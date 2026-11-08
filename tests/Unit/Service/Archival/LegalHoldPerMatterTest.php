@@ -57,7 +57,12 @@ class LegalHoldPerMatterTest extends TestCase {
 		$mapper = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['update'])->getMock();
 		$mapper->method('update')->willReturnArgument(0);
 
-		$this->service = new LegalHoldService(new LegalHoldRecords($mapper, $this->createMock(AuditTrailMapper::class)), $session, $this->createMock(IJobList::class), new NullLogger());
+		$this->service = new LegalHoldService(
+			new LegalHoldRecords($mapper, $this->createMock(AuditTrailMapper::class)),
+			$session,
+			$this->createMock(IJobList::class),
+			new NullLogger()
+		);
 	}//end setUp()
 
 	private function object(array $retention = []): ObjectEntity {

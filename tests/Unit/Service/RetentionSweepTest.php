@@ -36,7 +36,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
-use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\DB\IResult;
@@ -126,7 +125,13 @@ class RetentionSweepTest extends TestCase {
 			// mock of its own: what is under test here is which tables get
 			// walked and how, and a mocked scanner would assert only that this
 			// service called something.
-			new RetentionRowScanner($this->db, new ArchivalRegisterMappers($this->registerMapper, $this->schemaMapper, $this->objectMapper), $this->logger),
+			new RetentionRowScanner(
+				$this->db,
+				$this->registerMapper,
+				$this->schemaMapper,
+				$this->objectMapper,
+				$this->logger
+			),
 			new ArchiveActionDateCalculator($this->objectMapper, $this->logger),
 			$this->createMock(SelectielijstResolver::class),
 		);

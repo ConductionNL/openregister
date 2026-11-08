@@ -114,7 +114,12 @@ class RetentionHoldGoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		return new LegalHoldService(records: new LegalHoldRecords(objectMapper: $mapper, auditTrailMapper: $this->createMock(AuditTrailMapperInterface::class), scanner: $scanner), userSession: $session, jobList: $jobs, logger: $this->createMock(LoggerInterface::class));
+		return new LegalHoldService(
+			records: new LegalHoldRecords(objectMapper: $mapper, auditTrailMapper: $this->createMock(AuditTrailMapperInterface::class), scanner: $scanner),
+			userSession: $session,
+			jobList: $jobs,
+			logger: $this->createMock(LoggerInterface::class)
+		);
 	}//end holds()
 
 	public function testHoldsArePlacedPerMatterAndReleasedPerMatterOrAll(): void {

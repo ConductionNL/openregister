@@ -33,7 +33,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCA\OpenRegister\Service\Archival\DestructionListCreator;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
-use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
@@ -107,7 +106,13 @@ class ArchivalCertificatesTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
 
-		$repository = new DestructionListRepository(new ArchivalRegisterMappers($registerMapper, $schemaMapper, $objectMapper), $settings, $this->createMock(LoggerInterface::class));
+		$repository = new DestructionListRepository(
+			$objectMapper,
+			$registerMapper,
+			$schemaMapper,
+			$settings,
+			$this->createMock(LoggerInterface::class)
+		);
 
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('archivaris-1');

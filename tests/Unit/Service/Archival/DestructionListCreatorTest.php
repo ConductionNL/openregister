@@ -115,7 +115,12 @@ class DestructionListCreatorTest extends TestCase {
 			}
 		);
 
-		$this->creator = new DestructionListCreator(retention: $retention, writer: new DestructionListWriter(objectMapper: $objectMapper, saveObject: $saveObject), settingsHandler: $settings, logger: $this->createMock(LoggerInterface::class));
+		$this->creator = new DestructionListCreator(
+			retention: $retention,
+			writer: new DestructionListWriter(objectMapper: $objectMapper, saveObject: $saveObject),
+			settingsHandler: $settings,
+			logger: $this->createMock(LoggerInterface::class)
+		);
 	}//end setUp()
 
 	/**

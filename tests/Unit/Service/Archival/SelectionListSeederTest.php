@@ -86,9 +86,20 @@ class SelectionListSeederTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
 
-		$this->seeder = new SelectionListSeeder(settingsHandler: $settings, mappers: new ArchivalRegisterMappers(registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper), saveObject: $saveObject, logger: $this->createMock(LoggerInterface::class));
+		$this->seeder = new SelectionListSeeder(
+			settingsHandler: $settings,
+			mappers: new ArchivalRegisterMappers(registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper),
+			saveObject: $saveObject,
+			logger: $this->createMock(LoggerInterface::class)
+		);
 
-		$this->resolver = new SelectielijstResolver(new ArchivalRegisterMappers($registerMapper, $schemaMapper, $objectMapper), $settings, $this->createMock(LoggerInterface::class));
+		$this->resolver = new SelectielijstResolver(
+			$objectMapper,
+			$schemaMapper,
+			$registerMapper,
+			$settings,
+			$this->createMock(LoggerInterface::class)
+		);
 	}//end setUp()
 
 	/**

@@ -34,7 +34,6 @@ use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
-use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\IAppConfig;
@@ -97,7 +96,13 @@ class RetentionClassificationOverrideTest extends TestCase {
 			$logger,
 			$this->createMock(RetentionRowScanner::class),
 			new ArchiveActionDateCalculator($objectMapper, $logger),
-			new SelectielijstResolver(new ArchivalRegisterMappers($this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class), $objectMapper), $settings, $logger),
+			new SelectielijstResolver(
+				$objectMapper,
+				$this->createMock(SchemaMapper::class),
+				$this->createMock(RegisterMapper::class),
+				$settings,
+				$logger
+			),
 		);
 	}//end setUp()
 

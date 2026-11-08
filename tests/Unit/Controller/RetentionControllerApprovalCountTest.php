@@ -50,7 +50,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
-use OCA\OpenRegister\Service\Archival\DestructionPlatform;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
@@ -121,7 +120,13 @@ class RetentionControllerApprovalCountTest extends TestCase {
 			$objectMapper,
 			$this->createMock(SchemaMapper::class),
 			$this->auditMapper,
-			new DestructionService(platform: new DestructionPlatform(objectMapper: $objectMapper, appConfig: $this->createMock(IAppConfig::class), jobList: $this->createMock(IJobList::class)), userSession: $session, logger: new NullLogger()),
+			new DestructionService(
+				objectMapper: $objectMapper,
+				appConfig: $this->createMock(IAppConfig::class),
+				jobList: $this->createMock(IJobList::class),
+				userSession: $session,
+				logger: new NullLogger(),
+			),
 			$this->createMock(IJobList::class),
 			$session,
 			new NullLogger()

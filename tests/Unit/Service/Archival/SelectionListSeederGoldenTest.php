@@ -70,7 +70,12 @@ class SelectionListSeederGoldenTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
 
-		return new SelectionListSeeder(settingsHandler: $handler, mappers: new ArchivalRegisterMappers(registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper), saveObject: $saveObject, logger: new NullLogger());
+		return new SelectionListSeeder(
+			settingsHandler: $handler,
+			mappers: new ArchivalRegisterMappers(registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper),
+			saveObject: $saveObject,
+			logger: new NullLogger()
+		);
 	}
 
 	/**

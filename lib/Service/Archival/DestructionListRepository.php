@@ -41,7 +41,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -61,12 +64,16 @@ class DestructionListRepository implements DestructionListRepositoryInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ArchivalRegisterMappers $mappers The register, schema and object mappers.
+	 * @param MagicMapperInterface            $objectMapper    Destruction lists are register objects.
+	 * @param RegisterMapperInterface         $registerMapper  Resolves the configured register.
+	 * @param SchemaMapperInterface           $schemaMapper    Resolves the configured schema.
 	 * @param ArchivalSettingsReaderInterface $settingsHandler Says which register and schema they live in.
 	 * @param LoggerInterface        $logger          Logger for a lookup that fails.
 	 */
 	public function __construct(
-		private readonly ArchivalRegisterMappers $mappers,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ArchivalSettingsReaderInterface $settingsHandler,
 		private readonly LoggerInterface $logger,
 	) {
@@ -109,11 +116,7 @@ class DestructionListRepository implements DestructionListRepositoryInterface {
 				return [];
 			}
 
-			return $this->mappers->objectMapper->findAll(
-				filters: $this->statusFilter(statuses: $statuses),
-				register: $scope['register'],
-				schema: $scope['schema']
-			);
+			return $this->objectMapper->findAll(filters: $this->statusFilter(statuses: $statuses), register: $scope['register'], schema: $scope['schema']);
 		} catch (Throwable $e) {
 			$this->logger->warning('[DestructionListRepository] Could not read destruction lists: ' . $e->getMessage());
 			return [];
@@ -133,7 +136,7 @@ class DestructionListRepository implements DestructionListRepositoryInterface {
 			return null;
 		}
 
-		return ['register' => $this->mappers->registerMapper->find((int)$registerId), 'schema' => $this->mappers->schemaMapper->find((int)$schemaId)];
+		return ['register' => $this->registerMapper->find((int)$registerId), 'schema' => $this->schemaMapper->find((int)$schemaId)];
 	}//end configuredScope()
 
 	/**
@@ -167,7 +170,7 @@ class DestructionListRepository implements DestructionListRepositoryInterface {
 	 */
 	public function find(string $uuid): ?ObjectEntity {
 		try {
-			return $this->mappers->objectMapper->find($uuid, null, null, false, false, false);
+			return $this->objectMapper->find($uuid, null, null, false, false, false);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'[DestructionListRepository] Destruction list ' . $uuid . ' not found: ' . $e->getMessage()
@@ -273,6 +276,6 @@ class DestructionListRepository implements DestructionListRepositoryInterface {
 	public function save(ObjectEntity $list, array $listData): void {
 		$list->setObject($listData);
 
-		$this->mappers->objectMapper->update($list);
+		$this->objectMapper->update($list);
 	}//end save()
 }//end class

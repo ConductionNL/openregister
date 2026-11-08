@@ -67,7 +67,12 @@ final class DestructionScopeServiceTest extends TestCase {
 		$relations = $this->createMock(ObjectRelationCleanupService::class);
 		$relations->method('countTimelineLinks')->willReturn(11);
 
-		$service = new DestructionScopeService($this->createMock(AuditTrailMapper::class), new NullLogger(), new DestructionScopeReader(), new DestructionCompanions($notes, $files, null, $relations));
+		$service = new DestructionScopeService(
+			$this->createMock(AuditTrailMapper::class),
+			new NullLogger(),
+			new DestructionScopeReader(),
+			new DestructionCompanions($notes, $files, null, $relations)
+		);
 
 		$preview = $service->preview(
 			$this->object(),
@@ -155,7 +160,12 @@ final class DestructionScopeServiceTest extends TestCase {
 		);
 		$tasks->expects(self::exactly(2))->method('deleteTask');
 
-		$service = new DestructionScopeService($this->createMock(AuditTrailMapper::class), new NullLogger(), new DestructionScopeReader(), new DestructionCompanions($notes, null, $tasks));
+		$service = new DestructionScopeService(
+			$this->createMock(AuditTrailMapper::class),
+			new NullLogger(),
+			new DestructionScopeReader(),
+			new DestructionCompanions($notes, null, $tasks)
+		);
 
 		$report = $service->destroy(
 			$this->object(),

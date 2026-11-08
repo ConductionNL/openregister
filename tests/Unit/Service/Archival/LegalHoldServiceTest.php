@@ -50,7 +50,12 @@ class LegalHoldServiceTest extends TestCase {
 		$this->jobList = $this->createMock(IJobList::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->service = new LegalHoldService(new LegalHoldRecords($this->objectMapper, $this->auditTrailMapper), $this->userSession, $this->jobList, $this->logger);
+		$this->service = new LegalHoldService(
+			new LegalHoldRecords($this->objectMapper, $this->auditTrailMapper),
+			$this->userSession,
+			$this->jobList,
+			$this->logger
+		);
 	}
 
 	/**

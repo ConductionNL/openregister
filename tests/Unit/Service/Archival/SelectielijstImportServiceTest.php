@@ -97,7 +97,12 @@ class SelectielijstImportServiceTest extends TestCase {
 			$this->getMockBuilder(Schema::class)->disableOriginalConstructor()->getMock()
 		);
 
-		$this->service = new SelectielijstImportService($this->settingsHandler, new ArchivalRegisterMappers($registerMapper, $schemaMapper, $this->objectMapper), $this->saveObject, $this->createMock(LoggerInterface::class));
+		$this->service = new SelectielijstImportService(
+			$this->settingsHandler,
+			new ArchivalRegisterMappers($registerMapper, $schemaMapper, $this->objectMapper),
+			$this->saveObject,
+			$this->createMock(LoggerInterface::class)
+		);
 	}
 
 	/**
@@ -137,7 +142,12 @@ class SelectielijstImportServiceTest extends TestCase {
 			$this->getMockBuilder(Schema::class)->disableOriginalConstructor()->getMock()
 		);
 
-		$this->service = new SelectielijstImportService($this->settingsHandler, new ArchivalRegisterMappers($registerMapper, $schemaMapper, $mapper), $this->saveObject, $this->createMock(LoggerInterface::class));
+		$this->service = new SelectielijstImportService(
+			$this->settingsHandler,
+			new ArchivalRegisterMappers($registerMapper, $schemaMapper, $mapper),
+			$this->saveObject,
+			$this->createMock(LoggerInterface::class)
+		);
 	}
 
 	public function testACsvWithAHeaderBecomesRows(): void {

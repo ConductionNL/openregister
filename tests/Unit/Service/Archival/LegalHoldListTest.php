@@ -76,7 +76,12 @@ class LegalHoldListTest extends TestCase {
 			]
 		);
 
-		return new LegalHoldService(new LegalHoldRecords($this->createMock(MagicMapper::class), $this->createMock(AuditTrailMapper::class), $scanner), $this->createMock(IUserSession::class), $this->createMock(IJobList::class), new NullLogger());
+		return new LegalHoldService(
+			new LegalHoldRecords($this->createMock(MagicMapper::class), $this->createMock(AuditTrailMapper::class), $scanner),
+			$this->createMock(IUserSession::class),
+			$this->createMock(IJobList::class),
+			new NullLogger()
+		);
 	}//end service()
 
 	/**
