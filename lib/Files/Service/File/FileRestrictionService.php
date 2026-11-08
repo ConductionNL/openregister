@@ -36,21 +36,59 @@ use Psr\Log\LoggerInterface;
 class FileRestrictionService {
 
 	/**
+	 * The rows.
+	 *
+	 * @var FileRestrictionStore
+	 */
+	private readonly FileRestrictionStore $store;
+
+	/**
+	 * Forgets its memo after a write.
+	 *
+	 * @var FileRestrictionGuard
+	 */
+	private readonly FileRestrictionGuard $guard;
+
+	/**
+	 * Who sets it.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Where every change is noted.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Removes the file's public link shares.
+	 *
+	 * @var FileMapperInterface
+	 */
+	private readonly FileMapperInterface $fileMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FileRestrictionStore $store       The rows.
-	 * @param FileRestrictionGuard $guard       Forgets its memo after a write.
-	 * @param IUserSession         $userSession Who sets it.
-	 * @param LoggerInterface      $logger      Where every change is noted.
-	 * @param FileMapperInterface           $fileMapper  Removes the file's public link shares.
+	 * @param FileRestrictionRecords $records     The rows and the guard that forgets its memo after a write.
+	 * @param IUserSession           $userSession Who sets it.
+	 * @param LoggerInterface        $logger      Where every change is noted.
+	 * @param FileMapperInterface    $fileMapper  Removes the file's public link shares.
 	 */
 	public function __construct(
-		private readonly FileRestrictionStore $store,
-		private readonly FileRestrictionGuard $guard,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly FileMapperInterface $fileMapper,
+		FileRestrictionRecords $records,
+		IUserSession $userSession,
+		LoggerInterface $logger,
+		FileMapperInterface $fileMapper,
 	) {
+		$this->store = $records->store;
+		$this->guard = $records->guard;
+		$this->userSession = $userSession;
+		$this->logger = $logger;
+		$this->fileMapper = $fileMapper;
 	}//end __construct()
 
 	/**

@@ -26,9 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\HookStoppedException;
-use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -46,42 +44,27 @@ use Throwable;
  * container recurse while building `ObjectService`. They are resolved from the
  * container at the moment a move is actually made, which is always inside a
  * request that has already built them.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class AutoTransitionRunner {
-
-
-	/**
-	 * Picks the one eligible move, or none.
-	 *
-	 * @var AutoTransitionSelector
-	 */
-	private readonly AutoTransitionSelector $selector;
-
-	/**
-	 * Decides inline versus queued, and owns the job list.
-	 *
-	 * @var AutoTransitionQueue
-	 */
-	private readonly AutoTransitionQueue $queue;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param AutoTransitionPlanning $planning     The selector and queue that decide and hold the automatic transitions to run.
-	 * @param ContainerInterface     $container    Resolves ObjectService and TransitionEngine lazily; see the class docblock.
-	 * @param SchemaMapperInterface  $schemaMapper Reads the schema's lifecycle annotation.
-	 * @param LoggerInterface        $logger       Logs every refusal, so a move that never happens is visible.
+	 * @param AutoTransitionDecider $decider Re-reads the object and picks the one eligible move, or none.
+	 * @param ContainerInterface $container Resolves TransitionEngine lazily; see the class docblock.
+	 * @param AutoTransitionQueue $queue Decides inline versus queued, and owns the job list.
+	 * @param LoggerInterface $logger Logs every refusal, so a move that never happens is visible.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		AutoTransitionPlanning $planning,
+		private readonly AutoTransitionDecider $decider,
 		private readonly ContainerInterface $container,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly AutoTransitionQueue $queue,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->selector = $planning->selector;
-		$this->queue = $planning->queue;
 	}//end __construct()
 
 	/**
@@ -101,36 +84,9 @@ class AutoTransitionRunner {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function decide(string $uuid, string $register, string $schema, array $previous): ?AutoTransitionDecision {
-		$object = $this->resolveObject(uuid: $uuid, register: $register, schema: $schema);
-		if ($object === null) {
-			return null;
-		}
-
-		$declaration = $this->annotationFor(schema: $schema);
-		if ($declaration === null) {
-			return null;
-		}
-
-		[$annotation, $slug] = $declaration;
-
-		$candidate = $this->selector->select(
-			annotation: $annotation,
-			objectData: ($object->getObject() ?? []),
-			previous: $previous,
-			schemaSlug: $slug
-		);
-		if ($candidate === null) {
-			return null;
-		}
-
-		return new AutoTransitionDecision(
-			uuid: $uuid,
-			register: $register,
-			schema: $schema,
-			schemaSlug: $slug,
-			candidate: $candidate,
-			version: $object->getVersion(),
-			updated: $object->getUpdated()
+		return $this->decider->decide(
+			entry: ['uuid' => $uuid, 'register' => $register, 'schema' => $schema],
+			previous: $previous
 		);
 	}//end decide()
 
@@ -162,24 +118,33 @@ class AutoTransitionRunner {
 				action: $decision->candidate->action
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[AutoTransitionRunner] An automatic transition was refused; the triggering write stands.',
-				[
-					'schema' => $decision->schemaSlug,
-					'uuid' => $decision->uuid,
-					'action' => $decision->candidate->action,
-					'from' => $decision->candidate->from,
-					'to' => $decision->candidate->to,
-					'refusalCode' => $this->refusalCodeOf(error: $e),
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logRefusal(decision: $decision, error: $e);
 			return null;
-		}//end try
+		}
 	}//end fire()
 
-
-
+	/**
+	 * Log an inline move the engine refused; the triggering write stands.
+	 *
+	 * @param AutoTransitionDecision $decision The refused move.
+	 * @param Throwable $error The exception raised while applying it.
+	 *
+	 * @return void
+	 */
+	private function logRefusal(AutoTransitionDecision $decision, Throwable $error): void {
+		$this->logger->warning(
+			'[AutoTransitionRunner] An automatic transition was refused; the triggering write stands.',
+			[
+				'schema' => $decision->schemaSlug,
+				'uuid' => $decision->uuid,
+				'action' => $decision->candidate->action,
+				'from' => $decision->candidate->from,
+				'to' => $decision->candidate->to,
+				'refusalCode' => $this->refusalCodeOf(error: $error),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logRefusal()
 
 	/**
 	 * The refusal code an exception carries, when it carries one.
@@ -202,54 +167,6 @@ class AutoTransitionRunner {
 
 		return null;
 	}//end refusalCodeOf()
-
-	/**
-	 * Re-read the object as stored, or null when it is gone or soft-deleted.
-	 *
-	 * @param string $uuid The object's uuid.
-	 * @param string $register The object's register reference.
-	 * @param string $schema The object's schema reference.
-	 *
-	 * @return ObjectEntity|null The stored object, or null.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function resolveObject(string $uuid, string $register, string $schema): ?ObjectEntity {
-		try {
-			$resolver = $this->container->get(DeferredEntryObjectResolver::class);
-			return $resolver->resolve(entry: ['uuid' => $uuid, 'register' => $register, 'schema' => $schema]);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[AutoTransitionRunner] Could not re-read the object to decide an automatic transition.',
-				['uuid' => $uuid, 'schema' => $schema, 'error' => $e->getMessage()]
-			);
-			return null;
-		}
-	}//end resolveObject()
-
-	/**
-	 * The schema's lifecycle annotation and the schema's slug.
-	 *
-	 * @param string $schema The object's schema reference.
-	 *
-	 * @return array{0: array<string, mixed>, 1: string}|null The annotation and slug, or null when there is none.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function annotationFor(string $schema): ?array {
-		try {
-			$entity = $this->schemaMapper->find($schema, _multitenancy: false);
-		} catch (Throwable $e) {
-			return null;
-		}
-
-		$annotation = (($entity->getConfiguration() ?? [])['x-openregister-lifecycle'] ?? null);
-		if (is_array($annotation) === false || $annotation === []) {
-			return null;
-		}
-
-		return [$annotation, (string)($entity->getSlug() ?? '')];
-	}//end annotationFor()
 
 	/**
 	 * The named-transition engine, resolved at the moment a move is made.

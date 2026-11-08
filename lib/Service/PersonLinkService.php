@@ -67,8 +67,25 @@ class PersonLinkService implements PersonLinkServiceInterface {
 	 */
 	public function listForObject(string $objectUuid, ?int $schemaId): array {
 		$listing = $this->contacts->getContactsForObject($objectUuid);
+
+		return [
+			'results' => $listing['results'],
+			'total' => $listing['total'],
+			'byRole' => $this->groupByRole(rows: $listing['results']),
+			'roles' => $this->roleVocabulary(schemaId: $schemaId),
+		];
+	}//end listForObject()
+
+	/**
+	 * Group link rows by role; a row without one goes under `other`.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The link rows.
+	 *
+	 * @return array<string, array<int, array<string, mixed>>> The rows per role.
+	 */
+	private function groupByRole(array $rows): array {
 		$byRole = [];
-		foreach ($listing['results'] as $row) {
+		foreach ($rows as $row) {
 			$role = (string)($row['role'] ?? '');
 			if ($role === '') {
 				$role = 'other';
@@ -77,13 +94,8 @@ class PersonLinkService implements PersonLinkServiceInterface {
 			$byRole[$role][] = $row;
 		}
 
-		return [
-			'results' => $listing['results'],
-			'total' => $listing['total'],
-			'byRole' => $byRole,
-			'roles' => $this->roleVocabulary(schemaId: $schemaId),
-		];
-	}//end listForObject()
+		return $byRole;
+	}//end groupByRole()
 
 	/**
 	 * The roles a person can hold on an object of the schema, [] when it declares none.
@@ -128,8 +140,7 @@ class PersonLinkService implements PersonLinkServiceInterface {
 		$role = $this->roleOf(payload: $payload);
 		$this->assertRoleAllowed(schemaId: $schemaId, role: $role);
 
-		$userId = trim((string)($payload['userId'] ?? ''));
-		$link = $this->linkContact(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, payload: $payload, role: $role, userId: $userId);
+		$link = $this->linkContact(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, payload: $payload, role: $role);
 
 		$link = $this->applyPeriodAndNote(link: $link, payload: $payload);
 		$this->events->linked(link: $link);
@@ -180,20 +191,7 @@ class PersonLinkService implements PersonLinkServiceInterface {
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-can-be-updated-and-removed-per-role
 	 */
 	public function unlink(string $objectUuid, string $contactUid, ?string $role = null): int {
-		$targets = [];
-		if ($role !== null) {
-			$targets[] = $this->findLink(objectUuid: $objectUuid, contactUid: $contactUid, role: $role);
-		}
-
-		if ($role === null) {
-			$targets = array_values(
-				array_filter(
-					$this->links->findByObjectUuid($objectUuid),
-					static fn (ContactLink $link): bool => $link->getContactUid() === $contactUid
-				)
-			);
-		}
-
+		$targets = $this->unlinkTargets(objectUuid: $objectUuid, contactUid: $contactUid, role: $role);
 		if ($targets === []) {
 			throw new Exception('Contact link not found', 404);
 		}
@@ -207,40 +205,74 @@ class PersonLinkService implements PersonLinkServiceInterface {
 	}//end unlink()
 
 	/**
+	 * The links an unlink removes: the one in the named role, else all of the person's on the object.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 * @param string $contactUid The person.
+	 * @param string|null $role Only this role, or null for all.
+	 *
+	 * @return array<int, ContactLink> The links.
+	 *
+	 * @throws Exception 404 when the named role's link does not exist.
+	 */
+	private function unlinkTargets(string $objectUuid, string $contactUid, ?string $role): array {
+		if ($role !== null) {
+			return [$this->findLink(objectUuid: $objectUuid, contactUid: $contactUid, role: $role)];
+		}
+
+		return array_values(
+			array_filter(
+				$this->links->findByObjectUuid($objectUuid),
+				static fn (ContactLink $link): bool => $link->getContactUid() === $contactUid
+			)
+		);
+	}//end unlinkTargets()
+
+	/**
 	 * Write the link: a user link when a user id is given, else a contact link
 	 * through ContactService, which keeps the vCard in step.
 	 *
 	 * @param string $objectUuid The object uuid.
 	 * @param int $registerId The register id.
 	 * @param int|null $schemaId The schema id.
-	 * @param array<string, mixed> $payload `addressbookId` and `contactUri`.
+	 * @param array<string, mixed> $payload `userId`, or `addressbookId` and `contactUri`.
 	 * @param string|null $role The role.
-	 * @param string $userId The account of a user link, '' for a contact link.
 	 *
 	 * @return ContactLink The link.
 	 *
 	 * @throws Exception 400 when the payload names no contact.
 	 */
-	private function linkContact(string $objectUuid, int $registerId, ?int $schemaId, array $payload, ?string $role, string $userId = ''): ContactLink {
+	private function linkContact(string $objectUuid, int $registerId, ?int $schemaId, array $payload, ?string $role): ContactLink {
+		$userId = trim((string)($payload['userId'] ?? ''));
 		if ($userId !== '') {
 			return $this->userLinks->write(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, userId: $userId, role: $role);
 		}
 
-		$addressbookId = (int)($payload['addressbookId'] ?? 0);
-		$contactUri = trim((string)($payload['contactUri'] ?? ''));
-		if ($addressbookId <= 0 || $contactUri === '') {
+		$contact = [(int)($payload['addressbookId'] ?? 0), trim((string)($payload['contactUri'] ?? ''))];
+
+		return $this->linkAddressbookContact(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, contact: $contact, role: $role);
+	}//end linkContact()
+
+	/**
+	 * Write a contact link through ContactService, which keeps the vCard in step.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 * @param int $registerId The register id.
+	 * @param int|null $schemaId The schema id.
+	 * @param array{0: int, 1: string} $contact The addressbook id and the trimmed contact uri.
+	 * @param string|null $role The role.
+	 *
+	 * @return ContactLink The link.
+	 *
+	 * @throws Exception 400 when the payload names no contact.
+	 */
+	private function linkAddressbookContact(string $objectUuid, int $registerId, ?int $schemaId, array $contact, ?string $role): ContactLink {
+		if ($contact[0] <= 0 || $contact[1] === '') {
 			throw new Exception('Either userId or addressbookId+contactUri is required', 400);
 		}
 
-		return $this->contacts->linkContact(
-			$objectUuid,
-			$registerId,
-			$addressbookId,
-			$contactUri,
-			$role,
-			$schemaId
-		);
-	}//end linkContact()
+		return $this->contacts->linkContact($objectUuid, $registerId, $contact[0], $contact[1], $role, $schemaId);
+	}//end linkAddressbookContact()
 
 	/**
 	 * Set validity and note from a payload; a key absent is left alone, null or '' clears.
@@ -251,32 +283,56 @@ class PersonLinkService implements PersonLinkServiceInterface {
 	 * @return ContactLink The stored link, unchanged when the payload carried none of the keys.
 	 */
 	private function applyPeriodAndNote(ContactLink $link, array $payload): ContactLink {
-		$touched = false;
-		foreach (['validFrom' => 'setValidFrom', 'validUntil' => 'setValidUntil'] as $key => $setter) {
-			if (array_key_exists($key, $payload) === false) {
-				continue;
-			}
-
-			$link->{$setter}(self::dateOrNull(value: $payload[$key]));
-			$touched = true;
-		}
-
-		if (array_key_exists('note', $payload) === true) {
-			$note = trim((string)($payload['note'] ?? ''));
-			$link->setNote(null);
-			if ($note !== '') {
-				$link->setNote($note);
-			}
-
-			$touched = true;
-		}
-
-		if ($touched === false) {
+		$periodSet = $this->applyPeriod(link: $link, payload: $payload);
+		$noteSet   = $this->applyNote(link: $link, payload: $payload);
+		if ($periodSet === false && $noteSet === false) {
 			return $link;
 		}
 
 		return $this->links->update($link);
 	}//end applyPeriodAndNote()
+
+	/**
+	 * Set the validity dates a payload carries; null or '' clears one.
+	 *
+	 * @param ContactLink $link The link.
+	 * @param array<string, mixed> $payload The payload.
+	 *
+	 * @return bool Whether the payload carried either date.
+	 */
+	private function applyPeriod(ContactLink $link, array $payload): bool {
+		$touched = false;
+		foreach (['validFrom' => 'setValidFrom', 'validUntil' => 'setValidUntil'] as $key => $setter) {
+			if (array_key_exists($key, $payload) === true) {
+				$link->{$setter}(self::dateOrNull(value: $payload[$key]));
+				$touched = true;
+			}
+		}
+
+		return $touched;
+	}//end applyPeriod()
+
+	/**
+	 * Set the note a payload carries, trimmed; null or '' clears it.
+	 *
+	 * @param ContactLink $link The link.
+	 * @param array<string, mixed> $payload The payload.
+	 *
+	 * @return bool Whether the payload carried a note.
+	 */
+	private function applyNote(ContactLink $link, array $payload): bool {
+		if (array_key_exists('note', $payload) === false) {
+			return false;
+		}
+
+		$note = trim((string)($payload['note'] ?? ''));
+		$link->setNote(null);
+		if ($note !== '') {
+			$link->setNote($note);
+		}
+
+		return true;
+	}//end applyNote()
 
 	/**
 	 * Move a link to another role; a contact link's vCard follows.

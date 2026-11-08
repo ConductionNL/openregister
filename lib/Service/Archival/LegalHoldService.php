@@ -124,28 +124,15 @@ class LegalHoldService {
 
 		// One hold per matter (#4172): a second matter adds its own hold
 		// instead of overwriting the first one's reason.
-		$object->setRetention(
-			(new LegalHoldLedger())->place(
-				retention: ($object->getRetention() ?? []),
-				reason: $reason,
-				ownerKey: $ownerKey,
-				userId: $userId,
-				now: (new DateTime())->format('c')
-			)
+		$retention = (new LegalHoldLedger())->place(
+			retention: ($object->getRetention() ?? []), reason: $reason, ownerKey: $ownerKey, userId: $userId, now: (new DateTime())->format('c')
 		);
-
+		$object->setRetention($retention);
 		$this->objectMapper->update($object);
 
 		$this->logger->info(
 			message: '[LegalHoldService] Legal hold placed on object',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'objectId' => $object->getUuid(),
-				'reason' => $reason,
-				'ownerKey' => $ownerKey,
-				'placedBy' => $userId,
-			]
+			context: $this->logContext(object: $object, facts: ['reason' => $reason, 'ownerKey' => $ownerKey, 'placedBy' => $userId])
 		);
 
 		return $object;
@@ -168,31 +155,31 @@ class LegalHoldService {
 
 		// A matter lifts only its own hold (#4172); naming no matter lifts
 		// every hold, as a release always did.
-		$object->setRetention(
-			(new LegalHoldLedger())->release(
-				retention: ($object->getRetention() ?? []),
-				ownerKey: $ownerKey,
-				releaseReason: $reason,
-				userId: $userId,
-				now: (new DateTime())->format('c')
-			)
+		$retention = (new LegalHoldLedger())->release(
+			retention: ($object->getRetention() ?? []), ownerKey: $ownerKey, releaseReason: $reason, userId: $userId, now: (new DateTime())->format('c')
 		);
+		$object->setRetention($retention);
 		$this->objectMapper->update($object);
 
 		$this->logger->info(
 			message: '[LegalHoldService] Legal hold released on object',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'objectId' => $object->getUuid(),
-				'releaseReason' => $reason,
-				'ownerKey' => $ownerKey,
-				'releasedBy' => $userId,
-			]
+			context: $this->logContext(object: $object, facts: ['releaseReason' => $reason, 'ownerKey' => $ownerKey, 'releasedBy' => $userId])
 		);
 
 		return $object;
 	}//end releaseHold()
+
+	/**
+	 * The log context of a hold change on one object.
+	 *
+	 * @param ObjectEntity         $object The object.
+	 * @param array<string, mixed> $facts  What changed, and who changed it.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	private function logContext(ObjectEntity $object, array $facts): array {
+		return array_merge(['file' => __FILE__, 'line' => __LINE__, 'objectId' => $object->getUuid()], $facts);
+	}//end logContext()
 
 	/**
 	 * Check if an object has an active legal hold.
@@ -235,28 +222,13 @@ class LegalHoldService {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function bulkPlaceHold(int $schemaId, int $registerId, string $reason): void {
-		$userId = $this->getCurrentUserId();
+		$job = ['schemaId' => $schemaId, 'registerId' => $registerId, 'reason' => $reason, 'placedBy' => $this->getCurrentUserId()];
 
-		$this->jobList->add(
-			\OCA\OpenRegister\BackgroundJob\BulkLegalHoldJob::class,
-			[
-				'schemaId' => $schemaId,
-				'registerId' => $registerId,
-				'reason' => $reason,
-				'placedBy' => $userId,
-			]
-		);
+		$this->jobList->add(\OCA\OpenRegister\BackgroundJob\BulkLegalHoldJob::class, $job);
 
 		$this->logger->info(
 			message: '[LegalHoldService] Bulk legal hold job queued',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'schemaId' => $schemaId,
-				'registerId' => $registerId,
-				'reason' => $reason,
-				'placedBy' => $userId,
-			]
+			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $job)
 		);
 	}//end bulkPlaceHold()
 
@@ -276,22 +248,29 @@ class LegalHoldService {
 			return ['results' => [], 'total' => 0, 'truncated' => false];
 		}
 
-		$scan   = $this->scanner->scan(accept: static fn (ObjectEntity $object): bool => $object->hasActiveLegalHold());
-		$ledger = new LegalHoldLedger();
+		$scan = $this->scanner->scan(accept: static fn (ObjectEntity $object): bool => $object->hasActiveLegalHold());
 
-		$results = [];
-		foreach ($scan['objects'] as $object) {
-			$results[] = [
-				'id'       => $object->getUuid(),
-				'register' => $object->getRegister(),
-				'schema'   => $object->getSchema(),
-				'name'     => $object->getName(),
-				'holds'    => $ledger->activeHolds(retention: ($object->getRetention() ?? [])),
-			];
-		}
+		$results = array_map(fn (ObjectEntity $object): array => $this->heldRecord(object: $object), $scan['objects']);
 
 		return ['results' => $results, 'total' => count($results), 'truncated' => $scan['truncated']];
 	}//end listActiveHolds()
+
+	/**
+	 * One held record, as the list of held records shows it.
+	 *
+	 * @param ObjectEntity $object The held record.
+	 *
+	 * @return array<string, mixed> The record and its active holds.
+	 */
+	private function heldRecord(ObjectEntity $object): array {
+		return [
+			'id'       => $object->getUuid(),
+			'register' => $object->getRegister(),
+			'schema'   => $object->getSchema(),
+			'name'     => $object->getName(),
+			'holds'    => (new LegalHoldLedger())->activeHolds(retention: ($object->getRetention() ?? [])),
+		];
+	}//end heldRecord()
 
 	/**
 	 * Get the current authenticated user ID.
@@ -301,11 +280,6 @@ class LegalHoldService {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	private function getCurrentUserId(): string {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return 'system';
-		}
-
-		return $user->getUID();
+		return ($this->userSession->getUser()?->getUID() ?? 'system');
 	}//end getCurrentUserId()
 }//end class

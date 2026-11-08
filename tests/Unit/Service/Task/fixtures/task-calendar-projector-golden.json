@@ -1,0 +1,703 @@
+{
+    "blank assignee": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "getCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "delete",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "log:info",
+                "[TaskCalendarProjector] Task has no individual assignee; not projected into any calendar.",
+                {
+                    "task": "00000000-0000-0000-0000-000000000002",
+                    "state": "active"
+                }
+            ]
+        ],
+        "result": null,
+        "rows": []
+    },
+    "calendar moved": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "forUser",
+                "EXAMPLE_APPROVER_USER"
+            ],
+            [
+                "getCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "deleteCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "delete",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "save",
+                "00000000-0000-0000-0000-000000000002",
+                "caldav",
+                "EXAMPLE_APPROVER_USER",
+                10,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62"
+            ],
+            [
+                "createCalendarObject",
+                10,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62"
+            ]
+        ],
+        "result": null,
+        "rows": [
+            "00000000-0000-0000-0000-000000000002"
+        ]
+    },
+    "changed task": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "forUser",
+                "EXAMPLE_APPROVER_USER"
+            ],
+            [
+                "getCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "save",
+                "00000000-0000-0000-0000-000000000002",
+                "caldav",
+                "EXAMPLE_APPROVER_USER",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "7046ebd575e9248e03dee340b6cefc36282614639f0c94ef86be1f901c4510cf"
+            ],
+            [
+                "updateCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "7046ebd575e9248e03dee340b6cefc36282614639f0c94ef86be1f901c4510cf"
+            ]
+        ],
+        "result": null,
+        "rows": [
+            "00000000-0000-0000-0000-000000000002"
+        ]
+    },
+    "create retries": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "forUser",
+                "EXAMPLE_APPROVER_USER"
+            ],
+            [
+                "save",
+                "00000000-0000-0000-0000-000000000002",
+                "caldav",
+                "EXAMPLE_APPROVER_USER",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62"
+            ],
+            [
+                "createCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62"
+            ],
+            [
+                "log:debug",
+                "[TaskCalendarProjector] Create under the stable uri failed, retrying under a fresh one: uri taken",
+                {
+                    "task": "00000000-0000-0000-0000-000000000002",
+                    "uri": "openregister-task-00000000-0000-0000-0000-000000000002.ics"
+                }
+            ],
+            [
+                "createCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-000000000002-<time>.ics",
+                "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62"
+            ],
+            [
+                "save",
+                "00000000-0000-0000-0000-000000000002",
+                "caldav",
+                "EXAMPLE_APPROVER_USER",
+                9,
+                "openregister-task-00000000-0000-0000-0000-000000000002-<time>.ics",
+                "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62"
+            ]
+        ],
+        "result": null,
+        "rows": [
+            "00000000-0000-0000-0000-000000000002"
+        ]
+    },
+    "echo": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "findForTask",
+                "unknown"
+            ]
+        ],
+        "result": [
+            true,
+            false,
+            false
+        ],
+        "rows": [
+            "00000000-0000-0000-0000-000000000002"
+        ]
+    },
+    "first projection": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "forUser",
+                "EXAMPLE_APPROVER_USER"
+            ],
+            [
+                "save",
+                "00000000-0000-0000-0000-000000000002",
+                "caldav",
+                "EXAMPLE_APPROVER_USER",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62"
+            ],
+            [
+                "createCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62"
+            ]
+        ],
+        "result": null,
+        "rows": [
+            "00000000-0000-0000-0000-000000000002"
+        ]
+    },
+    "no calendar": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "getCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "delete",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "forUser",
+                "second-approver"
+            ],
+            [
+                "log:info",
+                "[TaskCalendarProjector] Assignee has no VTODO-capable calendar; projection skipped, task unaffected: No VTODO-supporting calendar found for user no calendar for second-approver",
+                {
+                    "task": "00000000-0000-0000-0000-000000000002",
+                    "assignee": "second-approver",
+                    "surface": "caldav"
+                }
+            ]
+        ],
+        "result": null,
+        "rows": []
+    },
+    "pooled after projection": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "getCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "deleteCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "delete",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "log:info",
+                "[TaskCalendarProjector] Task has no individual assignee; not projected into any calendar.",
+                {
+                    "task": "00000000-0000-0000-0000-000000000002",
+                    "state": "active"
+                }
+            ]
+        ],
+        "result": null,
+        "rows": []
+    },
+    "pooled never projected": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "log:info",
+                "[TaskCalendarProjector] Task has no individual assignee; not projected into any calendar.",
+                {
+                    "task": "00000000-0000-0000-0000-000000000002",
+                    "state": "active"
+                }
+            ]
+        ],
+        "result": null,
+        "rows": []
+    },
+    "pooled terminal never projected": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ]
+        ],
+        "result": null,
+        "rows": []
+    },
+    "reassignment": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "getCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "deleteCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "delete",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "forUser",
+                "second-approver"
+            ],
+            [
+                "save",
+                "00000000-0000-0000-0000-000000000002",
+                "caldav",
+                "second-approver",
+                21,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "b4a14c369a213473cc4204c28b194adf4493f425e733bd48c2ecf8b80cd72a52"
+            ],
+            [
+                "createCalendarObject",
+                21,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "b4a14c369a213473cc4204c28b194adf4493f425e733bd48c2ecf8b80cd72a52"
+            ]
+        ],
+        "result": null,
+        "rows": [
+            "00000000-0000-0000-0000-000000000002"
+        ]
+    },
+    "reconcile after deletion": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "forUser",
+                "EXAMPLE_APPROVER_USER"
+            ],
+            [
+                "getCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "save",
+                "00000000-0000-0000-0000-000000000002",
+                "caldav",
+                "EXAMPLE_APPROVER_USER",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62"
+            ],
+            [
+                "createCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62"
+            ]
+        ],
+        "result": null,
+        "rows": [
+            "00000000-0000-0000-0000-000000000002"
+        ]
+    },
+    "reconcile after edit": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "forUser",
+                "EXAMPLE_APPROVER_USER"
+            ],
+            [
+                "getCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "save",
+                "00000000-0000-0000-0000-000000000002",
+                "caldav",
+                "EXAMPLE_APPROVER_USER",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62"
+            ],
+            [
+                "updateCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62"
+            ]
+        ],
+        "result": null,
+        "rows": [
+            "00000000-0000-0000-0000-000000000002"
+        ]
+    },
+    "reconcile untouched": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "forUser",
+                "EXAMPLE_APPROVER_USER"
+            ],
+            [
+                "getCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ]
+        ],
+        "result": null,
+        "rows": [
+            "00000000-0000-0000-0000-000000000002"
+        ]
+    },
+    "remove": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "getCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "deleteCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "delete",
+                "00000000-0000-0000-0000-000000000002"
+            ]
+        ],
+        "result": null,
+        "rows": []
+    },
+    "remove unknown": {
+        "calls": [
+            [
+                "findForTask",
+                "unknown"
+            ]
+        ],
+        "result": null,
+        "rows": [
+            "00000000-0000-0000-0000-000000000002"
+        ]
+    },
+    "remove when delete fails": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "getCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "deleteCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "log:warning",
+                "[TaskCalendarProjector] Could not remove a stale projection: delete failed",
+                {
+                    "task": "00000000-0000-0000-0000-000000000002",
+                    "calendar": 9,
+                    "uri": "openregister-task-00000000-0000-0000-0000-000000000002.ics"
+                }
+            ],
+            [
+                "delete",
+                "00000000-0000-0000-0000-000000000002"
+            ]
+        ],
+        "result": null,
+        "rows": []
+    },
+    "remove when object gone": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "getCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "delete",
+                "00000000-0000-0000-0000-000000000002"
+            ]
+        ],
+        "result": null,
+        "rows": []
+    },
+    "render": {
+        "render:assigned": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nCALSCALE:GREGORIAN\r\nPRODID:-//OpenRegister//Tasks//EN\r\nBEGIN:VTODO\r\nUID:00000000-0000-0000-0000-000000000002\r\nDTSTAMP:<now>\r\nSUMMARY:Approve the permit\r\nDESCRIPTION:Check the drawings against the zoning plan.\r\nSTATUS:IN-PROCESS\r\nPRIORITY:3\r\nDUE:20260910T120000Z\r\nURL;VALUE=URI:https://cloud.example/openregister.task.open/00000000-0000-00\r\n 00-0000-000000000002\r\nX-OPENREGISTER-TASK:00000000-0000-0000-0000-000000000002\r\nX-OPENREGISTER-TASK-ASSIGNEE:EXAMPLE_APPROVER_USER\r\nX-OPENREGISTER-REGISTER:8\r\nX-OPENREGISTER-SCHEMA:18\r\nX-OPENREGISTER-OBJECT:obj-42\r\nLINK;LINKREL=related;LABEL=Approve the permit;VALUE=URI:/apps/openregister/\r\n api/objects/8/18/obj-42\r\nEND:VTODO\r\nEND:VCALENDAR\r\n",
+        "fields:assigned": {
+            "task": "00000000-0000-0000-0000-000000000002",
+            "status": "IN-PROCESS",
+            "summary": "Approve the permit",
+            "description": "Check the drawings against the zoning plan.",
+            "due": "1789041600",
+            "priority": "3",
+            "assignee": "EXAMPLE_APPROVER_USER"
+        },
+        "hash:assigned": "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62",
+        "uuid:assigned": "00000000-0000-0000-0000-000000000002",
+        "render:completed": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nCALSCALE:GREGORIAN\r\nPRODID:-//OpenRegister//Tasks//EN\r\nBEGIN:VTODO\r\nUID:00000000-0000-0000-0000-000000000002\r\nDTSTAMP:<now>\r\nSUMMARY:Approve the permit\r\nDESCRIPTION:Check the drawings against the zoning plan.\r\nSTATUS:COMPLETED\r\nPRIORITY:3\r\nDUE:20260910T120000Z\r\nCOMPLETED:20260901T090000Z\r\nPERCENT-COMPLETE:100\r\nURL;VALUE=URI:https://cloud.example/openregister.task.open/00000000-0000-00\r\n 00-0000-000000000002\r\nX-OPENREGISTER-TASK:00000000-0000-0000-0000-000000000002\r\nX-OPENREGISTER-TASK-ASSIGNEE:EXAMPLE_APPROVER_USER\r\nX-OPENREGISTER-REGISTER:8\r\nX-OPENREGISTER-SCHEMA:18\r\nX-OPENREGISTER-OBJECT:obj-42\r\nLINK;LINKREL=related;LABEL=Approve the permit;VALUE=URI:/apps/openregister/\r\n api/objects/8/18/obj-42\r\nEND:VTODO\r\nEND:VCALENDAR\r\n",
+        "fields:completed": {
+            "task": "00000000-0000-0000-0000-000000000002",
+            "status": "COMPLETED",
+            "summary": "Approve the permit",
+            "description": "Check the drawings against the zoning plan.",
+            "due": "1789041600",
+            "priority": "3",
+            "assignee": "EXAMPLE_APPROVER_USER"
+        },
+        "hash:completed": "7046ebd575e9248e03dee340b6cefc36282614639f0c94ef86be1f901c4510cf",
+        "uuid:completed": "00000000-0000-0000-0000-000000000002",
+        "render:minimal": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nCALSCALE:GREGORIAN\r\nPRODID:-//OpenRegister//Tasks//EN\r\nBEGIN:VTODO\r\nUID:00000000-0000-0000-0000-000000000002\r\nDTSTAMP:<now>\r\nSUMMARY:Approve the permit\r\nSTATUS:IN-PROCESS\r\nPRIORITY:5\r\nURL;VALUE=URI:https://cloud.example/openregister.task.open/00000000-0000-00\r\n 00-0000-000000000002\r\nX-OPENREGISTER-TASK:00000000-0000-0000-0000-000000000002\r\nX-OPENREGISTER-TASK-ASSIGNEE:EXAMPLE_APPROVER_USER\r\nEND:VTODO\r\nEND:VCALENDAR\r\n",
+        "fields:minimal": {
+            "task": "00000000-0000-0000-0000-000000000002",
+            "status": "IN-PROCESS",
+            "summary": "Approve the permit",
+            "description": "",
+            "due": "",
+            "priority": "5",
+            "assignee": "EXAMPLE_APPROVER_USER"
+        },
+        "hash:minimal": "afa7c8e923625fab63c4355476c24ac1318815dce145b22c126f1062da6739eb",
+        "uuid:minimal": "00000000-0000-0000-0000-000000000002",
+        "render:no-schema": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nCALSCALE:GREGORIAN\r\nPRODID:-//OpenRegister//Tasks//EN\r\nBEGIN:VTODO\r\nUID:00000000-0000-0000-0000-000000000002\r\nDTSTAMP:<now>\r\nSUMMARY:Approve the permit\r\nDESCRIPTION:Check the drawings against the zoning plan.\r\nSTATUS:IN-PROCESS\r\nPRIORITY:3\r\nDUE:20260910T120000Z\r\nURL;VALUE=URI:https://cloud.example/openregister.task.open/00000000-0000-00\r\n 00-0000-000000000002\r\nX-OPENREGISTER-TASK:00000000-0000-0000-0000-000000000002\r\nX-OPENREGISTER-TASK-ASSIGNEE:EXAMPLE_APPROVER_USER\r\nEND:VTODO\r\nEND:VCALENDAR\r\n",
+        "fields:no-schema": {
+            "task": "00000000-0000-0000-0000-000000000002",
+            "status": "IN-PROCESS",
+            "summary": "Approve the permit",
+            "description": "Check the drawings against the zoning plan.",
+            "due": "1789041600",
+            "priority": "3",
+            "assignee": "EXAMPLE_APPROVER_USER"
+        },
+        "hash:no-schema": "bea1d56dad6322e452c26e3b07505a5059ff8ec96c26291198d05e4048939f62",
+        "uuid:no-schema": "00000000-0000-0000-0000-000000000002",
+        "fields:garbage": null,
+        "hash:garbage": null,
+        "uuid:garbage": null,
+        "fields:vcard": null,
+        "hash:vcard": null,
+        "uuid:vcard": null,
+        "fields:no-vtodo": null,
+        "hash:no-vtodo": null,
+        "uuid:no-vtodo": null,
+        "fields:standalone": {
+            "task": "",
+            "status": "NEEDS-ACTION",
+            "summary": "Buy milk",
+            "description": "",
+            "due": "",
+            "priority": "",
+            "assignee": ""
+        },
+        "hash:standalone": "8ac06ed6962584de783eb6fdbf75e3a159b6131f80f4f305b110b93ac6cf4bf6",
+        "uuid:standalone": null,
+        "fields:bad-due": {
+            "task": " t-1 ",
+            "status": "",
+            "summary": "",
+            "description": "",
+            "due": "soon",
+            "priority": "",
+            "assignee": ""
+        },
+        "hash:bad-due": "88ab1b9ab2ed2ae85d630b1da43e875abc8abae3dc61ea8049e7a66f7cbde78f",
+        "uuid:bad-due": "t-1",
+        "fields:date-due": {
+            "task": "t-2",
+            "status": "",
+            "summary": "",
+            "description": "",
+            "due": "1789041600",
+            "priority": "1",
+            "assignee": ""
+        },
+        "hash:date-due": "29c4a19bf9034c64ac65626aad37b514f78a4efd78dabeeffcade6fac13e9f7b",
+        "uuid:date-due": "t-2"
+    },
+    "terminal after projection": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "forUser",
+                "EXAMPLE_APPROVER_USER"
+            ],
+            [
+                "getCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics"
+            ],
+            [
+                "save",
+                "00000000-0000-0000-0000-000000000002",
+                "caldav",
+                "EXAMPLE_APPROVER_USER",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "2c94758e95e677fbf8938e16c69f79ca7d55bdbe43fd8a4f982339ef2383a876"
+            ],
+            [
+                "updateCalendarObject",
+                9,
+                "openregister-task-00000000-0000-0000-0000-<time>.ics",
+                "2c94758e95e677fbf8938e16c69f79ca7d55bdbe43fd8a4f982339ef2383a876"
+            ]
+        ],
+        "result": null,
+        "rows": [
+            "00000000-0000-0000-0000-000000000002"
+        ]
+    },
+    "terminal never projected": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ]
+        ],
+        "result": null,
+        "rows": []
+    },
+    "unchanged re-projection": {
+        "calls": [
+            [
+                "findForTask",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            [
+                "forUser",
+                "EXAMPLE_APPROVER_USER"
+            ]
+        ],
+        "result": null,
+        "rows": [
+            "00000000-0000-0000-0000-000000000002"
+        ]
+    }
+}

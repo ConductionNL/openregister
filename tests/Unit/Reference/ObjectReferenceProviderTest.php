@@ -35,6 +35,7 @@ use OCA\OpenRegister\Reference\ObjectReferenceProvider;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
 use OCP\Collaboration\Reference\Reference;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -146,10 +147,12 @@ class ObjectReferenceProviderTest extends TestCase {
 		$this->formatter = new ObjectPreviewFormatter(
 			$this->urlGenerator,
 			$this->l10n,
-			$this->objectService,
-			$this->deepLinkRegistry,
-			$this->schemaMapper,
-			$this->registerMapper,
+			new ObjectPreviewSources(
+				objectService: $this->objectService,
+				deepLinkRegistry: $this->deepLinkRegistry,
+				schemaMapper: $this->schemaMapper,
+				registerMapper: $this->registerMapper
+			),
 			$this->logger
 		);
 

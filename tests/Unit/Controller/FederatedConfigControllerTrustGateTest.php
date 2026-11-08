@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\FederatedConfigController;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCA\OpenRegister\Service\Config\FederatedConfigTransport;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FederatedConfigControllerFactory;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -111,7 +112,7 @@ class FederatedConfigControllerTrustGateTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->willReturn($isAdmin);
 
-		return new FederatedConfigController(
+		return FederatedConfigControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,
@@ -311,7 +312,7 @@ class FederatedConfigControllerTrustGateTest extends TestCase {
 		);
 		$this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
 		$this->groupManager->method('isAdmin')->willReturn(true);
-		$controller = new FederatedConfigController(
+		$controller = FederatedConfigControllerFactory::create(
 			'openregister',
 			$this->request,
 			$service,

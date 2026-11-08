@@ -146,7 +146,25 @@ class ScheduledReportServiceRunGoldenTest extends TestCase {
 			$recorder = $this->getMockBuilder(ExportRunRecorder::class)->disableOriginalConstructor()->onlyMethods(['record'])->getMock();
 			$recorder->method('record')->willReturnCallback(
 				function (...$args) use ($opt) {
-					$this->calls[] = ['recorder.record', $this->plain($args)];
+					// The fixture pins the run's fields in the order record() took
+					// them before they were grouped; flatten the groups back.
+					[$origin, $content, $file, $retention] = $args;
+					$fields = [
+						$origin->source,
+						$origin->actor,
+						$content->format,
+						$content->rowCount,
+						$origin->profile,
+						$file->filename,
+						$content->registerName,
+						$content->schemaName,
+						$file->fileId,
+						$file->filePath,
+						$retention,
+						$file->downloadCount,
+						$origin->status,
+					];
+					$this->calls[] = ['recorder.record', $this->plain($fields)];
 					if (($opt['recorder'] ?? 'ok') === 'throws') {
 						throw new RuntimeException('no table');
 					}

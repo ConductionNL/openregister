@@ -26,6 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Db;
 
 use DateTime;
+use OCA\OpenRegister\Notifications\Db\BroadcastMessage;
+use OCA\OpenRegister\Notifications\Db\BroadcastWindow;
 use OCA\OpenRegister\Notifications\Db\NotificationBroadcastMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationBroadcastReceiptMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
@@ -249,7 +251,7 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			}
 		};
 		return [
-			'broadcast record'               => [$broadcasts, 'record', ['u-1', 'Hi', null, 'admin', $at, $at], [], false],
+			'broadcast record'               => [$broadcasts, 'record', ['u-1', 'admin', new BroadcastMessage(subject: 'Hi', body: null), new BroadcastWindow(startsAt: $at, endsAt: $at)], [], false],
 			'broadcast findByUuid found'     => [$broadcasts, 'findByUuid', ['u-1'], [[self::ROW]], false],
 			'broadcast findByUuid missing'   => [$broadcasts, 'findByUuid', ['u-1'], [[]], false],
 			'broadcast findAll'              => [$broadcasts, 'findAllBroadcasts', [], [[self::ROW]], false],

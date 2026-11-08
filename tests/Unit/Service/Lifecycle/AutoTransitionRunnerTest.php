@@ -33,9 +33,10 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionCandidate;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecider;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecision;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSubject;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPlanning;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionQueue;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
@@ -124,7 +125,9 @@ class AutoTransitionRunnerTest extends TestCase {
 		$l10n->method('getLanguageCode')->willReturn('en');
 
 		$this->runner = new AutoTransitionRunner(
-			new AutoTransitionPlanning(
+			new AutoTransitionDecider(
+				$this->container,
+				$this->schemaMapper,
 				new AutoTransitionSelector(
 					new LifecycleConditionEvaluator(
 						$this->createMock(IUserSession::class),
@@ -135,13 +138,13 @@ class AutoTransitionRunnerTest extends TestCase {
 					),
 					$this->logger
 				),
-				// A REAL queue around the mocked deferral service, not a mocked queue:
-				// the dedupe key, the entry shape and the kill-switch rule are the
-				// behaviour these tests assert, and a double would assert nothing.
-				new AutoTransitionQueue($this->deferral, $this->logger)
+				$this->logger
 			),
 			$this->container,
-			$this->schemaMapper,
+			// A REAL queue around the mocked deferral service, not a mocked queue:
+			// the dedupe key, the entry shape and the kill-switch rule are the
+			// behaviour these tests assert, and a double would assert nothing.
+			new AutoTransitionQueue($this->deferral, $this->logger),
 			$this->logger
 		);
 	}//end setUp()
@@ -204,10 +207,7 @@ class AutoTransitionRunnerTest extends TestCase {
 	 */
 	private function decision(string $mode = 'sync'): AutoTransitionDecision {
 		return new AutoTransitionDecision(
-			uuid: 'obj-1',
-			register: '1',
-			schema: '2',
-			schemaSlug: 'bezwaar',
+			subject: new AutoTransitionSubject(uuid: 'obj-1', register: '1', schema: '2', schemaSlug: 'bezwaar'),
 			candidate: new AutoTransitionCandidate('beslissen', 'open', 'besloten', $mode),
 			version: '3',
 			updated: '2026-09-11T09:00:00+00:00'

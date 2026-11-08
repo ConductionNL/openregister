@@ -60,11 +60,30 @@ class TimelineEntryService {
 	use OptionalPayloadString;
 
 	/**
+	 * Reads and writes the record.
+	 *
+	 * @var TimelineEntryMapper
+	 */
+	private readonly TimelineEntryMapper $entryMapper;
+
+	/**
+	 * Declares kinds and validates their fields.
+	 *
+	 * @var TimelineKindService
+	 */
+	private readonly TimelineKindService $kinds;
+
+	/**
+	 * Records the language a message arrived in.
+	 *
+	 * @var LanguageDetector
+	 */
+	private readonly LanguageDetector $languages;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param TimelineEntryMapper       $entryMapper Reads and writes the record.
-	 * @param TimelineKindService       $kinds       Declares kinds and validates their fields.
-	 * @param LanguageDetector          $languages   Records the language a message arrived in.
+	 * @param TimelineEntryRecords      $records     The record store, kind registry and language detector.
 	 * @param TimelineVisibilityService $visibility  Normalises the flag and decides who may set it.
 	 * @param IUserSession              $userSession The caller.
 	 * @param LoggerInterface           $logger      Logger for the fail-open paths.
@@ -72,13 +91,14 @@ class TimelineEntryService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly TimelineEntryMapper $entryMapper,
-		private readonly TimelineKindService $kinds,
-		private readonly LanguageDetector $languages,
+		TimelineEntryRecords $records,
 		private readonly TimelineVisibilityService $visibility,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->entryMapper = $records->entryMapper;
+		$this->kinds = $records->kinds;
+		$this->languages = $records->languages;
 	}//end __construct()
 
 	/**

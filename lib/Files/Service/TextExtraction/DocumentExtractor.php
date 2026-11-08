@@ -172,10 +172,7 @@ class DocumentExtractor {
 		$this->logger->debug(
 			message: '[DocumentExtractor] Document extracted',
 			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'fileId' => $file->getId(),
-				'sections' => count($structure['sections']),
+				'file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'sections' => count($structure['sections']),
 				'truncated' => $structure['truncated'],
 			]
 		);
@@ -228,13 +225,7 @@ class DocumentExtractor {
 			// Per-document failure: log structure only, never document content (ADR-005).
 			$this->logger->error(
 				message: '[DocumentExtractor] Document extraction failed; returning null',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $file->getId(),
-					'mimeType' => $mimeType,
-					'exception' => get_class($e),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'mimeType' => $mimeType, 'exception' => get_class($e)]
 			);
 			return null;
 		} finally {

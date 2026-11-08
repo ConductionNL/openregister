@@ -228,7 +228,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			return WriteCause::runAs(
 				cause: WriteCause::IMPORT,
 				run: 'example-set:'.$set,
-				operation: fn (): array => $this->installHeld(plan: $plan, adopt: $adopt, password: $password, today: $today, report: $report)
+				operation: fn (): array => $this->installHeld(
+					request: new ExampleSetInstallRequest(plan: $plan, adopt: $adopt, password: $password, today: $today),
+					report: $report
+				)
 			);
 		} finally {
 			$this->lock?->release(set: $set);
@@ -238,17 +241,18 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	/**
 	 * Install a set this run holds: check, then write what the record lacks, then prove it.
 	 *
-	 * @param array<string, mixed> $plan     A plan from ExampleSetCatalogue::gather().
-	 * @param array<int, string>   $adopt    Account ids the administrator lets the set use.
-	 * @param string               $password One password for every new account; '' makes one per account.
-	 * @param DateTimeImmutable    $today    The install day.
-	 * @param array<string, mixed> $report   The empty report.
+	 * @param ExampleSetInstallRequest $request The plan, the adopted account ids, the password and the install day.
+	 * @param array<string, mixed>     $report  The empty report.
 	 *
 	 * @return array<string, mixed> The report, as install() returns it.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
-	private function installHeld(array $plan, array $adopt, string $password, DateTimeImmutable $today, array $report): array {
+	private function installHeld(ExampleSetInstallRequest $request, array $report): array {
+		$plan                = $request->plan;
+		$adopt               = $request->adopt;
+		$password            = $request->password;
+		$today               = $request->today;
 		$checked             = $this->check(plan: $plan, adopt: $adopt, today: $today);
 		$report['refusals']  = $checked['refusals'];
 		$report['registers'] = $checked['registers'];
@@ -265,7 +269,12 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$base['setGroups'] = $record['groups'];
 		$written = [];
 		foreach ($plan['fragments'] as $fragment) {
-			$report = $this->installFragment(plan: $plan, fragment: $fragment, base: $base, report: $report, record: $record, written: $written);
+			$report = $this->installFragment(
+				run: new ExampleSetFragmentRun(plan: $plan, fragment: $fragment, base: $base),
+				report: $report,
+				record: $record,
+				written: $written
+			);
 		}
 
 		return $this->proven(report: $report, record: $record, written: $written);
@@ -345,12 +354,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	/**
 	 * Write the objects and changes of one fragment that the record does not hold.
 	 *
-	 * @param array<string, mixed>                $plan     The plan.
-	 * @param array<string, mixed>                $fragment The fragment.
-	 * @param array<string, mixed>                $base     The context every placeholder may draw on.
-	 * @param array<string, mixed>                $report   The report so far.
-	 * @param array<string, mixed>                $record   The record; updated and kept after every write.
-	 * @param array<string, array<string, mixed>> $written  Collects what this run sent, by record key.
+	 * @param ExampleSetFragmentRun               $run     The plan, the fragment and the context every placeholder may draw on.
+	 * @param array<string, mixed>                $report  The report so far.
+	 * @param array<string, mixed>                $record  The record; updated and kept after every write.
+	 * @param array<string, array<string, mixed>> $written Collects what this run sent, by record key.
 	 *
 	 * @return array<string, mixed> The report.
 	 *
@@ -358,7 +365,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *                                                not made or written, each answered in place.
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The same pass, kept in one place.
 	 */
-	private function installFragment(array $plan, array $fragment, array $base, array $report, array &$record, array &$written): array {
+	private function installFragment(ExampleSetFragmentRun $run, array $report, array &$record, array &$written): array {
+		$plan     = $run->plan;
+		$fragment = $run->fragment;
+		$base     = $run->base;
 		$objects = [];
 		$files   = [];
 		$save    = fn (array $kept) => $this->record->write(set: (string) $plan['set'], record: $kept);
@@ -381,8 +391,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			if ($kept !== null) {
 				$report['types'][$type]['kept']++;
 				if (isset($record['files'][$name]) === false) {
-					$heldId = (string) $record['objects'][$name]['id'];
-					$report = $this->attachFiles(plan: $plan, fragment: $fragment, object: $object, objectId: $heldId, report: $report, record: $record);
+					$report = $this->attachFiles(run: $run, object: $object, report: $report, record: $record);
 				}
 
 				$files[$object['key']] = $this->heldFileIds(record: $record, name: $name);
@@ -391,9 +400,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 					plan: $plan,
 					run: ['store' => $this->store, 'fragment' => $fragment, 'object' => $object, 'row' => $kept],
 					resolve: fn (): array => $this->resolve(object: $object, context: $context, planned: []),
-					references: function () use ($plan, $fragment, $object, $kept, $context, &$report, &$record): array {
-						$args = ['plan' => $plan, 'fragment' => $fragment, 'object' => $object, 'row' => $kept, 'context' => $context];
-						return $this->refreshReferences(...$args, report: $report, record: $record);
+					references: function () use ($run, $object, $kept, $context, &$report, &$record): array {
+						$held = new ExampleSetKeptObject(object: $object, row: $kept, context: $context);
+						return $this->refreshReferences(run: $run, held: $held, report: $report, record: $record);
 					},
 					report: $report,
 					written: $written
@@ -428,7 +437,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 			$this->record->write(set: (string) $plan['set'], record: $record);
 			$written[$name] = $resolved['data'];
-			$report         = $this->attachFiles(plan: $plan, fragment: $fragment, object: $object, objectId: $made['id'], report: $report, record: $record);
+			$report         = $this->attachFiles(run: $run, object: $object, report: $report, record: $record);
 			$files[$object['key']] = $this->heldFileIds(record: $record, name: $name);
 
 			// The row as stored, because a later object may quote a field the
@@ -449,9 +458,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		$context['flows']       = $this->values->flowsOf(fragment: $fragment, record: $record);
 		$context['accessLinks'] = ($this->engineRows?->accessLinksOf(fragment: $fragment, record: $record) ?? []);
-		$report           = $this->installChanges(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
+		$report           = $this->installChanges(run: $run, context: $context, report: $report, record: $record);
 
-		$report = $this->installAppConfig(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
+		$report = $this->installAppConfig(run: $run, context: $context, report: $report, record: $record);
 
 		if ($this->engineRows?->install(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
@@ -459,7 +468,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		// After the views, so a preference can quote one (`{{view:key.uuid}}`).
 		$context['views'] = $this->values->viewsOf(fragment: $fragment, record: $record);
-		$report           = $this->installUserPreferences(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
+		$report           = $this->installUserPreferences(run: $run, context: $context, report: $report, record: $record);
 
 		return $report;
 	}//end installFragment()
@@ -475,19 +484,21 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * `<app>/<key>#references`, so the proof checks it and remove stays exact.
 	 * The first recorded old value of a field is kept over later refreshes.
 	 *
-	 * @param array<string, mixed> $plan     The plan.
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $object   The declared object.
-	 * @param array<string, mixed> $row      The object as stored.
-	 * @param array<string, mixed> $context  The context its placeholders draw on.
-	 * @param array<string, mixed> $report   The report; gains the outcome under `changes`.
-	 * @param array<string, mixed> $record   The record; gains the refresh.
+	 * @param ExampleSetFragmentRun $run    The plan and the fragment.
+	 * @param ExampleSetKeptObject  $held   The declared object, the object as stored and the context its placeholders draw on.
+	 * @param array<string, mixed>  $report The report; gains the outcome under `changes`.
+	 * @param array<string, mixed>  $record The record; gains the refresh.
 	 *
 	 * @return array<string, mixed> The object as stored after the refresh.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
-	private function refreshReferences(array $plan, array $fragment, array $object, array $row, array $context, array &$report, array &$record): array {
+	private function refreshReferences(ExampleSetFragmentRun $run, ExampleSetKeptObject $held, array &$report, array &$record): array {
+		$plan     = $run->plan;
+		$fragment = $run->fragment;
+		$object   = $held->object;
+		$row      = $held->row;
+		$context  = $held->context;
 		$fields = $this->referenceFields(object: $object);
 		if ($fields === []) {
 			return $row;
@@ -573,11 +584,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * Make the changes of one fragment that the record does not hold, and let go of the held ones it no longer
 	 * declares.
 	 *
-	 * @param array<string, mixed> $plan     The plan.
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  `cast`, `objects` and `today`.
-	 * @param array<string, mixed> $report   The report so far.
-	 * @param array<string, mixed> $record   The record; updated and kept after every change.
+	 * @param ExampleSetFragmentRun $run     The plan and the fragment.
+	 * @param array<string, mixed>  $context `cast`, `objects` and `today`.
+	 * @param array<string, mixed>  $report  The report so far.
+	 * @param array<string, mixed>  $record  The record; updated and kept after every change.
 	 *
 	 * @return array<string, mixed> The report.
 	 *
@@ -586,7 +596,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetRecord::letGoUndeclared() is a pure function of its arguments, shared by every part.
 	 */
-	private function installChanges(array $plan, array $fragment, array $context, array $report, array &$record): array {
+	private function installChanges(ExampleSetFragmentRun $run, array $context, array $report, array &$record): array {
+		$plan     = $run->plan;
+		$fragment = $run->fragment;
 		$refresh = (($plan['refresh'] ?? false) === true);
 		foreach ($fragment['changes'] as $change) {
 			$change = $this->withObjectJsonFields(change: $change, fragment: $fragment);
@@ -965,15 +977,16 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	/**
 	 * Write the app config of one fragment that the record does not hold.
 	 *
-	 * @param array<string, mixed> $plan     The plan.
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<string, mixed> $report   The report so far; names keys, never values.
-	 * @param array<string, mixed> $record   The record; updated after every write.
+	 * @param ExampleSetFragmentRun $run     The plan and the fragment.
+	 * @param array<string, mixed>  $context The context placeholders draw on.
+	 * @param array<string, mixed>  $report  The report so far; names keys, never values.
+	 * @param array<string, mixed>  $record  The record; updated after every write.
 	 *
 	 * @return array<string, mixed> The report.
 	 */
-	private function installAppConfig(array $plan, array $fragment, array $context, array $report, array &$record): array {
+	private function installAppConfig(ExampleSetFragmentRun $run, array $context, array $report, array &$record): array {
+		$plan     = $run->plan;
+		$fragment = $run->fragment;
 		foreach (($fragment['appConfig'] ?? []) as $entry) {
 			$name = $fragment['app'].'/'.$entry['key'];
 			$report['appConfig'][$name] = 'kept';
@@ -1080,17 +1093,18 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	/**
 	 * Write the user preferences of one fragment that the record does not hold, for the set's own accounts only.
 	 *
-	 * @param array<string, mixed> $plan     The plan.
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<string, mixed> $report   The report so far.
-	 * @param array<string, mixed> $record   The record; updated after every write.
+	 * @param ExampleSetFragmentRun $run     The plan and the fragment.
+	 * @param array<string, mixed>  $context The context placeholders draw on.
+	 * @param array<string, mixed>  $report  The report so far.
+	 * @param array<string, mixed>  $record  The record; updated after every write.
 	 *
 	 * @return array<string, mixed> The report.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
-	private function installUserPreferences(array $plan, array $fragment, array $context, array $report, array &$record): array {
+	private function installUserPreferences(ExampleSetFragmentRun $run, array $context, array $report, array &$record): array {
+		$plan     = $run->plan;
+		$fragment = $run->fragment;
 		$refresh = (($plan['refresh'] ?? false) === true);
 		foreach (($fragment['userPreferences'] ?? []) as $entry) {
 			$gaps  = [];
@@ -1133,23 +1147,24 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 	/**
 	 * Attach the files of a just-written object and record them. A kept object gets the files declared after it was
-	 * written, once.
+	 * written, once. The object's id is the one the record holds for it.
 	 *
-	 * @param array<string, mixed> $plan     The plan.
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $object   The declared object.
-	 * @param string               $objectId The written object's id.
-	 * @param array<string, mixed> $report   The report so far.
-	 * @param array<string, mixed> $record   The record; gains the files.
+	 * @param ExampleSetFragmentRun $run    The plan and the fragment.
+	 * @param array<string, mixed>  $object The declared object.
+	 * @param array<string, mixed>  $report The report so far.
+	 * @param array<string, mixed>  $record The record; holds the object's id and gains the files.
 	 *
 	 * @return array<string, mixed> The report.
 	 */
-	private function attachFiles(array $plan, array $fragment, array $object, string $objectId, array $report, array &$record): array {
+	private function attachFiles(ExampleSetFragmentRun $run, array $object, array $report, array &$record): array {
 		if (($object['files'] ?? []) === []) {
 			return $report;
 		}
 
+		$plan     = $run->plan;
+		$fragment = $run->fragment;
 		$name     = $fragment['app'].'/'.$object['key'];
+		$objectId = (string) $record['objects'][$name]['id'];
 		$attached = $this->files->attach(dir: (string) $fragment['dir'], object: $object, objectId: $objectId);
 		if ($attached['files'] !== []) {
 			$record['files'][$name] = $attached['files'];

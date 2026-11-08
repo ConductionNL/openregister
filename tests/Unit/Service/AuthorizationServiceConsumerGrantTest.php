@@ -164,7 +164,7 @@ class AuthorizationServiceConsumerGrantTest extends TestCase {
 	 */
 	private function permits(TokenGrantSource $grants, string $action): bool {
 		$narrower = new TokenGrantNarrower();
-		$handler = new PermissionHandler(
+		$handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->createMock(IUserSession::class),
 			$this->createMock(IUserManager::class),
 			$this->createMock(IGroupManager::class),

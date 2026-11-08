@@ -57,13 +57,26 @@ use Psr\Log\LoggerInterface;
 class GetObject
 {
     /**
+     * Registry of object-source providers (virtual schemas).
+     *
+     * @var ObjectSourceRegistry
+     */
+    private readonly ObjectSourceRegistry $objectSourceRegistry;
+
+    /**
+     * Logger for object-source delegation warnings.
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
+
+    /**
      * Constructor for GetObject handler.
      *
-     * @param MagicObjectFinderInterface          $objectMapper         Object entity data mapper.
-     * @param AuditTrailMapperInterface     $auditTrailMapper     Audit trail mapper for logs.
-     * @param ReadHistoryService   $readHistory          The one read registration (audit trail and AVG log).
-     * @param ObjectSourceRegistry $objectSourceRegistry Registry of object-source providers (virtual schemas).
-     * @param LoggerInterface      $logger               Logger for object-source delegation warnings.
+     * @param MagicObjectFinderInterface $objectMapper     Object entity data mapper.
+     * @param AuditTrailMapperInterface  $auditTrailMapper Audit trail mapper for logs.
+     * @param ReadHistoryService         $readHistory      The one read registration (audit trail and AVG log).
+     * @param GetObjectSources           $sources          Object-source registry and the logger for its warnings.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
@@ -71,9 +84,10 @@ class GetObject
         private readonly MagicObjectFinderInterface $objectMapper,
         private readonly AuditTrailMapperInterface $auditTrailMapper,
         private readonly ReadHistoryService $readHistory,
-        private readonly ObjectSourceRegistry $objectSourceRegistry,
-        private readonly LoggerInterface $logger
+        GetObjectSources $sources
     ) {
+        $this->objectSourceRegistry = $sources->objectSourceRegistry;
+        $this->logger = $sources->logger;
     }//end __construct()
 
     /**

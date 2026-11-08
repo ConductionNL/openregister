@@ -142,13 +142,8 @@ class ProcessingLogMapper extends QBMapper {
 			->from($this->getTableName())
 			->where($this->subjectMatch(qb: $qb, idType: $idType, idValue: $idValue));
 
-		$this->applyCommonFilters(
-			qb: $qb,
-			from: $from,
-			to: $to,
-			organisationId: $organisationId,
-			includeConfidential: $includeConfidential
-		);
+		$this->applyPeriod(qb: $qb, from: $from, to: $to);
+		$this->applyScope(qb: $qb, organisationId: $organisationId, includeConfidential: $includeConfidential);
 
 		$qb->orderBy('created', 'ASC');
 
@@ -264,13 +259,8 @@ class ProcessingLogMapper extends QBMapper {
 			$qb->andWhere($this->subjectMatch(qb: $qb, idType: $idType, idValue: $idValue));
 		}
 
-		$this->applyCommonFilters(
-			qb: $qb,
-			from: $from,
-			to: $to,
-			organisationId: $organisationId,
-			includeConfidential: $includeConfidential
-		);
+		$this->applyPeriod(qb: $qb, from: $from, to: $to);
+		$this->applyScope(qb: $qb, organisationId: $organisationId, includeConfidential: $includeConfidential);
 
 		$qb->orderBy('created', 'DESC')
 			->setMaxResults($limit)
@@ -346,24 +336,15 @@ class ProcessingLogMapper extends QBMapper {
 	}//end deleteCreatedBefore()
 
 	/**
-	 * Apply the period + tenant + confidentiality filters shared by the
-	 * read helpers.
+	 * Apply the period filter shared by the read helpers.
 	 *
 	 * @param IQueryBuilder $qb Query under construction.
 	 * @param DateTime|null $from Inclusive lower bound.
 	 * @param DateTime|null $to Inclusive upper bound.
-	 * @param string|null $organisationId Tenant scope.
-	 * @param bool $includeConfidential Whether to include confidential entries.
 	 *
 	 * @return void
 	 */
-	private function applyCommonFilters(
-		IQueryBuilder $qb,
-		?DateTime $from,
-		?DateTime $to,
-		?string $organisationId,
-		bool $includeConfidential,
-	): void {
+	private function applyPeriod(IQueryBuilder $qb, ?DateTime $from, ?DateTime $to): void {
 		if ($from !== null) {
 			$qb->andWhere(
 				$qb->expr()->gte('created', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE))
@@ -376,6 +357,18 @@ class ProcessingLogMapper extends QBMapper {
 			);
 		}
 
+	}//end applyPeriod()
+
+	/**
+	 * Apply the tenant and confidentiality filters shared by the read helpers.
+	 *
+	 * @param IQueryBuilder $qb Query under construction.
+	 * @param string|null $organisationId Tenant scope.
+	 * @param bool $includeConfidential Whether to include confidential entries.
+	 *
+	 * @return void
+	 */
+	private function applyScope(IQueryBuilder $qb, ?string $organisationId, bool $includeConfidential): void {
 		if ($organisationId !== null && $organisationId !== '') {
 			$qb->andWhere(
 				$qb->expr()->eq('organisation_id', $qb->createNamedParameter($organisationId))
@@ -388,5 +381,5 @@ class ProcessingLogMapper extends QBMapper {
 			);
 		}
 
-	}//end applyCommonFilters()
+	}//end applyScope()
 }//end class

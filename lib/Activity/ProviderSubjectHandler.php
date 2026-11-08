@@ -98,10 +98,8 @@ class ProviderSubjectHandler {
 			$this->applySimpleSubject(
 				event: $event,
 				l: $l,
-				parsedKey: self::SIMPLE_SUBJECTS[$subject][0],
-				richKey: self::SIMPLE_SUBJECTS[$subject][1],
-				title: $title,
-				richParams: $richParams
+				keys: self::SIMPLE_SUBJECTS[$subject],
+				title: $title
 			);
 		}
 	}//end applySubjectText()
@@ -131,10 +129,8 @@ class ProviderSubjectHandler {
 	 *
 	 * @param IEvent $event The event.
 	 * @param object $l The l10n translator.
-	 * @param string $parsedKey The parsed subject translation key.
-	 * @param string $richKey The rich subject translation key.
+	 * @param array{0: string, 1: string} $keys The parsed and the rich subject translation key.
 	 * @param string $title The entity title.
-	 * @param array $richParams The rich parameters.
 	 *
 	 * @return void
 	 *
@@ -143,15 +139,13 @@ class ProviderSubjectHandler {
 	private function applySimpleSubject(
 		IEvent $event,
 		object $l,
-		string $parsedKey,
-		string $richKey,
+		array $keys,
 		string $title,
-		array $richParams,
 	): void {
-		$event->setParsedSubject($l->t($parsedKey, [$title]));
+		$event->setParsedSubject($l->t($keys[0], [$title]));
 		$event->setRichSubject(
-			$l->t($richKey),
-			$richParams
+			$l->t($keys[1]),
+			$this->buildRichParams(event: $event, title: $title)
 		);
 	}//end applySimpleSubject()
 }//end class

@@ -158,48 +158,8 @@ final class RuleTrace implements JsonSerializable {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public static function renderValue(mixed $value): string {
-		if (is_bool($value) === true) {
-			if ($value === true) {
-				return 'true';
-			}
-
-			return 'false';
-		}
-
-		$rendered = match (true) {
-			$value === null => 'null',
-			is_scalar($value) === true => (string)$value,
-			default => self::encode(value: $value),
-		};
-
-		if (mb_strlen($rendered) <= self::VALUE_LIMIT) {
-			return $rendered;
-		}
-
-		return (mb_substr($rendered, 0, self::VALUE_LIMIT) . '…');
+		return (new RuleTraceValue())->render(value: $value);
 	}//end renderValue()
-
-	/**
-	 * A structured value as JSON, or a word saying it could not be rendered.
-	 *
-	 * `json_encode` answers `false` for a value it cannot encode, and `false`
-	 * cast to a string is the empty string, which in a log column reads exactly
-	 * like a property that was genuinely empty.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string The JSON, or the word.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md
-	 */
-	private static function encode(mixed $value): string {
-		$json = json_encode($value);
-		if ($json === false) {
-			return 'unrenderable';
-		}
-
-		return $json;
-	}//end encode()
 
 	/**
 	 * The trace as an API surface returns it.

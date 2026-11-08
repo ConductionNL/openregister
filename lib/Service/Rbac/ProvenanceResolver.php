@@ -123,12 +123,12 @@ class ProvenanceResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param DenyResolver $denyResolver The one reader of the deny grammar, whose
+	 * @param DenyResolverInterface $denyResolver The one reader of the deny grammar, whose
 	 *                                   entry matcher is shared because grants and
 	 *                                   denies use the same grammar.
 	 */
 	public function __construct(
-		private readonly DenyResolver $denyResolver = new DenyResolver(),
+		private readonly DenyResolverInterface $denyResolver = new DenyResolver(),
 	) {
 	}//end __construct()
 
@@ -359,68 +359,68 @@ class ProvenanceResolver {
 			return null;
 		}
 
-		$actionsByRole = $this->actionsByRole(roleDefinitions: $roleDefinitions);
+		$actionsByRole = (new RoleActionMap())->of(roleDefinitions: $roleDefinitions);
 
-		foreach ($assignments as $roleName => $holders) {
-			if (is_string($roleName) === false || is_array($holders) === false) {
-				continue;
-			}
-
-			$actions = ($actionsByRole[$roleName] ?? null);
-			if ($actions === null || in_array(needle: $action, haystack: $actions, strict: true) === false) {
-				continue;
-			}
-
-			foreach ($holders as $holder) {
-				$named = $this->denyResolver->entryNames(entry: $holder, principals: $principals);
-				if ($named !== null) {
-					return ['rule' => $holders, 'principal' => $named, 'role' => $roleName];
-				}
-			}
-		}//end foreach
-
-		return null;
+		return $this->grantingRole(assignments: $assignments, actionsByRole: $actionsByRole, action: $action, principals: $principals);
 	}//end roleGrantIn()
 
 	/**
-	 * Flatten role definitions into a name to actions map.
+	 * The first role assignment that carries the action and names one of the caller's principals.
 	 *
-	 * `extends` is NOT followed here. The hierarchy is resolved in
-	 * {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::expandRoles()},
-	 * and a second walk of it here could disagree with the first, which would
-	 * make the provenance name a role that did not actually decide. Callers that
-	 * need inherited actions pass the already-resolved definitions.
+	 * @param array                             $assignments   The block's role assignments.
+	 * @param array<string, array<int, string>> $actionsByRole Role name to its actions.
+	 * @param string                            $action        The action asked about.
+	 * @param string[]                          $principals    The caller's principals.
 	 *
-	 * @param mixed $roleDefinitions The register's role definitions.
-	 *
-	 * @return array<string, array<int, string>> Role name to its actions.
+	 * @return array{rule: array, principal: string, role: string}|null The granting rule, or null.
 	 */
-	private function actionsByRole(mixed $roleDefinitions): array {
-		if (is_array($roleDefinitions) === false) {
-			return [];
-		}
-
-		$map = [];
-		foreach ($roleDefinitions as $key => $definition) {
-			if (is_array($definition) === false) {
+	private function grantingRole(array $assignments, array $actionsByRole, string $action, array $principals): ?array {
+		foreach ($assignments as $roleName => $holders) {
+			$actions = ($actionsByRole[$roleName] ?? null);
+			if ($this->roleCarries(roleName: $roleName, holders: $holders, actions: $actions, action: $action) === false) {
 				continue;
 			}
 
-			// Two shapes reach this: the list of definitions a register stores,
-			// each with its own `name`, and the flat `name => actions` map the
-			// hierarchy resolver produces. Both are read rather than one being
-			// declared canonical, because a caller holding the resolved map is
-			// exactly the caller whose answer is most accurate.
-			if (isset($definition['name']) === true && is_array(($definition['actions'] ?? null)) === true) {
-				$map[(string)$definition['name']] = array_values(array_filter($definition['actions'], 'is_string'));
-				continue;
-			}
-
-			if (is_string($key) === true) {
-				$map[$key] = array_values(array_filter($definition, 'is_string'));
+			$named = $this->firstNamed(holders: $holders, principals: $principals);
+			if ($named !== null) {
+				return ['rule' => $holders, 'principal' => $named, 'role' => $roleName];
 			}
 		}
 
-		return $map;
-	}//end actionsByRole()
+		return null;
+	}//end grantingRole()
+
+	/**
+	 * Whether one role assignment is well formed and its role carries the action.
+	 *
+	 * @param int|string              $roleName The assignment's key.
+	 * @param mixed                   $holders  Its holder list.
+	 * @param array<int, string>|null $actions  The role's actions, or null when no definition names it.
+	 * @param string                  $action   The action asked about.
+	 *
+	 * @return bool
+	 */
+	private function roleCarries(int|string $roleName, mixed $holders, ?array $actions, string $action): bool {
+		return is_string($roleName) === true && is_array($holders) === true && $actions !== null
+			&& in_array(needle: $action, haystack: $actions, strict: true) === true;
+	}//end roleCarries()
+
+	/**
+	 * The first of the caller's principals a holder list names.
+	 *
+	 * @param array    $holders    The holder list.
+	 * @param string[] $principals The caller's principals.
+	 *
+	 * @return string|null The principal, or null when no holder names one.
+	 */
+	private function firstNamed(array $holders, array $principals): ?string {
+		foreach ($holders as $holder) {
+			$named = $this->denyResolver->entryNames(entry: $holder, principals: $principals);
+			if ($named !== null) {
+				return $named;
+			}
+		}
+
+		return null;
+	}//end firstNamed()
 }//end class

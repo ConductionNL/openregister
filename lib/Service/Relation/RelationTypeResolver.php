@@ -314,7 +314,7 @@ class RelationTypeResolver {
 	 */
 	private function readingOf(string $name, mixed $property, array $merged, string $language): array {
 		$symmetric = self::symmetricOf(merged: $merged);
-		$labels    = $this->labelsFor(name: $name, property: $property, merged: $merged, symmetric: $symmetric, language: $language);
+		$labels    = $this->labelsFor(name: $name, property: $property, merged: $merged, language: $language);
 
 		return [
 			'label' => $labels['label'],
@@ -423,21 +423,23 @@ class RelationTypeResolver {
 	 * to nothing would render as a blank chip, and an inverse that did would
 	 * render the other end of the same link as a blank one.
 	 *
-	 * @param string               $name      The property name.
-	 * @param mixed                $property  The property definition.
-	 * @param array<string, mixed> $merged    The vocabulary entry under the property's own declaration.
-	 * @param boolean              $symmetric Whether the relation reads the same from both ends.
-	 * @param string               $language  The BCP-47 tag.
+	 * Whether the relation is symmetric is read from `$merged`, the same
+	 * place {@see self::readingOf()} reads it from.
+	 *
+	 * @param string               $name     The property name.
+	 * @param mixed                $property The property definition.
+	 * @param array<string, mixed> $merged   The vocabulary entry under the property's own declaration.
+	 * @param string               $language The BCP-47 tag.
 	 *
 	 * @return array{label: string, inverse: string} The two labels.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function labelsFor(string $name, mixed $property, array $merged, bool $symmetric, string $language): array {
+	private function labelsFor(string $name, mixed $property, array $merged, string $language): array {
 		$label = ($this->values->text(value: ($merged['label'] ?? null), language: $language) ?? $this->values->titleOf(property: $property) ?? $name);
 
 		$inverse = $this->values->text(value: ($merged['inverseLabel'] ?? null), language: $language);
-		if ($symmetric === true) {
+		if (self::symmetricOf(merged: $merged) === true) {
 			// A symmetric relation reads the same from both ends. The save-time
 			// refusal keeps an inverseLabel out of a symmetric declaration, so
 			// this only has to hold for rows written before that refusal.

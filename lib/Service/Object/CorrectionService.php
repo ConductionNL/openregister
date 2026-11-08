@@ -88,29 +88,41 @@ class CorrectionService {
 	public const ACTION = 'correction';
 
 	/**
+	 * The audit trail.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objectService The write path a correction goes through.
-	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail.
-	 * @param OpenRegisterActionAuthService $actionAuth The action-rights matrix.
-	 * @param IUserSession $userSession Resolves the correcting user.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ObjectOperationsInterface     $objectService The write path a correction goes through.
+	 * @param OpenRegisterActionAuthService $actionAuth    The action-rights matrix.
+	 * @param IUserSession                  $userSession   Resolves the correcting user.
+	 * @param CorrectionAuditing            $auditing      The audit trail and the logger.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly OpenRegisterActionAuthService $actionAuth,
 		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		CorrectionAuditing $auditing,
 	) {
+		$this->auditTrailMapper = $auditing->auditTrailMapper;
+		$this->logger = $auditing->logger;
 	}//end __construct()
 
 	/**
 	 * Correct one or more values on a record.
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema The schema slug or id.
-	 * @param string $id The object's id or uuid.
+	 * @param CorrectionTarget $target The register, schema and object the correction is made on.
 	 * @param array $values The properties to correct, mapped to their corrected values.
 	 * @param string|null $reason Why the values are wrong. Required.
 	 *
@@ -121,8 +133,11 @@ class CorrectionService {
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function correct(string $register, string $schema, string $id, array $values, ?string $reason): array {
-		$user   = $this->correctingUser();
+	public function correct(CorrectionTarget $target, array $values, ?string $reason): array {
+		$register = $target->register;
+		$schema   = $target->schema;
+		$id       = $target->id;
+		$user     = $this->correctingUser();
 		$reason = self::requiredReason(reason: $reason);
 		$values = self::correctableValues(values: $values);
 

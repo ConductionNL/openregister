@@ -47,6 +47,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ObjectShareLinkControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectShareLinkThrottle;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -59,10 +61,10 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\IRequest;
-use OCP\Security\Bruteforce\IThrottler;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
+use Closure;
 use Throwable;
 
 /**
@@ -114,11 +116,11 @@ class ObjectShareLinkController extends Controller {
 	private readonly AccessLinkReaderInterface $reader;
 
 	/**
-	 * Brute-force throttler for rejected tokens.
+	 * Counts rejected tokens against the brute-force throttler.
 	 *
-	 * @var IThrottler
+	 * @var ObjectShareLinkThrottle
 	 */
-	private readonly IThrottler $throttler;
+	private readonly ObjectShareLinkThrottle $rejections;
 
 	/**
 	 * Constructor.
@@ -138,7 +140,8 @@ class ObjectShareLinkController extends Controller {
 		$this->shareManager = $services->shareManager;
 		$this->objectService = $services->objectService;
 		$this->reader = $services->reader;
-		$this->throttler = $services->throttler;
+		$label = 'ObjectShareLinkController';
+		$this->rejections = new ObjectShareLinkThrottle(throttler: $services->throttler, logger: $logger, action: self::THROTTLE_ACTION, label: $label);
 	}//end __construct()
 
 	/**
@@ -163,17 +166,8 @@ class ObjectShareLinkController extends Controller {
 			//
 			// That uniformity is necessary and not sufficient: it hides WHICH
 			// failure happened, but says nothing about how fast a caller may
-			// keep trying. The counter below is the other half.
-			try {
-				$this->throttler->registerAttempt(
-					action: self::THROTTLE_ACTION,
-					ip: $this->request->getRemoteAddress()
-				);
-			} catch (\Throwable $throttlerFailure) {
-				$this->logger->warning(
-					'ObjectShareLinkController: registerAttempt failed: ' . $throttlerFailure->getMessage()
-				);
-			}
+			// keep trying. The counter is the other half.
+			$this->rejections->countRejected(address: $this->request->getRemoteAddress());
 
 			return $this->refused();
 		}
@@ -183,41 +177,63 @@ class ObjectShareLinkController extends Controller {
 			return $this->refused();
 		}
 
+		// RBAC off: there is no principal to evaluate, and the token that
+		// core just validated IS the authorization. Multitenancy off for the
+		// same reason — an anonymous caller belongs to no organisation.
+		$object = $this->loaded(
+			load: fn (): ?ObjectEntity => $this->objectService->find(id: $uuid, _rbac: false, _multitenancy: false)
+		);
+
+		return $this->published(object: $object, share: $share);
+	}//end show()
+
+	/**
+	 * The object a live token addressed, or null when it cannot be loaded.
+	 *
+	 * @param Closure $load Loads the object; may throw.
+	 *
+	 * @return ObjectEntity|null The object.
+	 */
+	private function loaded(Closure $load): ?ObjectEntity {
 		try {
-			// RBAC off: there is no principal to evaluate, and the token that
-			// core just validated IS the authorization. Multitenancy off for the
-			// same reason — an anonymous caller belongs to no organisation.
-			$object = $this->objectService->find(
-				id: $uuid,
-				_rbac: false,
-				_multitenancy: false
-			);
+			return $load();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[ObjectShareLink] Could not load the object a live token addressed',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-			return $this->refused();
+			return null;
 		}
+	}//end loaded()
 
+	/**
+	 * The anonymous answer for a loaded object, or the refusal when none loaded.
+	 *
+	 * Projected, never serialised whole. The token says WHICH record may be
+	 * read; it does not say that the platform's own bookkeeping travels with
+	 * it. Before this, `@self.authorization`, the owner, the organisation and
+	 * the folder all left with every anonymous read, plus every property
+	 * regardless of write-only or property-level authorization
+	 * (openregister#3818). The projection is the access-link reader's, so the
+	 * two anonymous surfaces publish the same shape.
+	 *
+	 * @param ObjectEntity|null $object The object, or null when it could not be loaded.
+	 * @param IShare            $share  The live share.
+	 *
+	 * @return JSONResponse The object, or the refusal.
+	 */
+	private function published(?ObjectEntity $object, IShare $share): JSONResponse {
 		if ($object === null) {
 			return $this->refused();
 		}
 
-		// Projected, never serialised whole. The token says WHICH record may be
-		// read; it does not say that the platform's own bookkeeping travels
-		// with it. Before this, `@self.authorization`, the owner, the
-		// organisation and the folder all left with every anonymous read, plus
-		// every property regardless of write-only or property-level
-		// authorization (openregister#3818). The projection is the access-link
-		// reader's, so the two anonymous surfaces publish the same shape.
 		return new JSONResponse(
 			[
 				'object' => $this->reader->publish(object: $object),
 				'permissions' => $share->getPermissions(),
 			]
 		);
-	}//end show()
+	}//end published()
 
 	/**
 	 * Resolve a token to a live, permitted share, or null.
@@ -227,15 +243,8 @@ class ObjectShareLinkController extends Controller {
 	 * @return IShare|null The share, or null when it must not be honoured.
 	 */
 	private function resolveLiveShare(string $token): ?IShare {
-		if (trim($token) === '') {
-			return null;
-		}
-
-		try {
-			// Throws for an unknown token, and for one whose share has expired
-			// or been revoked — so expiry and revocation need no handling here.
-			$share = $this->shareManager->getShareByToken($token);
-		} catch (Throwable $e) {
+		$share = $this->shareByToken(token: $token);
+		if ($share === null) {
 			return null;
 		}
 
@@ -249,6 +258,27 @@ class ObjectShareLinkController extends Controller {
 
 		return $share;
 	}//end resolveLiveShare()
+
+	/**
+	 * The share core resolves a token to, or null for a blank or dead token.
+	 *
+	 * @param string $token The share token.
+	 *
+	 * @return IShare|null The share.
+	 */
+	private function shareByToken(string $token): ?IShare {
+		if (trim($token) === '') {
+			return null;
+		}
+
+		try {
+			// Throws for an unknown token, and for one whose share has expired
+			// or been revoked — so expiry and revocation need no handling here.
+			return $this->shareManager->getShareByToken($token);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end shareByToken()
 
 	/**
 	 * Whether a password-protected share has been unlocked.

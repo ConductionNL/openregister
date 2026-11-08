@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CalendarEventsControllerFactory;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -81,7 +82,7 @@ class CalendarEventsControllerTest extends TestCase {
 			}
 		);
 
-		$this->controller = new CalendarEventsController(
+		$this->controller = CalendarEventsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->calendarEventService,

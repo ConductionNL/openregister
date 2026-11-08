@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserManager;
@@ -107,12 +108,41 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 			return 'field "'.implode('", "', $unknown).'" is not an audit entry field a set may write';
 		}
 
+		$missing = $this->missingRefusal(data: $data);
+		if ($missing !== '') {
+			return $missing;
+		}
+
+		return $this->detailRefusal(data: $data, users: $users);
+	}//end refusal()
+
+	/**
+	 * Why an entry lacks the object, action, person or moment it needs, or ''.
+	 *
+	 * @param array<string, mixed> $data The row's fields.
+	 *
+	 * @return string
+	 */
+	private function missingRefusal(array $data): string {
 		foreach (['object' => 'the object it is on', 'action' => 'an action', 'user' => 'the person who acted', 'at' => 'a moment'] as $field => $what) {
 			if (is_string($data[$field] ?? null) === false || trim($data[$field]) === '') {
 				return 'an audit entry needs '.$what.' ('.$field.')';
 			}
 		}
 
+		return '';
+	}//end missingRefusal()
+
+	/**
+	 * Why an entry's person is no account the set creates or adopts, its changes are no object or its moment no
+	 * date and time, or ''.
+	 *
+	 * @param array<string, mixed> $data  The row's fields, with the fields missingRefusal() asks for.
+	 * @param array<int, string>   $users The account ids the set creates or adopts.
+	 *
+	 * @return string
+	 */
+	private function detailRefusal(array $data, array $users): string {
 		if (in_array((string) $data['user'], $users, true) === false) {
 			return '"'.(string) $data['user'].'" is not an account the set creates or adopts';
 		}
@@ -128,7 +158,7 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 		}
 
 		return '';
-	}//end refusal()
+	}//end detailRefusal()
 
 	/**
 	 * Write one audit entry by the named person, or find the one an earlier install wrote.
@@ -148,36 +178,96 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 			return ['error' => 'no object "'.$objectUuid.'" to give the entry', 'entry' => null];
 		}
 
-		$run    = 'example-set:'.$app.'/'.$key;
 		$mapper = $this->mapper();
 		try {
-			foreach ($mapper->findForObjectByAction($objectUuid, [(string) $data['action']], 500) as $earlier) {
-				if ($earlier->getCauseRun() === $run) {
-					return ['error' => '', 'entry' => ['id' => (int) $earlier->getId(), 'object' => $objectUuid]];
-				}
-			}
-
-			$user  = (string) $data['user'];
-			$trail = new AuditTrail();
-			$trail->setUuid((string) Uuid::v4());
-			$trail->setObjectUuid($objectUuid);
-			$trail->setObject((int) $object->getId());
-			$trail->setRegister((int) $object->getRegister());
-			$trail->setSchema((int) $object->getSchema());
-			$trail->setAction((string) $data['action']);
-			$trail->setChanged((array) ($data['changed'] ?? []));
-			$trail->setUser($user);
-			$trail->setUserName($this->container->get(IUserManager::class)->get($user)?->getDisplayName() ?? $user);
-			$trail->setCreated(new DateTime((string) $data['at']));
-			$trail->setCause(WriteCause::IMPORT);
-			$trail->setCauseRun($run);
-			$written = $mapper->insertAuditTrails([$trail])[0];
+			$id = $this->writeOnce(mapper: $mapper, object: $object, data: $data, run: 'example-set:'.$app.'/'.$key);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return ['error' => '', 'entry' => ['id' => (int) $written->getId(), 'object' => $objectUuid]];
+		return ['error' => '', 'entry' => ['id' => $id, 'object' => $objectUuid]];
 	}//end write()
+
+	/**
+	 * The id of the entry this row wrote: the one an earlier install wrote, or one written now.
+	 *
+	 * @param AuditTrailMapperInterface $mapper The audit trail mapper.
+	 * @param ObjectEntity              $object The object.
+	 * @param array<string, mixed>      $data   The row's fields.
+	 * @param string                    $run    The row's cause run, `example-set:<app>/<key>`.
+	 *
+	 * @return int
+	 */
+	private function writeOnce(AuditTrailMapperInterface $mapper, ObjectEntity $object, array $data, string $run): int {
+		$id = $this->earlierId(mapper: $mapper, objectUuid: (string) $data['object'], action: (string) $data['action'], run: $run);
+		if ($id !== null) {
+			return $id;
+		}
+
+		return (int) $mapper->insertAuditTrails([$this->trail(object: $object, data: $data, run: $run)])[0]->getId();
+	}//end writeOnce()
+
+	/**
+	 * The id of the entry an earlier install wrote for this row (the same cause run), or null.
+	 *
+	 * @param AuditTrailMapperInterface $mapper     The audit trail mapper.
+	 * @param string                    $objectUuid The object's uuid.
+	 * @param string                    $action     The entry's action.
+	 * @param string                    $run        The row's cause run, `example-set:<app>/<key>`.
+	 *
+	 * @return int|null
+	 */
+	private function earlierId(AuditTrailMapperInterface $mapper, string $objectUuid, string $action, string $run): ?int {
+		foreach ($mapper->findForObjectByAction($objectUuid, [$action], 500) as $earlier) {
+			if ($earlier->getCauseRun() === $run) {
+				return (int) $earlier->getId();
+			}
+		}
+
+		return null;
+	}//end earlierId()
+
+	/**
+	 * The audit entry a row declares, by the named person, as an import of this row.
+	 *
+	 * @param ObjectEntity         $object The object.
+	 * @param array<string, mixed> $data   The row's fields.
+	 * @param string               $run    The row's cause run.
+	 *
+	 * @return AuditTrail
+	 */
+	private function trail(ObjectEntity $object, array $data, string $run): AuditTrail {
+		$user  = (string) $data['user'];
+		$trail = $this->trailOn(object: $object, uuid: (string) $data['object']);
+		$trail->setAction((string) $data['action']);
+		$trail->setChanged((array) ($data['changed'] ?? []));
+		$trail->setUser($user);
+		$trail->setUserName($this->container->get(IUserManager::class)->get($user)?->getDisplayName() ?? $user);
+		$trail->setCreated(new DateTime((string) $data['at']));
+		$trail->setCause(WriteCause::IMPORT);
+		$trail->setCauseRun($run);
+
+		return $trail;
+	}//end trail()
+
+	/**
+	 * A new audit entry on the object, with its own uuid.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string       $uuid   The object's uuid.
+	 *
+	 * @return AuditTrail
+	 */
+	private function trailOn(ObjectEntity $object, string $uuid): AuditTrail {
+		$trail = new AuditTrail();
+		$trail->setUuid((string) Uuid::v4());
+		$trail->setObjectUuid($uuid);
+		$trail->setObject((int) $object->getId());
+		$trail->setRegister((int) $object->getRegister());
+		$trail->setSchema((int) $object->getSchema());
+
+		return $trail;
+	}//end trailOn()
 
 	/**
 	 * Whether a written entry is gone.

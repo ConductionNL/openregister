@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Quality\QualityListingWindow;
+use OCA\OpenRegister\Service\Quality\QualityScopeMappers;
 use OCA\OpenRegister\Service\Quality\QualityScorer;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -61,8 +63,7 @@ class QualityStatisticsServiceTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->service = new QualityStatisticsService(
 			$this->objectService,
-			$this->schemaMapper,
-			$this->registerMapper,
+			new QualityScopeMappers($this->schemaMapper, $this->registerMapper),
 			new QualityScorer(),
 			$this->createMock(LoggerInterface::class)
 		);
@@ -278,8 +279,8 @@ class QualityStatisticsServiceTest extends TestCase {
 			]
 		);
 
-		$page1 = $this->service->lowestQuality('reg', 'sch', limit: 2, offset: 0);
-		$page2 = $this->service->lowestQuality('reg', 'sch', limit: 2, offset: 2);
+		$page1 = $this->service->lowestQuality('reg', 'sch', window: new QualityListingWindow(limit: 2, offset: 0));
+		$page2 = $this->service->lowestQuality('reg', 'sch', window: new QualityListingWindow(limit: 2, offset: 2));
 
 		$this->assertCount(2, $page1['items']);
 		$this->assertCount(1, $page2['items']);

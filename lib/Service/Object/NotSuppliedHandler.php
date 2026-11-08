@@ -124,14 +124,14 @@ class NotSuppliedHandler {
 			$properties = [];
 		}
 
+		$rules = new NotSuppliedRules(properties: $properties, reasons: $reasons);
 		$violations = [];
 		foreach ($record as $property => $reason) {
 			$refusal = $this->refuseEntry(
 				property: (string)$property,
 				reason: $reason,
 				object: $object,
-				properties: $properties,
-				reasons: $reasons
+				rules: $rules
 			);
 
 			if ($refusal !== null) {
@@ -154,8 +154,7 @@ class NotSuppliedHandler {
 	 * @param string $property The property named in the record.
 	 * @param mixed $reason The reason code it was marked with.
 	 * @param array $object The candidate object body.
-	 * @param array $properties The schema's declared properties.
-	 * @param array<string, string> $reasons The reasons this schema administers.
+	 * @param NotSuppliedRules $rules The schema's declared properties and the reasons it administers.
 	 *
 	 * @return array{property: string, code: string, message: string}|null The refusal, or null.
 	 *
@@ -165,9 +164,10 @@ class NotSuppliedHandler {
 		string $property,
 		mixed $reason,
 		array $object,
-		array $properties,
-		array $reasons,
+		NotSuppliedRules $rules,
 	): ?array {
+		$properties = $rules->properties;
+		$reasons = $rules->reasons;
 		if (is_string($reason) === false || $reason === '') {
 			return [
 				'property' => $property,

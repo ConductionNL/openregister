@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelection;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
@@ -238,7 +239,15 @@ class ObjectActionsControllerTest extends TestCase {
 		$job->setId(42);
 		$job->setTotal(250);
 		$this->bulk->expects($this->once())->method('start')
-			->with($this->anything(), 'r', 'ticket', 'assign-to-me', $ids, [])
+			->with(
+				$this->callback(
+					static fn (ObjectActionSelection $selection): bool => $selection->register === 'r'
+						&& $selection->schemaRef === 'ticket'
+						&& $selection->ids === $ids
+				),
+				'assign-to-me',
+				[]
+			)
 			->willReturn($job);
 		$this->runner->expects($this->never())->method('run');
 

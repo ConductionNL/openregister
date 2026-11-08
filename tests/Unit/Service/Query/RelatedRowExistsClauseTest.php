@@ -40,6 +40,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Query\RelatedRowExistsClause;
 use OCA\OpenRegister\Service\Query\RelatedRowFilter;
+use OCA\OpenRegister\Service\Query\RelatedRowInnerRow;
+use OCA\OpenRegister\Service\Query\RelatedRowSqlTarget;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -47,6 +49,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowExistsClause
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowInnerRow
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowSqlTarget
  */
 class RelatedRowExistsClauseTest extends TestCase {
 
@@ -89,12 +93,16 @@ class RelatedRowExistsClauseTest extends TestCase {
 	private function render(array $conditions, string $engine = RelatedRowExistsClause::ENGINE_POSTGRES): array {
 		return $this->clause->render(
 			filter: $this->filter($conditions),
-			engine: $engine,
-			table: 'oc_openregister_objects',
-			outerAlias: 'o',
-			innerAlias: 'r0',
-			accessPredicate: 'r0.owner = :me',
-			parameterPrefix: 'rel0'
+			target: new RelatedRowSqlTarget(
+				engine: $engine,
+				table: 'oc_openregister_objects',
+				outerAlias: 'o'
+			),
+			inner: new RelatedRowInnerRow(
+				alias: 'r0',
+				accessPredicate: 'r0.owner = :me',
+				parameterPrefix: 'rel0'
+			)
 		);
 	}//end render()
 
@@ -192,12 +200,16 @@ class RelatedRowExistsClauseTest extends TestCase {
 
 		$this->clause->render(
 			filter: $this->filter([]),
-			engine: RelatedRowExistsClause::ENGINE_POSTGRES,
-			table: 'oc_openregister_objects',
-			outerAlias: 'o',
-			innerAlias: 'r0',
-			accessPredicate: '   ',
-			parameterPrefix: 'rel0'
+			target: new RelatedRowSqlTarget(
+				engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+				table: 'oc_openregister_objects',
+				outerAlias: 'o'
+			),
+			inner: new RelatedRowInnerRow(
+				alias: 'r0',
+				accessPredicate: '   ',
+				parameterPrefix: 'rel0'
+			)
 		);
 	}//end testRenderingWithoutAnAccessPredicateIsRefused()
 
@@ -308,9 +320,11 @@ class RelatedRowExistsClauseTest extends TestCase {
 				$this->filter([['field' => 'propertyDefinition', 'operator' => 'eq', 'value' => 'pd-7']]),
 				$this->filter([['field' => 'propertyDefinition', 'operator' => 'eq', 'value' => 'pd-9']]),
 			],
-			engine: RelatedRowExistsClause::ENGINE_POSTGRES,
-			table: 'oc_openregister_objects',
-			outerAlias: 'o',
+			target: new RelatedRowSqlTarget(
+				engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+				table: 'oc_openregister_objects',
+				outerAlias: 'o'
+			),
 			accessPredicateFor: static fn(string $alias): string => $alias . '.owner = :me'
 		);
 
@@ -348,13 +362,17 @@ class RelatedRowExistsClauseTest extends TestCase {
 	private function renderColumns(array $conditions): array {
 		return $this->clause->render(
 			filter: new RelatedRowFilter('syncLog', 'synchronization_id', $conditions),
-			engine: RelatedRowExistsClause::ENGINE_POSTGRES,
-			table: 'oc_openregister_table_29_1108',
-			outerAlias: 'o',
-			innerAlias: 'r0',
-			accessPredicate: 'r0._owner = :me',
-			parameterPrefix: 'rel0',
-			storage: RelatedRowExistsClause::STORAGE_COLUMNS
+			target: new RelatedRowSqlTarget(
+				engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+				table: 'oc_openregister_table_29_1108',
+				outerAlias: 'o',
+				storage: RelatedRowExistsClause::STORAGE_COLUMNS
+			),
+			inner: new RelatedRowInnerRow(
+				alias: 'r0',
+				accessPredicate: 'r0._owner = :me',
+				parameterPrefix: 'rel0'
+			)
 		);
 	}//end renderColumns()
 
@@ -479,13 +497,17 @@ class RelatedRowExistsClauseTest extends TestCase {
 
 		$this->clause->render(
 			filter: $this->filter([['field' => 'value', 'operator' => 'eq', 'value' => 'x']]),
-			engine: RelatedRowExistsClause::ENGINE_POSTGRES,
-			table: 'whatever',
-			outerAlias: 'o',
-			innerAlias: 'r0',
-			accessPredicate: 'TRUE',
-			parameterPrefix: 'rel0',
-			storage: 'mongo'
+			target: new RelatedRowSqlTarget(
+				engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+				table: 'whatever',
+				outerAlias: 'o',
+				storage: 'mongo'
+			),
+			inner: new RelatedRowInnerRow(
+				alias: 'r0',
+				accessPredicate: 'TRUE',
+				parameterPrefix: 'rel0'
+			)
 		);
 	}//end testAnUnknownStorageIsRefused()
 
@@ -499,13 +521,17 @@ class RelatedRowExistsClauseTest extends TestCase {
 
 		$this->clause->render(
 			filter: new RelatedRowFilter('syncLog', 'synchronization_id', []),
-			engine: RelatedRowExistsClause::ENGINE_POSTGRES,
-			table: 'oc_openregister_table_29_1108',
-			outerAlias: 'o',
-			innerAlias: 'r0',
-			accessPredicate: '',
-			parameterPrefix: 'rel0',
-			storage: RelatedRowExistsClause::STORAGE_COLUMNS
+			target: new RelatedRowSqlTarget(
+				engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+				table: 'oc_openregister_table_29_1108',
+				outerAlias: 'o',
+				storage: RelatedRowExistsClause::STORAGE_COLUMNS
+			),
+			inner: new RelatedRowInnerRow(
+				alias: 'r0',
+				accessPredicate: '',
+				parameterPrefix: 'rel0'
+			)
 		);
 	}//end testAMagicTableClauseAlsoRequiresTheAccessPredicate()
 }//end class

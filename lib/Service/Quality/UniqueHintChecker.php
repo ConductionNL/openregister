@@ -104,10 +104,7 @@ class UniqueHintChecker {
 			}
 
 			$this->checkOne(
-				property: $property,
-				value: $value,
-				register: $register,
-				schema: $schema,
+				lookup: new UniqueHintLookup(property: $property, value: $value, register: $register, schema: $schema),
 				selfUuid: $selfUuid
 			);
 		}
@@ -116,31 +113,17 @@ class UniqueHintChecker {
 	/**
 	 * Check one nominated property.
 	 *
-	 * @param string $property The nominated property.
-	 * @param scalar $value The incoming value.
-	 * @param int|string $register Register reference.
-	 * @param int|string $schema Schema reference.
+	 * @param UniqueHintLookup $lookup The nominated property, its incoming value, and the register and schema.
 	 * @param string|null $selfUuid Uuid to exclude, on an update.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
-	private function checkOne(string $property, $value, $register, $schema, ?string $selfUuid): void {
-		$visible = $this->holdersOf(
-			property: $property,
-			value: $value,
-			register: $register,
-			schema: $schema,
-			scoped: true
-		);
-		$all = $this->holdersOf(
-			property: $property,
-			value: $value,
-			register: $register,
-			schema: $schema,
-			scoped: false
-		);
+	private function checkOne(UniqueHintLookup $lookup, ?string $selfUuid): void {
+		$property = $lookup->property;
+		$visible = $this->holdersOf(lookup: $lookup, scoped: true);
+		$all = $this->holdersOf(lookup: $lookup, scoped: false);
 
 		$visibleUuids = $this->uuidsExcludingSelf(holders: $visible, selfUuid: $selfUuid);
 		$allUuids = $this->uuidsExcludingSelf(holders: $all, selfUuid: $selfUuid);
@@ -201,10 +184,7 @@ class UniqueHintChecker {
 	 * cannot become a way to ask whether a BSN exists in a register you have
 	 * no access to.
 	 *
-	 * @param string $property The nominated property.
-	 * @param scalar $value The incoming value.
-	 * @param int|string $register Register reference.
-	 * @param int|string $schema Schema reference.
+	 * @param UniqueHintLookup $lookup The nominated property, its incoming value, and the register and schema.
 	 * @param bool $scoped Whether to apply RBAC and tenancy; false counts holders the caller may not read.
 	 *
 	 * @return array<int, ObjectEntity> The holders.
@@ -217,14 +197,14 @@ class UniqueHintChecker {
 	 *   from "somebody you may not see holds this", and two methods would be
 	 *   two copies of one filter drifting apart.
 	 */
-	private function holdersOf(string $property, $value, $register, $schema, bool $scoped = true): array {
+	private function holdersOf(UniqueHintLookup $lookup, bool $scoped = true): array {
 		try {
 			$objects = $this->objectService->findAll(
 				[
 					'filters' => [
-						'register' => $register,
-						'schema' => $schema,
-						$property => $value,
+						'register' => $lookup->register,
+						'schema' => $lookup->schema,
+						$lookup->property => $lookup->value,
 					],
 					'limit' => self::MAX_CANDIDATES,
 				],

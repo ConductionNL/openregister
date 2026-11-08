@@ -150,8 +150,7 @@ class CodedOptionsBuilder {
 		return $this->hierarchy->tree(
 			rootUri: $uri,
 			conceptsByUri: $query->conceptsByUri,
-			language: $query->language,
-			at: $query->asOf,
+			reading: $query->reading,
 			maxDepth: $query->declaration->maxDepth
 		);
 	}//end subtree()
@@ -175,8 +174,7 @@ class CodedOptionsBuilder {
 			declaration: $declaration,
 			conceptsByUri: $conceptsByUri,
 			context: $scope[1],
-			language: $scope[0],
-			asOf: $instant
+			reading: new ConceptReading(language: $scope[0], instant: $instant)
 		);
 	}//end query()
 
@@ -249,7 +247,7 @@ class CodedOptionsBuilder {
 	private function isOffered(CodedOptionQuery $query, string $uri): bool {
 		$declaration = $query->declaration;
 		$concept = $query->concept(uri: $uri);
-		if ($this->lifecycle->isOfferable(concept: $concept, at: $query->asOf, allowDeprecated: $declaration->allowDeprecated) === false) {
+		if ($this->lifecycle->isOfferable(concept: $concept, at: $query->reading->instant, allowDeprecated: $declaration->allowDeprecated) === false) {
 			return false;
 		}
 
@@ -294,7 +292,7 @@ class CodedOptionsBuilder {
 
 		return [
 			'uri' => $uri,
-			'label' => $this->hierarchy->labelOf(concept: $concept, language: $query->language),
+			'label' => $this->hierarchy->labelOf(concept: $concept, language: $query->reading->language),
 			'notation' => ($concept['notation'] ?? null),
 			'weight' => $this->lifecycle->weightOf(concept: $concept),
 			'leaf' => $this->hierarchy->isLeaf(uri: $uri, conceptsByUri: $query->conceptsByUri),

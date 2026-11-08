@@ -56,27 +56,60 @@ final class FlowStreamPass {
 	public array $placeItems = [];
 
 	/**
+	 * The flow document.
+	 *
+	 * @var array
+	 */
+	public readonly array $flow;
+
+	/**
+	 * The marking store (synced from each commit).
+	 *
+	 * @var MarkingStoreInterface
+	 */
+	public readonly MarkingStoreInterface $store;
+
+	/**
+	 * The subject holding the marking.
+	 *
+	 * @var object
+	 */
+	public readonly object $subject;
+
+	/**
+	 * Performs each step's side effect.
+	 *
+	 * @var FlowStepDispatcher
+	 */
+	public readonly FlowStepDispatcher $dispatcher;
+
+	/**
+	 * Run-level metadata handed to every step.
+	 *
+	 * @var array
+	 */
+	public readonly array $context;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param array                 $flow       The flow document.
-	 * @param Workflow              $workflow   The Petri net over the run's marking store.
-	 * @param MarkingStoreInterface $store      The marking store (synced from each commit).
-	 * @param object                $subject    The subject holding the marking.
-	 * @param FlowStepDispatcher    $dispatcher Performs each step's side effect.
-	 * @param array                 $context    Run-level metadata handed to every step.
-	 * @param FlowStreamWalk        $streams    The stream collaborator.
+	 * The flow, store, subject, dispatcher and context are taken from the run
+	 * start as they stand when the pass is made.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A value object carrying the pass's collaborators
+	 * @param FlowRunStart   $start    The run start the pass walks for.
+	 * @param Workflow       $workflow The Petri net over the run's marking store.
+	 * @param FlowStreamWalk $streams  The stream collaborator.
 	 */
 	public function __construct(
-		public readonly array $flow,
+		FlowRunStart $start,
 		public readonly Workflow $workflow,
-		public readonly MarkingStoreInterface $store,
-		public readonly object $subject,
-		public readonly FlowStepDispatcher $dispatcher,
-		public readonly array $context,
 		public readonly FlowStreamWalk $streams,
 	) {
+		$this->flow       = $start->flow;
+		$this->store      = $start->store;
+		$this->subject    = $start->subject;
+		$this->dispatcher = $start->dispatcher;
+		$this->context    = $start->context;
 	}//end __construct()
 
 	/**
