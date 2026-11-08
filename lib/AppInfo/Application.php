@@ -180,7 +180,7 @@ class Application extends App implements IBootstrap {
 				// the override we are installing.
 				return new OutboundClientFactory(
 					clientService: \OCP\Server::get(\OCP\Http\Client\IClientService::class),
-					proxy: $container->get(\OCA\OpenRegister\Service\Outbound\ProxySettings::class),
+					proxy: $container->get(\OCA\OpenRegister\Service\Outbound\ProxySettingsInterface::class),
 				);
 			}
 		);
