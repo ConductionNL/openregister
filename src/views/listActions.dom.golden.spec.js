@@ -41,6 +41,7 @@ jest.mock('vue', () => ({
 }))
 jest.mock('@conduction/nextcloud-vue', () => ({
 	__esModule: true,
+	CnDataTable: jest.requireActual('../../tests/unit/support/tableGolden.js').CnDataTableStub,
 	CnIndexPage: mockIndexPage(),
 }))
 jest.mock('vue-material-design-icons/AccountMultiplePlus.vue', () =>
