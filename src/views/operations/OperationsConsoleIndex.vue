@@ -72,6 +72,9 @@
 						:columns="jobColumns"
 						:rows="bulkJobs"
 						:cellClass="cellClass">
+						<template #column-startedBy="{ value }">
+							{{ value }}
+						</template>
 						<template #column-processed="{ row: job }">
 							{{ job.processed }} / {{ job.total }}
 						</template>
@@ -166,7 +169,17 @@
 						:columns="ruleColumns"
 						:rows="rulesHoldingAnError"
 						rowKey="ruleId"
-						:cellClass="cellClass" />
+						:cellClass="cellClass">
+						<template #column-schemaSlug="{ value }">
+							{{ value }}
+						</template>
+						<template #column-lastError="{ value }">
+							{{ value }}
+						</template>
+						<template #column-lastErrorAt="{ value }">
+							{{ value }}
+						</template>
+					</CnDataTable>
 				</section>
 
 				<section class="consoleSection">
@@ -229,6 +242,9 @@
 						:columns="runColumns"
 						:rows="runs"
 						:cellClass="cellClass">
+						<template #column-started="{ value }">
+							{{ value }}
+						</template>
 						<template #column-duration="{ row: run }">
 							{{ durationOf(run) }}
 						</template>
@@ -392,7 +408,7 @@ export default {
 		 */
 		ruleColumns() {
 			return [
-				{ key: 'ruleId', label: t('openregister', 'Rule') },
+				{ key: 'ruleId', label: t('openregister', 'Rule'), cellClass: 'cn-cell--wrap' },
 				{ key: 'schemaSlug', label: t('openregister', 'Schema') },
 				{ key: 'lastError', label: t('openregister', 'Last error') },
 				{ key: 'lastErrorAt', label: t('openregister', 'When') },
@@ -407,7 +423,7 @@ export default {
 		 */
 		runColumns() {
 			return [
-				{ key: 'name', label: t('openregister', 'Job') },
+				{ key: 'name', label: t('openregister', 'Job'), cellClass: 'cn-cell--wrap' },
 				{ key: 'started', label: t('openregister', 'Started') },
 				{ key: 'duration', label: t('openregister', 'Took') },
 				{ key: 'outcome', label: t('openregister', 'Outcome') },
@@ -494,7 +510,7 @@ export default {
 		 * @return {string} The cell class
 		 */
 		cellClass(row, col) {
-			return ['failure', 'lastError', 'message'].includes(col.key) ? 'failureCell' : ''
+			return ['failure', 'lastError', 'message'].includes(col.key) ? 'failureCell cn-cell--wrap' : ''
 		},
 
 		/**

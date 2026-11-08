@@ -33,6 +33,9 @@
 				class="agents__table"
 				:columns="columns"
 				:rows="agents">
+				<template #column-name="{ value }">
+					{{ value }}
+				</template>
 				<template #column-tools="{ row: agent }">
 					{{ labels(agent.tools, toolOptions) }}
 				</template>
@@ -130,9 +133,9 @@ export default {
 		 */
 		columns() {
 			return [
-				{ key: 'name', label: t('openregister', 'Name') },
-				{ key: 'tools', label: t('openregister', 'Tools') },
-				{ key: 'views', label: t('openregister', 'Views') },
+				{ key: 'name', label: t('openregister', 'Name'), cellClass: 'cn-cell--wrap' },
+				{ key: 'tools', label: t('openregister', 'Tools'), cellClass: 'cn-cell--wrap' },
+				{ key: 'views', label: t('openregister', 'Views'), cellClass: 'cn-cell--wrap' },
 			]
 		},
 	},

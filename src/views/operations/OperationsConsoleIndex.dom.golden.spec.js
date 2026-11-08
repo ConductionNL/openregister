@@ -23,10 +23,33 @@ jest.mock('@nextcloud/l10n', () => ({
 }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
 jest.mock('@nextcloud/vue', () => jest.requireActual('../../../tests/unit/support/ncGolden.js').ncLibrary())
-jest.mock('@conduction/nextcloud-vue', () => ({
-	__esModule: true,
-	CnDataTable: jest.requireActual('../../../tests/unit/support/tableGolden.js').CnDataTableStub,
-}))
+jest.mock('@conduction/nextcloud-vue', () => {
+	const { CnDataTableStub } = jest.requireActual('../../../tests/unit/support/tableGolden.js')
+	// A cell without a slot as the library's formatValue draws it: text cut at
+	// 100 characters plus an ellipsis, an empty value as a dash.
+	const formatValue = (value) => {
+		if (value === null || value === undefined || value === '') {
+			return '—'
+		}
+		const text = String(value)
+		return text.length > 100 ? `${text.substring(0, 100)}...` : text
+	}
+	return {
+		__esModule: true,
+		CnDataTable: {
+			...CnDataTableStub,
+			render() {
+				const $slots = { ...this.$slots }
+				for (const col of this.columns) {
+					$slots[`column-${col.key}`] ||= ({ value }) => formatValue(value)
+				}
+				return CnDataTableStub.render.call(new Proxy(this, {
+					get: (target, key) => (key === '$slots' ? $slots : target[key]),
+				}))
+			},
+		},
+	}
+})
 jest.mock('vue-material-design-icons/CogOutline.vue', () => ({ __esModule: true, default: { render: () => null } }))
 
 const FILLED = {
@@ -62,6 +85,24 @@ describe('OperationsConsoleIndex tables', () => {
 		const wrapper = await mounted(FILLED)
 		expect(tableText(wrapper)).toMatchSnapshot()
 		expect(wrapper.findAll('[data-stub="empty"]')).toHaveLength(0)
+	})
+
+	it('keeps a long error whole, wraps it and leaves missing values blank', async () => {
+		const long = 'A long sentence that runs on. '.repeat(6).trim()
+		const wrapper = await mounted({
+			...FILLED,
+			bulkJobs: [{ id: 'j1', action: 'delete', state: 'running', processed: 1, total: 2, startedBy: null }],
+			rulesHoldingAnError: [{ ruleId: 'r1', schemaSlug: null, lastError: long, lastErrorAt: null }],
+		})
+		const cells = wrapper.findAll('table')[2].findAll('tbody td').map((cell) => cell.text())
+		expect(cells).toEqual(['r1', '', long, ''])
+		const jobCells = wrapper.findAll('table')[0].findAll('tbody td').map((cell) => cell.text())
+		expect(jobCells[3]).toBe('')
+		const [jobs, rules, runs] = wrapper.findAllComponents({ name: 'CnDataTable' })
+			.filter((table) => table.props('columns').some((col) => ['failure', 'lastError', 'message'].includes(col.key)))
+		for (const [table, key] of [[jobs, 'failure'], [rules, 'lastError'], [runs, 'message']]) {
+			expect(table.vm.$attrs.cellClass({}, { key })).toBe('failureCell cn-cell--wrap')
+		}
 	})
 
 	it('shows the empty states without rows', async () => {

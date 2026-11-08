@@ -63,6 +63,15 @@ describe('AgentsIndex table', () => {
 		expect(tableText(wrapper)).toMatchSnapshot()
 	})
 
+	it('lets the name, tools and views wrap and leaves a missing name blank', async () => {
+		const wrapper = await mounted([{ id: 1, name: null, owner: 'bob', tools: [], views: [] }])
+		const wrapping = wrapper.findComponent({ name: 'CnDataTable' }).props('columns')
+			.filter((column) => column.cellClass === 'cn-cell--wrap')
+			.map((column) => column.key)
+		expect(wrapping).toEqual(['name', 'tools', 'views'])
+		expect(wrapper.findAll('tbody td')[0].text()).toBe('')
+	})
+
 	it('shows the empty state without agents', async () => {
 		const wrapper = await mounted([])
 		expect(wrapper.findAll('table')).toHaveLength(0)
