@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -408,9 +409,9 @@ class StateFieldRuleListenerTest extends TestCase {
 		$this->ruleRuns->expects($this->once())
 			->method('record')
 			->with(
-				$this->stringContains('stateFieldRule'),
-				'zaak',
-				$this->anything(),
+				$this->callback(
+					fn (RuleRunSubject $subject): bool => str_contains($subject->ruleId, 'stateFieldRule') && $subject->schemaSlug === 'zaak'
+				),
 				$this->anything(),
 				$this->anything()
 			);

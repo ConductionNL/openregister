@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use DateTime;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
@@ -445,7 +446,7 @@ class RulesServicesGoldenTest extends TestCase {
 		foreach (['', 'off', 'yes', 'FALSE', '12'] as $detail) {
 			foreach ($traces as $name => $trace) {
 				$this->calls = [];
-				$this->recorder($detail)->record('r:s:k', 's', $trace, 'uuid', 'reg', $moment);
+				$this->recorder($detail)->record(new RuleRunSubject('r:s:k', 's', 'uuid', 'reg'), $trace, $moment);
 				$actual[$detail][$name] = $this->calls;
 			}
 
@@ -456,12 +457,12 @@ class RulesServicesGoldenTest extends TestCase {
 
 		foreach ([[true, false], [false, true], [true, true]] as [$failSummary, $failInsert]) {
 			$this->calls = [];
-			$this->recorder('', $failSummary, $failInsert)->record('r:s:k', 's', $traces['error'], null, null, $moment);
+			$this->recorder('', $failSummary, $failInsert)->record(new RuleRunSubject('r:s:k', 's'), $traces['error'], $moment);
 			$actual['failing'][] = $this->calls;
 		}
 
 		$this->calls = [];
-		$this->recorder('')->record('r:s:k', 's', $traces['fired']);
+		$this->recorder('')->record(new RuleRunSubject('r:s:k', 's'), $traces['fired']);
 		$actual['defaults'] = array_map(
 			static function (array $call): array {
 				unset($call[1]['created'], $call[1][3]);
@@ -486,8 +487,8 @@ class RulesServicesGoldenTest extends TestCase {
 		);
 		$recorder = $this->createMock(RuleRunRecorder::class);
 		$recorder->method('record')->willReturnCallback(
-			function (...$args) use ($failRecord): void {
-				$args[2] = $args[2]->jsonSerialize();
+			function (RuleRunSubject $subject, RuleTrace $trace, ?DateTime $moment = null) use ($failRecord): void {
+				$args = [$subject->ruleId, $subject->schemaSlug, $trace->jsonSerialize(), $subject->objectUuid, $subject->registerSlug, $moment];
 				$this->calls[] = ['record', $args];
 				if ($failRecord === true) {
 					throw new RuntimeException('record failed');
