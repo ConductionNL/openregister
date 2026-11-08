@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ApiCallersControllerServices;
 use OCA\OpenRegister\Db\ApiCallRecord;
-use OCA\OpenRegister\Db\ApiCallRecordMapper;
+use OCA\OpenRegister\Db\ApiCallRecordMapperInterface;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
 use OCP\AppFramework\Controller;
@@ -117,9 +117,9 @@ class ApiCallersController extends Controller {
 	/**
 	 * Reads the caller record.
 	 *
-	 * @var ApiCallRecordMapper
+	 * @var ApiCallRecordMapperInterface
 	 */
-	private readonly ApiCallRecordMapper $records;
+	private readonly ApiCallRecordMapperInterface $records;
 
 	/**
 	 * The declared contract versions.

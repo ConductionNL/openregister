@@ -59,13 +59,19 @@ final class DbRegistrar {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AccessLinkMapperInterface::class => AccessLinkMapper::class,
+		ApiCallRecordMapperInterface::class => ApiCallRecordMapper::class,
 		ApplicationMapperInterface::class => ApplicationMapper::class,
 		AuditTrailMapperInterface::class => AuditTrailMapper::class,
 		BulkJobMapperInterface::class => BulkJobMapper::class,
 		BulkJobMemberMapperInterface::class => BulkJobMemberMapper::class,
+		CalendarFeedTokenMapperInterface::class => CalendarFeedTokenMapper::class,
+		CaseTokenMapperInterface::class => CaseTokenMapper::class,
+		ConsumerMapperInterface::class => ConsumerMapper::class,
 		EndpointLogMapperInterface::class => EndpointLogMapper::class,
 		EndpointMapperInterface::class => EndpointMapper::class,
 		EntityRelationMapperInterface::class => EntityRelationMapper::class,
+		ErasurePreviewMapperInterface::class => ErasurePreviewMapper::class,
 		FlowRunMapperInterface::class => FlowRunMapper::class,
 		FlowTriggerMapperInterface::class => FlowTriggerMapper::class,
 		JobRunMapperInterface::class => JobRunMapper::class,
@@ -92,6 +98,7 @@ final class DbRegistrar {
 		RuleRunSummaryMapperInterface::class => RuleRunSummaryMapper::class,
 		SchemaMapperInterface::class => SchemaMapper::class,
 		SourceMapperInterface::class => SourceMapper::class,
+		SubjectExportMapperInterface::class => SubjectExportMapper::class,
 		SyncRecordMapperInterface::class => SyncRecordMapper::class,
 		TranslationMapperInterface::class => TranslationMapper::class,
 		WebhookLogMapperInterface::class => WebhookLogMapper::class,

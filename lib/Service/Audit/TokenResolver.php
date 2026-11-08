@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\Consumer;
-use OCA\OpenRegister\Db\ConsumerMapper;
+use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCP\Authentication\Token\IProvider as ITokenProvider;
 use OCP\Authentication\Token\IToken;
 use OCP\ISession;
@@ -61,13 +61,13 @@ class TokenResolver {
 	 * @param ISession       $session       The current session.
 	 * @param ITokenProvider $tokenProvider Resolves an app password to its token record.
 	 * @param IUserSession   $userSession   The authenticated principal.
-	 * @param ConsumerMapper $consumerMapper Registered API consumers.
+	 * @param ConsumerMapperInterface $consumerMapper Registered API consumers.
 	 */
 	public function __construct(
 		private readonly ISession $session,
 		private readonly ITokenProvider $tokenProvider,
 		private readonly IUserSession $userSession,
-		private readonly ConsumerMapper $consumerMapper,
+		private readonly ConsumerMapperInterface $consumerMapper,
 	) {
 	}//end __construct()
 
