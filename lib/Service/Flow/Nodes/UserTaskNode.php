@@ -71,13 +71,11 @@ use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
-use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -112,43 +110,70 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	private readonly UserTaskPerformers $performers;
 
 	/**
+	 * Creates and reads the node's task.
+	 *
+	 * @var FlowTaskBridge
+	 */
+	private readonly FlowTaskBridge $bridge;
+
+	/**
+	 * Arms the task's business timer.
+	 *
+	 * @var FlowTimerService
+	 */
+	private readonly FlowTimerService $timers;
+
+	/**
+	 * Resolves `attachTo` to the object the run declared under that role.
+	 *
+	 * @var FlowRunSubjectRecorder|null
+	 */
+	private readonly ?FlowRunSubjectRecorder $subjects;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Resolves the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowTaskBridge $bridge Creates and reads the node's task.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 * @param TaskFormReader $forms Reads and refuses the step's form declaration.
-	 * @param FlowTimerService $timers Arms the task's business timer.
-	 * @param PrincipalResolverRegistry|null $principals Passed to the config reader,
-	 *                             which refuses a performer whose type nothing on
-	 *                             this instance understands.
-	 * @param IEventDispatcher|null $events Where an agent performer's turn is
-	 *                             ASKED FOR. The node dispatches; it never
-	 *                             invokes a runtime, so the app that owns
-	 *                             agents stays unnamed here.
-	 * @param FlowRunSubjectRecorder|null $subjects Resolves `attachTo` to the
-	 *                             object the run declared under that role.
+	 * @param UserTaskServices     $services     The task bridge, form reader and
+	 *                                          business timers.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
+	 * @param UserTaskHooks        $hooks        The principal resolvers the config
+	 *                                          reader refuses unknown performer
+	 *                                          types with, the dispatcher an agent
+	 *                                          performer's turn is ASKED FOR on,
+	 *                                          and the recorder `attachTo`
+	 *                                          resolves against.
 	 *
 	 * @spec openspec/specs/flow-user-task-node/spec.md
 	 */
 	public function __construct(
-		private readonly FlowTaskBridge $bridge,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-		TaskFormReader $forms,
-		private readonly FlowTimerService $timers,
-		private readonly ?PrincipalResolverRegistry $principals = null,
-		private readonly ?IEventDispatcher $events = null,
-		// Appended LAST and nullable: a new argument inserted anywhere else
-		// shifts every positional caller, and the resulting TypeError names the
-		// argument AFTER the one that moved.
-		private readonly ?FlowRunSubjectRecorder $subjects = null,
+		UserTaskServices $services,
+		FlowNodePresentation $presentation,
+		UserTaskHooks $hooks=new UserTaskHooks(),
 	) {
-		$this->config = new UserTaskConfig(l10n: $l10n, forms: $forms);
+		$this->bridge     = $services->bridge;
+		$this->timers     = $services->timers;
+		$this->subjects   = $hooks->subjects;
+		$this->l10n       = $presentation->l10n;
+		$this->urls       = $presentation->urls;
+		$this->config     = new UserTaskConfig(l10n: $this->l10n, forms: $services->forms);
 		$this->performers = new UserTaskPerformers(
 			config: $this->config,
-			principals: $principals,
-			events: $events
+			principals: $hooks->principals,
+			events: $hooks->events
 		);
 
 	}//end __construct()

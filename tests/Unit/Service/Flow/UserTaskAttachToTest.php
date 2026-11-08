@@ -41,6 +41,9 @@ use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjects;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskServices;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Task\TaskForm;
@@ -119,18 +122,13 @@ final class UserTaskAttachToTest extends TestCase {
 		$runs->method('findByUuid')->willReturnCallback(fn (): FlowRun => $this->run);
 
 		return new UserTaskNode(
-			$bridge,
-			$l10n,
-			$this->createMock(IURLGenerator::class),
-			$forms,
-			$this->createMock(FlowTimerService::class),
-			null,
-			null,
-			new FlowRunSubjectRecorder(
+			new UserTaskServices($bridge, $forms, $this->createMock(FlowTimerService::class)),
+			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class)),
+			new UserTaskHooks(null, null, new FlowRunSubjectRecorder(
 				$runs,
 				new FlowRunSubjects(),
 				$this->createMock(LoggerInterface::class)
-			)
+			))
 		);
 	}//end node()
 

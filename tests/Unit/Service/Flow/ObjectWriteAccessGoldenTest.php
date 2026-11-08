@@ -38,7 +38,10 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -272,13 +275,9 @@ final class ObjectWriteAccessGoldenTest extends TestCase {
 		$config->method('getValueInt')->willReturnArgument(2);
 
 		return new ObjectWriteNode(
-			$this->store(),
-			$this->registers(),
-			$this->schemas(properties: $properties),
-			$users,
-			$config,
-			$l10n,
-			$this->createMock(IURLGenerator::class)
+			new ObjectWriteStores($this->store(), $this->registers(), $this->schemas(properties: $properties)),
+			new ObjectWritePlatform($users, $config),
+			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class))
 		);
 
 	}//end node()

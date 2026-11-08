@@ -28,8 +28,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskServices;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskServices;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
@@ -95,18 +98,12 @@ final class HumanTaskNodesGoldenTest extends TestCase {
 		);
 		$nodes = [
 			new UserTaskNode(
-				$this->createMock(FlowTaskBridge::class),
-				$l10n,
-				$urls,
-				$forms,
-				$this->createMock(FlowTimerService::class)
+				new UserTaskServices($this->createMock(FlowTaskBridge::class), $forms, $this->createMock(FlowTimerService::class)),
+				new FlowNodePresentation($l10n, $urls)
 			),
 			new PortalTaskNode(
-				$this->createMock(FlowTaskBridge::class),
-				$this->createMock(PortalPartyResolver::class),
-				$this->createMock(PortalTaskDeliveryService::class),
-				$l10n,
-				$urls
+				new PortalTaskServices($this->createMock(FlowTaskBridge::class), $this->createMock(PortalPartyResolver::class), $this->createMock(PortalTaskDeliveryService::class)),
+				new FlowNodePresentation($l10n, $urls)
 			),
 		];
 

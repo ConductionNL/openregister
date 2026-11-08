@@ -75,18 +75,16 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 	 *
 	 * @param DecisionTableEvaluator $engine The shared evaluator; all deciding is delegated to it.
 	 * @param DecisionTableValidator $validator Refuses a table the evaluator could not execute.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 * @param DecisionTableStore|null $store Reads a stored table named by tableRef.
 	 */
 	public function __construct(
 		private readonly DecisionTableEvaluator $engine,
 		private readonly DecisionTableValidator $validator,
-		IL10N $l10n,
-		IURLGenerator $urls,
+		FlowNodePresentation $presentation,
 		private readonly ?DecisionTableStore $store = null,
 	) {
-		parent::__construct(l10n: $l10n, urls: $urls);
+		parent::__construct(l10n: $presentation->l10n, urls: $presentation->urls);
 	}//end __construct()
 
 	/**
