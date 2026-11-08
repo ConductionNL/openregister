@@ -56,7 +56,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service\Object
  */
-class ArchiveHandler {
+class ArchiveHandler implements ArchiveHandlerInterface {
 
 	/**
 	 * Constructor.

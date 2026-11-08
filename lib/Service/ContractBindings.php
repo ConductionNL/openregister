@@ -812,6 +812,7 @@ final class ContractBindings {
 		FlowRunServiceInterface::class => FlowRunService::class,
 		ConfigurationServiceInterface::class => ConfigurationService::class,
 		ConfigurationTransferInterface::class => ConfigurationService::class,
+		\OCA\OpenRegister\Service\Object\ArchiveHandlerInterface::class => \OCA\OpenRegister\Service\Object\ArchiveHandler::class,
 		RetentionServiceInterface::class => RetentionService::class,
 		\OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
