@@ -105,7 +105,6 @@ class WebPushControllerTest extends TestCase {
 		$this->request->method('getHeader')->willReturn('Mozilla/5.0 (Test)');
 
 		$this->controller = new WebPushController(
-			'openregister',
 			$this->request,
 			new WebPushControllerServices(
 				webPushService: $this->webPushService,
