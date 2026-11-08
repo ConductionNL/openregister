@@ -33,34 +33,23 @@
 				)
 			}}
 		</p>
-		<table v-else class="pack-preview__table">
-			<thead>
-				<tr>
-					<th scope="col">
-						{{ t('openregister', 'Source column') }}
-					</th>
-					<th scope="col">
-						{{ t('openregister', 'Sample value') }}
-					</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr v-for="column in columns" :key="column">
-					<td>{{ column }}</td>
-					<td>
-						<input
-							:value="sample[column] || ''"
-							type="text"
-							:aria-label="
-								t('openregister', 'Sample value for {column}', {
-									column,
-								})
-							"
-							@input="setValue(column, $event.target.value)" />
-					</td>
-				</tr>
-			</tbody>
-		</table>
+		<CnDataTable
+			v-else
+			class="pack-preview__table"
+			:columns="sampleColumns"
+			:rows="sampleRows">
+			<template #column-value="{ row }">
+				<input
+					:value="sample[row.id] || ''"
+					type="text"
+					:aria-label="
+						t('openregister', 'Sample value for {column}', {
+							column: row.id,
+						})
+					"
+					@input="setValue(row.id, $event.target.value)" />
+			</template>
+		</CnDataTable>
 
 		<div class="pack-preview__actions">
 			<NcButton :disabled="!definition || columns.length === 0" @click="run">
@@ -91,26 +80,16 @@
 
 			<template v-if="result">
 				<h4>{{ t('openregister', 'Fields the import would write') }}</h4>
-				<table v-if="resultFields.length > 0" class="pack-preview__table">
-					<thead>
-						<tr>
-							<th scope="col">
-								{{ t('openregister', 'Field') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Value') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="field in resultFields" :key="field.name">
-							<td>{{ field.name }}</td>
-							<td>
-								<code>{{ field.value }}</code>
-							</td>
-						</tr>
-					</tbody>
-				</table>
+				<CnDataTable
+					v-if="resultFields.length > 0"
+					class="pack-preview__table"
+					:columns="fieldColumns"
+					:rows="resultFields"
+					rowKey="name">
+					<template #column-value="{ value }">
+						<code>{{ value }}</code>
+					</template>
+				</CnDataTable>
 				<p v-else class="pack-preview__empty">
 					{{
 						t(
@@ -122,30 +101,17 @@
 
 				<template v-if="result.errors.length > 0">
 					<h4>{{ t('openregister', 'Problems in this row') }}</h4>
-					<table class="pack-preview__table">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Source column') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Target field') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Problem') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr
-								v-for="(problem, index) in result.errors"
-								:key="index">
-								<td>{{ problem.source || '-' }}</td>
-								<td>{{ problem.target || '-' }}</td>
-								<td>{{ problem.message }}</td>
-							</tr>
-						</tbody>
-					</table>
+					<CnDataTable
+						class="pack-preview__table"
+						:columns="problemColumns"
+						:rows="problemRows">
+						<template #column-source="{ value }">
+							{{ value || '-' }}
+						</template>
+						<template #column-target="{ value }">
+							{{ value || '-' }}
+						</template>
+					</CnDataTable>
 				</template>
 			</template>
 		</div>
@@ -153,6 +119,7 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import { NcButton, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import { explainError, previewPack } from '../../services/migrationPacks.js'
 import { t } from '../../views/migrationPack/l10n.js'
@@ -165,7 +132,7 @@ let panelCounter = 0
 
 export default {
 	name: 'PackPreviewPanel',
-	components: { NcButton, NcLoadingIcon, NcNoteCard },
+	components: { CnDataTable, NcButton, NcLoadingIcon, NcNoteCard },
 	props: {
 		/** The definition to test, or null while the editor holds problems. */
 		definition: { type: Object, default: null },
@@ -189,6 +156,61 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The sample table's columns: the source column and its value.
+		 *
+		 * @return {Array<object>} The CnDataTable columns.
+		 */
+		sampleColumns() {
+			return [
+				{ key: 'id', label: t('openregister', 'Source column') },
+				{ key: 'value', label: t('openregister', 'Sample value') },
+			]
+		},
+
+		/**
+		 * One sample row per source column, keyed by the column.
+		 *
+		 * @return {Array<{id: string}>} The rows.
+		 */
+		sampleRows() {
+			return this.columns.map((column) => ({ id: column }))
+		},
+
+		/**
+		 * The written fields table's columns.
+		 *
+		 * @return {Array<object>} The CnDataTable columns.
+		 */
+		fieldColumns() {
+			return [
+				{ key: 'name', label: t('openregister', 'Field') },
+				{ key: 'value', label: t('openregister', 'Value') },
+			]
+		},
+
+		/**
+		 * The row problems table's columns.
+		 *
+		 * @return {Array<object>} The CnDataTable columns.
+		 */
+		problemColumns() {
+			return [
+				{ key: 'source', label: t('openregister', 'Source column') },
+				{ key: 'target', label: t('openregister', 'Target field') },
+				{ key: 'message', label: t('openregister', 'Problem') },
+			]
+		},
+
+		/**
+		 * The row problems, keyed by their position.
+		 *
+		 * @return {Array<object>} The rows.
+		 */
+		problemRows() {
+			return (this.result?.errors || []).map((problem, id) => ({ ...problem, id }))
+		},
+
 		/**
 		 * The mapped fields of the result, values shown as JSON.
 		 *
@@ -325,16 +347,7 @@ export default {
 }
 
 .pack-preview__table {
-	width: 100%;
-	border-collapse: collapse;
 	margin-block: 8px;
-}
-
-.pack-preview__table th,
-.pack-preview__table td {
-	padding: 4px 8px;
-	text-align: start;
-	border-bottom: 1px solid var(--color-border);
 }
 
 .pack-preview__table input {
