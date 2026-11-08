@@ -13,6 +13,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Service\TalkLinkPlatform;
 use OCA\OpenRegister\Service\TalkLinkService;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -363,7 +364,7 @@ class TalkLinkServiceRefactorGoldenTest extends TestCase {
 			);
 		}
 
-		return new TalkLinkService($mapper, $container, $l10n, $this->createMock(SchemaMapperInterface::class), new LinkServiceRuntime($apps, $session, $logger));
+		return new TalkLinkService($mapper, new TalkLinkPlatform($container, $l10n), $this->createMock(SchemaMapperInterface::class), new LinkServiceRuntime($apps, $session, $logger));
 	}//end service()
 
 	/**

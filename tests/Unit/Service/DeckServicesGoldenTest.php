@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCA\OpenRegister\Service\CardDraft;
 use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\DeckPlatform;
 use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
@@ -406,6 +407,6 @@ class DeckServicesGoldenTest extends TestCase {
 				return $w['route'];
 			}
 		);
-		return new DeckCardService($links, new LinkServiceRuntime($appManager, $session, $logger), $urls, $users, $container);
+		return new DeckCardService($links, new LinkServiceRuntime($appManager, $session, $logger), $urls, new DeckPlatform($users, $container));
 	}//end makeService()
 }//end class

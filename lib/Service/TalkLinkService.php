@@ -46,8 +46,6 @@ use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\TalkLink\TalkGateway;
 use OCA\OpenRegister\Service\TalkLink\TalkLinkFactory;
 use OCA\OpenRegister\Service\TalkLink\TalkRoomFields;
-use OCP\IL10N;
-use Psr\Container\ContainerInterface;
 use Throwable;
 
 /**
@@ -98,20 +96,18 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	 * Constructor.
 	 *
 	 * @param TalkLinkMapperInterface $talkLinkMapper Persistence for link rows.
-	 * @param ContainerInterface $container Container for late-bound Talk classes.
-	 * @param IL10N $l10n Translation service.
+	 * @param TalkLinkPlatform $platform Container for late-bound Talk classes and the translator.
 	 * @param SchemaMapperInterface $schemaMapper Resolves the schema an object belongs to (external-participant opt-in check).
 	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 */
 	public function __construct(
 		private readonly TalkLinkMapperInterface $talkLinkMapper,
-		ContainerInterface $container,
-		IL10N $l10n,
+		TalkLinkPlatform $platform,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LinkServiceRuntime $runtime,
 	) {
-		$this->talk = new TalkGateway(container: $container, appManager: $runtime->appManager(), logger: $runtime->logger());
-		$this->roomFields = new TalkRoomFields(l10n: $l10n);
+		$this->talk = new TalkGateway(container: $platform->container, appManager: $runtime->appManager(), logger: $runtime->logger());
+		$this->roomFields = new TalkRoomFields(l10n: $platform->l10n);
 		$this->linkFactory = new TalkLinkFactory();
 	}//end __construct()
 
