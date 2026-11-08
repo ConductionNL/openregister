@@ -38,7 +38,7 @@ use DateTimeImmutable;
 use Exception;
 use OCA\OpenRegister\Controller\Support\FlowTimerDiagnosticControllerServices;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
-use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
+use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
@@ -72,9 +72,9 @@ class FlowTimerDiagnosticController extends Controller {
 	/**
 	 * The engine, narrating.
 	 *
-	 * @var TermDiagnosticInterface
+	 * @var TermDiagnostic
 	 */
-	private readonly TermDiagnosticInterface $diagnostic;
+	private readonly TermDiagnostic $diagnostic;
 
 	/**
 	 * Constructor.

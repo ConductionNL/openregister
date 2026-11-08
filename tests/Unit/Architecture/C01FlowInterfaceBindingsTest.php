@@ -38,8 +38,6 @@ use OCA\OpenRegister\Service\Flow\FlowRunVersionPin;
 use OCA\OpenRegister\Service\Flow\FlowRunVersionPinInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistryInterface;
-use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
-use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -70,7 +68,6 @@ final class C01FlowInterfaceBindingsTest extends TestCase {
 		FlowRunnableGuard::class => [FlowRunnableGuardInterface::class, ContractBindings::class],
 		FlowStateMapper::class => [FlowStateMapperInterface::class, DbRegistrar::class],
 		PrincipalResolverRegistry::class => [PrincipalResolverRegistryInterface::class, ContractBindings::class],
-		TermDiagnostic::class => [TermDiagnosticInterface::class, ContractBindings::class],
 	];
 
 	/**

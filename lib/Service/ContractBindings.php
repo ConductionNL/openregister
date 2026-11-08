@@ -363,7 +363,6 @@ final class ContractBindings {
 		RouterNodeInterface::class => RouterNode::class,
 		SetFieldsNodeInterface::class => SetFieldsNode::class,
 		SubFlowNodeInterface::class => SubFlowNode::class,
-		\OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface::class => \OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic::class,
 		WaitNodeInterface::class => WaitNode::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,
