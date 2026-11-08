@@ -78,3 +78,19 @@ exclude:
   # its own Apache-2.0 licence and update script). Not part of the shipped app;
   # the skills stay in the repository for developers.
   - ".*/[.]claude/.*"
+
+# Open Source Health. These eight are the Nextcloud platform's own libraries,
+# which a Nextcloud app cannot avoid. Their AGPL and GPL licences are accepted, so
+# only the licence property is excluded: vulnerabilities, freshness, activity and
+# management are still scored. [:/] matches the scoped npm name in either form,
+# because the name Sigrid compares against is not documented.
+dependencychecker:
+  exclude:
+    - license: "^@nextcloud[:/]vue$"
+    - license: "^@nextcloud[:/]dialogs$"
+    - license: "^@nextcloud[:/]auth$"
+    - license: "^@nextcloud[:/]axios$"
+    - license: "^@nextcloud[:/]l10n$"
+    - license: "^@nextcloud[:/]router$"
+    - license: "^@nextcloud[:/]initial-state$"
+    - license: "^@nextcloud[:/]capabilities$"
