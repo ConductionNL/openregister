@@ -46,8 +46,12 @@ use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
+use OCA\OpenRegister\Service\Sharing\AccessLinkViewReaders;
 use OCP\IURLGenerator;
 use OCP\Security\IHasher;
 use OCP\Security\ISecureRandom;
@@ -115,11 +119,9 @@ class AccessLinkGoldenTest extends TestCase {
 	private function service(): AccessLinkService {
 		return new AccessLinkService(
 			mapper: $this->mapper,
-			auditTrail: $this->auditTrail,
-			secureRandom: $this->secureRandom,
-			hasher: $this->hasher,
-			urlGenerator: $this->urlGenerator,
-			logger: $this->logger
+			useLog: new AccessLinkUseLog(auditTrail: $this->auditTrail, logger: $this->logger),
+			secrets: new AccessLinkSecrets(secureRandom: $this->secureRandom, hasher: $this->hasher),
+			urlGenerator: $this->urlGenerator
 		);
 	}
 
@@ -127,9 +129,7 @@ class AccessLinkGoldenTest extends TestCase {
 		return new AccessLinkMintGuard(
 			objects: $this->objects,
 			subjects: new AccessLinkSubject(),
-			views: $this->views,
-			registers: $this->registers,
-			schemas: $this->schemas
+			viewReaders: new AccessLinkViewReaders(views: $this->views, registers: $this->registers, schemas: $this->schemas)
 		);
 	}
 
@@ -150,11 +150,14 @@ class AccessLinkGoldenTest extends TestCase {
 		?array $context = null,
 	): void {
 		if ($context === null) {
-			$this->service()->recordUse(link: $link, act: $act, object: $object, ipAddress: $ipAddress);
+			$this->service()->recordUse(link: $link, use: new AccessLinkUse(act: $act, object: $object, ipAddress: $ipAddress));
 			return;
 		}
 
-		$this->service()->recordUse(link: $link, act: $act, object: $object, ipAddress: $ipAddress, context: $context);
+		$this->service()->recordUse(
+			link: $link,
+			use: new AccessLinkUse(act: $act, object: $object, ipAddress: $ipAddress, context: $context)
+		);
 	}
 
 	// ---- mint: allowed. ----------------------------------------------------
