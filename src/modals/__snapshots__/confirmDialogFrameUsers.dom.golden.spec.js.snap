@@ -127,6 +127,166 @@ exports[`dialog application shows the busy state 1`] = `
 </x-ncdialog>"
 `;
 
+exports[`dialog clearCacheDialog asks 1`] = `
+"<x-ncdialog open="true" name="Clear Cache" noclose="false">
+  <slot-default>
+    <div class="clear-cache-dialog">
+      <div class="clear-cache-options">
+        <h3>🗑️ Clear Cache</h3>
+        <p class="warning-text"> Select the type of cache to clear. This action cannot be undone and may temporarily impact performance. </p>
+        <div class="cache-type-selection">
+          <h4>Cache Type:</h4>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="all">
+            <slot-default> Clear All Cache (Recommended) </slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="object">
+            <slot-default> Object Cache Only </slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="schema">
+            <slot-default> Schema Cache Only </slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="facet">
+            <slot-default> Facet Cache Only </slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="distributed">
+            <slot-default> Distributed Cache Only </slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <x-ncbutton disabled="false">
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="false">
+          <slot-default> Clear Cache</slot-default>
+          <slot-icon>
+            <x-delete size="20"></x-delete>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog clearCacheDialog cancels 1`] = `
+{
+  "calls": [],
+  "emitted": {
+    "closing": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog clearCacheDialog confirms 1`] = `
+"<x-ncdialog open="true" name="Clear Cache" noclose="false">
+  <slot-default>
+    <div class="clear-cache-dialog">
+      <div class="clear-cache-options">
+        <h3>🗑️ Clear Cache</h3>
+        <p class="warning-text"> Select the type of cache to clear. This action cannot be undone and may temporarily impact performance. </p>
+        <div class="cache-type-selection">
+          <h4>Cache Type:</h4>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="all">
+            <slot-default> Clear All Cache (Recommended) </slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="object">
+            <slot-default> Object Cache Only </slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="schema">
+            <slot-default> Schema Cache Only </slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="facet">
+            <slot-default> Facet Cache Only </slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="distributed">
+            <slot-default> Distributed Cache Only </slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <x-ncbutton disabled="false">
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="false">
+          <slot-default> Clear Cache</slot-default>
+          <slot-icon>
+            <x-delete size="20"></x-delete>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog clearCacheDialog confirms 2`] = `
+{
+  "afterTimer": [],
+  "calls": [],
+  "emitted": {
+    "confirm": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog clearCacheDialog dismisses through the dialog itself 1`] = `
+{
+  "calls": [],
+  "emitted": {
+    "closing": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog clearCacheDialog shows the busy state 1`] = `
+"<x-ncdialog open="true" name="Clear Cache" noclose="true">
+  <slot-default>
+    <div class="clear-cache-dialog">
+      <div class="clear-cache-options">
+        <h3>🗑️ Clear Cache</h3>
+        <p class="warning-text"> Select the type of cache to clear. This action cannot be undone and may temporarily impact performance. </p>
+        <div class="cache-type-selection">
+          <h4>Cache Type:</h4>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="all">
+            <slot-default> Clear All Cache (Recommended) </slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="object">
+            <slot-default> Object Cache Only </slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="schema">
+            <slot-default> Schema Cache Only </slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="facet">
+            <slot-default> Facet Cache Only </slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="distributed">
+            <slot-default> Distributed Cache Only </slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <x-ncbutton disabled="true">
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="true">
+          <slot-default> Clearing...</slot-default>
+          <slot-icon>
+            <x-ncloadingicon size="20"></x-ncloadingicon>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
 exports[`dialog clearCacheModal asks 1`] = `
 "<x-ncdialog name="Clear Cache" size="small" noclose="false">
   <slot-actions>
@@ -304,6 +464,115 @@ exports[`dialog clearCacheModal shows the busy state 1`] = `
             <slot-default>Distributed Cache Only</slot-default>
           </x-nccheckboxradioswitch>
         </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog clearTableDialog asks 1`] = `
+"<x-ncdialog open="true" name="N">
+  <slot-default>
+    <div class="clear-dialog-content">
+      <h3>⚠️ H</h3>
+      <p>D</p>
+      <p><strong>C</strong></p>
+      <p class="warning-text">W</p>
+      <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="false">
+          <slot-default> Confirm Clear All</slot-default>
+          <slot-icon>
+            <x-delete size="20"></x-delete>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog clearTableDialog cancels 1`] = `
+{
+  "calls": [],
+  "emitted": {
+    "closing": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog clearTableDialog confirms 1`] = `
+"<x-ncdialog open="true" name="N">
+  <slot-default>
+    <div class="clear-dialog-content">
+      <h3>⚠️ H</h3>
+      <p>D</p>
+      <p><strong>C</strong></p>
+      <p class="warning-text">W</p>
+      <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="false">
+          <slot-default> Confirm Clear All</slot-default>
+          <slot-icon>
+            <x-delete size="20"></x-delete>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog clearTableDialog confirms 2`] = `
+{
+  "afterTimer": [],
+  "calls": [],
+  "emitted": {
+    "confirm": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog clearTableDialog dismisses through the dialog itself 1`] = `
+{
+  "calls": [],
+  "emitted": {
+    "closing": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog clearTableDialog shows the busy state 1`] = `
+"<x-ncdialog open="true" name="N">
+  <slot-default>
+    <div class="clear-dialog-content">
+      <h3>⚠️ H</h3>
+      <p>D</p>
+      <p><strong>C</strong></p>
+      <p class="warning-text">W</p>
+      <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="true">
+          <slot-default> Clearing...</slot-default>
+          <slot-icon>
+            <x-ncloadingicon size="20"></x-ncloadingicon>
+          </slot-icon>
+        </x-ncbutton>
       </div>
     </div>
   </slot-default>
@@ -545,6 +814,109 @@ exports[`dialog endpoint shows the busy state 1`] = `
     <div class="modal">
       <p> Are you sure you want to delete the endpoint <b>E</b>? </p>
       <p>t:This action cannot be undone.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog rebaseDialog asks 1`] = `
+"<x-ncdialog open="true" name="Confirm Rebase Operation">
+  <slot-default>
+    <div class="rebase-dialog-content">
+      <h3>⚠️ Confirm Rebase Operation</h3>
+      <p> This operation will recalculate deletion times for all objects and logs based on current retention settings. It will also assign default owners and organizations to objects that don't have them assigned. </p>
+      <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="false">
+          <slot-default> Confirm Rebase</slot-default>
+          <slot-icon>
+            <x-refresh size="20"></x-refresh>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog rebaseDialog cancels 1`] = `
+{
+  "calls": [],
+  "emitted": {
+    "closing": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog rebaseDialog confirms 1`] = `
+"<x-ncdialog open="true" name="Confirm Rebase Operation">
+  <slot-default>
+    <div class="rebase-dialog-content">
+      <h3>⚠️ Confirm Rebase Operation</h3>
+      <p> This operation will recalculate deletion times for all objects and logs based on current retention settings. It will also assign default owners and organizations to objects that don't have them assigned. </p>
+      <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="false">
+          <slot-default> Confirm Rebase</slot-default>
+          <slot-icon>
+            <x-refresh size="20"></x-refresh>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog rebaseDialog confirms 2`] = `
+{
+  "afterTimer": [],
+  "calls": [],
+  "emitted": {
+    "confirm": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog rebaseDialog dismisses through the dialog itself 1`] = `
+{
+  "calls": [],
+  "emitted": {
+    "closing": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog rebaseDialog shows the busy state 1`] = `
+"<x-ncdialog open="true" name="Confirm Rebase Operation">
+  <slot-default>
+    <div class="rebase-dialog-content">
+      <h3>⚠️ Confirm Rebase Operation</h3>
+      <p> This operation will recalculate deletion times for all objects and logs based on current retention settings. It will also assign default owners and organizations to objects that don't have them assigned. </p>
+      <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="true">
+          <slot-default> Rebasing...</slot-default>
+          <slot-icon>
+            <x-ncloadingicon size="20"></x-ncloadingicon>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
     </div>
   </slot-default>
 </x-ncdialog>"

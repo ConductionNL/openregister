@@ -10,6 +10,9 @@ import { reactive } from 'vue'
  * @copyright 2026 Conduction B.V.
  */
 import RemoveConnectionDialog from '../dialogs/mail/RemoveConnectionDialog.vue'
+import ClearCacheDialog from '../dialogs/settings/ClearCacheDialog.vue'
+import ClearTableDialog from '../dialogs/settings/ClearTableDialog.vue'
+import RebaseConfirmationDialog from '../dialogs/settings/RebaseConfirmationDialog.vue'
 import DeleteApplication from './application/DeleteApplication.vue'
 import DeleteConfiguration from './configuration/DeleteConfiguration.vue'
 import DeleteEndpoint from './endpoint/DeleteEndpoint.vue'
@@ -229,6 +232,31 @@ const DIALOGS = {
 	clearCacheModal: {
 		component: ClearCacheModal,
 		props: { show: true, cacheType: 'facet' },
+		busyProps: { clearing: true },
+		fields: {},
+	},
+	rebaseDialog: {
+		component: RebaseConfirmationDialog,
+		props: { open: true },
+		busyProps: { rebasing: true },
+		fields: {},
+	},
+	clearCacheDialog: {
+		component: ClearCacheDialog,
+		props: { open: true, cacheType: 'facet' },
+		busyProps: { clearing: true },
+		fields: {},
+	},
+	clearTableDialog: {
+		component: ClearTableDialog,
+		props: {
+			open: true,
+			name: 'N',
+			heading: 'H',
+			description: 'D',
+			countText: 'C',
+			warning: 'W',
+		},
 		busyProps: { clearing: true },
 		fields: {},
 	},
