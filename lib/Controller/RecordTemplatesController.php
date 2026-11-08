@@ -38,6 +38,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Index, show, create, update, patch and destroy for record templates.
@@ -54,7 +55,6 @@ class RecordTemplatesController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                $appName   The app name.
 	 * @param IRequest              $request   The request.
 	 * @param RecordTemplateStoreInterface $templates Decides and stores.
 	 * @param ViewerReachResolverInterface   $viewers   Names the caller and their groups.
@@ -63,13 +63,12 @@ class RecordTemplatesController extends Controller {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly RecordTemplateStoreInterface $templates,
 		private readonly ViewerReachResolverInterface $viewers,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

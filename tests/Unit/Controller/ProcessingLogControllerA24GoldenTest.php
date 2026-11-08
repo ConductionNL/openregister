@@ -43,6 +43,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices;
 
 /**
  * Allowed and refused outcomes of the processing-log API.
@@ -132,11 +133,9 @@ final class ProcessingLogControllerA24GoldenTest extends TestCase {
 		);
 
 		return new ProcessingLogController(
-			'openregister',
 			$request,
-			$this->logMapper,
+			new ProcessingLogControllerServices($this->logMapper, $config),
 			new ControllerSession($session, $groups, $this->createMock(LoggerInterface::class)),
-			$config,
 			$organisations
 		);
 	}//end controller()

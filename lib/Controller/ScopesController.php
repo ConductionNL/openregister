@@ -42,6 +42,8 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Controller\Support\ScopesControllerServices;
 
 /**
  * Discovery endpoint for the current user's effective RBAC scopes.
@@ -80,25 +82,37 @@ class ScopesController extends Controller {
 	private readonly IGroupManager $groupManager;
 
 	/**
+	 * Register lookup.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application identifier.
 	 * @param IRequest $request Active HTTP request.
 	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param RegisterMapperInterface $registerMapper Register lookup.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
+	 * @param ScopesControllerServices $services Register and schema lookups.
 	 * @param PermissionHandlerInterface $permissionHandler RBAC evaluator that
 	 *                                             owns the rule chain.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		ControllerSession $session,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly ControllerSession $session,
+		ScopesControllerServices $services,
 		private readonly PermissionHandlerInterface $permissionHandler,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		$this->registerMapper = $services->registerMapper;
+		$this->schemaMapper = $services->schemaMapper;
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->userSession = $session->userSession;
 		$this->groupManager = $session->groupManager;

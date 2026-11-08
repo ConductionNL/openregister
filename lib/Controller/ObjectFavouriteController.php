@@ -47,6 +47,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Star an object for the calling user, and unstar it.
@@ -67,20 +68,18 @@ class ObjectFavouriteController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                    $appName       App name.
 	 * @param IRequest                  $request       Request.
 	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
 	 * @param FavouriteServiceInterface $favourites    The favourite primitive.
 	 * @param LoggerInterface           $logger        Logger.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectOperationsInterface $objectService,
 		private readonly FavouriteServiceInterface $favourites,
 		LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$failure = 'Could not complete the favourite request';
 		$this->endpoint = new ObjectSharingEndpoint(objectService: $objectService, logger: $logger, file: __FILE__, failure: $failure);
 	}//end __construct()

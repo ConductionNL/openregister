@@ -51,6 +51,8 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Controller\Support\ObjectReadStateControllerServices;
 
 /**
  * Read an object's read state, mark it read, and mark it back to unread.
@@ -69,24 +71,36 @@ class ObjectReadStateController extends Controller {
 	private readonly ObjectSharingEndpoint $endpoint;
 
 	/**
+	 * The read-state primitive.
+	 *
+	 * @var ReadStateServiceInterface
+	 */
+	private readonly ReadStateServiceInterface $readState;
+
+	/**
+	 * Empties the bell when the work is opened.
+	 *
+	 * @var NotificationClearingServiceInterface
+	 */
+	private readonly NotificationClearingServiceInterface $clearing;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
-	 * @param ReadStateServiceInterface $readState The read-state primitive.
-	 * @param NotificationClearingServiceInterface $clearing Empties the bell when the work is opened.
+	 * @param ObjectReadStateControllerServices $services Read-state store and notification clearing.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectOperationsInterface $objectService,
-		private readonly ReadStateServiceInterface $readState,
-		private readonly NotificationClearingServiceInterface $clearing,
+		ObjectReadStateControllerServices $services,
 		LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		$this->readState = $services->readState;
+		$this->clearing = $services->clearing;
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$failure = 'Could not complete the read state request';
 		$this->endpoint = new ObjectSharingEndpoint(objectService: $objectService, logger: $logger, file: __FILE__, failure: $failure);
 	}//end __construct()
