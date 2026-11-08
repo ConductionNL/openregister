@@ -47,12 +47,12 @@ class DecisionTableStore {
 	/**
 	 * The register the tables live in.
 	 */
-	public const REGISTER = 'decision-tables';
+	public const REGISTER = DecisionTableLocation::REGISTER;
 
 	/**
 	 * The schema of one table.
 	 */
-	public const SCHEMA = 'decision-table';
+	public const SCHEMA = DecisionTableLocation::SCHEMA;
 
 	/**
 	 * Tables resolved in this request, by reference.

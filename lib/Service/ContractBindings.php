@@ -99,6 +99,8 @@ use OCA\OpenRegister\Service\Credential\DoriathCredentialKeys;
 use OCA\OpenRegister\Service\Credential\DoriathCredentialStore;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
+use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
+use OCA\OpenRegister\Service\Dmn\DecisionTableValidatorInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
@@ -358,10 +360,14 @@ use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategyInterface;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepositoryInterface;
+use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuard;
+use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuardInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -668,7 +674,10 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\PermissionScopeInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		\OCA\OpenRegister\Service\Object\TransitionAuthorizationInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		AgentPrincipalResolverInterface::class => AgentPrincipalResolver::class,
+		CodedValueGuardInterface::class => CodedValueGuard::class,
+		ConceptShapeGuardInterface::class => ConceptShapeGuard::class,
 		ConfigSetShareableConfigTypeInterface::class => ConfigSetShareableConfigType::class,
+		DecisionTableValidatorInterface::class => DecisionTableValidator::class,
 		FlowShareableConfigTypeInterface::class => FlowShareableConfigType::class,
 		GroupPrincipalResolverInterface::class => GroupPrincipalResolver::class,
 		KillSwitchCheckInterface::class => KillSwitchCheck::class,
