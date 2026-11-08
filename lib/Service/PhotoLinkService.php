@@ -53,11 +53,8 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\PhotoLink;
 use OCA\OpenRegister\Db\PhotoLinkMapperInterface;
-use OCP\App\IAppManager;
 use OCP\IURLGenerator;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -85,18 +82,14 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	 *
 	 * @param PhotoLinkMapperInterface $photoLinkMapper Persistence for link rows.
 	 * @param ContainerInterface $container Container for late-bound Photos classes.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
 	 * @param IURLGenerator $urlGenerator URL generator for deep links / thumbnails.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 */
 	public function __construct(
 		private readonly PhotoLinkMapperInterface $photoLinkMapper,
 		private readonly ContainerInterface $container,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
 		private readonly IURLGenerator $urlGenerator,
-		private readonly LoggerInterface $logger,
+		private readonly LinkServiceRuntime $runtime,
 	) {
 	}//end __construct()
 
@@ -106,7 +99,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	 * @return bool
 	 */
 	public function isPhotosAvailable(): bool {
-		return $this->appManager->isEnabledForUser(self::REQUIRED_APP);
+		return $this->runtime->appManager()->isEnabledForUser(self::REQUIRED_APP);
 	}//end isPhotosAvailable()
 
 	/**
@@ -125,7 +118,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 		try {
 			return $this->container->get(self::ALBUM_MAPPER);
 		} catch (Throwable $e) {
-			$this->logger->debug('PhotoLinkService: AlbumMapper unavailable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('PhotoLinkService: AlbumMapper unavailable: ' . $e->getMessage());
 			return null;
 		}
 	}//end getAlbumMapper()
@@ -138,7 +131,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	 * @throws Exception When there is no active user.
 	 */
 	private function requireUid(): string {
-		return $this->userSession->getUser()?->getUID() ?? throw new Exception('No user logged in', 401);
+		return $this->runtime->userSession()->getUser()?->getUID() ?? throw new Exception('No user logged in', 401);
 	}//end requireUid()
 
 	/**
@@ -250,7 +243,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 		try {
 			return (int)$mapper->create($uid, $name)->getId();
 		} catch (Throwable $e) {
-			$this->logger->warning('PhotoLinkService::createAndLinkAlbum failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('PhotoLinkService::createAndLinkAlbum failed: ' . $e->getMessage());
 			throw new Exception('Failed to create Photos album', 500);
 		}
 	}//end createAlbum()
@@ -292,7 +285,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	public function getLinkedAlbums(string $objectUuid): array {
 		$links = $this->photoLinkMapper->findByObjectUuid($objectUuid);
 		$available = $this->isPhotosAvailable();
-		$uid = $this->userSession->getUser()?->getUID();
+		$uid = $this->runtime->userSession()->getUser()?->getUID();
 
 		$results = [];
 		foreach ($links as $link) {
@@ -347,7 +340,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	 */
 	public function getAvailableAlbums(?string $search = null): array {
 		$mapper = $this->getAlbumMapper();
-		$uid = $this->userSession->getUser()?->getUID();
+		$uid = $this->runtime->userSession()->getUser()?->getUID();
 		if ($mapper === null || $uid === null) {
 			return [];
 		}
@@ -404,7 +397,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 		try {
 			return $mapper->getForUser($uid);
 		} catch (Throwable $e) {
-			$this->logger->warning('PhotoLinkService::getAvailableAlbums failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('PhotoLinkService::getAvailableAlbums failed: ' . $e->getMessage());
 			return [];
 		}
 	}//end albumsForUser()
@@ -497,7 +490,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 		try {
 			return $this->photoLinkMapper->update($link);
 		} catch (Throwable $e) {
-			$this->logger->debug('PhotoLinkService::refreshLink update failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('PhotoLinkService::refreshLink update failed: ' . $e->getMessage());
 			return $link;
 		}
 	}//end refreshLink()
@@ -544,7 +537,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 		try {
 			return $mapper->get($albumId);
 		} catch (Throwable $e) {
-			$this->logger->debug('PhotoLinkService::fetchAlbumInfo get failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('PhotoLinkService::fetchAlbumInfo get failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end findAlbum()
@@ -583,7 +576,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 			$withFiles = $mapper->getForAlbumIdAndUserWithFiles($albumId, $uid, []);
 			return count($withFiles);
 		} catch (Throwable $e) {
-			$this->logger->debug('PhotoLinkService::countPhotos failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('PhotoLinkService::countPhotos failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end countPhotos()

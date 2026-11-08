@@ -53,13 +53,10 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Db\TimeTrackerLinkMapperInterface;
-use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -127,9 +124,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @param TimeTrackerLinkMapperInterface $timeTrackerLinkMapper Persistence for link rows.
 	 * @param IDBConnection $db DB connection for upstream client/task lookups.
 	 * @param ContainerInterface $container Container for late-bound TimeManager classes.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 *
 	 * @SuppressWarnings(PHPMD.LongVariable) $timeTrackerLinkMapper follows the repo naming convention for OR
 	 * link-table mappers; $timeTrackerLinkMapper is the exact constructor-injected variable name used across
@@ -139,9 +134,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 		private readonly TimeTrackerLinkMapperInterface $timeTrackerLinkMapper,
 		private readonly IDBConnection $db,
 		private readonly ContainerInterface $container,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		private readonly LinkServiceRuntime $runtime,
 	) {
 	}//end __construct()
 
@@ -151,7 +144,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @return bool
 	 */
 	public function isTimeManagerAvailable(): bool {
-		return $this->appManager->isEnabledForUser(self::REQUIRED_APP);
+		return $this->runtime->appManager()->isEnabledForUser(self::REQUIRED_APP);
 	}//end isTimeManagerAvailable()
 
 	/**
@@ -172,7 +165,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 		try {
 			return $this->container->get($class);
 		} catch (Throwable $e) {
-			$this->logger->debug('TimeTrackerLinkService: ' . $class . ' unavailable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('TimeTrackerLinkService: ' . $class . ' unavailable: ' . $e->getMessage());
 			return null;
 		}
 	}//end resolveMapper()
@@ -185,7 +178,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @throws Exception When there is no active user.
 	 */
 	private function requireUid(): string {
-		return $this->userSession->getUser()?->getUID() ?? throw new Exception('No user logged in', 401);
+		return $this->runtime->userSession()->getUser()?->getUID() ?? throw new Exception('No user logged in', 401);
 	}//end requireUid()
 
 	/**
@@ -340,7 +333,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 		try {
 			return $this->insertClient(clientMapper: $clientMapper, name: $name, uid: $uid);
 		} catch (Throwable $e) {
-			$this->logger->warning('TimeTrackerLinkService::createAndLinkClient failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('TimeTrackerLinkService::createAndLinkClient failed: ' . $e->getMessage());
 			throw new Exception('Failed to create TimeManager client', 500);
 		}
 	}//end createClient()
@@ -496,7 +489,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	public function getLinkedEntries(string $objectUuid): array {
 		$links     = $this->timeTrackerLinkMapper->findByObjectUuid($objectUuid);
 		$available = $this->isTimeManagerAvailable();
-		$uid       = $this->userSession->getUser()?->getUID();
+		$uid       = $this->runtime->userSession()->getUser()?->getUID();
 
 		$results = [];
 		foreach ($links as $link) {
@@ -593,7 +586,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 */
 	public function getAvailableClients(?string $search = null): array {
 		$clientMapper = $this->resolveMapper(class: self::CLIENT_MAPPER);
-		$uid          = $this->userSession->getUser()?->getUID();
+		$uid          = $this->runtime->userSession()->getUser()?->getUID();
 		if ($clientMapper === null || $uid === null) {
 			return [];
 		}
@@ -667,7 +660,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 			$tableName = $clientMapper->getTableName();
 			return $this->fetchObjects(result: $this->clientsQuery(tableName: $tableName, uid: $uid, search: $search)->executeQuery());
 		} catch (Throwable $e) {
-			$this->logger->debug('TimeTrackerLinkService::fetchClientRows failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('TimeTrackerLinkService::fetchClientRows failed: ' . $e->getMessage());
 			return [];
 		}
 	}//end fetchClientRows()
@@ -764,7 +757,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 		try {
 			return $this->timeTrackerLinkMapper->findAll($objectUuid);
 		} catch (Throwable $e) {
-			$this->logger->error('TimeTrackerLinkService::reconcileAllLinks findAll failed: ' . $e->getMessage());
+			$this->runtime->logger()->error('TimeTrackerLinkService::reconcileAllLinks findAll failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end reconcileTargets()
@@ -844,7 +837,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 			$this->timeTrackerLinkMapper->update($link);
 			return ['refreshed'];
 		} catch (Throwable $e) {
-			$this->logger->error(
+			$this->runtime->logger()->error(
 				'TimeTrackerLinkService::reconcileAllLinks update failed for link id ' . ((string)$link->getId()) . ': ' . $e->getMessage()
 			);
 			return ['refreshed', 'errors'];
@@ -979,7 +972,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 		try {
 			return $this->timeTrackerLinkMapper->update($link);
 		} catch (Throwable $e) {
-			$this->logger->debug('TimeTrackerLinkService::refreshLink update failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('TimeTrackerLinkService::refreshLink update failed: ' . $e->getMessage());
 			return $link;
 		}
 	}//end refreshLink()
@@ -1123,7 +1116,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 
 			return (object)$row;
 		} catch (Throwable $e) {
-			$this->logger->debug('TimeTrackerLinkService::queryRowByUuid failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('TimeTrackerLinkService::queryRowByUuid failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end queryRowByUuid()

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\XwikiLink;
@@ -79,7 +80,7 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 		$this->container->method('get')->willReturn($this->provider);
 		$this->mapper->method('insert')->willReturnArgument(0);
 
-		$this->service = new XwikiLinkService($this->mapper, $this->container, $this->appManager, $this->userSession, $this->logger);
+		$this->service = new XwikiLinkService($this->mapper, $this->container, new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger));
 	}//end setUp()
 
 	private function target(): LinkTarget {
@@ -156,7 +157,7 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 	public function testAnUnresolvableProviderMakesCreate503(): void {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new RuntimeException('no provider'));
-		$service = new XwikiLinkService($this->mapper, $container, $this->appManager, $this->userSession, $this->logger);
+		$service = new XwikiLinkService($this->mapper, $container, new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger));
 		$this->logger->expects($this->once())->method('debug')
 			->with('XwikiLinkService: XwikiProvider unavailable: no provider');
 

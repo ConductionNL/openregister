@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\BookmarkLinkMapper;
 use OCA\OpenRegister\Db\CospendLinkMapper;
@@ -177,10 +178,12 @@ class LinkRowStampGoldenTest extends TestCase {
 		$service = new MapLinkService(
 			$this->mapper(MapLinkMapper::class, 'findByObjectAndFavorite'),
 			$this->container(['OCA\\Maps\\Service\\FavoritesService' => $favorites]),
-			$this->apps(),
-			$this->session('alice'),
 			$this->createMock(IURLGenerator::class),
-			$this->createMock(LoggerInterface::class)
+			new LinkServiceRuntime(
+				$this->apps(),
+				$this->session('alice'),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$this->assertGolden(fn () => $this->entityFields($service->linkPoi((new LinkTarget('obj-1', 3))->inSchema($schemaId), 9)));
@@ -200,9 +203,11 @@ class LinkRowStampGoldenTest extends TestCase {
 		$service = new PollLinkService(
 			$this->mapper(PollLinkMapper::class, 'findByObjectAndPoll'),
 			$this->db($row),
-			$this->apps(),
-			$this->session('alice'),
-			$this->createMock(LoggerInterface::class)
+			new LinkServiceRuntime(
+				$this->apps(),
+				$this->session('alice'),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$this->assertGolden(fn () => $this->entityFields($service->linkPoll((new LinkTarget('obj-1', 3))->inSchema($schemaId), 5)));
@@ -348,10 +353,12 @@ class LinkRowStampGoldenTest extends TestCase {
 		$service = new PhotoLinkService(
 			$this->mapper(PhotoLinkMapper::class, 'findByObjectAndAlbum'),
 			$this->container(['OCA\\Photos\\Album\\AlbumMapper' => $albums]),
-			$this->apps(),
-			$this->session('alice'),
 			$urls,
-			$this->createMock(LoggerInterface::class)
+			new LinkServiceRuntime(
+				$this->apps(),
+				$this->session('alice'),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$this->assertGolden(

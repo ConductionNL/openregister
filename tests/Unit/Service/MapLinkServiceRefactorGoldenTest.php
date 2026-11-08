@@ -7,6 +7,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Db\MapLink;
 use OCA\OpenRegister\Db\MapLinkMapper;
 use OCA\OpenRegister\Service\LinkTarget;
@@ -157,7 +158,7 @@ class MapLinkServiceRefactorGoldenTest extends TestCase {
 			);
 		}
 
-		return new MapLinkService($mapper, $container, $apps, $session, $urls, $logger);
+		return new MapLinkService($mapper, $container, $urls, new LinkServiceRuntime($apps, $session, $logger));
 	}//end service()
 
 	/**

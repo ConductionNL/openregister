@@ -51,11 +51,8 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use OCA\OpenRegister\Db\MapLink;
 use OCA\OpenRegister\Db\MapLinkMapperInterface;
-use OCP\App\IAppManager;
 use OCP\IURLGenerator;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -82,18 +79,14 @@ class MapLinkService implements MapLinkServiceInterface {
 	 *
 	 * @param MapLinkMapperInterface $mapLinkMapper Persistence for link rows.
 	 * @param ContainerInterface $container Container for late-bound Maps classes.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
 	 * @param IURLGenerator $urlGenerator URL generator for deep links.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 */
 	public function __construct(
 		private readonly MapLinkMapperInterface $mapLinkMapper,
 		private readonly ContainerInterface $container,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
 		private readonly IURLGenerator $urlGenerator,
-		private readonly LoggerInterface $logger,
+		private readonly LinkServiceRuntime $runtime,
 	) {
 	}//end __construct()
 
@@ -105,7 +98,7 @@ class MapLinkService implements MapLinkServiceInterface {
 	 * @spec openspec/specs/integration-maps/spec.md
 	 */
 	public function isMapsAvailable(): bool {
-		return $this->appManager->isEnabledForUser(self::REQUIRED_APP);
+		return $this->runtime->appManager()->isEnabledForUser(self::REQUIRED_APP);
 	}//end isMapsAvailable()
 
 	/**
@@ -128,7 +121,7 @@ class MapLinkService implements MapLinkServiceInterface {
 		try {
 			return $this->container->get(self::FAVORITES_SERVICE);
 		} catch (Throwable $e) {
-			$this->logger->debug('MapLinkService: FavoritesService unavailable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('MapLinkService: FavoritesService unavailable: ' . $e->getMessage());
 			return null;
 		}
 	}//end getFavoritesService()
@@ -141,7 +134,7 @@ class MapLinkService implements MapLinkServiceInterface {
 	 * @throws Exception When there is no active user.
 	 */
 	private function requireUid(): string {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in', 401);
 		}
@@ -249,7 +242,7 @@ class MapLinkService implements MapLinkServiceInterface {
 		try {
 			$favoriteId = (int)$service->addFavoriteToDB($uid, $name, $poi->lat(), $poi->lng(), $poi->category(), $poi->comment(), null);
 		} catch (Throwable $e) {
-			$this->logger->warning('MapLinkService::createAndLinkPoi failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('MapLinkService::createAndLinkPoi failed: ' . $e->getMessage());
 			throw new Exception('Failed to create Maps POI', 500);
 		}
 
@@ -357,7 +350,7 @@ class MapLinkService implements MapLinkServiceInterface {
 	 */
 	private function currentUserFavorites(): mixed {
 		$service = $this->getFavoritesService();
-		$uid = $this->userSession->getUser()?->getUID();
+		$uid = $this->runtime->userSession()->getUser()?->getUID();
 		if ($service === null || $uid === null) {
 			return [];
 		}
@@ -365,7 +358,7 @@ class MapLinkService implements MapLinkServiceInterface {
 		try {
 			return $service->getFavoritesFromDB($uid);
 		} catch (Throwable $e) {
-			$this->logger->warning('MapLinkService::getAvailablePois failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('MapLinkService::getAvailablePois failed: ' . $e->getMessage());
 			return [];
 		}
 	}//end currentUserFavorites()
@@ -490,7 +483,7 @@ class MapLinkService implements MapLinkServiceInterface {
 		try {
 			$favorite = $service->getFavoriteFromDB($favoriteId, $uid);
 		} catch (Throwable $e) {
-			$this->logger->debug('MapLinkService::fetchFavoriteInfo failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('MapLinkService::fetchFavoriteInfo failed: ' . $e->getMessage());
 			return null;
 		}
 
