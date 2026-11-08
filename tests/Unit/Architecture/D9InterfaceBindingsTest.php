@@ -153,9 +153,7 @@ final class D9InterfaceBindingsTest extends TestCase {
 		UniqueHintAnnotationValidator::class => [
 			UniqueHintAnnotationValidatorInterface::class,
 			SearchRegistrar::class,
-			[
-				'lib/Db/SchemaMapper/RecordAnnotationRefusals.php',
-			],
+			[],
 		],
 		UploadService::class => [
 			UploadServiceInterface::class,
