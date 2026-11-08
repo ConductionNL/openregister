@@ -46,7 +46,7 @@ use Exception;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
-use OCA\OpenRegister\Db\CaseTokenMapper;
+use OCA\OpenRegister\Db\CaseTokenMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCP\IURLGenerator;
@@ -63,7 +63,7 @@ use Throwable;
  * user-session, URL generator and the lazily-resolved ObjectService — each is required for the
  * mint / resolve / revoke contract.
  */
-class CaseTokenService {
+class CaseTokenService implements CaseTokenServiceInterface {
 
 	/**
 	 * Token length in characters (URL-safe alphanumeric). 43 chars of
@@ -89,7 +89,7 @@ class CaseTokenService {
 	/**
 	 * Constructor.
 	 *
-	 * @param CaseTokenMapper $mapper Token persistence.
+	 * @param CaseTokenMapperInterface $mapper Token persistence.
 	 * @param ISecureRandom $secureRandom NC secure RNG.
 	 * @param IUserSession $userSession Current user (minter).
 	 * @param IURLGenerator $urlGenerator Public URL builder.
@@ -99,7 +99,7 @@ class CaseTokenService {
 	 * @return void
 	 */
 	public function __construct(
-		private CaseTokenMapper $mapper,
+		private CaseTokenMapperInterface $mapper,
 		private ISecureRandom $secureRandom,
 		private IUserSession $userSession,
 		private IURLGenerator $urlGenerator,

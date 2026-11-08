@@ -36,7 +36,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
-class ContentReportMapper extends QBMapper {
+class ContentReportMapper extends QBMapper implements ContentReportMapperInterface {
 	/**
 	 * Constructor.
 	 *

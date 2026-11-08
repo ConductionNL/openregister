@@ -58,14 +58,14 @@ use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
-use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
+use OCA\OpenRegister\Service\Flow\FlowPublishedGraphInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowUnattributed;
 use OCA\OpenRegister\Service\Flow\IFlowDirectlyInvokable;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -114,9 +114,9 @@ class FlowNodeRunController extends Controller {
 	/**
 	 * Resolves the flow's PUBLISHED
 	 *
-	 * @var FlowPublishedGraph
+	 * @var FlowPublishedGraphInterface
 	 */
-	private readonly FlowPublishedGraph $publishedGraphs;
+	private readonly FlowPublishedGraphInterface $publishedGraphs;
 
 	/**
 	 * Resolves the live flow document (for
@@ -156,9 +156,9 @@ class FlowNodeRunController extends Controller {
 	/**
 	 * The SAME object-RBAC evaluator the
 	 *
-	 * @var PermissionHandlerInterface
+	 * @var PermissionCheckInterface
 	 */
-	private readonly PermissionHandlerInterface $permissions;
+	private readonly PermissionCheckInterface $permissions;
 
 	/**
 	 * Constructor.

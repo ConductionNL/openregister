@@ -30,7 +30,7 @@ use DateTimeInterface;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Db\CalendarLink;
-use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\OpenRegister\Db\CalendarLinkMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -57,7 +57,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalendarLinkMapper $linkMapper Link-table mapper.
+	 * @param CalendarLinkMapperInterface $linkMapper Link-table mapper.
 	 * @param CalendarEventService $calendarEventService Legacy CalDAV-property service.
 	 * @param CalDavBackend $calDavBackend CalDAV backend for direct picker queries.
 	 * @param IUserSession $userSession User session.
@@ -66,7 +66,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CalendarLinkMapper $linkMapper,
+		private readonly CalendarLinkMapperInterface $linkMapper,
 		private readonly CalendarEventService $calendarEventService,
 		private readonly CalDavBackend $calDavBackend,
 		private readonly IUserSession $userSession,

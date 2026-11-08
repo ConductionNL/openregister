@@ -51,8 +51,8 @@ use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
-use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
-use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
+use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
+use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategyInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -116,8 +116,8 @@ final class SearchRegistrar {
 			logger: $container->get(LoggerInterface::class)
 		);
 
-		$service->registerStrategy('file', $container->get(FileVectorizationStrategy::class));
-		$service->registerStrategy('object', $container->get(ObjectVectorizationStrategy::class));
+		$service->registerStrategy('file', $container->get(FileVectorizationStrategyInterface::class));
+		$service->registerStrategy('object', $container->get(ObjectVectorizationStrategyInterface::class));
 
 		return $service;
 	}//end buildVectorizationService()

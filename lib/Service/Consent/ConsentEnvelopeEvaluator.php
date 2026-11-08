@@ -35,7 +35,7 @@ use DateTimeImmutable;
 /**
  * Evaluates one consent-shaped property write: append-only check, then evidence fill.
  */
-final class ConsentEnvelopeEvaluator {
+final class ConsentEnvelopeEvaluator implements ConsentEnvelopeEvaluatorInterface {
 
 	/**
 	 * Fields the platform fills on every newly appended entry; a

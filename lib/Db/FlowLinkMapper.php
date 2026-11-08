@@ -26,7 +26,7 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<FlowLink>
  * @method list<FlowLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class FlowLinkMapper extends QBMapper {
+class FlowLinkMapper extends QBMapper implements FlowLinkMapperInterface {
 
 	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;

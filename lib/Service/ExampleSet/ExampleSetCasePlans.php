@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\CaseItem;
-use OCA\OpenRegister\Db\CaseItemMapper;
+use OCA\OpenRegister\Db\CaseItemMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Case\CasePlanService;
@@ -232,7 +232,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 */
 	public function revert(array $entry): string {
 		try {
-			$mapper = $this->container->get(CaseItemMapper::class);
+			$mapper = $this->container->get(CaseItemMapperInterface::class);
 			foreach ($this->createdItems(entry: $entry) as $item) {
 				$this->deleteRealisationTask(item: $item);
 				$mapper->delete($item);
@@ -277,7 +277,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	private function createdItems(array $entry): array {
 		$keys  = array_map('strval', (array) ($entry['created'] ?? []));
 		$items = array_filter(
-			$this->container->get(CaseItemMapper::class)->findByObject(objectUuid: (string) $entry['object']),
+			$this->container->get(CaseItemMapperInterface::class)->findByObject(objectUuid: (string) $entry['object']),
 			static fn (CaseItem $item): bool => in_array((string) $item->getItemKey(), $keys, true)
 		);
 

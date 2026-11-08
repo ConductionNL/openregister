@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
+use OCA\OpenRegister\Service\Rbac\ObjectSharingServiceInterface;
 
 /**
  * The services of the object sharing API.
@@ -39,7 +39,7 @@ final class ObjectSharingControllerServices {
 	 * @param ObjectOperationsInterface $objectService  Resolves an object through the RBAC boundary.
 	 * @param RegisterMapperInterface   $registerMapper Resolves the register entity.
 	 * @param SchemaMapperInterface     $schemaMapper   Resolves the schema entity.
-	 * @param ObjectSharingService      $sharing        Performs the owner-checked writes.
+	 * @param ObjectSharingServiceInterface      $sharing        Performs the owner-checked writes.
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
@@ -47,7 +47,7 @@ final class ObjectSharingControllerServices {
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly RegisterMapperInterface $registerMapper,
 		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly ObjectSharingService $sharing,
+		public readonly ObjectSharingServiceInterface $sharing,
 	) {
 	}//end __construct()
 }//end class

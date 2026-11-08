@@ -144,8 +144,8 @@ class TimeTrackerLinkServiceGoldenTest extends TestCase {
 			$this->mapperBehaviour['findAllThrows'] = true;
 		}
 
-		$service = $this->service();
 		$before = time();
+		$service = $this->service();
 		try {
 			$result = match ($kind) {
 				'link' => $this->linkFields($service->linkEntry((new LinkTarget('obj-1', 3))->inSchema(4), $arg[0], $arg[1])),

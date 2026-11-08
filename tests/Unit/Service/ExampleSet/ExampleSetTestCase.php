@@ -45,8 +45,10 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemMapper;
+use OCA\OpenRegister\Db\CaseItemMapperInterface;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\OpenRegister\Db\CalendarLinkMapperInterface;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages;
@@ -63,10 +65,12 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesStore;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
@@ -76,11 +80,13 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetOwnRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds;
 use OCA\OpenRegister\Db\DeckLinkMapper;
+use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates;
@@ -101,6 +107,7 @@ use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
+use OCA\OpenRegister\Db\ObjectReadStateMapperInterface;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException as CommentNotFoundException;
@@ -315,9 +322,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			WatcherMapperInterface::class      => $this->watcherMapper(),
 			PartyRoleService::class   => $this->partyRoles(),
 			PartyService::class       => $this->partyService(),
-			ContactLinkMapper::class  => $this->contactLinks(),
+			ContactLinkMapperInterface::class => $this->contactLinks(),
 			ICommentsManager::class   => $this->commentsManager(),
-			ObjectReadStateMapper::class => $this->readStateMapper(),
+			ObjectReadStateMapperInterface::class => $this->readStateMapper(),
 			FlowMapper::class         => $this->flowMapper(),
 			FlowVersionService::class => $this->flowVersions(),
 			FlowService::class        => $this->flowService(),
@@ -326,16 +333,16 @@ abstract class ExampleSetTestCase extends TestCase {
 			ExampleSetDeckStore::class => $this->deckStore(),
 			ExampleSetCollectivesStore::class => $this->collectivesStore(),
 			ExampleSetTalkStore::class => $this->talkStore(),
-			TalkLinkMapper::class     => $this->talkLinkMapper(),
+			TalkLinkMapperInterface::class => $this->talkLinkMapper(),
 			AuditTrailMapperInterface::class => $this->auditTrailMapper(),
 			TimelineEntryMapper::class => $this->timelineEntryMapper(),
 			TimelineKindService::class => $this->timelineKindService(),
-			DeckLinkMapper::class     => $this->deckLinkMapper(),
-			EmailLinkMapper::class    => $this->emailLinkMapper(),
+			DeckLinkMapperInterface::class => $this->deckLinkMapper(),
+			EmailLinkMapperInterface::class => $this->emailLinkMapper(),
 			CalDavBackend::class      => $this->caldav(),
-			CalendarLinkMapper::class => $this->calendarLinkMapper(),
+			CalendarLinkMapperInterface::class => $this->calendarLinkMapper(),
 			CasePlanService::class    => $this->casePlans(),
-			CaseItemMapper::class     => $this->caseItemMapper(),
+			CaseItemMapperInterface::class => $this->caseItemMapper(),
 			IUserManager::class       => $this->createMock(IUserManager::class),
 			OrganisationServiceInterface::class => $this->organisationService(),
 			default                   => $this->services[$id],

@@ -50,14 +50,7 @@ namespace OCA\OpenRegister\Service\ExternalLink;
  * @category Service
  * @package  OCA\OpenRegister\Service\ExternalLink
  */
-class ExternalLinkResolver {
-
-	/**
-	 * The schema configuration key carrying the declarations.
-	 *
-	 * @var string
-	 */
-	public const ANNOTATION = 'x-openregister-external-links';
+class ExternalLinkResolver implements ExternalLinkResolverInterface {
 
 	/**
 	 * How deep a placeholder may reach into the object.

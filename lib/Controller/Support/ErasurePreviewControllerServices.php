@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService;
-use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore;
-use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStoreInterface;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunnerInterface;
 
 /**
  * The collaborators of ErasurePreviewController, wired by DI autowiring.
@@ -35,16 +35,16 @@ final class ErasurePreviewControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ErasurePreviewService $previewService The preview.
-	 * @param ErasurePreviewStore $store The recorded preview and its approval.
-	 * @param ErasureRunner $runner The run.
+	 * @param ErasurePreviewServiceInterface $previewService The preview.
+	 * @param ErasurePreviewStoreInterface $store The recorded preview and its approval.
+	 * @param ErasureRunnerInterface $runner The run.
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function __construct(
-		public readonly ErasurePreviewService $previewService,
-		public readonly ErasurePreviewStore $store,
-		public readonly ErasureRunner $runner,
+		public readonly ErasurePreviewServiceInterface $previewService,
+		public readonly ErasurePreviewStoreInterface $store,
+		public readonly ErasureRunnerInterface $runner,
 	) {
 	}//end __construct()
 }//end class

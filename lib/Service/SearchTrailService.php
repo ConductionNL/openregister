@@ -33,7 +33,7 @@ use Exception;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SearchTrail;
-use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\SearchTrailMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -104,7 +104,7 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 * Initializes service with required mappers and optional configuration.
 	 * Sets retention period and self-clearing flag if provided.
 	 *
-	 * @param SearchTrailMapper $searchTrailMapper Mapper for search trail database operations
+	 * @param SearchTrailMapperInterface $searchTrailMapper Mapper for search trail database operations
 	 * @param RegisterMapperInterface $registerMapper Mapper for register database operations
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema database operations
 	 * @param int|null $retentionDays Optional retention period in days (default: 365)
@@ -114,7 +114,7 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SearchTrailMapper $searchTrailMapper,
+		private readonly SearchTrailMapperInterface $searchTrailMapper,
 		RegisterMapperInterface $registerMapper,
 		SchemaMapperInterface $schemaMapper,
 		?int $retentionDays = null,

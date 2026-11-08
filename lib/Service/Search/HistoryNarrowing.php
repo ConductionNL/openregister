@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Search;
 
-use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Db\StateHistoryMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -45,11 +45,11 @@ class HistoryNarrowing {
 	/**
 	 * Constructor.
 	 *
-	 * @param StateHistoryMapper $mapper The projection.
+	 * @param StateHistoryMapperInterface $mapper The projection.
 	 * @param LoggerInterface    $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly StateHistoryMapper $mapper,
+		private readonly StateHistoryMapperInterface $mapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

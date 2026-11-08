@@ -27,7 +27,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\ProcessingLogMapper;
+use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -73,14 +73,14 @@ class ProcessingLogRetentionJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory        $time       The clock.
-	 * @param ProcessingLogMapper $entries    Deletes expired entries.
-	 * @param AuditTrailMapperInterface $auditTrail Holds the record of each purge.
+	 * @param ProcessingLogMapperInterface $entries    Deletes expired entries.
+	 * @param AuditTrailMapperInterface    $auditTrail Holds the record of each purge.
 	 * @param IAppConfig          $config     Reads the retention period.
 	 * @param LoggerInterface     $logger     Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ProcessingLogMapper $entries,
+		private readonly ProcessingLogMapperInterface $entries,
 		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly IAppConfig $config,
 		private readonly LoggerInterface $logger,

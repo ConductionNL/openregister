@@ -55,6 +55,7 @@ use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixPersonValues;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
+use OCA\OpenRegister\Service\Rbac\McpScope;
 use OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
@@ -253,7 +254,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @var string
 	 */
-	public const SCOPE_MCP = 'mcp';
+	public const SCOPE_MCP = McpScope::SCOPE;
 
 	/**
 	 * Write actions that fail closed for anonymous callers.
@@ -3173,38 +3174,8 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * Remove the `mcp` scope from a block, leaving enforcement exactly as it
 	 * was before the annotation was added.
 	 *
-	 * The scope is removed so it can never satisfy a caller. What it does NOT
-	 * do is make the block disappear: an action key emptied by the strip stays
-	 * as `[]`, which the grammar reads as "grant this action to nobody", and a
-	 * block that held nothing but offers remains a non-empty block.
-	 *
-	 * 🔴 That shape is deliberate, and an earlier cut of this method got it
-	 * backwards. Collapsing an offers-only block to `null` made it "no
-	 * authorization configured" — which is default-OPEN — so a schema annotated
-	 * `{"read": ["mcp"]}` became readable by every authenticated user AND by
-	 * anonymous callers. An author documenting an agent surface would have
-	 * published the schema instead of restricting it.
-	 *
-	 * The reasoning that produced it was: a descriptive annotation should not
-	 * change enforcement, so an mcp-only block should evaluate as though absent.
-	 * The flaw is the direction of the failure. Treating the annotation as
-	 * enforcement-bearing can only ever DENY — loud, visible, quickly fixed.
-	 * Treating it as absent can GRANT — silent, and to anonymous callers. Between
-	 * a fail-safe and a fail-open reading of an ambiguous block, the block gets
-	 * the fail-safe one.
-	 *
-	 * So: writing an `mcp` entry into `authorization` opts the schema into
-	 * authorization, exactly as writing any other rule does. To record an agent
-	 * surface WITHOUT touching enforcement, use the `x-openregister-mcp` dialect,
-	 * which is where the surface belongs and where every live declaration on the
-	 * instance already is.
-	 *
-	 * Control keys that are not rule lists (notably the `public: true` opt-in,
-	 * read back off the RESOLVED block) are carried through untouched.
-	 *
-	 * Static and pure so both rule interpreters — this one and the SQL-layer
-	 * {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler} — can apply the
-	 * identical transform and cannot drift apart on it.
+	 * Kept as an entry point; the transform lives in {@see McpScope::strip()} so
+	 * the SQL-layer interpreter applies the identical one without naming this class.
 	 *
 	 * @param array|null $authorization The block to strip, or null.
 	 *
@@ -3214,93 +3185,13 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
 	 */
 	public static function stripMcpScope(?array $authorization): ?array {
-		if ($authorization === null || $authorization === []) {
-			return $authorization;
-		}
-
-		$stripped = [];
-
-		foreach ($authorization as $key => $rules) {
-			// Not a rule list (inheritFromPublic, public, objectScope, ...):
-			// carry it through untouched. These are behaviour toggles read at
-			// runtime, and the mcp scope has no business editing them.
-			if (is_array($rules) === false) {
-				$stripped[$key] = $rules;
-				continue;
-			}
-
-			// The deny block is a block of rule lists, not one rule list.
-			// Handing it to the list stripper would ask "is this entry the mcp
-			// scope" of an entire action's list, which is always no, and would
-			// reindex the block's action keys on the way through.
-			if ($key === DenyResolver::DENY_KEY) {
-				$stripped[$key] = self::stripMcpScope(authorization: $rules);
-				continue;
-			}
-
-			// 🔴 A CONTROL KEY THAT HAPPENS TO BE AN ARRAY IS NOT A RULE LIST,
-			// and reading it as one does not fail — it REINDEXES. The reindex
-			// is what made the whole department matrix inert: `matrix` is the
-			// map `{field, userSource, rows}`, `stripMcpFromRuleList()` walks
-			// its VALUES and appends them to a fresh list, and what reached
-			// `compileDepartmentMatrix()` was `['department', {...}, [...]]`
-			// with every key gone. `$matrix['field']` was then absent,
-			// `compile()` returned nothing, `merge()` left the block alone, and
-			// the schema ended up granting `read` to nobody at all. Measured on
-			// a live instance 2026-09-19: an identical rule written by hand as
-			// a conditional scope narrowed the list correctly, and the same
-			// rule expressed as a matrix admitted no one.
-			//
-			// `roles` has exactly the same shape and was losing its role names
-			// the same way.
-			//
-			// The comment above about carrying control keys through untouched
-			// was already the intent; it only covered the ones that are not
-			// arrays.
-			if (in_array($key, PermissionCatalogue::CONTROL_KEYS, true) === true) {
-				$stripped[$key] = $rules;
-				continue;
-			}
-
-			$stripped[$key] = self::stripMcpFromRuleList(rules: $rules);
-		}//end foreach
-
-		return $stripped;
+		return McpScope::strip(authorization: $authorization);
 	}//end stripMcpScope()
-
-	/**
-	 * Strip the mcp scope from one action's rule list.
-	 *
-	 * An emptied list stays `[]` rather than being dropped. The grammar reads
-	 * `[]` as "grant this action to nobody", which is the fail-safe reading of
-	 * an action whose only rule was an offer to agents.
-	 *
-	 * @param array $rules One action's rule list.
-	 *
-	 * @return array The surviving rules, possibly empty.
-	 *
-	 * @spec openspec/specs/declared-actions/spec.md
-	 */
-	private static function stripMcpFromRuleList(array $rules): array {
-		$kept = [];
-		foreach ($rules as $entry) {
-			if (self::isMcpScopeEntry(entry: $entry) === true) {
-				continue;
-			}
-
-			$kept[] = $entry;
-		}
-
-		return $kept;
-	}//end stripMcpFromRuleList()
 
 	/**
 	 * Read back the actions a block offers to agents.
 	 *
-	 * This is the half of the annotation that survives as DATA: the
-	 * grantable-rights index serves it to Hermiq as the menu of rights that
-	 * could be granted. It answers "what may be offered here", and never
-	 * "who holds it".
+	 * Kept as an entry point; the read lives in {@see McpScope::offeredActions()}.
 	 *
 	 * @param array|null $authorization The block to read.
 	 *
@@ -3309,33 +3200,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
 	 */
 	public static function mcpOfferedActions(?array $authorization): array {
-		if ($authorization === null || $authorization === []) {
-			return [];
-		}
-
-		$offered = [];
-		foreach ($authorization as $action => $rules) {
-			if (is_array($rules) === false || is_string($action) === false) {
-				continue;
-			}
-
-			foreach ($rules as $entry) {
-				if (self::isMcpScopeEntry(entry: $entry) === true) {
-					$offered[] = $action;
-					break;
-				}
-			}
-		}
-
-		return $offered;
+		return McpScope::offeredActions(authorization: $authorization);
 	}//end mcpOfferedActions()
 
 	/**
 	 * Whether a single authorization entry names the `mcp` scope.
-	 *
-	 * Covers both spellings the rule grammar accepts — the bare string and the
-	 * `{"group": "mcp"}` object — because they are independent match branches
-	 * and a guard that knows only one of them is a guard with a hole.
 	 *
 	 * @param mixed $entry One entry from an action's rule list.
 	 *
@@ -3344,7 +3213,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private static function isMcpScopeEntry(mixed $entry): bool {
-		return self::entryNamesGroup(entry: $entry, group: self::SCOPE_MCP);
+		return McpScope::isScopeEntry(entry: $entry);
 	}//end isMcpScopeEntry()
 
 	/**

@@ -38,7 +38,7 @@ use Throwable;
  *
  * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
  */
-class ConnectionReporter {
+class ConnectionReporter implements ConnectionReporterInterface {
 
 	/**
 	 * The app id integriq keys the rows by.

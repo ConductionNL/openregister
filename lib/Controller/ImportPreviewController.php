@@ -36,8 +36,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\BackgroundJob\ImportPreviewRunner;
 use OCA\OpenRegister\Controller\Support\ImportPreviewControllerServices;
 use OCA\OpenRegister\Db\ImportPreview;
-use OCA\OpenRegister\Db\ImportPreviewMapper;
-use OCA\OpenRegister\Db\ImportPreviewRowMapper;
+use OCA\OpenRegister\Db\ImportPreviewMapperInterface;
+use OCA\OpenRegister\Db\ImportPreviewRowMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Import\ConflictPolicy;
@@ -88,16 +88,16 @@ class ImportPreviewController extends Controller {
 	/**
 	 * Preview persistence.
 	 *
-	 * @var ImportPreviewMapper
+	 * @var ImportPreviewMapperInterface
 	 */
-	private readonly ImportPreviewMapper $previewMapper;
+	private readonly ImportPreviewMapperInterface $previewMapper;
 
 	/**
 	 * Per-row decision persistence.
 	 *
-	 * @var ImportPreviewRowMapper
+	 * @var ImportPreviewRowMapperInterface
 	 */
-	private readonly ImportPreviewRowMapper $rowMapper;
+	private readonly ImportPreviewRowMapperInterface $rowMapper;
 
 	/**
 	 * The file reader, for hashing and staging.

@@ -26,7 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
-use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
+use OCA\OpenRegister\Service\Quota\ObjectQuotaServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -72,14 +72,14 @@ class ObjectQuotaListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectQuotaService $quotas  Reads the cap and counts.
+	 * @param ObjectQuotaServiceInterface $quotas  Reads the cap and counts.
 	 * @param SchemaMapperInterface       $schemas Resolves the object's schema.
 	 * @param LoggerInterface    $logger  Logger.
 	 *
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
 	public function __construct(
-		private readonly ObjectQuotaService $quotas,
+		private readonly ObjectQuotaServiceInterface $quotas,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
 	) {

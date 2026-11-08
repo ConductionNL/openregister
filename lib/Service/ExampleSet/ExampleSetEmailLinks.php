@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTime;
 use OCA\OpenRegister\Db\EmailLink;
-use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -409,9 +409,9 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	/**
 	 * The email link mapper.
 	 *
-	 * @return EmailLinkMapper
+	 * @return EmailLinkMapperInterface
 	 */
-	private function mapper(): EmailLinkMapper {
-		return $this->container->get(EmailLinkMapper::class);
+	private function mapper(): EmailLinkMapperInterface {
+		return $this->container->get(EmailLinkMapperInterface::class);
 	}//end mapper()
 }//end class

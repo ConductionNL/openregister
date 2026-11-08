@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Party;
 
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
@@ -76,13 +76,13 @@ class PartyNotificationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper     $links   The link rows, for the parties on an object.
+	 * @param ContactLinkMapperInterface     $links   The link rows, for the parties on an object.
 	 * @param PartyServiceInterface $parties The party records and their addresses.
 	 * @param EmailSender           $email   The email channel.
 	 * @param PartyReachGates       $gates   The indicator guard and the opt-out authority.
 	 */
 	public function __construct(
-		private readonly ContactLinkMapper $links,
+		private readonly ContactLinkMapperInterface $links,
 		private readonly PartyServiceInterface $parties,
 		private readonly EmailSender $email,
 		PartyReachGates $gates,

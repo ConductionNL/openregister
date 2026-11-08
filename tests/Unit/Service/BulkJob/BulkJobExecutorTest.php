@@ -41,6 +41,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutor;
+use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
+use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IUser;
@@ -160,14 +162,18 @@ final class BulkJobExecutorTest extends TestCase {
 
 	private function executor(): BulkJobExecutor {
 		return new BulkJobExecutor(
-			$this->jobMapper,
-			$this->memberMapper,
-			$this->resolver,
-			$this->registry,
-			$this->permissionHandler,
-			$this->schemaMapper,
-			$this->auditTrailMapper,
-			$this->userManager,
+			new BulkJobExecutorStores(
+				$this->jobMapper,
+				$this->memberMapper,
+				$this->schemaMapper,
+				$this->auditTrailMapper
+			),
+			new BulkJobExecutorServices(
+				$this->resolver,
+				$this->registry,
+				$this->permissionHandler,
+				$this->userManager
+			),
 			new NullLogger()
 		);
 	}

@@ -53,7 +53,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-1.1
  */
-class AuditQueryService {
+class AuditQueryService implements AuditQueryServiceInterface {
 
 	/**
 	 * Maximum allowed page size.

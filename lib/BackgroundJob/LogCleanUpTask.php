@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SearchTrailCleanupInterface;
-use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Db\StateHistoryMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -82,7 +82,7 @@ class LogCleanUpTask extends TimedJob {
 	 * @param SearchTrailCleanupInterface $searchTrailMapper The search trail mapper for database operations
 	 * @param RetentionSettingsReaderInterface $retentionHandler  The retention settings handler
 	 * @param LoggerInterface        $logger            The logger for logging operations
-	 * @param StateHistoryMapper|null $stateHistory     The derived state-history projection, pruned with the trail
+	 * @param StateHistoryMapperInterface|null $stateHistory     The derived state-history projection, pruned with the trail
 	 * @param MetricsRetentionInterface|null $metrics          The operational metrics, cut to their retention
 	 *
 	 * @return void
@@ -97,7 +97,7 @@ class LogCleanUpTask extends TimedJob {
 		private readonly LoggerInterface $logger,
 		// LAST AND NULLABLE so every existing construction of this job keeps
 		// working; the container always supplies it.
-		private readonly ?StateHistoryMapper $stateHistory = null,
+		private readonly ?StateHistoryMapperInterface $stateHistory = null,
 		private readonly ?MetricsRetentionInterface $metrics = null,
 	) {
 		parent::__construct(time: $time);
@@ -192,13 +192,13 @@ class LogCleanUpTask extends TimedJob {
 	 * for ten years vanish from "was ever in bezwaar" the day its oldest audit
 	 * row expired.
 	 *
-	 * @param StateHistoryMapper $history The projection.
+	 * @param StateHistoryMapperInterface $history The projection.
 	 *
 	 * @return int
 	 *
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
-	private function prunePurgedIntervals(StateHistoryMapper $history): int {
+	private function prunePurgedIntervals(StateHistoryMapperInterface $history): int {
 		$pruned = 0;
 		foreach ($this->auditTrailMapper->findPurgedHorizons(limit: self::PRUNE_BATCH) as $uuid => $horizon) {
 			if ($horizon !== '') {

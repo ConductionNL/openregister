@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\AppHost\Reference;
 use OCA\OpenRegister\AppHost\SchemaScopedProvider;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface;
 use OCP\Collaboration\Reference\ADiscoverableReferenceProvider;
 use OCP\Collaboration\Reference\IReference;
 use OCP\Collaboration\Reference\ISearchableReferenceProvider;
@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  * A concrete subclass implements only {@see self::getRegisterSlug()} and
  * {@see self::getSchemaSlug()} — no id, title, icon, or constructor
  * boilerplate. Everything else (URL parsing, RBAC-safe resolution, rich
- * preview formatting) is reused from {@see ObjectPreviewFormatter}, the
+ * preview formatting) is reused from {@see ObjectPreviewFormatterInterface}, the
  * same service the generic `ObjectReferenceProvider` delegates to.
  *
  * Gated by the schema's `smartPickerEnabled` flag: when `false`,
@@ -71,7 +71,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	/**
 	 * Constructor for AbstractSchemaReferenceProvider.
 	 *
-	 * @param ObjectPreviewFormatter $formatter Shared preview-formatting/URL-parsing service
+	 * @param ObjectPreviewFormatterInterface $formatter Shared preview-formatting/URL-parsing service
 	 * @param RegisterMapperInterface $registerMapper Register mapper for slug-to-id resolution
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for slug-to-id resolution and the `smartPickerEnabled` flag
 	 * @param LoggerInterface $logger Logger
@@ -82,7 +82,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2
 	 */
 	public function __construct(
-		private readonly ObjectPreviewFormatter $formatter,
+		private readonly ObjectPreviewFormatterInterface $formatter,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,

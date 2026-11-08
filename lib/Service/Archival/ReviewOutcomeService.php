@@ -49,7 +49,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  */
-class ReviewOutcomeService {
+class ReviewOutcomeService implements ReviewOutcomeServiceInterface {
 
 	/**
 	 * Constructor.

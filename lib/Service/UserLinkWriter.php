@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -38,13 +38,13 @@ use OCP\IUserSession;
 class UserLinkWriter {
 
 	/**
-	 * @param ContactLinkMapper $links The link rows.
+	 * @param ContactLinkMapperInterface $links The link rows.
 	 * @param IUserManager $users The accounts.
 	 * @param IUserSession $session The signed-in user, recorded as the linker.
 	 * @param IURLGenerator $urls The avatar route.
 	 */
 	public function __construct(
-		private readonly ContactLinkMapper $links,
+		private readonly ContactLinkMapperInterface $links,
 		private readonly IUserManager $users,
 		private readonly IUserSession $session,
 		private readonly IURLGenerator $urls,

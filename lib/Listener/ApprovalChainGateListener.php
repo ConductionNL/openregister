@@ -39,7 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\TaskSequence;
-use OCA\OpenRegister\Db\TaskSequenceMapper;
+use OCA\OpenRegister\Db\TaskSequenceMapperInterface;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
 use OCA\OpenRegister\Service\Task\TaskSequenceServiceInterface;
@@ -60,7 +60,7 @@ class ApprovalChainGateListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param LifecycleEditReader              $edits           Reads the edit and the transition it amounts to.
-	 * @param TaskSequenceMapper               $sequenceMapper  Reads the anchor's sequences.
+	 * @param TaskSequenceMapperInterface               $sequenceMapper  Reads the anchor's sequences.
 	 * @param TaskSequenceServiceInterface     $sequenceService Provisions a sequence on the first attempt.
 	 * @param ApprovalChainAnnotationInstaller $installer       Compiles the declared chain into a task template.
 	 * @param IUserSession                     $userSession     Current user session (requester identity).
@@ -68,7 +68,7 @@ class ApprovalChainGateListener implements IEventListener {
 	 */
 	public function __construct(
 		private readonly LifecycleEditReader $edits,
-		private readonly TaskSequenceMapper $sequenceMapper,
+		private readonly TaskSequenceMapperInterface $sequenceMapper,
 		private readonly TaskSequenceServiceInterface $sequenceService,
 		private readonly ApprovalChainAnnotationInstaller $installer,
 		private readonly IUserSession $userSession,

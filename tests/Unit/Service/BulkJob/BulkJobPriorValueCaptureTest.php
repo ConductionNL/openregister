@@ -44,6 +44,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutor;
+use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
+use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -133,14 +135,18 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($schema);
 
 		return new BulkJobExecutor(
-			$this->jobMapper,
-			$this->memberMapper,
-			$this->resolver,
-			$this->registry,
-			$this->permissionHandler,
-			$schemaMapper,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(IUserManager::class),
+			new BulkJobExecutorStores(
+				$this->jobMapper,
+				$this->memberMapper,
+				$schemaMapper,
+				$this->createMock(AuditTrailMapper::class)
+			),
+			new BulkJobExecutorServices(
+				$this->resolver,
+				$this->registry,
+				$this->permissionHandler,
+				$this->createMock(IUserManager::class)
+			),
 			new NullLogger()
 		);
 	}

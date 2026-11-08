@@ -36,26 +36,7 @@ use OCP\IRequest;
  *
  * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-create-and-update-must-accept-a-definition-envelope-and-keep-the-route-id
  */
-class MigrationPackRequestReader {
-	/**
-	 * The most sample rows one preview request may map.
-	 *
-	 * @var int
-	 */
-	public const MAX_PREVIEW_ROWS = 20;
-
-	/**
-	 * The largest preview input, definition and rows together, as JSON bytes.
-	 *
-	 * The row count alone does not bound the work: one row can carry any
-	 * number of columns, and every row runs through the mapping engine in the
-	 * request. 1 MiB holds a large pack with long lookup tables and twenty
-	 * wide rows.
-	 *
-	 * @var int
-	 */
-	public const MAX_PREVIEW_BYTES = 1048576;
-
+class MigrationPackRequestReader implements MigrationPackRequestReaderInterface {
 	/**
 	 * Constructor.
 	 *

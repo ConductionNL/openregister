@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\MapLink;
-use OCA\OpenRegister\Db\MapLinkMapper;
+use OCA\OpenRegister\Db\MapLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -69,7 +69,7 @@ class MapsProvider extends AbstractIntegrationProvider {
 		private IDBConnection $db,
 		private IAppManager $appManager,
 		private IL10N $l10n,
-		private MapLinkMapper $mapLinkMapper,
+		private MapLinkMapperInterface $mapLinkMapper,
 		private LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -93,9 +93,9 @@ class MapsProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads first.
 	 *
-	 * @return MapLinkMapper
+	 * @return MapLinkMapperInterface
 	 */
-	protected function linkMapper(): MapLinkMapper {
+	protected function linkMapper(): MapLinkMapperInterface {
 		return $this->mapLinkMapper;
 	}//end linkMapper()
 

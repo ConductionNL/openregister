@@ -31,7 +31,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<Sequence>
  */
-class SequenceMapper extends QBMapper {
+class SequenceMapper extends QBMapper implements SequenceMapperInterface {
 	/**
 	 * Constructor.
 	 *

@@ -44,7 +44,7 @@ use OCA\OpenRegister\Service\WriteCause;
  *
  * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
-class AppointmentAttendeeService {
+class AppointmentAttendeeService implements AppointmentAttendeeServiceInterface {
 
 	/**
 	 * The object property the answers are stored under.

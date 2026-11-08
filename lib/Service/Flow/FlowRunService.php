@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStep;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
-use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\FlowStateMapperInterface;
 use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Exception\FlowRunExpired;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
@@ -119,7 +119,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * Constructor.
 	 *
 	 * @param FlowRunMapperInterface $mapper Persists runs.
-	 * @param FlowStateMapper $stateMapper Persists state that outlives a run.
+	 * @param FlowStateMapperInterface $stateMapper Persists state that outlives a run.
 	 * @param FlowEngine $engine Walks the graph.
 	 * @param FlowNodeRegistryInterface $registry Resolves step types.
 	 * @param LoggerInterface $logger The logger.
@@ -143,7 +143,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 */
 	public function __construct(
 		private readonly FlowRunMapperInterface $mapper,
-		FlowStateMapper $stateMapper,
+		FlowStateMapperInterface $stateMapper,
 		private readonly FlowEngine $engine,
 		private readonly FlowNodeRegistryInterface $registry,
 		private readonly LoggerInterface $logger,

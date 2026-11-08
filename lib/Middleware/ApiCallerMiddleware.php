@@ -43,10 +43,10 @@ namespace OCA\OpenRegister\Middleware;
 
 use Exception;
 use OCA\OpenRegister\Middleware\Exception\CallerRefusedException;
-use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
-use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
-use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorderInterface;
+use OCA\OpenRegister\Service\ApiCaller\CallerPolicyInterface;
+use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiterInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiatorInterface;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
 use OCP\IRequest;
@@ -87,19 +87,19 @@ class ApiCallerMiddleware extends Middleware {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming request.
-	 * @param ApiCallRecorder $recorder Writes the caller record.
-	 * @param CallerRateLimiter $limiter Applies the administered ceiling.
-	 * @param CallerPolicy $policy Resolves the address binding.
-	 * @param ApiVersionNegotiator $negotiator Names the contract that will answer.
+	 * @param ApiCallRecorderInterface $recorder Writes the caller record.
+	 * @param CallerRateLimiterInterface $limiter Applies the administered ceiling.
+	 * @param CallerPolicyInterface $policy Resolves the address binding.
+	 * @param ApiVersionNegotiatorInterface $negotiator Names the contract that will answer.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly ApiCallRecorder $recorder,
-		private readonly CallerRateLimiter $limiter,
-		private readonly CallerPolicy $policy,
-		private readonly ApiVersionNegotiator $negotiator,
+		private readonly ApiCallRecorderInterface $recorder,
+		private readonly CallerRateLimiterInterface $limiter,
+		private readonly CallerPolicyInterface $policy,
+		private readonly ApiVersionNegotiatorInterface $negotiator,
 	) {
 
 	}//end __construct()

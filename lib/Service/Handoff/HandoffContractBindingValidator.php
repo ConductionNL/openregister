@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Service\Handoff;
  * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
  *   (Requirement: Kind contract binding on the implementing schema)
  */
-class HandoffContractBindingValidator {
+class HandoffContractBindingValidator implements HandoffContractBindingValidatorInterface {
 
 	/**
 	 * The error code every binding problem is reported under.

@@ -19,7 +19,7 @@
 namespace OCA\OpenRegister\Db\Schema;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
+use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 
 /**
  * The `x-openregister-*` keys a schema configuration keeps.
@@ -258,7 +258,7 @@ final class AnnotationVocabulary {
 		// stopped at the root while its author read a 201. Measured on a live
 		// instance 2026-09-19 — POST with the annotation returned 201 and the
 		// configuration column was empty.
-		HierarchyGrantExpander::ANNOTATION,
+		AccessDeclarationValidators::HIERARCHY_ANNOTATION,
 		// Whether this schema's objects may invite an external
 		// (non-Nextcloud-user) participant into a linked Talk room by email,
 		// via TalkLinkService::inviteExternalParticipant() — default OFF.

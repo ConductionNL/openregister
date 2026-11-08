@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\Schema;
  *
  * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
  */
-class ObjectQuotaService {
+class ObjectQuotaService implements ObjectQuotaServiceInterface {
 
 	/**
 	 * The schema configuration key carrying the quota.

@@ -39,7 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowDefinition;
-use OCA\OpenRegister\Db\FlowDefinitionMapper;
+use OCA\OpenRegister\Db\FlowDefinitionMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -64,11 +64,11 @@ class FlowDefinitionPin {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowDefinitionMapper $mapper Stores and reads pinned definitions.
+	 * @param FlowDefinitionMapperInterface $mapper Stores and reads pinned definitions.
 	 * @param LoggerInterface      $logger Records pins that could not be taken.
 	 */
 	public function __construct(
-		private readonly FlowDefinitionMapper $mapper,
+		private readonly FlowDefinitionMapperInterface $mapper,
 		private readonly LoggerInterface $logger,
 	) {
 

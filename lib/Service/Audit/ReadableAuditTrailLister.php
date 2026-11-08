@@ -52,7 +52,7 @@ use Throwable;
 /**
  * Lists the audit trail within the reach of one caller.
  */
-class ReadableAuditTrailLister {
+class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 
 	/**
 	 * How many raw rows one request may inspect before it gives up.

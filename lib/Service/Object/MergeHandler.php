@@ -24,7 +24,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use OCP\Files\File;
 use OCP\IUserSession;
@@ -68,12 +68,12 @@ class MergeHandler {
 	 * Constructor for MergeHandler.
 	 *
 	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities.
-	 * @param FileService $fileService Service for file operations.
+	 * @param ObjectFilesInterface $fileService Service for file operations.
 	 * @param IUserSession $userSession User session for tracking deletions.
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly FileService $fileService,
+		private readonly ObjectFilesInterface $fileService,
 		private readonly IUserSession $userSession,
 	) {
 	}//end __construct()

@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\ApiCaller;
 
 use DateTime;
 use OCA\OpenRegister\Db\ApiCallKey;
-use OCA\OpenRegister\Db\ApiCallRecordMapper;
+use OCA\OpenRegister\Db\ApiCallRecordMapperInterface;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -53,7 +53,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiCaller
  */
-class ApiCallRecorder {
+class ApiCallRecorder implements ApiCallRecorderInterface {
 
 	/**
 	 * The app the switch lives under.
@@ -84,7 +84,7 @@ class ApiCallRecorder {
 	/**
 	 * Constructor.
 	 *
-	 * @param ApiCallRecordMapper $mapper Writes the record.
+	 * @param ApiCallRecordMapperInterface $mapper Writes the record.
 	 * @param IUserSession $userSession Names the caller.
 	 * @param IAppConfig $appConfig Reads the switch.
 	 * @param LoggerInterface $logger Records a write that did not happen.
@@ -92,7 +92,7 @@ class ApiCallRecorder {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ApiCallRecordMapper $mapper,
+		private readonly ApiCallRecordMapperInterface $mapper,
 		private readonly IUserSession $userSession,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,

@@ -37,13 +37,13 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
-use OCA\OpenRegister\Service\Archival\DestructionListCreator;
-use OCA\OpenRegister\Service\Archival\DestructionListRepository;
-use OCA\OpenRegister\Service\Archival\DestructionReviewService;
-use OCA\OpenRegister\Service\Archival\DestructionService;
-use OCA\OpenRegister\Service\Archival\LegalHoldService;
-use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
+use OCA\OpenRegister\Service\Archival\ArchivalNominationServiceInterface;
+use OCA\OpenRegister\Service\Archival\DestructionListCreatorInterface;
+use OCA\OpenRegister\Service\Archival\DestructionListRepositoryInterface;
+use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
+use OCA\OpenRegister\Service\Archival\DestructionServiceInterface;
+use OCA\OpenRegister\Service\Archival\LegalHoldServiceInterface;
+use OCA\OpenRegister\Service\Archival\ReviewOutcomeServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -89,16 +89,16 @@ class ArchivalController extends Controller {
 	/**
 	 * Destruction service.
 	 *
-	 * @var DestructionService
+	 * @var DestructionServiceInterface
 	 */
-	private DestructionService $destructionService;
+	private DestructionServiceInterface $destructionService;
 
 	/**
 	 * Legal hold service.
 	 *
-	 * @var LegalHoldService
+	 * @var LegalHoldServiceInterface
 	 */
-	private LegalHoldService $legalHoldService;
+	private LegalHoldServiceInterface $legalHoldService;
 
 	/**
 	 * Object mapper.
@@ -131,23 +131,23 @@ class ArchivalController extends Controller {
 	/**
 	 * Finds the destruction lists this instance holds.
 	 *
-	 * @var DestructionListRepository
+	 * @var DestructionListRepositoryInterface
 	 */
-	private readonly DestructionListRepository $lists;
+	private readonly DestructionListRepositoryInterface $lists;
 
 	/**
 	 * Assignment, sign-off and the decision history.
 	 *
-	 * @var DestructionReviewService
+	 * @var DestructionReviewServiceInterface
 	 */
-	private readonly DestructionReviewService $reviews;
+	private readonly DestructionReviewServiceInterface $reviews;
 
 	/**
 	 * Carries an answer out against the record.
 	 *
-	 * @var ReviewOutcomeService
+	 * @var ReviewOutcomeServiceInterface
 	 */
-	private readonly ReviewOutcomeService $outcomes;
+	private readonly ReviewOutcomeServiceInterface $outcomes;
 
 	/**
 	 * Records who signed off what.
@@ -159,9 +159,9 @@ class ArchivalController extends Controller {
 	/**
 	 * Derives and writes an archival nomination.
 	 *
-	 * @var ArchivalNominationService
+	 * @var ArchivalNominationServiceInterface
 	 */
-	private readonly ArchivalNominationService $nominations;
+	private readonly ArchivalNominationServiceInterface $nominations;
 
 	/**
 	 * Loads the schema a nomination is derived from.
@@ -173,9 +173,9 @@ class ArchivalController extends Controller {
 	/**
 	 * Creates a destruction list for the objects an app names.
 	 *
-	 * @var DestructionListCreator
+	 * @var DestructionListCreatorInterface
 	 */
-	private readonly DestructionListCreator $creator;
+	private readonly DestructionListCreatorInterface $creator;
 
 	/**
 	 * Constructor.
@@ -362,7 +362,7 @@ class ArchivalController extends Controller {
 
 			// Check if dual approval was rejected (same user).
 			if ($result['status'] === $destructionList['status']
-				&& $result['status'] === DestructionService::STATUS_AWAITING_SECOND
+				&& $result['status'] === DestructionServiceInterface::STATUS_AWAITING_SECOND
 			) {
 				return new JSONResponse(
 					data: ['error' => 'De tweede goedkeuring moet door een andere archivaris worden gegeven'],
@@ -921,13 +921,13 @@ class ArchivalController extends Controller {
 			$newDate = (string)$newDate;
 		}
 
-		if (in_array($answer, DestructionReviewService::ANSWERS, true) === false) {
+		if (in_array($answer, DestructionReviewServiceInterface::ANSWERS, true) === false) {
 			return new JSONResponse(
 				data: [
 					'error' => sprintf(
 						'"%s" is not a review answer; the answers are %s',
 						$answer,
-						implode(', ', DestructionReviewService::ANSWERS)
+						implode(', ', DestructionReviewServiceInterface::ANSWERS)
 					),
 				],
 				statusCode: Http::STATUS_BAD_REQUEST
@@ -1012,7 +1012,7 @@ class ArchivalController extends Controller {
 		}
 
 		$pending = [];
-		foreach ($this->lists->findLists(statuses: DestructionListRepository::OPEN_STATUSES) as $list) {
+		foreach ($this->lists->findLists(statuses: DestructionListRepositoryInterface::OPEN_STATUSES) as $list) {
 			$pending = array_merge(
 				$pending,
 				$this->reviews->pendingEntries(
@@ -1084,7 +1084,7 @@ class ArchivalController extends Controller {
 				reason: $reason
 			);
 
-			if (($nomination['status'] ?? null) === ArchivalNominationService::STATUS_NOT_APPLICABLE) {
+			if (($nomination['status'] ?? null) === ArchivalNominationServiceInterface::STATUS_NOT_APPLICABLE) {
 				// The reason names both places a declaration could have lived.
 				// "Does not declare an archive block" was true of one of them
 				// and sent readers to the schema editor while the answer sat in

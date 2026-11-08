@@ -54,28 +54,7 @@ use Throwable;
  *
  * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
  */
-class ObjectTreeService {
-
-	/**
-	 * Read the objects below the root.
-	 *
-	 * @var string
-	 */
-	public const DIRECTION_DESCENDANTS = 'descendants';
-
-	/**
-	 * Read the objects above the root.
-	 *
-	 * @var string
-	 */
-	public const DIRECTION_ANCESTORS = 'ancestors';
-
-	/**
-	 * Read both.
-	 *
-	 * @var string
-	 */
-	public const DIRECTION_BOTH = 'both';
+class ObjectTreeService implements ObjectTreeServiceInterface {
 
 	/**
 	 * The walk stopped at the depth bound with more below or above it.
