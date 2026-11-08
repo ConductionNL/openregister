@@ -187,12 +187,12 @@ class EscalationLadderServiceTest extends TestCase {
 		$fireAt = $this->at('2026-09-20 12:00');
 		// Deadline 5 days away: the 14-day and 7-day rungs have both passed unfired.
 		$now = $this->at('2026-09-15 12:00');
-		$due = $this->ladder->dueRungs(rungs: $rungs, fireAt: $fireAt, now: $now, firedKeys: [], calendar: $this->calendar);
+		$due = $this->ladder->dueRungs(timeline: new \OCA\OpenRegister\Service\Flow\Timer\RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: [], calendar: $this->calendar), now: $now);
 		self::assertSame(['preBreach:14:calendarDays', 'preBreach:7:calendarDays'], array_map(static fn (array $entry): string => $entry['rung']['key'], $due));
 		self::assertSame('2026-09-06 12:00', $due[0]['at']->format('Y-m-d H:i'));
 
 		// Yesterday's 7-day rung fired: today, still more than 2 days out, nothing is due.
-		$none = $this->ladder->dueRungs(rungs: $rungs, fireAt: $fireAt, now: $now, firedKeys: ['preBreach:14:calendarDays', 'preBreach:7:calendarDays'], calendar: $this->calendar);
+		$none = $this->ladder->dueRungs(timeline: new \OCA\OpenRegister\Service\Flow\Timer\RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: ['preBreach:14:calendarDays', 'preBreach:7:calendarDays'], calendar: $this->calendar), now: $now);
 		self::assertSame([], $none);
 
 		// next_rung_at is the earliest unfired rung: the 2-day one.
