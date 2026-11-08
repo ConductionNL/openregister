@@ -572,6 +572,7 @@ final class ContractBindings {
 		AppointmentAttendeeServiceInterface::class => AppointmentAttendeeService::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
 		DeclaredGroupInventoryInterface::class => DeclaredGroupInventoryService::class,
+		\OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizerInterface::class => \OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer::class,
 		DoriathCredentialKeys::class => DoriathCredentialStore::class,
 		FileVectorizationStrategyInterface::class => FileVectorizationStrategy::class,
 		FlowRunSubjectsInterface::class => FlowRunSubjects::class,
