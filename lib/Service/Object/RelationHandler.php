@@ -21,7 +21,6 @@ namespace OCA\OpenRegister\Service\Object;
 use Closure;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
-use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -768,7 +767,7 @@ class RelationHandler {
 			return true;
 		}
 
-		return (new PurposeBoundTables(guard: $this->purposeGuard))->readable(pairs: [$pair]) !== [];
+		return $this->purposeGuard->allows(register: $pair['register'], schema: $pair['schema']);
 	}//end purposeAdmits()
 
 	/**
