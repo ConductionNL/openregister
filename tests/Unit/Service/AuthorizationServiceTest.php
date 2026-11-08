@@ -191,7 +191,11 @@ class AuthorizationServiceTest extends TestCase {
 		];
 
 		$this->service->validatePayload($payload);
-		$this->assertTrue(true);
+
+		$payload['exp'] = $now - 60;
+		$this->expectException(AuthenticationException::class);
+		$this->expectExceptionMessage('expired');
+		$this->service->validatePayload($payload);
 	}
 
 	public function testValidatePayloadThrowsWhenMissingIat(): void {
@@ -247,7 +251,12 @@ class AuthorizationServiceTest extends TestCase {
 		];
 
 		$this->service->validatePayload($payload);
-		$this->assertTrue(true);
+
+		// Past the default one hour lifetime.
+		$payload['iat'] = time() - 3700;
+		$this->expectException(AuthenticationException::class);
+		$this->expectExceptionMessage('expired');
+		$this->service->validatePayload($payload);
 	}
 
 	public function testValidatePayloadDefaultExpiryExpired(): void {
@@ -268,19 +277,13 @@ class AuthorizationServiceTest extends TestCase {
 			'exp' => $now + 3600,
 		];
 
+		// Exactly at the clock skew.
 		$this->service->validatePayload($payload);
-		$this->assertTrue(true);
-	}
 
-	public function testValidatePayloadWithExactlyNowIat(): void {
-		$now = time();
-		$payload = [
-			'iat' => $now,
-			'exp' => $now + 3600,
-		];
-
+		$payload['iat'] = $now + 3000;
+		$this->expectException(AuthenticationException::class);
+		$this->expectExceptionMessage('invalid issue time');
 		$this->service->validatePayload($payload);
-		$this->assertTrue(true);
 	}
 
 	public function testValidatePayloadWithZeroIat(): void {
@@ -303,7 +306,11 @@ class AuthorizationServiceTest extends TestCase {
 		];
 
 		$this->service->validatePayload($payload);
-		$this->assertTrue(true);
+
+		$payload['nbf'] = $now + 3000;
+		$this->expectException(AuthenticationException::class);
+		$this->expectExceptionMessage('not yet valid');
+		$this->service->validatePayload($payload);
 	}
 
 	// ==========================================

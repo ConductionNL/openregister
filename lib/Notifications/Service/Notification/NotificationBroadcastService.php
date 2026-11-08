@@ -63,32 +63,22 @@ class NotificationBroadcastService {
 	/**
 	 * Send one broadcast.
 	 *
-	 * @param string $subject The one-line message.
-	 * @param string|null $body The longer text, when there is one.
-	 * @param string $sender The uid of whoever is sending it.
-	 * @param DateTime $startsAt When it starts showing.
-	 * @param DateTime $endsAt When it stops showing.
+	 * @param BroadcastMessage $message The one-line subject and the longer text, when there is one.
+	 * @param string           $sender  The uid of whoever is sending it.
+	 * @param BroadcastWindow  $window  When it starts and stops showing.
 	 *
 	 * @return NotificationBroadcast The recorded broadcast.
 	 *
 	 * @throws InvalidArgumentException When the period ends before it starts, or the subject is empty.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The broadcast's own fields.
-	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
-	public function send(
-		string $subject,
-		?string $body,
-		string $sender,
-		DateTime $startsAt,
-		DateTime $endsAt,
-	): NotificationBroadcast {
-		if (trim($subject) === '') {
+	public function send(BroadcastMessage $message, string $sender, BroadcastWindow $window): NotificationBroadcast {
+		if (trim($message->subject) === '') {
 			throw new InvalidArgumentException('A broadcast needs a subject.');
 		}
 
-		if ($endsAt < $startsAt) {
+		if ($window->endsAt < $window->startsAt) {
 			// A period that ends before it starts shows to nobody, which is the
 			// one outcome an administrator sending a broadcast cannot want.
 			throw new InvalidArgumentException('A broadcast cannot end before it starts.');
@@ -97,17 +87,17 @@ class NotificationBroadcastService {
 		$broadcast = $this->broadcasts->record(
 			uuid: $this->newUuid(),
 			sender: $sender,
-			message: new BroadcastMessage(subject: $subject, body: $body),
-			window: new BroadcastWindow(startsAt: $startsAt, endsAt: $endsAt)
+			message: $message,
+			window: $window
 		);
 
 		$this->logger->info(
 			sprintf(
 				'[NotificationBroadcastService] "%s" sent by %s for %s to %s',
-				$subject,
+				$message->subject,
 				$sender,
-				$startsAt->format(DateTime::ATOM),
-				$endsAt->format(DateTime::ATOM)
+				$window->startsAt->format(DateTime::ATOM),
+				$window->endsAt->format(DateTime::ATOM)
 			)
 		);
 

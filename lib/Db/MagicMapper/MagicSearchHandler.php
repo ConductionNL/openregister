@@ -451,13 +451,12 @@ class MagicSearchHandler {
 
 		// Apply sorting BEFORE pagination so the query optimizer can use
 		// indexes for ORDER BY … LIMIT instead of sorting the full result set.
-		$this->applyResultOrder(
-			qb: $queryBuilder,
-			sort: new SortRequest(
-				order: $order, schema: $schema, searchTerm: $searchTerm, recentViews: ($query['_recentViews'] ?? null),
-				dateTimeColumns: $dateTimeColumns, sortLanguages: $this->sortLanguageChain(register: $register)
-			)
-		);
+		$sort = new SortRequest(order: $order, schema: $schema);
+		$sort->searchTerm = $searchTerm;
+		$sort->recentViews = ($query['_recentViews'] ?? null);
+		$sort->dateTimeColumns = $dateTimeColumns;
+		$sort->sortLanguages = $this->sortLanguageChain(register: $register);
+		$this->applyResultOrder(qb: $queryBuilder, sort: $sort);
 
 		$queryBuilder->setMaxResults($limit)
 			->setFirstResult($offset);

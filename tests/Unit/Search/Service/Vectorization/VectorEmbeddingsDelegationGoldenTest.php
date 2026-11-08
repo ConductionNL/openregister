@@ -27,6 +27,7 @@ use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStatsHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
+use LLPhant\Embeddings\EmbeddingGenerator\EmbeddingGeneratorInterface;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -84,10 +85,10 @@ final class VectorEmbeddingsDelegationGoldenTest extends TestCase {
 	 *
 	 * @return VectorEmbeddings
 	 */
-	private function service(): VectorEmbeddings {
+	private function service(?SettingsServiceInterface $settings = null): VectorEmbeddings {
 		return new VectorEmbeddings(
 			$this->createMock(IDBConnection::class),
-			$this->createMock(SettingsServiceInterface::class),
+			$settings ?? $this->createMock(SettingsServiceInterface::class),
 			new VectorEmbeddingHandlers($this->generator, $this->storage, $this->search, $this->stats),
 			$this->createMock(LoggerInterface::class)
 		);
@@ -173,6 +174,35 @@ final class VectorEmbeddingsDelegationGoldenTest extends TestCase {
 		);
 		$this->addToAssertionCount(1);
 	}//end testSearchHandlerUntouchedByStorage()
+
+	/**
+	 * Hybrid search embeds the query with the configured provider and hands the
+	 * embedding, the keyword results, the limit and the weights to the search handler.
+	 *
+	 * @return void
+	 */
+	public function testHybridSearchEmbedsWithTheConfiguredProviderAndFuses(): void {
+		$settings = $this->createMock(SettingsServiceInterface::class);
+		$settings->method('getLLMSettingsOnly')->willReturn(['embeddingProvider' => 'ollama', 'ollamaConfig' => ['model' => 'm1', 'url' => 'http://o']]);
+		$embedder = $this->createMock(EmbeddingGeneratorInterface::class);
+		$embedder->expects($this->once())->method('embedText')->with('needle')->willReturn([0.5, 0.25]);
+		$this->generator->method('getDefaultDimensions')->willReturn(2);
+		$this->generator->expects($this->once())
+			->method('getGenerator')
+			->with(['provider' => 'ollama', 'model' => 'm1', 'dimensions' => 2, 'api_key' => null, 'base_url' => 'http://o'])
+			->willReturn($embedder);
+		$keyword = [['id' => 'k1']];
+		$weights = ['keyword' => 0.25, 'vector' => 0.75];
+		$this->search->expects($this->once())
+			->method('hybridSearch')
+			->with([0.5, 0.25], $keyword, 7, $weights)
+			->willReturn(['results' => [['id' => 'k1']]]);
+
+		$this->assertSame(
+			['results' => [['id' => 'k1']]],
+			$this->service($settings)->hybridSearch(query: 'needle', keywordResults: $keyword, limit: 7, weights: $weights)
+		);
+	}//end testHybridSearchEmbedsWithTheConfiguredProviderAndFuses()
 
 	/**
 	 * Build a stored vector.
