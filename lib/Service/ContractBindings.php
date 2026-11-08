@@ -44,6 +44,14 @@ use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorderInterface;
+use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
+use OCA\OpenRegister\Service\ApiCaller\CallerPolicyInterface;
+use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter;
+use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiterInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiatorInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
@@ -278,6 +286,13 @@ use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Service\Oas\OasRequestValidator;
+use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
+use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
+use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
+use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
@@ -290,7 +305,6 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
-use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
@@ -312,8 +326,6 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandlerInterface;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -774,6 +786,7 @@ final class ContractBindings {
 		ConfigurationTransferInterface::class => ConfigurationService::class,
 		RetentionServiceInterface::class => RetentionService::class,
 		\OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
+		\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\ObjectCacheInvalidationInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\ObjectCacheMaintenanceInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\ObjectEntityCacheInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
@@ -784,13 +797,22 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\PermissionCheckInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		\OCA\OpenRegister\Service\Object\PermissionEnforcementInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		\OCA\OpenRegister\Service\Object\PermissionExplanationInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
+		\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		\OCA\OpenRegister\Service\Object\PermissionScopeInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
+		\OCA\OpenRegister\Service\Object\SaveObjectInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
+		\OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
+		\OCA\OpenRegister\Service\Object\SaveObjectWriterInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\SchemaUriResolverInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\TransitionAuthorizationInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
+		\OCA\OpenRegister\Service\Object\ValidateObjectInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\ValidationErrorResponseInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\WriteConstraintValidatorInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		AgentPrincipalResolverInterface::class => AgentPrincipalResolver::class,
+		ApiCallRecorderInterface::class => ApiCallRecorder::class,
+		ApiVersionNegotiatorInterface::class => ApiVersionNegotiator::class,
 		CacheHandlerInterface::class => CacheHandler::class,
+		CallerPolicyInterface::class => CallerPolicy::class,
+		CallerRateLimiterInterface::class => CallerRateLimiter::class,
 		CodedValueGuardInterface::class => CodedValueGuard::class,
 		ConceptShapeGuardInterface::class => ConceptShapeGuard::class,
 		ConfigSetShareableConfigTypeInterface::class => ConfigSetShareableConfigType::class,
@@ -799,8 +821,10 @@ final class ContractBindings {
 		FlowTaskBridgeInterface::class => FlowTaskBridge::class,
 		GroupPrincipalResolverInterface::class => GroupPrincipalResolver::class,
 		KillSwitchCheckInterface::class => KillSwitchCheck::class,
+		OasRequestValidatorInterface::class => OasRequestValidator::class,
 		OrganisationHaltCheckInterface::class => OrganisationHaltCheck::class,
 		PermissionHandlerInterface::class => PermissionHandler::class,
+		ProblemDetailsBuilderInterface::class => ProblemDetailsBuilder::class,
 		RegisterSchemaShareableConfigTypeInterface::class => RegisterSchemaShareableConfigType::class,
 		SaveObjectInterface::class => SaveObject::class,
 		SaveObjectRelationScannerInterface::class => SaveObject::class,

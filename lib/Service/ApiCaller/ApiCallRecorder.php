@@ -53,7 +53,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiCaller
  */
-class ApiCallRecorder {
+class ApiCallRecorder implements ApiCallRecorderInterface {
 
 	/**
 	 * The app the switch lives under.
