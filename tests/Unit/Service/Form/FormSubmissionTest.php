@@ -27,14 +27,15 @@ class FormSubmissionTest extends TestCase {
 	public function testASignedInSubjectIsTheSubmitterOverAnyOwner(): void {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('alice');
-		$by         = new FormSubmitter(subject: $user, owner: DraftOwner::portalSubject(subjectRef: 'bsn-1'));
-		$submission = new FormSubmission(writes: [], payload: [], by: $by);
+		$submitter  = new FormSubmitter(subject: $user, owner: DraftOwner::portalSubject(subjectRef: 'bsn-1'));
+		$submission = new FormSubmission(writes: [], payload: [], submitter: $submitter);
 
 		$this->assertSame('user:alice', $submission->submitter());
 	}//end testASignedInSubjectIsTheSubmitterOverAnyOwner()
 
 	public function testAScopedOwnerIsTheSubmitterWithoutASubject(): void {
-		$submission = new FormSubmission(writes: [], payload: [], by: new FormSubmitter(owner: DraftOwner::portalSubject(subjectRef: 'bsn-1')));
+		$submitter  = new FormSubmitter(owner: DraftOwner::portalSubject(subjectRef: 'bsn-1'));
+		$submission = new FormSubmission(writes: [], payload: [], submitter: $submitter);
 
 		$this->assertSame('scope:portal:bsn-1', $submission->submitter());
 	}//end testAScopedOwnerIsTheSubmitterWithoutASubject()
@@ -44,7 +45,8 @@ class FormSubmissionTest extends TestCase {
 	}//end testNobodyIsTheAnonymousSubmitter()
 
 	public function testTheFormIdIsTheKeyScope(): void {
-		$submission = new FormSubmission(writes: [['register' => 'r', 'schema' => 's']], payload: [], by: new FormSubmitter(scope: 'form-1'));
+		$submitter  = new FormSubmitter(scope: 'form-1');
+		$submission = new FormSubmission(writes: [['register' => 'r', 'schema' => 's']], payload: [], submitter: $submitter);
 
 		$this->assertSame('form-1', $submission->keyScope());
 	}//end testTheFormIdIsTheKeyScope()
@@ -57,8 +59,8 @@ class FormSubmissionTest extends TestCase {
 	}//end testWithoutAFormTheFirstDestinationIsTheKeyScope()
 	public function testTheSubmitterFieldsReachTheSubmission(): void {
 		$owner = DraftOwner::portalSubject(subjectRef: 'bsn-1');
-		$by         = new FormSubmitter(scope: 'form-1', draftId: 'd-1', owner: $owner);
-		$submission = new FormSubmission(writes: [['register' => 'r']], payload: ['a' => 1], by: $by);
+		$submitter  = new FormSubmitter(scope: 'form-1', draftId: 'd-1', owner: $owner);
+		$submission = new FormSubmission(writes: [['register' => 'r']], payload: ['a' => 1], submitter: $submitter);
 
 		$this->assertSame([['register' => 'r']], $submission->writes);
 		$this->assertSame(['a' => 1], $submission->payload);

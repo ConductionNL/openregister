@@ -77,19 +77,19 @@ final readonly class FormSubmission {
 	/**
 	 * Bundle the request.
 	 *
-	 * @param array<int, array<string, mixed>> $writes  The writes, in order: `{ register, schema, mapping?, as? }`.
-	 * @param array<string, mixed>             $payload What the submitter filled in.
-	 * @param FormSubmitter                    $by      Who submits it and where it lands.
+	 * @param array<int, array<string, mixed>> $writes    The writes, in order: `{ register, schema, mapping?, as? }`.
+	 * @param array<string, mixed>             $payload   What the submitter filled in.
+	 * @param FormSubmitter                    $submitter Who submits it and where it lands.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
-	public function __construct(array $writes, array $payload, FormSubmitter $by=new FormSubmitter()) {
+	public function __construct(array $writes, array $payload, FormSubmitter $submitter=new FormSubmitter()) {
 		$this->writes  = $writes;
 		$this->payload = $payload;
-		$this->subject = $by->subject;
-		$this->scope   = $by->scope;
-		$this->draftId = $by->draftId;
-		$this->owner   = $by->owner;
+		$this->subject = $submitter->subject;
+		$this->scope   = $submitter->scope;
+		$this->draftId = $submitter->draftId;
+		$this->owner   = $submitter->owner;
 	}//end __construct()
 
 	/**
