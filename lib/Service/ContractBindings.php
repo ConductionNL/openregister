@@ -247,12 +247,28 @@ use OCA\OpenRegister\Service\Quality\QualityScorer;
 use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
+use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
+use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidatorInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompilerInterface;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidatorInterface;
+use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
+use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
+use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpanderInterface;
+use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
+use OCA\OpenRegister\Service\Rbac\MetadataConditionFindingsInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\RevealCollector;
+use OCA\OpenRegister\Service\Rbac\RevealCollectorInterface;
+use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
+use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindingsInterface;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
@@ -477,6 +493,14 @@ final class ContractBindings {
 		PartySchemaCatalogueInterface::class => PartyService::class,
 		PartyServiceInterface::class => PartyService::class,
 		PermissionCatalogueInterface::class => PermissionCatalogue::class,
+		AuthorizationDenyValidatorInterface::class => AuthorizationDenyValidator::class,
+		DepartmentMatrixCompilerInterface::class => DepartmentMatrixCompiler::class,
+		DepartmentMatrixValidatorInterface::class => DepartmentMatrixValidator::class,
+		HierarchyAnnotationValidatorInterface::class => HierarchyAnnotationValidator::class,
+		HierarchyGrantExpanderInterface::class => HierarchyGrantExpander::class,
+		MetadataConditionFindingsInterface::class => MetadataConditionFindings::class,
+		RevealCollectorInterface::class => RevealCollector::class,
+		UnknownRuleKeyFindingsInterface::class => UnknownRuleKeyFindings::class,
 		PersonLinkServiceInterface::class => PersonLinkService::class,
 		PhotoLinkServiceInterface::class => PhotoLinkService::class,
 		PollLinkServiceInterface::class => PollLinkService::class,

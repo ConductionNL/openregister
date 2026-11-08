@@ -22,11 +22,10 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
-use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
-use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
-use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
-use OCA\OpenRegister\Service\Rbac\RevealCollector;
+use OCA\OpenRegister\Service\Rbac\AuthorizationDeclarationValidators;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompilerInterface;
+use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpanderInterface;
+use OCA\OpenRegister\Service\Rbac\RevealCollectorInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -98,11 +97,11 @@ final class AccessDeclarationChecks {
 	 */
 	public function checkDepartmentMatrix(Schema $schema): void {
 		$authorization = $schema->getAuthorization();
-		if (is_array($authorization) === false || array_key_exists(DepartmentMatrixCompiler::KEY, $authorization) === false) {
+		if (is_array($authorization) === false || array_key_exists(DepartmentMatrixCompilerInterface::KEY, $authorization) === false) {
 			return;
 		}
 
-		$findings = (new DepartmentMatrixValidator(declaredActions: $schema->declaredActionNames()))->validate(
+		$findings = AuthorizationDeclarationValidators::departmentMatrix(declaredActions: $schema->declaredActionNames())->validate(
 			properties: $schema->getProperties(),
 			authorization: $authorization
 		);
@@ -136,12 +135,12 @@ final class AccessDeclarationChecks {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function checkHierarchy(Schema $schema): void {
-		$annotation = new SchemaAnnotation(schema: $schema, key: HierarchyGrantExpander::ANNOTATION);
+		$annotation = new SchemaAnnotation(schema: $schema, key: HierarchyGrantExpanderInterface::ANNOTATION);
 		if ($annotation->hasValue() === false) {
 			return;
 		}
 
-		$validator = new HierarchyAnnotationValidator();
+		$validator = AuthorizationDeclarationValidators::hierarchy();
 		$split = $validator->partition(findings: $validator->validate($this->hierarchyShape(annotation: $annotation, schema: $schema)));
 		if (count($split['warnings']) > 0) {
 			$this->logger->warning($annotation->faults()->unknownKeysNotice(warnings: $split['warnings']));
@@ -185,7 +184,7 @@ final class AccessDeclarationChecks {
 			$authorization = ($config['authorization'] ?? null);
 		}
 
-		if (is_array($authorization) === false || ($authorization[RevealCollector::AUDIT_KEY] ?? null) !== true) {
+		if (is_array($authorization) === false || ($authorization[RevealCollectorInterface::AUDIT_KEY] ?? null) !== true) {
 			return false;
 		}
 

@@ -59,14 +59,7 @@ use DateTimeInterface;
  *
  * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
  */
-class DepartmentMatrixCompiler {
-
-	/**
-	 * The key the matrix is declared under, inside `authorization`.
-	 *
-	 * @var string
-	 */
-	public const KEY = 'matrix';
+class DepartmentMatrixCompiler implements DepartmentMatrixCompilerInterface {
 
 	/**
 	 * The wildcard that means "whatever this caller's own values are".

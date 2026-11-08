@@ -27,13 +27,9 @@ use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
-use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\AuthorizationDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
-use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
-use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -692,7 +688,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		// unknown verb used to survive longest. It matched nothing, so it
 		// granted nothing, and the role read as correctly configured in every
 		// screen that showed it.
-		(new PermissionCatalogue(eventDispatcher: $this->eventDispatcher))->assertGrantable(
+		AuthorizationDeclarationValidators::permissionCatalogue(eventDispatcher: $this->eventDispatcher)->assertGrantable(
 			authorization: $authorization,
 			roleDefinitions: $roleDefinitions,
 			subject: $subject
@@ -702,10 +698,10 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			return;
 		}
 
-		(new MetadataConditionFindings(db: $this->db))->assertRegisterSavable(register: $register, subject: $subject);
-		(new UnknownRuleKeyFindings(db: $this->db))->assertRegisterSavable(register: $register, subject: $subject);
+		AuthorizationDeclarationValidators::metadataConditions(db: $this->db)->assertRegisterSavable(register: $register, subject: $subject);
+		AuthorizationDeclarationValidators::unknownRuleKeys(db: $this->db)->assertRegisterSavable(register: $register, subject: $subject);
 
-		(new AuthorizationDenyValidator(denyResolver: new DenyResolver()))->assertStorable(
+		AuthorizationDeclarationValidators::denyBlocks()->assertStorable(
 			authorization: $authorization,
 			subject: $subject
 		);

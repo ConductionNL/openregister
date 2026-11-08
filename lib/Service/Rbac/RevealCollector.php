@@ -55,7 +55,7 @@ namespace OCA\OpenRegister\Service\Rbac;
  *
  * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
  */
-class RevealCollector {
+class RevealCollector implements RevealCollectorInterface {
 
 	/**
 	 * The action an entry carries.
@@ -63,13 +63,6 @@ class RevealCollector {
 	 * @var string
 	 */
 	public const ACTION = 'property.revealed';
-
-	/**
-	 * The key a property's authorization block declares the audit under.
-	 *
-	 * @var string
-	 */
-	public const AUDIT_KEY = 'audit';
 
 	/**
 	 * How many reveals one request may collect before it stops counting.

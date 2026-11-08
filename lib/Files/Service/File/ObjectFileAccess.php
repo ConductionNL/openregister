@@ -27,9 +27,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
-use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
-use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompilerInterface;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidatorInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
 
@@ -347,7 +347,7 @@ class ObjectFileAccess {
 			return false;
 		}
 
-		$matrix = ($block[DepartmentMatrixCompiler::KEY] ?? null);
+		$matrix = ($block[DepartmentMatrixCompilerInterface::KEY] ?? null);
 		if (is_array($matrix) === false) {
 			return false;
 		}
@@ -382,7 +382,7 @@ class ObjectFileAccess {
 			return null;
 		}
 
-		if (is_string($matrix[DepartmentMatrixValidator::ROWS_FROM_KEY] ?? null) === true) {
+		if (is_string($matrix[DepartmentMatrixValidatorInterface::ROWS_FROM_KEY] ?? null) === true) {
 			return true;
 		}
 

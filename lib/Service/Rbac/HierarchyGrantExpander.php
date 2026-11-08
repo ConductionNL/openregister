@@ -68,14 +68,7 @@ use Throwable;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class HierarchyGrantExpander {
-
-	/**
-	 * The schema annotation that declares the parent edge.
-	 *
-	 * @var string
-	 */
-	public const ANNOTATION = 'x-openregister-hierarchy';
+class HierarchyGrantExpander implements HierarchyGrantExpanderInterface {
 
 	/**
 	 * The depth used when a declaration names none.

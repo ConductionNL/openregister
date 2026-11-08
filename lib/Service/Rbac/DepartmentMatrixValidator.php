@@ -39,14 +39,7 @@ namespace OCA\OpenRegister\Service\Rbac;
  *
  * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
  */
-class DepartmentMatrixValidator {
-
-	/**
-	 * The matrix key naming the provider of rows an app adds at check time.
-	 *
-	 * @var string
-	 */
-	public const ROWS_FROM_KEY = 'rowsFrom';
+class DepartmentMatrixValidator implements DepartmentMatrixValidatorInterface {
 
 	/**
 	 * Metadata fields a row's `where` may name besides the schema's properties.
