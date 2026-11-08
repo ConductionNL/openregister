@@ -51,6 +51,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Controller\Support\ObjectPermissionsControllerServices;
 
 /**
  * The per-object access set and its history.
@@ -60,24 +61,44 @@ use Psr\Log\LoggerInterface;
 class ObjectPermissionsController extends Controller {
 
 	/**
+	 * Names the register and schema the request resolved.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Assembles the answer.
+	 *
+	 * @var ObjectAccessReportInterface
+	 */
+	private readonly ObjectAccessReportInterface $report;
+
+	/**
+	 * Resolves the object and decides who may ask.
+	 *
+	 * @var AccessReviewGateInterface
+	 */
+	private readonly AccessReviewGateInterface $gate;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string             $appName       Application identifier.
 	 * @param IRequest           $request       Active HTTP request.
-	 * @param ObjectOperationsInterface      $objectService Names the register and schema the request resolved.
-	 * @param ObjectAccessReportInterface $report        Assembles the answer.
-	 * @param AccessReviewGateInterface   $gate          Resolves the object and decides who may ask.
+	 * @param ObjectPermissionsControllerServices $services The services, bundled.
 	 * @param LoggerInterface    $logger        Records why an access set could not be assembled.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly ObjectAccessReportInterface $report,
-		private readonly AccessReviewGateInterface $gate,
+		ObjectPermissionsControllerServices $services,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objectService = $services->objectService;
+		$this->report = $services->report;
+		$this->gate = $services->gate;
 
 	}//end __construct()
 

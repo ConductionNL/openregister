@@ -55,6 +55,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectPermissionsControllerFactory;
 
 /**
  * Tasks 7.2 and 7.3, over the wire.
@@ -180,7 +181,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())
 		);
 
-		return new ObjectPermissionsController(
+		return ObjectPermissionsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			objectService: $objectService,
