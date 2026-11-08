@@ -956,7 +956,7 @@
       "count": 1
     },
     "no-console": {
-      "count": 3
+      "count": 2
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -979,7 +979,7 @@
   },
   "src/views/logs/AuditTrailIndex.vue": {
     "no-console": {
-      "count": 11
+      "count": 9
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -990,7 +990,7 @@
       "count": 1
     },
     "no-console": {
-      "count": 10
+      "count": 8
     },
     "vue/prefer-define-options": {
       "count": 1
