@@ -123,8 +123,7 @@ class CredentialStoreResolver {
 	 *
 	 * @param IAppManager $appManager Probes whether the doriath app is enabled.
 	 * @param IAppConfig $appConfig Holds OR's Doriath self-registration state.
-	 * @param DoriathCredentialStore $doriathStore The Doriath-backed leaf (selected when eligible).
-	 * @param NextcloudVaultCredentialStore $vaultStore The NC-vault leaf (fallback).
+	 * @param CredentialStoreLeaves $leaves The Doriath leaf (selected when eligible) and the NC-vault leaf (fallback).
 	 * @param LoggerInterface $logger Secret-free diagnostics.
 	 *
 	 * @return void
@@ -132,8 +131,7 @@ class CredentialStoreResolver {
 	public function __construct(
 		private readonly IAppManager $appManager,
 		private readonly IAppConfig $appConfig,
-		private readonly DoriathCredentialStore $doriathStore,
-		private readonly NextcloudVaultCredentialStore $vaultStore,
+		private readonly CredentialStoreLeaves $leaves,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -147,10 +145,10 @@ class CredentialStoreResolver {
 	 */
 	public function resolve(): CredentialStore {
 		if ($this->isDoriathEligible() === true) {
-			return $this->doriathStore;
+			return $this->leaves->doriathStore;
 		}
 
-		return $this->vaultStore;
+		return $this->leaves->vaultStore;
 	}//end resolve()
 
 	/**
