@@ -36,7 +36,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
-class ProcessingPurposeMapper extends QBMapper {
+class ProcessingPurposeMapper extends QBMapper implements ProcessingPurposeMapperInterface {
 	/**
 	 * Constructor.
 	 *
