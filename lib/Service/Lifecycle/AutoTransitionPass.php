@@ -65,6 +65,8 @@ use Psr\Log\LoggerInterface;
  * at least as strict there; and the pass travels with a queued move, which a
  * request-scoped counter cannot do. A counter that reset in every background
  * job would let an async A to B, B to A loop run forever, one cron tick apart.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class AutoTransitionPass {
 
@@ -95,7 +97,7 @@ class AutoTransitionPass {
 	/**
 	 * Objects written in this pass and not yet decided.
 	 *
-	 * @var array<string, array{register: string, schema: string, inside: bool}>
+	 * @var array<string, array{uuid: string, register: string, schema: string, inside: bool}>
 	 */
 	private array $pending = [];
 
@@ -217,7 +219,7 @@ class AutoTransitionPass {
 		}
 
 		$inside = $this->isInsideBoundary();
-		$this->pending[$uuid] = ['register' => $register, 'schema' => $schema, 'inside' => $inside];
+		$this->pending[$uuid] = ['uuid' => $uuid, 'register' => $register, 'schema' => $schema, 'inside' => $inside];
 
 		if ($inside === false) {
 			$this->hookFlush();
@@ -298,7 +300,7 @@ class AutoTransitionPass {
 			}
 
 			unset($this->pending[$uuid]);
-			$this->safeStep(uuid: $uuid, record: $record, queueOnly: true);
+			$this->safeStep(record: $record);
 			$queued = true;
 		}
 
@@ -315,32 +317,42 @@ class AutoTransitionPass {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function drain(): array {
-		$applied = [];
 		$this->draining = true;
 
 		try {
-			while (true) {
-				$uuid = $this->nextInside();
-				if ($uuid === null) {
-					break;
-				}
-
-				$record = $this->pending[$uuid];
-				unset($this->pending[$uuid]);
-
-				$entity = $this->safeStep(uuid: $uuid, record: $record, queueOnly: false);
-				if ($entity !== null) {
-					$applied[$uuid] = $entity;
-				}
-			}
+			return $this->drainInside();
 		} finally {
 			$this->draining = false;
 			$this->previous = [];
 			$this->lineage = [];
-		}//end try
+		}
+	}//end drain()
+
+	/**
+	 * Step every object recorded inside a boundary until none is left.
+	 *
+	 * A LOOP, not recursion: a fired move re-records its object, and the next
+	 * iteration picks it up.
+	 *
+	 * @return array<string, ObjectEntity> The last entity applied per object uuid.
+	 */
+	private function drainInside(): array {
+		$applied = [];
+		$uuid = $this->nextInside();
+		while ($uuid !== null) {
+			$record = $this->pending[$uuid];
+			unset($this->pending[$uuid]);
+
+			$entity = $this->safeStep(record: $record);
+			if ($entity !== null) {
+				$applied[$uuid] = $entity;
+			}
+
+			$uuid = $this->nextInside();
+		}
 
 		return $applied;
-	}//end drain()
+	}//end drainInside()
 
 	/**
 	 * The next object recorded inside a boundary, or null when there is none.
@@ -367,22 +379,20 @@ class AutoTransitionPass {
 	 * can meet are caught one layer down, in the runner, with their refusal
 	 * code; this is the backstop for everything else.
 	 *
-	 * @param string $uuid The object's uuid.
-	 * @param array{register: string, schema: string, inside: bool} $record What the listener recorded.
-	 * @param bool $queueOnly True for a move recorded outside any boundary.
+	 * @param array{uuid: string, register: string, schema: string, inside: bool} $record What the listener recorded.
 	 *
 	 * @return ObjectEntity|null The object after the move, or null.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function safeStep(string $uuid, array $record, bool $queueOnly): ?ObjectEntity {
+	private function safeStep(array $record): ?ObjectEntity {
 		try {
-			return $this->step(uuid: $uuid, record: $record, queueOnly: $queueOnly);
+			return $this->step(record: $record);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'[AutoTransitionPass] Deciding or applying an automatic transition failed; '
 				. 'the triggering write stands.',
-				['uuid' => $uuid, 'schema' => $record['schema'], 'error' => $e->getMessage()]
+				['uuid' => $record['uuid'], 'schema' => $record['schema'], 'error' => $e->getMessage()]
 			);
 			return null;
 		}
@@ -391,54 +401,83 @@ class AutoTransitionPass {
 	/**
 	 * Decide one object's next move and take it, unless a limit says no.
 	 *
-	 * @param string $uuid The object's uuid.
-	 * @param array{register: string, schema: string, inside: bool} $record What the listener recorded.
-	 * @param bool $queueOnly True for a move recorded outside any boundary.
+	 * @param array{uuid: string, register: string, schema: string, inside: bool} $record What the listener recorded.
 	 *
 	 * @return ObjectEntity|null The object after the move, or null.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function step(string $uuid, array $record, bool $queueOnly): ?ObjectEntity {
-		$decision = $this->runner->decide(
-			uuid: $uuid,
-			register: $record['register'],
-			schema: $record['schema'],
-			previous: ($this->previous[$uuid] ?? [])
-		);
+	private function step(array $record): ?ObjectEntity {
+		$uuid = $record['uuid'];
+		$decision = $this->decide(record: $record);
 		if ($decision === null) {
 			return null;
 		}
 
-		$candidate = $decision->candidate;
-		$this->seedLineage(uuid: $uuid, from: $candidate->from);
-		$lineage = $this->lineage[$uuid];
-
-		if (isset($lineage['visited'][$candidate->to]) === true) {
-			$this->cut(decision: $decision, lineage: $lineage, limit: 'revisit');
+		$this->seedLineage(uuid: $uuid, from: $decision->candidate->from);
+		if (self::limitOf(lineage: $this->lineage[$uuid], to: $decision->candidate->to) !== null) {
+			$this->cut(decision: $decision, lineage: $this->lineage[$uuid]);
 			return null;
 		}
 
-		if ($lineage['moves'] >= self::MAX_MOVES) {
-			$this->cut(decision: $decision, lineage: $lineage, limit: 'ceiling');
-			return null;
-		}
+		return $this->advance(record: $record, decision: $decision);
+	}//end step()
 
-		$this->lineage[$uuid]['visited'][$candidate->to] = true;
-		$this->lineage[$uuid]['moves']++;
-		$this->lineage[$uuid]['applied'][] = $candidate->action;
+	/**
+	 * Ask the runner for the object's next move, against the state that started the pass.
+	 *
+	 * @param array{uuid: string, register: string, schema: string, inside: bool} $record What the listener recorded.
+	 *
+	 * @return AutoTransitionDecision|null The decided move, or null.
+	 */
+	private function decide(array $record): ?AutoTransitionDecision {
+		return $this->runner->decide(
+			uuid: $record['uuid'],
+			register: $record['register'],
+			schema: $record['schema'],
+			previous: ($this->previous[$record['uuid']] ?? [])
+		);
+	}//end decide()
 
-		$this->applying = $candidate->action;
+	/**
+	 * Count the move in the object's lineage and fire it inside the ambient frame.
+	 *
+	 * A record made outside any boundary is queued, whatever the declared mode.
+	 *
+	 * @param array{uuid: string, register: string, schema: string, inside: bool} $record   What the listener recorded.
+	 * @param AutoTransitionDecision                                               $decision The move to make.
+	 *
+	 * @return ObjectEntity|null The object after the move, or null.
+	 */
+	private function advance(array $record, AutoTransitionDecision $decision): ?ObjectEntity {
+		$uuid = $record['uuid'];
+		$this->countMove(uuid: $uuid, candidate: $decision->candidate);
+
+		$this->applying = $decision->candidate->action;
 		try {
 			return $this->runner->fire(
 				decision: $decision,
 				lineage: $this->lineage[$uuid],
-				queueOnly: $queueOnly
+				queueOnly: ($record['inside'] === false)
 			);
 		} finally {
 			$this->applying = null;
 		}
-	}//end step()
+	}//end advance()
+
+	/**
+	 * Record a move about to be made in the object's lineage.
+	 *
+	 * @param string                  $uuid      The object's uuid.
+	 * @param AutoTransitionCandidate $candidate The move.
+	 *
+	 * @return void
+	 */
+	private function countMove(string $uuid, AutoTransitionCandidate $candidate): void {
+		$this->lineage[$uuid]['visited'][$candidate->to] = true;
+		$this->lineage[$uuid]['moves']++;
+		$this->lineage[$uuid]['applied'][] = $candidate->action;
+	}//end countMove()
 
 	/**
 	 * Start this object's lineage at the state it is in now.
@@ -460,6 +499,26 @@ class AutoTransitionPass {
 	}//end seedLineage()
 
 	/**
+	 * Which limit a move into `$to` reaches, or null when it may be made.
+	 *
+	 * @param array{visited: array<string, bool>, moves: int, applied: list<string>} $lineage The chain so far.
+	 * @param string                                                                $to      The state the move enters.
+	 *
+	 * @return string|null `revisit`, `ceiling`, or null.
+	 */
+	private static function limitOf(array $lineage, string $to): ?string {
+		if (isset($lineage['visited'][$to]) === true) {
+			return 'revisit';
+		}
+
+		if ($lineage['moves'] >= self::MAX_MOVES) {
+			return 'ceiling';
+		}
+
+		return null;
+	}//end limitOf()
+
+	/**
 	 * Log a cut pass and make no move.
 	 *
 	 * Error level, not warning: a cut means a declaration loops, which is an
@@ -469,19 +528,18 @@ class AutoTransitionPass {
 	 *
 	 * @param AutoTransitionDecision $decision The move that was not made.
 	 * @param array{visited: array<string, bool>, moves: int, applied: list<string>} $lineage The chain so far.
-	 * @param string $limit Which limit was reached: `revisit` or `ceiling`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function cut(AutoTransitionDecision $decision, array $lineage, string $limit): void {
+	private function cut(AutoTransitionDecision $decision, array $lineage): void {
 		$this->logger->error(
 			'[AutoTransitionPass] Automatic transitions were cut for this object; the declaration loops.',
 			[
 				'schema' => $decision->schemaSlug,
 				'uuid' => $decision->uuid,
-				'limit' => $limit,
+				'limit' => self::limitOf(lineage: $lineage, to: $decision->candidate->to),
 				'ceiling' => self::MAX_MOVES,
 				'refused' => $decision->candidate->action,
 				'to' => $decision->candidate->to,

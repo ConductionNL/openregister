@@ -189,8 +189,6 @@ class TmloService {
 	 *
 	 * @return ObjectEntity The object with populated TMLO metadata
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-2
 	 */
 	public function populateDefaults(ObjectEntity $object, Register $register, Schema $schema): ObjectEntity {
@@ -204,30 +202,48 @@ class TmloService {
 			$tmlo = [];
 		}
 
-		// Get schema-level defaults.
-		$defaults = $this->getSchemaDefaults(schema: $schema);
+		$tmlo = $this->mergeSchemaDefaults(tmlo: $tmlo, defaults: $this->getSchemaDefaults(schema: $schema));
+		$object->setTmlo($this->withDerivedDefaults(tmlo: $tmlo));
 
-		// Merge defaults: only fill in fields that are not already set.
+		return $object;
+	}//end populateDefaults()
+
+	/**
+	 * Fill every TMLO field that is not set (or null) from the schema defaults.
+	 *
+	 * @param array $tmlo     The object's TMLO metadata.
+	 * @param array $defaults The schema-level TMLO defaults.
+	 *
+	 * @return array The merged TMLO metadata.
+	 */
+	private function mergeSchemaDefaults(array $tmlo, array $defaults): array {
 		foreach (self::TMLO_FIELDS as $field) {
 			if (isset($tmlo[$field]) === false || $tmlo[$field] === null) {
 				$tmlo[$field] = ($defaults[$field] ?? null);
 			}
 		}
 
-		// Always default archiefstatus to 'actief' if not set.
+		return $tmlo;
+	}//end mergeSchemaDefaults()
+
+	/**
+	 * Default archiefstatus to 'actief', and derive archiefactiedatum from bewaarTermijn when unset.
+	 *
+	 * @param array $tmlo The merged TMLO metadata.
+	 *
+	 * @return array The TMLO metadata with derived defaults.
+	 */
+	private function withDerivedDefaults(array $tmlo): array {
 		if (($tmlo['archiefstatus'] ?? null) === null) {
 			$tmlo['archiefstatus'] = self::ARCHIEFSTATUS_ACTIEF;
 		}
 
-		// Calculate archiefactiedatum from bewaarTermijn if not explicitly set.
 		if (($tmlo['archiefactiedatum'] ?? null) === null && ($tmlo['bewaarTermijn'] ?? null) !== null) {
 			$tmlo['archiefactiedatum'] = $this->calculateArchiveActionDate(duration: $tmlo['bewaarTermijn']);
 		}
 
-		$object->setTmlo($tmlo);
-
-		return $object;
-	}//end populateDefaults()
+		return $tmlo;
+	}//end withDerivedDefaults()
 
 	/**
 	 * Calculate archiefactiedatum from an ISO-8601 duration string.
@@ -417,8 +433,7 @@ class TmloService {
 	 * @spec openspec/specs/tmlo-export/spec.md#requirement-mdto-compliant-xml-export
 	 */
 	public function generateMdtoXml(ObjectEntity $object): string {
-		$tmlo = $object->getTmlo();
-		if (is_array($tmlo) === false || empty($tmlo) === true) {
+		if ($this->hasTmlo(object: $object) === false) {
 			throw new InvalidArgumentException(
 				'Object ' . $object->getUuid() . ' has no TMLO metadata. MDTO export requires TMLO metadata.'
 			);
@@ -453,19 +468,39 @@ class TmloService {
 		$dom->appendChild($envelope);
 
 		foreach ($objects as $object) {
-			$tmlo = $object->getTmlo();
-			if (is_array($tmlo) === false || empty($tmlo) === true) {
-				continue;
+			if ($this->hasTmlo(object: $object) === true) {
+				$envelope->appendChild($this->importMdtoDocument(dom: $dom, object: $object));
 			}
-
-			$document = new DOMDocument('1.0', 'UTF-8');
-			$document->loadXML($this->mdtoGenerator->generate($object));
-
-			$imported = $dom->importNode($document->documentElement, true);
-			$envelope->appendChild($imported);
 		}
 
 		return (string)$dom->saveXML();
 	}//end generateBatchMdtoXml()
+
+	/**
+	 * Whether the object carries a non-empty TMLO metadata array.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return bool
+	 */
+	private function hasTmlo(ObjectEntity $object): bool {
+		$tmlo = $object->getTmlo();
+		return is_array($tmlo) === true && empty($tmlo) === false;
+	}//end hasTmlo()
+
+	/**
+	 * Generate the object's MDTO document and import its root into the envelope document.
+	 *
+	 * @param DOMDocument  $dom    The envelope document.
+	 * @param ObjectEntity $object The object to export.
+	 *
+	 * @return \DOMNode The imported MDTO root element.
+	 */
+	private function importMdtoDocument(DOMDocument $dom, ObjectEntity $object): \DOMNode {
+		$document = new DOMDocument('1.0', 'UTF-8');
+		$document->loadXML($this->mdtoGenerator->generate($object));
+
+		return $dom->importNode($document->documentElement, true);
+	}//end importMdtoDocument()
 
 }//end class

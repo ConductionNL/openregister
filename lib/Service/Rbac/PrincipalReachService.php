@@ -65,27 +65,59 @@ use Throwable;
  */
 class PrincipalReachService {
 	/**
+	 * The schemas the cascade is asked about.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Grants derived from sign-in claims.
+	 *
+	 * @var DerivedGrantStore
+	 */
+	private readonly DerivedGrantStore $derived;
+
+	/**
+	 * Delegations held by this principal.
+	 *
+	 * @var DelegationGrantMapper
+	 */
+	private readonly DelegationGrantMapper $delegations;
+
+	/**
+	 * Group membership.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Account lookup.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
 	 * Wire the authorities the listing reads.
 	 *
-	 * @param PermissionExplanationInterface     $permissions  The canonical RBAC verdict and its provenance.
-	 * @param SchemaMapperInterface          $schemaMapper The schemas the cascade is asked about.
-	 * @param DerivedGrantStore     $derived      Grants derived from sign-in claims.
-	 * @param DelegationGrantMapper $delegations  Delegations held by this principal.
-	 * @param IGroupManager         $groupManager Group membership.
-	 * @param IUserManager          $userManager  Account lookup.
-	 * @param LoggerInterface       $logger       PSR logger.
-	 *
-	 * @return void
+	 * @param PermissionExplanationInterface $permissions The canonical RBAC verdict and its provenance.
+	 * @param ReachSources               $sources     The schemas the cascade is asked about, derived grants and delegations.
+	 * @param PrincipalDirectory         $directory   Group membership and account lookup.
+	 * @param LoggerInterface            $logger      PSR logger.
 	 */
 	public function __construct(
 		private readonly PermissionExplanationInterface $permissions,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly DerivedGrantStore $derived,
-		private readonly DelegationGrantMapper $delegations,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserManager $userManager,
+		ReachSources $sources,
+		PrincipalDirectory $directory,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->schemaMapper = $sources->schemaMapper;
+		$this->derived = $sources->derived;
+		$this->delegations = $sources->delegations;
+		$this->groupManager = $directory->groupManager;
+		$this->userManager = $directory->userManager;
 	}//end __construct()
 
 	/**

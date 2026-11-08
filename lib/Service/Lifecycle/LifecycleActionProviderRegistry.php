@@ -32,9 +32,6 @@ namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Lifecycle\LifecycleActionProviderInterface;
-use OCP\IServerContainer;
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 
 /**
  * Resolves DI tag → provider instance.
@@ -59,22 +56,6 @@ class LifecycleActionProviderRegistry {
 	 * @var array<string, LifecycleActionProviderInterface>
 	 */
 	private array $cache = [];
-
-	/**
-	 * Constructor.
-	 *
-	 * @param ContainerInterface $container OR app container used to resolve provider services first.
-	 * @param IServerContainer $serverContainer NC server container used as fallback for FQCN-tagged providers in other apps.
-	 * @param LoggerInterface $logger Logger for provider resolution diagnostics.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function __construct(
-		private readonly ContainerInterface $container,
-		private readonly IServerContainer $serverContainer,
-		private readonly LoggerInterface $logger,
-	) {
-	}//end __construct()
 
 	/**
 	 * Resolve a provider tag to its registered implementation.

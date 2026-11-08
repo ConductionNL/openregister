@@ -96,20 +96,30 @@ class SubjectPartyCounter {
 
 		$count = 0;
 		foreach ($payload as $key => $value) {
-			if (is_array($value) === false) {
-				continue;
+			if (is_array($value) === true) {
+				$count += $this->countUnder(key: (string)$key, value: $value, needles: $needles);
 			}
-
-			if (in_array((string)$key, self::PARTY_LIST_KEYS, true) === true) {
-				$count += $this->countInList(parties: $value, needles: $needles);
-				continue;
-			}
-
-			$count += $this->count(payload: $value, needles: $needles);
 		}
 
 		return $count;
 	}//end count()
+
+	/**
+	 * Count under one payload key: a party list is counted, anything else descended.
+	 *
+	 * @param string             $key     The payload key.
+	 * @param array<mixed>       $value   The array under it.
+	 * @param array<int, string> $needles Lower-cased subject values.
+	 *
+	 * @return int The matching party records.
+	 */
+	private function countUnder(string $key, array $value, array $needles): int {
+		if (in_array($key, self::PARTY_LIST_KEYS, true) === true) {
+			return $this->countInList(parties: $value, needles: $needles);
+		}
+
+		return $this->count(payload: $value, needles: $needles);
+	}//end countUnder()
 
 	/**
 	 * Count the entries of one party list that name the subject.
@@ -140,21 +150,27 @@ class SubjectPartyCounter {
 	 */
 	private function mentions(array $data, array $needles): bool {
 		foreach ($data as $value) {
-			if (is_array($value) === true) {
-				if ($this->mentions(data: $value, needles: $needles) === true) {
-					return true;
-				}
-
-				continue;
-			}
-
-			if (is_scalar($value) === true
-				&& in_array(strtolower((string)$value), $needles, true) === true
-			) {
+			if ($this->valueMentions(value: $value, needles: $needles) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end mentions()
+
+	/**
+	 * Whether one value is, or contains, one of the subject's values.
+	 *
+	 * @param mixed              $value   A scalar or a nested sub-payload.
+	 * @param array<int, string> $needles Lower-cased subject values.
+	 *
+	 * @return bool True when it names the subject.
+	 */
+	private function valueMentions(mixed $value, array $needles): bool {
+		if (is_array($value) === true) {
+			return $this->mentions(data: $value, needles: $needles);
+		}
+
+		return (is_scalar($value) === true && in_array(strtolower((string)$value), $needles, true) === true);
+	}//end valueMentions()
 }//end class

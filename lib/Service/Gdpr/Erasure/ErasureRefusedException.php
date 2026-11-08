@@ -39,7 +39,17 @@ use Throwable;
  */
 class ErasureRefusedException extends Exception {
 	/**
+	 * The `error` label every erasure refusal publishes.
+	 *
+	 * @var string
+	 */
+	private const ERROR = 'ERASURE_REFUSED';
+
+	/**
 	 * Build a refusal.
+	 *
+	 * The sentence and the status code are kept where Exception keeps them —
+	 * the message and the code — so there is one copy of each.
 	 *
 	 * @param string               $rule       Machine-readable rule id, e.g. `erasure-not-approved`.
 	 * @param string               $reason     The sentence a person reads.
@@ -51,13 +61,37 @@ class ErasureRefusedException extends Exception {
 	 */
 	public function __construct(
 		private readonly string $rule,
-		private readonly string $reason,
-		private readonly int $statusCode = 409,
+		string $reason,
+		int $statusCode = 409,
 		private readonly array $context = [],
 		?Throwable $previous = null,
 	) {
 		parent::__construct(message: $reason, code: $statusCode, previous: $previous);
 	}//end __construct()
+
+	/**
+	 * The refusal as the API publishes it.
+	 *
+	 * @return array<string, mixed> The response body.
+	 *
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
+	 */
+	public function toResponseBody(): array {
+		$body = ['error' => self::ERROR, 'rule' => $this->getRule(), 'message' => $this->getMessage()];
+
+		return array_merge($body, $this->context);
+	}//end toResponseBody()
+
+	/**
+	 * The HTTP status the caller should answer with.
+	 *
+	 * @return int The status code.
+	 *
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
+	 */
+	public function getStatusCode(): int {
+		return (int)$this->getCode();
+	}//end getStatusCode()
 
 	/**
 	 * The rule that refused.
@@ -69,33 +103,4 @@ class ErasureRefusedException extends Exception {
 	public function getRule(): string {
 		return $this->rule;
 	}//end getRule()
-
-	/**
-	 * The HTTP status the caller should answer with.
-	 *
-	 * @return int The status code.
-	 *
-	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
-	 */
-	public function getStatusCode(): int {
-		return $this->statusCode;
-	}//end getStatusCode()
-
-	/**
-	 * The refusal as the API publishes it.
-	 *
-	 * @return array<string, mixed> The response body.
-	 *
-	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
-	 */
-	public function toResponseBody(): array {
-		return array_merge(
-			[
-				'error' => 'ERASURE_REFUSED',
-				'rule' => $this->rule,
-				'message' => $this->reason,
-			],
-			$this->context
-		);
-	}//end toResponseBody()
 }//end class

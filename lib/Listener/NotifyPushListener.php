@@ -48,14 +48,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Listener\Support\PushSlugResolver;
 use OCA\OpenRegister\Push\PushEvents;
 use OCA\OpenRegister\Service\Object\ObjectReadersInterface;
-use OCP\App\IAppManager;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IAppConfig;
@@ -76,9 +74,8 @@ use Psr\Log\LoggerInterface;
  * @implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent>
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Listener must reference three event types
- *   (ObjectCreated/Updated/DeletedEvent), two mappers (register + schema), a container,
- *   logger, appConfig, and PermissionHandlerInterface; each dependency is required for the
- *   push-routing and slug-resolution responsibilities.
+ *   (ObjectCreated/Updated/DeletedEvent), the slug resolver, a container, logger, appConfig,
+ *   and PermissionHandlerInterface; each dependency is required for the push-routing.
  */
 class NotifyPushListener implements IEventListener {
 
@@ -123,24 +120,20 @@ class NotifyPushListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppManager $appManager Nextcloud app manager (notify_push install check).
 	 * @param LoggerInterface $logger PSR-3 logger.
 	 * @param ContainerInterface $container DI container for lazy IQueue resolution.
 	 * @param ObjectReadersInterface $permissionHandler RBAC handler for reader-list resolution.
 	 * @param IAppConfig $appConfig App config for push_available flag.
-	 * @param RegisterMapperInterface $registerMapper Mapper for resolving register slugs.
-	 * @param SchemaMapperInterface $schemaMapper Mapper for resolving schema slugs.
+	 * @param PushSlugResolver $slugs Resolves register and schema slugs as the system.
 	 *
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-4
 	 */
 	public function __construct(
-		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
 		private readonly ObjectReadersInterface $permissionHandler,
 		private readonly IAppConfig $appConfig,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly PushSlugResolver $slugs,
 	) {
 	}//end __construct()
 
@@ -150,13 +143,6 @@ class NotifyPushListener implements IEventListener {
 	 * @param Event $event The dispatched event.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) PHPMD 2.x accumulates the CC of all
-	 *   extracted private helper methods (resolveEventAction, resolveQueue, dispatchPushes,
-	 *   accumulateBatchEntry) into this orchestrator's score; handle() itself only contains
-	 *   lightweight guard checks and delegates to those helpers.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      NPath inflation mirrors the CC accumulation
-	 *   issue; the orchestrator cannot be simplified further without removing necessary guards.
 	 *
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-4
 	 */
@@ -170,31 +156,56 @@ class NotifyPushListener implements IEventListener {
 
 		// Lazy-resolve IQueue; soft-fail if notify_push is not installed.
 		$queue = $this->resolveQueue();
-		if ($queue === null) {
+		if ($queue === null || $this->firstSighting(action: $action, object: $object) === false) {
 			return;
 		}
 
-		$uuid = $object->getUuid();
-		if ($uuid === null || $uuid === '') {
-			return;
-		}
+		$this->route(action: $action, object: $object, queue: $queue);
 
-		// Per-request deduplication — same (uuid, action) within one request fires once.
-		$dedupKey = $uuid . '|' . $action;
-		if (isset(self::$seen[$dedupKey]) === true) {
-			return;
-		}
+	}//end handle()
 
-		self::$seen[$dedupKey] = true;
-
+	/**
+	 * Accumulate the object's collection in batch mode, else push it now.
+	 *
+	 * @param string       $action Action verb.
+	 * @param ObjectEntity $object The affected object entity.
+	 * @param object       $queue  Resolved IQueue instance.
+	 *
+	 * @return void
+	 */
+	private function route(string $action, ObjectEntity $object, object $queue): void {
 		if (self::$batchMode === true) {
 			$this->accumulateBatchEntry(object: $object);
 			return;
 		}
 
 		$this->dispatchPushes(action: $action, object: $object, queue: $queue);
+	}//end route()
 
-	}//end handle()
+	/**
+	 * Record an (uuid, action) pair; false when it has no uuid or was seen this request.
+	 *
+	 * Per-request deduplication — same (uuid, action) within one request fires once.
+	 *
+	 * @param string       $action Action verb.
+	 * @param ObjectEntity $object The affected object entity.
+	 *
+	 * @return boolean True the first time the pair is seen.
+	 */
+	private function firstSighting(string $action, ObjectEntity $object): bool {
+		$uuid = $object->getUuid();
+		if ($uuid === null || $uuid === '') {
+			return false;
+		}
+
+		$dedupKey = $uuid . '|' . $action;
+		if (isset(self::$seen[$dedupKey]) === true) {
+			return false;
+		}
+
+		self::$seen[$dedupKey] = true;
+		return true;
+	}//end firstSighting()
 
 	/**
 	 * Resolve the action verb and object entity from a lifecycle event.
@@ -229,8 +240,8 @@ class NotifyPushListener implements IEventListener {
 	 * @return void
 	 */
 	private function accumulateBatchEntry(ObjectEntity $object): void {
-		$registerSlug = $this->resolveRegisterSlug(registerUuid: $object->getRegister());
-		$schemaSlug = $this->resolveSchemaSlug(schemaUuid: $object->getSchema());
+		$registerSlug = $this->slugs->registerSlug(registerUuid: $object->getRegister());
+		$schemaSlug = $this->slugs->schemaSlug(schemaUuid: $object->getSchema());
 
 		if ($registerSlug !== null && $schemaSlug !== null) {
 			$collectionKey = $registerSlug . '|' . $schemaSlug;
@@ -257,61 +268,98 @@ class NotifyPushListener implements IEventListener {
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-4
 	 */
 	private function dispatchPushes(string $action, ObjectEntity $object, object $queue): void {
-		$uuid = $object->getUuid();
-		$registerSlug = $this->resolveRegisterSlug(registerUuid: $object->getRegister());
-		$schemaSlug = $this->resolveSchemaSlug(schemaUuid: $object->getSchema());
-		$version = $object->getVersion();
-
-		$payload = [
-			'action' => $action,
-			'register' => $registerSlug,
-			'schema' => $schemaSlug,
-			'uuid' => $uuid,
-			'version' => $version,
-		];
-
+		$payload = $this->lifecyclePayload(action: $action, object: $object);
 		$userIds = $this->permissionHandler->getReadableByUsers(object: $object);
+		$objectChannel = PushEvents::OR_OBJECT . '-' . $payload['uuid'];
+		$pushed = $this->pushToUsers(queue: $queue, userIds: $userIds, channel: $objectChannel, payload: $payload);
 
+		$collectionChannel = $this->collectionChannel(payload: $payload);
+		if ($collectionChannel !== null) {
+			$pushed = ($this->pushToUsers(queue: $queue, userIds: $userIds, channel: $collectionChannel, payload: $payload) || $pushed);
+		}
+
+		$this->markPushAvailable(pushed: $pushed);
+
+	}//end dispatchPushes()
+
+	/**
+	 * The body of a lifecycle push: action, slugs, uuid and version.
+	 *
+	 * @param string       $action Action verb (`create`, `update`, `delete`).
+	 * @param ObjectEntity $object The affected object entity.
+	 *
+	 * @return array{action: string, register: string|null, schema: string|null, uuid: string|null, version: mixed}
+	 */
+	private function lifecyclePayload(string $action, ObjectEntity $object): array {
+		return [
+			'action' => $action,
+			'register' => $this->slugs->registerSlug(registerUuid: $object->getRegister()),
+			'schema' => $this->slugs->schemaSlug(schemaUuid: $object->getSchema()),
+			'uuid' => $object->getUuid(),
+			'version' => $object->getVersion(),
+		];
+	}//end lifecyclePayload()
+
+	/**
+	 * The collection channel a lifecycle push is also sent on.
+	 *
+	 * Emit collection event on create and delete (not on update to avoid noise),
+	 * and only when both slugs resolved.
+	 *
+	 * @param array{action: string, register: string|null, schema: string|null, uuid: string|null, version: mixed} $payload The push body.
+	 *
+	 * @return string|null Null when the push has no collection channel.
+	 */
+	private function collectionChannel(array $payload): ?string {
+		if (in_array($payload['action'], ['create', 'delete'], true) === false
+			|| $payload['register'] === null
+			|| $payload['schema'] === null
+		) {
+			return null;
+		}
+
+		return PushEvents::OR_COLLECTION . '-' . $payload['register'] . '-' . $payload['schema'];
+	}//end collectionChannel()
+
+	/**
+	 * Push one message to each user on one channel.
+	 *
+	 * @param object               $queue   Resolved IQueue instance.
+	 * @param array<int, string>   $userIds Recipients: the object's readers.
+	 * @param string               $channel The channel.
+	 * @param array<string, mixed> $payload The body.
+	 *
+	 * @return boolean True when at least one push was queued.
+	 */
+	private function pushToUsers(object $queue, array $userIds, string $channel, array $payload): bool {
 		$pushed = false;
-		$objectChannel = PushEvents::OR_OBJECT . '-' . $uuid;
-
 		foreach ($userIds as $userId) {
 			$queue->push(
 				'notify_custom',
 				[
 					'user' => $userId,
-					'message' => $objectChannel,
+					'message' => $channel,
 					'body' => $payload,
 				]
 			);
 			$pushed = true;
 		}
 
-		// Emit collection event on create and delete (not on update to avoid noise).
-		if (($action === 'create' || $action === 'delete')
-			&& $registerSlug !== null
-			&& $schemaSlug !== null
-		) {
-			$collectionChannel = PushEvents::OR_COLLECTION . '-' . $registerSlug . '-' . $schemaSlug;
-			foreach ($userIds as $userId) {
-				$queue->push(
-					'notify_custom',
-					[
-						'user' => $userId,
-						'message' => $collectionChannel,
-						'body' => $payload,
-					]
-				);
-				$pushed = true;
-			}
-		}
+		return $pushed;
+	}//end pushToUsers()
 
-		// On first successful push, flag the app config so admin UI shows "active".
+	/**
+	 * On first successful push, flag the app config so admin UI shows "active".
+	 *
+	 * @param boolean $pushed Whether anything was pushed.
+	 *
+	 * @return void
+	 */
+	private function markPushAvailable(bool $pushed): void {
 		if ($pushed === true && $this->appConfig->getValueString('openregister', 'push_available', '') !== '1') {
 			$this->appConfig->setValueString('openregister', 'push_available', '1');
 		}
-
-	}//end dispatchPushes()
+	}//end markPushAvailable()
 
 	/**
 	 * Enable or disable batch mode.
@@ -423,36 +471,42 @@ class NotifyPushListener implements IEventListener {
 	 */
 	public static function flushBatch(object $queue): void {
 		foreach (self::$batchedCollections as $entry) {
-			$registerSlug = $entry['register'];
-			$schemaSlug = $entry['schema'];
-
-			$payload = [
-				'action' => 'batch',
-				'register' => $registerSlug,
-				'schema' => $schemaSlug,
-			];
-
-			$collectionChannel = PushEvents::OR_COLLECTION . '-' . $registerSlug . '-' . $schemaSlug;
-
-			// Batch flush is a collection-wide signal that does not target a specific
-			// reader set. We omit the `user` field; notify_push treats this as a
-			// broadcast to every connected client subscribed to the collection
-			// channel. Clients that don't have access to the underlying objects
-			// simply ignore the event when they refetch and the API returns an
-			// empty page.
-			$queue->push(
-				'notify_custom',
-				[
-					'message' => $collectionChannel,
-					'body' => $payload,
-				]
-			);
-		}//end foreach
+			self::broadcastCollection(queue: $queue, entry: $entry);
+		}
 
 		self::$batchedCollections = [];
 		self::$seen = [];
 
 	}//end flushBatch()
+
+	/**
+	 * Broadcast one accumulated collection change.
+	 *
+	 * Batch flush is a collection-wide signal that does not target a specific
+	 * reader set. We omit the `user` field; notify_push treats this as a
+	 * broadcast to every connected client subscribed to the collection
+	 * channel. Clients that don't have access to the underlying objects
+	 * simply ignore the event when they refetch and the API returns an
+	 * empty page.
+	 *
+	 * @param object                                 $queue Resolved IQueue instance.
+	 * @param array{register: string, schema: string} $entry The accumulated pair.
+	 *
+	 * @return void
+	 */
+	private static function broadcastCollection(object $queue, array $entry): void {
+		$queue->push(
+			'notify_custom',
+			[
+				'message' => PushEvents::OR_COLLECTION . '-' . $entry['register'] . '-' . $entry['schema'],
+				'body' => [
+					'action' => 'batch',
+					'register' => $entry['register'],
+					'schema' => $entry['schema'],
+				],
+			]
+		);
+	}//end broadcastCollection()
 
 	/**
 	 * Lazily resolve the IQueue from the container.
@@ -472,18 +526,29 @@ class NotifyPushListener implements IEventListener {
 		try {
 			return $this->container->get('OCA\NotifyPush\Queue\IQueue');
 		} catch (\Throwable $e) {
-			self::$queueUnavailable = true;
-			$this->logger->debug(
-				message: '[NotifyPushListener] notify_push IQueue not available; push disabled for this request',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->markQueueUnavailable(error: $e);
 			return null;
 		}
 	}//end resolveQueue()
+
+	/**
+	 * Remember for the request that the queue is missing, and say so once at DEBUG.
+	 *
+	 * @param \Throwable $error Why the queue could not be resolved.
+	 *
+	 * @return void
+	 */
+	private function markQueueUnavailable(\Throwable $error): void {
+		self::$queueUnavailable = true;
+		$this->logger->debug(
+			message: '[NotifyPushListener] notify_push IQueue not available; push disabled for this request',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end markQueueUnavailable()
 
 	/**
 	 * Push that the readers of an object changed.
@@ -519,86 +584,9 @@ class NotifyPushListener implements IEventListener {
 			return false;
 		}
 
-		$payload = [
-			'action' => 'presence',
-			'uuid' => $uuid,
-			'present' => array_values($present),
-		];
+		$payload = ['action' => 'presence', 'uuid' => $uuid, 'present' => array_values($present)];
+		$readers = $this->permissionHandler->getReadableByUsers(object: $object);
 
-		$pushed = false;
-		$channel = PushEvents::OR_OBJECT . '-' . $uuid;
-		foreach ($this->permissionHandler->getReadableByUsers(object: $object) as $userId) {
-			$queue->push(
-				'notify_custom',
-				[
-					'user' => $userId,
-					'message' => $channel,
-					'body' => $payload,
-				]
-			);
-			$pushed = true;
-		}
-
-		return $pushed;
+		return $this->pushToUsers(queue: $queue, userIds: $readers, channel: PushEvents::OR_OBJECT . '-' . $uuid, payload: $payload);
 	}//end pushPresence()
-
-	/**
-	 * Resolve a register's slug from its UUID.
-	 *
-	 * @param string|null $registerUuid The register UUID from ObjectEntity::getRegister().
-	 *
-	 * @return string|null The register slug, or null when not resolvable.
-	 *
-	 * @spec openspec/specs/realtime-updates/spec.md
-	 */
-	private function resolveRegisterSlug(?string $registerUuid): ?string {
-		if ($registerUuid === null || $registerUuid === '') {
-			return null;
-		}
-
-		try {
-			// System-internal lookup: bypass RBAC + multitenancy. The listener
-			// is system-level, not user-scoped — without the bypass the lookup
-			// throws "Register not found" whenever the request user's tenant
-			// doesn't own the register, leaving the push payload's slug fields
-			// null (issue #1454).
-			$register = $this->registerMapper->find(
-				id: $registerUuid,
-				_rbac: false,
-				_multitenancy: false
-			);
-			return $register->getSlug();
-		} catch (\Throwable $e) {
-			return null;
-		}
-	}//end resolveRegisterSlug()
-
-	/**
-	 * Resolve a schema's slug from its UUID.
-	 *
-	 * @param string|null $schemaUuid The schema UUID from ObjectEntity::getSchema().
-	 *
-	 * @return string|null The schema slug, or null when not resolvable.
-	 *
-	 * @spec openspec/specs/realtime-updates/spec.md
-	 */
-	private function resolveSchemaSlug(?string $schemaUuid): ?string {
-		if ($schemaUuid === null || $schemaUuid === '') {
-			return null;
-		}
-
-		try {
-			// System-internal lookup: bypass RBAC + multitenancy. Same reason
-			// as resolveRegisterSlug above — without the bypass cross-tenant
-			// events leave the schema slug null in the push body (issue #1454).
-			$schema = $this->schemaMapper->find(
-				id: $schemaUuid,
-				_rbac: false,
-				_multitenancy: false
-			);
-			return $schema->getSlug();
-		} catch (\Throwable $e) {
-			return null;
-		}
-	}//end resolveSchemaSlug()
 }//end class

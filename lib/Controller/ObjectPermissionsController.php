@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
@@ -112,24 +113,13 @@ class ObjectPermissionsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->reviewableObject(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		$refusal = $this->requireAccessReview(object: $object);
-		if ($refusal !== null) {
-			return $refusal;
-		}
-
 		try {
-			return new JSONResponse(
-				$this->report->setFor(
-					object: $object,
-					registerRef: $this->objectService->getRegister(),
-					schemaRef: $this->objectService->getSchema()
-				)
-			);
+			return new JSONResponse($this->accessSetOf(object: $object));
 		} catch (\Throwable $e) {
 			// An access set that could not be assembled is reported as exactly
 			// that. Left to the framework it is a 500 carrying a stack trace, on
@@ -138,14 +128,7 @@ class ObjectPermissionsController extends Controller {
 			// the one answer an auditor must not be given by accident. The cause
 			// goes to the log, so the caller's generic message is not the only
 			// trace of it.
-			$this->logger->error(
-				message: '[ObjectPermissionsController] The access set for {uuid} could not be assembled: {error}',
-				context: ['uuid' => $id, 'error' => $e->getMessage(), 'exception' => $e]
-			);
-			return new JSONResponse(
-				['message' => 'The access set for this object could not be assembled'],
-				Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->unassembled(exception: $e, id: $id);
 		}
 	}//end index()
 
@@ -173,14 +156,9 @@ class ObjectPermissionsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function history(string $register, string $schema, string $id, ?string $at = null): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->reviewableObject(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
-		}
-
-		$refusal = $this->requireAccessReview(object: $object);
-		if ($refusal !== null) {
-			return $refusal;
 		}
 
 		try {
@@ -195,6 +173,61 @@ class ObjectPermissionsController extends Controller {
 			);
 		}
 	}//end history()
+
+	/**
+	 * The object, once the caller may both read it and review its access.
+	 *
+	 * The read is checked first (404), the review right second (403), and both
+	 * before anything about the access set is read.
+	 *
+	 * @param string $register Register slug or id.
+	 * @param string $schema   Schema slug or id.
+	 * @param string $id       Object uuid.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the refusal.
+	 */
+	private function reviewableObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
+		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		return ($this->requireAccessReview(object: $object) ?? $object);
+	}//end reviewableObject()
+
+	/**
+	 * The access set of the object, in the register and schema the request resolved.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array The access set.
+	 */
+	private function accessSetOf(ObjectEntity $object): array {
+		return $this->report->setFor(
+			object: $object,
+			registerRef: $this->objectService->getRegister(),
+			schemaRef: $this->objectService->getSchema()
+		);
+	}//end accessSetOf()
+
+	/**
+	 * Log why an access set could not be assembled, and answer a generic 500.
+	 *
+	 * @param \Throwable $exception The failure.
+	 * @param string     $id        Object uuid.
+	 *
+	 * @return JSONResponse The 500.
+	 */
+	private function unassembled(\Throwable $exception, string $id): JSONResponse {
+		$this->logger->error(
+			message: '[ObjectPermissionsController] The access set for {uuid} could not be assembled: {error}',
+			context: ['uuid' => $id, 'error' => $exception->getMessage(), 'exception' => $exception]
+		);
+		return new JSONResponse(
+			['message' => 'The access set for this object could not be assembled'],
+			Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end unassembled()
 
 	/**
 	 * Refuse a caller who may read the object but not review its access.
@@ -228,7 +261,6 @@ class ObjectPermissionsController extends Controller {
 	 * @return ObjectEntity|JSONResponse The object, or the refusal.
 	 */
 	private function resolveObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
-		return ($this->gate->resolve(register: $register, schema: $schema, id: $id)
-			?? new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND));
+		return ($this->gate->resolve(register: $register, schema: $schema, id: $id) ?? ObjectSharingEndpoint::notFound());
 	}//end resolveObject()
 }//end class

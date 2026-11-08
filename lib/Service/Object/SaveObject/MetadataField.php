@@ -45,4 +45,20 @@ final readonly class MetadataField {
 		public array $commonFields,
 	) {
 	}//end __construct()
+
+	/**
+	 * The schema properties this column resolves relation fields against: all of them for the name, none for
+	 * the other columns.
+	 *
+	 * @param array $schemaProperties The schema properties.
+	 *
+	 * @return array
+	 */
+	public function relationProperties(array $schemaProperties): array {
+		if ($this->column === 'name') {
+			return $schemaProperties;
+		}
+
+		return [];
+	}//end relationProperties()
 }//end class

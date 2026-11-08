@@ -115,23 +115,25 @@ class SemanticRoleHandler implements SemanticRoleHandlerInterface {
 
 		foreach ($properties as $name => $property) {
 			$declared = $this->rawRoleOf(property: $property);
-			if ($declared === null) {
-				continue;
+			if (in_array($declared, self::ROLES, true) === true) {
+				$byRole[$declared][] = (string)$name;
+			} else if ($declared !== null) {
+				$errors[] = sprintf('The property "%s" declares the role "%s", which is not one of: %s.', (string)$name, $declared, implode(', ', self::ROLES));
 			}
+		}
 
-			if (in_array($declared, self::ROLES, true) === false) {
-				$errors[] = sprintf(
-					'The property "%s" declares the role "%s", which is not one of: %s.',
-					(string)$name,
-					$declared,
-					implode(', ', self::ROLES)
-				);
-				continue;
-			}
+		return array_merge($errors, self::duplicateRoleErrors(byRole: $byRole));
+	}//end violations()
 
-			$byRole[$declared][] = (string)$name;
-		}//end foreach
-
+	/**
+	 * The refusals for roles more than one property claims.
+	 *
+	 * @param array<string, array<int, string>> $byRole Property names per declared role.
+	 *
+	 * @return array<int, string> The refusals.
+	 */
+	private static function duplicateRoleErrors(array $byRole): array {
+		$errors = [];
 		foreach ($byRole as $role => $names) {
 			if (count($names) < 2) {
 				continue;
@@ -145,7 +147,7 @@ class SemanticRoleHandler implements SemanticRoleHandlerInterface {
 		}
 
 		return $errors;
-	}//end violations()
+	}//end duplicateRoleErrors()
 
 	/**
 	 * The help text of every property that carries it, in one language.
@@ -188,12 +190,7 @@ class SemanticRoleHandler implements SemanticRoleHandlerInterface {
 		$raw = $this->annotationOf(property: $property, annotation: self::HELP_ANNOTATION);
 
 		if (is_string($raw) === true) {
-			$raw = trim($raw);
-			if ($raw === '') {
-				return null;
-			}
-
-			return $raw;
+			return self::nonEmptyText(value: $raw);
 		}
 
 		if (is_object($raw) === true) {
@@ -218,21 +215,35 @@ class SemanticRoleHandler implements SemanticRoleHandlerInterface {
 	 * @return string|null The help text, or null when the map holds none.
 	 */
 	private function localisedHelp(array $map, string $language): ?string {
+		$preferred = [];
 		foreach ([$language, substr($language, 0, 2), 'nl', 'en'] as $tag) {
-			$candidate = ($map[$tag] ?? null);
-			if (is_string($candidate) === true && trim($candidate) !== '') {
-				return trim($candidate);
-			}
+			$preferred[] = ($map[$tag] ?? null);
 		}
 
-		foreach ($map as $candidate) {
-			if (is_string($candidate) === true && trim($candidate) !== '') {
-				return trim($candidate);
+		foreach (array_merge($preferred, array_values($map)) as $candidate) {
+			$text = self::nonEmptyText(value: $candidate);
+			if ($text !== null) {
+				return $text;
 			}
 		}
 
 		return null;
 	}//end localisedHelp()
+
+	/**
+	 * A value as trimmed text, or null when it is no string or only whitespace.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|null The trimmed text.
+	 */
+	private static function nonEmptyText(mixed $value): ?string {
+		if (is_string($value) === false || trim($value) === '') {
+			return null;
+		}
+
+		return trim($value);
+	}//end nonEmptyText()
 
 	/**
 	 * One property's declared role, when it is a valid one.

@@ -194,18 +194,32 @@ class RegistrySubscriptionController extends Controller {
 		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _render: false));
 		$resolvedSchema = $this->schemaMapper->find(id: (string)$object->getSchema());
 
-		$user = $this->userSession->getUser();
-		$allowed = $this->permissionHandler->hasPermission(
-			schema: $resolvedSchema,
-			action: 'update',
-			userId: $user?->getUID(),
-			objectOwner: $object->getOwner(),
-			object: $object,
-		);
-		if ($allowed === false) {
+		if ($this->mayUpdate(schema: $resolvedSchema, object: $object) === false) {
 			throw new NotAuthorizedException(message: 'You do not have permission to update this object.');
 		}
 
 		return [$object, $resolvedSchema];
 	}//end resolveObjectAndGuardUpdate()
+
+	/**
+	 * Whether the caller holds `update` on the object.
+	 *
+	 * @param Schema       $schema The object's schema.
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return bool The permission handler's verdict.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
+	 */
+	private function mayUpdate(Schema $schema, ObjectEntity $object): bool {
+		$user = $this->userSession->getUser();
+
+		return $this->permissionHandler->hasPermission(
+			schema: $schema,
+			action: 'update',
+			userId: $user?->getUID(),
+			objectOwner: $object->getOwner(),
+			object: $object,
+		);
+	}//end mayUpdate()
 }//end class

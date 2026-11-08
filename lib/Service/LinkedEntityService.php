@@ -189,21 +189,17 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 */
 	public function addLink(string $objectUuid, string $type, string $entityId): array {
 		$this->validateType(type: $type);
-		$columnName = $type;
 
 		$object = $this->magicMapper->find($objectUuid);
-		$getter = 'get' . ucfirst($columnName);
-		$setter = 'set' . ucfirst($columnName);
-		$existingIds = $object->$getter() ?? [];
+		$existingIds = $this->linkedIds(entity: $object, type: $type);
 
-		// Idempotent: don't add if already present.
-		if (in_array($entityId, $existingIds, true) === false) {
-			// SEC-CTRL-4: enforce write (update) permission before mutating the object.
-			$this->assertCanWriteObject(object: $object);
-			$existingIds[] = $entityId;
-			$object->$setter($existingIds);
-			$this->magicMapper->update($object);
+		// Idempotent: an id already present is neither checked nor written.
+		if (in_array($entityId, $existingIds, true) === true) {
+			return $existingIds;
 		}
+
+		$existingIds[] = $entityId;
+		$this->writeObjectIds(object: $object, type: $type, ids: $existingIds);
 
 		return $existingIds;
 	}//end addLink()
@@ -224,29 +220,66 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 */
 	public function removeLink(string $objectUuid, string $type, string $entityId): array {
 		$this->validateType(type: $type);
-		$columnName = $type;
 
 		$object = $this->magicMapper->find($objectUuid);
-		$getter = 'get' . ucfirst($columnName);
-		$setter = 'set' . ucfirst($columnName);
-		$existingIds = $object->$getter() ?? [];
-
 		$existingIds = array_values(
 			array_filter(
-				$existingIds,
-				function ($id) use ($entityId) {
-					return $id !== $entityId;
-				}
+				$this->linkedIds(entity: $object, type: $type),
+				fn ($id) => $id !== $entityId
 			)
 		);
 
-		// SEC-CTRL-4: enforce write (update) permission before mutating the object.
-		$this->assertCanWriteObject(object: $object);
-		$object->$setter($existingIds);
-		$this->magicMapper->update($object);
+		$this->writeObjectIds(object: $object, type: $type, ids: $existingIds);
 
 		return $existingIds;
 	}//end removeLink()
+
+	/**
+	 * Store an object's new linked ids, after the write permission check.
+	 *
+	 * SEC-CTRL-4: the update RBAC check runs before the object is mutated or
+	 * persisted; a refusal throws and nothing is written.
+	 *
+	 * @param ObjectEntity $object The object to update.
+	 * @param string       $type   The linked entity type (its column).
+	 * @param array        $ids    The new linked ids.
+	 *
+	 * @throws Exception When the schema cannot be resolved or the user lacks write permission.
+	 *
+	 * @return void
+	 */
+	private function writeObjectIds(ObjectEntity $object, string $type, array $ids): void {
+		$this->assertCanWriteObject(object: $object);
+		$this->storeLinkedIds(entity: $object, type: $type, ids: $ids);
+		$this->magicMapper->update($object);
+	}//end writeObjectIds()
+
+	/**
+	 * The ids in an entity's linked-type column; none when it is empty.
+	 *
+	 * @param object $entity The object, register or schema.
+	 * @param string $type   The linked entity type (its column).
+	 *
+	 * @return array
+	 */
+	private function linkedIds(object $entity, string $type): array {
+		$getter = 'get' . ucfirst($type);
+		return $entity->$getter() ?? [];
+	}//end linkedIds()
+
+	/**
+	 * Set an entity's linked-type column.
+	 *
+	 * @param object $entity The object, register or schema.
+	 * @param string $type   The linked entity type (its column).
+	 * @param array  $ids    The linked ids.
+	 *
+	 * @return void
+	 */
+	private function storeLinkedIds(object $entity, string $type, array $ids): void {
+		$setter = 'set' . ucfirst($type);
+		$entity->$setter($ids);
+	}//end storeLinkedIds()
 
 	/**
 	 * Add a linked entity ID to a register's metadata column.
@@ -263,22 +296,18 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 */
 	public function addLinkToRegister(string $registerUuid, string $type, string $entityId): array {
 		$this->validateType(type: $type);
-		$columnName = $type;
 
 		$registers = $this->registerMapper->findAll(filters: ['uuid' => $registerUuid]);
 		if (empty($registers) === true) {
 			throw new Exception("Register not found: $registerUuid");
 		}
 
-		$register = $registers[0];
-		$getter = 'get' . ucfirst($columnName);
-		$setter = 'set' . ucfirst($columnName);
-		$existingIds = $register->$getter() ?? [];
-
+		$entity = $registers[0];
+		$existingIds = $this->linkedIds(entity: $entity, type: $type);
 		if (in_array($entityId, $existingIds, true) === false) {
 			$existingIds[] = $entityId;
-			$register->$setter($existingIds);
-			$this->registerMapper->update($register);
+			$this->storeLinkedIds(entity: $entity, type: $type, ids: $existingIds);
+			$this->registerMapper->update($entity);
 		}
 
 		return $existingIds;
@@ -299,22 +328,18 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 */
 	public function addLinkToSchema(string $schemaUuid, string $type, string $entityId): array {
 		$this->validateType(type: $type);
-		$columnName = $type;
 
 		$schemas = $this->schemaMapper->findAll(filters: ['uuid' => $schemaUuid]);
 		if (empty($schemas) === true) {
 			throw new Exception("Schema not found: $schemaUuid");
 		}
 
-		$schema = $schemas[0];
-		$getter = 'get' . ucfirst($columnName);
-		$setter = 'set' . ucfirst($columnName);
-		$existingIds = $schema->$getter() ?? [];
-
+		$entity = $schemas[0];
+		$existingIds = $this->linkedIds(entity: $entity, type: $type);
 		if (in_array($entityId, $existingIds, true) === false) {
 			$existingIds[] = $entityId;
-			$schema->$setter($existingIds);
-			$this->schemaMapper->update($schema);
+			$this->storeLinkedIds(entity: $entity, type: $type, ids: $existingIds);
+			$this->schemaMapper->update($entity);
 		}
 
 		return $existingIds;
@@ -368,40 +393,61 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 		// use-case where cross-tenant linking is required, but constitutes a cross-tenant data exposure
 		// for multi-tenant SaaS deployments. A per-row access check should be added before this
 		// endpoint is used in strict-isolation deployments. See TODO #1273.
-		$allSchemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
 		$scanned = 0;
-
-		foreach ($allSchemas as $schema) {
+		foreach ($this->schemaMapper->findAll(_rbac: false, _multitenancy: false) as $schema) {
 			if ($scanned >= self::MAX_TABLES_TO_SCAN) {
-				$this->logger->warning(
-					'[LinkedEntityService] Circuit breaker: max tables reached',
-					['maxTables' => self::MAX_TABLES_TO_SCAN, 'type' => $lookup->type]
-				);
+				$this->logCircuitBreaker(lookup: $lookup);
 				break;
 			}
 
-			if (in_array($lookup->type, $schema->getLinkedTypes(), true) === false) {
-				continue;
+			if (in_array($lookup->type, $schema->getLinkedTypes(), true) === true) {
+				$results = array_merge($results, $this->scanSchemaTable(schema: $schema, lookup: $lookup));
+				$scanned++;
 			}
-
-			// Query this schema's magic table for the entity ID in the column.
-			try {
-				$objects = $this->magicMapper->findByLinkedEntity($schema, $lookup->magicColumn(), $lookup->entityId);
-				foreach ($objects as $object) {
-					$results[] = $this->objectResult(schema: $schema, object: $object);
-				}
-			} catch (Exception $e) {
-				$this->logger->warning(
-					'[LinkedEntityService] Error scanning magic table',
-					['schema' => $schema->getId(), 'error' => $e->getMessage()]
-				);
-			}//end try
-
-			$scanned++;
-		}//end foreach
+		}
 
 		return $results;
 	}//end scanMagicTables()
+
+	/**
+	 * Log that the reverse lookup stopped at the table-scan limit.
+	 *
+	 * @param LinkedEntityLookup $lookup The type looked for
+	 *
+	 * @return void
+	 */
+	private function logCircuitBreaker(LinkedEntityLookup $lookup): void {
+		$this->logger->warning(
+			'[LinkedEntityService] Circuit breaker: max tables reached',
+			['maxTables' => self::MAX_TABLES_TO_SCAN, 'type' => $lookup->type]
+		);
+	}//end logCircuitBreaker()
+
+	/**
+	 * Query one schema's magic table for objects linked to the entity. A table
+	 * that cannot be read is logged and yields the rows read before the failure.
+	 *
+	 * @param Schema             $schema The schema declaring the linked type
+	 * @param LinkedEntityLookup $lookup The type and entity id looked for
+	 *
+	 * @return array Array of matching results
+	 */
+	private function scanSchemaTable(Schema $schema, LinkedEntityLookup $lookup): array {
+		$results = [];
+		try {
+			$objects = $this->magicMapper->findByLinkedEntity($schema, $lookup->magicColumn(), $lookup->entityId);
+			foreach ($objects as $object) {
+				$results[] = $this->objectResult(schema: $schema, object: $object);
+			}
+		} catch (Exception $e) {
+			$this->logger->warning(
+				'[LinkedEntityService] Error scanning magic table',
+				['schema' => $schema->getId(), 'error' => $e->getMessage()]
+			);
+		}
+
+		return $results;
+	}//end scanSchemaTable()
 
 	/**
 	 * A reverse-lookup result row for a linked object, with the owning app's detail
@@ -416,15 +462,6 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	private function objectResult(Schema $schema, ObjectEntity $object): array {
 		$registerId = (int)$object->getRegister();
 		$schemaId = (int)$schema->getId();
-		$deepLink = $this->deepLinkRegistry->resolveUrl(
-			registerId: $registerId,
-			schemaId: $schemaId,
-			objectData: [
-				'uuid' => $object->getUuid(),
-				'register' => $registerId,
-				'schema' => $schemaId,
-			]
-		);
 
 		return [
 			'entityType' => 'object',
@@ -434,9 +471,26 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 			'schemaId' => $schemaId,
 			'schemaIcon' => $schema->getIcon(),
 			'register' => $registerId,
-			'url' => $deepLink,
+			'url' => $this->deepLink(registerId: $registerId, schemaId: $schemaId, uuid: $object->getUuid()),
 		];
 	}//end objectResult()
+
+	/**
+	 * The owning app's detail route for an object, or null when none is registered.
+	 *
+	 * @param int         $registerId The object's register id
+	 * @param int         $schemaId   The object's schema id
+	 * @param string|null $uuid       The object's uuid
+	 *
+	 * @return string|null
+	 */
+	private function deepLink(int $registerId, int $schemaId, ?string $uuid): ?string {
+		return $this->deepLinkRegistry->resolveUrl(
+			registerId: $registerId,
+			schemaId: $schemaId,
+			objectData: ['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
+		);
+	}//end deepLink()
 
 	/**
 	 * Scan one entity table (registers, schemas or organisations) for entities linked
@@ -452,31 +506,48 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	private function scanEntityTable(string $entityType, LinkedEntityLookup $lookup): array {
 		$results = [];
 		try {
-			$entities = match ($entityType) {
-				'register' => $this->registerMapper->findAll(),
-				'schema' => $this->schemaMapper->findAll(),
-				default => $this->organisationMapper->findAll(),
-			};
-			foreach ($entities as $entity) {
-				if ($lookup->isLinkedFrom(entity: $entity) === false) {
-					continue;
+			foreach ($this->entitiesOf(entityType: $entityType) as $entity) {
+				if ($lookup->isLinkedFrom(entity: $entity) === true) {
+					$results[] = $this->entityResult(entityType: $entityType, entity: $entity);
 				}
-
-				$results[] = [
-					'entityType' => $entityType,
-					'uuid' => $entity->getUuid(),
-					'name' => $this->entityName(entityType: $entityType, entity: $entity),
-				];
 			}
 		} catch (Exception $e) {
-			$this->logger->warning(
-				'[LinkedEntityService] Error scanning ' . $entityType . 's',
-				['error' => $e->getMessage()]
-			);
+			$this->logger->warning('[LinkedEntityService] Error scanning ' . $entityType . 's', ['error' => $e->getMessage()]);
 		}
 
 		return $results;
 	}//end scanEntityTable()
+
+	/**
+	 * Every register, schema or organisation.
+	 *
+	 * @param string $entityType `register`, `schema` or `organisation`.
+	 *
+	 * @return array
+	 */
+	private function entitiesOf(string $entityType): array {
+		return match ($entityType) {
+			'register' => $this->registerMapper->findAll(),
+			'schema' => $this->schemaMapper->findAll(),
+			default => $this->organisationMapper->findAll(),
+		};
+	}//end entitiesOf()
+
+	/**
+	 * A reverse-lookup result row for a linked register, schema or organisation.
+	 *
+	 * @param string $entityType `register`, `schema` or `organisation`.
+	 * @param object $entity     The entity.
+	 *
+	 * @return array
+	 */
+	private function entityResult(string $entityType, object $entity): array {
+		return [
+			'entityType' => $entityType,
+			'uuid' => $entity->getUuid(),
+			'name' => $this->entityName(entityType: $entityType, entity: $entity),
+		];
+	}//end entityResult()
 
 	/**
 	 * The display name of a register or schema (its title) or an organisation (its name).
@@ -547,15 +618,6 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 * @spec openspec/specs/cleanup-linked-entity-type-map/spec.md "Constants Removed"
 	 */
 	private static function legacyLinkedTypeIds(): array {
-		return [
-			'files',
-			'mail',
-			'contacts',
-			'notes',
-			'todos',
-			'calendar',
-			'talk',
-			'deck',
-		];
+		return ['files', 'mail', 'contacts', 'notes', 'todos', 'calendar', 'talk', 'deck'];
 	}//end legacyLinkedTypeIds()
 }//end class

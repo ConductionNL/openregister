@@ -60,21 +60,35 @@ class PartyNotificationService {
 	public const OUTCOME_AUTHORITY_UNAVAILABLE = OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE;
 
 	/**
+	 * The declared effects, which decide who may be reached.
+	 *
+	 * @var PartyIndicatorGuard
+	 */
+	private readonly PartyIndicatorGuard $indicators;
+
+	/**
+	 * Asks integriq whether a party's address may be mailed.
+	 *
+	 * @var OptOutAuthority
+	 */
+	private readonly OptOutAuthority $optOut;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper     $links      The link rows, for the parties on an object.
-	 * @param PartyServiceInterface $parties    The party records and their addresses.
-	 * @param PartyIndicatorGuard   $indicators The declared effects, which decide who may be reached.
-	 * @param EmailSender           $email      The email channel.
-	 * @param OptOutAuthority       $optOut     Asks integriq whether a party's address may be mailed.
+	 * @param ContactLinkMapper     $links   The link rows, for the parties on an object.
+	 * @param PartyServiceInterface $parties The party records and their addresses.
+	 * @param EmailSender           $email   The email channel.
+	 * @param PartyReachGates       $gates   The indicator guard and the opt-out authority.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapper $links,
 		private readonly PartyServiceInterface $parties,
-		private readonly PartyIndicatorGuard $indicators,
 		private readonly EmailSender $email,
-		private readonly OptOutAuthority $optOut,
+		PartyReachGates $gates,
 	) {
+		$this->indicators = $gates->indicators;
+		$this->optOut = $gates->optOut;
 	}//end __construct()
 
 	/**

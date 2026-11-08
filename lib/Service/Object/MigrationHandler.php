@@ -76,9 +76,9 @@ class MigrationHandler {
 	/**
 	 * Finds the relations in the mapped data.
 	 *
-	 * @var SaveObjectInterface
+	 * @var SaveObjectRelationScannerInterface
 	 */
-	private readonly SaveObjectInterface $relationScanner;
+	private readonly SaveObjectRelationScannerInterface $relationScanner;
 
 	/**
 	 * Records what the mapping changed.

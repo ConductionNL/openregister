@@ -1735,6 +1735,11 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 		}
 
 		foreach (($task->getCandidateGroups() ?? []) as $groupId) {
+			// A typed `{type, id}` entry is never a bare group name.
+			if (is_array($groupId) === true) {
+				continue;
+			}
+
 			$rows[] = [
 				'kind' => 'group',
 				'ref' => (string)$groupId,

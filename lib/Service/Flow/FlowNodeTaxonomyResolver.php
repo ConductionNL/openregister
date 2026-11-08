@@ -66,10 +66,12 @@ class FlowNodeTaxonomyResolver {
 	public function kindOf(IFlowNode $node): string {
 		return $this->declared(
 			node: $node,
-			declaration: static fn (IFlowNodeTaxonomy $taxonomy): string => $taxonomy->getKind(),
-			allowed: IFlowNodeTaxonomy::KINDS,
-			fallback: IFlowNodeTaxonomy::KIND_SERVICE_TASK,
-			what: 'kind'
+			vocabulary: new FlowTaxonomyVocabulary(
+				declaration: static fn (IFlowNodeTaxonomy $taxonomy): string => $taxonomy->getKind(),
+				allowed: IFlowNodeTaxonomy::KINDS,
+				fallback: IFlowNodeTaxonomy::KIND_SERVICE_TASK,
+				what: 'kind'
+			)
 		);
 
 	}//end kindOf()
@@ -86,10 +88,12 @@ class FlowNodeTaxonomyResolver {
 	public function categoryOf(IFlowNode $node): string {
 		return $this->declared(
 			node: $node,
-			declaration: static fn (IFlowNodeTaxonomy $taxonomy): string => $taxonomy->getCategory(),
-			allowed: IFlowNodeTaxonomy::CATEGORIES,
-			fallback: IFlowNodeTaxonomy::CATEGORY_OTHER,
-			what: 'category'
+			vocabulary: new FlowTaxonomyVocabulary(
+				declaration: static fn (IFlowNodeTaxonomy $taxonomy): string => $taxonomy->getCategory(),
+				allowed: IFlowNodeTaxonomy::CATEGORIES,
+				fallback: IFlowNodeTaxonomy::CATEGORY_OTHER,
+				what: 'category'
+			)
 		);
 
 	}//end categoryOf()
@@ -162,23 +166,19 @@ class FlowNodeTaxonomyResolver {
 	 * palette group of one that no author asked for. Falling back puts it where
 	 * undeclared nodes already are, which is where people look for exactly this.
 	 *
-	 * @param IFlowNode          $node        The node.
-	 * @param callable           $declaration Reads the value off the taxonomy.
-	 * @param array<int, string> $allowed     The closed vocabulary.
-	 * @param string             $fallback    What an undeclared node reports.
-	 * @param string             $what        The field name, for the log.
+	 * @param IFlowNode              $node       The node.
+	 * @param FlowTaxonomyVocabulary $vocabulary The declaration reader, closed vocabulary, fallback and field name.
 	 *
 	 * @return string The value to serve.
 	 *
 	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-both-are-optional-and-a-node-that-declares-neither-still-works
 	 */
-	private function declared(
-		IFlowNode $node,
-		callable $declaration,
-		array $allowed,
-		string $fallback,
-		string $what
-	): string {
+	private function declared(IFlowNode $node, FlowTaxonomyVocabulary $vocabulary): string {
+		$declaration = $vocabulary->declaration;
+		$allowed     = $vocabulary->allowed;
+		$fallback    = $vocabulary->fallback;
+		$what        = $vocabulary->what;
+
 		if (($node instanceof IFlowNodeTaxonomy) === false) {
 			return $fallback;
 		}

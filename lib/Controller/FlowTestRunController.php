@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\FlowTestRunControllerServices;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
@@ -49,24 +50,50 @@ use stdClass;
 class FlowTestRunController extends Controller {
 
 	/**
+	 * Queues and executes a run.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runner;
+
+	/**
+	 * Resolves the flow being tested.
+	 *
+	 * @var FlowLocatorInterface
+	 */
+	private readonly FlowLocatorInterface $resolvers;
+
+	/**
+	 * Who is asking, for attribution.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Whether the caller may run and edit this flow.
+	 *
+	 * @var FlowRunnableGuard
+	 */
+	private readonly FlowRunnableGuard $guard;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string            $appName     The app id.
 	 * @param IRequest          $request     The request.
-	 * @param FlowRunServiceInterface    $runner      Queues and executes a run.
-	 * @param FlowLocatorInterface       $resolvers   Resolves the flow being tested.
-	 * @param IUserSession      $userSession Who is asking, for attribution.
-	 * @param FlowRunnableGuard $guard       Whether the caller may run and edit this flow.
+	 * @param FlowTestRunControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly FlowRunServiceInterface $runner,
-		private readonly FlowLocatorInterface $resolvers,
-		private readonly IUserSession $userSession,
-		private readonly FlowRunnableGuard $guard,
+		FlowTestRunControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->runner = $services->runner;
+		$this->resolvers = $services->resolvers;
+		$this->userSession = $services->userSession;
+		$this->guard = $services->guard;
 	}//end __construct()
 
 	/**
