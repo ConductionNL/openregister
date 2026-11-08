@@ -50,7 +50,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use stdClass;
 use UnexpectedValueException;
@@ -58,7 +57,7 @@ use UnexpectedValueException;
 /**
  * Executes a named flow as a step, optionally waiting for its result.
  */
-class SubFlowNode implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * How deep a chain of sub-flows may go before it is refused.
@@ -89,10 +88,10 @@ class SubFlowNode implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKey
 	public function __construct(
 		private readonly FlowLocator $resolvers,
 		private readonly FlowRunServiceInterface $runs,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		IL10N $l10n,
+		IURLGenerator $urls,
 	) {
-
+		parent::__construct(l10n: $l10n, urls: $urls);
 	}//end __construct()
 
 	/**
@@ -130,18 +129,6 @@ class SubFlowNode implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKey
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/external.svg');
 	}//end getIcon()
-
-	/**
-	 * Running a sub-flow grants no privilege of its own; the sub-run enforces
-	 * whatever its own steps require.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a sub-flow step.
@@ -494,16 +481,4 @@ class SubFlowNode implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKey
 		return IFlowNodeTaxonomy::KIND_SUB_PROCESS;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

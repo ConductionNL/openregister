@@ -62,7 +62,7 @@ use Psr\Log\LoggerInterface;
  *   cause vocabulary; each is required for the degrade-don't-throw search
  *   surface (AD-23).
  */
-class OpenCorporatesProvider extends AbstractIntegrationProvider {
+class OpenCorporatesProvider extends AbstractIntegrationProvider implements OpenCorporatesSearchInterface {
 
 	use ConnectorRoutedProviderTrait;
 	use CompanyLookupCalls;

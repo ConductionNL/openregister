@@ -129,16 +129,27 @@ class TranslationProjectionListener implements IEventListener {
 
 		$this->deferral->defer(
 			jobClass: TranslationProjectionJob::class,
-			entry: [
-				'uuid' => (string)$object->getUuid(),
-				'register' => (string)$object->getRegister(),
-				'schema' => (string)$object->getSchema(),
-				'version' => $object->getVersion(),
-			],
+			entry: $this->deferralEntry(object: $object),
 			chunkSize: self::CHUNK_SIZE,
 			dedupeKey: (string)$object->getUuid()
 		);
 	}//end projectOrDefer()
+
+	/**
+	 * The queue entry the deferred projection job re-reads the object from.
+	 *
+	 * @param ObjectEntity $object The saved object.
+	 *
+	 * @return array<string, mixed> The entry.
+	 */
+	private function deferralEntry(ObjectEntity $object): array {
+		return [
+			'uuid' => (string)$object->getUuid(),
+			'register' => (string)$object->getRegister(),
+			'schema' => (string)$object->getSchema(),
+			'version' => $object->getVersion(),
+		];
+	}//end deferralEntry()
 
 	/**
 	 * Whether the object's schema declares at least one translatable property.

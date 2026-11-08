@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationDomain;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationMappers;
-use OCA\OpenRegister\Controller\Support\SchemaMigrationPlatform;
+use OCA\OpenRegister\Controller\Support\RetentionPlatform;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\QueryPage;
 use OCA\OpenRegister\Db\Schema;
@@ -68,9 +68,9 @@ class SchemaMigrationController extends Controller {
 	/**
 	 * Job list, current user and logger.
 	 *
-	 * @var SchemaMigrationPlatform
+	 * @var RetentionPlatform
 	 */
-	private readonly SchemaMigrationPlatform $platform;
+	private readonly RetentionPlatform $platform;
 
 	/**
 	 * Constructor.

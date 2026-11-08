@@ -27,7 +27,7 @@ use OCA\OpenRegister\Controller\RulesController;
 use OCA\OpenRegister\Controller\Support\RulesControllerServices;
 use OCA\OpenRegister\Controller\Support\RulesDomain;
 use OCA\OpenRegister\Controller\Support\RulesMappers;
-use OCA\OpenRegister\Controller\Support\RulesPlatform;
+use OCA\OpenRegister\Controller\Support\DsarCasePlatform;
 use OCA\OpenRegister\Controller\Support\RulesReplay;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -128,7 +128,7 @@ class RulesControllerA24GoldenTest extends TestCase {
 				mappers: new RulesMappers(schemaMapper: $this->schemas, runs: $this->runs),
 				domain: new RulesDomain(inventory: $this->inventory, trials: $this->trials, enablement: $this->enablement, vocabulary: new RuleVocabulary()),
 				replay: new RulesReplay(replays: $this->replays),
-				platform: new RulesPlatform(userSession: $this->userSession)
+				platform: new DsarCasePlatform(userSession: $this->userSession)
 			)
 		);
 	}

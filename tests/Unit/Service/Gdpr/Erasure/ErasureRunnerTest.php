@@ -37,10 +37,13 @@ use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureBucket;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureDestroyer;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureDestroyGuard;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRefusedException;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureSchemaResolver;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -166,18 +169,16 @@ final class ErasureRunnerTest extends TestCase {
 			}
 		);
 
-		return new ErasureRunner(
-			$previewService,
-			$store,
-			$subjects,
-			$objectMapper,
-			$this->createMock(SchemaMapper::class),
-			$destroyRight,
-			$clock,
+		$destroyer = new ErasureDestroyer(
+			new ErasureSchemaResolver($this->createMock(SchemaMapper::class)),
+			new ErasureDestroyGuard($destroyRight, $clock),
 			$scopeService,
 			$recorder,
+			$objectMapper,
 			new NullLogger()
 		);
+
+		return new ErasureRunner($previewService, $store, $subjects, $destroyer);
 	}//end runner()
 
 	public function testOneDestructionPathOneRecord(): void {

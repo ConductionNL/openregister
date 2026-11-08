@@ -29,7 +29,7 @@ use OCA\OpenRegister\Controller\SchemaMigrationController;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationDomain;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationMappers;
-use OCA\OpenRegister\Controller\Support\SchemaMigrationPlatform;
+use OCA\OpenRegister\Controller\Support\RetentionPlatform;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
@@ -148,7 +148,7 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 			new SchemaMigrationControllerServices(
 				mappers: new SchemaMigrationMappers($this->schemas, $this->changelog, $this->runs, $this->entries),
 				domain: new SchemaMigrationDomain($this->revalidation, $this->migration, $this->reader, $conversions),
-				platform: new SchemaMigrationPlatform(jobList: $this->jobs, userSession: $this->userSession, logger: new NullLogger())
+				platform: new RetentionPlatform(jobList: $this->jobs, userSession: $this->userSession, logger: new NullLogger())
 			)
 		);
 	}

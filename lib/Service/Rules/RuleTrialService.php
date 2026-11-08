@@ -27,11 +27,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
+use OCA\OpenRegister\Service\Rules\Support\RuleTrialEngine;
 use Throwable;
 
 /**
@@ -77,21 +78,17 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	 * Constructor.
 	 *
 	 * @param RuleInventoryService $inventory Finds the rule as declared.
-	 * @param CalculationEvaluatorInterface $evaluator The JSON-AST evaluator.
-	 * @param ConditionTracer $tracer Names the operand that decided.
+	 * @param RuleTrialEngine $engine The evaluator, the tracer and the dialect a rule is tried through.
 	 * @param RegisterMapperInterface $registerMapper Register lookup for a named object.
-	 * @param MagicMapperInterface $objectMapper Object lookup in the register and schema table.
-	 * @param ConditionDialect $dialect Decides and evaluates a condition in whichever dialect it is written.
+	 * @param MagicTableRowReaderInterface $objectMapper Object lookup in the register and schema table.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly RuleInventoryService $inventory,
-		private readonly CalculationEvaluatorInterface $evaluator,
-		private readonly ConditionTracer $tracer,
+		private readonly RuleTrialEngine $engine,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly ConditionDialect $dialect,
+		private readonly MagicTableRowReaderInterface $objectMapper,
 	) {
 	}//end __construct()
 
@@ -133,26 +130,15 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function tryObject(
-		Schema $schema,
-		string $ruleId,
-		string $register,
-		string $objectId,
-		?array $override = null,
-	): array {
+	public function tryObject(Schema $schema, string $ruleId, string $register, string $objectId,
+		?array $override = null): array {
 		$rule = $this->resolve(schema: $schema, ruleId: $ruleId, override: $override);
 		if ($rule instanceof RuleDescriptor === false) {
 			return $rule;
 		}
 
-		try {
-			$registerEntity = $this->registerMapper->find($register);
-			$object = $this->objectMapper->findInRegisterSchemaTable(
-				identifier: $objectId,
-				register: $registerEntity,
-				schema: $schema
-			);
-		} catch (Throwable $e) {
+		$object = $this->storedObject(schema: $schema, register: $register, objectId: $objectId);
+		if ($object === null) {
 			return $this->refusal(
 				code: self::CODE_OBJECT_NOT_FOUND,
 				message: sprintf('Object "%s" could not be read in register "%s".', $objectId, $register)
@@ -161,6 +147,27 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 
 		return $this->run(rule: $rule, payload: ($object->getObject() ?? []), objectUuid: ($object->getUuid() ?? null));
 	}//end tryObject()
+
+	/**
+	 * The stored object to try a rule against, read through the scoped mappers.
+	 *
+	 * @param Schema $schema The schema the object belongs to.
+	 * @param string $register Register id, uuid or slug.
+	 * @param string $objectId Object id, uuid, slug or uri.
+	 *
+	 * @return ObjectEntity|null The object, or null when it cannot be read.
+	 */
+	private function storedObject(Schema $schema, string $register, string $objectId): ?ObjectEntity {
+		try {
+			return $this->objectMapper->findInRegisterSchemaTable(
+				identifier: $objectId,
+				register: $this->registerMapper->find($register),
+				schema: $schema
+			);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end storedObject()
 
 	/**
 	 * The rule to try: the declared one, or the unsaved one the caller supplied.
@@ -175,20 +182,8 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	 */
 	private function resolve(Schema $schema, string $ruleId, ?array $override): RuleDescriptor|array {
 		$declared = $this->inventory->find(schema: $schema, ruleId: $ruleId);
-
 		if ($override !== null && isset($override['expression']) === true) {
-			// The caller is trying something that is not saved. It borrows the
-			// declared rule's identity so the response is about the rule the
-			// author is editing, and nothing at all is written.
-			return new RuleDescriptor(
-				kind: ($declared?->getKind() ?? RuleVocabulary::KIND_CALCULATION),
-				schemaSlug: (string)($schema->getSlug() ?? ''),
-				key: ($declared?->getKey() ?? 'draft'),
-				label: ($declared?->getKey() ?? 'draft'),
-				source: 'draft',
-				actions: [RuleVocabulary::ACTION_SET_VALUE],
-				condition: $override['expression']
-			);
+			return $this->draft(schema: $schema, declared: $declared, expression: $override['expression']);
 		}
 
 		if ($declared === null) {
@@ -200,6 +195,31 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 
 		return $declared;
 	}//end resolve()
+
+	/**
+	 * The unsaved rule a caller is trying.
+	 *
+	 * The caller is trying something that is not saved. It borrows the
+	 * declared rule's identity so the response is about the rule the author
+	 * is editing, and nothing at all is written.
+	 *
+	 * @param Schema $schema The schema the rule belongs to.
+	 * @param RuleDescriptor|null $declared The declared rule it stands in for, when there is one.
+	 * @param mixed $expression The unsaved expression.
+	 *
+	 * @return RuleDescriptor The draft rule.
+	 */
+	private function draft(Schema $schema, ?RuleDescriptor $declared, mixed $expression): RuleDescriptor {
+		return new RuleDescriptor(
+			kind: ($declared?->getKind() ?? RuleVocabulary::KIND_CALCULATION),
+			schemaSlug: (string)($schema->getSlug() ?? ''),
+			key: ($declared?->getKey() ?? 'draft'),
+			label: ($declared?->getKey() ?? 'draft'),
+			source: 'draft',
+			actions: [RuleVocabulary::ACTION_SET_VALUE],
+			condition: $expression
+		);
+	}//end draft()
 
 	/**
 	 * Evaluate one rule against one payload.
@@ -239,34 +259,29 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	 *
 	 * @return array<string, mixed> The trial result.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) RuleTrace::fired and ::errored are named
-	 *   constructors on an immutable value object, not a collaborator to inject.
-	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function runCalculation(RuleDescriptor $rule, array $payload, ?string $objectUuid): array {
 		try {
 			// No SequenceContext: a trial must never reserve a running number.
-			$value = $this->evaluator->evaluate($payload, $rule->getCondition());
+			$value = $this->engine->evaluator->evaluate($payload, $rule->getCondition());
 		} catch (EvaluationException $e) {
-			return $this->result(
-				rule: $rule,
-				trace: RuleTrace::errored(message: $e->getMessage()),
-				writes: [],
-				objectUuid: $objectUuid
-			);
+			$errored = RuleTrace::errored(message: $e->getMessage());
+			return $this->result(rule: $rule, trace: $errored, writes: [], objectUuid: $objectUuid);
 		}
 
-		return $this->result(
-			rule: $rule,
-			trace: RuleTrace::fired(),
-			writes: [$rule->getKey() => $value],
-			objectUuid: $objectUuid
-		);
+		return $this->result(rule: $rule, trace: RuleTrace::fired(), writes: [$rule->getKey() => $value], objectUuid: $objectUuid);
 	}//end runCalculation()
 
 	/**
 	 * Evaluate a transition condition and report whether it would refuse.
+	 *
+	 * THE SAME CLASS THE SAVE PATH ASKS. Task 4.2 moved
+	 * LifecycleConditionEvaluator onto ConditionDialect and this with it, in
+	 * one change, because a trial that understood a dialect the save path
+	 * does not would answer "it fires" about a rule that refuses every
+	 * transition in production. That is worse than not offering the dialect
+	 * at all, and it is why the two are never moved separately.
 	 *
 	 * @param RuleDescriptor $rule The condition.
 	 * @param array<string, mixed> $payload The object payload.
@@ -277,35 +292,37 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function runCondition(RuleDescriptor $rule, array $payload, ?string $objectUuid): array {
-		// The same four-key document the save path builds, with the transition
-		// half left empty: a trial is asking about the object, and inventing a
-		// transition it is not making would answer a question nobody asked.
-		$document = [
+		$document = $this->conditionDocument(rule: $rule, payload: $payload);
+		$verdict = RuleVocabulary::VERDICT_NO_MATCH;
+		if ($this->engine->dialect->holds(node: $rule->getCondition(), document: $document) === true) {
+			$verdict = RuleVocabulary::VERDICT_FIRED;
+		}
+
+		$trace = $this->engine->tracer->trace(condition: $rule->getCondition(), document: $document, verdict: $verdict);
+
+		return $this->result(rule: $rule, trace: $trace, writes: [], objectUuid: $objectUuid);
+	}//end runCondition()
+
+	/**
+	 * The document a transition condition is evaluated against.
+	 *
+	 * The same four-key document the save path builds, with the transition
+	 * half left empty: a trial is asking about the object, and inventing a
+	 * transition it is not making would answer a question nobody asked.
+	 *
+	 * @param RuleDescriptor $rule The condition.
+	 * @param array<string, mixed> $payload The object payload.
+	 *
+	 * @return array<string, mixed> The document.
+	 */
+	private function conditionDocument(RuleDescriptor $rule, array $payload): array {
+		return [
 			'object' => $payload,
 			'previous' => $payload,
 			'user' => ['uid' => '', 'groups' => []],
 			'transition' => ['action' => $rule->getKey(), 'from' => '', 'to' => ''],
 		];
-
-		// THE SAME CLASS THE SAVE PATH ASKS. Task 4.2 moved
-		// LifecycleConditionEvaluator onto ConditionDialect and this with it, in
-		// one change, because a trial that understood a dialect the save path
-		// does not would answer "it fires" about a rule that refuses every
-		// transition in production. That is worse than not offering the dialect
-		// at all, and it is why the two are never moved separately.
-		$holds = $this->dialect->holds(node: $rule->getCondition(), document: $document);
-		$verdict = RuleVocabulary::VERDICT_NO_MATCH;
-		if ($holds === true) {
-			$verdict = RuleVocabulary::VERDICT_FIRED;
-		}
-
-		return $this->result(
-			rule: $rule,
-			trace: $this->tracer->trace(condition: $rule->getCondition(), document: $document, verdict: $verdict),
-			writes: [],
-			objectUuid: $objectUuid
-		);
-	}//end runCondition()
+	}//end conditionDocument()
 
 	/**
 	 * Shape one successful trial.

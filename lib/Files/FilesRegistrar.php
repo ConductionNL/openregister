@@ -22,10 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files;
 
+use OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
+use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
@@ -62,9 +67,13 @@ final class FilesRegistrar
      */
     public const BINDINGS = [
         AccessLinkReaderInterface::class          => AccessLinkReader::class,
+        ChunkIndexOverviewInterface::class        => ChunkMapper::class,
         ChunkMapperInterface::class               => ChunkMapper::class,
+        ChunkSourceReaderInterface::class         => ChunkMapper::class,
+        ChunkStoreInterface::class                => ChunkMapper::class,
         DocumentProcessingHandlerInterface::class => DocumentProcessingHandler::class,
         FileMapperInterface::class                => FileMapper::class,
+        FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,
         RegisterFolderProvisionerInterface::class => RegisterFolderProvisioner::class,

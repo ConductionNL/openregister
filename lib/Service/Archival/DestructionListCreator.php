@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -53,14 +53,14 @@ class DestructionListCreator {
 	 * @param RetentionServiceInterface       $retention       Judges each object and builds the list.
 	 * @param MagicMapperInterface            $objectMapper    Loads the named objects.
 	 * @param SaveObjectInterface             $saveObject      Stores the list as the sweep does.
-	 * @param ObjectRetentionHandler $settingsHandler Names the destruction-list register and schema.
+	 * @param ArchivalSettingsReaderInterface $settingsHandler Names the destruction-list register and schema.
 	 * @param LoggerInterface        $logger          Records who asked for a list.
 	 */
 	public function __construct(
 		private readonly RetentionServiceInterface $retention,
 		private readonly MagicMapperInterface $objectMapper,
 		private readonly SaveObjectInterface $saveObject,
-		private readonly ObjectRetentionHandler $settingsHandler,
+		private readonly ArchivalSettingsReaderInterface $settingsHandler,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -78,6 +78,52 @@ class DestructionListCreator {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function createFor(array $uuids): array {
+		$location = $this->listLocation();
+		$judged = $this->judge(uuids: $uuids);
+		if ($judged['eligible'] === []) {
+			return ['list' => null, 'refused' => $judged['refused']];
+		}
+
+		$listData = $this->retention->createDestructionList($judged['eligible']);
+		if ($listData === null) {
+			throw new InvalidArgumentException('The destruction list could not be built from the archival settings.');
+		}
+
+		$saved = $this->store(location: $location, listData: $listData, judged: $judged);
+
+		return ['list' => (($saved->getObject() ?? $listData) + ['uuid' => $saved->getUuid()]), 'refused' => $judged['refused']];
+	}//end createFor()
+
+	/**
+	 * Save a built list exactly as the sweep saves one.
+	 *
+	 * @param array{register: mixed, schema: mixed} $location The configured register and schema.
+	 * @param array<string, mixed>                  $listData The built list.
+	 * @param array<string, array<int, mixed>>      $judged   The judged uuids, for the log line.
+	 *
+	 * @return ObjectEntity The stored list.
+	 */
+	private function store(array $location, array $listData, array $judged): ObjectEntity {
+		// The sweep's own save call (DestructionCheckJob::run()): no RBAC or
+		// multitenancy on the list, persisted, silent.
+		$saved = $this->saveObject->saveObject($location['register'], $location['schema'], $listData, null, false, false, true, true);
+
+		$this->logger->info(
+			'[DestructionListCreator] Created destruction list ' . (string)$saved->getUuid()
+			. ' with ' . count($judged['eligible']) . ' entries, ' . count($judged['refused']) . ' refused'
+		);
+
+		return $saved;
+	}//end store()
+
+	/**
+	 * The register and schema destruction lists are kept in.
+	 *
+	 * @return array{register: mixed, schema: mixed} The configured register and schema.
+	 *
+	 * @throws InvalidArgumentException When no destruction-list register and schema are configured.
+	 */
+	private function listLocation(): array {
 		$settings = $this->settingsHandler->getArchivalSettingsOnly();
 		$registerId = ($settings['destructionListRegister'] ?? null);
 		$schemaId = ($settings['destructionListSchema'] ?? null);
@@ -88,66 +134,52 @@ class DestructionListCreator {
 			);
 		}
 
+		return ['register' => $registerId, 'schema' => $schemaId];
+	}//end listLocation()
+
+	/**
+	 * Judge every named uuid once, by the sweep's own rule.
+	 *
+	 * @param array<int, string> $uuids The objects the caller wants destroyed.
+	 *
+	 * @return array{eligible: array<int, ObjectEntity>, refused: array<int, array{uuid: string, reason: string}>}
+	 *         The eligible objects and the refused uuids, both in the order named.
+	 */
+	private function judge(array $uuids): array {
 		$today = (new DateTime())->format('Y-m-d');
 		$onOpenLists = $this->retention->getObjectsOnPendingDestructionLists();
 
-		$eligible = [];
-		$refused = [];
-		$seen = [];
-		foreach ($uuids as $uuid) {
-			$uuid = trim((string)$uuid);
-			if (isset($seen[$uuid]) === true) {
-				continue;
-			}
-
-			$seen[$uuid] = true;
+		$judged = ['eligible' => [], 'refused' => []];
+		foreach (array_unique(array_map(static fn ($uuid): string => trim((string)$uuid), $uuids)) as $uuid) {
 			$object = $this->load(uuid: $uuid);
-			if ($object === null) {
-				$refused[] = ['uuid' => $uuid, 'reason' => self::REFUSAL_NOT_FOUND];
-				continue;
-			}
-
-			$reason = $this->retention->destructionRefusal(object: $object, today: $today, excludeUuids: $onOpenLists);
+			$reason = $this->refusalOf(object: $object, today: $today, onOpenLists: $onOpenLists);
 			if ($reason !== null) {
-				$refused[] = ['uuid' => $uuid, 'reason' => $reason];
+				$judged['refused'][] = ['uuid' => $uuid, 'reason' => $reason];
 				continue;
 			}
 
-			$eligible[] = $object;
-		}//end foreach
-
-		if ($eligible === []) {
-			return ['list' => null, 'refused' => $refused];
+			$judged['eligible'][] = $object;
 		}
 
-		$listData = $this->retention->createDestructionList($eligible);
-		if ($listData === null) {
-			throw new InvalidArgumentException('The destruction list could not be built from the archival settings.');
+		return $judged;
+	}//end judge()
+
+	/**
+	 * Why this object may not go on a list, or null when it may.
+	 *
+	 * @param ObjectEntity|null  $object      The object, or null when the uuid did not resolve.
+	 * @param string             $today       Today, as Y-m-d.
+	 * @param array<int, string> $onOpenLists Uuids already on an open destruction list.
+	 *
+	 * @return string|null The refusal reason.
+	 */
+	private function refusalOf(?ObjectEntity $object, string $today, array $onOpenLists): ?string {
+		if ($object === null) {
+			return self::REFUSAL_NOT_FOUND;
 		}
 
-		// The sweep's own save call (DestructionCheckJob::run()): no RBAC or
-		// multitenancy on the list, persisted, silent.
-		$saved = $this->saveObject->saveObject(
-			$registerId,
-			$schemaId,
-			$listData,
-			null,
-			false,
-			false,
-			true,
-			true
-		);
-
-		$this->logger->info(
-			'[DestructionListCreator] Created destruction list ' . (string)$saved->getUuid()
-			. ' with ' . count($eligible) . ' entries, ' . count($refused) . ' refused'
-		);
-
-		return [
-			'list' => (($saved->getObject() ?? $listData) + ['uuid' => $saved->getUuid()]),
-			'refused' => $refused,
-		];
-	}//end createFor()
+		return $this->retention->destructionRefusal(object: $object, today: $today, excludeUuids: $onOpenLists);
+	}//end refusalOf()
 
 	/**
 	 * One object by uuid, or null when there is none.

@@ -3,9 +3,7 @@ import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import {
 	dashboardStore,
 	navigationStore,
-	objectStore,
 	registerStore,
-	schemaStore,
 } from '../../store/store.js'
 </script>
 
@@ -233,6 +231,7 @@ import TableIcon from 'vue-material-design-icons/Table.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import formatBytes from '../../services/formatBytes.js'
 import { scopePickers } from '../../services/scopePickers.js'
+import { dashboardScope } from '../dashboardScope.js'
 // Ensure data is loaded
 dashboardStore.preload()
 
@@ -262,7 +261,7 @@ export default {
 		ChartBar,
 	},
 
-	mixins: [scopePickers],
+	mixins: [scopePickers, dashboardScope],
 
 	data() {
 		return {
@@ -308,60 +307,11 @@ export default {
 			return dashboardStore.getOrphanedItems
 		},
 
-		/**
-		 * Registers excluding the synthetic System Totals / Orphaned Items rows.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {Array}
-		 */
-		filteredRegisters() {
-			return dashboardStore.registers.filter(
-				(register) =>
-					register.title !== 'System Totals'
-					&& register.title !== 'Orphaned Items',
-			)
-		},
 
-		/**
-		 * Total schema count across the filtered registers.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {number}
-		 */
-		totalSchemas() {
-			return this.filteredRegisters.reduce((total, register) => {
-				return total + (register.schemas?.length || 0)
-			}, 0)
-		},
 	},
 
 	methods: {
-		/**
-		 * Apply a register selection and reset dependent schema state (cascade).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
-		 * @param {object|null} option - Selected register (or null to clear)
-		 * @return {void}
-		 */
-		handleRegisterChange(option) {
-			registerStore.setRegisterItem(option)
-			schemaStore.setSchemaItem(null)
-		},
 
-		/**
-		 * Apply a schema selection, initialise properties, and refresh the object list.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
-		 * @param {object|null} option - Selected schema (or null to clear)
-		 * @return {void}
-		 */
-		handleSchemaChange(option) {
-			schemaStore.setSchemaItem(option)
-			if (option) {
-				objectStore.initializeProperties(option)
-				objectStore.refreshObjectList()
-			}
-		},
 
 		/**
 		 * Push the selected date range into the dashboard store for stats scoping.

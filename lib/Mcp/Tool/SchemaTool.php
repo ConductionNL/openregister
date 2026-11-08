@@ -244,22 +244,7 @@ class SchemaTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
-		$this->log(functionName: $functionName, parameters: $parameters);
-
-		if ($this->hasUserContext(explicitUserId: $userId) === false) {
-			return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
-		}
-
-		try {
-			// Convert snake_case to camelCase for PSR compliance.
-			$methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
-
-			// Call the method directly (LLPhant-compatible).
-			return $this->$methodName(...array_values($parameters));
-		} catch (\Exception $e) {
-			$this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
-			return $this->formatError(message: $e->getMessage());
-		}
+		return $this->executeWithUser(functionName: $functionName, parameters: $parameters, userId: $userId);
 	}//end executeFunction()
 
 	/**

@@ -75,24 +75,23 @@ class StateHistoryProjectionListener implements IEventListener {
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function handle(Event $event): void {
-		if (($event instanceof ObjectTransitionedEvent) === false) {
-			return;
+		if ($event instanceof ObjectTransitionedEvent) {
+			$this->projectSafely(event: $event);
 		}
+	}//end handle()
 
+	/**
+	 * Project the transition; a failure is logged and never reaches the move.
+	 *
+	 * @param ObjectTransitionedEvent $event The committed transition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	private function projectSafely(ObjectTransitionedEvent $event): void {
 		try {
-			$object = $event->getObject();
-			$uuid = (string)$object->getUuid();
-			if ($uuid === '') {
-				return;
-			}
-
-			$this->projector->record(
-				objectUuid: $uuid,
-				schema: $this->resolveSchema(event: $event),
-				register: $event->getRegister(),
-				to: $event->getTo(),
-				stampedAt: new DateTime()
-			);
+			$this->project(event: $event);
 		} catch (\Throwable $e) {
 			// The projection is derived and rebuildable; the transition is
 			// not. A failure here must never travel back into the move.
@@ -101,7 +100,31 @@ class StateHistoryProjectionListener implements IEventListener {
 				['error' => $e->getMessage(), 'exception' => $e]
 			);
 		}//end try
-	}//end handle()
+	}//end projectSafely()
+
+	/**
+	 * Record the transition's target state for an object that has a uuid.
+	 *
+	 * @param ObjectTransitionedEvent $event The committed transition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	private function project(ObjectTransitionedEvent $event): void {
+		$uuid = (string)$event->getObject()->getUuid();
+		if ($uuid === '') {
+			return;
+		}
+
+		$this->projector->record(
+			objectUuid: $uuid,
+			schema: $this->resolveSchema(event: $event),
+			register: $event->getRegister(),
+			to: $event->getTo(),
+			stampedAt: new DateTime()
+		);
+	}//end project()
 
 	/**
 	 * Resolve the schema whose declaration names the projected property.
