@@ -26,12 +26,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
-use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Files\Controller\Support\FileSidebarControllerServices;
 use OCA\OpenRegister\Files\Service\FileSidebarService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\Files\IRootFolder;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
@@ -62,30 +62,32 @@ class FileSidebarController extends Controller {
 	private readonly CallerFileAccess $fileAccess;
 
 	/**
+	 * File sidebar service.
+	 *
+	 * @var FileSidebarService
+	 */
+	private readonly FileSidebarService $fileSidebarService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
-	 * @param IRequest $request HTTP request.
-	 * @param FileSidebarService $fileSidebarService File sidebar service.
-	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param IRootFolder $rootFolder Root folder for per-user file access checks.
+	 * @param IRequest                                                $request       HTTP request.
+	 * @param FileSidebarControllerServices                           $services      The sidebar service, the root folder, the session and the logger.
 	 * @param \OCA\OpenRegister\Files\Service\File\FileReadScope|null $fileReadScope The object read rule for an object's file.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly FileSidebarService $fileSidebarService,
-		ControllerSession $session,
-		IRootFolder $rootFolder,
+		FileSidebarControllerServices $services,
 		?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope = null,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
-		$this->logger = $session->logger;
+		$this->fileSidebarService = $services->fileSidebarService;
+		$this->logger = $services->logger;
 		$this->fileAccess = new CallerFileAccess(
 			fileReadScope: $fileReadScope,
-			userSession: $session->userSession,
-			rootFolder: $rootFolder
+			userSession: $services->userSession,
+			rootFolder: $services->rootFolder
 		);
 	}//end __construct()
 
