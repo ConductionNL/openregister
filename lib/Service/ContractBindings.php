@@ -308,6 +308,8 @@ use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidatorInterface;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
+use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
+use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Import\ImportPreviewService;
 use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
 use OCA\OpenRegister\Service\Import\SourceRowReader;
@@ -499,6 +501,8 @@ use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetService;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetServiceInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
@@ -1004,6 +1008,8 @@ final class ContractBindings {
 		RevealFlusherInterface::class => RevealFlusher::class,
 		UserPrincipalResolverInterface::class => UserPrincipalResolver::class,
 		WorkingCalendarWriteGuardInterface::class => WorkingCalendarWriteGuard::class,
+		HingeAnnotationValidatorInterface::class => HingeAnnotationValidator::class,
+		SurvivorshipAnnotationValidatorInterface::class => SurvivorshipAnnotationValidator::class,
 	];
 
 	/**

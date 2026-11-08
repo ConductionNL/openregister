@@ -21,13 +21,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
-use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
+use OCA\OpenRegister\Search\Service\SearchAnnotationValidators;
 use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
 use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
-use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -66,7 +65,7 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-aggregations');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
-				errors: (new AggregationAnnotationValidator())->validate($annotation->shape()),
+				errors: SearchAnnotationValidators::aggregation()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (aggregation not registered)'
 			);
 		}
@@ -138,7 +137,7 @@ final class AdvisoryAnnotationChecks {
 		}
 
 		$this->warn(
-			errors: (new HingeAnnotationValidator())->validate(['properties' => ($schema->getProperties() ?? [])] + $declared),
+			errors: SchemaAnnotationValidators::hinge()->validate(['properties' => ($schema->getProperties() ?? [])] + $declared),
 			text: 'Hinge annotations on schema "' . ((string)($schema->getSlug() ?? '')) . '" are invalid and were ignored'
 		);
 	}//end checkHinge()
@@ -158,7 +157,7 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-survivorship');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
-				errors: (new SurvivorshipAnnotationValidator())->validate($annotation->shape()),
+				errors: SchemaAnnotationValidators::survivorship()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (golden record not materialised)'
 			);
 		}

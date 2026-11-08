@@ -28,6 +28,8 @@ use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilderInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
@@ -79,6 +81,7 @@ final class SearchRegistrar {
 		SearchIndexMaintenanceInterface::class => SearchIndexMaintenance::class,
 		DuplicateDetectionServiceInterface::class => DuplicateDetectionService::class,
 		UniqueHintAnnotationValidatorInterface::class => UniqueHintAnnotationValidator::class,
+		AggregationAnnotationValidatorInterface::class => AggregationAnnotationValidator::class,
 		TimeseriesRequestValidatorInterface::class => TimeseriesRequestValidator::class,
 		VectorizationServiceInterface::class => VectorizationService::class,
 		VectorStorageHandlerInterface::class => VectorStorageHandler::class,
