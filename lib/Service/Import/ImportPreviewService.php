@@ -208,12 +208,12 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			$preview->setToRefuse(0);
 			$this->store->previewMapper->persist(preview: $preview);
 
+			$destination = new ImportDestination(register: $register, schema: $schema);
 			foreach ($rows as $index => $row) {
 				$decision = $this->decideRow(
 					row: $row,
 					preview: $preview,
-					register: $register,
-					schema: $schema,
+					destination: $destination,
 					pack: $pack
 				);
 
@@ -305,6 +305,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 
 		$register = $this->resolveRegister(value: $preview->getRegisterId());
 		$schema = $this->resolveSchema(value: $preview->getSchemaId());
+		$destination = new ImportDestination(register: $register, schema: $schema);
 
 		$preview->setState(ImportPreview::STATE_COMMITTING);
 		$this->store->previewMapper->persist(preview: $preview);
@@ -323,8 +324,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 				$this->writeBatch(
 					preview: $preview,
 					batch: $batch,
-					register: $register,
-					schema: $schema,
+					destination: $destination,
 					currentUser: $currentUser
 				);
 
@@ -380,8 +380,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 *
 	 * @param ImportPreview $preview The preview being committed.
 	 * @param array<int, ImportPreviewRow> $batch The rows to write.
-	 * @param Register $register The target register.
-	 * @param Schema $schema The target schema.
+	 * @param ImportDestination $destination The target register and schema.
 	 * @param IUser|null $currentUser The actor.
 	 *
 	 * @return void
@@ -389,8 +388,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	private function writeBatch(
 		ImportPreview $preview,
 		array $batch,
-		Register $register,
-		Schema $schema,
+		ImportDestination $destination,
 		?IUser $currentUser,
 	): void {
 		$objects = [];
@@ -401,8 +399,8 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		try {
 			$result = $this->targets->objectService->saveObjects(
 				objects: $objects,
-				register: $register,
-				schema: $schema,
+				register: $destination->register,
+				schema: $destination->schema,
 				validation: false,
 				events: false
 			);
@@ -432,8 +430,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			$this->writeRow(
 				preview: $preview,
 				row: $row,
-				register: $register,
-				schema: $schema,
+				destination: $destination,
 				currentUser: $currentUser
 			);
 		}
@@ -444,8 +441,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 *
 	 * @param ImportPreview $preview The preview being committed.
 	 * @param ImportPreviewRow $row The row.
-	 * @param Register $register The target register.
-	 * @param Schema $schema The target schema.
+	 * @param ImportDestination $destination The target register and schema.
 	 * @param IUser|null $currentUser The actor.
 	 *
 	 * @return void
@@ -453,15 +449,14 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	private function writeRow(
 		ImportPreview $preview,
 		ImportPreviewRow $row,
-		Register $register,
-		Schema $schema,
+		ImportDestination $destination,
 		?IUser $currentUser,
 	): void {
 		try {
 			$this->targets->objectService->saveObject(
 				object: ($row->getPayload() ?? []),
-				register: $register,
-				schema: $schema,
+				register: $destination->register,
+				schema: $destination->schema,
 				_validation: false,
 				currentUser: $currentUser
 			);
@@ -566,8 +561,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 *
 	 * @param array{row: int, data: array<string, mixed>} $row The source row.
 	 * @param ImportPreview $preview The preview.
-	 * @param Register $register The target register.
-	 * @param Schema $schema The target schema.
+	 * @param ImportDestination $destination The target register and schema.
 	 * @param array<string, mixed>|null $pack The saved mapping, if any.
 	 *
 	 * @return array{decision: string, reason: string|null, targetUuid: string|null,
@@ -579,8 +573,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	private function decideRow(
 		array $row,
 		ImportPreview $preview,
-		Register $register,
-		Schema $schema,
+		ImportDestination $destination,
 		?array $pack,
 	): array {
 		$data = $row['data'];
@@ -603,15 +596,15 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		try {
 			$object = $this->matching->importService->transformCsvRowToObject(
 				rowData: $data,
-				register: $register,
-				schema: $schema,
+				register: $destination->register,
+				schema: $destination->schema,
 				currentUser: null
 			);
 		} catch (Throwable $exception) {
 			return $this->refusal(reason: 'The row could not be mapped onto the schema: '.$exception->getMessage());
 		}
 
-		$validation = $this->targets->validateObject->validateObject(object: $object, schema: $schema);
+		$validation = $this->targets->validateObject->validateObject(object: $object, schema: $destination->schema);
 
 		if ($validation->isValid() === false) {
 			return $this->refusal(
@@ -625,8 +618,8 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			$candidates = $this->matching->matchResolver->resolve(
 				object: $object,
 				matchKey: ($preview->getMatchKey() ?? []),
-				register: $register,
-				schema: $schema
+				register: $destination->register,
+				schema: $destination->schema
 			);
 		} catch (MatchLookupFailedException $exception) {
 			return $this->refusal(reason: $exception->getMessage(), payload: $object);

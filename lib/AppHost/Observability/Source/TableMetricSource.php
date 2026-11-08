@@ -106,13 +106,13 @@ class TableMetricSource implements MetricSourceInterface {
 				return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: $samples)];
 			}
 
-			$samples = $this->countGrouped(
-				table: $table,
-				groupBy: $groupBy,
-				filter: $source['filter'] ?? [],
-				labelMap: $labelMap,
-				labelDefaults: $labelDefaults
-			);
+			$samples = [];
+			foreach ($this->countGrouped(table: $table, groupBy: $groupBy, filter: $source['filter'] ?? []) as $row) {
+				$samples[] = [
+					'labels' => $this->labelsOf(row: $row, groupBy: $groupBy, labelMap: $labelMap, labelDefaults: $labelDefaults),
+					'value' => (int)($row['cnt'] ?? 0),
+				];
+			}
 
 			return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: $samples)];
 		} catch (Throwable $e) {
@@ -151,14 +151,12 @@ class TableMetricSource implements MetricSourceInterface {
 	 * @param string $table Allowlisted table name.
 	 * @param string[] $groupBy Columns to group by.
 	 * @param array<string, mixed> $filter Column filters.
-	 * @param array<string, string> $labelMap Column → label rename.
-	 * @param array<string, scalar> $labelDefaults Default value for NULL/empty columns.
 	 *
-	 * @return array<int, array{labels: array<string,string>, value: int}>
+	 * @return array<int, array<string, mixed>> The grouped rows, each with its `cnt`.
 	 *
 	 * @throws \OCP\DB\Exception On DB error.
 	 */
-	private function countGrouped(string $table, array $groupBy, array $filter, array $labelMap, array $labelDefaults): array {
+	private function countGrouped(string $table, array $groupBy, array $filter): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'cnt'));
 
@@ -171,32 +169,42 @@ class TableMetricSource implements MetricSourceInterface {
 		$this->applyFilters(qb: $qb, filter: $filter);
 
 		$result = $qb->executeQuery();
-		$samples = [];
-		foreach ($result->fetchAll() as $row) {
-			$labels = [];
-			foreach ($groupBy as $column) {
-				$column = (string)$column;
-				$raw = $row[$column] ?? null;
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+		return $rows;
+	}//end countGrouped()
 
-				$value = $raw;
-				if ($raw === null || $raw === '') {
-					$value = ($labelDefaults[$column] ?? '');
-				}
+	/**
+	 * The sample labels of one grouped row.
+	 *
+	 * @param array<string, mixed> $row One grouped row.
+	 * @param string[] $groupBy Columns grouped by.
+	 * @param array<string, string> $labelMap Column → label rename.
+	 * @param array<string, scalar> $labelDefaults Default value for NULL/empty columns.
+	 *
+	 * @return array<string, string>
+	 */
+	private function labelsOf(array $row, array $groupBy, array $labelMap, array $labelDefaults): array {
+		$labels = [];
+		foreach ($groupBy as $column) {
+			$column = (string)$column;
+			$raw = $row[$column] ?? null;
 
-				$labelKey = $column;
-				if (isset($labelMap[$column]) === true) {
-					$labelKey = (string)$labelMap[$column];
-				}
-
-				$labels[$labelKey] = (string)$value;
+			$value = $raw;
+			if ($raw === null || $raw === '') {
+				$value = ($labelDefaults[$column] ?? '');
 			}
 
-			$samples[] = ['labels' => $labels, 'value' => (int)($row['cnt'] ?? 0)];
-		}//end foreach
+			$labelKey = $column;
+			if (isset($labelMap[$column]) === true) {
+				$labelKey = (string)$labelMap[$column];
+			}
 
-		$result->closeCursor();
-		return $samples;
-	}//end countGrouped()
+			$labels[$labelKey] = (string)$value;
+		}
+
+		return $labels;
+	}//end labelsOf()
 
 	/**
 	 * Apply column filters (eq/neq/lt/lte/gt/gte/like) to the query builder.

@@ -140,10 +140,12 @@ class FlowRunCommit {
 			if ($stream === null) {
 				$stream = $this->mintStream(
 					runUuid: $uuid,
-					streamId: $firing->streamId,
-					path: $firing->getStreamPath(),
-					parent: $firing->getStreamParent(),
-					place: ($firing->froms[0] ?? null),
+					ref: new FlowStreamRef(
+						streamId: $firing->streamId,
+						path: $firing->getStreamPath(),
+						parent: $firing->getStreamParent(),
+						place: ($firing->froms[0] ?? null)
+					),
 					now: $now
 				);
 				$streams[$firing->streamId] = $stream;
@@ -275,7 +277,7 @@ class FlowRunCommit {
 		try {
 			$locked = $this->runs->lockByUuid(uuid: $uuid);
 			$stream = $this->streams->findByRunAndStream(runUuid: $uuid, streamId: $ref->streamId)
-				?? $this->mintStream(runUuid: $uuid, streamId: $ref->streamId, path: $ref->path, parent: $ref->parent, place: $ref->place, now: $now);
+				?? $this->mintStream(runUuid: $uuid, ref: $ref, now: $now);
 			$stream->setStatus($closure->status);
 			if ($closure->parks() === true) {
 				$stream->setResumeAt($closure->resumeAt());
@@ -585,22 +587,19 @@ class FlowRunCommit {
 	 * walk before it has fired anything; its row is written by the first
 	 * commit that names it. `next_sequence` continues the run's history.
 	 *
-	 * @param string $runUuid The run.
-	 * @param string $streamId The stream's id.
-	 * @param string $path Its ordinal path.
-	 * @param string|null $parent Its parent stream id.
-	 * @param string|null $place The place holding its token.
-	 * @param DateTime $now Now.
+	 * @param string        $runUuid The run.
+	 * @param FlowStreamRef $ref     The stream's id, ordinal path, parent stream id and token place.
+	 * @param DateTime      $now     Now.
 	 *
 	 * @return FlowStream The inserted stream.
 	 */
-	private function mintStream(string $runUuid, string $streamId, string $path, ?string $parent, ?string $place, DateTime $now): FlowStream {
+	private function mintStream(string $runUuid, FlowStreamRef $ref, DateTime $now): FlowStream {
 		$stream = new FlowStream();
 		$stream->setRunUuid($runUuid);
-		$stream->setStreamId($streamId);
-		$stream->setOrdinalPath($path);
-		$stream->setParentStreamId($parent);
-		$stream->setPlace($place);
+		$stream->setStreamId($ref->streamId);
+		$stream->setOrdinalPath($ref->path);
+		$stream->setParentStreamId($ref->parent);
+		$stream->setPlace($ref->place);
 		$stream->setStatus(FlowRun::STATUS_RUNNING);
 		$stream->setNextSequence(($this->steps->highestSequence(runUuid: $runUuid) + 1));
 		$stream->setCreated($now);

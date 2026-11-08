@@ -38,7 +38,6 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
 use OCA\OpenRegister\Service\Oas\OasRbacAnnotator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
@@ -386,7 +385,7 @@ class OasService implements OasServiceInterface {
 	 * @param IURLGenerator $urlGenerator URL generator for absolute URLs
 	 * @param LoggerInterface|null $logger PSR-3 logger for surfacing validation issues
 	 * @param ?OasRequestValidator $metaValidator Optional validator for the vendored OAS 3.1 meta-schema check.
-	 * @param PropertyRbacHandler|null $propertyRbac Withholds a property the caller may not read. Nullable and
+	 * @param PropertyRbacHandlerInterface|null $propertyRbac Withholds a property the caller may not read. Nullable and
 	 *                                               last so no construction site shifts; absent, a governed
 	 *                                               property is withheld, which is the safe direction.
 	 */
@@ -399,7 +398,7 @@ class OasService implements OasServiceInterface {
 		// LAST AND NULLABLE so every existing construction keeps working. The
 		// container always supplies it; null happens only in a hand-built test,
 		// and then a GOVERNED property is withheld, which is the safe direction.
-		?PropertyRbacHandler $propertyRbac = null,
+		?PropertyRbacHandlerInterface $propertyRbac = null,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->schemaMapper = $schemaMapper;
@@ -412,13 +411,13 @@ class OasService implements OasServiceInterface {
 	/**
 	 * Build the report and the RBAC annotator the generation uses.
 	 *
-	 * @param PropertyRbacHandler|null $propertyRbac Withholds a property the caller may not read.
+	 * @param PropertyRbacHandlerInterface|null $propertyRbac Withholds a property the caller may not read.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
-	private function wireCollaborators(?PropertyRbacHandler $propertyRbac): void {
+	private function wireCollaborators(?PropertyRbacHandlerInterface $propertyRbac): void {
 		$this->report = new OasValidationReport();
 		$this->rbacAnnotator = new OasRbacAnnotator(
 			registerMapper: $this->registerMapper,

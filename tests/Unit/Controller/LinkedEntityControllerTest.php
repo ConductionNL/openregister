@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\LinkedEntityController;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\LinkedEntityService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\LinkedEntityControllerFactory;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -90,7 +91,7 @@ class LinkedEntityControllerTest extends TestCase {
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn($user);
 
-		$this->controller = new LinkedEntityController(
+		$this->controller = LinkedEntityControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,

@@ -259,36 +259,36 @@ class HierarchyGrantExpander {
 			}
 		}
 
-		$added = 0;
+		$descent = new HierarchyDescent(seen: $seen, granted: $granted, sources: $sources);
 
 		for ($depth = 0; $depth < $hierarchy['maxDepth']; $depth++) {
 			if (empty($frontier) === true) {
-				return;
+				break;
 			}
 
 			$children = $this->childrenOrNull(hierarchy: $hierarchy, frontier: $frontier, depth: $depth);
 			if ($children === null) {
-				return;
+				break;
 			}
 
 			$next = $this->absorbLevel(
 				hierarchy: $hierarchy,
 				children: $children,
 				frontier: $frontier,
-				seen: $seen,
-				granted: $granted,
-				sources: $sources,
-				added: $added
+				descent: $descent
 			);
 
 			// The descendant bound was passed. Nothing below this point is
 			// inherited, and stopping here is the whole point of the bound.
 			if ($next === null) {
-				return;
+				break;
 			}
 
 			$frontier = $next;
 		}//end for
+
+		$granted = $descent->granted;
+		$sources = $descent->sources;
 	}//end expandOne()
 
 	/**
@@ -333,10 +333,7 @@ class HierarchyGrantExpander {
 	 * @param array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int} $hierarchy One declaration, resolved.
 	 * @param array<string, string> $children Child uuid => parent uuid.
 	 * @param array<string, array{mask: int, root: string}> $frontier The current frontier.
-	 * @param array<string, array{mask: int, root: string}> $seen Everything decided so far, modified in place.
-	 * @param array<string, int> $granted The grant map, modified in place.
-	 * @param array<string, string> $sources The provenance map, modified in place.
-	 * @param integer $added How many descendants the descent has taken, modified in place.
+	 * @param HierarchyDescent $descent What the descent has decided so far, modified in place.
 	 *
 	 * @return array<string, array{mask: int, root: string}>|null The next frontier, or null when the bound was passed.
 	 *
@@ -346,10 +343,7 @@ class HierarchyGrantExpander {
 		array $hierarchy,
 		array $children,
 		array $frontier,
-		array &$seen,
-		array &$granted,
-		array &$sources,
-		int &$added
+		HierarchyDescent $descent
 	): ?array {
 		$next = [];
 
@@ -357,13 +351,13 @@ class HierarchyGrantExpander {
 			$childUuid = (string)$childUuid;
 			$parentUuid = (string)$parentUuid;
 
-			if (isset($seen[$childUuid]) === true) {
+			if (isset($descent->seen[$childUuid]) === true) {
 				$this->logRevisit(hierarchy: $hierarchy, childUuid: $childUuid);
 				continue;
 			}
 
-			$added++;
-			if ($added > self::MAX_DESCENDANTS) {
+			$descent->added++;
+			if ($descent->added > self::MAX_DESCENDANTS) {
 				$this->logger->warning(
 					message: '[HierarchyGrantExpander] The descent passed its descendant bound; nothing below this point is inherited',
 					context: [
@@ -382,7 +376,7 @@ class HierarchyGrantExpander {
 			}
 
 			$mask = $this->narrow(mask: $from['mask'], verbs: $hierarchy['verbs']);
-			$seen[$childUuid] = ['mask' => $mask, 'root' => $from['root']];
+			$descent->seen[$childUuid] = ['mask' => $mask, 'root' => $from['root']];
 			$next[$childUuid] = ['mask' => $mask, 'root' => $from['root']];
 
 			// 🔴 A DIRECT GRANT IS NEVER OVERWRITTEN. The inherited one is the
@@ -394,12 +388,12 @@ class HierarchyGrantExpander {
 			// every verb away, and recording a grant of nothing would put the
 			// object in the list and refuse every action on it, which reads as
 			// a broken object.
-			if (array_key_exists($childUuid, $granted) === true || $mask === 0) {
+			if (array_key_exists($childUuid, $descent->granted) === true || $mask === 0) {
 				continue;
 			}
 
-			$granted[$childUuid] = $mask;
-			$sources[$childUuid] = $from['root'];
+			$descent->granted[$childUuid] = $mask;
+			$descent->sources[$childUuid] = $from['root'];
 		}//end foreach
 
 		return $next;

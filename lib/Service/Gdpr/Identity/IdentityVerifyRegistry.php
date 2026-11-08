@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Gdpr\Identity;
 
+use OCA\OpenRegister\Service\Gdpr\Seam\ProviderSet;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -45,9 +46,9 @@ class IdentityVerifyRegistry {
 	/**
 	 * Registered providers, keyed by provider id.
 	 *
-	 * @var array<string, IdentityVerifyProvider>
+	 * @var ProviderSet<IdentityVerifyProvider>
 	 */
-	private array $providers = [];
+	private ProviderSet $providers;
 
 	/**
 	 * Constructor.
@@ -58,12 +59,16 @@ class IdentityVerifyRegistry {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly LoggerInterface $logger,
+		LoggerInterface $logger,
 		private readonly NullIdentityVerifyProvider $default,
 	) {
+		$this->providers = new ProviderSet(
+			logger: $logger,
+			duplicateWarning: '[IdentityVerifyRegistry] duplicate provider id "%s" — keeping first registration'
+		);
 		// The fail-closed default is itself registered so a pack that names it
 		// explicitly (as the default pack does) resolves through the same path.
-		$this->providers[$this->default->getProviderId()] = $this->default;
+		$this->providers->add(id: $this->default->getProviderId(), provider: $this->default);
 	}//end __construct()
 
 	/**
@@ -78,19 +83,7 @@ class IdentityVerifyRegistry {
 	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function addProvider(IdentityVerifyProvider $provider): bool {
-		$id = $provider->getProviderId();
-		if (isset($this->providers[$id]) === true) {
-			$this->logger->warning(
-				sprintf(
-					'[IdentityVerifyRegistry] duplicate provider id "%s" — keeping first registration',
-					$id
-				)
-			);
-			return false;
-		}
-
-		$this->providers[$id] = $provider;
-		return true;
+		return $this->providers->add(id: $provider->getProviderId(), provider: $provider);
 	}//end addProvider()
 
 	/**
@@ -106,8 +99,19 @@ class IdentityVerifyRegistry {
 	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function get(string $id): ?IdentityVerifyProvider {
-		return $this->providers[$id] ?? null;
+		return $this->providers->get(id: $id);
 	}//end get()
+
+	/**
+	 * List every registered provider, irrespective of enablement.
+	 *
+	 * @return array<int, IdentityVerifyProvider>
+	 *
+	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
+	 */
+	public function list(): array {
+		return $this->providers->all();
+	}//end list()
 
 	/**
 	 * Resolve the identity provider for a pack selector, FAIL-CLOSED.
@@ -124,31 +128,14 @@ class IdentityVerifyRegistry {
 	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function resolve(?string $selectorId): IdentityVerifyProvider {
-		if ($selectorId !== null && $selectorId !== '' && isset($this->providers[$selectorId]) === true) {
-			return $this->providers[$selectorId];
-		}
-
-		$this->logger->warning(
-			sprintf(
-				'[IdentityVerifyRegistry] identityVerifyProvider "%s" is unset or unregistered — '
-				. 'resolving fail-closed default "%s" (identity NOT verified)',
-				($selectorId ?? '(null)'),
-				$this->default->getProviderId()
-			)
+		return $this->providers->resolve(
+			selectorId: $selectorId,
+			default: $this->default,
+			defaultId: $this->default->getProviderId(),
+			fallbackWarning: '[IdentityVerifyRegistry] identityVerifyProvider "%s" is unset or unregistered — '
+				. 'resolving fail-closed default "%s" (identity NOT verified)'
 		);
-		return $this->default;
 	}//end resolve()
-
-	/**
-	 * List every registered provider, irrespective of enablement.
-	 *
-	 * @return array<int, IdentityVerifyProvider>
-	 *
-	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
-	 */
-	public function list(): array {
-		return array_values($this->providers);
-	}//end list()
 
 	/**
 	 * Return the ids of every registered provider.
@@ -158,6 +145,6 @@ class IdentityVerifyRegistry {
 	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function listIds(): array {
-		return array_keys($this->providers);
+		return $this->providers->ids();
 	}//end listIds()
 }//end class

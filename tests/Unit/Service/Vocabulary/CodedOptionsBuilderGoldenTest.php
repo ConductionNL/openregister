@@ -31,8 +31,10 @@ declare(strict_types=1);
 namespace Unit\Service\Vocabulary;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Vocabulary\CodedNarrowing;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueRules;
 use OCA\OpenRegister\Service\Vocabulary\ConceptHierarchy;
 use OCA\OpenRegister\Service\Vocabulary\ConceptLifecycle;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
@@ -74,13 +76,13 @@ class CodedOptionsBuilderGoldenTest extends TestCase {
 	private static function declarations(): array {
 		return [
 			'plain' => new CodedPropertyDeclaration('urn:scheme'),
-			'notation' => new CodedPropertyDeclaration('urn:scheme', 'notation'),
-			'deprecated allowed' => new CodedPropertyDeclaration('urn:scheme', 'uri', true),
-			'branch' => new CodedPropertyDeclaration('urn:scheme', 'uri', false, 'urn:mid'),
-			'missing branch' => new CodedPropertyDeclaration('urn:scheme', 'uri', false, 'urn:nope'),
-			'leaf only' => new CodedPropertyDeclaration('urn:scheme', 'notation', false, 'urn:top', true),
-			'depth 1' => new CodedPropertyDeclaration('urn:scheme', 'uri', false, 'urn:top', false, 1),
-			'context bound' => new CodedPropertyDeclaration('urn:scheme', 'uri', false, null, false, null, 'zaaktype'),
+			'notation' => new CodedPropertyDeclaration('urn:scheme', new CodedValueRules('notation')),
+			'deprecated allowed' => new CodedPropertyDeclaration('urn:scheme', new CodedValueRules('uri', true)),
+			'branch' => new CodedPropertyDeclaration('urn:scheme', new CodedValueRules(), new CodedNarrowing('urn:mid')),
+			'missing branch' => new CodedPropertyDeclaration('urn:scheme', new CodedValueRules(), new CodedNarrowing('urn:nope')),
+			'leaf only' => new CodedPropertyDeclaration('urn:scheme', new CodedValueRules('notation', false, true), new CodedNarrowing('urn:top')),
+			'depth 1' => new CodedPropertyDeclaration('urn:scheme', new CodedValueRules(), new CodedNarrowing('urn:top', 1)),
+			'context bound' => new CodedPropertyDeclaration('urn:scheme', new CodedValueRules(), new CodedNarrowing(null, null, 'zaaktype')),
 			'empty scheme' => new CodedPropertyDeclaration('urn:empty'),
 		];
 	}//end declarations()

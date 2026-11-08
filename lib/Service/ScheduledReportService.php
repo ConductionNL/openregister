@@ -43,6 +43,9 @@ use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
@@ -993,16 +996,22 @@ class ScheduledReportService implements ScheduledReportsInterface {
 
 		try {
 			$this->exportRuns->record(
-				source: 'scheduled-report',
-				actor: $run->owner->getUID(),
-				format: (string)($report->getFormat() ?? 'csv'),
-				rowCount: (int)($run->export['rowCount'] ?? 0),
-				profile: (string)($report->getName() ?? ('report-' . (string)$report->getId())),
-				filename: $run->filename,
-				registerName: $this->nullableString(value: $report->getRegisterId()),
-				schemaName: $this->nullableString(value: $report->getSchemaId()),
-				fileId: $fileId,
-				filePath: $filePath,
+				origin: new ExportRunOrigin(
+					source: 'scheduled-report',
+					actor: $run->owner->getUID(),
+					profile: (string)($report->getName() ?? ('report-' . (string)$report->getId()))
+				),
+				content: new ExportRunContent(
+					format: (string)($report->getFormat() ?? 'csv'),
+					rowCount: (int)($run->export['rowCount'] ?? 0),
+					registerName: $this->nullableString(value: $report->getRegisterId()),
+					schemaName: $this->nullableString(value: $report->getSchemaId())
+				),
+				file: new ExportRunFile(
+					filename: $run->filename,
+					fileId: $fileId,
+					filePath: $filePath
+				),
 				retentionSeconds: $this->retentionFor(report: $report)
 			);
 		} catch (\Throwable $e) {

@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessHistory;
@@ -187,8 +188,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 			gate: new AccessReviewGate(
 				objectService: $objectService,
 				report: $report,
-				userSession: $userSession,
-				groupManager: $groupManager,
+				caller: new CallerContext(userSession: $userSession, groupManager: $groupManager),
 				grantManage: $this->createMock(originalClassName: GrantManageGuard::class)
 			),
 			logger: ($logger ?? new NullLogger())

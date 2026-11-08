@@ -81,6 +81,13 @@ class DsarPolicyPackResolver {
 	public const REGULATOR_SELECTOR = 'regulatorEscalateProvider';
 
 	/**
+	 * The findAll() config selecting every policy-pack object.
+	 *
+	 * @var array{filters: array{register: string, schema: string}}
+	 */
+	private const PACK_QUERY = ['filters' => ['register' => self::REGISTER_SLUG, 'schema' => self::SCHEMA_SLUG]];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objectService RBAC + tenant scoped object store (pack read).
@@ -143,20 +150,7 @@ class DsarPolicyPackResolver {
 			return $this->resolveActivePack(case: $case);
 		}
 
-		$wanted = $this->stringField(data: $case, key: 'jurisdiction');
-		$default = null;
-		foreach ($this->loadPacks(_rbac: false, _multitenancy: false) as $pack) {
-			$packJurisdiction = $this->stringField(data: $pack, key: 'jurisdiction');
-			if ($wanted !== '' && $packJurisdiction === $wanted) {
-				return $pack;
-			}
-
-			if ($packJurisdiction === self::DEFAULT_JURISDICTION) {
-				$default = $pack;
-			}
-		}
-
-		return $default;
+		return $this->pickPack(case: $case, packs: $this->loadPacks(_rbac: false, _multitenancy: false));
 	}//end activePackForCase()
 
 	/**
@@ -190,21 +184,45 @@ class DsarPolicyPackResolver {
 	 * @return array<string, mixed>|null The active pack, or null when none exists.
 	 */
 	private function resolveActivePack(array $case): ?array {
-		$wanted = $this->stringField(data: $case, key: 'jurisdiction');
-		$default = null;
-		foreach ($this->loadPacks() as $pack) {
-			$packJurisdiction = $this->stringField(data: $pack, key: 'jurisdiction');
-			if ($wanted !== '' && $packJurisdiction === $wanted) {
-				return $pack;
-			}
+		return $this->pickPack(case: $case, packs: $this->loadPacks());
+	}//end resolveActivePack()
 
-			if ($packJurisdiction === self::DEFAULT_JURISDICTION) {
-				$default = $pack;
+	/**
+	 * Pick the first pack whose `jurisdiction` matches the case's, else the
+	 * LAST `default` pack, else null.
+	 *
+	 * @param array<string, mixed>             $case  The case's serialised payload.
+	 * @param array<int, array<string, mixed>> $packs The readable packs, in store order.
+	 *
+	 * @return array<string, mixed>|null The active pack, or null when none applies.
+	 */
+	private function pickPack(array $case, array $packs): ?array {
+		$wanted = $this->stringField(data: $case, key: 'jurisdiction');
+		$match = null;
+		if ($wanted !== '') {
+			$match = $this->firstFor(packs: $packs, jurisdiction: $wanted);
+		}
+
+		return ($match ?? $this->firstFor(packs: array_reverse($packs), jurisdiction: self::DEFAULT_JURISDICTION));
+	}//end pickPack()
+
+	/**
+	 * The first pack declaring the given jurisdiction, or null.
+	 *
+	 * @param array<int, array<string, mixed>> $packs        The packs, in the order to search.
+	 * @param string                           $jurisdiction The jurisdiction key.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function firstFor(array $packs, string $jurisdiction): ?array {
+		foreach ($packs as $pack) {
+			if ($this->stringField(data: $pack, key: 'jurisdiction') === $jurisdiction) {
+				return $pack;
 			}
 		}
 
-		return $default;
-	}//end resolveActivePack()
+		return null;
+	}//end pickPack()
 
 	/**
 	 * Read a string field off an array, defaulting to an empty string.
@@ -239,16 +257,7 @@ class DsarPolicyPackResolver {
 	 */
 	private function loadPacks(bool $_rbac = true, bool $_multitenancy = true): array {
 		try {
-			$rows = $this->objectService->findAll(
-				config: [
-					'filters' => [
-						'register' => self::REGISTER_SLUG,
-						'schema' => self::SCHEMA_SLUG,
-					],
-				],
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy
-			);
+			$rows = $this->objectService->findAll(config: self::PACK_QUERY, _rbac: $_rbac, _multitenancy: $_multitenancy);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				sprintf('[DsarPolicyPackResolver] policy-pack read failed: %s', $e->getMessage())
@@ -256,13 +265,6 @@ class DsarPolicyPackResolver {
 			return [];
 		}
 
-		$packs = [];
-		foreach ($rows as $row) {
-			if (is_array($row) === true) {
-				$packs[] = $row;
-			}
-		}
-
-		return $packs;
+		return array_values(array_filter($rows, static fn (mixed $row): bool => is_array($row)));
 	}//end loadPacks()
 }//end class

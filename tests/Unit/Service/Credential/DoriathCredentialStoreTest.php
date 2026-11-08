@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Service\Credential\DoriathCredentialStore;
+use OCA\OpenRegister\Service\Credential\DoriathKeyMaterial;
 use OCA\OpenRegister\Service\Credential\NextcloudVaultCredentialStore;
 use OCA\OpenRegister\Tests\Fixtures\Doriath\FakeDecryptService;
 use OCA\OpenRegister\Tests\Fixtures\Doriath\FakeEncryptService;
@@ -289,7 +290,7 @@ class DoriathCredentialStoreTest extends TestCase {
 				LoggerInterface $logger,
 				private readonly array $serviceMap,
 			) {
-				parent::__construct($vaultStore, $credentialsManager, $appConfig, $userSession, $logger);
+				parent::__construct($vaultStore, new DoriathKeyMaterial($credentialsManager, $appConfig), $userSession, $logger);
 			}
 
 			protected function resolveDoriathService(string $relativeClass): ?object {

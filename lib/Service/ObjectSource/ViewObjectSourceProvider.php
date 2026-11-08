@@ -56,23 +56,43 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	private const RESERVED = ['limit', 'offset', 'page', 'sort', 'filters', 'extend', 'fields', 'register', 'schema'];
 
 	/**
+	 * Reads the backing view.
+	 *
+	 * @var ViewMapperInterface
+	 */
+	private readonly ViewMapperInterface $viewMapper;
+
+	/**
+	 * Resolves the source register.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Resolves the source schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ViewMapperInterface      $viewMapper     Reads the backing view.
-	 * @param RegisterMapperInterface  $registerMapper Resolves the source register.
-	 * @param SchemaMapperInterface    $schemaMapper   Resolves the source schema.
-	 * @param MagicTableRowReaderInterface     $magicMapper    Searches the source table.
-	 * @param LoggerInterface $logger         Logs a view that cannot back a type.
+	 * @param ViewSourceMappers            $mappers     The view, register and schema mappers.
+	 * @param MagicTableRowReaderInterface $magicMapper Searches the source table.
+	 * @param LoggerInterface              $logger      Logs a view that cannot back a type.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ViewMapperInterface $viewMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		ViewSourceMappers $mappers,
 		private readonly MagicTableRowReaderInterface $magicMapper,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->viewMapper     = $mappers->viewMapper;
+		$this->registerMapper = $mappers->registerMapper;
+		$this->schemaMapper   = $mappers->schemaMapper;
 	}//end __construct()
 
 	/**

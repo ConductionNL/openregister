@@ -39,9 +39,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Authorization;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -63,17 +60,13 @@ class GroupReconciler {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Live register lookup.
-	 * @param SchemaMapperInterface $schemaMapper Live schema lookup.
-	 * @param IAppConfig $appConfig Stores each app's declared group list.
+	 * @param GroupDeclarationSources $sources Live registers, live schemas and stored declarations.
 	 * @param RbacGroupCollector $collector Declared-group extraction.
 	 * @param GroupProvisioner $provisioner Create-only group provisioning.
 	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly IAppConfig $appConfig,
+		private readonly GroupDeclarationSources $sources,
 		private readonly RbacGroupCollector $collector,
 		private readonly GroupProvisioner $provisioner,
 		private readonly LoggerInterface $logger,
@@ -159,7 +152,7 @@ class GroupReconciler {
 	 */
 	private function fromLiveRegisters(): array {
 		$groups = [];
-		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+		foreach ($this->sources->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
 			$groups = array_merge(
 				$groups,
 				$this->collector->fromAuthorizationBlock(authorization: $register->getAuthorization())
@@ -181,7 +174,7 @@ class GroupReconciler {
 	 */
 	private function fromLiveSchemas(): array {
 		$groups = [];
-		foreach ($this->schemaMapper->findAll(_rbac: false, _multitenancy: false) as $schema) {
+		foreach ($this->sources->schemaMapper->findAll(_rbac: false, _multitenancy: false) as $schema) {
 			$groups = array_merge(
 				$groups,
 				$this->collector->fromSchemaDefinition(
@@ -208,12 +201,12 @@ class GroupReconciler {
 	 */
 	private function fromStoredDeclarations(): array {
 		$groups = [];
-		foreach ($this->appConfig->getKeys('openregister') as $key) {
+		foreach ($this->sources->appConfig->getKeys('openregister') as $key) {
 			if (str_starts_with($key, self::DECLARED_GROUPS_PREFIX) === false) {
 				continue;
 			}
 
-			$stored = json_decode($this->appConfig->getValueString('openregister', $key, '[]'), true);
+			$stored = json_decode($this->sources->appConfig->getValueString('openregister', $key, '[]'), true);
 			if (is_array($stored) === false) {
 				continue;
 			}

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use DateTime;
+use OCA\OpenRegister\Notifications\Db\BroadcastMessage;
+use OCA\OpenRegister\Notifications\Db\BroadcastWindow;
 use OCA\OpenRegister\Notifications\Db\NotificationBroadcast;
 use OCA\OpenRegister\Notifications\Db\NotificationBroadcastMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationBroadcastReceipt;
@@ -48,19 +50,17 @@ class NotificationBroadcastServiceTest extends TestCase {
 		$this->broadcasts->method('record')->willReturnCallback(
 			function (
 				string $uuid,
-				string $subject,
-				?string $body,
 				string $sender,
-				DateTime $startsAt,
-				DateTime $endsAt,
+				BroadcastMessage $message,
+				BroadcastWindow $window,
 			): NotificationBroadcast {
 				$entity = new NotificationBroadcast();
 				$entity->setUuid($uuid);
-				$entity->setSubject($subject);
-				$entity->setBody($body);
+				$entity->setSubject($message->subject);
+				$entity->setBody($message->body);
 				$entity->setSender($sender);
-				$entity->setStartsAt($startsAt);
-				$entity->setEndsAt($endsAt);
+				$entity->setStartsAt($window->startsAt);
+				$entity->setEndsAt($window->endsAt);
 				$entity->setCreated(new DateTime());
 				$this->stored[$uuid] = $entity;
 

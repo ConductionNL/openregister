@@ -184,24 +184,11 @@ class MdtoXmlGenerator {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
 	public function generate(ObjectEntity $object, array $files = []): string {
-		$this->preconditions->assertGeneratorPreconditions(object: $object, files: $files);
-		$this->preconditions->reportMdtoRequiredElementGaps(object: $object);
-
+		$this->checkInputs(object: $object, files: $files);
 		[$dom, $root] = $this->writer->createDocument(kind: 'informatieobject');
 
 		$facts = $this->sourceReader->coreFacts(object: $object);
-		$self = $this->representedObject(object: $object);
-		$this->writer->identificatie(parent: $root, name: 'identificatie', kenmerk: $self['kenmerk'], bron: $self['bron']);
-		$this->writer->text(parent: $root, name: 'naam', content: $self['naam']);
-		$this->addAggregationLevel(parent: $root, object: $object);
-		$this->addClassification(parent: $root, facts: $facts);
-
-		$this->writer->textIfPresent(
-			parent: $root,
-			name: 'omschrijving',
-			content: $facts['description']
-		);
-
+		$this->addDescription(parent: $root, object: $object, facts: $facts);
 		$this->addTemporalCoverage(parent: $root, object: $object);
 		$this->addEvents(parent: $root, object: $object);
 		$this->addRating(parent: $root, facts: $facts);
@@ -363,29 +350,65 @@ class MdtoXmlGenerator {
 	 */
 	private function addEvents(DOMElement $parent, ObjectEntity $object): void {
 		foreach ($this->eventMapper->forObject(object: $object) as $event) {
-			$element = $this->writer->element(parent: $parent, name: 'event');
-
-			$this->writer->begrip(
-				parent: $element,
-				name: 'eventType',
-				label: $event['type'],
-				code: null,
-				list: MdtoEventMapper::EVENT_TYPE_LIST
-			);
-
-			$this->writer->textIfPresent(parent: $element, name: 'eventTijd', content: $event['time']);
-
-			if ($event['actorName'] !== null) {
-				$this->writer->verwijzing(
-					parent: $element,
-					name: 'eventVerantwoordelijkeActor',
-					verwijzingNaam: $event['actorName'],
-					kenmerk: $event['actorId'],
-					bron: $this->organisationIdentifier()
-				);
-			}
+			$this->addEvent(parent: $parent, event: $event);
 		}
 	}//end addEvents()
+
+	/**
+	 * Refuse missing generator inputs, and log the required elements that get a default.
+	 *
+	 * @param ObjectEntity $object The object to export.
+	 * @param array        $files  Associated file metadata.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If a precondition is not met.
+	 */
+	private function checkInputs(ObjectEntity $object, array $files): void {
+		$this->preconditions->assertGeneratorPreconditions(object: $object, files: $files);
+		$this->preconditions->reportMdtoRequiredElementGaps(object: $object);
+	}//end checkInputs()
+
+	/**
+	 * Add the identification, name, aggregation level, classification and description.
+	 *
+	 * @param DOMElement           $parent The informatieobject element.
+	 * @param ObjectEntity         $object The source object.
+	 * @param array<string, mixed> $facts  The object's core archival facts.
+	 *
+	 * @return void
+	 */
+	private function addDescription(DOMElement $parent, ObjectEntity $object, array $facts): void {
+		$self = $this->representedObject(object: $object);
+		$this->writer->identificatie(parent: $parent, name: 'identificatie', kenmerk: $self['kenmerk'], bron: $self['bron']);
+		$this->writer->text(parent: $parent, name: 'naam', content: $self['naam']);
+		$this->addAggregationLevel(parent: $parent, object: $object);
+		$this->addClassification(parent: $parent, facts: $facts);
+		$this->writer->textIfPresent(parent: $parent, name: 'omschrijving', content: $facts['description']);
+	}//end addDescription()
+
+	/**
+	 * Add one `event`: its type, its time and, when known, its responsible actor.
+	 *
+	 * @param DOMElement           $parent The informatieobject element.
+	 * @param array<string, mixed> $event  The mapped event.
+	 *
+	 * @return void
+	 */
+	private function addEvent(DOMElement $parent, array $event): void {
+		$element = $this->writer->element(parent: $parent, name: 'event');
+		$this->writer->begrip(parent: $element, name: 'eventType', label: $event['type'], code: null, list: MdtoEventMapper::EVENT_TYPE_LIST);
+		$this->writer->textIfPresent(parent: $element, name: 'eventTijd', content: $event['time']);
+		if ($event['actorName'] !== null) {
+			$this->writer->verwijzing(
+				parent: $element,
+				name: 'eventVerantwoordelijkeActor',
+				verwijzingNaam: $event['actorName'],
+				kenmerk: $event['actorId'],
+				bron: $this->organisationIdentifier()
+			);
+		}
+	}//end addEvent()
 
 	/**
 	 * Add `waardering`, a `begripGegevens` from the closed Waarderingen list.
@@ -578,20 +601,8 @@ class MdtoXmlGenerator {
 		}
 
 		$element = $this->writer->element(parent: $parent, name: 'beperkingGebruik');
-		$this->writer->begrip(
-			parent: $element,
-			name: 'beperkingGebruikType',
-			label: $restriction['type'],
-			code: null,
-			list: self::USE_RESTRICTION_LIST
-		);
-
-		$this->writer->textIfPresent(
-			parent: $element,
-			name: 'beperkingGebruikNadereBeschrijving',
-			content: $restriction['description']
-		);
-
+		$this->writer->begrip(parent: $element, name: 'beperkingGebruikType', label: $restriction['type'], code: null, list: self::USE_RESTRICTION_LIST);
+		$this->writer->textIfPresent(parent: $element, name: 'beperkingGebruikNadereBeschrijving', content: $restriction['description']);
 		if ($restriction['startDate'] !== null) {
 			$term = $this->writer->element(parent: $element, name: 'beperkingGebruikTermijn');
 			$this->writer->text(parent: $term, name: 'termijnStartdatumLooptijd', content: $restriction['startDate']);

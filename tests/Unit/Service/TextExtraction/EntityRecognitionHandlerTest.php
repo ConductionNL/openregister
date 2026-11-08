@@ -26,6 +26,8 @@ use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionBackends;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -75,13 +77,17 @@ class EntityRecognitionHandlerTest extends TestCase {
 		$this->anonymisationBackendService = $this->createMock(AnonymisationBackendService::class);
 
 		$this->handler = new EntityRecognitionHandler(
-			$this->chunkMapper,
-			$this->entityMapper,
-			$this->entityRelationMapper,
-			$this->db,
-			$this->logger,
-			$this->settingsService,
-			$this->anonymisationBackendService
+			stores: new EntityRecognitionStores(
+				chunkMapper: $this->chunkMapper,
+				entityMapper: $this->entityMapper,
+				entityRelationMapper: $this->entityRelationMapper,
+				db: $this->db
+			),
+			backends: new EntityRecognitionBackends(
+				settingsService: $this->settingsService,
+				anonymisationBackendService: $this->anonymisationBackendService
+			),
+			logger: $this->logger
 		);
 	}
 

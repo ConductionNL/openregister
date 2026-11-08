@@ -61,9 +61,9 @@ class RegistrySubscriptionNotifier {
 	 * Announce a subscription request: dispatch the connector event and
 	 * audit it against the session user.
 	 *
+	 * The event names the register and schema the object itself carries.
+	 *
 	 * @param ObjectEntity $object The object requesting a subscription.
-	 * @param string $register Register slug/id the object lives in.
-	 * @param string $schema Schema slug/id the object was saved against.
 	 * @param string $registry The registry id (`brp`, `kvk`, ...).
 	 * @param string $identityValue The object's identity value at that registry.
 	 *
@@ -71,11 +71,11 @@ class RegistrySubscriptionNotifier {
 	 *
 	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
 	 */
-	public function requested(ObjectEntity $object, string $register, string $schema, string $registry, string $identityValue): void {
+	public function requested(ObjectEntity $object, string $registry, string $identityValue): void {
 		$this->eventDispatcher->dispatchTyped(new RegistrySubscriptionRequestedEvent(
 			objectUuid: (string)$object->getUuid(),
-			register: $register,
-			schema: $schema,
+			register: (string)$object->getRegister(),
+			schema: (string)$object->getSchema(),
 			registry: $registry,
 			identityValue: $identityValue,
 		));

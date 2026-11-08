@@ -43,7 +43,9 @@ use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\ShareTimeWriter;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCP\Files\Folder;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
@@ -833,11 +835,9 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 
 		return new AccessLinkService(
 			mapper: $mapper,
-			auditTrail: $this->createMock(AuditTrailMapper::class),
-			secureRandom: $random,
-			hasher: $this->createMock(IHasher::class),
-			urlGenerator: $urls,
-			logger: new NullLogger()
+			useLog: new AccessLinkUseLog(auditTrail: $this->createMock(AuditTrailMapper::class), logger: new NullLogger()),
+			secrets: new AccessLinkSecrets(secureRandom: $random, hasher: $this->createMock(IHasher::class)),
+			urlGenerator: $urls
 		);
 	}//end linkService()
 

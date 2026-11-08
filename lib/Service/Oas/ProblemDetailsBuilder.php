@@ -50,16 +50,14 @@ class ProblemDetailsBuilder {
 
 	public const CONTENT_TYPE = 'application/problem+json';
 
-	private const DEFAULT_TYPE = 'about:blank';
+	public const DEFAULT_TYPE = 'about:blank';
 
 	/**
 	 * Build a problem document from the input parts.
 	 *
 	 * @param int $status HTTP status code (4xx / 5xx).
 	 * @param string $title Short summary.
-	 * @param string $detail Per-occurrence explanation.
-	 * @param string $type Problem-class URI; defaults to `about:blank`.
-	 * @param string $instance Instance URI; '' = omit.
+	 * @param ProblemDescription|null $description Detail, problem-class URI and instance URI; null = none of them.
 	 * @param array $extensions Free-form extension fields (e.g. `errors`, `code`).
 	 *
 	 * @return array<string, mixed> The problem-json payload.
@@ -69,14 +67,16 @@ class ProblemDetailsBuilder {
 	public function build(
 		int $status,
 		string $title,
-		string $detail = '',
-		string $type = self::DEFAULT_TYPE,
-		string $instance = '',
+		?ProblemDescription $description = null,
 		array $extensions = [],
 	): array {
+		$description ??= new ProblemDescription();
+		$detail        = $description->detail;
+		$instance      = $description->instance;
+
 		$problemType = self::DEFAULT_TYPE;
-		if ($type !== '') {
-			$problemType = $type;
+		if ($description->type !== '') {
+			$problemType = $description->type;
 		}
 
 		$problem = [
@@ -121,9 +121,7 @@ class ProblemDetailsBuilder {
 		return $this->build(
 			status: 422,
 			title: 'Validation failed',
-			detail: $detail,
-			type: 'about:blank',
-			instance: $instance,
+			description: new ProblemDescription(detail: $detail, type: 'about:blank', instance: $instance),
 			extensions: ['errors' => $errors]
 		);
 
@@ -143,8 +141,7 @@ class ProblemDetailsBuilder {
 		return $this->build(
 			status: 404,
 			title: 'Not found',
-			detail: $detail,
-			instance: $instance
+			description: new ProblemDescription(detail: $detail, instance: $instance)
 		);
 
 	}//end notFound()
@@ -163,8 +160,7 @@ class ProblemDetailsBuilder {
 		return $this->build(
 			status: 409,
 			title: 'Conflict',
-			detail: $detail,
-			instance: $instance
+			description: new ProblemDescription(detail: $detail, instance: $instance)
 		);
 
 	}//end conflict()

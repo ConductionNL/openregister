@@ -40,7 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\ApiCallersControllerServices;
 use OCA\OpenRegister\Db\ApiCallRecord;
 use OCA\OpenRegister\Db\ApiCallRecordMapper;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
@@ -115,30 +115,48 @@ class ApiCallersController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
+	 * Reads the caller record.
+	 *
+	 * @var ApiCallRecordMapper
+	 */
+	private readonly ApiCallRecordMapper $records;
+
+	/**
+	 * The declared contract versions.
+	 *
+	 * @var ApiVersionCatalogue
+	 */
+	private readonly ApiVersionCatalogue $catalogue;
+
+	/**
+	 * Reads and writes the declaration.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The incoming request.
-	 * @param ApiCallRecordMapper $records Reads the caller record.
-	 * @param ApiVersionCatalogue $catalogue The declared contract versions.
-	 * @param IAppConfig $appConfig Reads and writes the declaration.
-	 * @param ControllerSession $session Session, group manager and logger.
+	 * @param ApiCallersControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ApiCallRecordMapper $records,
-		private readonly ApiVersionCatalogue $catalogue,
-		private readonly IAppConfig $appConfig,
-		ControllerSession $session,
+		ApiCallersControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->records = $services->records;
+		$this->catalogue = $services->catalogue;
+		$this->appConfig = $services->appConfig;
 
-		$this->userSession = $session->userSession;
-		$this->groupManager = $session->groupManager;
-		$this->logger = $session->logger;
+		$this->userSession = $services->session->userSession;
+		$this->groupManager = $services->session->groupManager;
+		$this->logger = $services->session->logger;
 	}//end __construct()
 
 	/**
