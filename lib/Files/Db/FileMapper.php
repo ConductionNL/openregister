@@ -86,6 +86,11 @@ use OCA\OpenRegister\Db\ObjectEntity;
 class FileMapper extends QBMapper implements FileMapperInterface {
 
 	/**
+	 * The permissions of a public share: read only.
+	 */
+	private const PUBLIC_SHARE_PERMISSIONS = 1;
+
+	/**
 	 * The text patterns of the untracked-file filter, in the order they are bound.
 	 */
 	private const UNTRACKED_FILE_PATTERNS = [
@@ -767,7 +772,6 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	 * @param int $fileId The file ID to publish
 	 * @param string $sharedBy The user who is sharing the file
 	 * @param string $shareOwner The owner of the file
-	 * @param int $permissions The permissions for the share (default: 1 = read)
 	 * @param \DateTime|null $depublished When the share stops working, or null for no end date
 	 *
 	 * @return (int|string)[]
@@ -779,7 +783,6 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	 * @phpstan-param int $fileId
 	 * @phpstan-param string $sharedBy
 	 * @phpstan-param string $shareOwner
-	 * @phpstan-param int $permissions
 	 *
 	 * @phpstan-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
 	 *
@@ -789,7 +792,6 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 		int $fileId,
 		string $sharedBy,
 		string $shareOwner,
-		int $permissions = 1,
 		?\DateTime $depublished = null
 	): array {
 		// Check if a public share already exists for this file.
@@ -826,7 +828,7 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 					'item_target' => $qb->createNamedParameter('/' . $fileId),
 					'file_source' => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
 					'file_target' => $qb->createNamedParameter('/' . $fileId),
-					'permissions' => $qb->createNamedParameter($permissions, IQueryBuilder::PARAM_INT),
+					'permissions' => $qb->createNamedParameter(self::PUBLIC_SHARE_PERMISSIONS, IQueryBuilder::PARAM_INT),
 					'stime' => $qb->createNamedParameter($currentTime, IQueryBuilder::PARAM_INT),
 					'accepted' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
 					// The share carries the end of the window, so Nextcloud stops
