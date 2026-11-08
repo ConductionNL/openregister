@@ -78,7 +78,7 @@ final class SearchRegistrarTest extends TestCase {
 			$expected[] = ['alias' => $contract, 'target' => $service];
 		}
 
-		$this->assertCount(16, $expected);
+		$this->assertCount(17, $expected);
 		$this->assertSame(expected: $expected, actual: $context->aliases);
 	}//end testEveryInterfaceIsBoundToItsImplementation()
 }//end class
