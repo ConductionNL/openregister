@@ -17,10 +17,10 @@ import DeleteApplication from './application/DeleteApplication.vue'
 import DeleteConfiguration from './configuration/DeleteConfiguration.vue'
 import DeleteEndpoint from './endpoint/DeleteEndpoint.vue'
 import RemoveUserDialog from './organisation/RemoveUserDialog.vue'
-import ClearCacheModal from './settings/ClearCacheModal.vue'
-import RebaseConfirmationModal from './settings/RebaseConfirmationModal.vue'
 import DeleteSchemaObjects from './schema/DeleteSchemaObjects.vue'
 import DeleteSchemaProperty from './schema/DeleteSchemaProperty.vue'
+import ClearCacheModal from './settings/ClearCacheModal.vue'
+import RebaseConfirmationModal from './settings/RebaseConfirmationModal.vue'
 import DeleteView from './view/DeleteView.vue'
 
 jest.mock('@nextcloud/l10n', () => ({
