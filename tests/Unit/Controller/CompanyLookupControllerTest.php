@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\CompanyLookupController;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactory;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCP\AppFramework\Http\JSONResponse;
@@ -80,10 +81,10 @@ class CompanyLookupControllerTest extends TestCase {
 		$this->openCorporates = $this->createMock(OpenCorporatesProvider::class);
 
 		$this->controller = new CompanyLookupController(
-			'openregister',
 			$this->request,
 			$this->kvk,
-			$this->openCorporates
+			$this->openCorporates,
+			new CompanySearchFactory()
 		);
 	}//end setUp()
 
