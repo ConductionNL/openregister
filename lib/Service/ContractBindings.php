@@ -328,6 +328,8 @@ use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
@@ -774,6 +776,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\ObjectAction\ObjectActionHistoryInterface::class
 			=> \OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory::class,
 		ObjectActionDefinitionsInterface::class => ObjectActionDefinitions::class,
+		ObjectActionDefinitionInterface::class => ObjectActionDefinition::class,
 		ObjectActionListInterface::class => ObjectActionList::class,
 		ObjectActionRunnerInterface::class => ObjectActionRunner::class,
 		ObjectActionValidatorInterface::class => ObjectActionValidator::class,
