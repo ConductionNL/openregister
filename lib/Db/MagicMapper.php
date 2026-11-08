@@ -2632,7 +2632,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function probeTableExistsInDatabase(string $tableName): bool {
 		try {
-			\OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'tableExists.probe');
+			\OCA\OpenRegister\Service\WritePhase::count(event: 'tableExists.probe');
 
 			// Check if table exists in information_schema.
 			// NOTE: We use raw SQL here because information_schema is a system table.
@@ -4910,7 +4910,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array<string, array<string, mixed>> Live tables keyed by unprefixed name.
 	 */
 	private function loadLiveMagicTables(): array {
-		\OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'magicTables.enumerate');
+		\OCA\OpenRegister\Service\WritePhase::count(event: 'magicTables.enumerate');
 
 		// Get all magic tables from information_schema.
 		// NOTE: We use raw SQL here because the query builder adds the table prefix.
@@ -8375,12 +8375,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			throw new Exception('Cannot insert object without register and schema context');
 		}
 
-		\OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:pre');
+		\OCA\OpenRegister\Service\WritePhase::mark('mm:pre');
 		$insertedEntity = $this->insertObjectEntity(entity: $entity, register: $register, schema: $schema, failIfExists: $failIfExists);
-		\OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:DB-INSERT');
+		\OCA\OpenRegister\Service\WritePhase::mark('mm:DB-INSERT');
 
 		$this->announceInsert(inserted: $insertedEntity, target: ['register' => $register, 'schema' => $schema]);
-		\OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:EVENT-DISPATCH');
+		\OCA\OpenRegister\Service\WritePhase::mark('mm:EVENT-DISPATCH');
 
 		return $insertedEntity;
 	}//end insert()
