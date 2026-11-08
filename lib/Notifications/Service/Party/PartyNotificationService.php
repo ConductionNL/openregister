@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Service\Party\PartySendRefusalInterface;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 
 /**
@@ -62,9 +62,9 @@ class PartyNotificationService {
 	/**
 	 * The declared effects, which decide who may be reached.
 	 *
-	 * @var PartyIndicatorGuard
+	 * @var PartySendRefusalInterface
 	 */
-	private readonly PartyIndicatorGuard $indicators;
+	private readonly PartySendRefusalInterface $indicators;
 
 	/**
 	 * Asks integriq whether a party's address may be mailed.

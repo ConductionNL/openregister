@@ -670,6 +670,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Credential\OAuth2RelayGuardInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2RelayGuard::class,
 		\OCA\OpenRegister\Service\Credential\OAuth2StateServiceInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2StateService::class,
 		\OCA\OpenRegister\Service\Party\PartyIndicatorGuardInterface::class => \OCA\OpenRegister\Service\Party\PartyIndicatorGuard::class,
+		\OCA\OpenRegister\Service\Party\PartySendRefusalInterface::class => \OCA\OpenRegister\Service\Party\PartyIndicatorGuard::class,
 		\OCA\OpenRegister\Service\Portal\PortalSubjectAssertionInterface::class => \OCA\OpenRegister\Service\Portal\PortalSubjectAssertion::class,
 		\OCA\OpenRegister\Service\Rbac\ObjectSharingServiceInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectSharingService::class,
 		\OCA\OpenRegister\Service\Rbac\PermissionReportScopeInterface::class => \OCA\OpenRegister\Service\Rbac\PermissionReportScope::class,
