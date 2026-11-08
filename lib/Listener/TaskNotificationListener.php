@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapters;
 use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -101,7 +101,7 @@ class TaskNotificationListener implements IEventListener {
 			}
 
 			$row = $this->inbox->enrich(task: $task);
-			$adapter = new TaskObjectAdapter(
+			$adapter = TaskObjectAdapters::forTask(
 				task: $task,
 				row: $row,
 				extra: ['previousAssignee' => $event->getPreviousAssignee()]
