@@ -49,6 +49,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OperationsConsoleControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OperationsConsistencyControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OperationsMaintenanceControllerFactory;
 
 /**
  * Pins the admin/CSRF posture, the acting uid and every refusal body.
@@ -164,7 +167,7 @@ class OperationsControllersA24GoldenTest extends TestCase {
 	 * @return OperationsConsoleController
 	 */
 	private function consoleController(array $params, string $verb = 'GET', ?string $uid = 'admin'): OperationsConsoleController {
-		return new OperationsConsoleController(
+		return OperationsConsoleControllerFactory::create(
 			'openregister',
 			$this->request($params, $verb),
 			$this->console,
@@ -363,7 +366,7 @@ class OperationsControllersA24GoldenTest extends TestCase {
 			['ok' => 1],
 			$this->throwException(new ConsistencyCheckWouldWriteException('wrote', 'probe-x'))
 		);
-		$c = new OperationsConsistencyController('openregister', $this->request([]), $this->check, $this->repair, $this->session('admin'));
+		$c = OperationsConsistencyControllerFactory::create('openregister', $this->request([]), $this->check, $this->repair, $this->session('admin'));
 		$this->assertSame(['ok' => 1], $c->consistency()->getData());
 		$r = $c->consistency();
 		$this->assertSame([500, ['error' => 'would-write', 'probe' => 'probe-x', 'message' => 'wrote']], [$r->getStatus(), $r->getData()]);
@@ -390,7 +393,7 @@ class OperationsControllersA24GoldenTest extends TestCase {
 
 			return ['plan' => $slug];
 		});
-		$c = new OperationsConsistencyController(
+		$c = OperationsConsistencyControllerFactory::create(
 			'openregister',
 			$this->request(['check' => 'orphans']),
 			$this->check,
@@ -398,7 +401,7 @@ class OperationsControllersA24GoldenTest extends TestCase {
 			$this->session('admin')
 		);
 		$this->assertSame([200, ['plan' => 'orphans']], [$c->repairPlan()->getStatus(), $c->repairPlan()->getData()]);
-		$c = new OperationsConsistencyController(
+		$c = OperationsConsistencyControllerFactory::create(
 			'openregister',
 			$this->request(['check' => 'bad']),
 			$this->check,
@@ -423,7 +426,7 @@ class OperationsControllersA24GoldenTest extends TestCase {
 
 			return [$slug, $actor];
 		});
-		$c = new OperationsConsistencyController(
+		$c = OperationsConsistencyControllerFactory::create(
 			'openregister',
 			$this->request(['check' => 'orphans'], 'POST'),
 			$this->check,
@@ -431,7 +434,7 @@ class OperationsControllersA24GoldenTest extends TestCase {
 			$this->session('root')
 		);
 		$this->assertSame(['orphans', 'root'], $c->repair()->getData());
-		$c = new OperationsConsistencyController(
+		$c = OperationsConsistencyControllerFactory::create(
 			'openregister',
 			$this->request(['check' => 'orphans'], 'POST'),
 			$this->check,
@@ -439,7 +442,7 @@ class OperationsControllersA24GoldenTest extends TestCase {
 			$this->session(null)
 		);
 		$this->assertSame(['orphans', ''], $c->repair()->getData());
-		$c = new OperationsConsistencyController(
+		$c = OperationsConsistencyControllerFactory::create(
 			'openregister',
 			$this->request(['check' => 'bad'], 'POST'),
 			$this->check,
@@ -468,7 +471,7 @@ class OperationsControllersA24GoldenTest extends TestCase {
 			string $verb,
 			array $params,
 			?string $uid
-		) => new OperationsMaintenanceController(
+		) => OperationsMaintenanceControllerFactory::create(
 			'openregister',
 			$this->request($params, $verb),
 			$this->maintenance,
