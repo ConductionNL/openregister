@@ -193,22 +193,15 @@ class TransferExecutionJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The attempt/terminal/retry/escalate
-	 *   branches are the durable-retry state machine; each is a required path.
-	 *
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
 	 *   (Scenario: Failed attempt reschedules with backoff)
 	 */
 	protected function run(mixed $argument): void {
-		if (is_array($argument) === false || empty($argument['transferListId']) === true) {
-			$this->logger->error(
-				message: '[TransferExecutionJob] Invalid job argument: missing transferListId',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		$transferListId = $this->transferListIdOf(argument: $argument);
+		if ($transferListId === null) {
 			return;
 		}
 
-		$transferListId = (string)$argument['transferListId'];
 		$attempt = (int)($argument['attempt'] ?? 1);
 
 		$list = $this->transferRecordService->loadTransferList($transferListId);
@@ -220,6 +213,44 @@ class TransferExecutionJob extends QueuedJob {
 			return;
 		}
 
+		$list = $this->attempt(list: $list, transferListId: $transferListId, attempt: $attempt);
+
+		$this->settle(list: $list, transferListId: $transferListId, attempt: $attempt);
+	}//end run()
+
+	/**
+	 * The transfer list id from the job argument, or null (logged) when it is missing.
+	 *
+	 * @param mixed $argument Job argument: `{transferListId, attempt}`.
+	 *
+	 * @return string|null The transfer list id.
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+	 */
+	private function transferListIdOf(mixed $argument): ?string {
+		if (is_array($argument) === false || empty($argument['transferListId']) === true) {
+			$this->logger->error(
+				message: '[TransferExecutionJob] Invalid job argument: missing transferListId',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+
+		return (string)$argument['transferListId'];
+	}//end transferListIdOf()
+
+	/**
+	 * Run one attempt; an unexpected throw counts as a partially failed attempt.
+	 *
+	 * @param array<string, mixed> $list           The transfer list.
+	 * @param string               $transferListId Its id, for the log.
+	 * @param int                  $attempt        The attempt number.
+	 *
+	 * @return array<string, mixed> The list after the attempt.
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+	 */
+	private function attempt(array $list, string $transferListId, int $attempt): array {
 		try {
 			$transport = $this->resolveTransport();
 			$list = $this->transferService->executeAttempt(transferList: $list, transport: $transport, attempt: $attempt);
@@ -232,6 +263,21 @@ class TransferExecutionJob extends QueuedJob {
 			$list['status'] = TransferListService::STATUS_PARTIALLY_FAILED;
 		}
 
+		return $list;
+	}//end attempt()
+
+	/**
+	 * Save a completed list, or retry / escalate a failed one.
+	 *
+	 * @param array<string, mixed> $list           The list after the attempt.
+	 * @param string               $transferListId Its id.
+	 * @param int                  $attempt        The attempt number.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+	 */
+	private function settle(array $list, string $transferListId, int $attempt): void {
 		$status = (string)($list['status'] ?? TransferListService::STATUS_FAILED);
 
 		if ($status === TransferListService::STATUS_COMPLETED) {
@@ -246,22 +292,53 @@ class TransferExecutionJob extends QueuedJob {
 		// Non-terminal failure: retry until the attempt cap, then escalate.
 		$maxAttempts = $this->maxAttempts();
 		if ($attempt >= $maxAttempts) {
-			$list['status'] = TransferListService::STATUS_FAILED;
-			$this->transferRecordService->saveTransferList($list);
-			$this->transferListService->notifyArchivists($list);
-			$this->logger->warning(
-				message: '[TransferExecutionJob] Attempt cap reached — transfer failed, archivists notified',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'transferListId' => $transferListId,
-					'attempt' => $attempt,
-					'maxAttempts' => $maxAttempts,
-				]
-			);
+			$this->escalate(list: $list, transferListId: $transferListId, attempt: $attempt, maxAttempts: $maxAttempts);
 			return;
 		}
 
+		$this->reschedule(list: $list, transferListId: $transferListId, attempt: $attempt);
+	}//end settle()
+
+	/**
+	 * Mark the list failed at the attempt cap and notify the archivists.
+	 *
+	 * @param array<string, mixed> $list           The list after the attempt.
+	 * @param string               $transferListId Its id.
+	 * @param int                  $attempt        The attempt number.
+	 * @param int                  $maxAttempts    The attempt cap.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+	 */
+	private function escalate(array $list, string $transferListId, int $attempt, int $maxAttempts): void {
+		$list['status'] = TransferListService::STATUS_FAILED;
+		$this->transferRecordService->saveTransferList($list);
+		$this->transferListService->notifyArchivists($list);
+		$this->logger->warning(
+			message: '[TransferExecutionJob] Attempt cap reached — transfer failed, archivists notified',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'transferListId' => $transferListId,
+				'attempt' => $attempt,
+				'maxAttempts' => $maxAttempts,
+			]
+		);
+	}//end escalate()
+
+	/**
+	 * Keep the list in progress and schedule the next attempt with backoff.
+	 *
+	 * @param array<string, mixed> $list           The list after the attempt.
+	 * @param string               $transferListId Its id.
+	 * @param int                  $attempt        The attempt number.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+	 */
+	private function reschedule(array $list, string $transferListId, int $attempt): void {
 		// Keep the list non-terminal (in_progress) between attempts so a
 		// partially-failed run keeps its confirmed objects while retrying.
 		$list['status'] = TransferListService::STATUS_IN_PROGRESS;
@@ -289,8 +366,7 @@ class TransferExecutionJob extends QueuedJob {
 				'delaySeconds' => $delay,
 			]
 		);
-
-	}//end run()
+	}//end reschedule()
 
 	/**
 	 * Exponential backoff with jitter: `min(60 * 2^(attempt-1), 28800)` ± 10 %.
