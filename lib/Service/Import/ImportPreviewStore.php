@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Import;
 
-use OCA\OpenRegister\Db\ImportPreviewMapper;
-use OCA\OpenRegister\Db\ImportPreviewRowMapper;
+use OCA\OpenRegister\Db\ImportPreviewMapperInterface;
+use OCA\OpenRegister\Db\ImportPreviewRowMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -36,14 +36,14 @@ final readonly class ImportPreviewStore {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param ImportPreviewMapper $previewMapper Preview persistence.
-	 * @param ImportPreviewRowMapper $rowMapper Per-row decision persistence.
+	 * @param ImportPreviewMapperInterface $previewMapper Preview persistence.
+	 * @param ImportPreviewRowMapperInterface $rowMapper Per-row decision persistence.
 	 * @param SourceRowReader $reader The file reader.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		public ImportPreviewMapper $previewMapper,
-		public ImportPreviewRowMapper $rowMapper,
+		public ImportPreviewMapperInterface $previewMapper,
+		public ImportPreviewRowMapperInterface $rowMapper,
 		public SourceRowReader $reader,
 		public LoggerInterface $logger,
 	) {

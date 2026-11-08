@@ -36,7 +36,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<ImportPreview>
  */
-class ImportPreviewMapper extends QBMapper implements ImportPreviewFinderInterface {
+class ImportPreviewMapper extends QBMapper implements ImportPreviewFinderInterface, ImportPreviewMapperInterface {
 	/**
 	 * Constructor.
 	 *
