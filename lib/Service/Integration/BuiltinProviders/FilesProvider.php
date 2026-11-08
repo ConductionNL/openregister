@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\FileFolderServiceInterface;
@@ -169,7 +170,7 @@ class FilesProvider extends AbstractIntegrationProvider {
 	private function resolveObject(string $objectId) {
 		foreach ([
 			'\OCA\OpenRegister\Db\ObjectEntityMapper',
-			'\OCA\OpenRegister\Db\MagicMapper',
+			MagicObjectFinderInterface::class,
 			'\OCA\OpenRegister\Db\AbstractObjectMapper',
 		] as $candidate
 		) {
