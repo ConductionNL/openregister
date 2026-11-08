@@ -169,7 +169,7 @@ class FlowRunVersionPinGoldenTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(function (string $id) use ($services, $case): mixed {
 			$this->calls[] = ['container.get' => $id];
-			$key = ['FlowVersionMapper' => 'versionMapper', 'FlowMapper' => 'flowMapper', 'FlowNodePreflight' => 'preflight'][substr($id, (int)strrpos($id, '\\') + 1)] ?? null;
+			$key = ['FlowVersionMapperInterface' => 'versionMapper', 'FlowMapper' => 'flowMapper', 'FlowNodePreflight' => 'preflight'][substr($id, (int)strrpos($id, '\\') + 1)] ?? null;
 			if ($key !== null && ($case[$key] ?? null) === 'throw') {
 				throw new RuntimeException('no ' . $id);
 			}
