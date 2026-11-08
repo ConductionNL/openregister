@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
+use OCA\OpenRegister\Service\Credential\CredentialUpdateRequestInterface;
 use OCA\OpenRegister\Service\Credential\CredentialUpdateRequests;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -509,14 +510,14 @@ class CredentialController extends Controller {
 	/**
 	 * Whether the updated data would repoint the credential's host or break its bounds.
 	 *
-	 * @param CredentialUpdateRequest $update The update.
-	 * @param array                   $data   The data with the update applied.
+	 * @param CredentialUpdateRequestInterface $update The update.
+	 * @param array                            $data   The data with the update applied.
 	 *
 	 * @return bool True when the update is refused as an invalid request.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
-	private function isInvalidUpdate(CredentialUpdateRequest $update, array $data): bool {
+	private function isInvalidUpdate(CredentialUpdateRequestInterface $update, array $data): bool {
 		return $update->wouldRepointHost(data: $data) === true || $update->exceedsBounds(data: $data) === true;
 	}//end isInvalidUpdate()
 
