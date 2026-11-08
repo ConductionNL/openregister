@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Export;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ExportProfile;
-use OCA\OpenRegister\Db\ExportProfileMapper;
+use OCA\OpenRegister\Db\ExportProfileMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -55,7 +55,7 @@ class ExportProfileService implements ExportProfileServiceInterface {
 	/**
 	 * Wire the collaborators.
 	 *
-	 * @param ExportProfileMapper  $mapper        Profile persistence.
+	 * @param ExportProfileMapperInterface  $mapper        Profile persistence.
 	 * @param RegisterMapperInterface       $registerMapper Register lookups.
 	 * @param SchemaMapperInterface         $schemaMapper  Schema lookups.
 	 * @param ExportService        $exportService The selection every export shares.
@@ -67,7 +67,7 @@ class ExportProfileService implements ExportProfileServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ExportProfileMapper $mapper,
+		private readonly ExportProfileMapperInterface $mapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ExportService $exportService,

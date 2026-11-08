@@ -70,12 +70,6 @@ final class C03RevertInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		SchemaRunEntryMapper::class => [
-			'Service/Integration/BuiltinIntegrationServices.php',
-			'Service/Schema/SchemaMigrationService.php',
-			'Service/Schema/SchemaRevalidationService.php',
-			'Service/Schema/SchemaVersioningService.php',
-		],
 		ShippedBaselineResetService::class => [
 			'Command/ResetSchemaToShippedCommand.php',
 		],

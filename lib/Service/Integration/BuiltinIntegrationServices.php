@@ -183,7 +183,7 @@ final class BuiltinIntegrationServices {
 			'db'             => \OCP\IDBConnection::class,
 			'appManager'     => \OCP\App\IAppManager::class,
 			'l10n'           => \OCP\IL10N::class,
-			'formLinkMapper' => \OCA\OpenRegister\Db\FormLinkMapper::class,
+			'formLinkMapper' => \OCA\OpenRegister\Db\FormLinkMapperInterface::class,
 			'logger'         => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-shares/spec.md
@@ -372,13 +372,13 @@ final class BuiltinIntegrationServices {
 			'diffService'     => \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
 			'changelogMapper' => \OCA\OpenRegister\Db\SchemaChangelogMapperInterface::class,
 			'runMapper'       => \OCA\OpenRegister\Db\SchemaRunMapper::class,
-			'runEntryMapper'  => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
+			'runEntryMapper'  => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
 			'userSession'     => \OCP\IUserSession::class,
 			'logger'          => \Psr\Log\LoggerInterface::class,
 		],
 		\OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class => [
 			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapper::class,
-			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
+			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
 			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
 			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
 			'validateObject' => \OCA\OpenRegister\Service\Object\ValidateObject::class,
@@ -387,7 +387,7 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\Schema\SchemaMigrationService::class => [
 			'planner'        => \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
 			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapper::class,
-			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
+			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
 			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
 			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
 			'logger'         => \Psr\Log\LoggerInterface::class,
