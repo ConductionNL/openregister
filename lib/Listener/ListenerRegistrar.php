@@ -75,6 +75,7 @@ final class ListenerRegistrar {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		DecisionTableValidationListenerInterface::class => DecisionTableValidationListener::class,
 		SchemaFlowImportListenerInterface::class => SchemaFlowImportListener::class,
 		UniqueConstraintListenerInterface::class => UniqueConstraintListener::class,
 	];

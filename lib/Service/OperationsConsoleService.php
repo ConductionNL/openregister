@@ -49,7 +49,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\BackgroundJob\RecordsItsRuns;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapperInterface;
@@ -114,7 +114,7 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 *
 	 * @var array<int, string>
 	 */
-	public const OBSERVED_JOBS = [BulkJobRunner::class];
+	public const OBSERVED_JOBS = [JobHandles::BULK_JOB_RUNNER];
 
 	/**
 	 * The job-list page the console reads.

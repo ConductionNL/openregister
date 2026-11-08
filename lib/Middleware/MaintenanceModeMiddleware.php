@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Controller\OperationsConsoleController;
+use OCA\OpenRegister\Controller\Support\MaintenanceReachableControllersInterface;
 use OCA\OpenRegister\Service\Operations\MaintenanceModeHoldInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -54,7 +54,7 @@ class MaintenanceModeMiddleware extends Middleware {
 	 *
 	 * @var array<int, string>
 	 */
-	private const ALWAYS_REACHABLE = [OperationsConsoleController::class];
+	private const ALWAYS_REACHABLE = MaintenanceReachableControllersInterface::ALWAYS_REACHABLE;
 
 	/**
 	 * Constructor.

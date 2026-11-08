@@ -33,14 +33,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\BackgroundJob\ImportPreviewRunner;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Controller\Support\ImportPreviewControllerServices;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapperInterface;
 use OCA\OpenRegister\Db\ImportPreviewRowMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Service\Import\ConflictPolicy;
+use OCA\OpenRegister\Service\Import\ConflictPolicyNames;
 use OCA\OpenRegister\Service\Import\ImportPreviewRefusedException;
 use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
 use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
@@ -176,27 +176,27 @@ class ImportPreviewController extends Controller {
 			data: [
 				'results' => [
 					[
-						'id' => ConflictPolicy::CREATE_ONLY,
+						'id' => ConflictPolicyNames::CREATE_ONLY,
 						'label' => 'Create only',
 						'description' => 'Every row creates. A row that matches an existing object is refused.',
 					],
 					[
-						'id' => ConflictPolicy::UPDATE_ONLY,
+						'id' => ConflictPolicyNames::UPDATE_ONLY,
 						'label' => 'Update only',
 						'description' => 'Only matched rows are written. A row that matches nothing is skipped.',
 					],
 					[
-						'id' => ConflictPolicy::UPSERT,
+						'id' => ConflictPolicyNames::UPSERT,
 						'label' => 'Upsert',
 						'description' => 'A matched row updates, an unmatched row creates.',
 					],
 					[
-						'id' => ConflictPolicy::REFUSE_ON_CONFLICT,
+						'id' => ConflictPolicyNames::REFUSE_ON_CONFLICT,
 						'label' => 'Refuse on conflict',
 						'description' => 'A matched row is refused. Unmatched rows create.',
 					],
 				],
-				'default' => ConflictPolicy::DEFAULT_POLICY,
+				'default' => ConflictPolicyNames::DEFAULT_POLICY,
 				'formats' => SourceRowReaderInterface::FORMATS,
 			]
 		);
@@ -407,10 +407,10 @@ class ImportPreviewController extends Controller {
 
 			if ($async === true) {
 				$this->jobList->add(
-					ImportPreviewRunner::class,
+					JobHandles::IMPORT_PREVIEW_RUNNER,
 					[
 						'preview_id' => (int)$preview->getId(),
-						'phase' => ImportPreviewRunner::PHASE_COMMIT,
+						'phase' => JobHandles::IMPORT_PREVIEW_PHASE_COMMIT,
 						'source_hash' => $sourceHash,
 					]
 				);
@@ -457,10 +457,10 @@ class ImportPreviewController extends Controller {
 		$this->previewMapper->persist(preview: $preview);
 
 		$this->jobList->add(
-			ImportPreviewRunner::class,
+			JobHandles::IMPORT_PREVIEW_RUNNER,
 			[
 				'preview_id' => (int)$preview->getId(),
-				'phase' => ImportPreviewRunner::PHASE_PREVIEW,
+				'phase' => JobHandles::IMPORT_PREVIEW_PHASE_PREVIEW,
 			]
 		);
 

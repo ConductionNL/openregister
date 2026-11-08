@@ -46,7 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\SourceRecordRecomputeJob;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -288,7 +288,7 @@ class SourceRecordChangeListener implements IEventListener {
 		}
 
 		$this->deferral->defer(
-			jobClass: SourceRecordRecomputeJob::class,
+			jobClass: JobHandles::SOURCE_RECORD_RECOMPUTE,
 			entry: ['masterUuid' => $masterUuid],
 			chunkSize: self::CHUNK_SIZE,
 			dedupeKey: $masterUuid

@@ -42,7 +42,7 @@ use Throwable;
  *
  * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
  */
-class FlowRunAdvancer {
+class FlowRunAdvancer implements FlowRunAdvancerInterface {
 	/**
 	 * Constructor.
 	 *

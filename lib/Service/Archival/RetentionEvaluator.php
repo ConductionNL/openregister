@@ -52,7 +52,7 @@ use Psr\Log\NullLogger;
  *
  * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-4
  */
-final class RetentionEvaluator {
+final class RetentionEvaluator implements RetentionEvaluatorInterface {
 
 	/**
 	 * Condition DSL evaluator used to match rules against a row.

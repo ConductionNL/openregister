@@ -65,4 +65,16 @@ interface ArchivalNominationServiceInterface {
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function nominate(ObjectEntity $object, Schema $schema, string $trigger, ?string $actor = null, ?string $reason = null): array;
+	/**
+	 * Whether the lifecycle value the object just reached is one its schema calls an end.
+	 *
+	 * @param Schema $schema The object's schema.
+	 * @param string $state  The lifecycle value the object just reached.
+	 *
+	 * @return bool True when the schema calls this state an end.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md
+	 */
+	public function isTerminalState(Schema $schema, string $state): bool;
 }//end interface

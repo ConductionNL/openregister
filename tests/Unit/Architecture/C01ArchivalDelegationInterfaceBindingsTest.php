@@ -49,7 +49,6 @@ use OCA\OpenRegister\Service\Delegation\DelegationConsentServiceInterface;
 use OCA\OpenRegister\Service\Delegation\DelegationNotifier;
 use OCA\OpenRegister\Service\Delegation\DelegationNotifierInterface;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
-use OCA\OpenRegister\Service\Rbac\DerivedGrantStoreInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -79,7 +78,6 @@ final class C01ArchivalDelegationInterfaceBindingsTest extends TestCase {
 		DelegationConsentService::class => [DelegationConsentServiceInterface::class, ContractBindings::class],
 		DelegationGrantMapper::class => [DelegationGrantMapperInterface::class, DbRegistrar::class],
 		DelegationNotifier::class => [DelegationNotifierInterface::class, ContractBindings::class],
-		DerivedGrantStore::class => [DerivedGrantStoreInterface::class, ContractBindings::class],
 		DestructionListCreator::class => [DestructionListCreatorInterface::class, ContractBindings::class],
 		DestructionListRepository::class => [DestructionListRepositoryInterface::class, ContractBindings::class],
 		DestructionReviewService::class => [DestructionReviewServiceInterface::class, ContractBindings::class],
@@ -100,12 +98,6 @@ final class C01ArchivalDelegationInterfaceBindingsTest extends TestCase {
 	 */
 	private const KEPT_CALLERS = [
 		DerivedGrantStore::class => ['Listener/IdentityClaimsLoginListener.php'],
-		AnonymisationBackendService::class => [
-			'Files/Controller/Settings/FileSettingsController.php',
-			'Files/Service/TextExtraction/EntityRecognitionBackends.php',
-			'Files/Service/TextExtraction/EntityRecognitionHandler.php',
-		],
-		DestructionService::class => ['Controller/RetentionController.php', 'Controller/Support/RetentionDomain.php'],
 	];
 
 	/**
