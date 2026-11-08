@@ -396,8 +396,12 @@ class McpProviderDiscovery {
 					appContainer: $appContainer,
 					logger: $logger,
 					appId: $appId,
-					descriptors: $descriptors,
-					providers: $providers
+					descriptors: $this->withoutCollidingDescriptors(
+						logger: $logger,
+						appId: $appId,
+						descriptors: $descriptors,
+						providers: $providers
+					)
 				);
 
 				if ($entries === []) {
@@ -492,25 +496,18 @@ class McpProviderDiscovery {
 	}//end resolveScannableServiceClasses()
 
 	/**
-	 * Resolve every scanned descriptor for one app to an invocable entry
-	 * (attaching the owning app's own DI-resolved service instance —
-	 * ADR-041), applying the collision policy documented on
+	 * Drop the scanned descriptors whose tool id collides with a tool the
+	 * same app already provides, applying the collision policy documented on
 	 * {@see collectAttributeMcpProviders()}.
 	 *
-	 * The service instance is resolved from the owning app's OWN container
-	 * (#390) — the scanned class and its dependencies are only reliably
-	 * wireable there, not in OR's shared container.
-	 *
-	 * @param ContainerInterface $appContainer The owning app's own DI container.
 	 * @param \Psr\Log\LoggerInterface $logger PSR logger.
 	 * @param string $appId The owning app id.
 	 * @param array<int, array<string, mixed>> $descriptors Scanned descriptors (see AttributeToolScanner).
 	 * @param array<IMcpToolProvider> $providers Providers collected so far (for collision checks).
 	 *
-	 * @return list<array<string, mixed>> Invocable entries (descriptor + resolved `instance`).
+	 * @return list<array<string, mixed>> The descriptors that survive the collision policy.
 	 */
-	private function resolveAttributeEntries(
-		ContainerInterface $appContainer,
+	private function withoutCollidingDescriptors(
 		\Psr\Log\LoggerInterface $logger,
 		string $appId,
 		array $descriptors,
@@ -533,7 +530,7 @@ class McpProviderDiscovery {
 			$otherIds = array_merge($otherIds, $ids);
 		}
 
-		$entries = [];
+		$kept = [];
 
 		foreach ($descriptors as $descriptor) {
 			$id = (string)$descriptor['id'];
@@ -552,6 +549,37 @@ class McpProviderDiscovery {
 				continue;
 			}
 
+			$kept[] = $descriptor;
+		}//end foreach
+
+		return $kept;
+	}//end withoutCollidingDescriptors()
+
+	/**
+	 * Resolve every kept descriptor for one app to an invocable entry
+	 * (attaching the owning app's own DI-resolved service instance —
+	 * ADR-041).
+	 *
+	 * The service instance is resolved from the owning app's OWN container
+	 * (#390) — the scanned class and its dependencies are only reliably
+	 * wireable there, not in OR's shared container.
+	 *
+	 * @param ContainerInterface $appContainer The owning app's own DI container.
+	 * @param \Psr\Log\LoggerInterface $logger PSR logger.
+	 * @param string $appId The owning app id.
+	 * @param array<int, array<string, mixed>> $descriptors Descriptors that survived the collision policy.
+	 *
+	 * @return list<array<string, mixed>> Invocable entries (descriptor + resolved `instance`).
+	 */
+	private function resolveAttributeEntries(
+		ContainerInterface $appContainer,
+		\Psr\Log\LoggerInterface $logger,
+		string $appId,
+		array $descriptors,
+	): array {
+		$entries = [];
+
+		foreach ($descriptors as $descriptor) {
 			try {
 				$descriptor['instance'] = $appContainer->get($descriptor['class']);
 			} catch (\Throwable $e) {
