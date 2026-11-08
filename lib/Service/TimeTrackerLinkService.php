@@ -279,13 +279,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @throws Exception On a duplicate (409).
 	 */
 	private function assertEntryUnlinked(LinkTarget $target, TimeTrackerLink $key): void {
-		$existing = $this->timeTrackerLinkMapper->findByObjectAndEntry(
-			$target->objectUuid,
-			$key->getEntryType(),
-			$key->getClientId(),
-			$key->getTaskId(),
-			$key->getTimeId()
-		);
+		$existing = $this->timeTrackerLinkMapper->findByObjectAndEntry(objectUuid: $target->objectUuid, entry: $key);
 		if ($existing !== null) {
 			throw new Exception('Entry already linked to this object', 409);
 		}

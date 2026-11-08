@@ -46,7 +46,6 @@ final class FileTextControllerFactory {
 		?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Files\Controller\Support\FileTextControllerServices(
 				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
