@@ -73,18 +73,6 @@ class ObjectReadStateMapper extends QBMapper implements ObjectReadStateMapperInt
 	public const TABLE = 'openregister_object_read_state';
 
 	/**
-	 * How many seen uuids the per-request memo will load at most.
-	 *
-	 * `@self.unread` is rendered on every row of every list, so the seen set is
-	 * loaded once and answered from memory. The cap keeps that one query
-	 * bounded; past it the caller falls back to asking per object, which is
-	 * slower but never unbounded in memory.
-	 *
-	 * @var integer
-	 */
-	public const SEEN_SET_LIMIT = 20000;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.

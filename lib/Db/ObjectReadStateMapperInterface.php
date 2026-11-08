@@ -33,6 +33,18 @@ use DateTime;
 interface ObjectReadStateMapperInterface {
 
 	/**
+	 * How many seen uuids the per-request memo will load at most.
+	 *
+	 * `@self.unread` is rendered on every row of every list, so the seen set is
+	 * loaded once and answered from memory. The cap keeps that one query
+	 * bounded; past it the caller falls back to asking per object, which is
+	 * slower but never unbounded in memory. ObjectReadStateMapper inherits it.
+	 *
+	 * @var integer
+	 */
+	public const SEEN_SET_LIMIT = 20000;
+
+	/**
 	 * One user's read state for one object, when it exists.
 	 *
 	 * @param string $userId The reading user's uid.
