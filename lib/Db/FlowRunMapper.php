@@ -243,6 +243,23 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
+		$this->narrowToFlows(qb: $qb, flowId: $flowId, flowIds: $flowIds);
+		$this->narrowToSinceAndStatus(qb: $qb, since: $since, status: $status);
+		$this->scopeToVisible(qb: $qb, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+
+		return $this->findEntities(query: $qb);
+	}//end findAllRuns()
+
+	/**
+	 * Narrow a run list to one flow and/or a set of flows.
+	 *
+	 * @param IQueryBuilder      $qb      The query being built.
+	 * @param string|null        $flowId  One flow; null or empty means no restriction.
+	 * @param array<int, string> $flowIds Any of these flows; empty means no restriction.
+	 *
+	 * @return void
+	 */
+	private function narrowToFlows(IQueryBuilder $qb, string|null $flowId, array $flowIds): void {
 		if ($flowId !== null && $flowId !== '') {
 			$qb->andWhere($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)));
 		}
@@ -250,7 +267,18 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		if (empty($flowIds) === false) {
 			$qb->andWhere($qb->expr()->in('flow_id', $qb->createNamedParameter(array_values($flowIds), IQueryBuilder::PARAM_STR_ARRAY)));
 		}
+	}//end narrowToFlows()
 
+	/**
+	 * Narrow a run list to runs created since a moment and/or with one status.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param DateTime|null $since  Only runs created at or after this moment.
+	 * @param string|null   $status One status; null or empty means no restriction.
+	 *
+	 * @return void
+	 */
+	private function narrowToSinceAndStatus(IQueryBuilder $qb, DateTime|null $since, string|null $status): void {
 		if ($since !== null) {
 			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
 		}
@@ -258,11 +286,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		if ($status !== null && $status !== '') {
 			$qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter($status)));
 		}
-
-		$this->scopeToVisible(qb: $qb, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
-
-		return $this->findEntities(query: $qb);
-	}//end findAllRuns()
+	}//end narrowToSinceAndStatus()
 
 	/**
 	 * Per flow: its most recent run and how many runs started since a moment.
@@ -288,6 +312,29 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		?string $requesterUid = null,
 		array $ownedFlowIds = [],
 	): array {
+		$summary = $this->emptySummaries(flowIds: $flowIds);
+		if ($summary === []) {
+			return [];
+		}
+
+		$ids = array_keys($summary);
+		$ids = array_map(static fn ($id): string => (string)$id, $ids);
+
+		$counts = $this->countSinceByFlow(flowIds: $ids, since: $since, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+		$summary = $this->withRunCounts(summary: $summary, counts: $counts);
+
+		$runs = $this->latestRunsByFlow(flowIds: $ids, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+		return $this->withLatestRuns(summary: $summary, runs: $runs);
+	}//end summarizeByFlow()
+
+	/**
+	 * One empty summary entry per distinct, non-blank flow id.
+	 *
+	 * @param array<int, mixed> $flowIds The requested flows.
+	 *
+	 * @return array<string, array{lastRun: array<string, mixed>|null, runsSince: int}> Keyed by flow id.
+	 */
+	private function emptySummaries(array $flowIds): array {
 		$summary = [];
 		foreach ($flowIds as $flowId) {
 			$flowId = trim((string)$flowId);
@@ -296,37 +343,65 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			}
 		}
 
-		if ($summary === []) {
-			return [];
-		}
+		return $summary;
+	}//end emptySummaries()
 
-		$ids = array_keys($summary);
-		$ids = array_map(static fn ($id): string => (string)$id, $ids);
-
-		foreach ($this->countSinceByFlow(flowIds: $ids, since: $since, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds) as $flowId => $count) {
+	/**
+	 * Write each requested flow's run count into its summary.
+	 *
+	 * @param array<string, array{lastRun: array<string, mixed>|null, runsSince: int}> $summary The summaries.
+	 * @param array<string, int>                                                      $counts  Run counts by flow id.
+	 *
+	 * @return array<string, array{lastRun: array<string, mixed>|null, runsSince: int}> The summaries.
+	 */
+	private function withRunCounts(array $summary, array $counts): array {
+		foreach ($counts as $flowId => $count) {
 			if (isset($summary[$flowId]) === true) {
 				$summary[$flowId]['runsSince'] = $count;
 			}
 		}
 
-		foreach ($this->latestRunsByFlow(flowIds: $ids, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds) as $run) {
+		return $summary;
+	}//end withRunCounts()
+
+	/**
+	 * Write each requested flow's newest run into its summary.
+	 *
+	 * @param array<string, array{lastRun: array<string, mixed>|null, runsSince: int}> $summary The summaries.
+	 * @param array<int, FlowRun>                                                     $runs    The newest runs.
+	 *
+	 * @return array<string, array{lastRun: array<string, mixed>|null, runsSince: int}> The summaries.
+	 */
+	private function withLatestRuns(array $summary, array $runs): array {
+		foreach ($runs as $run) {
 			$flowId = (string)$run->getFlowId();
 			if (isset($summary[$flowId]) === false) {
 				continue;
 			}
 
-			$summary[$flowId]['lastRun'] = [
-				'uuid' => $run->getUuid(),
-				'status' => $run->getStatus(),
-				'outcome' => $run->getOutcome(),
-				'error' => $run->getError(),
-				'created' => $run->getCreated()?->format(DateTime::ATOM),
-				'updated' => $run->getUpdated()?->format(DateTime::ATOM),
-			];
+			$summary[$flowId]['lastRun'] = $this->lastRunSummary(run: $run);
 		}
 
 		return $summary;
-	}//end summarizeByFlow()
+	}//end withLatestRuns()
+
+	/**
+	 * The fields a summary shows of a flow's newest run.
+	 *
+	 * @param FlowRun $run The run.
+	 *
+	 * @return array<string, mixed> The run's summary fields.
+	 */
+	private function lastRunSummary(FlowRun $run): array {
+		return [
+			'uuid' => $run->getUuid(),
+			'status' => $run->getStatus(),
+			'outcome' => $run->getOutcome(),
+			'error' => $run->getError(),
+			'created' => $run->getCreated()?->format(DateTime::ATOM),
+			'updated' => $run->getUpdated()?->format(DateTime::ATOM),
+		];
+	}//end lastRunSummary()
 
 	/**
 	 * How many visible runs each flow started since a moment.
@@ -1216,6 +1291,22 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		// Ceil, not floor: with more waiting flows than batch slots a floor
 		// would be zero and the pass would claim nothing at all.
 		$share = (int)ceil($limit / count($flowIds));
+
+		return $this->claimShares(flowIds: $flowIds, share: $share, limit: $limit);
+	}//end findQueued()
+
+	/**
+	 * Take up to one share of queued runs from each flow, in order, within the limit.
+	 *
+	 * @param array<int, string> $flowIds The flows, longest-waiting first.
+	 * @param integer            $share   Maximum runs to take from one flow.
+	 * @param integer            $limit   Maximum runs to take in total.
+	 *
+	 * @return array<int, FlowRun> The queued runs.
+	 *
+	 * @spec openspec/specs/flow-queue-fairness/spec.md
+	 */
+	private function claimShares(array $flowIds, int $share, int $limit): array {
 		$runs = [];
 
 		foreach ($flowIds as $flowId) {
@@ -1230,7 +1321,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		}
 
 		return $runs;
-	}//end findQueued()
+	}//end claimShares()
 
 	/**
 	 * The flows that have queued runs, the longest-waiting flow first.
