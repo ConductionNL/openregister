@@ -60,23 +60,43 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 	public const TIMELINE_INTEGRATIONS = ['notes', 'activity'];
 
 	/**
+	 * Resolves the object's schema for the permission check.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Current caller.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for the fail-closed paths.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface     $schemaMapper     Resolves the object's schema for the permission check.
-	 * @param PermissionCheckInterface $permissionHandler Canonical RBAC verdict.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Writes the audit entry on a change.
-	 * @param IUserSession     $userSession      Current caller.
-	 * @param LoggerInterface  $logger           Logger for the fail-closed paths.
+	 * @param TimelineVisibilityPlatform $platform          The schema mapper, the caller's session and the logger.
+	 * @param PermissionCheckInterface   $permissionHandler Canonical RBAC verdict.
+	 * @param AuditTrailMapperInterface  $auditTrailMapper  Writes the audit entry on a change.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
+		TimelineVisibilityPlatform $platform,
 		private readonly PermissionCheckInterface $permissionHandler,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->schemaMapper = $platform->schemaMapper;
+		$this->userSession = $platform->userSession;
+		$this->logger = $platform->logger;
 	}//end __construct()
 
 	/**

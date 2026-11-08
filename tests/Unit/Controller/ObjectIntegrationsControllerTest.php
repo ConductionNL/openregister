@@ -575,11 +575,9 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		);
 
 		$visibility = new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService(
-			$this->createMock(SchemaMapper::class),
+			new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform($this->createMock(SchemaMapper::class), $this->createMock(\OCP\IUserSession::class), new NullLogger()),
 			$this->permissionHandlerAnswering(false),
-			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			$this->createMock(\OCP\IUserSession::class),
-			new NullLogger()
+			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class)
 		);
 
 		$controller = $this->buildController(
@@ -608,11 +606,9 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$registry->addProvider(new _ControllerStubProvider('files'));
 
 		$visibility = new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService(
-			$this->createMock(SchemaMapper::class),
+			new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform($this->createMock(SchemaMapper::class), $this->createMock(\OCP\IUserSession::class), new NullLogger()),
 			$this->permissionHandlerAnswering(false),
-			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			$this->createMock(\OCP\IUserSession::class),
-			new NullLogger()
+			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class)
 		);
 
 		$controller = $this->buildController(

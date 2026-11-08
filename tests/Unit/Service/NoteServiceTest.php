@@ -16,6 +16,7 @@ use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Files\Service\NoteAccounts;
 use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
@@ -43,11 +44,9 @@ class NoteServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->visibility = new TimelineVisibilityService(
-			$this->createMock(SchemaMapper::class),
+			new TimelineVisibilityPlatform($this->createMock(SchemaMapper::class), $this->userSession, $this->logger),
 			$this->createMock(PermissionHandler::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->userSession,
-			$this->logger
+			$this->createMock(AuditTrailMapper::class)
 		);
 
 		$this->versions = $this->createMock(NoteVersionService::class);
