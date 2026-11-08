@@ -542,11 +542,11 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $searchConditions = [],
-		?array $searchParams = [],
+		int|null $limit = null,
+		int|null $offset = null,
+		array|null $filters = [],
+		array|null $searchConditions = [],
+		array|null $searchParams = [],
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
@@ -562,13 +562,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			->setFirstResult($offset ?? 0);
 
 		$this->applyColumnFilters(qb: $qb, filters: $filters);
-
-		if (empty($searchConditions) === false) {
-			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
-			foreach ($searchParams ?? [] as $param => $value) {
-				$qb->setParameter($param, $value);
-			}
-		}
+		$this->applySearchConditions(qb: $qb, searchConditions: $searchConditions, searchParams: $searchParams);
 
 		// Apply organisation filter.
 		$this->applyOrganisationFilter(
@@ -581,6 +575,28 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		// Just return the entities; do not attach stats here.
 		return $this->findEntities(query: $qb);
 	}//end findAll()
+
+	/**
+	 * OR the raw search conditions into the query and bind their parameters.
+	 *
+	 * Nothing is added, and no parameter is bound, when there are no conditions.
+	 *
+	 * @param IQueryBuilder $qb               The query to add the conditions to.
+	 * @param array|null    $searchConditions SQL fragments, joined with OR.
+	 * @param array|null    $searchParams     Parameter name to value for those fragments.
+	 *
+	 * @return void
+	 */
+	private function applySearchConditions(IQueryBuilder $qb, array|null $searchConditions, array|null $searchParams): void {
+		if (empty($searchConditions) === true) {
+			return;
+		}
+
+		$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
+		foreach ($searchParams ?? [] as $param => $value) {
+			$qb->setParameter($param, $value);
+		}
+	}//end applySearchConditions()
 
 	/**
 	 * Insert a new entity
@@ -628,19 +644,42 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 
 		// Ensure the object has a slug.
 		if (empty($register->getSlug()) === true) {
-			// Convert to lowercase and replace spaces with dashes.
-			$slug = strtolower(trim($register->getTitle() ?? 'register'));
-			// Assuming title is used for slug.
-			// Remove special characters.
-			$slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
-			// Remove multiple dashes.
-			$slug = preg_replace('/-+/', '-', $slug);
-			// Remove leading/trailing dashes.
-			$slug = trim($slug, '-');
-
-			$register->setSlug($slug);
+			$register->setSlug($this->slugFromTitle(title: $register->getTitle()));
 		}
 
+		$this->applyVersionAndSourceDefaults(register: $register);
+
+		$this->validateAuthorizationDeny(register: $register);
+	}//end cleanObject()
+
+	/**
+	 * A slug from a register title: lowercased, anything but a-z, 0-9 and dashes
+	 * turned into a dash, runs of dashes collapsed, and no dash at either end.
+	 *
+	 * @param string|null $title The title, or null for the word "register".
+	 *
+	 * @return string
+	 */
+	private function slugFromTitle(string|null $title): string {
+		// Convert to lowercase and replace spaces with dashes.
+		$slug = strtolower(trim($title ?? 'register'));
+		// Assuming title is used for slug.
+		// Remove special characters.
+		$slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
+		// Remove multiple dashes.
+		$slug = preg_replace('/-+/', '-', $slug);
+		// Remove leading/trailing dashes.
+		return trim($slug, '-');
+	}//end slugFromTitle()
+
+	/**
+	 * Give a register without a version 0.0.1, and one without a source 'internal'.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return void
+	 */
+	private function applyVersionAndSourceDefaults(Register $register): void {
 		// Ensure the object has a version.
 		if ($register->getVersion() === null) {
 			$register->setVersion('0.0.1');
@@ -650,9 +689,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		if ($register->getSource() === null || $register->getSource() === '') {
 			$register->setSource('internal');
 		}
-
-		$this->validateAuthorizationDeny(register: $register);
-	}//end cleanObject()
+	}//end applyVersionAndSourceDefaults()
 
 	/**
 	 * Refuse an authorization block whose deny contradicts its own grants.
@@ -673,17 +710,13 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 */
 	private function validateAuthorizationDeny(Register $register): void {
 		$authorization = $register->getAuthorization();
-		$configuration = $register->getConfiguration();
-		$roleDefinitions = null;
-		if (is_array($configuration) === true) {
-			$roleDefinitions = ($configuration['roles'] ?? null);
-		}
+		$roleDefinitions = $this->roleDefinitionsOf(register: $register);
 
-		if ((is_array($authorization) === false || $authorization === []) && $roleDefinitions === null) {
+		if ($this->isEmptyAuthorization(authorization: $authorization) === true && $roleDefinitions === null) {
 			return;
 		}
 
-		$subject = sprintf('the register "%s"', (string)($register->getSlug() ?? $register->getTitle() ?? ''));
+		$subject = $this->authorizationSubject(register: $register);
 
 		// The catalogue check runs FIRST, and it is the only one that reads the
 		// register's ROLE definitions: a role's `actions` array is where an
@@ -696,7 +729,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			subject: $subject
 		);
 
-		if (is_array($authorization) === false || $authorization === []) {
+		if ($this->isEmptyAuthorization(authorization: $authorization) === true) {
 			return;
 		}
 
@@ -708,6 +741,44 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			subject: $subject
 		);
 	}//end validateAuthorizationDeny()
+
+	/**
+	 * The role definitions the register's configuration declares, or null when it declares none.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return mixed The `roles` entry of the configuration, or null.
+	 */
+	private function roleDefinitionsOf(Register $register): mixed {
+		$configuration = $register->getConfiguration();
+		if (is_array($configuration) === true) {
+			return ($configuration['roles'] ?? null);
+		}
+
+		return null;
+	}//end roleDefinitionsOf()
+
+	/**
+	 * Whether an authorization block is missing: not an array, or an empty one.
+	 *
+	 * @param mixed $authorization The block as stored.
+	 *
+	 * @return bool
+	 */
+	private function isEmptyAuthorization(mixed $authorization): bool {
+		return is_array($authorization) === false || $authorization === [];
+	}//end isEmptyAuthorization()
+
+	/**
+	 * How a refusal names the register: by slug, else title, else empty.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return string
+	 */
+	private function authorizationSubject(Register $register): string {
+		return sprintf('the register "%s"', (string)($register->getSlug() ?? $register->getTitle() ?? ''));
+	}//end authorizationSubject()
 
 	/**
 	 * Create a new register from an array of data
