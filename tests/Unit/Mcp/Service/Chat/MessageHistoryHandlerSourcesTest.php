@@ -31,7 +31,7 @@ class MessageHistoryHandlerSourcesTest extends TestCase
         $mapper->expects($this->once())->method('insert')->willReturnArgument(0);
         $handler = new MessageHistoryHandler($mapper, $this->createMock(ConversationMapper::class), $this->createMock(LoggerInterface::class));
 
-        $message = $handler->storeMessage(5, 'assistant', 'answer', $sources);
+        $message = $handler->storeAssistantMessage(5, 'answer', $sources);
 
         $this->assertSame($sources, $message->getSources());
         $this->assertSame($sources, $message->jsonSerialize()['sources']);
@@ -43,7 +43,7 @@ class MessageHistoryHandlerSourcesTest extends TestCase
         $mapper->method('insert')->willReturnArgument(0);
         $handler = new MessageHistoryHandler($mapper, $this->createMock(ConversationMapper::class), $this->createMock(LoggerInterface::class));
 
-        $message = $handler->storeMessage(5, 'assistant', 'answer', []);
+        $message = $handler->storeAssistantMessage(5, 'answer', []);
 
         $this->assertNull($message->getSources());
         $this->assertArrayNotHasKey('sources', $message->getUpdatedFields());
