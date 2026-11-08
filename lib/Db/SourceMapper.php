@@ -173,11 +173,11 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $searchConditions = [],
-		?array $searchParams = [],
+		int|null $limit = null,
+		int|null $offset = null,
+		array|null $filters = [],
+		array|null $searchConditions = [],
+		array|null $searchParams = [],
 	): array {
 		// Verify RBAC permission to read.
 		$this->verifyRbacPermission(action: 'read', entityType: 'source');
@@ -190,19 +190,35 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 			->setFirstResult($offset);
 
 		$this->applyColumnFilters(qb: $qb, filters: $filters);
-
-		if (empty($searchConditions) === false) {
-			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
-			foreach ($searchParams ?? [] as $param => $value) {
-				$qb->setParameter($param, $value);
-			}
-		}
+		$this->applySearchConditions(qb: $qb, searchConditions: $searchConditions, searchParams: $searchParams);
 
 		// Apply organisation filter (all users including admins must have active org).
 		$this->applyOrganisationFilter(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()
+
+	/**
+	 * OR the raw search conditions into the query and bind their parameters.
+	 *
+	 * Nothing is added, and no parameter is bound, when there are no conditions.
+	 *
+	 * @param IQueryBuilder $qb               The query to add the conditions to.
+	 * @param array|null    $searchConditions SQL fragments, joined with OR.
+	 * @param array|null    $searchParams     Parameter name to value for those fragments.
+	 *
+	 * @return void
+	 */
+	private function applySearchConditions(IQueryBuilder $qb, array|null $searchConditions, array|null $searchParams): void {
+		if (empty($searchConditions) === true) {
+			return;
+		}
+
+		$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
+		foreach ($searchParams ?? [] as $param => $value) {
+			$qb->setParameter($param, $value);
+		}
+	}//end applySearchConditions()
 
 	/**
 	 * Find all sources that have scheduled sync enabled.
