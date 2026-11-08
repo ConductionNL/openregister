@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BulkAction\Support\ApplyRuleServices;
 
 /**
  * Pins what the apply-rule bulk action validates, skips, previews and writes.
@@ -80,8 +81,7 @@ class ApplyRuleActionTest extends TestCase {
 		$this->action = new ApplyRuleAction(
 			$this->objects,
 			$schemas,
-			$this->inventory,
-			$this->evaluator,
+			new ApplyRuleServices($this->inventory, $this->evaluator),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
