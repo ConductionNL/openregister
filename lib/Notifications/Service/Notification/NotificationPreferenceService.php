@@ -184,21 +184,35 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	private array $groupCache = [];
 
 	/**
+	 * Group resolver; null leaves the group layer empty.
+	 *
+	 * @var IGroupManager|null
+	 */
+	private readonly ?IGroupManager $groupManager;
+
+	/**
+	 * User resolver, needed to read a user's groups.
+	 *
+	 * @var IUserManager|null
+	 */
+	private readonly ?IUserManager $userManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IConfig $config Nextcloud config for per-user values.
 	 * @param SchemaMapperInterface $schemaMapper Mapper used to enumerate accessible schemas.
 	 * @param LoggerInterface $logger Logger for diagnostics.
-	 * @param IGroupManager|null $groupManager Group resolver; null leaves the group layer empty.
-	 * @param IUserManager|null $userManager User resolver, needed to read a user's groups.
+	 * @param UserGroupServices|null $userGroups The user and group resolvers; null leaves the group layer empty.
 	 */
 	public function __construct(
 		private readonly IConfig $config,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
-		private readonly ?IGroupManager $groupManager = null,
-		private readonly ?IUserManager $userManager = null,
+		?UserGroupServices $userGroups = null,
 	) {
+		$this->groupManager = $userGroups?->groupManager;
+		$this->userManager = $userGroups?->userManager;
 	}//end __construct()
 
 	/**

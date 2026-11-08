@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolverInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 
 /**
  * Recipient address rules for the flow send nodes.
@@ -84,9 +85,7 @@ class FlowRecipientAddresses {
 							'groups' => [$entry],
 						],
 					],
-					data: [],
-					object: null,
-					context: []
+					source: new RecipientSource(data: [], object: null, context: [], roleGroups: [])
 				)
 			);
 			return $out;
@@ -136,9 +135,7 @@ class FlowRecipientAddresses {
 					'relation' => $field,
 				],
 			],
-			data: [$field => $value],
-			object: null,
-			context: []
+			source: new RecipientSource(data: [$field => $value], object: null, context: [], roleGroups: [])
 		);
 		$candidates = $this->recipientResolver->extractUidsFromRelation(value: $value);
 
