@@ -79,6 +79,7 @@ final class DbRegistrar {
 		CospendLinkMapperInterface::class => CospendLinkMapper::class,
 		DecisionMapperInterface::class => DecisionMapper::class,
 		DeckLinkMapperInterface::class => DeckLinkMapper::class,
+		DelegationGrantMapperInterface::class => DelegationGrantMapper::class,
 		EmailLinkMapperInterface::class => EmailLinkMapper::class,
 		EndpointLogMapperInterface::class => EndpointLogMapper::class,
 		EndpointMapperInterface::class => EndpointMapper::class,

@@ -44,6 +44,8 @@ use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorderInterface;
 use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
@@ -56,6 +58,12 @@ use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiatorInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
+use OCA\OpenRegister\Service\Archival\ArchivalNominationServiceInterface;
+use OCA\OpenRegister\Service\Archival\DestructionListRepository;
+use OCA\OpenRegister\Service\Archival\DestructionListRepositoryInterface;
+use OCA\OpenRegister\Service\Archival\DestructionReviewService;
+use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidatorInterface;
 use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
@@ -96,6 +104,8 @@ use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenService;
 use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenServiceInterface;
 use OCA\OpenRegister\Service\Capability\ToolReachLevels;
 use OCA\OpenRegister\Service\Capability\ToolReachResolver;
+use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
+use OCA\OpenRegister\Service\Case\CasePlanAuthorizationServiceInterface;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimersInterface;
 use OCA\OpenRegister\Service\Case\CasePlanService;
@@ -141,6 +151,8 @@ use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
+use OCA\OpenRegister\Service\Delegation\DelegationConsentServiceInterface;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidatorInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport;
@@ -517,9 +529,10 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Rbac\ObjectAccessReportInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectAccessReport::class,
 		\OCA\OpenRegister\Service\Rbac\ObjectGrantsReportInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectGrantsReport::class,
 		AnalyticsLinkServiceInterface::class => AnalyticsLinkService::class,
-		ApiCapabilitiesServiceInterface::class => ApiCapabilitiesService::class,
 		\OCA\OpenRegister\Service\ApiVersion\ApiContractServiceInterface::class => \OCA\OpenRegister\Service\ApiVersion\ApiContractService::class,
 		\OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface::class => \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue::class,
+		AnonymisationBackendServiceInterface::class => AnonymisationBackendService::class,
+		ApiCapabilitiesServiceInterface::class => ApiCapabilitiesService::class,
 		AppConfigurationImporterInterface::class => ConfigurationService::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		ApplicationServiceInterface::class => ApplicationService::class,
@@ -540,6 +553,7 @@ final class ContractBindings {
 		TenantKeyRotationInterface::class => TenantKeyService::class,
 		ToolReachLevels::class => ToolReachResolver::class,
 		AppSettingsInterface::class => SettingsService::class,
+		ArchivalNominationServiceInterface::class => ArchivalNominationService::class,
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		\OCA\OpenRegister\Service\Audit\AuditSinkInterface::class => \OCA\OpenRegister\Service\Audit\AuditSink::class,
 		\OCA\OpenRegister\Service\Audit\AuditSinkStatusInterface::class => \OCA\OpenRegister\Service\Audit\AuditSinkStatus::class,
@@ -550,8 +564,11 @@ final class ContractBindings {
 		AwaitSignalNodeInterface::class => AwaitSignalNode::class,
 		\OCA\OpenRegister\Service\AuthenticationTokenFetcherInterface::class => \OCA\OpenRegister\Service\AuthenticationService::class,
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
+		\OCA\OpenRegister\Service\Archival\DestructionListCreatorInterface::class => \OCA\OpenRegister\Service\Archival\DestructionListCreator::class,
+		\OCA\OpenRegister\Service\Archival\DestructionServiceInterface::class => \OCA\OpenRegister\Service\Archival\DestructionService::class,
 		\OCA\OpenRegister\Service\Audit\ContentReportServiceInterface::class => \OCA\OpenRegister\Service\Audit\ContentReportService::class,
 		\OCA\OpenRegister\Service\Connection\ConnectionReporterInterface::class => \OCA\OpenRegister\Service\Connection\ConnectionReporter::class,
+		\OCA\OpenRegister\Service\Delegation\DelegationNotifierInterface::class => \OCA\OpenRegister\Service\Delegation\DelegationNotifier::class,
 		\OCA\OpenRegister\Service\DsarServiceInterface::class => \OCA\OpenRegister\Service\DsarService::class,
 		\OCA\OpenRegister\Service\Edepot\EdepotTransferServiceInterface::class => \OCA\OpenRegister\Service\Edepot\EdepotTransferService::class,
 		\OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchangeInterface::class => \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchange::class,
@@ -564,22 +581,29 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStoreInterface::class => \OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore::class,
 		\OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunnerInterface::class => \OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner::class,
 		\OCA\OpenRegister\Service\Object\RevertHandlerInterface::class => \OCA\OpenRegister\Service\Object\RevertHandler::class,
+		\OCA\OpenRegister\Service\Rbac\DerivedGrantStoreInterface::class => \OCA\OpenRegister\Service\Rbac\DerivedGrantStore::class,
 		\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface::class => \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker::class,
 		\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
 		\OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface::class => \OCA\OpenRegister\Service\Task\TaskMetricsProvider::class,
 		BrpPersonProviderInterface::class => BrpPersonProvider::class,
 		CalendarFeedTokenServiceInterface::class => CalendarFeedTokenService::class,
+		CasePlanAuthorizationServiceInterface::class => CasePlanAuthorizationService::class,
 		CaseTokenServiceInterface::class => CaseTokenService::class,
+		DelegationConsentServiceInterface::class => DelegationConsentService::class,
+		DestructionListRepositoryInterface::class => DestructionListRepository::class,
+		DestructionReviewServiceInterface::class => DestructionReviewService::class,
 		DoriathApplicationRegistrarInterface::class => DoriathApplicationRegistrar::class,
 		FederationShareServiceInterface::class => FederationShareService::class,
 		ShippedBaselineResetServiceInterface::class => ShippedBaselineResetService::class,
 		FlowStateNodeInterface::class => FlowStateNode::class,
 		IterateNodeInterface::class => IterateNode::class,
+		\OCA\OpenRegister\Service\Archival\LegalHoldServiceInterface::class => \OCA\OpenRegister\Service\Archival\LegalHoldService::class,
 		LinkObjectNodeInterface::class => LinkObjectNode::class,
 		LoopNodeInterface::class => LoopNode::class,
 		MaintenanceModeServiceInterface::class => MaintenanceModeService::class,
 		MapNodeInterface::class => MapNode::class,
 		MergeNodeInterface::class => MergeNode::class,
+		\OCA\OpenRegister\Service\Archival\ReviewOutcomeServiceInterface::class => \OCA\OpenRegister\Service\Archival\ReviewOutcomeService::class,
 		\OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface::class => \OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class,
 		\OCA\OpenRegister\Service\Audit\ReadableAuditTrailListerInterface::class => \OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister::class,
 		\OCA\OpenRegister\Service\Credential\OAuth2ConnectServiceInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2ConnectService::class,

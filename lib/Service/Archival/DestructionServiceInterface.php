@@ -1,0 +1,90 @@
+<?php
+
+/**
+ * DestructionServiceInterface: what callers outside the component use of DestructionService.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Archival
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Archival;
+
+/**
+ * The destruction list decisions the archival endpoints record.
+ *
+ * Declares only what callers outside the component use; the rest of the
+ * class stays its own.
+ */
+interface DestructionServiceInterface {
+
+	/**
+	 * Destruction list status constants.
+	 */
+	public const STATUS_IN_REVIEW = 'in_review';
+	public const STATUS_APPROVED = 'approved';
+	public const STATUS_AWAITING_SECOND = 'awaiting_second_approval';
+	public const STATUS_REJECTED = 'rejected';
+	public const STATUS_COMPLETED = 'completed';
+
+	/**
+	 * Approve a destruction list (full or partial).
+	 *
+	 * The approval is recorded under the CANONICAL `userId` key: it is the shape
+	 * RetentionController writes, and the shape both readers of the approvals
+	 * list consume — RetentionService::generateDestructionCertificate() and
+	 * DestructionExecutionJob both do array_column($approvals, 'userId'). This
+	 * method previously wrote `approvedBy`, so the destruction certificate's
+	 * approver list — the legal record of WHO authorised the destruction —
+	 * came out empty (openregister#393).
+	 *
+	 * A recorded retain/transfer is binding; see withholdDecidedEntries() for
+	 * why it is derived here rather than asked of the approver. It runs AFTER
+	 * handlePartialApproval(), which REPLACES `objects`.
+	 *
+	 * @param array<string, mixed> $destructionList The destruction list data.
+	 * @param string $action The approval action: 'approve_all' or 'approve_partial'.
+	 * @param array<int, string> $excludedIds UUIDs of objects to exclude (for partial approval).
+	 * @param array<string, string> $exclusionReasons Reasons per excluded object UUID.
+	 * @param bool $requiresDual Whether two-step approval is required.
+	 * @param string|null $listUuid UUID of the persisted destruction list; passed to the
+	 *                              execution job so it can reload the list from storage.
+	 *
+	 * @return array<string, mixed> The updated destruction list.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Configuration-driven dual approval toggle
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function approveList(
+		array $destructionList, string $action='approve_all', array $excludedIds=[],
+		array $exclusionReasons=[], bool $requiresDual=false, ?string $listUuid=null
+	): array;
+
+	/**
+	 * Reject an entire destruction list.
+	 *
+	 * @param array<string, mixed> $destructionList The destruction list data.
+	 * @param string $reason The reason for rejection.
+	 *
+	 * @return array<string, mixed> The updated destruction list.
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function rejectList(array $destructionList, string $reason): array;
+}//end interface

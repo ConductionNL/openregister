@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\AnonymisationBackendControllerServices;
-use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -53,9 +53,9 @@ class AnonymisationBackendController extends Controller {
 	/**
 	 * Backend state service (single source of truth).
 	 *
-	 * @var AnonymisationBackendService
+	 * @var AnonymisationBackendServiceInterface
 	 */
-	private readonly AnonymisationBackendService $service;
+	private readonly AnonymisationBackendServiceInterface $service;
 
 	/**
 	 * Constructor.

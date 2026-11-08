@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 
@@ -36,12 +36,12 @@ final class AnonymisationBackendControllerServices {
 	 *
 	 * @param IUserSession $userSession Current user session for admin gating.
 	 * @param IGroupManager $groupManager Group manager for admin checks.
-	 * @param AnonymisationBackendService $service Backend state service (single source of truth).
+	 * @param AnonymisationBackendServiceInterface $service Backend state service (single source of truth).
 	 */
 	public function __construct(
 		public readonly IUserSession $userSession,
 		public readonly IGroupManager $groupManager,
-		public readonly AnonymisationBackendService $service,
+		public readonly AnonymisationBackendServiceInterface $service,
 	) {
 	}//end __construct()
 }//end class
