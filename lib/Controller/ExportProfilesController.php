@@ -32,6 +32,9 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportRefusedException;
 use OCP\AppFramework\Controller;
@@ -330,15 +333,21 @@ class ExportProfilesController extends Controller {
 	private function recordRun($profile, string $actorUid, array $written): void {
 		try {
 			$this->exportRuns->record(
-				source: 'export-profile',
-				actor: $actorUid,
-				format: (string)($profile->getFormat() ?? 'csv'),
-				rowCount: (int)($written['rowCount'] ?? 0),
-				profile: (string)($written['metadata']['profileUuid'] ?? ''),
-				filename: (string)($written['filename'] ?? ''),
-				retentionSeconds: null,
-				downloadCount: 1,
-				status: \OCA\OpenRegister\Db\ExportRun::STATUS_SERVED
+				origin: new ExportRunOrigin(
+					source: 'export-profile',
+					actor: $actorUid,
+					profile: (string)($written['metadata']['profileUuid'] ?? ''),
+					status: \OCA\OpenRegister\Db\ExportRun::STATUS_SERVED
+				),
+				content: new ExportRunContent(
+					format: (string)($profile->getFormat() ?? 'csv'),
+					rowCount: (int)($written['rowCount'] ?? 0)
+				),
+				file: new ExportRunFile(
+					filename: (string)($written['filename'] ?? ''),
+					downloadCount: 1
+				),
+				retentionSeconds: null
 			);
 		} catch (\Throwable $e) {
 			// Deliberately swallowed: see the docblock.

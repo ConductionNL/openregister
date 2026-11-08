@@ -34,6 +34,8 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionBackends;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -181,13 +183,14 @@ class OpenAnonymiserCredentialsTest extends TestCase {
 		$backend->expects($this->never())->method('requestOpenAnonymiser');
 
 		$handler = new EntityRecognitionHandler(
-			$this->createMock(ChunkMapper::class),
-			$this->createMock(GdprEntityMapper::class),
-			$this->createMock(EntityRelationMapper::class),
-			$this->createMock(IDBConnection::class),
-			$logger,
-			$settings,
-			$backend
+			stores: new EntityRecognitionStores(
+				chunkMapper: $this->createMock(ChunkMapper::class),
+				entityMapper: $this->createMock(GdprEntityMapper::class),
+				entityRelationMapper: $this->createMock(EntityRelationMapper::class),
+				db: $this->createMock(IDBConnection::class)
+			),
+			backends: new EntityRecognitionBackends(settingsService: $settings, anonymisationBackendService: $backend),
+			logger: $logger
 		);
 
 		$method = new ReflectionMethod(EntityRecognitionHandler::class, 'detectWithOpenAnonymiser');

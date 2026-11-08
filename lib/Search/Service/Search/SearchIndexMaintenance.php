@@ -88,23 +88,67 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	];
 
 	/**
+	 * The database connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Resolves the registers to walk.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Resolves a register and schema to its table.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Stores the report of the last run.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Reads the configured table prefix.
+	 *
+	 * @var IConfig
+	 */
+	private readonly IConfig $config;
+
+	/**
+	 * Reports progress and failure.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection   $db            The database connection.
-	 * @param RegisterMapperInterface  $registerMapper Resolves the registers to walk.
-	 * @param MagicMapperInterface     $magicMapper   Resolves a register and schema to its table.
-	 * @param IAppConfig      $appConfig     Stores the report of the last run.
-	 * @param IConfig         $config        Reads the configured table prefix.
-	 * @param LoggerInterface $logger        Reports progress and failure.
+	 * @param SearchIndexStores $stores    The database connection, register mapper and magic table mapper.
+	 * @param IAppConfig        $appConfig Stores the report of the last run.
+	 * @param IConfig           $config    Reads the configured table prefix.
+	 * @param LoggerInterface   $logger    Reports progress and failure.
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly IAppConfig $appConfig,
-		private readonly IConfig $config,
-		private readonly LoggerInterface $logger,
+		SearchIndexStores $stores,
+		IAppConfig $appConfig,
+		IConfig $config,
+		LoggerInterface $logger,
 	) {
+		$this->db             = $stores->db;
+		$this->registerMapper = $stores->registerMapper;
+		$this->magicMapper    = $stores->magicMapper;
+		$this->appConfig      = $appConfig;
+		$this->config         = $config;
+		$this->logger         = $logger;
 	}//end __construct()
 
 	/**

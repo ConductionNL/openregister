@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\Operations\MaintenanceModeServiceInterface;
 use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
+use OCA\OpenRegister\Controller\Support\OperationsActingRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -44,6 +45,13 @@ use OCP\IUserSession;
 class OperationsMaintenanceController extends Controller {
 
 	/**
+	 * The acting administrator and the parameter readers.
+	 *
+	 * @var OperationsActingRequest
+	 */
+	private readonly OperationsActingRequest $acting;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                 $appName     Application name.
@@ -57,9 +65,10 @@ class OperationsMaintenanceController extends Controller {
 		IRequest $request,
 		private readonly MaintenanceModeServiceInterface $maintenance,
 		private readonly SupportBundleServiceInterface $bundle,
-		private readonly IUserSession $userSession,
+		IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->acting = new OperationsActingRequest(request: $request, userSession: $userSession);
 	}//end __construct()
 
 	/**
@@ -81,13 +90,13 @@ class OperationsMaintenanceController extends Controller {
 		}
 
 		if ($method === 'DELETE') {
-			return new JSONResponse(data: $this->maintenance->leave(actor: $this->actor()));
+			return new JSONResponse(data: $this->maintenance->leave(actor: $this->acting->actor()));
 		}
 
 		return new JSONResponse(
 			data: $this->maintenance->enter(
-				actor: $this->actor(),
-				message: $this->stringParam(name: 'message')
+				actor: $this->acting->actor(),
+				message: $this->acting->stringParam(name: 'message')
 			)
 		);
 	}//end maintenance()
@@ -116,33 +125,5 @@ class OperationsMaintenanceController extends Controller {
 		return new JSONResponse(data: $this->bundle->facts());
 	}//end facts()
 
-	/**
-	 * The uid acting.
-	 *
-	 * Every write here is an administrator's act and is recorded as theirs, so
-	 * an unresolvable session is an empty string the services refuse rather
-	 * than a system identity the record would blame.
-	 *
-	 * @return string The uid, or the empty string.
-	 */
-	private function actor(): string {
-		return (string)($this->userSession->getUser()?->getUID() ?? '');
-	}//end actor()
 
-	/**
-	 * Read a non-empty string request parameter.
-	 *
-	 * @param string $name The parameter name.
-	 *
-	 * @return string|null The value, or null when absent or empty.
-	 */
-	private function stringParam(string $name): ?string {
-		$value = $this->request->getParam($name);
-
-		if (is_string($value) === false || $value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end stringParam()
 }//end class

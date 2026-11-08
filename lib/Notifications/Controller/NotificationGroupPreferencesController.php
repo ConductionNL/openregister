@@ -37,16 +37,21 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Group\ISubAdmin;
+use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationRequestTrait;
 
 class NotificationGroupPreferencesController extends Controller {
+	use NotificationRequestTrait;
+
 	/**
 	 * The group manager.
 	 *
@@ -100,50 +105,17 @@ class NotificationGroupPreferencesController extends Controller {
 	public function index(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
 		$groupId = $this->nonEmptyString(value: $this->request->getParam('group'));
-		if ($groupId === null) {
-			return new JSONResponse(data: ['error' => 'A "group" is required'], statusCode: 422);
-		}
-
-		$group = $this->groupManager->get($groupId);
-		if ($group === null) {
-			return new JSONResponse(data: ['error' => 'Unknown group'], statusCode: 404);
-		}
-
-		// A member may read their own team's defaults; anyone else may not,
-		// because a group's list is a statement about that group.
-		if ($group->inGroup($this->userSession->getUser()) === false
-			&& $this->administersGroup(userId: $userId, groupId: $groupId) === false
-		) {
-			return new JSONResponse(data: ['error' => 'Not a member of that group'], statusCode: 403);
+		$refusal = $this->refuseRead(userId: $userId, groupId: $groupId);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		$scope = $this->nonEmptyString(value: $this->request->getParam('scope'));
-		$items = [];
-		foreach ($this->declaredNotifications() as $entry) {
-			$stored = $this->preferenceService->getGroupDefault(
-				groupId: $groupId,
-				schemaSlug: $entry['schema'],
-				notificationKey: $entry['notification'],
-				scope: $scope
-			);
-			if ($stored === null) {
-				continue;
-			}
-
-			$items[] = [
-				'group' => $groupId,
-				'schema' => $entry['schema'],
-				'schemaTitle' => $entry['schemaTitle'],
-				'notification' => $entry['notification'],
-				'scope' => ($scope ?? 'global'),
-				'enabled' => (bool)($stored['enabled'] ?? true),
-				'channels' => ($stored['channels'] ?? null),
-			];
-		}
+		$items = $this->groupDefaults(groupId: (string)$groupId, scope: $scope);
 
 		return new JSONResponse(data: ['results' => $items, 'total' => count($items)]);
 	}//end index()
@@ -159,48 +131,155 @@ class NotificationGroupPreferencesController extends Controller {
 	 * @NoCSRFRequired
 	 */
 	public function update(): JSONResponse {
-		$params = $this->request->getParams();
-		$groupId = $this->nonEmptyString(value: ($params['group'] ?? null));
-		$schema = $this->nonEmptyString(value: ($params['schema'] ?? null));
-		$notification = $this->nonEmptyString(value: ($params['notification'] ?? null));
+		$userId = $this->resolveUserId();
+		if ($userId === null) {
+			return $this->authenticationRequired();
+		}
 
-		$refusal = $this->refuseWrite(groupId: $groupId, schema: $schema, notification: $notification);
+		$params = $this->request->getParams();
+		$target = $this->writeTarget(params: $params);
+		$refusal = $this->refuseWrite(userId: $userId, target: $target);
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		$scope = $this->nonEmptyString(value: ($params['scope'] ?? null));
-		$default = null;
-		if (($params['reset'] ?? false) !== true && ($params['reset'] ?? null) !== 'true') {
-			$default = ['enabled' => (bool)($params['enabled'] ?? true)];
-			if (isset($params['channels']) === true && is_array($params['channels']) === true) {
-				$default['channels'] = $params['channels'];
+		return $this->writeGroupDefault(target: $target, default: $this->requestedSetting(params: $params));
+	}//end update()
+
+	/**
+	 * What a write is for, read from the payload.
+	 *
+	 * @param array<string, mixed> $params The request payload.
+	 *
+	 * @return array{group: ?string, schema: ?string, notification: ?string, scope: ?string} The target.
+	 */
+	private function writeTarget(array $params): array {
+		return [
+			'group' => $this->stringParam(params: $params, key: 'group'),
+			'schema' => $this->stringParam(params: $params, key: 'schema'),
+			'notification' => $this->stringParam(params: $params, key: 'notification'),
+			'scope' => $this->stringParam(params: $params, key: 'scope'),
+		];
+	}//end writeTarget()
+
+	/**
+	 * Refuse a read of a group's defaults the caller may not make.
+	 *
+	 * Members of the group read its defaults, and so do the administrators and
+	 * sub-admins who set them.
+	 *
+	 * @param string      $userId  The caller.
+	 * @param string|null $groupId The group asked for.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the read may proceed.
+	 */
+	private function refuseRead(string $userId, ?string $groupId): ?JSONResponse {
+		if ($groupId === null) {
+			return new JSONResponse(data: ['error' => 'A "group" is required'], statusCode: 422);
+		}
+
+		$group = $this->groupManager->get($groupId);
+		if ($group === null) {
+			return new JSONResponse(data: ['error' => 'Unknown group'], statusCode: 404);
+		}
+
+		if ($this->mayReadGroup(group: $group, userId: $userId, groupId: $groupId) === false) {
+			return new JSONResponse(data: ['error' => 'Not a member of that group'], statusCode: 403);
+		}
+
+		return null;
+	}//end refuseRead()
+
+	/**
+	 * Whether the caller is in the group or administers it.
+	 *
+	 * @param IGroup $group   The group.
+	 * @param string $userId  The caller.
+	 * @param string $groupId The group's id.
+	 *
+	 * @return boolean True when the caller may read the group's defaults.
+	 */
+	private function mayReadGroup(IGroup $group, string $userId, string $groupId): bool {
+		if ($group->inGroup($this->userSession->getUser()) === true) {
+			return true;
+		}
+
+		return $this->administersGroup(userId: $userId, groupId: $groupId);
+	}//end mayReadGroup()
+
+	/**
+	 * The group's stored defaults for every declared notification that has one.
+	 *
+	 * @param string      $groupId The group.
+	 * @param string|null $scope   The scope asked for, or null for global.
+	 *
+	 * @return array<int, array<string, mixed>> The stored defaults.
+	 */
+	private function groupDefaults(string $groupId, ?string $scope): array {
+		$items = [];
+		foreach ($this->declaredNotifications() as $entry) {
+			$stored = $this->preferenceService->getGroupDefault(
+				groupId: $groupId,
+				schemaSlug: $entry['schema'],
+				notificationKey: $entry['notification'],
+				scope: $scope
+			);
+			if ($stored !== null) {
+				$items[] = $this->groupItem(groupId: $groupId, entry: $entry, scope: $scope, stored: $stored);
 			}
 		}
 
+		return $items;
+	}//end groupDefaults()
+
+	/**
+	 * One stored group default as the list answers it.
+	 *
+	 * @param string                                                         $groupId The group.
+	 * @param array{schema: string, schemaTitle: string, notification: string} $entry   The declared notification.
+	 * @param string|null                                                    $scope   The scope, or null for global.
+	 * @param array<string, mixed>                                           $stored  The stored default.
+	 *
+	 * @return array<string, mixed> The list item.
+	 */
+	private function groupItem(string $groupId, array $entry, ?string $scope, array $stored): array {
+		return [
+			'group' => $groupId,
+			'schema' => $entry['schema'],
+			'schemaTitle' => $entry['schemaTitle'],
+			'notification' => $entry['notification'],
+			'scope' => ($scope ?? 'global'),
+			'enabled' => (bool)($stored['enabled'] ?? true),
+			'channels' => ($stored['channels'] ?? null),
+		];
+	}//end groupItem()
+
+	/**
+	 * Store the group default, then answer with what is stored now.
+	 *
+	 * A null `default` clears the group's value, so the schema default applies.
+	 *
+	 * @param array{group: ?string, schema: ?string, notification: ?string, scope: ?string} $target  What the default is for.
+	 * @param array<string, mixed>|null                                                    $default The default, or null to clear it.
+	 *
+	 * @return JSONResponse The stored default.
+	 */
+	private function writeGroupDefault(array $target, ?array $default): JSONResponse {
+		$groupId = (string)$target['group'];
+		$schema = (string)$target['schema'];
+		$notification = (string)$target['notification'];
 		$this->preferenceService->setGroupDefault(
-			groupId: (string)$groupId,
-			schemaSlug: (string)$schema,
-			notificationKey: (string)$notification,
+			groupId: $groupId,
+			schemaSlug: $schema,
+			notificationKey: $notification,
 			default: $default,
-			scope: $scope
+			scope: $target['scope']
 		);
 
-		return new JSONResponse(
-			data: [
-				'group' => $groupId,
-				'schema' => $schema,
-				'notification' => $notification,
-				'scope' => ($scope ?? 'global'),
-				'default' => $this->preferenceService->getGroupDefault(
-					groupId: (string)$groupId,
-					schemaSlug: (string)$schema,
-					notificationKey: (string)$notification,
-					scope: $scope
-				),
-			]
-		);
-	}//end update()
+		$scope = $target['scope'];
+		$stored = $this->preferenceService->getGroupDefault(groupId: $groupId, schemaSlug: $schema, notificationKey: $notification, scope: $scope);
+		return $this->settingResponse(target: $target, key: 'default', stored: $stored);
+	}//end writeGroupDefault()
 
 	/**
 	 * Refuse a write that is unauthenticated, incomplete, or not this caller's
@@ -211,34 +290,26 @@ class NotificationGroupPreferencesController extends Controller {
 	 * place is what makes it obvious that administering the group is checked on
 	 * the WRITER and never inferred from membership.
 	 *
-	 * @param string|null $groupId The group named in the request, or null when absent.
-	 * @param string|null $schema The schema named in the request, or null when absent.
-	 * @param string|null $notification The notification named in the request, or null when absent.
+	 * @param string                    $userId The caller.
+	 * @param array<string, string|null> $target What the write is for (group, schema, notification,
+	 *                                           scope); null where the request names nothing.
 	 *
 	 * @return JSONResponse|null The refusal, or null when the write may proceed.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
-	private function refuseWrite(?string $groupId, ?string $schema, ?string $notification): ?JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+	private function refuseWrite(string $userId, array $target): ?JSONResponse {
+		$groupId = $target['group'];
+		if (in_array(null, [$groupId, $target['schema'], $target['notification']], true) === true) {
+			$error = 'A "group", a "schema" and a "notification" are required';
+			return new JSONResponse(data: ['error' => $error], statusCode: 422);
 		}
 
-		if ($groupId === null || $schema === null || $notification === null) {
-			return new JSONResponse(
-				data: ['error' => 'A "group", a "schema" and a "notification" are required'],
-				statusCode: 422
-			);
-		}
-
-		if ($this->groupManager->get($groupId) === null) {
+		if ($this->groupManager->get((string)$groupId) === null) {
 			return new JSONResponse(data: ['error' => 'Unknown group'], statusCode: 404);
 		}
 
-		// Setting a team's default is an act of administration over that team.
-		// Checked here on the writer, never inferred from membership.
-		if ($this->administersGroup(userId: $userId, groupId: $groupId) === false) {
+		if ($this->administersGroup(userId: $userId, groupId: (string)$groupId) === false) {
 			return new JSONResponse(data: ['error' => 'You do not administer that group'], statusCode: 403);
 		}
 
@@ -292,51 +363,42 @@ class NotificationGroupPreferencesController extends Controller {
 
 		$entries = [];
 		foreach ($schemas as $schema) {
-			$config = ($schema->getConfiguration() ?? []);
-			$notifications = ($config['x-openregister-notifications'] ?? null);
-			if (is_array($notifications) === false) {
-				continue;
-			}
-
-			$slug = (string)($schema->getSlug() ?? $schema->getId());
-			foreach (array_keys($notifications) as $key) {
-				$entries[] = [
-					'schema' => $slug,
-					'schemaTitle' => (string)($schema->getTitle() ?? $slug),
-					'notification' => (string)$key,
-				];
-			}
+			$entries = array_merge($entries, $this->declaredBy(schema: $schema));
 		}
 
 		return $entries;
 	}//end declaredNotifications()
 
 	/**
-	 * Resolve the current user's UID, or null when anonymous.
+	 * The notifications one schema declares, as list entries.
 	 *
-	 * @return string|null
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<int, array{schema: string, schemaTitle: string, notification: string}> The entries.
 	 */
-	private function resolveUserId(): ?string {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return null;
-		}
+	private function declaredBy(Schema $schema): array {
+		$slug = (string)($schema->getSlug() ?? $schema->getId());
+		$title = (string)($schema->getTitle() ?? $slug);
 
-		return $user->getUID();
-	}//end resolveUserId()
+		return array_map(
+			static fn (int|string $key): array => ['schema' => $slug, 'schemaTitle' => $title, 'notification' => (string)$key],
+			$this->notificationKeys(schema: $schema)
+		);
+	}//end declaredBy()
 
 	/**
-	 * Coerce a request value to a non-empty string, or null.
+	 * The keys of the notifications a schema declares, or none.
 	 *
-	 * @param mixed $value Input.
+	 * @param Schema $schema The schema.
 	 *
-	 * @return string|null
+	 * @return array<int, int|string> The declared keys.
 	 */
-	private function nonEmptyString(mixed $value): ?string {
-		if (is_string($value) === false || $value === '') {
-			return null;
+	private function notificationKeys(Schema $schema): array {
+		$notifications = (($schema->getConfiguration() ?? [])['x-openregister-notifications'] ?? null);
+		if (is_array($notifications) === false) {
+			return [];
 		}
 
-		return $value;
-	}//end nonEmptyString()
+		return array_keys($notifications);
+	}//end notificationKeys()
 }//end class

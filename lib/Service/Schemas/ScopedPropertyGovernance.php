@@ -67,6 +67,18 @@ class ScopedPropertyGovernance {
 	public const DEFAULT_UNUSED_DAYS = 90;
 
 	/**
+	 * The refusal at the ceiling: scope, count, ceiling, property.
+	 */
+	private const MSG_CEILING = 'Scope \'%s\' already holds %d scoped properties, which is its ceiling of %d, so \'%s\' is refused. '
+		. 'Raise the ceiling or retire a field the scope no longer uses.';
+
+	/**
+	 * The refusal for promoting an unscoped property: property.
+	 */
+	private const MSG_NOT_SCOPED = '\'%s\' is not a scoped property, so there is nothing to promote it from. '
+		. 'Promoting it anyway would report an act that did not happen.';
+
+	/**
 	 * The collaborators.
 	 *
 	 * @param IUserSession  $userSession  The caller.
@@ -165,22 +177,33 @@ class ScopedPropertyGovernance {
 	public function countAtScope(Schema $schema, string $scope, string $except = ''): int {
 		$count = 0;
 		foreach (($schema->getProperties() ?? []) as $name => $property) {
-			if ((string)$name === $except) {
-				continue;
-			}
-
-			if (is_array($property) === false) {
-				continue;
-			}
-
-			$declared = ($property[ScopedPropertyDeclaration::ANNOTATION] ?? null);
-			if (is_string($declared) === true && trim($declared) === $scope) {
+			if ((string)$name !== $except && self::scopeOf(property: $property) === $scope) {
 				$count++;
 			}
 		}
 
 		return $count;
 	}//end countAtScope()
+
+	/**
+	 * The trimmed scope a property declares, or null when it is no property or declares no string.
+	 *
+	 * @param mixed $property The property definition.
+	 *
+	 * @return string|null The trimmed scope, which may be empty.
+	 */
+	private static function scopeOf(mixed $property): ?string {
+		if (is_array($property) === false) {
+			return null;
+		}
+
+		$declared = ($property[ScopedPropertyDeclaration::ANNOTATION] ?? null);
+		if (is_string($declared) === false) {
+			return null;
+		}
+
+		return trim($declared);
+	}//end scopeOf()
 
 	/**
 	 * Refuse a scoped property that would sit above the ceiling.
@@ -208,16 +231,7 @@ class ScopedPropertyGovernance {
 			return;
 		}
 
-		throw new ScopedPropertyException(
-			sprintf(
-				'Scope \'%s\' already holds %d scoped properties, which is its ceiling of %d, so \'%s\' is refused. '
-				. 'Raise the ceiling or retire a field the scope no longer uses.',
-				$scope,
-				$already,
-				$ceiling,
-				$property
-			)
-		);
+		throw new ScopedPropertyException(sprintf(self::MSG_CEILING, $scope, $already, $ceiling, $property));
 	}//end assertBelowCeiling()
 
 	/**
@@ -261,42 +275,43 @@ class ScopedPropertyGovernance {
 		$report = [];
 
 		foreach (($schema->getProperties() ?? []) as $name => $property) {
-			if (is_array($property) === false) {
+			$scope = self::scopeOf(property: $property);
+			if ($scope === null || $scope === '') {
 				continue;
 			}
 
-			$scope = ($property[ScopedPropertyDeclaration::ANNOTATION] ?? null);
-			if (is_string($scope) === false || trim($scope) === '') {
-				continue;
-			}
-
-			$key   = (string)$name;
-			$state = 'in use';
-			$values = null;
-
-			if (array_key_exists($key, $counts) === false) {
-				$state = 'unknown';
-			}
-
-			if (array_key_exists($key, $counts) === true) {
-				$values = (int)$counts[$key];
-				if ($values === 0) {
-					$state = 'unused';
-				}
-			}
-
-			$report[] = [
-				'property' => $key,
-				'scope'    => trim($scope),
-				'values'   => $values,
-				'state'    => $state,
+			$report[] = self::usageRow(key: (string)$name, scope: $scope, counts: $counts) + [
 				'unusedAfterDays' => $this->unusedAfterDays(),
-				'asOf'     => $asOf->format('c'),
+				'asOf'            => $asOf->format('c'),
 			];
 		}
 
 		return $report;
 	}//end unusedReport()
+
+	/**
+	 * What the counts say about one scoped property.
+	 *
+	 * @param string             $key    The property name.
+	 * @param string             $scope  Its trimmed scope.
+	 * @param array<string, int> $counts How many values each property holds.
+	 *
+	 * @return array{property: string, scope: string, values: int|null, state: string} The row.
+	 */
+	private static function usageRow(string $key, string $scope, array $counts): array {
+		$row = ['property' => $key, 'scope' => $scope, 'values' => null, 'state' => 'unknown'];
+		if (array_key_exists($key, $counts) === false) {
+			return $row;
+		}
+
+		$row['values'] = (int)$counts[$key];
+		$row['state']  = 'in use';
+		if ($row['values'] === 0) {
+			$row['state'] = 'unused';
+		}
+
+		return $row;
+	}//end usageRow()
 
 	/**
 	 * Promote a scoped property to an ordinary schema property.
@@ -326,20 +341,12 @@ class ScopedPropertyGovernance {
 		$config     = ($properties[$property] ?? null);
 
 		if (is_array($config) === false) {
-			throw new ScopedPropertyException(
-				sprintf('There is no property \'%s\' to promote.', $property)
-			);
+			throw new ScopedPropertyException(sprintf('There is no property \'%s\' to promote.', $property));
 		}
 
-		$scope = ($config[ScopedPropertyDeclaration::ANNOTATION] ?? null);
-		if (is_string($scope) === false || trim($scope) === '') {
-			throw new ScopedPropertyException(
-				sprintf(
-					'\'%s\' is not a scoped property, so there is nothing to promote it from. '
-					. 'Promoting it anyway would report an act that did not happen.',
-					$property
-				)
-			);
+		$scope = self::scopeOf(property: $config);
+		if ($scope === null || $scope === '') {
+			throw new ScopedPropertyException(sprintf(self::MSG_NOT_SCOPED, $property));
 		}
 
 		unset($config[ScopedPropertyDeclaration::ANNOTATION]);

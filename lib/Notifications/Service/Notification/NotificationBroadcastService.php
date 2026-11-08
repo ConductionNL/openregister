@@ -36,6 +36,8 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 use InvalidArgumentException;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\NotificationBroadcast;
+use OCA\OpenRegister\Notifications\Db\BroadcastMessage;
+use OCA\OpenRegister\Notifications\Db\BroadcastWindow;
 use OCA\OpenRegister\Notifications\Db\NotificationBroadcastMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationBroadcastReceiptMapper;
 use Psr\Log\LoggerInterface;
@@ -94,11 +96,9 @@ class NotificationBroadcastService {
 
 		$broadcast = $this->broadcasts->record(
 			uuid: $this->newUuid(),
-			subject: $subject,
-			body: $body,
 			sender: $sender,
-			startsAt: $startsAt,
-			endsAt: $endsAt
+			message: new BroadcastMessage(subject: $subject, body: $body),
+			window: new BroadcastWindow(startsAt: $startsAt, endsAt: $endsAt)
 		);
 
 		$this->logger->info(

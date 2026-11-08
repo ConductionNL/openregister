@@ -502,12 +502,7 @@ class EmlParser {
 	private function logUndetectedEncoding(string $value): void {
 		$this->logger->error(
 			message: '[EmlParser] Non-UTF-8 input — encoding detection failed; returning raw bytes',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'value_bytes' => strlen($value),
-				'candidates' => self::ENCODING_CANDIDATES,
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'value_bytes' => strlen($value), 'candidates' => self::ENCODING_CANDIDATES]
 		);
 	}//end logUndetectedEncoding()
 
@@ -527,13 +522,7 @@ class EmlParser {
 
 		$this->logger->error(
 			message: '[EmlParser] Non-UTF-8 input — transcoding to UTF-8 failed; returning raw bytes',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'value_bytes' => strlen($value),
-				'detected_from' => $from,
-				'target_encoding' => 'UTF-8',
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'value_bytes' => strlen($value), 'detected_from' => $from, 'target_encoding' => 'UTF-8']
 		);
 		return $value;
 	}//end transcodeToUtf8()

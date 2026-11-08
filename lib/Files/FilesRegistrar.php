@@ -38,6 +38,7 @@ use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisionerInterface;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
 use OCA\OpenRegister\Files\Service\File\TaggingHandler;
+use OCA\OpenRegister\Files\Service\NoteAccounts;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
@@ -113,8 +114,10 @@ final class FilesRegistrar
     {
         return new NoteService(
             commentsManager: $container->get('OCP\Comments\ICommentsManager'),
-            userSession: $container->get('OCP\IUserSession'),
-            userManager: $container->get('OCP\IUserManager'),
+            accounts: new NoteAccounts(
+                userSession: $container->get('OCP\IUserSession'),
+                userManager: $container->get('OCP\IUserManager')
+            ),
             visibility: $container->get(TimelineVisibilityServiceInterface::class),
             versions: $container->get(NoteVersionService::class)
         );

@@ -19,6 +19,7 @@ use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowRunMigrationControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -116,7 +117,7 @@ class FlowRunMigrationControllerTest extends TestCase {
 	 * @return FlowRunMigrationController The controller.
 	 */
 	private function controller($migrations = null): FlowRunMigrationController {
-		return new FlowRunMigrationController(
+		return FlowRunMigrationControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,

@@ -84,60 +84,121 @@ class AnonymisationSweep {
 	 */
 	public function run(array $candidates, callable $targetsFor, string $salt): array {
 		$fingerprint = $this->run->fingerprint(salt: $salt);
-		$anonymised = [];
-		$refused = [];
+		$outcome = ['anonymised' => [], 'refused' => []];
 
 		foreach ($candidates as $candidate) {
-			$uuid = (string)($candidate['uuid'] ?? '');
-			if ($uuid === '') {
-				// A candidate with no identity cannot be reported on afterwards,
-				// and an anonymisation nobody can point at is not auditable.
-				$refused[] = ['uuid' => '', 'reason' => 'This candidate carries no uuid, so the act could not be recorded against it.'];
-				continue;
-			}
-
-			$refusal = $this->run->refuse(
-				marker: (array)($candidate['marker'] ?? []),
-				hasLegalHold: (bool)($candidate['hasLegalHold'] ?? false),
-				holdReason: (string)($candidate['holdReason'] ?? ''),
-				saltFingerprint: $fingerprint
-			);
-
-			if ($refusal !== null) {
-				$refused[] = ['uuid' => $uuid, 'reason' => $refusal];
-				$this->logger->info('[AnonymisationSweep] Refused', ['object' => $uuid, 'reason' => $refusal]);
-				continue;
-			}
-
-			try {
-				$plan = $this->run->plan(
-					objectUuid: $uuid,
-					payload: (array)($candidate['payload'] ?? []),
-					annotation: (array)($candidate['annotation'] ?? []),
-					salt: $salt,
-					profileName: (string)($candidate['profileName'] ?? '')
-				);
-
-				$marker = $this->run->apply(plan: $plan, targets: $targetsFor($candidate, $plan));
-				$anonymised[] = ['uuid' => $uuid, 'marker' => $marker];
-			} catch (Throwable $error) {
-				// 🔴 ONE RECORD'S FAILURE DOES NOT STOP THE BATCH, AND DOES NOT
-				// DISAPPEAR EITHER. It is counted apart and its reason is kept,
-				// because a sweep that reports only its successes is the
-				// instrument reporting green over the work it did not do.
-				$refused[] = ['uuid' => $uuid, 'reason' => $error->getMessage()];
-				$this->logger->warning(
-					'[AnonymisationSweep] Stopped on one record',
-					['object' => $uuid, 'reason' => $error->getMessage()]
-				);
-			}
-		}//end foreach
+			$result = $this->one(candidate: $candidate, targetsFor: $targetsFor, salt: $salt, fingerprint: $fingerprint);
+			$outcome[$result['kind']][] = $result['entry'];
+		}
 
 		return [
-			'anonymised' => $anonymised,
-			'refused' => $refused,
-			'anonymisedCount' => count($anonymised),
-			'refusedCount' => count($refused),
+			'anonymised' => $outcome['anonymised'],
+			'refused' => $outcome['refused'],
+			'anonymisedCount' => count($outcome['anonymised']),
+			'refusedCount' => count($outcome['refused']),
 		];
 	}//end run()
+
+	/**
+	 * Anonymise one candidate, or say why not.
+	 *
+	 * @param array<string, mixed> $candidate   The record to consider.
+	 * @param callable             $targetsFor  Returns the targets for one candidate.
+	 * @param string               $salt        The instance salt.
+	 * @param string               $fingerprint The salt's fingerprint.
+	 *
+	 * @return array{kind: string, entry: array<string, mixed>} `anonymised` or `refused`, and its report entry.
+	 */
+	private function one(array $candidate, callable $targetsFor, string $salt, string $fingerprint): array {
+		$uuid = (string)($candidate['uuid'] ?? '');
+		if ($uuid === '') {
+			// A candidate with no identity cannot be reported on afterwards,
+			// and an anonymisation nobody can point at is not auditable.
+			return $this->refused(uuid: '', reason: 'This candidate carries no uuid, so the act could not be recorded against it.');
+		}
+
+		$refusal = $this->refusalOf(candidate: $candidate, fingerprint: $fingerprint);
+		if ($refusal !== null) {
+			$this->logger->info('[AnonymisationSweep] Refused', ['object' => $uuid, 'reason' => $refusal]);
+			return $this->refused(uuid: $uuid, reason: $refusal);
+		}
+
+		return $this->anonymise(candidate: $candidate, uuid: $uuid, targetsFor: $targetsFor, salt: $salt);
+	}//end one()
+
+	/**
+	 * Plan and apply one candidate the run did not refuse.
+	 *
+	 * 🔴 ONE RECORD'S FAILURE DOES NOT STOP THE BATCH, AND DOES NOT DISAPPEAR
+	 * EITHER. It is counted apart and its reason is kept, because a sweep that
+	 * reports only its successes is the instrument reporting green over the
+	 * work it did not do.
+	 *
+	 * @param array<string, mixed> $candidate  The record.
+	 * @param string               $uuid       Its uuid.
+	 * @param callable             $targetsFor Returns the targets for one candidate.
+	 * @param string               $salt       The instance salt.
+	 *
+	 * @return array{kind: string, entry: array<string, mixed>} The outcome.
+	 */
+	private function anonymise(array $candidate, string $uuid, callable $targetsFor, string $salt): array {
+		try {
+			$plan = $this->planFor(candidate: $candidate, uuid: $uuid, salt: $salt);
+			$marker = $this->run->apply(plan: $plan, targets: $targetsFor($candidate, $plan));
+			return ['kind' => 'anonymised', 'entry' => ['uuid' => $uuid, 'marker' => $marker]];
+		} catch (Throwable $error) {
+			$this->logger->warning('[AnonymisationSweep] Stopped on one record', ['object' => $uuid, 'reason' => $error->getMessage()]);
+			return $this->refused(uuid: $uuid, reason: $error->getMessage());
+		}
+	}//end anonymise()
+
+	/**
+	 * Why the run refuses this candidate, or null when it may run.
+	 *
+	 * @param array<string, mixed> $candidate   The record.
+	 * @param string               $fingerprint The salt's fingerprint.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private function refusalOf(array $candidate, string $fingerprint): string|null {
+		return $this->run->refuse(
+			marker: (array)($candidate['marker'] ?? []),
+			hasLegalHold: (bool)($candidate['hasLegalHold'] ?? false),
+			holdReason: (string)($candidate['holdReason'] ?? ''),
+			saltFingerprint: $fingerprint
+		);
+	}//end refusalOf()
+
+	/**
+	 * The plan for one candidate.
+	 *
+	 * @param array<string, mixed> $candidate The record.
+	 * @param string               $uuid      Its uuid.
+	 * @param string               $salt      The instance salt.
+	 *
+	 * @return AnonymisationPlan The plan.
+	 *
+	 * @throws Throwable When the profile is unsound or the plan would change nothing.
+	 */
+	private function planFor(array $candidate, string $uuid, string $salt): AnonymisationPlan {
+		return $this->run->plan(
+			objectUuid: $uuid,
+			payload: (array)($candidate['payload'] ?? []),
+			annotation: (array)($candidate['annotation'] ?? []),
+			salt: $salt,
+			profileName: (string)($candidate['profileName'] ?? '')
+		);
+	}//end planFor()
+
+	/**
+	 * A refused outcome.
+	 *
+	 * @param string $uuid   The candidate's uuid.
+	 * @param string $reason Why it was refused.
+	 *
+	 * @return array{kind: string, entry: array{uuid: string, reason: string}} The outcome.
+	 */
+	private function refused(string $uuid, string $reason): array {
+		return ['kind' => 'refused', 'entry' => ['uuid' => $uuid, 'reason' => $reason]];
+	}//end refused()
 }//end class

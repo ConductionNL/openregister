@@ -123,24 +123,43 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	private const MAX_LIMIT = 1000;
 
 	/**
+	 * Object reads, RBAC-enforcing.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objects;
+
+	/**
+	 * Resolves the configured register.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registers;
+
+	/**
+	 * Resolves the configured schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objects Object reads, RBAC-enforcing.
-	 * @param RegisterMapperInterface $registers Resolves the configured register.
-	 * @param SchemaMapperInterface $schemas Resolves the configured schema.
-	 * @param IUserManager $userManager Resolves the run owner.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param ObjectNodeSources $sources     Object reads (RBAC-enforcing) and the register and schema mappers.
+	 * @param IUserManager      $userManager Resolves the run owner.
+	 * @param IL10N             $l10n        Translations.
+	 * @param IURLGenerator     $urls        For the palette icon.
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objects,
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
+		ObjectNodeSources $sources,
 		private readonly IUserManager $userManager,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,
 	) {
-
+		$this->objects   = $sources->objects;
+		$this->registers = $sources->registers;
+		$this->schemas   = $sources->schemas;
 	}//end __construct()
 
 	/**
@@ -257,10 +276,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 			$filters = $this->renderFilters(config: $config, json: $json);
 
 			$records = $this->read(
-				register: $register,
-				schema: $schema,
-				filters: $filters,
-				limit: $limit,
+				query: new ObjectReadQuery(register: $register, schema: $schema, filters: $filters, limit: $limit),
 				owner: $owner
 			);
 
@@ -376,17 +392,14 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	 * caller that cannot tell them apart — a reaper, a guard, a count — will
 	 * read the second as the first and quietly do nothing.
 	 *
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
-	 * @param array $filters The rendered filters.
-	 * @param int $limit The bounded result cap.
-	 * @param IUser $owner The run owner, whose RBAC applies.
+	 * @param ObjectReadQuery $query The resolved register and schema, the rendered filters and the cap.
+	 * @param IUser           $owner The run owner, whose RBAC applies.
 	 *
 	 * @return array<int, array> The matched objects, as plain records.
 	 *
 	 * @throws RuntimeException When the read itself fails.
 	 */
-	private function read(Register $register, Schema $schema, array $filters, int $limit, IUser $owner): array {
+	private function read(ObjectReadQuery $query, IUser $owner): array {
 		try {
 			// The read runs AS the owner. `$owner` was resolved, declared and
 			// documented as "the subject whose RBAC applies" — and then never
@@ -404,9 +417,9 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 			$found = $this->objects->runAs(
 				$owner,
 				fn (): array => $this->objects
-					->setRegister($register)
-					->setSchema($schema)
-					->findAll(config: ['filters' => $filters, 'limit' => $limit])
+					->setRegister($query->register)
+					->setSchema($query->schema)
+					->findAll(config: ['filters' => $query->filters, 'limit' => $query->limit])
 			);
 		} catch (Throwable $e) {
 			throw new RuntimeException(

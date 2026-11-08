@@ -55,27 +55,59 @@ class FlowTimerSweep implements FlowTimerSweepInterface {
 	public const TIMEOUT_SOURCE = 'task-expiry-sweep';
 
 	/**
+	 * The two timer range scans.
+	 *
+	 * @var FlowTimerMapper
+	 */
+	private readonly FlowTimerMapper $timers;
+
+	/**
+	 * Fires expiries and rungs.
+	 *
+	 * @var FlowTimerService
+	 */
+	private readonly FlowTimerService $service;
+
+	/**
+	 * Reset once per pass so memoisation is per pass.
+	 *
+	 * @var WorkingCalendarService
+	 */
+	private readonly WorkingCalendarService $calendars;
+
+	/**
+	 * The task-timeout range scan (task-expiry-and-outcomes D-3); null skips the task pass.
+	 *
+	 * @var TaskMapper|null
+	 */
+	private readonly ?TaskMapper $tasks;
+
+	/**
+	 * Applies a due task's declared behaviour; null skips the task pass.
+	 *
+	 * @var TaskServiceInterface|null
+	 */
+	private readonly ?TaskServiceInterface $taskService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimerMapper $timers The two timer range scans.
-	 * @param FlowTimerService $service Fires expiries and rungs.
-	 * @param WorkingCalendarService $calendars Reset once per pass so memoisation is per pass.
-	 * @param LoggerInterface $logger Per-timer failure reporting.
-	 * @param TaskMapper|null $tasks The task-timeout range scan
-	 *                               (task-expiry-and-outcomes D-3). Nullable so
-	 *                               pre-existing positional instantiations keep
-	 *                               working; the container wires both.
-	 * @param TaskServiceInterface|null $taskService Applies a due task's declared behaviour.
+	 * @param FlowTimerSweepTimers     $timers The timer range scans, the timer service and the calendars.
+	 * @param LoggerInterface          $logger Per-timer failure reporting.
+	 * @param FlowTimerSweepTasks|null $tasks  The task-timeout scan and task service. Nullable so
+	 *                                         a sweep without them skips the task pass; the
+	 *                                         container wires both.
 	 */
 	public function __construct(
-		private readonly FlowTimerMapper $timers,
-		private readonly FlowTimerService $service,
-		private readonly WorkingCalendarService $calendars,
+		FlowTimerSweepTimers $timers,
 		private readonly LoggerInterface $logger,
-		private readonly ?TaskMapper $tasks = null,
-		private readonly ?TaskServiceInterface $taskService = null,
+		?FlowTimerSweepTasks $tasks = null,
 	) {
-
+		$this->timers      = $timers->timers;
+		$this->service     = $timers->service;
+		$this->calendars   = $timers->calendars;
+		$this->tasks       = $tasks?->tasks;
+		$this->taskService = $tasks?->taskService;
 	}//end __construct()
 
 	/**

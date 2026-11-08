@@ -348,6 +348,8 @@
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Object/SaveObject.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Object/SaveObject.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Object/SaveObject/FilePropertyHandler.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Object/SaveObjectWriterInterface.php"/>
+  <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Service/Object/SaveObjectWriterInterface.php" method="saveObject"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Service/Object/SaveObjects.php" method="__construct"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/Object/SaveObjects.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Object/TranslationHandler.php"/>

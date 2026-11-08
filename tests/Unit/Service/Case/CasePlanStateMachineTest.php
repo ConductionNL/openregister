@@ -27,9 +27,11 @@ use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
+use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CasePlanTree;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
+use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -122,14 +124,9 @@ class CasePlanStateMachineTest extends TestCase {
 		);
 
 		return new CasePlanStateMachine(
-			items: $this->items,
-			audits: $this->audits,
+			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $this->db, logger: new NullLogger()),
 			table: new CasePlanTransitions(),
-			realiser: $this->realiser,
-			writer: $this->writer,
-			db: $this->db,
-			logger: new NullLogger(),
-			dispatcher: $dispatcher
+			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->writer, dispatcher: $dispatcher)
 		);
 	}//end machine()
 
@@ -338,14 +335,9 @@ class CasePlanStateMachineTest extends TestCase {
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->expects($this->once())->method('dispatchTyped')->willThrowException(new RuntimeException('listener broke'));
 		$machine = new CasePlanStateMachine(
-			items: $this->items,
-			audits: $this->audits,
+			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()),
 			table: new CasePlanTransitions(),
-			realiser: $this->realiser,
-			writer: $this->writer,
-			db: $db,
-			logger: new NullLogger(),
-			dispatcher: $dispatcher
+			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->writer, dispatcher: $dispatcher)
 		);
 
 		$machine->transition(item: $item, to: CaseItem::STATE_COMPLETED, cause: CaseItemAudit::CAUSE_SENTRY, causeRef: 's', actor: null);
@@ -353,13 +345,9 @@ class CasePlanStateMachineTest extends TestCase {
 		$this->assertSame(CaseItem::STATE_COMPLETED, $item->getState());
 
 		$silent = new CasePlanStateMachine(
-			items: $this->items,
-			audits: $this->audits,
+			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $this->db, logger: new NullLogger()),
 			table: new CasePlanTransitions(),
-			realiser: $this->realiser,
-			writer: $this->writer,
-			db: $this->db,
-			logger: new NullLogger()
+			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->writer)
 		);
 		$other = CaseFixtures::row(id: 2, key: 'y', type: CaseItem::TYPE_MILESTONE, state: CaseItem::STATE_AVAILABLE);
 		$this->items->seed([$other]);

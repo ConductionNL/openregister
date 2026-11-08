@@ -32,25 +32,21 @@ use JsonException;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
-use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis;
+use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects;
+use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionReaders;
+use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionStorage;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
-use OCP\IDBConnection;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
-use OCA\OpenRegister\Service\SettingsServiceInterface;
 
 // Document parsing libraries.
 
@@ -136,44 +132,18 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Constructor
 	 *
-	 * @param FileMapperInterface $fileMapper Mapper for Nextcloud files
-	 * @param ChunkMapper $chunkMapper Mapper for chunks
-	 * @param IRootFolder $rootFolder Nextcloud root folder
-	 * @param IDBConnection $db Database connection
-	 * @param LoggerInterface $logger Logger
-	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas
-	 * @param RegisterMapperInterface $registerMapper Mapper for registers
-	 * @param EntityRecognitionHandler $entityHandler Handler for entity recognition
-	 * @param SettingsServiceInterface $settingsService Settings service
-	 * @param RiskLevelService $riskLevelService Risk level computation service
-	 * @param EmlParser $emlParser EML message-parser (used for message/rfc822
-	 *                             inputs and for the public `parseEmlStructured`
-	 *                             surface that DocuDesk's `eml-pdf-assembly`
-	 *                             consumes; see `text-extraction-eml`).
-	 * @param SpreadsheetExtractor $spreadsheetExtractor Extractor for spreadsheet documents
-	 * @param PdfExtractor $pdfExtractor Extractor for PDF documents
-	 * @param WordExtractor $wordExtractor Extractor for Word documents
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection for all document-type parsers and entity mappers.
-	 * @SuppressWarnings(PHPMD.ShortVariable)          $db is a well-known PHP idiom for a database connection parameter.
+	 * @param TextExtractionStorage  $storage     The file and database stores.
+	 * @param ChunkMapper            $chunkMapper The chunk store, passed on to ObjectHandler.
+	 * @param TextExtractionObjects  $objects     The object, schema and register mappers.
+	 * @param TextExtractionAnalysis $analysis    Entity recognition, settings, risk level and logging.
+	 * @param TextExtractionReaders  $readers     The document readers.
 	 */
 	public function __construct(
-		private readonly FileMapperInterface $fileMapper,
+		private readonly TextExtractionStorage $storage,
 		private readonly ChunkMapper $chunkMapper,
-		private readonly IRootFolder $rootFolder,
-		private readonly IDBConnection $db,
-		private readonly LoggerInterface $logger,
-		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly EntityRecognitionHandler $entityHandler,
-		private readonly SettingsServiceInterface $settingsService,
-		private readonly RiskLevelService $riskLevelService,
-		private readonly EmlParser $emlParser,
-		private readonly SpreadsheetExtractor $spreadsheetExtractor,
-		private readonly PdfExtractor $pdfExtractor,
-		private readonly WordExtractor $wordExtractor,
+		private readonly TextExtractionObjects $objects,
+		private readonly TextExtractionAnalysis $analysis,
+		private readonly TextExtractionReaders $readers,
 	) {
 	}//end __construct()
 
@@ -201,12 +171,12 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function extractFile(int $fileId, bool $forceReExtract = false, ?array $entityTypes = null): void {
-		$this->logger->debug(
+		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Starting file extraction',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
 		);
 
-		$ncFile = $this->fileMapper->getFile($fileId);
+		$ncFile = $this->storage->fileMapper->getFile($fileId);
 		if ($ncFile === null) {
 			throw new NotFoundException("File with ID {$fileId} not found in Nextcloud");
 		}
@@ -222,7 +192,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		);
 		if ($forceReExtract === false && $isUpToDate === true) {
 			// File is up-to-date and all chunks are still valid.
-			$this->logger->debug(
+			$this->analysis->logger->debug(
 				message: '[TextExtractionService] File already processed and up-to-date',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
 			);
@@ -256,7 +226,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/text-extraction/spec.md
 	 */
 	public function extractFromProvidedText(int $fileId, string $text, ?array $entityTypes = null, string $method = 'ocr'): void {
-		$ncFile = $this->fileMapper->getFile($fileId);
+		$ncFile = $this->storage->fileMapper->getFile($fileId);
 		if ($ncFile === null) {
 			throw new NotFoundException("File with ID {$fileId} not found in Nextcloud");
 		}
@@ -279,9 +249,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$chunks = $this->textToChunks(
 			payload: $payload,
 			options: [
-				'chunk_size' => self::DEFAULT_CHUNK_SIZE,
-				'chunk_overlap' => self::DEFAULT_CHUNK_OVERLAP,
-				'strategy' => self::RECURSIVE_CHARACTER,
+				'chunk_size' => self::DEFAULT_CHUNK_SIZE, 'chunk_overlap' => self::DEFAULT_CHUNK_OVERLAP, 'strategy' => self::RECURSIVE_CHARACTER,
 			]
 		);
 
@@ -300,14 +268,9 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			return;
 		}
 
-		$this->logger->debug(
+		$this->analysis->logger->debug(
 			message: '[TextExtractionService] File extraction complete',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'fileId' => $fileId,
-				'chunkCount' => count($chunks) + 1,
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'chunkCount' => count($chunks) + 1]
 		);
 	}//end indexFilePayload()
 
@@ -324,39 +287,33 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		// Extract entities from chunks.
 		try {
 			// Get entity recognition settings.
-			$fileSettings = $this->settingsService->getFileSettingsOnly();
+			$fileSettings = $this->analysis->settingsService->getFileSettingsOnly();
 			$entityMethod = $fileSettings['entityRecognitionMethod'] ?? 'hybrid';
 			$entityEnabled = $fileSettings['entityRecognitionEnabled'] ?? false;
 
 			if ($entityEnabled === false) {
-				$this->logger->debug(
+				$this->analysis->logger->debug(
 					message: '[TextExtractionService] Entity recognition disabled, skipping',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
 				);
 				return false;
 			}
 
-			$entityOptions = [
-				'method' => $entityMethod,
-				'confidence_threshold' => 0.5,
-			];
+			$entityOptions = ['method' => $entityMethod, 'confidence_threshold' => 0.5];
 			if ($entityTypes !== null) {
 				$entityOptions['entity_types'] = array_values($entityTypes);
 			}
 
-			$entityResult = $this->entityHandler->processSourceChunks(
+			$entityResult = $this->analysis->entityHandler->processSourceChunks(
 				sourceType: 'file',
 				sourceId: $fileId,
 				options: $entityOptions
 			);
 
-			$this->logger->debug(
+			$this->analysis->logger->debug(
 				message: '[TextExtractionService] Entity extraction complete',
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $fileId,
-					'entities_found' => $entityResult['entities_found'],
+					'file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'entities_found' => $entityResult['entities_found'],
 					'relations_created' => $entityResult['relations_created'],
 				]
 			);
@@ -364,14 +321,9 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			// Compute and persist risk level based on detected entities.
 			$this->updateFileRiskLevel(fileId: $fileId);
 		} catch (Exception $e) {
-			$this->logger->error(
+			$this->analysis->logger->error(
 				message: '[TextExtractionService] Entity extraction failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $fileId,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'error' => $e->getMessage()]
 			);
 		}//end try
 
@@ -387,15 +339,15 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function updateFileRiskLevel(int $fileId): void {
 		try {
-			$riskLevel = $this->riskLevelService->updateRiskLevel(fileId: $fileId);
+			$riskLevel = $this->analysis->riskLevelService->updateRiskLevel(fileId: $fileId);
 			// Info: a risk level changing is a compliance-relevant state
 			// change on the document, not a step in extracting it.
-			$this->logger->info(
+			$this->analysis->logger->info(
 				'[TextExtractionService] Risk level updated',
 				['fileId' => $fileId, 'riskLevel' => $riskLevel]
 			);
 		} catch (Exception $e) {
-			$this->logger->warning(
+			$this->analysis->logger->warning(
 				'[TextExtractionService] Failed to update risk level',
 				['fileId' => $fileId, 'error' => $e->getMessage()]
 			);
@@ -508,7 +460,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function extractObject(int $objectId, bool $forceReExtract = false): void {
-		$this->logger->debug(
+		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Starting object extraction',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId]
 		);
@@ -526,7 +478,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			forceReExtract: $forceReExtract
 		);
 		if ($forceReExtract === false && $isUpToDate === true) {
-			$this->logger->debug(
+			$this->analysis->logger->debug(
 				message: '[TextExtractionService] Object already processed and up-to-date',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId]
 			);
@@ -549,13 +501,13 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function findObjectToExtract(int $objectId): ?ObjectEntity {
 		try {
-			return $this->objectEntityMapper->find($objectId);
+			return $this->objects->objectEntityMapper->find($objectId);
 		} catch (DoesNotExistException $e) {
 			// Info, deliberately: this explains why queued work did NOT happen
 			// — the object was deleted between queueing and extraction. Silence
 			// there looks like the job never ran. TextExtractionServiceDeepTest
 			// asserts the level, so the intent is recorded rather than assumed.
-			$this->logger->info(
+			$this->analysis->logger->info(
 				message: '[TextExtractionService] Object no longer exists, skipping extraction',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId]
 			);
@@ -570,11 +522,11 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function newObjectHandler(): ObjectHandler {
 		return new ObjectHandler(
-			objectMapper: $this->objectEntityMapper,
+			objectMapper: $this->objects->objectEntityMapper,
 			chunkMapper: $this->chunkMapper,
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
-			logger: $this->logger
+			schemaMapper: $this->objects->schemaMapper,
+			registerMapper: $this->objects->registerMapper,
+			logger: $this->analysis->logger
 		);
 	}//end newObjectHandler()
 
@@ -597,19 +549,11 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$languageSignals = $this->detectLanguageSignals(text: $cleanText);
 
 		return [
-			'source_type' => 'object',
-			'source_id' => $objectId,
-			'text' => $cleanText,
-			'length' => strlen($cleanText),
-			'checksum' => hash('sha256', $cleanText),
-			'method' => 'object_extraction',
-			'owner' => $extractedData['owner'] ?? null,
-			'organisation' => $extractedData['organisation'] ?? null,
-			'language' => $languageSignals['language'],
-			'language_level' => $languageSignals['language_level'],
-			'language_confidence' => $languageSignals['language_confidence'],
-			'detection_method' => $languageSignals['detection_method'],
-			'metadata' => $extractedData['metadata'] ?? [],
+			'source_type' => 'object', 'source_id' => $objectId, 'text' => $cleanText, 'length' => strlen($cleanText),
+			'checksum' => hash('sha256', $cleanText), 'method' => 'object_extraction', 'owner' => $extractedData['owner'] ?? null,
+			'organisation' => $extractedData['organisation'] ?? null, 'language' => $languageSignals['language'],
+			'language_level' => $languageSignals['language_level'], 'language_confidence' => $languageSignals['language_confidence'],
+			'detection_method' => $languageSignals['detection_method'], 'metadata' => $extractedData['metadata'] ?? [],
 		];
 	}//end objectPayload()
 
@@ -640,7 +584,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 		$this->extractObjectEntities(objectId: $objectId);
 
-		$this->logger->debug(
+		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Object extraction completed',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId, 'chunkCount' => count($chunks) + 1]
 		);
@@ -655,24 +599,21 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function extractObjectEntities(int $objectId): void {
 		try {
-			$entityResult = $this->entityHandler->processSourceChunks(
+			$entityResult = $this->analysis->entityHandler->processSourceChunks(
 				sourceType: 'object',
 				sourceId: $objectId,
 				options: ['method' => 'hybrid', 'confidence_threshold' => 0.5]
 			);
 
-			$this->logger->debug(
+			$this->analysis->logger->debug(
 				message: '[TextExtractionService] Entity extraction complete',
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'objectId' => $objectId,
-					'entities_found' => $entityResult['entities_found'],
+					'file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId, 'entities_found' => $entityResult['entities_found'],
 					'relations_created' => $entityResult['relations_created'],
 				]
 			);
 		} catch (Exception $e) {
-			$this->logger->error(
+			$this->analysis->logger->error(
 				message: '[TextExtractionService] Entity extraction failed',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId, 'error' => $e->getMessage()]
 			);
@@ -784,10 +725,8 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			'language_confidence' => $languageSignals['language_confidence'],
 			'detection_method' => $languageSignals['detection_method'],
 			'metadata' => [
-				'file_path' => $sourceMeta['path'] ?? null,
-				'file_name' => $sourceMeta['name'] ?? null,
-				'mime_type' => $sourceMeta['mimetype'] ?? null,
-				'file_size' => $sourceMeta['size'] ?? null,
+				'file_path' => $sourceMeta['path'] ?? null, 'file_name' => $sourceMeta['name'] ?? null,
+				'mime_type' => $sourceMeta['mimetype'] ?? null, 'file_size' => $sourceMeta['size'] ?? null,
 			],
 		];
 	}//end payloadFromText()
@@ -813,9 +752,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		}
 
 		return [
-			'language' => $language,
-			'language_level' => null,
-			'language_confidence' => $confidence,
+			'language' => $language, 'language_level' => null, 'language_confidence' => $confidence,
 			'detection_method' => $this->getDetectionMethod(language: $language),
 		];
 	}//end detectLanguageSignals()
@@ -850,11 +787,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		// Generate the low-level chunks.
 		$rawChunks = $this->chunkDocument(
 			text: $payload['text'],
-			options: [
-				'chunk_size' => $chunkSize,
-				'chunk_overlap' => $chunkOverlap,
-				'strategy' => $strategy,
-			]
+			options: ['chunk_size' => $chunkSize, 'chunk_overlap' => $chunkOverlap, 'strategy' => $strategy]
 		);
 
 		$mappedChunks = [];
@@ -862,15 +795,10 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		foreach (array_values($rawChunks) as $index => $chunk) {
 			// Translate chunk metadata to a persistence-friendly structure.
 			$mappedChunks[] = [
-				'chunk_index' => $index,
-				'text_content' => $chunk['text'],
-				'start_offset' => $chunk['start_offset'] ?? 0,
-				'end_offset' => $chunk['end_offset'] ?? strlen($chunk['text']),
-				'language' => $payload['language'] ?? null,
-				'language_level' => $payload['language_level'] ?? null,
-				'language_confidence' => $payload['language_confidence'] ?? null,
-				'detection_method' => $payload['detection_method'] ?? null,
-				'overlap_size' => $chunkOverlap,
+				'chunk_index' => $index, 'text_content' => $chunk['text'], 'start_offset' => $chunk['start_offset'] ?? 0,
+				'end_offset' => $chunk['end_offset'] ?? strlen($chunk['text']), 'language' => $payload['language'] ?? null,
+				'language_level' => $payload['language_level'] ?? null, 'language_confidence' => $payload['language_confidence'] ?? null,
+				'detection_method' => $payload['detection_method'] ?? null, 'overlap_size' => $chunkOverlap,
 				'position_reference' => $this->buildPositionReference(sourceType: $payload['source_type'], chunk: $chunk),
 				'checksum' => $payload['checksum'] ?? null,
 			];
@@ -895,17 +823,10 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function buildPositionReference(string $sourceType, array $chunk): array {
 		if ($sourceType === 'object') {
-			return [
-				'type' => 'property-path',
-				'path' => $chunk['property_path'] ?? null,
-			];
+			return ['type' => 'property-path', 'path' => $chunk['property_path'] ?? null];
 		}
 
-		return [
-			'type' => 'text-range',
-			'start' => $chunk['start_offset'] ?? 0,
-			'end' => $chunk['end_offset'] ?? 0,
-		];
+		return ['type' => 'text-range', 'start' => $chunk['start_offset'] ?? 0, 'end' => $chunk['end_offset'] ?? 0];
 	}//end buildPositionReference()
 
 	/**
@@ -933,7 +854,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		int $sourceTimestamp,
 		array $payload,
 	): void {
-		$this->db->beginTransaction();
+		$this->storage->db->beginTransaction();
 
 		try {
 			// Remove all existing chunks for this source to avoid stale data.
@@ -959,9 +880,9 @@ class TextExtractionService implements TextExtractionServiceInterface {
 				sourceTimestamp: $sourceTimestamp
 			);
 
-			$this->db->commit();
+			$this->storage->db->commit();
 		} catch (Throwable $throwable) {
-			$this->db->rollBack();
+			$this->storage->db->rollBack();
 			throw $throwable;
 		}//end try
 	}//end persistChunksForSource()
@@ -1037,33 +958,19 @@ class TextExtractionService implements TextExtractionServiceInterface {
 				JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT
 			);
 		} catch (JsonException $exception) {
-			$this->logger->warning(
+			$this->analysis->logger->warning(
 				message: '[TextExtractionService] Failed to encode metadata chunk payload',
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'sourceType' => $sourceType,
-					'sourceId' => $sourceId,
-					'error' => $exception->getMessage(),
+					'file' => __FILE__, 'line' => __LINE__, 'sourceType' => $sourceType, 'sourceId' => $sourceId, 'error' => $exception->getMessage(),
 				]
 			);
 			$metadataText = 'metadata_encoding_failed';
 		}
 
 		$chunkData = [
-			'chunk_index' => -1,
-			'text_content' => $metadataText,
-			'start_offset' => 0,
-			'end_offset' => strlen($metadataText),
-			'language' => null,
-			'language_level' => null,
-			'language_confidence' => null,
-			'detection_method' => null,
-			'overlap_size' => 0,
-			'position_reference' => [
-				'type' => 'metadata',
-			],
-			'checksum' => $payload['checksum'] ?? null,
+			'chunk_index' => -1, 'text_content' => $metadataText, 'start_offset' => 0, 'end_offset' => strlen($metadataText), 'language' => null,
+			'language_level' => null, 'language_confidence' => null, 'detection_method' => null, 'overlap_size' => 0,
+			'position_reference' => ['type' => 'metadata'], 'checksum' => $payload['checksum'] ?? null,
 		];
 
 		$chunkEntity = $this->hydrateChunkEntity(
@@ -1132,7 +1039,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	private function performTextExtraction(int $fileId, array $ncFile): ?string {
 		$mimeType = $ncFile['mimetype'] ?? '';
 		$context = ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'mimeType' => $mimeType];
-		$this->logger->debug(message: '[TextExtractionService] Attempting extraction', context: $context + ['filePath' => $ncFile['path'] ?? '']);
+		$this->analysis->logger->debug(message: '[TextExtractionService] Attempting extraction', context: $context + ['filePath' => $ncFile['path'] ?? '']);
 
 		try {
 			// Resolve the node with an explicit filesystem context; see resolveFileNode().
@@ -1142,12 +1049,12 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			$file = $this->resolveFileNode(fileId: $fileId, owner: $this->homeStorageOwner(storageId: $ncFile['storage_id'] ?? null));
 			$text = $this->textOfType(file: $file, mimeType: $mimeType);
 		} catch (Exception $e) {
-			$this->logger->error(message: '[TextExtractionService] Failed to read file', context: $context + ['error' => $e->getMessage()]);
+			$this->analysis->logger->error(message: '[TextExtractionService] Failed to read file', context: $context + ['error' => $e->getMessage()]);
 			throw $e;
 		}
 
 		if ($text === null) {
-			$this->logger->debug(message: '[TextExtractionService] Unsupported file type', context: $context);
+			$this->analysis->logger->debug(message: '[TextExtractionService] Unsupported file type', context: $context);
 		}
 
 		return $text;
@@ -1251,7 +1158,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$nodes = $this->nodesInOwnerFolder(fileId: $fileId, owner: $owner);
 		if (empty($nodes) === true) {
 			// No owner, or the owner's folder did not hold the file.
-			$nodes = $this->rootFolder->getById($fileId);
+			$nodes = $this->storage->rootFolder->getById($fileId);
 		}
 
 		if (empty($nodes) === true) {
@@ -1281,10 +1188,10 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 		try {
 			// Sets up the user's mounts as a side effect: the whole point.
-			return $this->rootFolder->getUserFolder($owner)->getById($fileId);
+			return $this->storage->rootFolder->getUserFolder($owner)->getById($fileId);
 		} catch (Throwable $e) {
 			// An unknown or disabled user must not abort the extraction; the root lookup follows.
-			$this->logger->warning(
+			$this->analysis->logger->warning(
 				message: '[TextExtractionService] Could not set up filesystem for owner',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'owner' => $owner, 'error' => $e->getMessage()]
 			);
@@ -1307,74 +1214,90 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function discoverUntrackedFiles(int $limit = 100): array {
-		$this->logger->debug(
+		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Discovering untracked files',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'limit' => $limit]
 		);
 
 		try {
 			// Get untracked files from Nextcloud (files without chunks).
-			$untrackedFiles = $this->fileMapper->findUntrackedFiles($limit);
-			$discovered = 0;
-			$failed = 0;
-
-			foreach ($untrackedFiles as $ncFile) {
-				try {
-					// Extract file directly - chunks will be created.
-					$this->extractFile(fileId: $ncFile['fileid'], forceReExtract: false);
-					$discovered++;
-
-					$this->logger->debug(
-						message: '[TextExtractionService] Discovered and extracted untracked file',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'fileId' => $ncFile['fileid'],
-							'path' => $ncFile['path'] ?? 'unknown',
-						]
-					);
-				} catch (Exception $e) {
-					$failed++;
-					$this->logger->error(
-						message: '[TextExtractionService] Failed to extract file',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'fileId' => $ncFile['fileid'] ?? 'unknown',
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end foreach
-
-			$this->logger->debug(
-				message: '[TextExtractionService] Discovery complete',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'discovered' => $discovered,
-					'failed' => $failed,
-				]
-			);
-
-			return [
-				'discovered' => $discovered,
-				'failed' => $failed,
-				'total' => count($untrackedFiles),
-			];
+			return $this->discoverFiles(untrackedFiles: $this->storage->fileMapper->findUntrackedFiles($limit));
 		} catch (Exception $e) {
-			$this->logger->error(
+			$this->analysis->logger->error(
 				message: '[TextExtractionService] Discovery failed',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-			return [
-				'discovered' => 0,
-				'failed' => 0,
-				'total' => 0,
-				'error' => $e->getMessage(),
-			];
+			return ['discovered' => 0, 'failed' => 0, 'total' => 0, 'error' => $e->getMessage()];
 		}//end try
 	}//end discoverUntrackedFiles()
+
+	/**
+	 * Extract each untracked file, counting the ones discovered and the ones that failed.
+	 *
+	 * @param array $untrackedFiles The untracked file rows (fileid, path).
+	 *
+	 * @return array{discovered: int, failed: int, total: int} Statistics about discovery.
+	 */
+	private function discoverFiles(array $untrackedFiles): array {
+		$discovered = 0;
+		$failed     = 0;
+		foreach ($untrackedFiles as $ncFile) {
+			if ($this->discoverFile(ncFile: $ncFile) === false) {
+				$failed++;
+				continue;
+			}
+
+			$discovered++;
+		}
+
+		$this->analysis->logger->debug(
+			message: '[TextExtractionService] Discovery complete',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'discovered' => $discovered, 'failed' => $failed]
+		);
+		return ['discovered' => $discovered, 'failed' => $failed, 'total' => count($untrackedFiles)];
+	}//end discoverFiles()
+
+	/**
+	 * Extract one untracked file, logging it once it is discovered.
+	 *
+	 * @param array $ncFile The file row (fileid, path).
+	 *
+	 * @return bool True when the file was extracted.
+	 */
+	private function discoverFile(array $ncFile): bool {
+		// Extract file directly - chunks will be created.
+		if ($this->extractListedFile(ncFile: $ncFile, force: false, failure: '[TextExtractionService] Failed to extract file') === false) {
+			return false;
+		}
+
+		$this->analysis->logger->debug(
+			message: '[TextExtractionService] Discovered and extracted untracked file',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $ncFile['fileid'], 'path' => $ncFile['path'] ?? 'unknown']
+		);
+		return true;
+	}//end discoverFile()
+
+	/**
+	 * Extract one listed file, logging the failure instead of throwing it.
+	 *
+	 * @param array  $ncFile  The file row (fileid).
+	 * @param bool   $force   Whether to re-extract a file that already has chunks.
+	 * @param string $failure The message logged when the extraction fails.
+	 *
+	 * @return bool True when the file was extracted.
+	 */
+	private function extractListedFile(array $ncFile, bool $force, string $failure): bool {
+		try {
+			$this->extractFile(fileId: $ncFile['fileid'], forceReExtract: $force);
+			return true;
+		} catch (Exception $e) {
+			$this->analysis->logger->error(
+				message: $failure,
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $ncFile['fileid'] ?? 'unknown', 'error' => $e->getMessage()]
+			);
+			return false;
+		}
+	}//end extractListedFile()
 
 	/**
 	 * Extract text from files that don't have chunks yet
@@ -1391,7 +1314,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function extractPendingFiles(int $limit = 100): array {
-		$this->logger->debug(
+		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Extracting files without chunks',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'limit' => $limit]
 		);
@@ -1403,13 +1326,10 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			}
 		}
 
-		$this->logger->debug(
+		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Extraction complete',
 			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'processed' => $walk->processed,
-				'failed' => $walk->failed,
+				'file' => __FILE__, 'line' => __LINE__, 'processed' => $walk->processed, 'failed' => $walk->failed,
 				'foundPending' => $walk->lastWindowSize,
 			]
 		);
@@ -1432,7 +1352,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @return bool Whether another window may hold pending files.
 	 */
 	private function extractPendingWindow(PendingExtractionWalk $walk): bool {
-		$untrackedFiles = $this->fileMapper->findUntrackedFiles(limit: $walk->limit, offset: $walk->offset);
+		$untrackedFiles = $this->storage->fileMapper->findUntrackedFiles(limit: $walk->limit, offset: $walk->offset);
 		$walk->windows++;
 		$walk->lastWindowSize = count($untrackedFiles);
 
@@ -1440,14 +1360,10 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			return false;
 		}
 
-		$this->logger->debug(
+		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Found files without chunks',
 			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'count' => count($untrackedFiles),
-				'limit' => $walk->limit,
-				'offset' => $walk->offset,
+				'file' => __FILE__, 'line' => __LINE__, 'count' => count($untrackedFiles), 'limit' => $walk->limit, 'offset' => $walk->offset,
 				'window' => $walk->windows,
 			]
 		);
@@ -1490,28 +1406,18 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		}
 
 		try {
-			$this->logger->debug(
+			$this->analysis->logger->debug(
 				message: '[TextExtractionService] Processing file',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $ncFile['fileid'],
-					'fileName' => $ncFile['name'] ?? 'unknown',
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $ncFile['fileid'], 'fileName' => $ncFile['name'] ?? 'unknown']
 			);
 			$this->extractFile(fileId: $fileId, forceReExtract: false);
 			$walk->processed++;
 		} catch (Exception $e) {
 			$walk->failed++;
 			$walk->failedInWindow++;
-			$this->logger->error(
+			$this->analysis->logger->error(
 				message: '[TextExtractionService] Failed to extract file',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $ncFile['fileid'] ?? 'unknown',
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $ncFile['fileid'] ?? 'unknown', 'error' => $e->getMessage()]
 			);
 		}//end try
 	}//end extractPendingFile()
@@ -1528,39 +1434,21 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function retryFailedExtractions(int $limit = 50): array {
-		$this->logger->debug(
+		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Retrying extractions',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'limit' => $limit]
 		);
 
 		// Get files without chunks or with old chunks.
-		$untrackedFiles = $this->fileMapper->findUntrackedFiles($limit);
-		$retried = 0;
-		$failed = 0;
-
+		$untrackedFiles = $this->storage->fileMapper->findUntrackedFiles($limit);
+		$retried        = 0;
 		foreach ($untrackedFiles as $ncFile) {
-			try {
-				$this->extractFile(fileId: $ncFile['fileid'], forceReExtract: true);
+			if ($this->extractListedFile(ncFile: $ncFile, force: true, failure: '[TextExtractionService] Retry failed for file') === true) {
 				$retried++;
-			} catch (Exception $e) {
-				$failed++;
-				$this->logger->error(
-					message: '[TextExtractionService] Retry failed for file',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'fileId' => $ncFile['fileid'] ?? 'unknown',
-						'error' => $e->getMessage(),
-					]
-				);
 			}
 		}
 
-		return [
-			'retried' => $retried,
-			'failed' => $failed,
-			'total' => count($untrackedFiles),
-		];
+		return ['retried' => $retried, 'failed' => count($untrackedFiles) - $retried, 'total' => count($untrackedFiles)];
 	}//end retryFailedExtractions()
 
 	/**
@@ -1579,15 +1467,12 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getStats(): array {
-		$untrackedCount = $this->fileMapper->countUntrackedFiles();
+		$untrackedCount = $this->storage->fileMapper->countUntrackedFiles();
 		$chunkCount = $this->getTableCountSafe(tableName: 'openregister_chunks');
 		$entityCount = $this->getTableCountSafe(tableName: 'openregister_entities');
 
 		return [
-			'totalFiles' => $untrackedCount + $chunkCount,
-			'untrackedFiles' => $untrackedCount,
-			'totalChunks' => $chunkCount,
-			'totalObjects' => 0,
+			'totalFiles' => $untrackedCount + $chunkCount, 'untrackedFiles' => $untrackedCount, 'totalChunks' => $chunkCount, 'totalObjects' => 0,
 			'totalEntities' => $entityCount,
 		];
 	}//end getStats()
@@ -1603,7 +1488,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function getTableCountSafe(string $tableName): int {
 		try {
-			$qb = $this->db->getQueryBuilder();
+			$qb = $this->storage->db->getQueryBuilder();
 			$qb->selectAlias($qb->createFunction('COUNT(*)'), 'cnt')
 				->from($tableName);
 
@@ -1613,14 +1498,9 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 			return $count;
 		} catch (Throwable $e) {
-			$this->logger->debug(
+			$this->analysis->logger->debug(
 				message: '[TextExtractionService] Unable to count table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'table' => $tableName,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $tableName, 'error' => $e->getMessage()]
 			);
 
 			return 0;
@@ -1679,7 +1559,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	private function extractPdf(\OCP\Files\File $file): ?string {
 		// Delegated to the dedicated PdfExtractor handler
 		// (extract-god-class-services) — behaviour unchanged.
-		return $this->pdfExtractor->extract(file: $file);
+		return $this->readers->pdfExtractor->extract(file: $file);
 	}//end extractPdf()
 
 	/**
@@ -1696,7 +1576,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	private function extractWord(\OCP\Files\File $file): ?string {
 		// Delegated to the dedicated WordExtractor handler
 		// (extract-god-class-services) — behaviour unchanged.
-		return $this->wordExtractor->extract(file: $file);
+		return $this->readers->wordExtractor->extract(file: $file);
 	}//end extractWord()
 
 	/**
@@ -1715,7 +1595,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	private function extractSpreadsheet(\OCP\Files\File $file): ?string {
 		// Delegated to the dedicated SpreadsheetExtractor handler
 		// (extract-god-class-services) — behaviour unchanged.
-		return $this->spreadsheetExtractor->extract(file: $file);
+		return $this->readers->spreadsheetExtractor->extract(file: $file);
 	}//end extractSpreadsheet()
 
 	/**
@@ -1736,18 +1616,14 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function extractEml(\OCP\Files\File $file): ?string {
 		try {
-			$structure = $this->emlParser->parse(file: $file);
-			return $this->emlParser->flatten(structure: $structure);
+			$structure = $this->readers->emlParser->parse(file: $file);
+			return $this->readers->emlParser->flatten(structure: $structure);
 		} catch (\OCA\OpenRegister\Exception\EmlParseException $e) {
 			$sanitised = \OCA\OpenRegister\Files\Service\TextExtraction\EmlParser::sanitisePiiForLogging(message: $e->getMessage());
-			$this->logger->error(
+			$this->analysis->logger->error(
 				message: '[TextExtractionService] EML parse failed: ' . $sanitised,
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $file->getId(),
-					'mimeType' => 'message/rfc822',
-					'exception' => get_class($e),
+					'file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'mimeType' => 'message/rfc822', 'exception' => get_class($e),
 				]
 			);
 			return null;
@@ -1773,7 +1649,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
 	 */
 	public function parseEmlStructured(\OCP\Files\File $file): \OCA\OpenRegister\Files\Service\TextExtraction\EmlStructure {
-		return $this->emlParser->parse(file: $file);
+		return $this->readers->emlParser->parse(file: $file);
 	}//end parseEmlStructured()
 
 	/**
@@ -1792,73 +1668,84 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function chunkDocument(string $text, array $options = []): array {
-		$chunkSize = $options['chunk_size'] ?? self::DEFAULT_CHUNK_SIZE;
+		$chunkSize    = $options['chunk_size'] ?? self::DEFAULT_CHUNK_SIZE;
 		$chunkOverlap = $options['chunk_overlap'] ?? self::DEFAULT_CHUNK_OVERLAP;
-		$strategy = $options['strategy'] ?? self::RECURSIVE_CHARACTER;
+		$strategy     = $options['strategy'] ?? self::RECURSIVE_CHARACTER;
 
-		$this->logger->debug(
+		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Chunking document',
 			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'text_length' => strlen($text),
-				'chunk_size' => $chunkSize,
-				'chunk_overlap' => $chunkOverlap,
+				'file' => __FILE__, 'line' => __LINE__, 'text_length' => strlen($text), 'chunk_size' => $chunkSize, 'chunk_overlap' => $chunkOverlap,
 				'strategy' => $strategy,
 			]
 		);
 
 		$startTime = microtime(true);
 
-		// Clean the text first.
-		$text = $this->cleanText(text: $text);
+		// Clean the text first, then split it with the chosen strategy and respect the max chunks limit.
+		$chunks = $this->splitText(text: $this->cleanText(text: $text), strategy: $strategy, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
+		$chunks = $this->capChunks(chunks: $chunks);
 
-		// Choose chunking strategy.
-		$chunks = match ($strategy) {
-			self::FIXED_SIZE => $this->chunkFixedSize(
-				text: $text,
-				chunkSize: $chunkSize, chunkOverlap: $chunkOverlap
-			),
-			self::RECURSIVE_CHARACTER => $this->chunkRecursive(
-				text: $text,
-				chunkSize: $chunkSize, chunkOverlap: $chunkOverlap
-			),
-			default => $this->chunkRecursive(
-				text: $text,
-				chunkSize: $chunkSize,
-				chunkOverlap: $chunkOverlap
-			)
-		};
+		$this->logChunked(chunks: $chunks, startTime: $startTime);
+		return $chunks;
+	}//end chunkDocument()
 
-		// Respect max chunks limit.
-		if (count($chunks) > self::MAX_CHUNKS_PER_FILE) {
-			$this->logger->warning(
-				message: '[TextExtractionService] File exceeds max chunks, truncating',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'chunks' => count($chunks),
-					'max' => self::MAX_CHUNKS_PER_FILE,
-				]
-			);
-			$chunks = array_slice($chunks, 0, self::MAX_CHUNKS_PER_FILE);
+	/**
+	 * Split cleaned text with a chunking strategy; any strategy but FIXED_SIZE splits recursively.
+	 *
+	 * @param string $text         The cleaned text.
+	 * @param mixed  $strategy     The chunking strategy.
+	 * @param mixed  $chunkSize    The target chunk size.
+	 * @param mixed  $chunkOverlap The overlap between chunks.
+	 *
+	 * @return array The chunks.
+	 */
+	private function splitText(string $text, mixed $strategy, mixed $chunkSize, mixed $chunkOverlap): array {
+		if ($strategy === self::FIXED_SIZE) {
+			return $this->chunkFixedSize(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
 		}
 
+		return $this->chunkRecursive(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
+	}//end splitText()
+
+	/**
+	 * Keep at most MAX_CHUNKS_PER_FILE chunks, warning when a file has more.
+	 *
+	 * @param array $chunks The chunks.
+	 *
+	 * @return array The chunks, truncated to the limit.
+	 */
+	private function capChunks(array $chunks): array {
+		if (count($chunks) <= self::MAX_CHUNKS_PER_FILE) {
+			return $chunks;
+		}
+
+		$this->analysis->logger->warning(
+			message: '[TextExtractionService] File exceeds max chunks, truncating',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'chunks' => count($chunks), 'max' => self::MAX_CHUNKS_PER_FILE]
+		);
+		return array_slice($chunks, 0, self::MAX_CHUNKS_PER_FILE);
+	}//end capChunks()
+
+	/**
+	 * Log how many chunks a document gave and how long chunking took.
+	 *
+	 * @param array $chunks    The chunks.
+	 * @param float $startTime When chunking started (microtime).
+	 *
+	 * @return void
+	 */
+	private function logChunked(array $chunks, float $startTime): void {
 		$chunkingTime = round((microtime(true) - $startTime) * 1000, 2);
 
-		$this->logger->debug(
+		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Document chunked successfully',
 			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'chunk_count' => count($chunks),
-				'chunking_time_ms' => $chunkingTime,
+				'file' => __FILE__, 'line' => __LINE__, 'chunk_count' => count($chunks), 'chunking_time_ms' => $chunkingTime,
 				'avg_chunk_size' => $this->calculateAvgChunkSize(chunks: $chunks),
 			]
 		);
-
-		return $chunks;
-	}//end chunkDocument()
+	}//end logChunked()
 
 	/**
 	 * Clean text by removing excessive whitespace and normalizing
@@ -2098,10 +1985,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @return bool True if spreadsheet
 	 */
 	private function isSpreadsheet(string $mimeType): bool {
-		$spreadsheetTypes = [
-			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-			'application/vnd.ms-excel',
-		];
+		$spreadsheetTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
 
 		return in_array($mimeType, $spreadsheetTypes, true) === true;
 	}//end isSpreadsheet()

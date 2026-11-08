@@ -32,6 +32,9 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Db\ExportRunMapper;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCP\Files\IRootFolder;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -171,16 +174,22 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 
 			$file = $folder->newFile($path, (string) $this->bytes(data: $data));
 			$run  = $this->container->get(ExportRunRecorder::class)->record(
-				source: self::SOURCE,
-				actor: $user,
-				format: (string) ($data['format'] ?? pathinfo($path, PATHINFO_EXTENSION)),
-				rowCount: (int) ($data['rowCount'] ?? 0),
-				filename: (string) $data['fileName'],
-				registerName: $this->text(value: ($data['registerName'] ?? null)),
-				schemaName: $this->text(value: ($data['schemaName'] ?? null)),
-				fileId: (int) $file->getId(),
-				filePath: (string) $file->getPath(),
-				downloadCount: (int) ($data['downloadCount'] ?? 0)
+				origin: new ExportRunOrigin(
+					source: self::SOURCE,
+					actor: $user
+				),
+				content: new ExportRunContent(
+					format: (string) ($data['format'] ?? pathinfo($path, PATHINFO_EXTENSION)),
+					rowCount: (int) ($data['rowCount'] ?? 0),
+					registerName: $this->text(value: ($data['registerName'] ?? null)),
+					schemaName: $this->text(value: ($data['schemaName'] ?? null))
+				),
+				file: new ExportRunFile(
+					filename: (string) $data['fileName'],
+					fileId: (int) $file->getId(),
+					filePath: (string) $file->getPath(),
+					downloadCount: (int) ($data['downloadCount'] ?? 0)
+				)
 			);
 
 			$producedAt = $this->moment(value: ($data['producedAt'] ?? null));

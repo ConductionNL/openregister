@@ -38,6 +38,8 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionBackends;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -60,13 +62,17 @@ class BsnDetectionTest extends TestCase {
 	 */
 	private function detect(string $text, ?array $entityTypes=null): array {
 		$handler = new EntityRecognitionHandler(
-			$this->createMock(ChunkMapper::class),
-			$this->createMock(GdprEntityMapper::class),
-			$this->createMock(EntityRelationMapper::class),
-			$this->createMock(IDBConnection::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(SettingsService::class),
-			$this->createMock(AnonymisationBackendService::class)
+			stores: new EntityRecognitionStores(
+				chunkMapper: $this->createMock(ChunkMapper::class),
+				entityMapper: $this->createMock(GdprEntityMapper::class),
+				entityRelationMapper: $this->createMock(EntityRelationMapper::class),
+				db: $this->createMock(IDBConnection::class)
+			),
+			backends: new EntityRecognitionBackends(
+				settingsService: $this->createMock(SettingsService::class),
+				anonymisationBackendService: $this->createMock(AnonymisationBackendService::class)
+			),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 		$method = new ReflectionMethod(EntityRecognitionHandler::class, 'detectWithRegex');

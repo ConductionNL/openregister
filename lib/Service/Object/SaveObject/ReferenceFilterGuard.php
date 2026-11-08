@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Exception\BrokenReference;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration;
 use Throwable;
@@ -216,10 +217,12 @@ final class ReferenceFilterGuard {
 	 */
 	private static function refusal(ReferencePropertyRun $run, string $message): ReferenceValidationException {
 		return new ReferenceValidationException(
-			propertyName: $run->propertyName,
-			referencedUuid: $run->uuid,
-			targetSchemaSlug: $run->ref,
-			targetRegister: $run->targetRegister,
+			reference: new BrokenReference(
+				propertyName: $run->propertyName,
+				referencedUuid: $run->uuid,
+				targetSchemaSlug: $run->ref,
+				targetRegister: $run->targetRegister
+			),
 			message: $message
 		);
 	}//end refusal()

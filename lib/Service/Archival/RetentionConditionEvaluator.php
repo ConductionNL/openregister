@@ -111,29 +111,47 @@ final class RetentionConditionEvaluator {
 		$trim = trim($source);
 
 		// Bool / null sentinels.
-		if ($trim === 'true') {
-			return true;
-		}
-
-		if ($trim === 'false') {
-			return false;
-		}
-
-		if ($trim === 'null') {
-			return null;
+		$sentinels = ['true' => true, 'false' => false, 'null' => null];
+		if (array_key_exists($trim, $sentinels) === true) {
+			return $sentinels[$trim];
 		}
 
 		// Single- or double-quoted string literal.
-		$length = strlen($trim);
-		if ($length >= 2) {
-			$first = $trim[0];
-			$last = $trim[($length - 1)];
-			if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
-				return substr($trim, 1, ($length - 2));
-			}
+		if ($this->isQuoted(text: $trim) === true) {
+			return substr($trim, 1, (strlen($trim) - 2));
 		}
 
-		// Numeric literal — int or float.
+		return $this->parseNumber(trim: $trim, source: $source);
+	}//end parseLiteral()
+
+	/**
+	 * Whether a literal is wrapped in matching single or double quotes.
+	 *
+	 * @param string $text The trimmed literal.
+	 *
+	 * @return bool True for a quoted string literal.
+	 */
+	private function isQuoted(string $text): bool {
+		if (strlen($text) < 2) {
+			return false;
+		}
+
+		$first = $text[0];
+
+		return ($first === '"' || $first === "'") && $text[(strlen($text) - 1)] === $first;
+	}//end isQuoted()
+
+	/**
+	 * Parse a numeric literal, int or float.
+	 *
+	 * @param string $trim   The trimmed literal.
+	 * @param string $source The raw literal, for the refusal.
+	 *
+	 * @return int|float The number.
+	 *
+	 * @throws InvalidArgumentException When the literal is not a number either.
+	 */
+	private function parseNumber(string $trim, string $source): int|float {
 		if (preg_match('/^-?\d+$/', $trim) === 1) {
 			return (int)$trim;
 		}
@@ -145,8 +163,7 @@ final class RetentionConditionEvaluator {
 		throw new InvalidArgumentException(
 			sprintf('Unrecognised literal in retention condition: "%s".', $source)
 		);
-
-	}//end parseLiteral()
+	}//end parseNumber()
 
 	/**
 	 * Compare two values under the given operator.

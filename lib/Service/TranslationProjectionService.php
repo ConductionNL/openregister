@@ -340,16 +340,10 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 	 * @return Schema|null The resolved schema, or null when not resolvable.
 	 */
 	private function loadSchema(ObjectEntity $object): ?Schema {
-		$ref = $object->getSchema();
-		if ($ref === null || $ref === '') {
-			return null;
-		}
-
-		try {
-			return $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false);
-		} catch (\Throwable $e) {
-			return null;
-		}
+		return $this->findQuietly(
+			ref: $object->getSchema(),
+			finder: fn ($ref) => $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false)
+		);
 	}//end loadSchema()
 
 	/**
@@ -360,17 +354,31 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 	 * @return Register|null The resolved register, or null when not resolvable.
 	 */
 	private function loadRegister(ObjectEntity $object): ?Register {
-		$ref = $object->getRegister();
+		return $this->findQuietly(
+			ref: $object->getRegister(),
+			finder: fn ($ref) => $this->registerMapper->find((string)$ref, _rbac: false, _multitenancy: false)
+		);
+	}//end loadRegister()
+
+	/**
+	 * Run a finder for a non-empty reference, turning a missing reference or any failure into null.
+	 *
+	 * @param mixed    $ref    The entity reference.
+	 * @param \Closure $finder Loads the entity for the reference.
+	 *
+	 * @return mixed The entity, or null.
+	 */
+	private function findQuietly(mixed $ref, \Closure $finder): mixed {
 		if ($ref === null || $ref === '') {
 			return null;
 		}
 
 		try {
-			return $this->registerMapper->find((string)$ref, _rbac: false, _multitenancy: false);
+			return $finder($ref);
 		} catch (\Throwable $e) {
 			return null;
 		}
-	}//end loadRegister()
+	}//end findQuietly()
 
 	/**
 	 * Resolve the source language for a single (object, property) tuple.

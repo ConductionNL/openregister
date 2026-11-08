@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\RegisterServiceStorage;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -109,9 +110,7 @@ class RegisterServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new RegisterService(
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
-			db: $this->db,
+			storage: new RegisterServiceStorage(registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper, db: $this->db),
 			fileService: $this->fileService,
 			organisationService: $this->organisationService,
 			logger: $this->logger,
