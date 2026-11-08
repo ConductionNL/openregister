@@ -49,6 +49,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Controller\Support\SurvivorshipControllerServices;
 
 /**
  * Source records and attribute overrides of a master object.
@@ -67,24 +68,44 @@ class SurvivorshipController extends Controller {
 	private const DEFAULT_OVERRIDES_FIELD = 'attributeOverrides';
 
 	/**
+	 * Object read/write path (RBAC + tenant scoped).
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Schema lookup for the survivorship annotation.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Mode-aware source-record resolver (embedded | reverseFk).
+	 *
+	 * @var SourceRecordResolverInterface
+	 */
+	private readonly SourceRecordResolverInterface $sourceRecordResolver;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                        $appName              The application name.
 	 * @param IRequest                      $request              The current request.
-	 * @param ObjectOperationsInterface     $objectService        Object read/write path (RBAC + tenant scoped).
-	 * @param SchemaMapperInterface         $schemaMapper         Schema lookup for the survivorship annotation.
-	 * @param SourceRecordResolverInterface $sourceRecordResolver Mode-aware source-record resolver (embedded | reverseFk).
+	 * @param SurvivorshipControllerServices $services The services, bundled.
 	 * @param IUserSession                  $userSession          Current user session, for actor attribution.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly SourceRecordResolverInterface $sourceRecordResolver,
+		SurvivorshipControllerServices $services,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objectService = $services->objectService;
+		$this->schemaMapper = $services->schemaMapper;
+		$this->sourceRecordResolver = $services->sourceRecordResolver;
 	}//end __construct()
 
 	/**

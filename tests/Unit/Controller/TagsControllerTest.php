@@ -14,6 +14,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TagsControllerFactory;
 
 class TagsControllerTest extends TestCase {
 
@@ -40,7 +41,7 @@ class TagsControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
 
-		$this->controller = new TagsController(
+		$this->controller = TagsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectService,
@@ -85,7 +86,7 @@ class TagsControllerTest extends TestCase {
 		$anonymousSession = $this->createMock(IUserSession::class);
 		$anonymousSession->method('getUser')->willReturn(null);
 
-		$controller = new TagsController(
+		$controller = TagsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectService,

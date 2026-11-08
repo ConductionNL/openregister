@@ -38,6 +38,7 @@ use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Controller\Support\TagsControllerServices;
 
 /**
  * TagsController handles tag management operations
@@ -60,13 +61,32 @@ use OCP\IUserSession;
  */
 class TagsController extends Controller {
 	/**
+	 * Object service instance
+	 *
+	 * @var ObjectService
+	 */
+	private readonly ObjectService $objectService;
+
+	/**
+	 * File service instance for tag retrieval
+	 *
+	 * @var FileServiceInterface
+	 */
+	private readonly FileServiceInterface $fileService;
+
+	/**
+	 * Tagging handler for object-level tags
+	 *
+	 * @var TaggingHandlerInterface
+	 */
+	private readonly TaggingHandlerInterface $taggingHandler;
+
+	/**
 	 * TagsController constructor
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param ObjectService $objectService Object service instance
-	 * @param FileServiceInterface $fileService File service instance for tag retrieval
-	 * @param TaggingHandlerInterface $taggingHandler Tagging handler for object-level tags
+	 * @param TagsControllerServices $services The services, bundled.
 	 * @param IUserSession $userSession Session for the @PublicPage anonymous-deny guard
 	 *
 	 * @return void
@@ -74,13 +94,14 @@ class TagsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
-		private readonly FileServiceInterface $fileService,
-		private readonly TaggingHandlerInterface $taggingHandler,
+		TagsControllerServices $services,
 		private readonly ?IUserSession $userSession = null,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
+		$this->objectService = $services->objectService;
+		$this->fileService = $services->fileService;
+		$this->taggingHandler = $services->taggingHandler;
 	}//end __construct()
 
 	/**
