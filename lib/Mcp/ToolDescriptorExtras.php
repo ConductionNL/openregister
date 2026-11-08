@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Mcp;
 
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
-use OCA\OpenRegister\Service\Capability\ToolReachResolver;
+use OCA\OpenRegister\Service\Capability\ToolReachLevels;
 use ReflectionMethod;
 
 /**
@@ -109,7 +109,7 @@ final class ToolDescriptorExtras {
 	 * Apps are expected to pin this with a test, the way hermiq's provider
 	 * does.
 	 *
-	 * The reach was already validated against ToolReachResolver::ORDER at
+	 * The reach was already validated against ToolReachLevels::ORDER at
 	 * scan time (REQ-ATTR-006) and the annotations at REQ-ATTR-007; an empty
 	 * annotations map is no declaration and is not forwarded.
 	 *
@@ -124,7 +124,7 @@ final class ToolDescriptorExtras {
 		}
 
 		return self::declaredText(key: 'subject', value: $attribute->subject)
-			+ self::declared(key: ToolReachResolver::REACH_KEY, value: $attribute->reach)
+			+ self::declared(key: ToolReachLevels::REACH_KEY, value: $attribute->reach)
 			+ self::declaredText(key: 'action', value: $attribute->action)
 			+ $annotations;
 	}//end taxonomy()

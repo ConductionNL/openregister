@@ -65,7 +65,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
-use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -119,14 +119,14 @@ class EmailLinkService implements EmailLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param EmailLinkMapper $mapper Persistence for link rows.
+	 * @param EmailLinkMapperInterface $mapper Persistence for link rows.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IDBConnection $db Database connection (Mail tables).
 	 * @param IUserSession $userSession Active session.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly EmailLinkMapper $mapper,
+		private readonly EmailLinkMapperInterface $mapper,
 		private readonly IAppManager $appManager,
 		IDBConnection $db,
 		private readonly IUserSession $userSession,

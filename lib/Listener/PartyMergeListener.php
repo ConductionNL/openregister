@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Listener;
 use DateTime;
 use JsonException;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -70,13 +70,13 @@ class PartyMergeListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper         $links   The link rows.
+	 * @param ContactLinkMapperInterface         $links   The link rows.
 	 * @param PartyServiceInterface     $parties The party records.
 	 * @param ObjectOperationsInterface $objects The object layer, for the address union.
 	 * @param LoggerInterface           $logger  Diagnostics; a party that will not carry over never fails the merge.
 	 */
 	public function __construct(
-		private readonly ContactLinkMapper $links,
+		private readonly ContactLinkMapperInterface $links,
 		private readonly PartyServiceInterface $parties,
 		private readonly ObjectOperationsInterface $objects,
 		private readonly LoggerInterface $logger,

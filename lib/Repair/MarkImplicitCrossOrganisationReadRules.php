@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Rbac\MatrixRowWhere;
+use OCA\OpenRegister\Service\Rbac\MatrixRowKeys;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -133,7 +133,7 @@ class MarkImplicitCrossOrganisationReadRules implements IRepairStep {
 		$narrowed = 0;
 		foreach ($read as $index => $rule) {
 			if ($this->crossesImplicitly(rule: $rule) === true) {
-				$read[$index][MatrixRowWhere::CROSS_ORGANISATION_KEY] = true;
+				$read[$index][MatrixRowKeys::CROSS_ORGANISATION_KEY] = true;
 				$marked++;
 				continue;
 			}
@@ -167,7 +167,7 @@ class MarkImplicitCrossOrganisationReadRules implements IRepairStep {
 	 */
 	private function crossesImplicitly(mixed $rule): bool {
 		$tenancy = new ReadRuleTenancy();
-		if (is_array($rule) === false || array_key_exists(MatrixRowWhere::CROSS_ORGANISATION_KEY, $rule) === true || isset($rule['user']) === true) {
+		if (is_array($rule) === false || array_key_exists(MatrixRowKeys::CROSS_ORGANISATION_KEY, $rule) === true || isset($rule['user']) === true) {
 			return false;
 		}
 

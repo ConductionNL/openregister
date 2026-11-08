@@ -30,7 +30,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<EmailLink>
  */
-class EmailLinkMapper extends QBMapper {
+class EmailLinkMapper extends QBMapper implements EmailLinkMapperInterface {
 
 	use ObjectKeyLinkTrait;
 	use DeleteLinksByObjectUuidTrait;
