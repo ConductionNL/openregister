@@ -20,6 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Bindings;
 
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolCatalogueInterface;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
+
 /**
  * Contract => service map for features.
  *
@@ -37,5 +40,7 @@ final class FeatureBindings {
 	 *
 	 * @var array<class-string, class-string>
 	 */
-	public const BINDINGS = [];
+	public const BINDINGS = [
+		McpToolCatalogueInterface::class => McpToolsService::class,
+	];
 }//end class
