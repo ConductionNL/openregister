@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface;
-use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 
 /**
@@ -103,7 +103,7 @@ final class AuthorizationControlKeys {
 		return array_values(
 			array_diff(
 				PermissionCatalogueInterface::CONTROL_KEYS,
-				[ObjectScopeResolver::SCOPE_KEY, Schema::ROLES_KEY, ExplicitRevealInterface::KEY]
+				[ObjectScopeResolverInterface::SCOPE_KEY, Schema::ROLES_KEY, ExplicitRevealInterface::KEY]
 			)
 		);
 	}//end unvalidatedKeys()
@@ -130,7 +130,7 @@ final class AuthorizationControlKeys {
 			return true;
 		}
 
-		if ($action === ObjectScopeResolver::SCOPE_KEY) {
+		if ($action === ObjectScopeResolverInterface::SCOPE_KEY) {
 			$this->validateScopeValue(scope: $value, context: $context);
 			return true;
 		}
@@ -244,7 +244,7 @@ final class AuthorizationControlKeys {
 	 * @return void
 	 */
 	private function validateScopeValue(mixed $scope, string $context): void {
-		$validScopes = [ObjectScopeResolver::SCOPE_ORGANISATION, ObjectScopeResolver::SCOPE_PRIVATE];
+		$validScopes = [ObjectScopeResolverInterface::SCOPE_ORGANISATION, ObjectScopeResolverInterface::SCOPE_PRIVATE];
 
 		if (in_array($scope, $validScopes, true) === false) {
 			$scopeList = implode(', ', $validScopes);

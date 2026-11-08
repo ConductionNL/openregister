@@ -69,7 +69,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class DenyEnforcementMode {
+class DenyEnforcementMode implements DenyEnforcementModeInterface {
 
 	/**
 	 * App identifier used for `IAppConfig` lookups.

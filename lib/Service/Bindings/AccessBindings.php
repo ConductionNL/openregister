@@ -20,6 +20,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Bindings;
 
+use OCA\OpenRegister\Service\Party\PartySearchInterface;
+use OCA\OpenRegister\Service\Party\PartySearchService;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
+
 /**
  * Contract => service map for access control.
  *
@@ -37,5 +42,8 @@ final class AccessBindings {
 	 *
 	 * @var array<class-string, class-string>
 	 */
-	public const BINDINGS = [];
+	public const BINDINGS = [
+		DenyEnforcementModeInterface::class => DenyEnforcementMode::class,
+		PartySearchInterface::class => PartySearchService::class,
+	];
 }//end class

@@ -59,7 +59,7 @@ use OCA\OpenRegister\Controller\Support\PermissionsAuditControllerServices;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\AdminGateInterface;
-use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionReportScopeInterface;
@@ -92,9 +92,9 @@ class PermissionsAuditController extends Controller {
 	/**
 	 * The staging switch, reported beside every rule.
 	 *
-	 * @var DenyEnforcementMode
+	 * @var DenyEnforcementModeInterface
 	 */
-	private readonly DenyEnforcementMode $enforcement;
+	private readonly DenyEnforcementModeInterface $enforcement;
 
 	/**
 	 * The one reader of the deny grammar.
