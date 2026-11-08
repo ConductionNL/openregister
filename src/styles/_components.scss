@@ -3,6 +3,8 @@
 // Style rules shared verbatim by several components under src/components.
 // Each mixin emits complete rules; a component includes it where the rules belong.
 
+@use 'sass:list';
+
 @mixin filter-sidebar($root) {
 	.#{$root} {
 		padding: 16px;
@@ -170,5 +172,25 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+}
+
+// The secondary detail lines of the rule panels (each selector given, with its
+// dot) and their muted text.
+@mixin rule-detail-text($selectors...) {
+	$blocks: ();
+
+	@each $selector in $selectors {
+		$blocks: list.append($blocks, $selector, $separator: comma);
+	}
+
+	#{$blocks} {
+		display: block;
+		color: var(--color-text-maxcontrast);
+		font-size: 0.9em;
+	}
+
+	.muted {
+		color: var(--color-text-maxcontrast);
 	}
 }

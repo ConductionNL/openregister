@@ -89,14 +89,9 @@ SPDX-License-Identifier: EUPL-1.2
 						</span>
 					</div>
 				</div>
-				<NcButton
-					variant="tertiary"
-					:aria-label="t('openregister', 'Unlink event')"
-					@click="unlinkEvent(event)">
-					<template #icon>
-						<CloseCircleOutline :size="20" />
-					</template>
-				</NcButton>
+				<UnlinkButton
+					:label="t('openregister', 'Unlink event')"
+					@unlink="unlinkEvent(event)" />
 			</li>
 		</ul>
 	</div>
@@ -107,9 +102,9 @@ import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import CalendarOutline from 'vue-material-design-icons/CalendarOutline.vue'
 import CalendarPlus from 'vue-material-design-icons/CalendarPlus.vue'
 import CalendarRemove from 'vue-material-design-icons/CalendarRemove.vue'
-import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import TabErrorState from '../shared/TabErrorState.vue'
+import UnlinkButton from './UnlinkButton.vue'
 import { useEventRelationsStore } from '../../store/modules/object-relations/events.js'
 import { storeRelationTab } from './relationTab.js'
 
@@ -136,7 +131,7 @@ export default {
 		CalendarOutline,
 		CalendarPlus,
 		CalendarRemove,
-		CloseCircleOutline,
+		UnlinkButton,
 		LinkVariant,
 	},
 

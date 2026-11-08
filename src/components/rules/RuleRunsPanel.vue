@@ -244,15 +244,7 @@ export default {
 	vertical-align: top;
 }
 
-.operandValue {
-	display: block;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
-}
-
-.muted {
-	color: var(--color-text-maxcontrast);
-}
+@include rule-detail-text('.operandValue');
 
 .refusal {
 	color: var(--color-error-text, var(--color-error));
