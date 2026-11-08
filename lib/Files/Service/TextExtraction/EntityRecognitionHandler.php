@@ -29,7 +29,7 @@ use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
-use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
@@ -126,9 +126,9 @@ class EntityRecognitionHandler {
 	/**
 	 * Entity mapper.
 	 *
-	 * @var GdprEntityMapper
+	 * @var GdprEntityMapperInterface
 	 */
-	private readonly GdprEntityMapper $entityMapper;
+	private readonly GdprEntityMapperInterface $entityMapper;
 
 	/**
 	 * Entity relation mapper.

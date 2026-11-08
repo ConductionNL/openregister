@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTime;
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\DelegationGrantMapper;
+use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionExplanationInterface;
@@ -81,9 +81,9 @@ class PrincipalReachService implements PrincipalReachListerInterface {
 	/**
 	 * Delegations held by this principal.
 	 *
-	 * @var DelegationGrantMapper
+	 * @var DelegationGrantMapperInterface
 	 */
-	private readonly DelegationGrantMapper $delegations;
+	private readonly DelegationGrantMapperInterface $delegations;
 
 	/**
 	 * Group membership.

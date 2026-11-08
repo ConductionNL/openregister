@@ -47,7 +47,7 @@ namespace OCA\OpenRegister\Service\Delegation;
 
 use DateTime;
 use OCA\OpenRegister\Db\DelegationGrant;
-use OCA\OpenRegister\Db\DelegationGrantMapper;
+use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -70,11 +70,11 @@ class DelegationResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param DelegationGrantMapper $grants Finds candidate grants.
+	 * @param DelegationGrantMapperInterface $grants Finds candidate grants.
 	 * @param LoggerInterface       $logger Records a store that cannot be read.
 	 */
 	public function __construct(
-		private readonly DelegationGrantMapper $grants,
+		private readonly DelegationGrantMapperInterface $grants,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

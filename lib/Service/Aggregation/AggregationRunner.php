@@ -40,7 +40,8 @@ use DateTimeInterface;
 use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
-use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
+use OCA\OpenRegister\Db\MagicMapper\OrganisationlessAdmission;
+use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeResolverInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -159,7 +160,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @param PermissionHandlerInterface $permissionHandler RBAC verdict on the schema's `list` action.
 	 * @param IUserSession $userSession Active session, for the RBAC + cache-key user scope.
 	 * @param OrganisationServiceInterface $organisationService Active-organisation lookup for the cache key.
-	 * @param MagicOrganizationHandler $organizationHandler Owns the organisation-boundary decision the native SQL renders.
+	 * @param OrganisationScopeResolverInterface $organizationHandler Owns the organisation-boundary decision the native SQL renders.
 	 * @param TranslationHandler $translationHandler Resolves translatable group keys to the negotiated language.
 	 * @param LanguageService $languageService Request-scoped language negotiation (Accept-Language / _lang).
 	 * @param LoggerInterface|null $logger Optional logger for diagnostics.
@@ -188,7 +189,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly OrganisationServiceInterface $organisationService,
-		private readonly MagicOrganizationHandler $organizationHandler,
+		private readonly OrganisationScopeResolverInterface $organizationHandler,
 		private readonly TranslationHandler $translationHandler,
 		private readonly LanguageService $languageService,
 		private readonly ?LoggerInterface $logger = null,
@@ -2939,11 +2940,11 @@ class AggregationRunner implements AggregationRunnerInterface {
 		}
 
 		if ($this->magicMapper->organisationBoundaryWaivedByRbac(schema: $schema) === true) {
-			return ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []];
+			return ['mode' => OrganisationScopeResolverInterface::SCOPE_ALL, 'uuids' => []];
 		}
 
 		if ($this->magicMapper->organisationlessRowsAdmittedByRbac(schema: $schema) === true) {
-			return MagicOrganizationHandler::admitOrganisationless(scope: $orgScope);
+			return OrganisationlessAdmission::admit(scope: $orgScope);
 		}
 
 		return $orgScope;
@@ -2965,18 +2966,18 @@ class AggregationRunner implements AggregationRunnerInterface {
 	private static function addOrganisationPredicate(NativeAggregationQuery $query, array $orgScope): bool {
 		$orgColumn = $query->quoted(column: '_organisation');
 		switch ($orgScope['mode']) {
-			case MagicOrganizationHandler::SCOPE_ALL:
+			case OrganisationScopeResolverInterface::SCOPE_ALL:
 				return true;
-			case MagicOrganizationHandler::SCOPE_NONE:
+			case OrganisationScopeResolverInterface::SCOPE_NONE:
 				$query->where(predicate: '1 = 0');
 				return true;
-			case MagicOrganizationHandler::SCOPE_NULL_ONLY:
+			case OrganisationScopeResolverInterface::SCOPE_NULL_ONLY:
 				$query->where(predicate: $orgColumn.' IS NULL');
 				return true;
-			case MagicOrganizationHandler::SCOPE_IN:
-			case MagicOrganizationHandler::SCOPE_IN_OR_NULL:
+			case OrganisationScopeResolverInterface::SCOPE_IN:
+			case OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL:
 				$inClause = $orgColumn.' IN ('.self::placeholders(count: count($orgScope['uuids'])).')';
-				if ($orgScope['mode'] === MagicOrganizationHandler::SCOPE_IN_OR_NULL) {
+				if ($orgScope['mode'] === OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL) {
 					$inClause = '('.$inClause.' OR '.$orgColumn.' IS NULL)';
 				}
 
