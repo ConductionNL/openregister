@@ -704,6 +704,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Edepot\TransferRecordStoreInterface::class => \OCA\OpenRegister\Service\Edepot\TransferRecordService::class,
 		\OCA\OpenRegister\Service\Edepot\Transport\SftpTransportInterface::class => \OCA\OpenRegister\Service\Edepot\Transport\SftpTransport::class,
 		\OCA\OpenRegister\Service\History\StateHistoryProjectorInterface::class => \OCA\OpenRegister\Service\History\StateHistoryProjector::class,
+		\OCA\OpenRegister\Service\History\StateHistoryRecorderInterface::class => \OCA\OpenRegister\Service\History\StateHistoryProjector::class,
 		\OCA\OpenRegister\Service\ShareLinkServiceInterface::class => \OCA\OpenRegister\Service\ShareLinkService::class,
 		\OCA\OpenRegister\Service\TmloServiceInterface::class => \OCA\OpenRegister\Service\TmloService::class,
 		\OCA\OpenRegister\Service\UserServiceInterface::class => \OCA\OpenRegister\Service\UserService::class,

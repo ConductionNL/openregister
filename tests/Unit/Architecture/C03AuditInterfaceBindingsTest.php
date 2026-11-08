@@ -102,9 +102,6 @@ final class C03AuditInterfaceBindingsTest extends TestCase {
 			'Db/MagicMapper/PurposeBoundTables.php',
 		],
 		SearchTrailMapper::class => [],
-		StateHistoryProjector::class => [
-			'Listener/StateHistoryProjectionListener.php',
-		],
 		SubjectExportService::class => [
 			'BackgroundJob/SubjectExportJob.php',
 		],
