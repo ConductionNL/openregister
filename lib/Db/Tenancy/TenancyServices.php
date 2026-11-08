@@ -31,6 +31,8 @@ use OCP\IUserSession;
  *
  * A mapper unpacks them into its own properties, so the trait's checks run
  * exactly as they did when each service was a constructor parameter.
+ *
+ * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-organisationservice-must-resolve-per-user-organisation-membership-and-active-context
  */
 final readonly class TenancyServices {
 	/**
