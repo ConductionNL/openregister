@@ -141,28 +141,59 @@ class InheritedGeoCollector {
 		$features = [];
 
 		foreach ($sources as $source) {
-			$through = $source['through'];
-			foreach ($this->identifiers(value: ($data[$through] ?? null)) as $identifier) {
-				$referenced = $this->read(identifier: $identifier, _rbac: $_rbac);
-				if ($referenced === null) {
-					continue;
-				}
-
-				foreach ($this->featuresOf(source: $referenced->getGeo()) as $feature) {
-					$feature['properties']['_source'] = 'inherited';
-					$feature['properties']['_through'] = $through;
-					$feature['properties']['_fromObject'] = (string)$referenced->getUuid();
-					if (isset($source['label']) === true) {
-						$feature['properties']['_relationLabel'] = $source['label'];
-					}
-
-					$features[] = $feature;
-				}
-			}
-		}//end foreach
+			$features = array_merge(
+				$features,
+				$this->featuresThrough(source: $source, value: ($data[$source['through']] ?? null), _rbac: $_rbac)
+			);
+		}
 
 		return $features;
 	}//end inheritedFeatures()
+
+	/**
+	 * Collect the features of every record one reference property points at.
+	 *
+	 * @param array $source The declared reference property, with its optional label.
+	 * @param mixed $value  The reference property's value on the inheriting record.
+	 * @param bool  $_rbac  Apply the caller's access to referenced records.
+	 *
+	 * @return array<int, array> The inherited features through this property.
+	 */
+	private function featuresThrough(array $source, mixed $value, bool $_rbac): array {
+		$features = [];
+		foreach ($this->identifiers(value: $value) as $identifier) {
+			$referenced = $this->read(identifier: $identifier, _rbac: $_rbac);
+			if ($referenced === null) {
+				continue;
+			}
+
+			foreach ($this->featuresOf(source: $referenced->getGeo()) as $feature) {
+				$features[] = $this->stampInherited(feature: $feature, source: $source, referenced: $referenced);
+			}
+		}
+
+		return $features;
+	}//end featuresThrough()
+
+	/**
+	 * Stamp an inherited feature with where it came from.
+	 *
+	 * @param array        $feature    The referenced record's feature.
+	 * @param array        $source     The declared reference property, with its optional label.
+	 * @param ObjectEntity $referenced The record the feature was read from.
+	 *
+	 * @return array The feature, carrying its provenance.
+	 */
+	private function stampInherited(array $feature, array $source, ObjectEntity $referenced): array {
+		$feature['properties']['_source'] = 'inherited';
+		$feature['properties']['_through'] = $source['through'];
+		$feature['properties']['_fromObject'] = (string)$referenced->getUuid();
+		if (isset($source['label']) === true) {
+			$feature['properties']['_relationLabel'] = $source['label'];
+		}
+
+		return $feature;
+	}//end stampInherited()
 
 	/**
 	 * Read a referenced record, or nothing when the caller may not.
@@ -199,9 +230,8 @@ class InheritedGeoCollector {
 	 * @return array<int, string> The identifiers.
 	 */
 	private function identifiers(mixed $value): array {
-		if (is_string($value) === true && $value !== '') {
-			$segments = explode('/', rtrim($value, '/'));
-			return [end($segments)];
+		if (is_string($value) === true) {
+			return $this->stringIdentifiers(value: $value);
 		}
 
 		if (is_array($value) === false) {
@@ -213,13 +243,40 @@ class InheritedGeoCollector {
 			return [$single];
 		}
 
+		return $this->listedIdentifiers(values: $value);
+	}//end identifiers()
+
+	/**
+	 * The identifier a reference held as a string or URI holds: its last path segment.
+	 *
+	 * @param string $value The reference.
+	 *
+	 * @return array<int, string> The one identifier, or nothing for an empty string.
+	 */
+	private function stringIdentifiers(string $value): array {
+		if ($value === '') {
+			return [];
+		}
+
+		$segments = explode('/', rtrim($value, '/'));
+		return [end($segments)];
+	}//end stringIdentifiers()
+
+	/**
+	 * The identifiers held by every entry of a list of references.
+	 *
+	 * @param array $values The entries.
+	 *
+	 * @return array<int, string> The identifiers, in entry order.
+	 */
+	private function listedIdentifiers(array $values): array {
 		$identifiers = [];
-		foreach ($value as $entry) {
+		foreach ($values as $entry) {
 			$identifiers = array_merge($identifiers, $this->identifiers(value: $entry));
 		}
 
 		return $identifiers;
-	}//end identifiers()
+	}//end listedIdentifiers()
 
 	/**
 	 * Read whatever shape `@self.geo` holds as a list of GeoJSON features.
@@ -240,7 +297,7 @@ class InheritedGeoCollector {
 
 		$type = ($source['type'] ?? null);
 
-		if (is_string($type) === true && in_array($type, self::GEOMETRY_TYPES, true) === true) {
+		if ($this->isGeometryType(type: $type) === true) {
 			return [$this->feature(geometry: $source, properties: [])];
 		}
 
@@ -248,6 +305,28 @@ class InheritedGeoCollector {
 			return $this->featureOf(source: $source);
 		}
 
+		return $this->collectionFeatures(source: $source);
+	}//end featuresOf()
+
+	/**
+	 * Whether a `type` member names a GeoJSON geometry.
+	 *
+	 * @param mixed $type The `type` member.
+	 *
+	 * @return bool True for a geometry type.
+	 */
+	private function isGeometryType(mixed $type): bool {
+		return is_string($type) === true && in_array($type, self::GEOMETRY_TYPES, true) === true;
+	}//end isGeometryType()
+
+	/**
+	 * Read a FeatureCollection, or a bare list, as the features of its members.
+	 *
+	 * @param array $source The FeatureCollection or list.
+	 *
+	 * @return array<int, array> The members' features, or nothing for any other shape.
+	 */
+	private function collectionFeatures(array $source): array {
 		$candidates = ($source['features'] ?? null);
 		if (is_array($candidates) === false) {
 			$candidates = $source;
@@ -263,7 +342,7 @@ class InheritedGeoCollector {
 		}
 
 		return $features;
-	}//end featuresOf()
+	}//end collectionFeatures()
 
 	/**
 	 * Read one GeoJSON Feature, keeping the properties it already carries.
