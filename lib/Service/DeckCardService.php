@@ -103,9 +103,7 @@ class DeckCardService implements DeckCardServiceInterface {
 	 * Constructor.
 	 *
 	 * @param DeckLinkMapperInterface $deckLinkMapper Deck link mapper
-	 * @param IAppManager $appManager App manager
-	 * @param IUserSession $userSession User session
-	 * @param LoggerInterface $logger Logger
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger
 	 * @param IURLGenerator $urlGenerator URL generator
 	 * @param IUserManager $userManager User manager for assignee display names
 	 * @param ContainerInterface $container App container Deck's services are resolved from
@@ -114,18 +112,16 @@ class DeckCardService implements DeckCardServiceInterface {
 	 */
 	public function __construct(
 		DeckLinkMapperInterface $deckLinkMapper,
-		IAppManager $appManager,
-		IUserSession $userSession,
-		LoggerInterface $logger,
+		LinkServiceRuntime $runtime,
 		IURLGenerator $urlGenerator,
 		IUserManager $userManager,
 		ContainerInterface $container,
 	) {
 		$this->deckLinkMapper = $deckLinkMapper;
-		$this->appManager = $appManager;
-		$this->userSession = $userSession;
+		$this->appManager = $runtime->appManager();
+		$this->userSession = $runtime->userSession();
 		$this->urlGenerator = $urlGenerator;
-		$this->logger = $logger;
+		$this->logger = $runtime->logger();
 		$this->userManager = $userManager;
 		$this->container = $container;
 	}//end __construct()
@@ -422,6 +418,21 @@ class DeckCardService implements DeckCardServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-8
 	 */
 	public function linkOrCreateCard(string $objectUuid, int $registerId, array $data): DeckLink {
+		return $this->linkCardTo(target: new LinkTarget(objectUuid: $objectUuid, registerId: $registerId), data: $data);
+	}//end linkOrCreateCard()
+
+	/**
+	 * Link the requested existing card to the target object, or create one and link it.
+	 *
+	 * @param LinkTarget          $target The object and register to link to.
+	 * @param array<string,mixed> $data   Card data: boardId, stackId, title, description, or cardId for existing.
+	 *
+	 * @return DeckLink The created link.
+	 *
+	 * @throws Exception If parameters are missing or Deck operations fail.
+	 */
+	private function linkCardTo(LinkTarget $target, array $data): DeckLink {
+		$objectUuid = $target->objectUuid;
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
@@ -437,7 +448,7 @@ class DeckCardService implements DeckCardServiceInterface {
 
 		$link = new DeckLink();
 		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
+		$link->setRegisterId($target->registerId);
 		$link->setBoardId($card['boardId']);
 		$link->setStackId($card['stackId']);
 		$link->setCardId($card['cardId']);
@@ -446,7 +457,7 @@ class DeckCardService implements DeckCardServiceInterface {
 		$link->setLinkedAt(new DateTime());
 
 		return $this->deckLinkMapper->insert($link);
-	}//end linkOrCreateCard()
+	}//end linkCardTo()
 
 	/**
 	 * Check the request names an existing card or a board and stack to create one on.
@@ -516,10 +527,8 @@ class DeckCardService implements DeckCardServiceInterface {
 		$cardTitle = $data['title'] ?? 'Untitled';
 
 		$cardId = $this->createDeckCard(
-			stackId: $stackId,
-			title: $cardTitle,
-			description: $data['description'] ?? '',
-			objectUuid: $objectUuid
+			card: new CardDraft(title: $cardTitle, stackId: $stackId),
+			description: $this->cardDescription(description: ($data['description'] ?? ''), objectUuid: $objectUuid)
 		);
 
 		if ($cardId === null) {
@@ -662,34 +671,37 @@ class DeckCardService implements DeckCardServiceInterface {
 	}//end getDeckCardInfo()
 
 	/**
+	 * The description of a new card: the given text, then a back-link to the object.
+	 *
+	 * @param string $description The card description.
+	 * @param string $objectUuid  The object UUID for the back-link.
+	 *
+	 * @return string The full description.
+	 */
+	private function cardDescription(string $description, string $objectUuid): string {
+		$fullDescription = $description;
+		if (empty($fullDescription) === false) {
+			$fullDescription .= "\n\n";
+		}
+
+		return $fullDescription . '[Object: ' . $objectUuid . '](/apps/openregister/objects/' . $objectUuid . ')';
+	}//end cardDescription()
+
+	/**
 	 * Create a Deck card using Deck's service classes.
 	 *
-	 * @param int $stackId The stack ID.
-	 * @param string $title The card title.
-	 * @param string $description The card description.
-	 * @param string $objectUuid The object UUID for the back-link.
+	 * @param CardDraft $card        The card title and stack.
+	 * @param string    $description The full card description, back-link included.
 	 *
 	 * @return int|null The created card ID or null.
 	 */
-	private function createDeckCard(
-		int $stackId,
-		string $title,
-		string $description,
-		string $objectUuid,
-	): ?int {
+	private function createDeckCard(CardDraft $card, string $description): ?int {
 		try {
 			if (class_exists('OCA\Deck\Service\CardService') === true) {
 				$cardService = $this->container->get('OCA\Deck\Service\CardService');
 
-				$fullDescription = $description;
-				if (empty($fullDescription) === false) {
-					$fullDescription .= "\n\n";
-				}
-
-				$fullDescription .= '[Object: ' . $objectUuid . '](/apps/openregister/objects/' . $objectUuid . ')';
-
 				$userUid = $this->userSession->getUser()->getUID();
-				$card = $cardService->create($title, $stackId, 'plain', 0, $userUid);
+				$created = $cardService->create($card->title, $card->stackId, 'plain', 0, $userUid);
 				// Deck CardService::update signature is:
 				// update($id, $title, $stackId, $type, $owner, $description = '', $order = 0, ...)
 				// The owner argument is required and must be a string user UID;
@@ -697,9 +709,9 @@ class DeckCardService implements DeckCardServiceInterface {
 				// mis-aligned every subsequent arg by one slot. Restore the
 				// correct positional order so updating a freshly-created card
 				// doesn't throw.
-				$cardService->update($card->getId(), $title, $stackId, 'plain', $userUid, $fullDescription, 0);
+				$cardService->update($created->getId(), $card->title, $card->stackId, 'plain', $userUid, $description, 0);
 
-				return $card->getId();
+				return $created->getId();
 			}//end if
 		} catch (Exception $e) {
 			$this->logger->warning('Failed to create Deck card: ' . $e->getMessage());
