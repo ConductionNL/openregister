@@ -46,8 +46,8 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\MigrationPacksControllerServices;
 use OCA\OpenRegister\Exception\MigrationPackRefusedException;
-use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder;
-use OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReader;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponderInterface;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReaderInterface;
 use OCA\OpenRegister\Service\MigrationPackServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -69,7 +69,7 @@ class MigrationPacksController extends Controller {
 	 *
 	 * @var int
 	 */
-	public const MAX_PREVIEW_ROWS = MigrationPackRequestReader::MAX_PREVIEW_ROWS;
+	public const MAX_PREVIEW_ROWS = MigrationPackRequestReaderInterface::MAX_PREVIEW_ROWS;
 
 	/**
 	 * Business logic.
@@ -88,16 +88,16 @@ class MigrationPacksController extends Controller {
 	/**
 	 * Reads definitions, uploads and preview input.
 	 *
-	 * @var MigrationPackRequestReader
+	 * @var MigrationPackRequestReaderInterface
 	 */
-	private readonly MigrationPackRequestReader $requestReader;
+	private readonly MigrationPackRequestReaderInterface $requestReader;
 
 	/**
 	 * Builds every error response.
 	 *
-	 * @var MigrationPackErrorResponder
+	 * @var MigrationPackErrorResponderInterface
 	 */
-	private readonly MigrationPackErrorResponder $errors;
+	private readonly MigrationPackErrorResponderInterface $errors;
 
 	/**
 	 * Constructor.
@@ -323,7 +323,7 @@ class MigrationPacksController extends Controller {
 	 * Create a migration pack. Admin only.
 	 *
 	 * The body is either `{"definition": {...}}` or the pack document itself;
-	 * see MigrationPackRequestReader::definition() for how the two differ.
+	 * see MigrationPackRequestReaderInterface::definition() for how the two differ.
 	 *
 	 * @return JSONResponse
 	 *
@@ -454,7 +454,7 @@ class MigrationPacksController extends Controller {
 	 *
 	 * Body: `{"definition": {...}, "rows": [{"<column>": "<value>"}, ...]}`
 	 * with at most MAX_PREVIEW_ROWS rows and at most
-	 * MigrationPackRequestReader::MAX_PREVIEW_BYTES in all. Returns
+	 * MigrationPackRequestReaderInterface::MAX_PREVIEW_BYTES in all. Returns
 	 * `{"rows": [{"rowNumber", "data", "errors"}]}` from the same mapping
 	 * engine an import uses. Nothing is stored.
 	 *

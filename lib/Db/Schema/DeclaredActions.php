@@ -18,7 +18,7 @@
 
 namespace OCA\OpenRegister\Db\Schema;
 
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 
 /**
  * Reads the `x-openregister-action` block for the action names it declares.
@@ -105,10 +105,10 @@ final class DeclaredActions {
 	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private function isDeclarableName(string $name): bool {
-		if ($name === '' || isset(PermissionCatalogue::CANONICAL[$name]) === true) {
+		if ($name === '' || isset(PermissionCatalogueInterface::CANONICAL[$name]) === true) {
 			return false;
 		}
 
-		return in_array($name, PermissionCatalogue::CONTROL_KEYS, true) === false;
+		return in_array($name, PermissionCatalogueInterface::CONTROL_KEYS, true) === false;
 	}//end isDeclarableName()
 }//end class

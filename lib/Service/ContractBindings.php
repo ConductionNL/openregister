@@ -620,6 +620,12 @@ final class ContractBindings {
 		FormSubmitServiceInterface::class => FormSubmitService::class,
 		FormUploadStoreInterface::class => FormUploadStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
+		\OCA\OpenRegister\Service\Configuration\GitHubGuardsInterface::class
+			=> \OCA\OpenRegister\Service\Configuration\GitHubGuards::class,
+		\OCA\OpenRegister\Service\Configuration\GitHubRequestValidatorInterface::class
+			=> \OCA\OpenRegister\Service\Configuration\GitHubRequestValidator::class,
+		\OCA\OpenRegister\Service\Configuration\RateLimiterServiceInterface::class
+			=> \OCA\OpenRegister\Service\Configuration\RateLimiterService::class,
 		GitLabHandlerInterface::class => GitLabHandler::class,
 		\OCA\OpenRegister\Service\Hardening\ElevationServiceInterface::class => \OCA\OpenRegister\Service\Hardening\ElevationService::class,
 		\OCA\OpenRegister\Service\Hardening\HardeningReportServiceInterface::class => \OCA\OpenRegister\Service\Hardening\HardeningReportService::class,
@@ -643,6 +649,10 @@ final class ContractBindings {
 		MapLinkServiceInterface::class => MapLinkService::class,
 		MappingServiceInterface::class => MappingService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
+		\OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponderInterface::class
+			=> \OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder::class,
+		\OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReaderInterface::class
+			=> \OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReader::class,
 		MigrationPackServiceInterface::class => MigrationPackService::class,
 		MigrationServiceInterface::class => MigrationService::class,
 		NotificationServiceInterface::class => NotificationService::class,
