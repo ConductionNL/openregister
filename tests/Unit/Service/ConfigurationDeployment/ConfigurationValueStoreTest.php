@@ -33,6 +33,8 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationWrite;
 
 final class ConfigurationValueStoreTest extends TestCase {
 
@@ -156,7 +158,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 		$appConfig->expects($this->never())->method('setValueString');
 
 		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
-		$undo = $store->write(ConfigurationLayer::REGISTER, 'zaken', 'integration.mail', ['relay' => 'new'], 'dep-2', 'bob');
+		$undo = $store->write(new ConfigurationAddress(ConfigurationLayer::REGISTER, 'zaken', 'integration.mail'), new ConfigurationWrite(['relay' => 'new'], 'dep-2', 'bob'));
 
 		$this->assertSame(['value' => ['relay' => 'new']], $row->getConfigValue());
 		$this->assertSame('dep-2', $row->getDeploymentUuid());
@@ -178,7 +180,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 		);
 
 		$store = new ConfigurationValueStore($mapper, $this->createMock(IAppConfig::class), 'openregister');
-		$store->write(ConfigurationLayer::SUBJECT, 'zaak', 'permission.matrix', ['read' => ['*']], null, 'bob');
+		$store->write(new ConfigurationAddress(ConfigurationLayer::SUBJECT, 'zaak', 'permission.matrix'), new ConfigurationWrite(['read' => ['*']], null, 'bob'));
 
 		$this->assertSame(
 			[
@@ -210,7 +212,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 			->with('openregister', 'rbac', '{"enabled":false}');
 
 		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
-		$undo = $store->write(ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => false], 'dep-8', 'admin');
+		$undo = $store->write(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac'), new ConfigurationWrite(['enabled' => false], 'dep-8', 'admin'));
 
 		$this->assertSame(ConfigurationLayer::INSTANCE, $undo['layer']);
 		$this->assertSame('rbac', $undo['key']);
@@ -279,6 +281,6 @@ final class ConfigurationValueStoreTest extends TestCase {
 			->with('openregister', 'flow_kill_switch', '1');
 
 		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
-		$store->write(ConfigurationLayer::INSTANCE, null, 'flow_kill_switch', true, 'dep-9', 'admin');
+		$store->write(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'flow_kill_switch'), new ConfigurationWrite(true, 'dep-9', 'admin'));
 	}//end testABooleanIsStoredTheWayTheSettingsReadersReadIt()
 }//end class
