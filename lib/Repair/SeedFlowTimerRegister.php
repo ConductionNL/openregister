@@ -45,6 +45,13 @@ use Throwable;
 class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterface {
 
 	/**
+	 * The descriptor this step imports, as a literal so the step's own code names the file.
+	 *
+	 * @var string
+	 */
+	public const REGISTER_PATH = '/lib/Settings/flow_timer_register.json';
+
+	/**
 	 * Descriptor version passed to the importer's version_compare gate.
 	 *
 	 * 🔴 BUMP THIS WHENEVER THE DESCRIPTOR CHANGES. The importer compares this
