@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\DerivedGrantConfig;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCP\IAppConfig;
@@ -112,8 +113,7 @@ class DerivedGrantStoreGoldenTest extends TestCase {
 		);
 
 		return new DerivedGrantStore(
-			config: $config,
-			appConfig: $appConfig,
+			stores: new DerivedGrantConfig(config: $config, appConfig: $appConfig),
 			userManager: $userManager,
 			resolver: new DerivedGrantResolver(),
 			logger: new NullLogger()
