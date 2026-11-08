@@ -1,71 +1,39 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`EditEndpoint golden record renders the recorded dialog for a new endpoint 1`] = `
-"<x-ncdialog name="t:Add Endpoint" size="large">
-  <x-slot-default>
-    <div class="formContainer">
-      <div class="form">
-        <x-nctextfield label="t:Name*" required="" maxlength="255"></x-nctextfield>
-        <x-nctextarea label="t:Description" rows="3"></x-nctextarea>
-        <x-nctextfield label="t:Endpoint Path*" placeholder="/api/example/{{id}}" required="" maxlength="255"></x-nctextfield>
-        <x-ncselect inputlabel="Endpoint Store Endpoint Item Method" options="[&quot;GET&quot;,&quot;POST&quot;,&quot;PUT&quot;,&quot;DELETE&quot;,&quot;PATCH&quot;,&quot;OPTIONS&quot;,&quot;HEAD&quot;]" label="t:Method*" placeholder="t:Select HTTP method"></x-ncselect>
-        <x-ncselect inputlabel="Endpoint Store Endpoint Item Target Type" options="[&quot;view&quot;,&quot;agent&quot;,&quot;webhook&quot;,&quot;register&quot;,&quot;schema&quot;]" label="t:Target Type*" placeholder="t:Select target type"></x-ncselect>
-        <x-nctextfield label="t:Target ID" placeholder="t:ID of the target resource"></x-nctextfield>
-        <x-nctextfield label="t:Version" placeholder="0.0.0"></x-nctextfield>
-        <x-nctextfield label="t:Input Mapping" placeholder="t:ID of input mapping (optional)"></x-nctextfield>
-        <x-nctextfield label="t:Output Mapping" placeholder="t:ID of output mapping (optional)"></x-nctextfield>
-      </div>
-      <div class="modalFooter">
-        <x-ncbutton>
-          <x-slot-icon>
-            <!---->
-          </x-slot-icon>
-          <x-slot-default> t:Cancel</x-slot-default>
-        </x-ncbutton>
-        <x-ncbutton disabled="true" variant="primary">
-          <x-slot-icon>
-            <!---->
-          </x-slot-icon>
-          <x-slot-default> t:Save</x-slot-default>
-        </x-ncbutton>
-      </div>
+"<x-cnformdialog item="null" dialogtitle="t:Add Endpoint" size="large" cancellabel="t:Cancel" confirmlabel="t:Save" confirmdisabled="true" recoverdraft="false" feedback="false">
+  <x-slot-form>
+    <div class="form">
+      <x-nctextfield label="t:Name*" required="" maxlength="255"></x-nctextfield>
+      <x-nctextarea label="t:Description" rows="3"></x-nctextarea>
+      <x-nctextfield label="t:Endpoint Path*" placeholder="/api/example/{{id}}" required="" maxlength="255"></x-nctextfield>
+      <x-ncselect inputlabel="Endpoint Store Endpoint Item Method" options="[&quot;GET&quot;,&quot;POST&quot;,&quot;PUT&quot;,&quot;DELETE&quot;,&quot;PATCH&quot;,&quot;OPTIONS&quot;,&quot;HEAD&quot;]" label="t:Method*" placeholder="t:Select HTTP method"></x-ncselect>
+      <x-ncselect inputlabel="Endpoint Store Endpoint Item Target Type" options="[&quot;view&quot;,&quot;agent&quot;,&quot;webhook&quot;,&quot;register&quot;,&quot;schema&quot;]" label="t:Target Type*" placeholder="t:Select target type"></x-ncselect>
+      <x-nctextfield label="t:Target ID" placeholder="t:ID of the target resource"></x-nctextfield>
+      <x-nctextfield label="t:Version" placeholder="0.0.0"></x-nctextfield>
+      <x-nctextfield label="t:Input Mapping" placeholder="t:ID of input mapping (optional)"></x-nctextfield>
+      <x-nctextfield label="t:Output Mapping" placeholder="t:ID of output mapping (optional)"></x-nctextfield>
     </div>
-  </x-slot-default>
-</x-ncdialog>"
+  </x-slot-form>
+</x-cnformdialog>"
 `;
 
 exports[`EditEndpoint golden record renders the recorded dialog for a stored endpoint 1`] = `
-"<x-ncdialog name="t:Edit Endpoint" size="large">
-  <x-slot-default>
-    <div class="formContainer">
-      <div class="form">
-        <x-nctextfield modelvalue="Cases" label="t:Name*" required="" maxlength="255"></x-nctextfield>
-        <x-nctextarea modelvalue="D" label="t:Description" rows="3"></x-nctextarea>
-        <x-nctextfield modelvalue="/api/cases" label="t:Endpoint Path*" placeholder="/api/example/{{id}}" required="" maxlength="255"></x-nctextfield>
-        <x-ncselect modelvalue="GET" inputlabel="Endpoint Store Endpoint Item Method" options="[&quot;GET&quot;,&quot;POST&quot;,&quot;PUT&quot;,&quot;DELETE&quot;,&quot;PATCH&quot;,&quot;OPTIONS&quot;,&quot;HEAD&quot;]" label="t:Method*" placeholder="t:Select HTTP method"></x-ncselect>
-        <x-ncselect modelvalue="view" inputlabel="Endpoint Store Endpoint Item Target Type" options="[&quot;view&quot;,&quot;agent&quot;,&quot;webhook&quot;,&quot;register&quot;,&quot;schema&quot;]" label="t:Target Type*" placeholder="t:Select target type"></x-ncselect>
-        <x-nctextfield modelvalue="12" label="t:Target ID" placeholder="t:ID of the target resource"></x-nctextfield>
-        <x-nctextfield modelvalue="1.0.0" label="t:Version" placeholder="0.0.0"></x-nctextfield>
-        <x-nctextfield modelvalue="" label="t:Input Mapping" placeholder="t:ID of input mapping (optional)"></x-nctextfield>
-        <x-nctextfield modelvalue="" label="t:Output Mapping" placeholder="t:ID of output mapping (optional)"></x-nctextfield>
-      </div>
-      <div class="modalFooter">
-        <x-ncbutton>
-          <x-slot-icon>
-            <!---->
-          </x-slot-icon>
-          <x-slot-default> t:Cancel</x-slot-default>
-        </x-ncbutton>
-        <x-ncbutton disabled="false" variant="primary">
-          <x-slot-icon>
-            <!---->
-          </x-slot-icon>
-          <x-slot-default> t:Save</x-slot-default>
-        </x-ncbutton>
-      </div>
+"<x-cnformdialog item="{&quot;id&quot;:4}" dialogtitle="t:Edit Endpoint" size="large" cancellabel="t:Cancel" confirmlabel="t:Save" confirmdisabled="false" recoverdraft="false" feedback="false">
+  <x-slot-form>
+    <div class="form">
+      <x-nctextfield modelvalue="Cases" label="t:Name*" required="" maxlength="255"></x-nctextfield>
+      <x-nctextarea modelvalue="D" label="t:Description" rows="3"></x-nctextarea>
+      <x-nctextfield modelvalue="/api/cases" label="t:Endpoint Path*" placeholder="/api/example/{{id}}" required="" maxlength="255"></x-nctextfield>
+      <x-ncselect modelvalue="GET" inputlabel="Endpoint Store Endpoint Item Method" options="[&quot;GET&quot;,&quot;POST&quot;,&quot;PUT&quot;,&quot;DELETE&quot;,&quot;PATCH&quot;,&quot;OPTIONS&quot;,&quot;HEAD&quot;]" label="t:Method*" placeholder="t:Select HTTP method"></x-ncselect>
+      <x-ncselect modelvalue="view" inputlabel="Endpoint Store Endpoint Item Target Type" options="[&quot;view&quot;,&quot;agent&quot;,&quot;webhook&quot;,&quot;register&quot;,&quot;schema&quot;]" label="t:Target Type*" placeholder="t:Select target type"></x-ncselect>
+      <x-nctextfield modelvalue="12" label="t:Target ID" placeholder="t:ID of the target resource"></x-nctextfield>
+      <x-nctextfield modelvalue="1.0.0" label="t:Version" placeholder="0.0.0"></x-nctextfield>
+      <x-nctextfield modelvalue="" label="t:Input Mapping" placeholder="t:ID of input mapping (optional)"></x-nctextfield>
+      <x-nctextfield modelvalue="" label="t:Output Mapping" placeholder="t:ID of output mapping (optional)"></x-nctextfield>
     </div>
-  </x-slot-default>
-</x-ncdialog>"
+  </x-slot-form>
+</x-cnformdialog>"
 `;
 
 exports[`EditEndpoint golden record renders the recorded fields 1`] = `

@@ -4,16 +4,29 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<CnFormDialog
 		v-if="navigationStore.modal === 'editEndpoint'"
-		:name="
+		ref="dialog"
+		:item="savedEndpoint"
+		:dialogTitle="
 			endpointStore.endpointItem?.id
 				? t('openregister', 'Edit Endpoint')
 				: t('openregister', 'Add Endpoint')
 		"
 		size="large"
-		@update:open="navigationStore.setModal(false)">
-		<div class="formContainer">
+		:cancelLabel="t('openregister', 'Cancel')"
+		:confirmLabel="t('openregister', 'Save')"
+		:confirmDisabled="
+			!endpointStore.endpointItem.name
+				|| !endpointStore.endpointItem.endpoint
+				|| !endpointStore.endpointItem.method
+				|| !endpointStore.endpointItem.targetType
+		"
+		:recoverDraft="false"
+		:feedback="false"
+		@confirm="saveEndpoint()"
+		@close="navigationStore.setModal(false)">
+		<template #form>
 			<div class="form">
 				<NcTextField
 					v-model="endpointStore.endpointItem.name"
@@ -63,48 +76,21 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 						t('openregister', 'ID of output mapping (optional)')
 					" />
 			</div>
-			<div class="modalFooter">
-				<CloseCancelButton :label="t('openregister', 'Cancel')" @click="navigationStore.setModal(false)" />
-				<NcButton
-					:disabled="
-						!endpointStore.endpointItem.name
-						|| !endpointStore.endpointItem.endpoint
-						|| !endpointStore.endpointItem.method
-						|| !endpointStore.endpointItem.targetType
-					"
-					variant="primary"
-					@click="saveEndpoint()">
-					<template #icon>
-						<ContentSaveOutline :size="20" />
-					</template>
-					{{ t('openregister', 'Save') }}
-				</NcButton>
-			</div>
-		</div>
-	</NcDialog>
+		</template>
+	</CnFormDialog>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcSelect,
-	NcTextArea,
-	NcTextField,
-} from '@nextcloud/vue'
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import { CnFormDialog } from '@conduction/nextcloud-vue'
+import { NcSelect, NcTextArea, NcTextField } from '@nextcloud/vue'
 
 export default {
 	name: 'EditEndpoint',
 	components: {
-		NcDialog,
+		CnFormDialog,
 		NcTextField,
 		NcTextArea,
-		NcButton,
 		NcSelect,
-		ContentSaveOutline,
-		CloseCancelButton,
 	},
 
 	data() {
@@ -124,6 +110,20 @@ export default {
 		}
 	},
 
+	computed: {
+		/**
+		 * The stored endpoint as the dialog's item, so the dialog knows it
+		 * edits rather than creates; only the id is read.
+		 *
+		 * @spec exclude Dialog plumbing: create-or-edit mode of the dialog.
+		 * @return {object|null} The id of the stored endpoint, or null
+		 */
+		savedEndpoint() {
+			const id = endpointStore.endpointItem?.id
+			return id ? { id } : null
+		},
+	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -138,6 +138,7 @@ export default {
 					})
 					.catch((error) => {
 						OCP.Toast.error(`Error updating endpoint: ${error.message}`)
+						this.backToForm()
 					})
 			} else {
 				endpointStore
@@ -148,8 +149,19 @@ export default {
 					})
 					.catch((error) => {
 						OCP.Toast.error(`Error creating endpoint: ${error.message}`)
+						this.backToForm()
 					})
 			}
+		},
+
+		/**
+		 * Leave the dialog's saving state after a failed save, so the form
+		 * can be corrected and saved again.
+		 *
+		 * @spec exclude Dialog plumbing: resets the dialog's loading state.
+		 */
+		backToForm() {
+			this.$refs.dialog?.setValidationErrors({}, null)
 		},
 	},
 }

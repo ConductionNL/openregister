@@ -185,5 +185,7 @@ describe('EditEndpoint golden record', () => {
 		await flushPromises()
 		expect(navigationStore.setModal).not.toHaveBeenCalled()
 		expect(globalThis.OCP.Toast.error.mock.calls).toEqual([['Error updating endpoint: boom']])
+		// The dialog leaves its saving state, so the form can be saved again.
+		expect(globalThis.dialogCalls).toEqual([['setValidationErrors', {}, null]])
 	})
 })
