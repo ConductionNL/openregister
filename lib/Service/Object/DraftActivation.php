@@ -186,25 +186,7 @@ class DraftActivation implements DraftActivationInterface {
 	 * @throws DraftActivationRefusedException 404, 409 or 403.
 	 */
 	private function ownDraft(Register $register, Schema $schema, string $draftId, DraftOwner $owner): ObjectEntity {
-		$draft = null;
-		if ($draftId !== '') {
-			try {
-				// RBAC off for the read only: the owner comparison below is
-				// stricter than any read rule, and a scope-value owner has
-				// no session to read with.
-				$draft = $this->objects->find(
-					id: $draftId,
-					register: $register,
-					schema: $schema,
-					_rbac: false,
-					_multitenancy: false,
-					_render: false,
-					_audit: false
-				);
-			} catch (Throwable) {
-				$draft = null;
-			}
-		}
+		$draft = $this->readDraft(register: $register, schema: $schema, draftId: $draftId);
 
 		if ($draft === null) {
 			throw new DraftActivationRefusedException(
@@ -229,6 +211,41 @@ class DraftActivation implements DraftActivationInterface {
 
 		return $draft;
 	}//end ownDraft()
+
+	/**
+	 * Read a draft by id with RBAC off; an empty id or a failed read is no draft.
+	 *
+	 * RBAC is off for the read only: the owner comparison in ownDraft() is
+	 * stricter than any read rule, and a scope-value owner has no session to
+	 * read with.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 * @param string   $draftId  The draft id.
+	 *
+	 * @return ObjectEntity|null The object read
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
+	 */
+	private function readDraft(Register $register, Schema $schema, string $draftId): ?ObjectEntity {
+		if ($draftId === '') {
+			return null;
+		}
+
+		try {
+			return $this->objects->find(
+				id: $draftId,
+				register: $register,
+				schema: $schema,
+				_rbac: false,
+				_multitenancy: false,
+				_render: false,
+				_audit: false
+			);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end readDraft()
 
 	/**
 	 * Judge the object against every rule of its schema, whatever its hard-validation flag.
