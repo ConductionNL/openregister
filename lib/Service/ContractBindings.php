@@ -412,6 +412,8 @@ use OCA\OpenRegister\Service\Operations\OperationsJobsService;
 use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
 use OCA\OpenRegister\Service\Operations\SupportBundleService;
 use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
+use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
+use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
 use OCA\OpenRegister\Service\Party\PartySchemaCatalogueInterface;
@@ -582,7 +584,7 @@ final class ContractBindings {
 		MovedJobStateInterface::class => MovedJobState::class,
 		ObjectVectorizationStrategyInterface::class => ObjectVectorizationStrategy::class,
 		OdtWriterInterface::class => OdtWriter::class,
-		\OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface::class => \OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor::class,
+		OrganisationEditAuditorInterface::class => OrganisationLifecycleAuditor::class,
 		ShareGrantorInterface::class => ShareGrantor::class,
 		TenantKeyRotationInterface::class => TenantKeyService::class,
 		ToolReachLevels::class => ToolReachResolver::class,
