@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelection;
 
 /**
  * One request to run an action on a selection: the action, the objects, the inputs, and the route as the caller named it.
@@ -61,11 +62,13 @@ final class ObjectActionsSelection {
 	 */
 	public function startOn(ObjectActionBulkInterface $bulk, Schema $schema): BulkJob {
 		return $bulk->start(
-			schema: $schema,
-			register: $this->route['register'],
-			schemaRef: $this->route['schema'],
+			selection: new ObjectActionSelection(
+				schema: $schema,
+				register: $this->route['register'],
+				schemaRef: $this->route['schema'],
+				ids: $this->ids
+			),
 			action: $this->action,
-			ids: $this->ids,
 			inputs: $this->inputs
 		);
 	}//end startOn()

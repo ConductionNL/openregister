@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
 use OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\TablesProviderParts;
 use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
 use OCA\OpenRegister\Service\ObjectSource\TablesReadScope;
 use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
@@ -115,10 +116,12 @@ class TablesObjectSourceProviderTest extends TestCase {
 		$columnMapper = new TablesColumnMapper($this->deriver, new NullLogger());
 
 		return new TablesObjectSourceProvider(
-			$this->reader,
-			$columnMapper,
-			$this->deriver,
-			$this->syncService,
+			new TablesProviderParts(
+				reader: $this->reader,
+				columnMapper: $columnMapper,
+				uuidDeriver: $this->deriver,
+				syncService: $this->syncService
+			),
 			$userSession,
 			new NullLogger()
 		);
@@ -536,10 +539,12 @@ class TablesObjectSourceProviderTest extends TestCase {
 		$logger->expects($this->once())->method('warning')->with($this->stringContains('first 1000 rows of table 5'));
 
 		$provider = new TablesObjectSourceProvider(
-			$this->reader,
-			new TablesColumnMapper($this->deriver, new NullLogger()),
-			$this->deriver,
-			$this->syncService,
+			new TablesProviderParts(
+				reader: $this->reader,
+				columnMapper: new TablesColumnMapper($this->deriver, new NullLogger()),
+				uuidDeriver: $this->deriver,
+				syncService: $this->syncService
+			),
 			$this->session(),
 			$logger
 		);

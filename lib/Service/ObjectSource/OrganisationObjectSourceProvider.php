@@ -79,8 +79,6 @@ use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -123,20 +121,19 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * Wire the mapper and the acting-user services.
 	 *
 	 * @param OrganisationMapperInterface  $organisationMapper  The organisation mapper.
-	 * @param IUserSession        $userSession         The acting user's session.
-	 * @param IGroupManager       $groupManager        Group manager, for the admin check.
-	 * @param LoggerInterface     $logger              Logger.
+	 * @param OrganisationActingUser       $actingUser          The acting user's session and the
+	 *                                                          group manager for the admin check.
+	 * @param LoggerInterface              $logger              Logger.
 	 * @param OrganisationServiceInterface $organisationService The organisation lifecycle,
-	 *                                                 which owns slug generation,
-	 *                                                 owner assignment and the
-	 *                                                 admin-group RBAC grant.
+	 *                                                          which owns slug generation,
+	 *                                                          owner assignment and the
+	 *                                                          admin-group RBAC grant.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly OrganisationActingUser $actingUser,
 		private readonly LoggerInterface $logger,
 		private readonly OrganisationServiceInterface $organisationService,
 	) {
@@ -254,7 +251,7 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-an-organisation-can-be-created-through-the-projection-req-orp-104
 	 */
 	public function insert(Register $register, Schema $schema, array $data, array $config = []): ObjectEntity {
-		if ($this->userSession->getUser() === null) {
+		if ($this->actingUser->userSession->getUser() === null) {
 			throw new RuntimeException('An organisation cannot be created without an acting user.');
 		}
 
@@ -427,7 +424,7 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-only-an-organisations-administrator-may-write-it-req-orp-105
 	 */
 	private function mayWrite(Organisation $organisation): bool {
-		if ($this->userSession->getUser() === null) {
+		if ($this->actingUser->userSession->getUser() === null) {
 			return false;
 		}
 
@@ -488,13 +485,13 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-the-projection-is-not-an-enumeration-oracle-req-orp-103
 	 */
 	private function mayRead(Organisation $organisation): bool {
-		$acting = $this->userSession->getUser();
+		$acting = $this->actingUser->userSession->getUser();
 		if ($acting === null) {
 			return false;
 		}
 
 		try {
-			if ($this->groupManager->isAdmin($acting->getUID()) === true) {
+			if ($this->actingUser->groupManager->isAdmin($acting->getUID()) === true) {
 				return true;
 			}
 
@@ -514,7 +511,7 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-the-projection-is-not-an-enumeration-oracle-req-orp-103
 	 */
 	private function readOrganisations(array $query): array {
-		$acting = $this->userSession->getUser();
+		$acting = $this->actingUser->userSession->getUser();
 		if ($acting === null) {
 			return [];
 		}
@@ -524,7 +521,7 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 		$offset = (int)($query['offset'] ?? 0);
 
 		try {
-			if ($this->groupManager->isAdmin($acting->getUID()) === true) {
+			if ($this->actingUser->groupManager->isAdmin($acting->getUID()) === true) {
 				$organisations = $this->organisationMapper->findAll(limit: $limit, offset: $offset, filters: []);
 				return array_values(self::matching(organisations: $organisations, search: $search));
 			}
