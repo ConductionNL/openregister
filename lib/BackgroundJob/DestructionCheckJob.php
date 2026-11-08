@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\Appraisal;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IGroupManager;
@@ -78,7 +78,7 @@ class DestructionCheckJob extends TimedJob {
 		parent::__construct(time: $time);
 
 		try {
-			$handler = $this->container->get(ObjectRetentionHandler::class);
+			$handler = $this->container->get(ArchivalSettingsReaderInterface::class);
 			$settings = $handler->getArchivalSettingsOnly();
 			$interval = (int)($settings['destructionCheckInterval'] ?? self::DEFAULT_INTERVAL);
 		} catch (Exception $e) {
@@ -108,7 +108,7 @@ class DestructionCheckJob extends TimedJob {
 
 		try {
 			$retentionService = $this->container->get(RetentionServiceInterface::class);
-			$settingsHandler = $this->container->get(ObjectRetentionHandler::class);
+			$settingsHandler = $this->container->get(ArchivalSettingsReaderInterface::class);
 			$settings = $settingsHandler->getArchivalSettingsOnly();
 
 			if (empty($settings['destructionListRegister']) === true

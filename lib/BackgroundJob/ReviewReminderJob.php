@@ -32,7 +32,7 @@ use DateTimeImmutable;
 use Exception;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\Notification\IManager as INotificationManager;
@@ -86,7 +86,7 @@ class ReviewReminderJob extends TimedJob {
 	 */
 	private function intervalSeconds(): int {
 		try {
-			$handler = $this->container->get(ObjectRetentionHandler::class);
+			$handler = $this->container->get(ArchivalSettingsReaderInterface::class);
 			$settings = $handler->getArchivalSettingsOnly();
 			$frequency = (string)($settings['reviewReminderFrequency'] ?? self::DEFAULT_FREQUENCY);
 
@@ -165,7 +165,7 @@ class ReviewReminderJob extends TimedJob {
 	 */
 	private function frequency(): string {
 		try {
-			$handler = $this->container->get(ObjectRetentionHandler::class);
+			$handler = $this->container->get(ArchivalSettingsReaderInterface::class);
 			$settings = $handler->getArchivalSettingsOnly();
 			$frequency = (string)($settings['reviewReminderFrequency'] ?? self::DEFAULT_FREQUENCY);
 
