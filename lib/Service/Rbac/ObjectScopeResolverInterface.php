@@ -171,9 +171,7 @@ interface ObjectScopeResolverInterface {
 	/**
 	 * The predicate for "this row is reachable at all by this caller".
 	 *
-	 * @param string $authColumn The `_authorization` column, qualified by the caller.
-	 * @param bool $defaultPrivate Whether the schema makes its objects private by default.
-	 * @param bool $isPostgres Whether the connected platform is PostgreSQL.
+	 * @param string $notPrivateSql The not-private term for the row, from notPrivateSql().
 	 * @param string $uuidColumn The `_uuid` column, qualified by the caller.
 	 * @param string[] $quotedUuids Granted object UUIDs, ALREADY quoted as SQL literals.
 	 *
@@ -181,5 +179,5 @@ interface ObjectScopeResolverInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function notPrivateOrGrantedSql(string $authColumn, bool $defaultPrivate, bool $isPostgres, string $uuidColumn, array $quotedUuids): string;
+	public function notPrivateOrGrantedSql(string $notPrivateSql, string $uuidColumn, array $quotedUuids): string;
 }//end interface

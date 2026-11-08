@@ -470,9 +470,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function reachableRowSqlFor(RbacAccessCall $call): string {
 		$reachable = $this->objectScope()->notPrivateOrGrantedSql(
-			authColumn: $call->authorizationColumn(),
-			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $call->authorization),
-			isPostgres: $this->isPostgres(),
+			notPrivateSql: $this->notPrivateSqlFor(call: $call),
 			uuidColumn: $call->columnPrefix . '_uuid',
 			quotedUuids: $this->quotedGrantedUuids(userId: $call->userId, action: $call->action)
 		);
@@ -483,6 +481,21 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		return $reachable;
 	}//end reachableRowSqlFor()
+
+	/**
+	 * The not-private term of the call's rows, as raw SQL.
+	 *
+	 * @param RbacAccessCall $call The call.
+	 *
+	 * @return string The predicate.
+	 */
+	private function notPrivateSqlFor(RbacAccessCall $call): string {
+		return $this->objectScope()->notPrivateSql(
+			columnName: $call->authorizationColumn(),
+			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $call->authorization),
+			isPostgres: $this->isPostgres()
+		);
+	}//end notPrivateSqlFor()
 
 	/**
 	 * Whether the call keeps drafts to their owner.

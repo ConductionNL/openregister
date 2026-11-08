@@ -114,9 +114,7 @@ class ObjectScopeReachableRowGoldenTest extends TestCase {
 	 */
 	private function reachable(bool $defaultPrivate, bool $isPostgres, array $quotedUuids): string {
 		return $this->resolver->notPrivateOrGrantedSql(
-			authColumn: 't._authorization',
-			defaultPrivate: $defaultPrivate,
-			isPostgres: $isPostgres,
+			notPrivateSql: $this->resolver->notPrivateSql(columnName: 't._authorization', defaultPrivate: $defaultPrivate, isPostgres: $isPostgres),
 			uuidColumn: 't._uuid',
 			quotedUuids: $quotedUuids
 		);
