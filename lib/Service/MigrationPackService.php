@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use OCA\OpenRegister\Db\MigrationPack;
-use OCA\OpenRegister\Db\MigrationPackMapper;
+use OCA\OpenRegister\Db\MigrationPackMapperInterface;
 use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
 use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
 use OCA\OpenRegister\Exception\PackChangedException;
@@ -58,13 +58,13 @@ class MigrationPackService implements MigrationPackServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param MigrationPackMapper $mapper Data mapper.
+	 * @param MigrationPackMapperInterface $mapper Data mapper.
 	 * @param PackDefinitionValidator $validator Pack definition validator.
 	 * @param MappingEngine $mappingEngine Applies a pack to source rows (preview).
 	 * @param IAppConfig $appConfig Remembers the slugs of deleted built-in packs.
 	 */
 	public function __construct(
-		private readonly MigrationPackMapper $mapper,
+		private readonly MigrationPackMapperInterface $mapper,
 		private readonly PackDefinitionValidator $validator,
 		private readonly MappingEngine $mappingEngine,
 		private readonly IAppConfig $appConfig,
