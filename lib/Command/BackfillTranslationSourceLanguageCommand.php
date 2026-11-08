@@ -122,7 +122,28 @@ class BackfillTranslationSourceLanguageCommand extends Command {
 			return Command::SUCCESS;
 		}
 
-		// Build register-id -> default-language map.
+		$updated = $this->translationMapper->backfillSourceLanguage($this->defaultLanguages(), $batchSize);
+		$output->writeln(sprintf('<info>%d rows updated.</info>', $updated));
+
+		$remaining = $this->translationMapper->countMissingSourceLanguage();
+		if ($remaining > 0) {
+			$output->writeln(
+				sprintf(
+					'<comment>%d rows still pending — re-run the command to continue back-filling.</comment>',
+					$remaining
+				)
+			);
+		}
+
+		return Command::SUCCESS;
+	}//end execute()
+
+	/**
+	 * Build the register-id -> default-language map.
+	 *
+	 * @return array<int|string, string> Default language per register id.
+	 */
+	private function defaultLanguages(): array {
 		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
 		$defaults = [];
 		foreach ($registers as $register) {
@@ -138,19 +159,6 @@ class BackfillTranslationSourceLanguageCommand extends Command {
 			$defaults[(string)$id] = $register->getDefaultLanguage();
 		}
 
-		$updated = $this->translationMapper->backfillSourceLanguage($defaults, $batchSize);
-		$output->writeln(sprintf('<info>%d rows updated.</info>', $updated));
-
-		$remaining = $this->translationMapper->countMissingSourceLanguage();
-		if ($remaining > 0) {
-			$output->writeln(
-				sprintf(
-					'<comment>%d rows still pending — re-run the command to continue back-filling.</comment>',
-					$remaining
-				)
-			);
-		}
-
-		return Command::SUCCESS;
-	}//end execute()
+		return $defaults;
+	}//end defaultLanguages()
 }//end class
