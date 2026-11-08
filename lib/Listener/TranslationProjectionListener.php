@@ -43,7 +43,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandlerInterface;
 use OCA\OpenRegister\Service\TranslationProjectionServiceInterface;
 use OCP\EventDispatcher\Event;
@@ -71,7 +71,7 @@ class TranslationProjectionListener implements IEventListener {
 	 * @param TranslationProjectionServiceInterface $projection Projection service.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup (request-cached) for the enqueue gate.
 	 * @param TranslationHandlerInterface $translationHandler Translatable-property gate.
-	 * @param ListenerDeferralService $deferral Actor-forwarding deferral service.
+	 * @param ListenerDeferralInterface $deferral Actor-forwarding deferral service.
 	 *
 	 * @return void
 	 *
@@ -81,7 +81,7 @@ class TranslationProjectionListener implements IEventListener {
 		private readonly TranslationProjectionServiceInterface $projection,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly TranslationHandlerInterface $translationHandler,
-		private readonly ListenerDeferralService $deferral,
+		private readonly ListenerDeferralInterface $deferral,
 	) {
 	}//end __construct()
 
