@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\BackgroundJob\Support\TenantPurgeStores;
 
 /**
  * What a purge deletes, against a real database.
@@ -206,10 +207,9 @@ class TenantPurgeScopeIntegrationTest extends TestCase {
 
 		$job = new TenantPurgeJob(
 			$this->createMock(ITimeFactory::class),
-			$mapper,
-			$this->usage,
+			new TenantPurgeStores($mapper, $this->usage),
 			$appConfig,
-			$this->createMock(LoggerInterface::class),
+			$this->createMock(LoggerInterface::class)
 		);
 
 		// Protected methods are invokable through reflection since PHP 8.1.
