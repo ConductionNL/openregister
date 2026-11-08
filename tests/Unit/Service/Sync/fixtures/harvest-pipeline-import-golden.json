@@ -1,0 +1,1130 @@
+{
+    "all fail": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 0,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 1,
+            "status": "failed"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "failure",
+                "a",
+                "import_error",
+                "validation failed"
+            ],
+            [
+                "warning",
+                "[HarvestPipeline] Import failed for a: validation failed"
+            ]
+        ]
+    },
+    "changed without object uuid": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 1,
+            "updated": 0,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "a",
+                "imported",
+                true,
+                "saved-uuid"
+            ]
+        ]
+    },
+    "changed, local changed, local wins": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 0,
+            "unchanged": 1,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "object.find",
+                "obj-1"
+            ],
+            [
+                "transition",
+                "a",
+                "unchanged",
+                true,
+                "obj-1"
+            ]
+        ]
+    },
+    "changed, local changed, manual": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 0,
+            "unchanged": 0,
+            "conflicts": 1,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "object.find",
+                "obj-1"
+            ],
+            [
+                "transition",
+                "a",
+                "conflict",
+                true,
+                "obj-1"
+            ]
+        ]
+    },
+    "changed, local changed, source wins": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 1,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "object.find",
+                "obj-1"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    "obj-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "a",
+                "imported",
+                true,
+                "saved-uuid"
+            ]
+        ]
+    },
+    "changed, local lookup throws": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 1,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "object.find",
+                "obj-1"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    "obj-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "a",
+                "imported",
+                true,
+                "saved-uuid"
+            ]
+        ]
+    },
+    "changed, local missing": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 1,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "object.find",
+                "obj-1"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    "obj-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "a",
+                "imported",
+                true,
+                "saved-uuid"
+            ]
+        ]
+    },
+    "changed, local unchanged": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 0,
+            "unchanged": 1,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "object.find",
+                "obj-1"
+            ],
+            [
+                "transition",
+                "a",
+                "unchanged",
+                true,
+                "obj-1"
+            ]
+        ]
+    },
+    "changed, no strategy": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 1,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "object.find",
+                "obj-1"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    "obj-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "a",
+                "imported",
+                true,
+                "saved-uuid"
+            ]
+        ]
+    },
+    "changed, previous hash null": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 1,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    "obj-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "a",
+                "imported",
+                true,
+                "saved-uuid"
+            ]
+        ]
+    },
+    "changed, unknown strategy": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 0,
+            "unchanged": 0,
+            "conflicts": 1,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "object.find",
+                "obj-1"
+            ],
+            [
+                "transition",
+                "a",
+                "conflict",
+                true,
+                "obj-1"
+            ]
+        ]
+    },
+    "mapping applied": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 0,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 1,
+            "status": "failed"
+        },
+        "calls": [
+            [
+                "mapping.find",
+                5
+            ],
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "mapped": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "failure",
+                "a",
+                "import_error",
+                "validation failed"
+            ],
+            [
+                "warning",
+                "[HarvestPipeline] Import failed for a: validation failed"
+            ]
+        ]
+    },
+    "mapping unresolvable": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 1,
+            "updated": 0,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "mapping.find",
+                404
+            ],
+            [
+                "warning",
+                "[HarvestPipeline] Mapping 404 not resolvable: no mapping"
+            ],
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "a",
+                "imported",
+                true,
+                "saved-uuid"
+            ]
+        ]
+    },
+    "mixed batch": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 4,
+            "created": 1,
+            "updated": 0,
+            "unchanged": 1,
+            "conflicts": 2,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "n"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T n",
+                        "ext": "n"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "n",
+                "imported",
+                true,
+                "saved-uuid"
+            ],
+            [
+                "findByExternalId",
+                1,
+                "u"
+            ],
+            [
+                "transition",
+                "u",
+                "unchanged",
+                true,
+                "obj-1"
+            ],
+            [
+                "findByExternalId",
+                1,
+                "c"
+            ],
+            [
+                "object.find",
+                "obj-c"
+            ],
+            [
+                "transition",
+                "c",
+                "conflict",
+                true,
+                "obj-c"
+            ],
+            [
+                "findByExternalId",
+                1,
+                "k"
+            ],
+            [
+                "object.find",
+                "obj-k"
+            ],
+            [
+                "transition",
+                "k",
+                "conflict",
+                true,
+                "obj-k"
+            ]
+        ]
+    },
+    "new record": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 1,
+            "updated": 0,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "a",
+                "imported",
+                true,
+                "saved-uuid"
+            ]
+        ]
+    },
+    "new record no raw data": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 0,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 1,
+            "status": "failed"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "saveObject",
+                [
+                    [],
+                    [],
+                    "reg",
+                    "schema",
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "failure",
+                "a",
+                "import_error",
+                "validation failed"
+            ],
+            [
+                "warning",
+                "[HarvestPipeline] Import failed for a: validation failed"
+            ]
+        ]
+    },
+    "previous is the same row": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 1,
+            "updated": 0,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "a",
+                "imported",
+                true,
+                "saved-uuid"
+            ]
+        ]
+    },
+    "save fails": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 2,
+            "created": 1,
+            "updated": 0,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 1,
+            "status": "partial"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "failure",
+                "a",
+                "import_error",
+                "validation failed"
+            ],
+            [
+                "warning",
+                "[HarvestPipeline] Import failed for a: validation failed"
+            ],
+            [
+                "findByExternalId",
+                1,
+                "b"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T b",
+                        "ext": "b"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "b",
+                "imported",
+                true,
+                "saved-uuid"
+            ]
+        ]
+    },
+    "saved uuid empty falls back": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 1,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "object.find",
+                "obj-1"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    "obj-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "a",
+                "imported",
+                true,
+                "obj-1"
+            ]
+        ]
+    },
+    "saved uuid not a string": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 1,
+            "updated": 0,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "a",
+                "imported",
+                true,
+                null
+            ]
+        ]
+    },
+    "saved uuid throws falls back": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 1,
+            "unchanged": 0,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "object.find",
+                "obj-1"
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "title": "T a",
+                        "ext": "a"
+                    },
+                    [],
+                    "reg",
+                    "schema",
+                    "obj-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "transition",
+                "a",
+                "imported",
+                true,
+                "obj-1"
+            ]
+        ]
+    },
+    "unchanged": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 0,
+            "unchanged": 1,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "transition",
+                "a",
+                "unchanged",
+                true,
+                "obj-1"
+            ]
+        ]
+    },
+    "unchanged without object uuid": {
+        "summary": {
+            "executionId": "exec-1",
+            "gathered": 1,
+            "created": 0,
+            "updated": 0,
+            "unchanged": 1,
+            "conflicts": 0,
+            "errors": 0,
+            "status": "success"
+        },
+        "calls": [
+            [
+                "findByExternalId",
+                1,
+                "a"
+            ],
+            [
+                "transition",
+                "a",
+                "unchanged",
+                true,
+                null
+            ]
+        ]
+    }
+}
