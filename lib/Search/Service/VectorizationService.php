@@ -622,7 +622,6 @@ class VectorizationService implements VectorizationServiceInterface {
 	 * @param array $keywordResults Pre-fetched keyword search results to fuse
 	 * @param int $limit Maximum results
 	 * @param array $weights Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
-	 * @param string|null $provider Embedding provider
 	 *
 	 * @return array Hybrid search results with combined scores and source breakdown.
 	 *
@@ -635,14 +634,12 @@ class VectorizationService implements VectorizationServiceInterface {
 		array $keywordResults = [],
 		int $limit = 20,
 		array $weights = ['keyword' => 0.5, 'vector' => 0.5],
-		?string $provider = null,
 	): array {
 		return $this->vectorService->hybridSearch(
 			query: $query,
 			keywordResults: $keywordResults,
 			limit: $limit,
-			weights: $weights,
-			provider: $provider
+			weights: $weights
 		);
 	}//end hybridSearch()
 

@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\SearchTrail;
+use OCA\OpenRegister\Db\SearchTrailCriteria;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -97,7 +98,7 @@ final class SearchTrailFiltersGoldenTest extends TestCase {
 			$this->builderCount = 0;
 			$this->parameterCount = 0;
 			$this->queuedRows = [[['count' => '3']]];
-			$result = $this->mapper()->count($filters);
+			$result = $this->mapper()->count(new SearchTrailCriteria($filters));
 			$actual['count: ' . $name] = ['result' => $result, 'queries' => $this->queryLog];
 		}
 
