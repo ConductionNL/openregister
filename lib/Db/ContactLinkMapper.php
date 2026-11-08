@@ -138,20 +138,14 @@ class ContactLinkMapper extends QBMapper implements ContactLinkMapperInterface {
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
-	public function findByObjectContactAndRole(string $objectUuid, string $contactUid, ?string $role): ?ContactLink {
+	public function findByObjectContactAndRole(string $objectUuid, string $contactUid, string|null $role): ContactLink|null {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
 			->setMaxResults(1);
-		if ($role === null || $role === '') {
-			$qb->andWhere($qb->expr()->isNull('role'));
-		}
-
-		if ($role !== null && $role !== '') {
-			$qb->andWhere($qb->expr()->eq('role', $qb->createNamedParameter($role)));
-		}
+		$this->applyRoleCondition(qb: $qb, role: $role);
 
 		try {
 			return $this->findEntity(query: $qb);
@@ -159,6 +153,23 @@ class ContactLinkMapper extends QBMapper implements ContactLinkMapperInterface {
 			return null;
 		}
 	}//end findByObjectContactAndRole()
+
+	/**
+	 * Match the given role, or a link without a role when the role is null or empty.
+	 *
+	 * @param IQueryBuilder $qb   The query.
+	 * @param string|null   $role The role, or null / '' for "no role".
+	 *
+	 * @return void
+	 */
+	private function applyRoleCondition(IQueryBuilder $qb, string|null $role): void {
+		if ($role === null || $role === '') {
+			$qb->andWhere($qb->expr()->isNull('role'));
+			return;
+		}
+
+		$qb->andWhere($qb->expr()->eq('role', $qb->createNamedParameter($role)));
+	}//end applyRoleCondition()
 
 	/**
 	 * Every link that names a Nextcloud user, newest first.

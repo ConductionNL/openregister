@@ -69,10 +69,10 @@ class TranslationMapper extends QBMapper implements TranslationMapperInterface {
 		string $objectUuid,
 		string $property,
 		string $language,
-		?string $value,
-		?string $status = null,
-		?string $translator = null,
-		?string $sourceLanguage = null,
+		string|null $value,
+		string|null $status = null,
+		string|null $translator = null,
+		string|null $sourceLanguage = null,
 	): Translation {
 		$existing = $this->findOne(objectUuid: $objectUuid, property: $property, language: $language);
 		$entity = $existing ?? new Translation();
@@ -249,12 +249,12 @@ class TranslationMapper extends QBMapper implements TranslationMapperInterface {
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
 	 */
 	public function search(
-		?string $query = null,
-		?string $language = null,
-		?string $status = null,
-		?string $objectUuid = null,
+		string|null $query = null,
+		string|null $language = null,
+		string|null $status = null,
+		string|null $objectUuid = null,
 		int $limit = 100,
-		?string $sourceLanguage = null,
+		string|null $sourceLanguage = null,
 		bool $isOutOfDate = false,
 	): array {
 		$qb = $this->db->getQueryBuilder();
