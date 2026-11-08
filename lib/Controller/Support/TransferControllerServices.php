@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Edepot\TransferListService;
-use OCA\OpenRegister\Service\Edepot\TransferRecordService;
+use OCA\OpenRegister\Service\Edepot\TransferListServiceInterface;
+use OCA\OpenRegister\Service\Edepot\TransferRecordServiceInterface;
 use OCP\BackgroundJob\IJobList;
 use Psr\Log\LoggerInterface;
 
@@ -36,18 +36,18 @@ final class TransferControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param TransferRecordService $transferRecords       Durable transfer-record persistence.
+	 * @param TransferRecordServiceInterface $transferRecords       Durable transfer-record persistence.
 	 * @param IJobList              $jobList               Background-job scheduler (dispatch execution).
 	 * @param LoggerInterface       $logger                Logger.
-	 * @param TransferListService   $transferListService   Approves and rejects transfer lists.
+	 * @param TransferListServiceInterface   $transferListService   Approves and rejects transfer lists.
 	 *
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
 	 */
 	public function __construct(
-		public readonly TransferRecordService $transferRecords,
+		public readonly TransferRecordServiceInterface $transferRecords,
 		public readonly IJobList $jobList,
 		public readonly LoggerInterface $logger,
-		public readonly TransferListService $transferListService,
+		public readonly TransferListServiceInterface $transferListService,
 	) {
 	}//end __construct()
 }//end class

@@ -48,18 +48,9 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
  */
-class TransferListService {
+class TransferListService implements TransferListServiceInterface {
 
-	/**
-	 * Transfer list status constants.
-	 */
-	public const STATUS_IN_REVIEW = 'in_review';
-	public const STATUS_APPROVED = 'approved';
-	public const STATUS_REJECTED = 'rejected';
-	public const STATUS_IN_PROGRESS = 'in_progress';
-	public const STATUS_COMPLETED = 'completed';
-	public const STATUS_PARTIALLY_FAILED = 'partially_failed';
-	public const STATUS_FAILED = 'failed';
+	// The transfer list statuses (STATUS_*) are declared on TransferListServiceInterface.
 
 	/**
 	 * Constructor.
