@@ -355,6 +355,8 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionServiceInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
@@ -553,7 +555,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Rbac\AdminGateInterface::class => \OCA\OpenRegister\Service\Rbac\AdminGate::class,
 		\OCA\OpenRegister\Service\Portal\PortalTaskServiceInterface::class => \OCA\OpenRegister\Service\Portal\PortalTaskService::class,
 		\OCA\OpenRegister\Service\Portal\PortalTaskDeliveryRequestInterface::class => \OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService::class,
-		\OCA\OpenRegister\Service\Registry\RegistrySubscriptionServiceInterface::class => \OCA\OpenRegister\Service\Registry\RegistrySubscriptionService::class,
+		RegistrySubscriptionServiceInterface::class => RegistrySubscriptionService::class,
 		\OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard::class,
 		\OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkService::class,
 		AdministeredValidationEnforcerInterface::class => AdministeredValidationEnforcer::class,

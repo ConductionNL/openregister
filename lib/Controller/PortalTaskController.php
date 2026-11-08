@@ -90,7 +90,7 @@ class PortalTaskController extends Controller {
 	/**
 	 * The subject-scoped read and completion.
 	 *
-	 * @var PortalTaskService
+	 * @var PortalTaskServiceInterface
 	 */
 	private readonly PortalTaskServiceInterface $portal;
 
