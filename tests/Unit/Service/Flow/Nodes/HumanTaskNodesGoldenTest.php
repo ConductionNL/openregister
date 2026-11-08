@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
+use OCA\OpenRegister\Service\Task\TaskFormSources;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
 
@@ -88,8 +89,7 @@ final class HumanTaskNodesGoldenTest extends TestCase {
 		$l10n = $this->snapshotL10n();
 		$urls = $this->snapshotUrls();
 		$forms = new TaskFormReader(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(TransitionEngine::class),
+			new TaskFormSources($this->createMock(SchemaMapper::class), $this->createMock(TransitionEngine::class)),
 			$this->createMock(IAppManager::class),
 			$l10n
 		);

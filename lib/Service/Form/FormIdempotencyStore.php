@@ -57,6 +57,20 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
  */
 class FormIdempotencyStore implements FormIdempotencyStoreInterface {
+	/**
+	 * The app's data store.
+	 *
+	 * @var IAppData
+	 */
+	private readonly IAppData $appData;
+
+	/**
+	 * The clock.
+	 *
+	 * @var ITimeFactory
+	 */
+	private readonly ITimeFactory $time;
+
 
 	use AppDataFolder;
 
@@ -84,19 +98,19 @@ class FormIdempotencyStore implements FormIdempotencyStoreInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppData         $appData The app's data store.
-	 * @param ITimeFactory     $time    The clock.
+	 * @param FormFileStorage  $storage The app's data store and the clock.
 	 * @param ILockingProvider $locks   Reserves a key while its submit runs.
 	 * @param IL10N            $l10n    Translations, for refusals a resident reads.
 	 * @param LoggerInterface|null $logger Says once that reservation is a no-op on this instance.
 	 */
 	public function __construct(
-		private readonly IAppData $appData,
-		private readonly ITimeFactory $time,
+		FormFileStorage $storage,
 		private readonly ILockingProvider $locks,
 		private readonly IL10N $l10n,
 		private readonly ?LoggerInterface $logger = null,
 	) {
+		$this->appData = $storage->appData;
+		$this->time    = $storage->time;
 
 	}//end __construct()
 

@@ -24,6 +24,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\File\FilePropertyRules;
+use OCA\OpenRegister\Service\Form\FormFileStorage;
 use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
 use OCA\OpenRegister\Service\Form\FormPayloadFindings;
 use OCA\OpenRegister\Service\Form\FormSubmitService;
@@ -261,7 +262,7 @@ class FormSubmitServiceTest extends TestCase {
 
 		$appData = new MemoryAppData();
 		$this->locks = new MemoryLockingProvider();
-		$this->uploads = new FormUploadStore(appData: $appData, time: $time, temp: $temp, rules: new FilePropertyRules(), l10n: $l10n);
+		$this->uploads = new FormUploadStore(storage: new FormFileStorage(appData: $appData, time: $time), temp: $temp, rules: new FilePropertyRules(), l10n: $l10n);
 
 		$this->service = new FormSubmitService(
 			destinations: new FormSubmitDestinations(
@@ -272,7 +273,7 @@ class FormSubmitServiceTest extends TestCase {
 			),
 			keeping: new FormSubmitKeeping(
 				findings: new FormPayloadFindings(),
-				keys: new FormIdempotencyStore(appData: $appData, time: $time, locks: $this->locks, l10n: $l10n),
+				keys: new FormIdempotencyStore(storage: new FormFileStorage(appData: $appData, time: $time), locks: $this->locks, l10n: $l10n),
 				uploads: $this->uploads
 			),
 			platform: new FormSubmitPlatform(
