@@ -64,29 +64,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
  *
  * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
  */
-class ConflictReport {
-
-	/**
-	 * The machine-readable code a client branches on.
-	 *
-	 * 🔴 IT IS `code`, AND `error` KEEPS THE SENTENCE IT ALWAYS HELD. The rest
-	 * of this app puts a slug in `error`, and this endpoint has always put a
-	 * sentence there instead. Correcting that today would break every client
-	 * branching on the substring "Conflict", which is the shape the published
-	 * body invited. So the sentence stays where clients expect it and the code
-	 * arrives beside it, and the outlier is retired when somebody can count the
-	 * clients rather than guess at them.
-	 *
-	 * @var string
-	 */
-	public const CODE = 'version-conflict';
-
-	/**
-	 * The sentence `error` has carried since this endpoint shipped.
-	 *
-	 * @var string
-	 */
-	public const ERROR = 'Conflict: the object was modified since it was read. Re-read and retry.';
+class ConflictReport implements ConflictReportInterface {
 
 	/**
 	 * What a property carries when the caller may not read it.

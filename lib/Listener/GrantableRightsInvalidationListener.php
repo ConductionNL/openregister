@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Service\Authorization\GrantableRightsIndex;
+use OCA\OpenRegister\Service\Authorization\GrantableRightsIndexInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -45,11 +45,11 @@ class GrantableRightsInvalidationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param GrantableRightsIndex $index  The index to invalidate.
+	 * @param GrantableRightsIndexInterface $index  The index to invalidate.
 	 * @param LoggerInterface      $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly GrantableRightsIndex $index,
+		private readonly GrantableRightsIndexInterface $index,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
