@@ -582,6 +582,7 @@ final class ContractBindings {
 		MovedJobStateInterface::class => MovedJobState::class,
 		ObjectVectorizationStrategyInterface::class => ObjectVectorizationStrategy::class,
 		OdtWriterInterface::class => OdtWriter::class,
+		\OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface::class => \OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor::class,
 		ShareGrantorInterface::class => ShareGrantor::class,
 		TenantKeyRotationInterface::class => TenantKeyService::class,
 		ToolReachLevels::class => ToolReachResolver::class,

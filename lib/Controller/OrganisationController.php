@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\OrganisationUsageService;
-use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
+use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\TenantLifecycleService;
@@ -137,9 +137,9 @@ class OrganisationController extends Controller {
 	/**
 	 * Records an edit of an organisation's details. Null only in legacy fixtures.
 	 *
-	 * @var ?OrganisationLifecycleAuditor
+	 * @var ?OrganisationEditAuditorInterface
 	 */
-	private readonly ?OrganisationLifecycleAuditor $lifecycleAuditor;
+	private readonly ?OrganisationEditAuditorInterface $lifecycleAuditor;
 
 	/**
 	 * OrganisationController constructor
