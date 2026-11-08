@@ -574,7 +574,10 @@ class LockHandler {
 			return;
 		}
 
-		$this->logger->warning(message: '[LockHandler] Unauthorized unlock attempt', context: $this->logContext(fields: ['identifier' => $request->identifier]));
+		$this->logger->warning(
+			message: '[LockHandler] Unauthorized unlock attempt',
+			context: $this->logContext(fields: ['identifier' => $request->identifier])
+		);
 		throw new Exception('User does not have permission to unlock this object');
 	}//end assertMayUnlock()
 
