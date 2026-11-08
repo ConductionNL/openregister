@@ -165,7 +165,7 @@ final class BackfillFlowSemanticVersionsTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($flows, $versions) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
 					FlowSemanticVersion::class => new FlowSemanticVersion(),
 					default => $flows,
 				};
@@ -355,7 +355,7 @@ final class BackfillFlowSemanticVersionsTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($flows, $versions) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
 					FlowSemanticVersion::class => new FlowSemanticVersion(),
 					default => $flows,
 				};

@@ -93,6 +93,7 @@ final class DbRegistrar {
 		FlowStateMapperInterface::class => FlowStateMapper::class,
 		FlowTimerMapperInterface::class => FlowTimerMapper::class,
 		FlowTriggerMapperInterface::class => FlowTriggerMapper::class,
+		FlowVersionMapperInterface::class => FlowVersionMapper::class,
 		HandoffQueueEntryMapperInterface::class => HandoffQueueEntryMapper::class,
 		ImportPreviewFinderInterface::class => ImportPreviewMapper::class,
 		ImportPreviewMapperInterface::class => ImportPreviewMapper::class,
