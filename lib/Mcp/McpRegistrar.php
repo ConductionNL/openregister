@@ -30,8 +30,6 @@ use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Mcp\Service\ChatService;
-use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
-use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsServiceInterface;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -49,7 +47,6 @@ final class McpRegistrar
         ChatServiceInterface::class        => ChatService::class,
         ContextChatSubmissionListenerInterface::class => ContextChatSubmissionListener::class,
         ConversationMapperInterface::class => ConversationMapper::class,
-        McpToolsServiceInterface::class => McpToolsService::class,
         ToolRegistryInterface::class => ToolRegistry::class,
     ];
 

@@ -25,12 +25,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Mcp\McpRegistrar;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidatorInterface;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidators;
-use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
-use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsServiceInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -64,7 +61,6 @@ final class F10IntegrationMcpInterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		LeafRegistry::class => [LeafRegistryInterface::class, IntegrationRegistrar::class],
 		IntegrationRegistry::class => [IntegrationIdIndexInterface::class, IntegrationRegistrar::class],
-		McpToolsService::class => [McpToolsServiceInterface::class, McpRegistrar::class],
 	];
 
 	/**

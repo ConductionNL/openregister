@@ -48,7 +48,7 @@ use stdClass;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class McpToolsService implements McpToolsServiceInterface {
+class McpToolsService {
 
 	/**
 	 * Registered tool providers.
