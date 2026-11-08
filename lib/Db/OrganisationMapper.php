@@ -1303,7 +1303,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 		// A chain longer than this is a data defect, not a deep hierarchy.
 		for ($hop = 0; $hop < self::MAX_MERGE_HOPS; $hop++) {
 			$next = $this->findMergeSuccessor(current: $current);
-			if ($next === null) {
+			if ($next === '') {
 				return $current;
 			}
 
@@ -1330,30 +1330,41 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	}//end resolveMergeTarget()
 
 	/**
-	 * The organisation the given one was merged into, or null when the walk ends here
+	 * The organisation the given one was merged into, or '' when the walk ends here
 	 *
 	 * The walk ends on an organisation that cannot be loaded (stay on the last UUID
 	 * that was verified) and on one with no merge target or a merge into itself.
 	 *
 	 * @param string $current The organisation UUID reached so far
 	 *
-	 * @return string|null The next UUID in the merge chain, or null to stop
+	 * @return string The next UUID in the merge chain, or '' to stop
 	 */
-	private function findMergeSuccessor(string $current): ?string {
-		try {
-			$organisation = $this->findByUuid(uuid: $current);
-		} catch (DoesNotExistException|MultipleObjectsReturnedException $e) {
-			// Unresolvable link: stay on the last UUID we did verify.
-			return null;
-		}
-
-		$next = $organisation->getMergedInto();
-		if ($next === null || $next === '' || $next === $current) {
-			return null;
+	private function findMergeSuccessor(string $current): string {
+		$next = $this->loadMergedInto(current: $current);
+		if ($next === '' || $next === $current) {
+			return '';
 		}
 
 		return $next;
 	}//end findMergeSuccessor()
+
+	/**
+	 * The stored merge target of an organisation, or '' when it has none or cannot be loaded
+	 *
+	 * @param string $current The organisation UUID reached so far
+	 *
+	 * @return string The stored merged_into value, or ''
+	 */
+	private function loadMergedInto(string $current): string {
+		try {
+			$organisation = $this->findByUuid(uuid: $current);
+		} catch (DoesNotExistException|MultipleObjectsReturnedException $e) {
+			// Unresolvable link: stay on the last UUID we did verify.
+			return '';
+		}
+
+		return $organisation->getMergedInto() ?? '';
+	}//end loadMergedInto()
 
 	/**
 	 * Find an organisation, following any merge to the surviving one
