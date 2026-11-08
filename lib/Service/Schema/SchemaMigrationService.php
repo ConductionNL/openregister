@@ -60,7 +60,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The thirteenth class is WriteCause, the ambient
  *                                                  audit-cause frame its object reads run in.
  */
-class SchemaMigrationService {
+class SchemaMigrationService implements SchemaBatchMigratorInterface {
 
 	use SchemaRunPopulation;
 

@@ -31,8 +31,8 @@ use DateTime;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
-use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
-use OCA\OpenRegister\Service\Sync\SyncScheduleService;
+use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
+use OCA\OpenRegister\Service\Sync\SyncScheduleInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -54,16 +54,16 @@ class SyncDataJob extends TimedJob {
 	 *
 	 * @param ITimeFactory                    $time            Time factory for scheduling
 	 * @param SourceMapperInterface                    $sourceMapper    Source persistence
-	 * @param SyncScheduleService             $scheduleService Due-source selection
-	 * @param SourceFetcherRegistry           $fetcherRegistry Resolves transport per source type
+	 * @param SyncScheduleInterface           $scheduleService Due-source selection
+	 * @param SourceFetcherLookupInterface    $fetcherRegistry Resolves transport per source type
 	 * @param HarvestPipelineServiceInterface $pipeline        Pipeline orchestrator
 	 * @param LoggerInterface                 $logger          Logger
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly SourceMapperInterface $sourceMapper,
-		private readonly SyncScheduleService $scheduleService,
-		private readonly SourceFetcherRegistry $fetcherRegistry,
+		private readonly SyncScheduleInterface $scheduleService,
+		private readonly SourceFetcherLookupInterface $fetcherRegistry,
 		private readonly HarvestPipelineServiceInterface $pipeline,
 		private readonly LoggerInterface $logger,
 	) {

@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
  */
-class ExampleSetDailyRefresh {
+class ExampleSetDailyRefresh implements ExampleSetDailyRefreshInterface {
 	/**
 	 * The app config key holding the marked set ids, as a JSON list.
 	 */
