@@ -108,7 +108,8 @@ final class TransitionEngineDelegatedAccessGoldenTest extends TestCase {
 		$this->assertCount(1, $this->saves);
 		$this->assertTrue($this->saves[0]['_rbac']);
 		$this->assertTrue($this->saves[0]['_multitenancy']);
-		$this->assertSame(['caseType' => self::PARENT, 'status' => self::S2], array_intersect_key($this->saves[0]['object'], ['status' => 1, 'caseType' => 1]));
+		$written = array_intersect_key($this->saves[0]['object'], ['status' => 1, 'caseType' => 1]);
+		$this->assertSame(['caseType' => self::PARENT, 'status' => self::S2], $written);
 		$this->assertSame([['move-to-' . self::S2, self::S1, self::S2, 'alice']], $this->events);
 	}
 
