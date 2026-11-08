@@ -16,6 +16,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Search\Service\Vectorization;
 
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\EmbeddingGeneratorHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSearchHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorEmbeddingHandlers;
@@ -90,47 +94,53 @@ final class VectorEmbeddingsDelegationGoldenTest extends TestCase {
 	}//end service()
 
 	/**
-	 * Every storeVector argument reaches the storage handler and its id comes back.
+	 * Every field of the stored vector reaches the storage handler and its id comes back.
 	 *
 	 * @return void
 	 */
 	public function testStoreVectorPassesEveryArgumentThrough(): void {
+		$stored = null;
 		$this->storage->expects($this->once())
 			->method('storeVector')
-			->with('file', 'uuid-1', [0.1, 0.2], 'model-x', 2, 3, 7, 'text', ['k' => 'v'])
-			->willReturn(42);
+			->willReturnCallback(
+				static function (StoredVector $vector) use (&$stored): int {
+					$stored = array_values(get_object_vars($vector));
+					return 42;
+				}
+			);
 
 		$id = $this->service()->storeVector(
-			entityType: 'file',
-			entityId: 'uuid-1',
-			embedding: [0.1, 0.2],
-			model: 'model-x',
-			dimensions: 2,
-			chunkIndex: 3,
-			totalChunks: 7,
-			chunkText: 'text',
-			metadata: ['k' => 'v']
+			vector: $this->vector(
+				subject: new VectorSubject(entityType: 'file', entityId: 'uuid-1'),
+				payload: new VectorPayload(embedding: [0.1, 0.2], model: 'model-x', dimensions: 2),
+				position: new VectorChunkPosition(chunkIndex: 3, totalChunks: 7, chunkText: 'text'),
+				metadata: ['k' => 'v']
+			)
 		);
 
 		$this->assertSame(42, $id);
+		$this->assertSame(['file', 'uuid-1', [0.1, 0.2], 'model-x', 2, 3, 7, 'text', ['k' => 'v']], $stored);
 	}//end testStoreVectorPassesEveryArgumentThrough()
 
 	/**
-	 * The defaults of storeVector reach the storage handler.
+	 * The stored vector reaches the storage handler as the same object.
 	 *
 	 * @return void
 	 */
-	public function testStoreVectorDefaults(): void {
+	public function testStoreVectorPassesTheSameVector(): void {
+		$vector = $this->vector(
+			subject: new VectorSubject(entityType: 'object', entityId: 'uuid-2'),
+			payload: new VectorPayload(embedding: [1.0], model: 'm', dimensions: 1),
+			position: new VectorChunkPosition(chunkIndex: 0, totalChunks: 1, chunkText: null),
+			metadata: []
+		);
 		$this->storage->expects($this->once())
 			->method('storeVector')
-			->with('object', 'uuid-2', [1.0], 'm', 1, 0, 1, null, [])
+			->with($this->identicalTo($vector))
 			->willReturn(5);
 
-		$this->assertSame(
-			5,
-			$this->service()->storeVector(entityType: 'object', entityId: 'uuid-2', embedding: [1.0], model: 'm', dimensions: 1)
-		);
-	}//end testStoreVectorDefaults()
+		$this->assertSame(5, $this->service()->storeVector(vector: $vector));
+	}//end testStoreVectorPassesTheSameVector()
 
 	/**
 	 * Statistics come from the stats handler unchanged.
@@ -153,7 +163,28 @@ final class VectorEmbeddingsDelegationGoldenTest extends TestCase {
 		$this->search->expects($this->never())->method($this->anything());
 		$this->storage->method('storeVector')->willReturn(1);
 
-		$this->service()->storeVector(entityType: 'object', entityId: 'u', embedding: [], model: 'm', dimensions: 0);
+		$this->service()->storeVector(
+			vector: $this->vector(
+				subject: new VectorSubject(entityType: 'object', entityId: 'u'),
+				payload: new VectorPayload(embedding: [], model: 'm', dimensions: 0),
+				position: new VectorChunkPosition(chunkIndex: 0, totalChunks: 1, chunkText: null),
+				metadata: []
+			)
+		);
 		$this->addToAssertionCount(1);
 	}//end testSearchHandlerUntouchedByStorage()
+
+	/**
+	 * Build a stored vector.
+	 *
+	 * @param VectorSubject       $subject  The entity.
+	 * @param VectorPayload       $payload  The embedding.
+	 * @param VectorChunkPosition $position The chunk position.
+	 * @param array<mixed>        $metadata The metadata.
+	 *
+	 * @return StoredVector The vector.
+	 */
+	private function vector(VectorSubject $subject, VectorPayload $payload, VectorChunkPosition $position, array $metadata): StoredVector {
+		return new StoredVector(subject: $subject, payload: $payload, position: $position, metadata: $metadata);
+	}//end vector()
 }//end class

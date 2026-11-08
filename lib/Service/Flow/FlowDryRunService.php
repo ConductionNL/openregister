@@ -40,21 +40,41 @@ use OCP\AppFramework\Db\DoesNotExistException;
  */
 class FlowDryRunService implements FlowDryRunServiceInterface {
 	/**
+	 * Finds the flow within the caller's organisation.
+	 *
+	 * @var FlowService
+	 */
+	private readonly FlowService $flows;
+
+	/**
+	 * Builds the flow document the engine walks.
+	 *
+	 * @var FlowLocator
+	 */
+	private readonly FlowLocator $locator;
+
+	/**
+	 * Reads the object with the caller's access.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objects;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowService      $flows    Finds the flow within the caller's organisation.
-	 * @param FlowLocator      $locator  Builds the flow document the engine walks.
-	 * @param ObjectOperationsInterface    $objects  Reads the object with the caller's access.
+	 * @param FlowDryRunLookups $lookups Finds the flow, builds its document and reads the object.
 	 * @param FlowEngine       $engine   The engine runs walk.
 	 * @param FlowNodeRegistryInterface $registry Resolves each step's node.
 	 */
 	public function __construct(
-		private readonly FlowService $flows,
-		private readonly FlowLocator $locator,
-		private readonly ObjectOperationsInterface $objects,
+		FlowDryRunLookups $lookups,
 		private readonly FlowEngine $engine,
 		private readonly FlowNodeRegistryInterface $registry,
 	) {
+		$this->flows   = $lookups->flows;
+		$this->locator = $lookups->locator;
+		$this->objects = $lookups->objects;
 	}//end __construct()
 
 	/**

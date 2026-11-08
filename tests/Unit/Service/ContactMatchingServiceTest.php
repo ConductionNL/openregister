@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ContactMatchingMappers;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\ICache;
@@ -67,8 +68,7 @@ class ContactMatchingServiceTest extends TestCase {
 
 		$this->service = new ContactMatchingService(
 			$this->objectService,
-			$this->schemaMapper,
-			$this->registerMapper,
+			new ContactMatchingMappers($this->schemaMapper, $this->registerMapper),
 			$this->cacheFactory,
 			$this->logger
 		);

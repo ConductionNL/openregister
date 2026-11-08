@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
 use OCA\OpenRegister\Service\PersonLinkService;
+use OCA\OpenRegister\Service\PersonLinkTargets;
 use OCA\OpenRegister\Service\UserLinkWriter;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IURLGenerator;
@@ -115,7 +116,7 @@ class PersonLinkWriteGoldenTest extends TestCase {
 				return new ContactLink();
 			}
 		);
-		return new PersonLinkService($links, $contacts, $userLinks, $schemas, new PersonLinkEvents($this->createMock(IEventDispatcher::class)));
+		return new PersonLinkService($links, new PersonLinkTargets($contacts, $userLinks), $schemas, new PersonLinkEvents($this->createMock(IEventDispatcher::class)));
 	}//end personLinks()
 
 	/**

@@ -23,6 +23,7 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowEngineServices;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
@@ -99,7 +100,7 @@ class FlowEngineAttributionTest extends TestCase {
 		$this->engine = new FlowEngine(
 			new FlowDefinitionBuilder(),
 			$this->createMock(LoggerInterface::class),
-			runContext: $this->context
+			services: new FlowEngineServices(runContext: $this->context)
 		);
 	}//end setUp()
 
