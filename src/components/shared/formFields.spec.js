@@ -76,6 +76,7 @@ const NEW_SELECT = {
 		:options="options"
 		label="title"
 		trackBy="id"
+		:labelOutside="true"
 		placeholder="Pick">
 		<template #noOptions>
 			<span>Nothing</span>

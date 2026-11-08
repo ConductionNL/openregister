@@ -69,6 +69,7 @@ import {
 							:options="typeOptions"
 							label="label"
 							trackBy="value"
+							:labelOutside="true"
 							:placeholder="
 								t('openregister', 'Select configuration type...')
 							"
@@ -115,6 +116,7 @@ import {
 							:multiple="true"
 							label="title"
 							trackBy="id"
+							:labelOutside="true"
 							:filterable="true"
 							:placeholder="
 								t('openregister', 'Search registers...')
@@ -145,6 +147,7 @@ import {
 							:multiple="true"
 							label="title"
 							trackBy="id"
+							:labelOutside="true"
 							:filterable="true"
 							:placeholder="t('openregister', 'Search schemas...')"
 							:closeOnSelect="false"
@@ -173,6 +176,7 @@ import {
 							:multiple="true"
 							label="title"
 							trackBy="id"
+							:labelOutside="true"
 							:filterable="true"
 							:placeholder="t('openregister', 'Search objects...')"
 							:closeOnSelect="false"
@@ -224,6 +228,7 @@ import {
 							:multiple="true"
 							label="title"
 							trackBy="id"
+							:labelOutside="true"
 							:filterable="true"
 							:placeholder="
 								t('openregister', 'Search data sources...')
@@ -254,6 +259,7 @@ import {
 							:multiple="true"
 							label="name"
 							trackBy="id"
+							:labelOutside="true"
 							:filterable="true"
 							:placeholder="t('openregister', 'Search agents...')"
 							:closeOnSelect="false"
@@ -282,6 +288,7 @@ import {
 							:multiple="true"
 							label="name"
 							trackBy="id"
+							:labelOutside="true"
 							:filterable="true"
 							:placeholder="t('openregister', 'Search views...')"
 							:closeOnSelect="false"
@@ -306,6 +313,7 @@ import {
 							:multiple="true"
 							label="name"
 							trackBy="id"
+							:labelOutside="true"
 							:filterable="true"
 							:placeholder="
 								t('openregister', 'Search applications...')
@@ -343,6 +351,7 @@ import {
 							:options="sourceTypeOptions"
 							label="label"
 							trackBy="value"
+							:labelOutside="true"
 							:placeholder="
 								t('openregister', 'Select source type...')
 							"
@@ -391,6 +400,7 @@ import {
 							:options="applicationOptions"
 							label="name"
 							trackBy="id"
+							:labelOutside="true"
 							:placeholder="
 								t(
 									'openregister',
@@ -459,6 +469,7 @@ import {
 							:multiple="true"
 							label="label"
 							trackBy="value"
+							:labelOutside="true"
 							:placeholder="
 								t('openregister', 'Select groups to notify...')
 							"

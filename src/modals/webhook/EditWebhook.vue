@@ -62,6 +62,7 @@
 							:options="httpMethodOptions"
 							label="label"
 							trackBy="value"
+							:labelOutside="true"
 							:placeholder="t('openregister', 'Select HTTP method')"
 							@update:modelValue="updateMethod" />
 
@@ -95,6 +96,7 @@
 							:options="eventOptions"
 							label="label"
 							trackBy="value"
+							:labelOutside="true"
 							:filterable="true"
 							:placeholder="
 								t('openregister', 'Select event to listen to...')
@@ -140,6 +142,7 @@
 							:options="eventPropertyOptions"
 							label="label"
 							trackBy="value"
+							:labelOutside="true"
 							:placeholder="
 								t('openregister', 'Select property to send as payload')
 							"
@@ -204,6 +207,7 @@
 							:options="retryPolicyOptions"
 							label="label"
 							trackBy="value"
+							:labelOutside="true"
 							:placeholder="t('openregister', 'Select retry policy')"
 							@update:modelValue="updateRetryPolicy" />
 

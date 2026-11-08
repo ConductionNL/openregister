@@ -1,7 +1,7 @@
 <template>
 	<div class="selectField">
 		<label :for="$attrs.id">{{ title }}</label>
-		<NcSelect v-bind="$attrs" :labelOutside="true">
+		<NcSelect v-bind="$attrs">
 			<template #option="option">
 				<slot name="option" v-bind="option">
 					<SelectOption
@@ -27,7 +27,8 @@ import SelectOption from './SelectOption.vue'
 
 /**
  * A labelled select of a tabbed edit form: the label above it, the select
- * itself (every attribute and listener goes to NcSelect) and the hint below.
+ * itself (every attribute and listener goes to NcSelect, so a caller passes
+ * `:labelOutside="true"` as it did) and the hint below.
  * An option shows its `label`-keyed title and its description unless the
  * `option` slot says otherwise.
  *
