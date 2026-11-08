@@ -32,6 +32,8 @@ use OCA\OpenRegister\Db\Schema;
 
 /**
  * What one upsert on a declared key was asked to do.
+ *
+ * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
  */
 final class UpsertOnKeyRequest {
 
