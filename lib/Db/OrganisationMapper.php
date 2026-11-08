@@ -329,19 +329,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 		// Validate UUID if provided.
 		$this->validateUuid(organisation: $organisation);
 
-		// Generate UUID if not present and not explicitly set.
-		if ($organisation->getUuid() === null || $organisation->getUuid() === '') {
-			$generatedUuid = $this->generateUuid();
-			$organisation->setUuid($generatedUuid);
-		}
-
-		// Set timestamps.
-		$now = new DateTime();
-		if ($organisation->getId() === null) {
-			$organisation->setCreated($now);
-		}
-
-		$organisation->setUpdated($now);
+		$this->stampForSave(organisation: $organisation);
 
 		if ($organisation->getId() === null) {
 			// A new organisation is only ever inserted, never written over the one holding its slug.
@@ -362,10 +350,36 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	}//end save()
 
 	/**
+	 * Give an organisation about to be saved its UUID and timestamps
+	 *
+	 * A missing UUID is generated; a new organisation gets its created date; every
+	 * save moves the updated date.
+	 *
+	 * @param Organisation $organisation The organisation being saved
+	 *
+	 * @return void
+	 */
+	private function stampForSave(Organisation $organisation): void {
+		// Generate UUID if not present and not explicitly set.
+		if ($organisation->getUuid() === null || $organisation->getUuid() === '') {
+			$generatedUuid = $this->generateUuid();
+			$organisation->setUuid($generatedUuid);
+		}
+
+		// Set timestamps.
+		$now = new DateTime();
+		if ($organisation->getId() === null) {
+			$organisation->setCreated($now);
+		}
+
+		$organisation->setUpdated($now);
+	}//end stampForSave()
+
+	/**
 	 * Throw a conflict when another organisation holds this organisation's slug.
 	 *
-	 * @param Organisation   $organisation The new organisation.
-	 * @param Exception|null $previous     The insert failure, when checking after one.
+	 * @param Organisation $organisation The new organisation.
+	 * @param Exception|null $previous The insert failure, when checking after one.
 	 *
 	 * @return void
 	 *
@@ -479,8 +493,8 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	 * would stop being deprovisioned, purged and metered, and nothing would
 	 * report it. Only a row explicitly marked false is excluded.
 	 *
-	 * @param int   $limit   Maximum number of results.
-	 * @param int   $offset  Number of results to skip.
+	 * @param int $limit Maximum number of results.
+	 * @param int $offset Number of results to skip.
 	 * @param array $filters Column => value equality filters.
 	 *
 	 * @return Organisation[]
@@ -508,7 +522,6 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
 		return $this->findEntities(query: $qb);
-
 	}//end findLocalTenants()
 
 	/**
@@ -836,6 +849,33 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 			return;
 		}
 
+		$parentChain = $this->refuseInvalidParent(organisationUuid: $organisationUuid, newParentUuid: $newParentUuid);
+		$totalDepth = $this->refuseExcessiveDepth(organisationUuid: $organisationUuid, parentChain: $parentChain);
+
+		$this->logger->debug(
+			message: '[OrganisationMapper] Parent assignment validated',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'organisation' => $organisationUuid,
+				'newParent' => $newParentUuid,
+				'parentChain' => $parentChain,
+				'totalDepth' => $totalDepth,
+			]
+		);
+	}//end validateParentAssignment()
+
+	/**
+	 * Refuse a parent that is the organisation itself, does not load, or descends from it
+	 *
+	 * @param string $organisationUuid The organisation UUID to update
+	 * @param string $newParentUuid The new parent UUID to assign
+	 *
+	 * @return array The new parent's own parent chain (direct parent first)
+	 *
+	 * @throws \Exception If the parent is refused
+	 */
+	private function refuseInvalidParent(string $organisationUuid, string $newParentUuid): array {
 		// Prevent self-reference.
 		if ($organisationUuid === $newParentUuid) {
 			throw new Exception('Organisation cannot be its own parent.');
@@ -856,6 +896,20 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 			);
 		}
 
+		return $parentChain;
+	}//end refuseInvalidParent()
+
+	/**
+	 * Refuse an assignment that would make the hierarchy deeper than ten levels
+	 *
+	 * @param string $organisationUuid The organisation UUID to update
+	 * @param array $parentChain The new parent's parent chain
+	 *
+	 * @return int The total depth after the assignment
+	 *
+	 * @throws \Exception If the maximum depth would be exceeded
+	 */
+	private function refuseExcessiveDepth(string $organisationUuid, array $parentChain): int {
 		// Check max depth: current parent chain + this org + existing children chain.
 		$childrenChain = $this->findChildrenChain(organisationUuid: $organisationUuid);
 
@@ -871,18 +925,8 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 			);
 		}
 
-		$this->logger->debug(
-			message: '[OrganisationMapper] Parent assignment validated',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'organisation' => $organisationUuid,
-				'newParent' => $newParentUuid,
-				'parentChain' => $parentChain,
-				'totalDepth' => $totalDepth,
-			]
-		);
-	}//end validateParentAssignment()
+		return $totalDepth;
+	}//end refuseExcessiveDepth()
 
 	/**
 	 * Get maximum depth in a children chain
@@ -903,6 +947,26 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 		}
 
 		// Build parent map for efficient lookup.
+		$parentMap = $this->buildParentMap(childrenUuids: $childrenUuids);
+
+		// Calculate depth for each child.
+		$maxDepth = 0;
+		foreach ($childrenUuids as $childUuid) {
+			$depth = $this->calculateDepthFromRoot(nodeUuid: $childUuid, rootUuid: $rootUuid, parentMap: $parentMap);
+			$maxDepth = max($maxDepth, $depth);
+		}
+
+		return $maxDepth;
+	}//end getMaxDepthInChain()
+
+	/**
+	 * Map each loadable child with a parent to that parent's UUID
+	 *
+	 * @param array $childrenUuids Array of child organisation UUIDs
+	 *
+	 * @return array Child UUID => parent UUID
+	 */
+	private function buildParentMap(array $childrenUuids): array {
 		$parentMap = [];
 		foreach ($childrenUuids as $childUuid) {
 			try {
@@ -916,15 +980,8 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 			}
 		}
 
-		// Calculate depth for each child.
-		$maxDepth = 0;
-		foreach ($childrenUuids as $childUuid) {
-			$depth = $this->calculateDepthFromRoot(nodeUuid: $childUuid, rootUuid: $rootUuid, parentMap: $parentMap);
-			$maxDepth = max($maxDepth, $depth);
-		}
-
-		return $maxDepth;
-	}//end getMaxDepthInChain()
+		return $parentMap;
+	}//end buildParentMap()
 
 	/**
 	 * Calculate depth of a node from root
@@ -980,8 +1037,6 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 			return $this->activeOrgUuidCache[$userId];
 		}
 
-		$activeOrganisationUuid = null;
-
 		$qb = $this->db->getQueryBuilder();
 
 		// Query the preferences table for active organisation.
@@ -992,13 +1047,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 			->andWhere($qb->expr()->eq('configkey', $qb->createNamedParameter('active_organisation')));
 
 		try {
-			$result = $qb->executeQuery();
-			$row = $result->fetch();
-			$result->closeCursor();
-
-			if ($row !== false && isset($row['configvalue']) === true) {
-				$activeOrganisationUuid = $row['configvalue'];
-			}
+			$activeOrganisationUuid = $this->readConfigValue(qb: $qb);
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[OrganisationMapper] Failed to get active organisation for user: ' . $e->getMessage(),
@@ -1013,6 +1062,27 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 
 		return $activeOrganisationUuid;
 	}//end getActiveOrganisationUuidForUser()
+
+	/**
+	 * Run a preference query and return its configvalue, or null when there is none
+	 *
+	 * @param IQueryBuilder $qb The prepared preferences query
+	 *
+	 * @return mixed The stored configvalue, or null
+	 *
+	 * @throws \Exception If the query fails
+	 */
+	private function readConfigValue(IQueryBuilder $qb): mixed {
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		if ($row !== false && isset($row['configvalue']) === true) {
+			return $row['configvalue'];
+		}
+
+		return null;
+	}//end readConfigValue()
 
 	/**
 	 * Get active organisation with fallback to default and set on session
@@ -1232,15 +1302,8 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 
 		// A chain longer than this is a data defect, not a deep hierarchy.
 		for ($hop = 0; $hop < self::MAX_MERGE_HOPS; $hop++) {
-			try {
-				$organisation = $this->findByUuid(uuid: $current);
-			} catch (DoesNotExistException | MultipleObjectsReturnedException $e) {
-				// Unresolvable link: stay on the last UUID we did verify.
-				return $current;
-			}
-
-			$next = $organisation->getMergedInto();
-			if ($next === null || $next === '' || $next === $current) {
+			$next = $this->findMergeSuccessor(current: $current);
+			if ($next === '') {
 				return $current;
 			}
 
@@ -1265,6 +1328,43 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 
 		return $current;
 	}//end resolveMergeTarget()
+
+	/**
+	 * The organisation the given one was merged into, or '' when the walk ends here
+	 *
+	 * The walk ends on an organisation that cannot be loaded (stay on the last UUID
+	 * that was verified) and on one with no merge target or a merge into itself.
+	 *
+	 * @param string $current The organisation UUID reached so far
+	 *
+	 * @return string The next UUID in the merge chain, or '' to stop
+	 */
+	private function findMergeSuccessor(string $current): string {
+		$next = $this->loadMergedInto(current: $current);
+		if ($next === '' || $next === $current) {
+			return '';
+		}
+
+		return $next;
+	}//end findMergeSuccessor()
+
+	/**
+	 * The stored merge target of an organisation, or '' when it has none or cannot be loaded
+	 *
+	 * @param string $current The organisation UUID reached so far
+	 *
+	 * @return string The stored merged_into value, or ''
+	 */
+	private function loadMergedInto(string $current): string {
+		try {
+			$organisation = $this->findByUuid(uuid: $current);
+		} catch (DoesNotExistException|MultipleObjectsReturnedException $e) {
+			// Unresolvable link: stay on the last UUID we did verify.
+			return '';
+		}
+
+		return $organisation->getMergedInto() ?? '';
+	}//end loadMergedInto()
 
 	/**
 	 * Find an organisation, following any merge to the surviving one
