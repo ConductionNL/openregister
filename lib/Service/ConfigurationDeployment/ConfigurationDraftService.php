@@ -33,9 +33,9 @@ namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
 use DateTime;
 use OCA\OpenRegister\Db\ConfigurationDraft;
-use OCA\OpenRegister\Db\ConfigurationDraftMapper;
+use OCA\OpenRegister\Db\ConfigurationDraftMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDraftSet;
-use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
+use OCA\OpenRegister\Db\ConfigurationDraftSetMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
@@ -63,8 +63,8 @@ class ConfigurationDraftService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationDraftSetMapper $sets      The draft sets.
-	 * @param ConfigurationDraftMapper    $drafts    The pending values.
+	 * @param ConfigurationDraftSetMapperInterface $sets      The draft sets.
+	 * @param ConfigurationDraftMapperInterface    $drafts    The pending values.
 	 * @param ConfigurationValueStore     $store     The live values.
 	 * @param ConfigurationKeyRegistry    $registry  The declared vocabulary.
 	 * @param IUserSession                $session   The current session.
@@ -72,8 +72,8 @@ class ConfigurationDraftService {
 	 * @param string                      $appName   The app the instance keys live under.
 	 */
 	public function __construct(
-		private readonly ConfigurationDraftSetMapper $sets,
-		private readonly ConfigurationDraftMapper $drafts,
+		private readonly ConfigurationDraftSetMapperInterface $sets,
+		private readonly ConfigurationDraftMapperInterface $drafts,
 		private readonly ConfigurationValueStore $store,
 		private readonly ConfigurationKeyRegistry $registry,
 		private readonly IUserSession $session,

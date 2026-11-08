@@ -41,7 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
 use DateTime;
-use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
+use OCA\OpenRegister\Db\ConfigurationDeploymentMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -58,11 +58,11 @@ class ConfigurationExplainer {
 	 * Constructor.
 	 *
 	 * @param ConfigurationValueStore       $store       The live values.
-	 * @param ConfigurationDeploymentMapper $deployments The append-only history.
+	 * @param ConfigurationDeploymentMapperInterface $deployments The append-only history.
 	 */
 	public function __construct(
 		private readonly ConfigurationValueStore $store,
-		private readonly ConfigurationDeploymentMapper $deployments
+		private readonly ConfigurationDeploymentMapperInterface $deployments
 	) {
 
 	}//end __construct()
