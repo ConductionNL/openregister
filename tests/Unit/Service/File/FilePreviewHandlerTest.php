@@ -43,7 +43,7 @@ class FilePreviewHandlerTest extends TestCase {
 		$this->previewManager->method('isAvailable')->willReturn(true);
 		$this->previewManager->method('getPreview')->willReturn($previewFile);
 
-		$result = $this->handler->getPreview($file);
+		$result = $this->handler->getPreview($file, new PreviewSize());
 
 		$this->assertSame($previewFile, $result);
 	}
@@ -60,14 +60,14 @@ class FilePreviewHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Preview not available for this file type');
 
-		$this->handler->getPreview($file);
+		$this->handler->getPreview($file, new PreviewSize());
 	}
 	/**
 	 * Calls the handler with an optional width and height.
 	 */
 	private function preview(File $file, ?int $width = null, ?int $height = null): ISimpleFile {
 		if ($width === null) {
-			return $this->handler->getPreview($file);
+			return $this->handler->getPreview($file, new PreviewSize());
 		}
 
 		return $this->handler->getPreview($file, new PreviewSize($width, (int) $height));
