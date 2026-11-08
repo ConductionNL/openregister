@@ -166,4 +166,22 @@ class ActivityFeedServiceSourcesGoldenTest extends TestCase {
 		$this->assertSame(['note'], array_column($page['rows'], 'kind'));
 		$this->assertSame(['activity'], $page['degraded']);
 	}//end testOnlyArrayRowsOfTheThreeHandedInKindsAreMerged()
+	public function testAHistoryThatAnswersNothingGivesNoAuditRowsAndNoDegradedSource(): void {
+		$history = $this->getMockBuilder(ObjectHistoryForReaders::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['page'])
+			->getMock();
+		$history->method('page')->willReturn(null);
+		$provider = $this->getMockBuilder(ActivityProvider::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['list'])
+			->getMock();
+		$provider->method('list')->willReturn([]);
+		$service = new ActivityFeedService(new ActivityFeedMerge(), $history, $provider, $this->createMock(LoggerInterface::class));
+
+		$page = $service->page('dossiq', 'case', 'obj-1');
+
+		$this->assertSame([], $page['rows']);
+		$this->assertSame([], $page['degraded']);
+	}//end testAHistoryThatAnswersNothingGivesNoAuditRowsAndNoDegradedSource()
 }//end class
