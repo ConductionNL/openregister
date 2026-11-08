@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\CospendLink;
 use OCA\OpenRegister\Db\CospendLinkMapperInterface;
 use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -407,6 +408,6 @@ class CospendLinkServiceGoldenTest extends TestCase {
 				return $copy;
 			}
 		);
-		return new CospendLinkService($links, $container, $appManager, $session, $this->database($w), $logger);
+		return new CospendLinkService($links, $container, new LinkServiceRuntime($appManager, $session, $logger), $this->database($w));
 	}//end makeService()
 }//end class

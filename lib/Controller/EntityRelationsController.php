@@ -40,6 +40,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\AuthDenialWarning;
+use OCA\OpenRegister\Controller\Support\EntityRelationPatch;
 use OCA\OpenRegister\Controller\Support\EntityRelationsControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Db\EmailLink;
@@ -63,7 +65,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\IRequest;
-use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -208,12 +209,14 @@ class EntityRelationsController extends Controller {
 			return $relation;
 		}
 
-		$refusal = $this->refusePatch(relation: $relation, user: $user, id: $id);
+		$patch = new EntityRelationPatch(id: $id, relation: $relation, user: $user);
+
+		$refusal = $this->refusePatch(patch: $patch);
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		return $this->decideRelation(relation: $relation, user: $user, id: $id);
+		return $this->decideRelation(patch: $patch);
 	}//end update()
 
 	/**
@@ -240,20 +243,19 @@ class EntityRelationsController extends Controller {
 	 * The write check runs first: a caller without write access learns nothing
 	 * about the content-type rules.
 	 *
-	 * @param EntityRelation $relation The relation.
-	 * @param IUser          $user     The acting user.
-	 * @param int            $id       Relation row id.
+	 * @param EntityRelationPatch $patch The relation, its id and the acting user.
 	 *
 	 * @return JSONResponse|null The 403 or 415 answer, or null when the PATCH may proceed.
 	 */
-	private function refusePatch(EntityRelation $relation, IUser $user, int $id): ?JSONResponse {
-		if ($this->actorCanWriteRelationSubject(relation: $relation, userId: $user->getUID()) === false) {
+	private function refusePatch(EntityRelationPatch $patch): ?JSONResponse {
+		$user = $patch->user;
+		if ($this->actorCanWriteRelationSubject(relation: $patch->relation, userId: $user->getUID()) === false) {
 			$this->logger->info(
 				message: '[EntityRelationsController] PATCH denied — no write-access to relation subject',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'relation_id' => $id,
+					'relation_id' => $patch->id,
 					'actor' => $user->getUID(),
 				]
 			);
@@ -274,19 +276,18 @@ class EntityRelationsController extends Controller {
 	/**
 	 * Record the decision the body carries and answer with the updated relation.
 	 *
-	 * @param EntityRelation $relation The relation.
-	 * @param IUser          $user     The acting user.
-	 * @param int            $id       Relation row id.
+	 * @param EntityRelationPatch $patch The relation, its id and the acting user.
 	 *
 	 * @return JSONResponse 200 with the relation, or 403 / 400 / 500.
 	 */
-	private function decideRelation(EntityRelation $relation, IUser $user, int $id): JSONResponse {
+	private function decideRelation(EntityRelationPatch $patch): JSONResponse {
+		$user = $patch->user;
 		$body = $this->request->getParams();
 		// Strip framework-injected keys; only the JSON body fields remain candidates.
 		unset($body['id'], $body['_route']);
 
 		try {
-			$decided = $this->relationDecisions->decide(relation: $relation, body: $body, actor: $user);
+			$decided = $this->relationDecisions->decide(relation: $patch->relation, body: $body, actor: $user);
 		} catch (DecisionOwnedException $e) {
 			return new JSONResponse(data: $e->getRefusal(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (CustomValidationException $e) {
@@ -300,7 +301,7 @@ class EntityRelationsController extends Controller {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'relation_id' => $id,
+					'relation_id' => $patch->id,
 					'error' => $e->getMessage(),
 				]
 			);
@@ -353,12 +354,7 @@ class EntityRelationsController extends Controller {
 
 		$objectId = $relation->getObjectId();
 		if ($this->isPositiveId(id: $objectId) === true) {
-			return $this->canUpdateObject(
-				objectId: $objectId,
-				registerId: $relation->getRegisterId(),
-				schemaId: $relation->getSchemaId(),
-				userId: $userId
-			);
+			return $this->canUpdateObject(relation: $relation, userId: $userId);
 		}
 
 		$emailId = $relation->getEmailId();
@@ -430,20 +426,14 @@ class EntityRelationsController extends Controller {
 	 * back to the magic-mapper's cross-table find, which yields
 	 * `DoesNotExistException` if no match — denied.
 	 *
-	 * @param int $objectId Object row id on its magic table.
-	 * @param string|null $registerId Register identifier (uuid or slug).
-	 * @param string|null $schemaId Schema identifier (uuid or slug).
-	 * @param string $userId Acting user UID.
+	 * @param EntityRelation $relation Relation row with a positive object id.
+	 * @param string         $userId   Acting user UID.
 	 *
 	 * @return bool
 	 */
-	private function canUpdateObject(
-		int $objectId,
-		string|null $registerId,
-		string|null $schemaId,
-		string $userId,
-	): bool {
-		$object = $this->resolveRelationObject(objectId: $objectId, registerId: $registerId, schemaId: $schemaId);
+	private function canUpdateObject(EntityRelation $relation, string $userId): bool {
+		$schemaId = $relation->getSchemaId();
+		$object = $this->resolveRelationObject(relation: $relation);
 		if ($object === null) {
 			return false;
 		}
@@ -455,8 +445,10 @@ class EntityRelationsController extends Controller {
 
 		$resolvedSchema = $this->loadSchemaOrDeny(
 			schemaId: $resolvedSchemaId,
-			message: '[EntityRelationsController] Object-bound auth check could not load schema, denying',
-			context: ['object_id' => $objectId, 'schema_id' => $resolvedSchemaId]
+			warning: new AuthDenialWarning(
+				message: '[EntityRelationsController] Object-bound auth check could not load schema, denying',
+				context: ['object_id' => $relation->getObjectId(), 'schema_id' => $resolvedSchemaId]
+			)
 		);
 		if ($resolvedSchema === null) {
 			return false;
@@ -474,13 +466,15 @@ class EntityRelationsController extends Controller {
 	/**
 	 * Resolve the relation's object, disambiguated by register and schema when given.
 	 *
-	 * @param int         $objectId   Object row id on its magic table.
-	 * @param string|null $registerId Register identifier (uuid or slug).
-	 * @param string|null $schemaId   Schema identifier (uuid or slug).
+	 * @param EntityRelation $relation Relation row with a positive object id.
 	 *
 	 * @return ObjectEntity|null The object, or null (logged) when any lookup fails.
 	 */
-	private function resolveRelationObject(int $objectId, string|null $registerId, string|null $schemaId): ObjectEntity|null {
+	private function resolveRelationObject(EntityRelation $relation): ObjectEntity|null {
+		$objectId = $relation->getObjectId();
+		$registerId = $relation->getRegisterId();
+		$schemaId = $relation->getSchemaId();
+
 		try {
 			$register = null;
 			if ($registerId !== null) {
@@ -516,21 +510,20 @@ class EntityRelationsController extends Controller {
 	/**
 	 * Load the schema the permission verdict is taken against.
 	 *
-	 * @param string $schemaId The schema identifier.
-	 * @param string $message  The warning logged when it does not load.
-	 * @param array  $context  The subject keys logged with that warning.
+	 * @param string            $schemaId The schema identifier.
+	 * @param AuthDenialWarning $warning  The warning logged, with its subject keys, when it does not load.
 	 *
 	 * @return Schema|null The schema, or null (logged) when it does not load.
 	 */
-	private function loadSchemaOrDeny(string $schemaId, string $message, array $context): ?Schema {
+	private function loadSchemaOrDeny(string $schemaId, AuthDenialWarning $warning): ?Schema {
 		try {
 			return $this->schemaMapper->find($schemaId);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				message: $message,
+				message: $warning->message,
 				context: array_merge(
 					['file' => __FILE__, 'line' => __LINE__],
-					$context,
+					$warning->context,
 					['error' => $e->getMessage()]
 				)
 			);
@@ -556,7 +549,6 @@ class EntityRelationsController extends Controller {
 		}
 
 		$parentObjectUuid = $emailLink->getObjectUuid();
-		$parentRegisterId = $emailLink->getRegisterId();
 		// EmailLink's `@method string getObjectUuid()` claims non-nullable,
 		// but the underlying column is `?string`. Guard via empty() so we
 		// catch both null and empty-string parents.
@@ -573,19 +565,17 @@ class EntityRelationsController extends Controller {
 			return false;
 		}
 
-		$object = $this->resolveEmailParent(
-			emailId: $emailId,
-			parentObjectUuid: $parentObjectUuid,
-			parentRegisterId: $parentRegisterId
-		);
+		$object = $this->resolveEmailParent(emailId: $emailId, emailLink: $emailLink);
 		if ($object === null) {
 			return false;
 		}
 
 		$schema = $this->loadSchemaOrDeny(
 			schemaId: (string)$object->getSchema(),
-			message: '[EntityRelationsController] Email-bound auth check could not load parent schema, denying',
-			context: ['email_id' => $emailId, 'schema_id' => $object->getSchema()]
+			warning: new AuthDenialWarning(
+				message: '[EntityRelationsController] Email-bound auth check could not load parent schema, denying',
+				context: ['email_id' => $emailId, 'schema_id' => $object->getSchema()]
+			)
 		);
 		if ($schema === null) {
 			return false;
@@ -627,13 +617,15 @@ class EntityRelationsController extends Controller {
 	/**
 	 * Resolve the email's parent object, in its register when the link names one.
 	 *
-	 * @param int    $emailId          EmailLink row id.
-	 * @param string $parentObjectUuid The parent object's uuid.
-	 * @param mixed  $parentRegisterId The parent's register id as the link holds it.
+	 * @param int       $emailId   EmailLink row id.
+	 * @param EmailLink $emailLink The link, with a non-empty parent object uuid.
 	 *
 	 * @return ObjectEntity|null The parent, or null (logged) when it does not resolve.
 	 */
-	private function resolveEmailParent(int $emailId, string $parentObjectUuid, mixed $parentRegisterId): ?ObjectEntity {
+	private function resolveEmailParent(int $emailId, EmailLink $emailLink): ?ObjectEntity {
+		$parentObjectUuid = (string)$emailLink->getObjectUuid();
+		$parentRegisterId = $emailLink->getRegisterId();
+
 		try {
 			// EmailLink's `@method int getRegisterId()` is non-nullable in
 			// the docblock; defensively coerce via empty() in case the

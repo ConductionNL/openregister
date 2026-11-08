@@ -361,12 +361,11 @@
 
 <script>
 import { NcButton, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
-import { mapStores } from 'pinia'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import ClearCacheDialog from '../../../dialogs/settings/ClearCacheDialog.vue'
-import { useSettingsStore } from '../../../store/settings.js'
+import { settingsSectionState } from './settingsSectionState.js'
 
 /**
  * The cache services with a card of their own: the key of their statistics
@@ -391,9 +390,9 @@ export default {
 		Delete,
 	},
 
-	computed: {
-		...mapStores(useSettingsStore),
+	mixins: [settingsSectionState],
 
+	computed: {
 		/**
 		 * The cache services shown as a card, for display.
 		 *
@@ -432,16 +431,6 @@ export default {
 		 */
 		clearingCache() {
 			return this.settingsStore.clearingCache
-		},
-
-		/**
-		 * Whether the settings store is loading, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		loading() {
-			return this.settingsStore.loading
 		},
 
 		/**

@@ -105,7 +105,8 @@ use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
-use OCA\OpenRegister\Service\Search\SearchTermParser;
+use OCA\OpenRegister\Service\Search\HistoryPredicateInterface;
+use OCA\OpenRegister\Service\Search\SearchGrammar;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Support\FilterParams;
@@ -1062,7 +1063,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			(new SearchTermParser())->parse(term: $term);
+			SearchGrammar::termParser()->parse(term: $term);
 		} catch (SearchTermSyntaxException $exception) {
 			return $this->searchSyntaxRefusal(exception: $exception);
 		}
@@ -1086,7 +1087,7 @@ class ObjectsController extends Controller {
 		}
 
 		$term = trim($search);
-		if ((new SearchTermParser())->needsParsing(term: $term) === true) {
+		if (SearchGrammar::termParser()->needsParsing(term: $term) === true) {
 			return $term;
 		}
 
@@ -1136,7 +1137,7 @@ class ObjectsController extends Controller {
 			return null;
 		}
 
-		$predicate = \OCA\OpenRegister\Service\Search\HistoryPredicate::parse(query: $params);
+		$predicate = SearchGrammar::historyPredicate(query: $params);
 		if ($predicate->narrows() === false) {
 			return null;
 		}
@@ -1147,13 +1148,13 @@ class ObjectsController extends Controller {
 	/**
 	 * The 400 for a history predicate over a property with no recorded history.
 	 *
-	 * @param \OCA\OpenRegister\Service\Search\HistoryPredicate $predicate The parsed predicate.
+	 * @param HistoryPredicateInterface $predicate The parsed predicate.
 	 *
 	 * @return JSONResponse|null A 400 naming the property, or null.
 	 *
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
-	private function historyRefusal(\OCA\OpenRegister\Service\Search\HistoryPredicate $predicate): ?JSONResponse {
+	private function historyRefusal(HistoryPredicateInterface $predicate): ?JSONResponse {
 		$refusal = $predicate->refusalFor(projectedProperties: $this->governance->stateHistory->projectedProperties());
 		if ($refusal === null) {
 			return null;
@@ -1213,7 +1214,7 @@ class ObjectsController extends Controller {
 		// from the write path, so search and single-read reported no
 		// per-request counts at all. Stamp + flush here so the same in-PHP
 		// counters that made the write numbers trustworthy cover reads too.
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.index.in');
+		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.index.in');
 
 		$params = $this->request->getParams();
 
@@ -2936,7 +2937,7 @@ class ObjectsController extends Controller {
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.show.in');
+		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.show.in');
 
 		try {
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
@@ -3316,7 +3317,7 @@ class ObjectsController extends Controller {
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function create(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.create.in');
+		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.create.in');
 		try {
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
@@ -3687,7 +3688,7 @@ class ObjectsController extends Controller {
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function update(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.in');
+		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.update.in');
 
 		try {
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
@@ -3861,9 +3862,9 @@ class ObjectsController extends Controller {
 		try {
 			$objectEntity = $update->saved(uuid: ($existing->getUuid() ?? $update->target->id));
 			$this->releaseOwnLockAfterWrite(objectEntity: $objectEntity);
-			\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.unlocked');
+			\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.update.unlocked');
 			$body = $objectEntity->jsonSerialize();
-			\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.out');
+			\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.update.out');
 
 			return new JSONResponse(data: $body);
 		} catch (\Exception $exception) {
@@ -4183,7 +4184,7 @@ class ObjectsController extends Controller {
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.destroy.in');
+		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.destroy.in');
 
 		try {
 			// Set the register and schema context for ObjectService.

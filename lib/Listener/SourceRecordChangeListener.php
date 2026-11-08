@@ -56,7 +56,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
 use OCA\OpenRegister\Service\Merge\MasterRecomputeService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -133,7 +133,7 @@ class SourceRecordChangeListener implements IEventListener {
 	 * @param SchemaMapperInterface $schemaMapper Schema registry (to build the reverse index).
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 * @param ICacheFactory $cacheFactory Distributed-cache factory for the reverse index.
-	 * @param ListenerDeferralService $deferral Actor-forwarding deferral service (ADR-078).
+	 * @param ListenerDeferralInterface $deferral Actor-forwarding deferral service (ADR-078).
 	 * @param MasterRecomputeService $recompute Golden-record recompute, used on the inline fallback only.
 	 *
 	 * @return void
@@ -144,7 +144,7 @@ class SourceRecordChangeListener implements IEventListener {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 		ICacheFactory $cacheFactory,
-		private readonly ListenerDeferralService $deferral,
+		private readonly ListenerDeferralInterface $deferral,
 		private readonly MasterRecomputeService $recompute,
 	) {
 		try {

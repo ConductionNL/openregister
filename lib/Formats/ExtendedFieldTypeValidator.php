@@ -49,21 +49,7 @@ use Throwable;
  * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
  * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-005
  */
-class ExtendedFieldTypeValidator {
-
-	/**
-	 * Default number of occurrences materialised for a recurrence value on read.
-	 *
-	 * @var int
-	 */
-	public const DEFAULT_OCCURRENCES = 5;
-
-	/**
-	 * Maximum number of occurrences a single request may materialise.
-	 *
-	 * @var int
-	 */
-	public const MAX_OCCURRENCES = 100;
+class ExtendedFieldTypeValidator implements ExtendedFieldTypeValidatorInterface {
 
 	/**
 	 * Hex colour regex: #RGB, #RRGGBB or #RRGGBBAA (case-insensitive).

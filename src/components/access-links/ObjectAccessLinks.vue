@@ -275,15 +275,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async toggle(link, disabled) {
-			this.busy = true
-			try {
-				await setAccessLinkDisabled(link.id, disabled)
-				await this.load()
-			} catch {
-				showError(t('openregister', 'That did not work. Try again later.'))
-			} finally {
-				this.busy = false
-			}
+			await this.changeLink(() => setAccessLinkDisabled(link.id, disabled))
 		},
 
 		/**
@@ -292,12 +284,25 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async revoke(link) {
-			this.busy = true
-			try {
+			await this.changeLink(async () => {
 				await revokeAccessLink(link.id)
 				if (this.created && this.created.id === link.id) {
 					this.created = null
 				}
+			})
+		},
+
+		/**
+		 * Change a link while busy, then reload the links; say so when it fails.
+		 *
+		 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+		 * @param {function(): Promise} change The change to make
+		 * @return {Promise<void>}
+		 */
+		async changeLink(change) {
+			this.busy = true
+			try {
+				await change()
 				await this.load()
 			} catch {
 				showError(t('openregister', 'That did not work. Try again later.'))

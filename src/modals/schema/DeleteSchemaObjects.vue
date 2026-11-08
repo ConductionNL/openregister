@@ -131,12 +131,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
+			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeDialog" />
 			<NcButton
 				v-if="!success && !loading && !error && objectCount > 0"
 				:disabled="loading"
@@ -161,8 +156,8 @@ import {
 	NcNoteCard,
 } from '@nextcloud/vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { schemaObjectCount } from './schemaObjectCount.js'
 
 export default {
@@ -173,7 +168,7 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
-		Cancel,
+		CloseCancelButton,
 		DeleteSweep,
 		AlertCircle,
 		SchemaStatsBlock,

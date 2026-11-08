@@ -157,6 +157,7 @@ import {
 } from '@nextcloud/vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
+import { fetchUserOptions, organisationOption } from './joinOptions.js'
 
 export default {
 	name: 'JoinOrganisation',
@@ -263,16 +264,7 @@ export default {
 					0,
 				)
 
-				// Transform results to NcSelect format with all necessary fields
-				this.organisationOptions = results.map((org) => ({
-					id: org.uuid || org.id,
-					uuid: org.uuid || org.id,
-					name: org.name,
-					label: org.name,
-					description: org.description,
-					users: org.users || [],
-					isDefault: org.isDefault,
-				}))
+				this.organisationOptions = results.map(organisationOption)
 			} catch (error) {
 				console.error('Error loading initial organisations:', error)
 				this.organisationOptions = []
@@ -364,16 +356,7 @@ export default {
 						0,
 					)
 
-					// Transform results to NcSelect format with all necessary fields
-					this.organisationOptions = results.map((org) => ({
-						id: org.uuid || org.id,
-						uuid: org.uuid || org.id,
-						name: org.name,
-						label: org.name,
-						description: org.description,
-						users: org.users || [],
-						isDefault: org.isDefault,
-					}))
+					this.organisationOptions = results.map(organisationOption)
 				} catch (error) {
 					console.error('Error searching organisations:', error)
 					this.error = 'Failed to search organisations: ' + error.message
@@ -395,29 +378,10 @@ export default {
 			try {
 				// Get list of users from Nextcloud API with pagination
 				// Limit to first 20 users for performance
-				const response = await fetch(
+				this.userOptions = await fetchUserOptions(
 					'/ocs/v2.php/cloud/users?limit=20&offset=0',
-					{
-						headers: {
-							'OCS-APIRequest': 'true',
-							Accept: 'application/json',
-						},
-					},
+					'Failed to load users',
 				)
-
-				if (!response.ok) {
-					throw new Error('Failed to load users')
-				}
-
-				const data = await response.json()
-				const users = data?.ocs?.data?.users || []
-
-				// Transform to NcSelect format with label property
-				this.userOptions = users.map((userId) => ({
-					id: userId,
-					displayName: userId,
-					label: userId, // Required by vue-select
-				}))
 
 				// Ensure current user is in the list and selected
 				const currentUser = this.getCurrentUser()
@@ -470,29 +434,10 @@ export default {
 
 				try {
 					// Search for users via Nextcloud API with limit
-					const response = await fetch(
+					this.userOptions = await fetchUserOptions(
 						`/ocs/v2.php/cloud/users?search=${encodeURIComponent(query.trim())}&limit=20`,
-						{
-							headers: {
-								'OCS-APIRequest': 'true',
-								Accept: 'application/json',
-							},
-						},
+						'Failed to search users',
 					)
-
-					if (!response.ok) {
-						throw new Error('Failed to search users')
-					}
-
-					const data = await response.json()
-					const users = data?.ocs?.data?.users || []
-
-					// Transform to NcSelect format with label property
-					this.userOptions = users.map((userId) => ({
-						id: userId,
-						displayName: userId,
-						label: userId, // Required by vue-select
-					}))
 
 					// Always include current user in options
 					const currentUser = this.getCurrentUser()

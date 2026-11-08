@@ -43,7 +43,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -71,14 +71,14 @@ class AnnotationNotificationListener implements IEventListener {
 	 *
 	 * @param NotificationRuleDispatcherInterface $dispatcher Dispatcher used to fire notifications.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup (request-cached) for the enqueue gate.
-	 * @param ListenerDeferralService $deferral Actor-forwarding deferral service.
+	 * @param ListenerDeferralInterface $deferral Actor-forwarding deferral service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly NotificationRuleDispatcherInterface $dispatcher,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ListenerDeferralService $deferral,
+		private readonly ListenerDeferralInterface $deferral,
 	) {
 	}//end __construct()
 

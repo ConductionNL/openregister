@@ -34,7 +34,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Export\ExportGate;
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCA\OpenRegister\Service\TmloServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -78,9 +79,9 @@ class TmloController extends Controller {
 	 * mappers — exercising the REAL resolution path instead of a mock of the very
 	 * thing under test.
 	 *
-	 * @var RegisterScopedSchemaResolver
+	 * @var RegisterScopedSchemaResolverInterface
 	 */
-	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
+	private readonly RegisterScopedSchemaResolverInterface $scopedSchemaResolver;
 
 
 	/**
@@ -139,7 +140,7 @@ class TmloController extends Controller {
 		$this->registerMapper = $records->registerMapper;
 		$this->logger = $services->guards->logger;
 		$this->exportGate = $services->guards->exportGate;
-		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(registerMapper: $records->registerMapper, schemaMapper: $records->schemaMapper);
+		$this->scopedSchemaResolver = RegisterScopedSchemaResolvers::over(registerMapper: $records->registerMapper, schemaMapper: $records->schemaMapper);
 	}//end __construct()
 
 	/**

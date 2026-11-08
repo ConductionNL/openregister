@@ -72,7 +72,7 @@ use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Integration\LeafBundle;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
-use OCA\OpenRegister\Service\ScriptManifestLoader;
+use OCA\OpenRegister\Service\EntryScripts;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\EventDispatcher\Event;
@@ -120,7 +120,7 @@ class LeafScriptListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ScriptManifestLoader is static for
+	 * @SuppressWarnings(PHPMD.StaticAccess) EntryScripts is static for
 	 *     the same reason \OCP\Util::addScript it wraps is: there is no
 	 *     injectable DI equivalent in the AppFramework.
 	 *
@@ -133,7 +133,7 @@ class LeafScriptListener implements IEventListener {
 
 		try {
 			foreach ($this->leafAppsForThisPage() as $providingApp) {
-				ScriptManifestLoader::addEntryScripts(appId: $providingApp, entry: self::LEAF_ENTRY, fallbackScript: $providingApp . '-' . self::LEAF_ENTRY);
+				EntryScripts::add(appId: $providingApp, entry: self::LEAF_ENTRY, fallbackScript: $providingApp . '-' . self::LEAF_ENTRY);
 			}
 		} catch (Throwable $e) {
 			// A page must render even when the catalogue cannot be read. The

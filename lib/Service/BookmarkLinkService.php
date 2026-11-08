@@ -44,11 +44,8 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\BookmarkLink;
 use OCA\OpenRegister\Db\BookmarkLinkMapperInterface;
-use OCP\App\IAppManager;
 use OCP\IUser;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -96,16 +93,12 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	 * Constructor.
 	 *
 	 * @param BookmarkLinkMapperInterface $bookmarkLinkMapper Persistence for link rows.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 * @param ContainerInterface $container App container the Bookmarks mappers are resolved from.
 	 */
 	public function __construct(
 		private readonly BookmarkLinkMapperInterface $bookmarkLinkMapper,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		private readonly LinkServiceRuntime $runtime,
 		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
@@ -116,7 +109,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	 * @return bool
 	 */
 	public function isBookmarksAvailable(): bool {
-		return $this->appManager->isEnabledForUser(self::REQUIRED_APP);
+		return $this->runtime->appManager()->isEnabledForUser(self::REQUIRED_APP);
 	}//end isBookmarksAvailable()
 
 	/**
@@ -135,7 +128,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function linkBookmark(LinkTarget $target, int $bookmarkId): BookmarkLink {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
@@ -262,7 +255,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function createAndLinkBookmark(LinkTarget $target, BookmarkDraft $draft): BookmarkLink {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
@@ -271,7 +264,10 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 
 		$cleanTags = $this->cleanTags(tags: $draft->tags());
 
-		$bookmarkId = $this->createBookmark(mapper: $mapper, userId: $user->getUID(), draft: $draft, cleanTags: $cleanTags);
+		$bookmarkId = $this->createBookmark(
+			mapper: $mapper,
+			draft: $draft->withDetails(description: $draft->description(), tags: $cleanTags)->ownedBy(ownerId: $user->getUID())
+		);
 
 		$existing = $this->bookmarkLinkMapper->findByObjectAndBookmark($target->objectUuid, $bookmarkId);
 		if ($existing !== null) {
@@ -297,7 +293,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	 */
 	private function refreshingUserId(): ?string {
 		$available = $this->isBookmarksAvailable();
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($available === false) {
 			return null;
 		}
@@ -315,7 +311,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 			return null;
 		}
 
-		return $this->userSession->getUser();
+		return $this->runtime->userSession()->getUser();
 	}//end pickerUser()
 
 	/**
@@ -370,7 +366,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 		try {
 			$this->bookmarkLinkMapper->update($link);
 		} catch (Throwable $e) {
-			$this->logger->debug('BookmarkLinkService cache refresh failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('BookmarkLinkService cache refresh failed: ' . $e->getMessage());
 		}
 	}//end refreshLink()
 
@@ -388,7 +384,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 		try {
 			return $mapper->findAll($userId, $this->queryParameters(search: $search, tags: $tags));
 		} catch (Throwable $e) {
-			$this->logger->warning('BookmarkLinkService::getAvailableBookmarks failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('BookmarkLinkService::getAvailableBookmarks failed: ' . $e->getMessage());
 			return [];
 		}
 	}//end findBookmarks()
@@ -447,19 +443,17 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	/**
 	 * Create the bookmark in NC Bookmarks and tag it.
 	 *
-	 * @param object            $mapper    The NC Bookmarks BookmarkMapper.
-	 * @param string            $userId    The owning user's id.
-	 * @param BookmarkDraft     $draft     The bookmark to create.
-	 * @param array<int,string> $cleanTags The cleaned tags to attach.
+	 * @param object        $mapper The NC Bookmarks BookmarkMapper.
+	 * @param BookmarkDraft $draft  The bookmark to create: owner set, tags cleaned.
 	 *
 	 * @return int The created bookmark id.
 	 *
 	 * @throws Exception When the bookmark cannot be created (500).
 	 */
-	private function createBookmark(object $mapper, string $userId, BookmarkDraft $draft, array $cleanTags): int {
+	private function createBookmark(object $mapper, BookmarkDraft $draft): int {
 		try {
 			$bookmark = new \OCA\Bookmarks\Db\Bookmark();
-			$bookmark->setUserId($userId);
+			$bookmark->setUserId($draft->ownerId());
 			$bookmark->setUrl(trim($draft->url));
 			$bookmark->setTitle(mb_substr(trim($draft->title), 0, 512));
 			$bookmark->setDescription((string)($draft->description() ?? ''));
@@ -471,11 +465,11 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 				throw new Exception('Failed to retrieve created bookmark id', 500);
 			}
 
-			$this->addTags(cleanTags: $cleanTags, bookmarkId: $bookmarkId);
+			$this->addTags(cleanTags: $draft->tags(), bookmarkId: $bookmarkId);
 		} catch (Exception $e) {
 			throw $e;
 		} catch (Throwable $e) {
-			$this->logger->warning('Failed to create bookmark: ' . $e->getMessage());
+			$this->runtime->logger()->warning('Failed to create bookmark: ' . $e->getMessage());
 			throw new Exception('Failed to create bookmark: ' . $e->getMessage(), 500);
 		}//end try
 
@@ -599,7 +593,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 		try {
 			$bookmark = $mapper->find($bookmarkId);
 		} catch (Throwable $e) {
-			$this->logger->debug('fetchBookmarkDetails find failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('fetchBookmarkDetails find failed: ' . $e->getMessage());
 			return null;
 		}
 
@@ -700,7 +694,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 		try {
 			return $this->container->get('\OCA\Bookmarks\Db\BookmarkMapper');
 		} catch (Throwable $e) {
-			$this->logger->debug('resolveBookmarkMapper failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('resolveBookmarkMapper failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end resolveBookmarkMapper()
@@ -718,7 +712,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 		try {
 			return $this->container->get('\OCA\Bookmarks\Db\TagMapper');
 		} catch (Throwable $e) {
-			$this->logger->debug('resolveTagMapper failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('resolveTagMapper failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end resolveTagMapper()

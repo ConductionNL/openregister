@@ -22,12 +22,7 @@
 		</p>
 
 		<template #actions>
-			<NcButton :disabled="removing" @click="$emit('cancel')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<CloseCancelButton :label="t('openregister', 'Cancel')" :disabled="removing" @click="$emit('cancel')" />
 			<NcButton :disabled="removing" variant="error" @click="$emit('confirm')">
 				<template #icon>
 					<NcLoadingIcon v-if="removing" :size="20" />
@@ -50,8 +45,8 @@
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'RemoveConnectionDialog',
@@ -59,7 +54,7 @@ export default {
 		NcButton,
 		NcDialog,
 		NcLoadingIcon,
-		Cancel,
+		CloseCancelButton,
 		LinkVariantOff,
 		AlertOutline,
 	},

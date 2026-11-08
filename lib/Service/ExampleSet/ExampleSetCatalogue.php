@@ -38,7 +38,7 @@ use Throwable;
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
  */
-class ExampleSetCatalogue {
+class ExampleSetCatalogue implements ExampleSetCatalogueInterface {
 	use ExampleSetKeyOf;
 
 	/**

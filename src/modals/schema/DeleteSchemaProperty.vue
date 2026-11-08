@@ -43,12 +43,7 @@ import {
 			</p>
 		</NcNoteCard>
 		<template #actions>
-			<NcButton :disabled="loading" icon="" @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success !== null ? 'Sluiten' : 'Annuleren' }}
-			</NcButton>
+			<CloseCancelButton :label="success !== null ? 'Sluiten' : 'Annuleren'" :disabled="loading" icon="" @click="closeModal" />
 			<NcButton
 				v-if="success === null"
 				:disabled="loading || !canDelete"
@@ -67,8 +62,8 @@ import {
 
 <script>
 import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'DeleteSchemaProperty',
@@ -78,7 +73,7 @@ export default {
 		NcNoteCard,
 		NcLoadingIcon,
 		// Icons
-		Cancel,
+		CloseCancelButton,
 		Delete,
 	},
 

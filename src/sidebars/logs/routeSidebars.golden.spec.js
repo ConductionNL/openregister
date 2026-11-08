@@ -35,6 +35,7 @@ jest.mock('../../eventBus.js', () => ({
 }))
 jest.mock('vue-material-design-icons/ChartLine.vue', () => ({}))
 jest.mock('vue-material-design-icons/CogOutline.vue', () => ({}))
+jest.mock('vue-material-design-icons/Delete.vue', () => ({}))
 jest.mock('vue-material-design-icons/Eye.vue', () => ({}))
 jest.mock('vue-material-design-icons/FilterOffOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/FilterOutline.vue', () => ({}))

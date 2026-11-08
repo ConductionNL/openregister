@@ -63,6 +63,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use DateTime;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
+use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -448,8 +449,10 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		// concrete cost of keeping the copy.
 		$this->subjects?->recordOne(
 			context: $context,
-			role: (string)($config['subjectRole'] ?? ''),
-			uuids: array_values(array_unique($targets))
+			candidates: new FlowSubjectCandidates(
+				role: (string)($config['subjectRole'] ?? ''),
+				uuids: array_values(array_unique($targets))
+			)
 		);
 
 	}//end recordSubject()
