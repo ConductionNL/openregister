@@ -207,4 +207,40 @@ final class ThresholdEvaluationGoldenTest extends TestCase {
 		$calls = $this->evaluateOnce(['aggregation' => 'a', 'op' => 'gt', 'value' => 1], 2, 'above', 'failset');
 		$this->assertSame(['run', 'get', 'set'], array_column($calls, 0));
 	}//end testFailingStateWriteIsSwallowed()
+
+	/**
+	 * Which declaration blocks count as having a threshold notification.
+	 *
+	 * @return void
+	 */
+	public function testHasThresholdNotifications(): void {
+		$factory = $this->createMock(ICacheFactory::class);
+		$service = new ThresholdEvaluationService(
+			$this->createMock(AggregationRunnerInterface::class),
+			$this->createMock(NotificationRuleDispatcherInterface::class),
+			$this->createMock(LoggerInterface::class),
+			$factory
+		);
+		$blocks = [
+			null,
+			'not-a-list',
+			[],
+			['a' => 'x', 'b' => ['trigger' => 'x'], 'c' => ['trigger' => ['type' => 'event']]],
+			['a' => ['trigger' => ['type' => 'event']], 'b' => ['trigger' => ['type' => 'threshold']]],
+			[['trigger' => ['type' => 'threshold']]],
+		];
+		$answers = [];
+		foreach ($blocks as $block) {
+			$schema = new Schema();
+			$config = [];
+			if ($block !== null) {
+				$config['x-openregister-notifications'] = $block;
+			}
+
+			$schema->setConfiguration($config);
+			$answers[] = $service->hasThresholdNotifications($schema);
+		}
+
+		$this->assertSame([false, false, false, false, true, true], $answers);
+	}//end testHasThresholdNotifications()
 }//end class
