@@ -71,6 +71,18 @@ async function mounted(state) {
 }
 
 describe('FlowOverview tables', () => {
+	// The golden pins UTC wall-clock times whatever timezone the machine runs in.
+	beforeEach(() => {
+		const toLocaleString = Date.prototype.toLocaleString
+		jest.spyOn(Date.prototype, 'toLocaleString').mockImplementation(function(locale, options) {
+			return toLocaleString.call(this, locale, { ...options, timeZone: 'UTC' })
+		})
+	})
+
+	afterEach(() => {
+		jest.restoreAllMocks()
+	})
+
 	it('shows the versions and the runs', async () => {
 		const wrapper = await mounted({ versions: VERSIONS, runs: RUNS })
 		expect(tableText(wrapper)).toMatchSnapshot()
