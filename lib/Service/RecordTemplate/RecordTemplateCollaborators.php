@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenRegister record template store
+ * OpenRegister record template collaborators
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -31,7 +31,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
  */
-final class RecordTemplateStore {
+final class RecordTemplateCollaborators {
 	/**
 	 * Bundle the collaborators.
 	 *

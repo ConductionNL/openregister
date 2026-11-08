@@ -161,19 +161,15 @@
     },
     "OCA\\OpenRegister\\Service\\Dbal\\DatabaseIntrospectionService": {
         "asked": [
-            "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory",
-            "OCA\\OpenRegister\\Service\\Dbal\\SqlTypeMapper",
+            "OCA\\OpenRegister\\Service\\Dbal\\IntrospectionTools",
             "OCA\\OpenRegister\\Db\\RegisterMapperInterface",
             "OCA\\OpenRegister\\Db\\SchemaMapperInterface",
-            "OCA\\OpenRegister\\Service\\Schema\\SchemaDiffService",
             "Psr\\Log\\LoggerInterface"
         ],
         "params": {
-            "connectionFactory": "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory",
-            "typeMapper": "OCA\\OpenRegister\\Service\\Dbal\\SqlTypeMapper",
+            "tools": "OCA\\OpenRegister\\Service\\Dbal\\IntrospectionTools",
             "registerMapper": "OCA\\OpenRegister\\Db\\RegisterMapperInterface",
             "schemaMapper": "OCA\\OpenRegister\\Db\\SchemaMapperInterface",
-            "diffService": "OCA\\OpenRegister\\Service\\Schema\\SchemaDiffService",
             "logger": "Psr\\Log\\LoggerInterface"
         }
     },

@@ -77,14 +77,14 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RecordTemplateStore $store The template rows, the schema lookups and the log.
+	 * @param RecordTemplateCollaborators $store The template rows, the schema lookups and the log.
 	 * @param PermissionCheckInterface    $permissions Answers whether a caller may create in a schema.
 	 * @param ViewerReachResolver  $viewers     Validates shares against existing groups.
 	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function __construct(
-		private readonly RecordTemplateStore $store,
+		private readonly RecordTemplateCollaborators $store,
 		private readonly PermissionCheckInterface $permissions,
 		private readonly ViewerReachResolver $viewers,
 	) {
