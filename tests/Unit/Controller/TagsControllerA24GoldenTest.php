@@ -38,7 +38,6 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use OCA\OpenRegister\Tests\Unit\Controller\Support\TagsControllerFactory;
 
 /**
  * Pins status + body of every allowed and refused tag outcome.
@@ -124,7 +123,7 @@ class TagsControllerA24GoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		return TagsControllerFactory::create('openregister', $this->request, $this->objectService, $this->fileService, $this->taggingHandler, $session);
+		return new TagsController('openregister', $this->request, $this->objectService, $this->fileService, $this->taggingHandler, $session);
 	}//end controller()
 
 	/**

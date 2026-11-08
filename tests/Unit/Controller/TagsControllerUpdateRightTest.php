@@ -31,7 +31,6 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use OCA\OpenRegister\Tests\Unit\Controller\Support\TagsControllerFactory;
 
 /**
  * A reader who may not update an object may not tag or untag it either.
@@ -85,7 +84,7 @@ class TagsControllerUpdateRightTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		$this->controller = TagsControllerFactory::create(
+		$this->controller = new TagsController(
 			'openregister',
 			$this->request,
 			$this->objectService,
