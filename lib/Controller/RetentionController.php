@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Archival\DestructionService;
+use OCA\OpenRegister\Service\Archival\DestructionServiceInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
@@ -111,9 +111,9 @@ class RetentionController extends Controller {
 	/**
 	 * Withholds entries a reviewer decided against
 	 *
-	 * @var DestructionService
+	 * @var DestructionServiceInterface
 	 */
-	private readonly DestructionService $destructionService;
+	private readonly DestructionServiceInterface $destructionService;
 
 	/**
 	 * Background job list
