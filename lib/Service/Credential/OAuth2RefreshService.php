@@ -61,7 +61,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess) One static call, to a named constructor:
  * {@see OAuth2TokenSet} decodes a stored document and has no instance to call.
  */
-class OAuth2RefreshService {
+class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	/**
 	 * How far ahead of an access token's expiry a refresh becomes due, in seconds.
 	 *

@@ -33,8 +33,8 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\CalendarFeedControllerServices;
-use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
-use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenService;
+use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeServiceInterface;
+use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenServiceInterface;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCP\AppFramework\Controller;
@@ -70,9 +70,9 @@ class CalendarFeedController extends Controller {
 	/**
 	 * The feed-token lifecycle.
 	 *
-	 * @var CalendarFeedTokenService
+	 * @var CalendarFeedTokenServiceInterface
 	 */
-	private readonly CalendarFeedTokenService $tokens;
+	private readonly CalendarFeedTokenServiceInterface $tokens;
 
 	/**
 	 * The feed generator.
@@ -84,9 +84,9 @@ class CalendarFeedController extends Controller {
 	/**
 	 * The attendee-response store.
 	 *
-	 * @var AppointmentAttendeeService
+	 * @var AppointmentAttendeeServiceInterface
 	 */
-	private readonly AppointmentAttendeeService $attendees;
+	private readonly AppointmentAttendeeServiceInterface $attendees;
 
 	/**
 	 * The current session, which names the principal.

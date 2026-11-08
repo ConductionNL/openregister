@@ -63,7 +63,7 @@ use Throwable;
  * user-session, URL generator and the lazily-resolved ObjectService — each is required for the
  * mint / resolve / revoke contract.
  */
-class CaseTokenService {
+class CaseTokenService implements CaseTokenServiceInterface {
 
 	/**
 	 * Token length in characters (URL-safe alphanumeric). 43 chars of

@@ -33,13 +33,9 @@ use DateTimeInterface;
 use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditSink;
-use OCA\OpenRegister\Service\Audit\OrganisationContextAttribution;
-use OCA\OpenRegister\Service\Audit\PurposeAttribution;
+use OCA\OpenRegister\Service\Audit\AuditTrailCollaborators;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
-use OCA\OpenRegister\Service\Audit\TokenAttribution;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -208,7 +204,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
 	private function applyElevation(AuditTrail $auditTrail): void {
-		$elevation = ObjectActionElevationScope::attributionFor(
+		$elevation = AuditTrailCollaborators::elevationAttribution(
 			schemaId: $auditTrail->getSchema(),
 			verb: (string)$auditTrail->getAction()
 		);
@@ -243,9 +239,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 */
 	private function applyAttributions(AuditTrail $auditTrail): void {
 		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
-		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
-		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
-		(new OrganisationContextAttribution())->apply(auditTrail: $auditTrail);
+		AuditTrailCollaborators::purposeAttribution(container: $this->container)->apply(auditTrail: $auditTrail);
+		AuditTrailCollaborators::tokenAttribution(container: $this->container)->apply(auditTrail: $auditTrail);
+		AuditTrailCollaborators::organisationContextAttribution()->apply(auditTrail: $auditTrail);
 		$this->applyElevation(auditTrail: $auditTrail);
 	}//end applyAttributions()
 
@@ -834,7 +830,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				return null;
 			}
 
-			$aggregation = new AuditAggregationService(appConfig: $appConfig);
+			$aggregation = AuditTrailCollaborators::aggregation(appConfig: $appConfig);
 			$window = $aggregation->windowSeconds();
 			if ($window === 0) {
 				return null;
@@ -1251,8 +1247,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		}
 
 		try {
-			return $this->container
-				->get(\OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext::class)
+			return AuditTrailCollaborators::lifecycleActionContextFrom(container: $this->container)
 				->systemAppFor($uuid);
 		} catch (\Throwable $contextUnavailable) {
 			return null;
@@ -1318,7 +1313,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 */
 	private function resolveAuditExpiry(ObjectEntity $objectEntity, \DateTime $createdAt): array {
 		try {
-			$resolver = $this->container->get(\OCA\OpenRegister\Service\AuditRetentionResolver::class);
+			$resolver = AuditTrailCollaborators::retentionResolverFrom(container: $this->container);
 
 			$resolved = $resolver->resolve(object: $objectEntity, createdAt: $createdAt);
 

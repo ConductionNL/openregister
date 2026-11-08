@@ -52,7 +52,7 @@ use Throwable;
 /**
  * Legal-hold-aware retention sweep over data-subject-request cases.
  */
-class RetentionSweepService {
+class RetentionSweepService implements RetentionSweepInterface {
 	/**
 	 * Constructor.
 	 *

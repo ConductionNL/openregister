@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
+use OCA\OpenRegister\Service\Rbac\ObjectOwnershipServiceInterface;
 
 /**
  * The services of the object ownership API.
@@ -39,7 +39,7 @@ final class ObjectOwnershipControllerServices {
 	 * @param ObjectOperationsInterface          $objectService  Resolves a record through the RBAC boundary.
 	 * @param RegisterMapperInterface         $registerMapper Resolves the register entity.
 	 * @param SchemaMapperInterface           $schemaMapper   Resolves the schema entity.
-	 * @param ObjectOwnershipService $ownership      Performs the checked writes.
+	 * @param ObjectOwnershipServiceInterface $ownership      Performs the checked writes.
 	 *
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
@@ -47,7 +47,7 @@ final class ObjectOwnershipControllerServices {
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly RegisterMapperInterface $registerMapper,
 		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly ObjectOwnershipService $ownership,
+		public readonly ObjectOwnershipServiceInterface $ownership,
 	) {
 	}//end __construct()
 }//end class

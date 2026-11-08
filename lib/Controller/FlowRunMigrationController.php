@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\FlowRunMigrationControllerServices;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -65,9 +65,9 @@ class FlowRunMigrationController extends Controller {
 	/**
 	 * Whether the caller may run this flow at all.
 	 *
-	 * @var FlowRunnableGuard
+	 * @var FlowRunnableGuardInterface
 	 */
-	private readonly FlowRunnableGuard $guard;
+	private readonly FlowRunnableGuardInterface $guard;
 
 	/**
 	 * Moves runs onto another version. Nullable; absent, the endpoints report

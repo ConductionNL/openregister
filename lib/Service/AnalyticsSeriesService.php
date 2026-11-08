@@ -54,7 +54,7 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Service composes the series mapper, integration
  * registry, user session and group manager — each is required for the register / fetch / RBAC contract.
  */
-class AnalyticsSeriesService {
+class AnalyticsSeriesService implements AnalyticsSeriesServiceInterface {
 
 	/**
 	 * Allowed visibility tiers.

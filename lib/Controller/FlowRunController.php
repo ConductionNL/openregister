@@ -34,12 +34,12 @@ use OCA\OpenRegister\Controller\Support\FlowRunControllerServices;
 use OCA\OpenRegister\Db\AuditFlowAttribution;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
+use OCA\OpenRegister\Service\Flow\FlowCaller;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
-use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
-use OCA\OpenRegister\Service\Flow\FlowCaller;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -119,9 +119,9 @@ class FlowRunController extends Controller {
 	/**
 	 * Whether the caller may run the flow a run belongs to.
 	 *
-	 * @var FlowRunnableGuard
+	 * @var FlowRunnableGuardInterface
 	 */
-	private readonly FlowRunnableGuard $guard;
+	private readonly FlowRunnableGuardInterface $guard;
 
 	/**
 	 * Distinguishes an administrator, who gets

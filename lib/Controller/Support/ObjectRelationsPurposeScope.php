@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
-use OCA\OpenRegister\Service\Object\ObjectReadAccess;
+use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
 use OCP\AppFramework\Http\JSONResponse;
 
 /**
@@ -50,12 +50,12 @@ final class ObjectRelationsPurposeScope {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectReadAccess        $access         Resolves an object's schema under the caller's own RBAC.
-	 * @param PurposeGuardInterface            $purposeGuard   The doelbinding guard the object read runs.
-	 * @param RegisterMapperInterface $registerMapper Resolves an object's register for that guard.
+	 * @param ObjectReadAccessInterface $access         Resolves an object's schema under the caller's own RBAC.
+	 * @param PurposeGuardInterface     $purposeGuard   The doelbinding guard the object read runs.
+	 * @param RegisterMapperInterface   $registerMapper Resolves an object's register for that guard.
 	 */
 	public function __construct(
-		public readonly ObjectReadAccess $access,
+		public readonly ObjectReadAccessInterface $access,
 		public readonly PurposeGuardInterface $purposeGuard,
 		public readonly RegisterMapperInterface $registerMapper,
 	) {

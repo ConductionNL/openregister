@@ -31,9 +31,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
+use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
-use OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider;
-use OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider;
+use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -135,7 +135,7 @@ class ConnectionSeamReportJob extends TimedJob {
 		 */
 
 		$registry = $this->container->get(IdentityVerifyRegistry::class);
-		$others = array_values(array_diff($registry->listIds(), [NullIdentityVerifyProvider::PROVIDER_ID]));
+		$others = array_values(array_diff($registry->listIds(), [IdentityVerifyProvider::NULL_PROVIDER_ID]));
 
 		if ($others === []) {
 			return [
@@ -163,7 +163,7 @@ class ConnectionSeamReportJob extends TimedJob {
 		 */
 
 		$registry = $this->container->get(RegulatorEscalateRegistry::class);
-		$others = array_values(array_diff($registry->listIds(), [NullRegulatorEscalateProvider::PROVIDER_ID]));
+		$others = array_values(array_diff($registry->listIds(), [RegulatorEscalateProvider::NULL_PROVIDER_ID]));
 
 		if ($others === []) {
 			return [

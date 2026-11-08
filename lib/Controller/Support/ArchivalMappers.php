@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Archival\DestructionListRepository;
+use OCA\OpenRegister\Service\Archival\DestructionListRepositoryInterface;
 
 /**
  * The mappers and repositories of the archival API.
@@ -37,7 +37,7 @@ final class ArchivalMappers {
 	 * Bundle the services.
 	 *
 	 * @param MagicMapperInterface      $objectMapper Object mapper.
-	 * @param DestructionListRepository $lists        Finds the destruction lists this instance holds.
+	 * @param DestructionListRepositoryInterface $lists        Finds the destruction lists this instance holds.
 	 * @param AuditTrailMapperInterface          $auditMapper  Records who signed off what.
 	 * @param SchemaMapperInterface              $schemaMapper Loads the schema a nomination is derived from.
 	 *
@@ -45,7 +45,7 @@ final class ArchivalMappers {
 	 */
 	public function __construct(
 		public readonly MagicMapperInterface $objectMapper,
-		public readonly DestructionListRepository $lists,
+		public readonly DestructionListRepositoryInterface $lists,
 		public readonly AuditTrailMapperInterface $auditMapper,
 		public readonly SchemaMapperInterface $schemaMapper,
 	) {

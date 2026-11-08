@@ -59,33 +59,7 @@ use InvalidArgumentException;
  *              and take away the one thing a refused reviewer needs, which is
  *              WHICH rule refused them.
  */
-class DestructionReviewService {
-
-	/**
-	 * Destroy the record. It has reached its disposal date and nothing holds it.
-	 */
-	public const ANSWER_DESTROY = 'destroy';
-
-	/**
-	 * Keep the record, on a new disposal date, for a recorded reason.
-	 */
-	public const ANSWER_RETAIN = 'retain';
-
-	/**
-	 * Hand the record to an e-Depot rather than destroy it.
-	 */
-	public const ANSWER_TRANSFER = 'transfer';
-
-	/**
-	 * The three answers a reviewer may give, and no others.
-	 *
-	 * @var string[]
-	 */
-	public const ANSWERS = [
-		self::ANSWER_DESTROY,
-		self::ANSWER_RETAIN,
-		self::ANSWER_TRANSFER,
-	];
+class DestructionReviewService implements DestructionReviewServiceInterface {
 
 	/**
 	 * The entries of a destruction list, as a list.

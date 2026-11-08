@@ -58,16 +58,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Public API surface for destruction workflow management
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class DestructionService {
-
-	/**
-	 * Destruction list status constants.
-	 */
-	public const STATUS_IN_REVIEW = 'in_review';
-	public const STATUS_APPROVED = 'approved';
-	public const STATUS_AWAITING_SECOND = 'awaiting_second_approval';
-	public const STATUS_REJECTED = 'rejected';
-	public const STATUS_COMPLETED = 'completed';
+class DestructionService implements DestructionServiceInterface {
 
 	/**
 	 * Default extension period when objects are excluded or rejected (1 year).
