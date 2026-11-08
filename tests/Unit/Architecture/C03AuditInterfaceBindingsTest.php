@@ -120,12 +120,7 @@ final class C03AuditInterfaceBindingsTest extends TestCase {
 			'Service/DsarService.php',
 			'Service/ProcessingLogService.php',
 		],
-		ViewerReachResolver::class => [
-			'Listener/ViewAlertAudience.php',
-			'Listener/ViewAlertCrossedListener.php',
-			'Search/Controller/Support/ViewsControllerServices.php',
-			'Search/Controller/ViewsController.php',
-		],
+		ViewerReachResolver::class => [],
 	];
 
 	/**

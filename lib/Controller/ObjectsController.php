@@ -4694,8 +4694,8 @@ class ObjectsController extends Controller {
 		$logs = $objectService->getLogs(uuid: $id, filters: $config['filters']);
 
 		// An explicit-reveal value reads masked for an administrator too.
-		$trailMasker = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker::class);
-		if ($trailMasker instanceof \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker) {
+		$trailMasker = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface::class);
+		if ($trailMasker instanceof \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface) {
 			$logs = $trailMasker->mask(entries: $logs);
 		}
 

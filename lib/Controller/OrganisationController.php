@@ -41,7 +41,7 @@ use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\OrganisationUsageService;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
-use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -814,7 +814,7 @@ class OrganisationController extends Controller {
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	private function grantManageOf(object $organisation): array {
-		$list = ($organisation->getAuthorization()[OrganisationSpecialRights::GRANT_MANAGE] ?? []);
+		$list = ($organisation->getAuthorization()[OrganisationSpecialRightsInterface::GRANT_MANAGE] ?? []);
 		if (is_array($list) === false) {
 			return [];
 		}

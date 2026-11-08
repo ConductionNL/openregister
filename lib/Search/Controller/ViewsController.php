@@ -32,7 +32,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
+use OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -79,9 +79,9 @@ class ViewsController extends Controller {
 	/**
 	 * Who is asking, and how far they reach over views.
 	 *
-	 * @var ViewerReachResolver
+	 * @var ViewerReachResolverInterface
 	 */
-	private ViewerReachResolver $viewers;
+	private ViewerReachResolverInterface $viewers;
 
 	/**
 	 * Constructor.

@@ -48,4 +48,35 @@ interface DerivedGrantStoreInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function rules(): array;
+
+	/**
+	 * Derive one account's grants from these claims, and keep both.
+	 *
+	 * The claims are kept so a rule change can be re-run without waiting for
+	 * everybody to sign in again, which is the difference between an access
+	 * change taking effect today and taking effect over a fortnight.
+	 *
+	 * @param string               $userId The account.
+	 * @param array<string, mixed> $claims The claims the provider asserted.
+	 *
+	 * @return array<int, array<string, mixed>> The grants that were stored.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function apply(string $userId, array $claims): array;
+
+	/**
+	 * Forget one account's derived access.
+	 *
+	 * Called when a sign-in asserts nothing. Keeping the previous set would keep
+	 * somebody in a department they left, which is the failure this whole
+	 * mechanism is supposed to end rather than automate.
+	 *
+	 * @param string $userId The account.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function forget(string $userId): void;
 }//end interface

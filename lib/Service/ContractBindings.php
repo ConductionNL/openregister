@@ -674,6 +674,8 @@ final class ContractBindings {
 		SubjectExportServiceInterface::class => SubjectExportService::class,
 		\OCA\OpenRegister\Service\Quality\UniqueHintWarningsInterface::class => \OCA\OpenRegister\Service\Quality\UniqueHintWarnings::class,
 		\OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface::class => \OCA\OpenRegister\Service\Rbac\ViewerReachResolver::class,
+		\OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface::class => \OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights::class,
+		\OCA\OpenRegister\Service\Rbac\PrincipalReachServiceInterface::class => \OCA\OpenRegister\Service\Rbac\PrincipalReachService::class,
 		WaitNodeInterface::class => WaitNode::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,
