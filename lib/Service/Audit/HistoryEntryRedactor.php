@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\RenderObject;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 
 /**
  * Removes from history entries what one reader may not see on the object.
@@ -47,10 +47,10 @@ class HistoryEntryRedactor {
 	/**
 	 * Constructor.
 	 *
-	 * @param PropertyRbacHandler $properties The render path's property read rules.
+	 * @param PropertyRbacHandlerInterface $properties The render path's property read rules.
 	 */
 	public function __construct(
-		private readonly PropertyRbacHandler $properties,
+		private readonly PropertyRbacHandlerInterface $properties,
 	) {
 	}//end __construct()
 

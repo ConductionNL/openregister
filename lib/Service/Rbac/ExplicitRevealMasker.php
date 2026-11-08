@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -48,14 +48,14 @@ class ExplicitRevealMasker {
 	 * Constructor.
 	 *
 	 * @param ExplicitReveal      $reveal      The request's grants.
-	 * @param PropertyRbacHandler $properties  The property read rule.
+	 * @param PropertyRbacHandlerInterface $properties  The property read rule.
 	 * @param IUserSession        $userSession The reader.
 	 * @param LoggerInterface     $logger      The logger.
 	 * @param RevealCollector|null $reveals    Records a reveal; absent, nothing is recorded.
 	 */
 	public function __construct(
 		private readonly ExplicitReveal $reveal,
-		private readonly PropertyRbacHandler $properties,
+		private readonly PropertyRbacHandlerInterface $properties,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly ?RevealCollector $reveals = null,

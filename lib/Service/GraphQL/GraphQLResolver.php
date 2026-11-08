@@ -40,7 +40,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
 
@@ -117,9 +117,9 @@ class GraphQLResolver {
 	/**
 	 * Property RBAC handler
 	 *
-	 * @var PropertyRbacHandler
+	 * @var PropertyRbacHandlerInterface
 	 */
-	private readonly PropertyRbacHandler $propertyRbac;
+	private readonly PropertyRbacHandlerInterface $propertyRbac;
 
 	/**
 	 * Translation handler
