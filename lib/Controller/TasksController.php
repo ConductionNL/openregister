@@ -34,6 +34,8 @@ use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskState;
 use OCA\OpenRegister\Service\Task\TaskStateRules;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
@@ -80,9 +82,9 @@ class TasksController extends Controller {
 	/**
 	 * The engine inbox the aggregate answers from;
 	 *
-	 * @var ?TaskInboxService
+	 * @var ?TaskInboxServiceInterface
 	 */
-	private readonly ?TaskInboxService $inbox;
+	private readonly ?TaskInboxServiceInterface $inbox;
 
 	/**
 	 * Names the caller for the aggregate
