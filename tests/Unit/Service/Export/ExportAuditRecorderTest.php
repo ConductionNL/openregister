@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 final class ExportAuditRecorderTest extends TestCase {
@@ -95,12 +96,12 @@ final class ExportAuditRecorderTest extends TestCase {
 
 	public function testALedgerThatThrowsDoesNotFailTheExport(): void {
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('createExportEntry')->willThrowException(new \RuntimeException('chain busy'));
+		$mapper->expects(self::once())->method('createExportEntry')->willThrowException(new \RuntimeException('chain busy'));
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects(self::once())->method('error')
+			->with('[ExportAudit] Could not record the export', self::callback(static fn (array $context): bool => $context['error'] === 'chain busy'));
 
-		(new ExportAuditRecorder($mapper, new NullLogger()))->recordCompleted('p', 1, 'csv');
-
-		// Reaching here is the assertion: a hash-chain hiccup must not turn a
-		// delivered aanlevering into a failure.
-		self::assertTrue(true);
+		// A hash-chain hiccup must not turn a delivered aanlevering into a failure.
+		(new ExportAuditRecorder($mapper, $logger))->recordCompleted('p', 1, 'csv');
 	}//end testALedgerThatThrowsDoesNotFailTheExport()
 }//end class
