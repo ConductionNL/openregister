@@ -113,15 +113,18 @@
 				<div class="cache-services">
 					<h4>🔧 Cache Services</h4>
 					<div class="cache-services-grid">
-						<!-- Object Cache -->
-						<div class="cache-service-card">
-							<h5>Object Cache</h5>
+						<div
+							v-for="service in cacheServices"
+							:key="service.key"
+							class="cache-service-card">
+							<h5>{{ service.name }}</h5>
 							<div class="service-stats">
 								<div class="service-stat">
 									<span class="stat-label">Entries:</span>
 									<span class="stat-value">{{
 										(
-											cacheStats.services.object.entries || 0
+											cacheStats.services[service.key].entries
+											|| 0
 										).toLocaleString()
 									}}</span>
 								</div>
@@ -132,13 +135,13 @@
 										:class="
 											getHitRateClass(
 												getServiceHitRate(
-													cacheStats.services.object,
+													cacheStats.services[service.key],
 												),
 											)
 										">
 										{{
 											getServiceHitRate(
-												cacheStats.services.object,
+												cacheStats.services[service.key],
 											).toFixed(1)
 										}}%
 									</span>
@@ -147,92 +150,8 @@
 									<span class="stat-label">Memory:</span>
 									<span class="stat-value">{{
 										formatBytes(
-											cacheStats.services.object.memoryUsage
-												|| 0,
-										)
-									}}</span>
-								</div>
-							</div>
-						</div>
-
-						<!-- Schema Cache -->
-						<div class="cache-service-card">
-							<h5>Schema Cache</h5>
-							<div class="service-stats">
-								<div class="service-stat">
-									<span class="stat-label">Entries:</span>
-									<span class="stat-value">{{
-										(
-											cacheStats.services.schema.entries || 0
-										).toLocaleString()
-									}}</span>
-								</div>
-								<div class="service-stat">
-									<span class="stat-label">Hit Rate:</span>
-									<span
-										class="stat-value"
-										:class="
-											getHitRateClass(
-												getServiceHitRate(
-													cacheStats.services.schema,
-												),
-											)
-										">
-										{{
-											getServiceHitRate(
-												cacheStats.services.schema,
-											).toFixed(1)
-										}}%
-									</span>
-								</div>
-								<div class="service-stat">
-									<span class="stat-label">Memory:</span>
-									<span class="stat-value">{{
-										formatBytes(
-											cacheStats.services.schema.memoryUsage
-												|| 0,
-										)
-									}}</span>
-								</div>
-							</div>
-						</div>
-
-						<!-- Facet Cache -->
-						<div class="cache-service-card">
-							<h5>Facet Cache</h5>
-							<div class="service-stats">
-								<div class="service-stat">
-									<span class="stat-label">Entries:</span>
-									<span class="stat-value">{{
-										(
-											cacheStats.services.facet.entries || 0
-										).toLocaleString()
-									}}</span>
-								</div>
-								<div class="service-stat">
-									<span class="stat-label">Hit Rate:</span>
-									<span
-										class="stat-value"
-										:class="
-											getHitRateClass(
-												getServiceHitRate(
-													cacheStats.services.facet,
-												),
-											)
-										">
-										{{
-											getServiceHitRate(
-												cacheStats.services.facet,
-											).toFixed(1)
-										}}%
-									</span>
-								</div>
-								<div class="service-stat">
-									<span class="stat-label">Memory:</span>
-									<span class="stat-value">{{
-										formatBytes(
-											cacheStats.services.facet.memoryUsage
-												|| 0,
+											cacheStats.services[service.key]
+												.memoryUsage || 0,
 										)
 									}}</span>
 								</div>
@@ -449,6 +368,16 @@ import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import ClearCacheDialog from '../../../dialogs/settings/ClearCacheDialog.vue'
 import { useSettingsStore } from '../../../store/settings.js'
 
+/**
+ * The cache services with a card of their own: the key of their statistics
+ * and the card title.
+ */
+const CACHE_SERVICES = [
+	{ key: 'object', name: 'Object Cache' },
+	{ key: 'schema', name: 'Schema Cache' },
+	{ key: 'facet', name: 'Facet Cache' },
+]
+
 export default {
 	name: 'CacheManagement',
 
@@ -464,6 +393,16 @@ export default {
 
 	computed: {
 		...mapStores(useSettingsStore),
+
+		/**
+		 * The cache services shown as a card, for display.
+		 *
+		 * @spec exclude UI plumbing — static card layout
+		 * @return {Array<object>}
+		 */
+		cacheServices() {
+			return CACHE_SERVICES
+		},
 
 		/**
 		 * Cache statistics from the settings store, for display.
@@ -1032,18 +971,6 @@ export default {
 
 	.cache-services-grid {
 		grid-template-columns: 1fr;
-	}
-
-	.section-header-inline {
-		position: static;
-		flex-direction: column;
-		gap: 12px;
-		align-items: stretch;
-		margin-bottom: 20px;
-	}
-
-	.button-group {
-		justify-content: center;
 	}
 }
 </style>

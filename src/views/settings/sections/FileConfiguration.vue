@@ -1103,6 +1103,54 @@ function extractionStatsOf(stats) {
 }
 
 /**
+ * The file types text can be extracted from, one row each: extension, label,
+ * icon, whether it is enabled by default, LLPhant support and whether Dolphin
+ * reads it with OCR.
+ */
+const FILE_TYPE_ROWS = [
+	// Text formats (LLPhant supported)
+	['txt', 'Text Files', '📝', true, 'yes', false],
+	['md', 'Markdown', '📋', true, 'yes', false],
+	['html', 'HTML Files', '🌐', true, 'yes', false],
+	['json', 'JSON Files', '📦', true, 'yes', false],
+	['xml', 'XML Files', '📰', true, 'yes', false],
+	['csv', 'CSV Files', '📊', true, 'yes', false],
+	// Document formats (LLPhant supported)
+	['pdf', 'PDF Documents', '📄', true, 'yes', true],
+	['docx', 'Word Documents', '📘', true, 'yes', false],
+	['doc', 'Word (Legacy)', '📘', true, 'yes', false],
+	['xlsx', 'Excel Spreadsheets', '📊', true, 'yes', false],
+	['xls', 'Excel (Legacy)', '📊', true, 'yes', false],
+	['pptx', 'PowerPoint', '📽️', false, 'yes', false],
+	// Image formats (Dolphin required for OCR)
+	['jpg', 'JPEG Images', '🖼️', false, 'none', true],
+	['jpeg', 'JPEG Images', '🖼️', false, 'none', true],
+	['png', 'PNG Images', '🖼️', false, 'none', true],
+	['gif', 'GIF Images', '🖼️', false, 'none', true],
+	['webp', 'WebP Images', '🖼️', false, 'none', true],
+	// Other formats
+	['odt', 'OpenDocument Text', '📄', false, 'yes', false],
+	['rtf', 'Rich Text Format', '📝', false, 'yes', false],
+]
+
+/**
+ * One row of FILE_TYPE_ROWS as the form edits it.
+ *
+ * @param {Array} row The row
+ * @return {object} The file type
+ */
+function toFileType(row) {
+	return {
+		extension: row[0],
+		label: row[1],
+		icon: row[2],
+		enabled: row[3],
+		llphantSupport: row[4],
+		dolphinOcr: row[5],
+	}
+}
+
+/**
  * The state every instance of this component starts from.
  */
 const INITIAL_STATE = {
@@ -1149,167 +1197,7 @@ const INITIAL_STATE = {
 		extractionMode: { id: 'background', label: 'Background Job' },
 	},
 
-	fileTypes: [
-		// Text formats (LLPhant supported)
-		{
-			extension: 'txt',
-			label: 'Text Files',
-			icon: '📝',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'md',
-			label: 'Markdown',
-			icon: '📋',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'html',
-			label: 'HTML Files',
-			icon: '🌐',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'json',
-			label: 'JSON Files',
-			icon: '📦',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'xml',
-			label: 'XML Files',
-			icon: '📰',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'csv',
-			label: 'CSV Files',
-			icon: '📊',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-
-		// Document formats (LLPhant supported)
-		{
-			extension: 'pdf',
-			label: 'PDF Documents',
-			icon: '📄',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: true,
-		},
-		{
-			extension: 'docx',
-			label: 'Word Documents',
-			icon: '📘',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'doc',
-			label: 'Word (Legacy)',
-			icon: '📘',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'xlsx',
-			label: 'Excel Spreadsheets',
-			icon: '📊',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'xls',
-			label: 'Excel (Legacy)',
-			icon: '📊',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'pptx',
-			label: 'PowerPoint',
-			icon: '📽️',
-			enabled: false,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-
-		// Image formats (Dolphin required for OCR)
-		{
-			extension: 'jpg',
-			label: 'JPEG Images',
-			icon: '🖼️',
-			enabled: false,
-			llphantSupport: 'none',
-			dolphinOcr: true,
-		},
-		{
-			extension: 'jpeg',
-			label: 'JPEG Images',
-			icon: '🖼️',
-			enabled: false,
-			llphantSupport: 'none',
-			dolphinOcr: true,
-		},
-		{
-			extension: 'png',
-			label: 'PNG Images',
-			icon: '🖼️',
-			enabled: false,
-			llphantSupport: 'none',
-			dolphinOcr: true,
-		},
-		{
-			extension: 'gif',
-			label: 'GIF Images',
-			icon: '🖼️',
-			enabled: false,
-			llphantSupport: 'none',
-			dolphinOcr: true,
-		},
-		{
-			extension: 'webp',
-			label: 'WebP Images',
-			icon: '🖼️',
-			enabled: false,
-			llphantSupport: 'none',
-			dolphinOcr: true,
-		},
-
-		// Other formats
-		{
-			extension: 'odt',
-			label: 'OpenDocument Text',
-			icon: '📄',
-			enabled: false,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'rtf',
-			label: 'Rich Text Format',
-			icon: '📝',
-			enabled: false,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-	],
+	fileTypes: FILE_TYPE_ROWS.map(toFileType),
 
 	textExtractors: [
 		{
@@ -2362,17 +2250,6 @@ export default {
 @include loading-icon;
 
 @media (max-width: 768px) {
-	.section-header-inline {
-		position: static;
-		margin-bottom: 1rem;
-		flex-direction: column;
-		align-items: stretch;
-	}
-
-	.button-group {
-		justify-content: center;
-	}
-
 	.file-types-grid {
 		grid-template-columns: 1fr;
 	}
