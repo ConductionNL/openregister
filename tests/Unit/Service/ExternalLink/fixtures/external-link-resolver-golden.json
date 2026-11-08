@@ -1,0 +1,168 @@
+{
+    "array value placeholder": [],
+    "blank description target": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        }
+    ],
+    "blank string placeholder": [],
+    "blank title": [],
+    "blank url": [],
+    "condition all must hold": [],
+    "condition bool expected": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        }
+    ],
+    "condition empty": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        }
+    ],
+    "condition empty list": [],
+    "condition expected trimmed": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        }
+    ],
+    "condition int expected": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        }
+    ],
+    "condition int key": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        }
+    ],
+    "condition int vs string": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        }
+    ],
+    "condition list": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        }
+    ],
+    "condition list miss": [],
+    "condition met": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        }
+    ],
+    "condition missing path": [],
+    "condition nested": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        }
+    ],
+    "condition null": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        }
+    ],
+    "condition null expected": [],
+    "condition scalar": [],
+    "condition unmet": [],
+    "description and target": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2",
+            "description": "Desc",
+            "target": "_blank"
+        }
+    ],
+    "encodes value": [
+        {
+            "title": "T",
+            "url": "https://x/?q=Jan%20%26%20Piet"
+        }
+    ],
+    "int float bool values": [
+        {
+            "title": "T",
+            "url": "https://x/3/1.5/true/false"
+        }
+    ],
+    "invalid placeholder syntax": [
+        {
+            "title": "T",
+            "url": "https://x/{1bad}/{ok-}"
+        }
+    ],
+    "max depth": [
+        {
+            "title": "T",
+            "url": "https://x/1"
+        }
+    ],
+    "missing placeholder": [],
+    "missing title": [],
+    "nested placeholder": [
+        {
+            "title": "T",
+            "url": "https://x/Utrecht/12"
+        }
+    ],
+    "no placeholders": [
+        {
+            "title": "T",
+            "url": "https://x/static"
+        }
+    ],
+    "non-array declaration": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        }
+    ],
+    "null value placeholder": [],
+    "numeric title": [
+        {
+            "title": "12",
+            "url": "https://x"
+        }
+    ],
+    "plain": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        }
+    ],
+    "repeated placeholder": [
+        {
+            "title": "T",
+            "url": "https://x/abc%201%2F2/abc%201%2F2"
+        }
+    ],
+    "scalar mid-path": [],
+    "several declarations": [
+        {
+            "title": "Kadaster",
+            "url": "https://k.example/abc%201%2F2"
+        },
+        {
+            "title": "C",
+            "url": "https://c/3"
+        }
+    ],
+    "too deep": [],
+    "trimmed title and url": [
+        {
+            "title": "T",
+            "url": "https://x/abc%201%2F2"
+        }
+    ]
+}
