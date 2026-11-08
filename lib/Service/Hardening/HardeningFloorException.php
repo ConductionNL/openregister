@@ -35,7 +35,7 @@ use RuntimeException;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class HardeningFloorException extends RuntimeException {
+class HardeningFloorException extends RuntimeException implements HardeningFloorExceptionInterface {
 
 	/**
 	 * Constructor.
