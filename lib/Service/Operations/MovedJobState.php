@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\JobRunMapperInterface;
  * When a job class moves, both follow it, so the schedule an administrator set
  * and the run history stay with the job.
  */
-class MovedJobState {
+class MovedJobState implements MovedJobStateInterface {
 
 	/**
 	 * Constructor.

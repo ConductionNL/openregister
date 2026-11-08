@@ -81,6 +81,8 @@ use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
+use OCA\OpenRegister\Service\Credential\DoriathCredentialKeys;
+use OCA\OpenRegister\Service\Credential\DoriathCredentialStore;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
@@ -88,6 +90,8 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
+use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
+use OCA\OpenRegister\Service\Export\Odt\OdtWriterInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeCatalogueInterface;
@@ -99,6 +103,8 @@ use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunSubjects;
+use OCA\OpenRegister\Service\Flow\FlowRunSubjectsInterface;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowService;
@@ -233,6 +239,8 @@ use OCA\OpenRegister\Service\Operations\JobScheduleService;
 use OCA\OpenRegister\Service\Operations\JobScheduleServiceInterface;
 use OCA\OpenRegister\Service\Operations\MaintenanceModeService;
 use OCA\OpenRegister\Service\Operations\MaintenanceModeServiceInterface;
+use OCA\OpenRegister\Service\Operations\MovedJobState;
+use OCA\OpenRegister\Service\Operations\MovedJobStateInterface;
 use OCA\OpenRegister\Service\Operations\OperationsJobsService;
 use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
 use OCA\OpenRegister\Service\Operations\SupportBundleService;
@@ -312,6 +320,10 @@ use OCA\OpenRegister\Service\Task\TaskSubjectLocator;
 use OCA\OpenRegister\Service\Task\TaskSubjectLocatorInterface;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
+use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
+use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
+use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
+use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategyInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
@@ -341,6 +353,12 @@ final class ContractBindings {
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		ApplicationServiceInterface::class => ApplicationService::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
+		DoriathCredentialKeys::class => DoriathCredentialStore::class,
+		OdtWriterInterface::class => OdtWriter::class,
+		FlowRunSubjectsInterface::class => FlowRunSubjects::class,
+		MovedJobStateInterface::class => MovedJobState::class,
+		FileVectorizationStrategyInterface::class => FileVectorizationStrategy::class,
+		ObjectVectorizationStrategyInterface::class => ObjectVectorizationStrategy::class,
 		AppSettingsInterface::class => SettingsService::class,
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		AwaitSignalNodeInterface::class => AwaitSignalNode::class,

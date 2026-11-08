@@ -31,6 +31,7 @@ namespace Unit\Repair;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Repair\SeedFlowRunTriggerSubject;
+use OCA\OpenRegister\Service\Flow\FlowRunSubjects;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -139,7 +140,8 @@ final class SeedFlowRunTriggerSubjectTest extends TestCase {
 
 		return new SeedFlowRunTriggerSubject(
 			$container,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			new FlowRunSubjects()
 		);
 	}//end step()
 
@@ -270,7 +272,7 @@ final class SeedFlowRunTriggerSubjectTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($mapperThrows);
 
-		(new SeedFlowRunTriggerSubject($container, $this->createMock(LoggerInterface::class)))
+		(new SeedFlowRunTriggerSubject($container, $this->createMock(LoggerInterface::class), new FlowRunSubjects()))
 			->run($this->upgradeOutput());
 
 		$this->assertCount(1, $this->stored, 'the run after the bad one is still seeded');
