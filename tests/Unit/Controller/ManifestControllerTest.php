@@ -79,7 +79,6 @@ class ManifestControllerTest extends TestCase {
 		$this->logger = $this->createMock(originalClassName: LoggerInterface::class);
 
 		$this->controller = ManifestControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->manifestService,
 			$this->appManager,
