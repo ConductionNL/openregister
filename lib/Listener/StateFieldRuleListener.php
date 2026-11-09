@@ -29,7 +29,6 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\Support\StateFieldVersion;
@@ -38,13 +37,11 @@ use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRulesInterface;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
-use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Listener\Support\StateFieldRulePlatform;
 
@@ -93,27 +90,6 @@ class StateFieldRuleListener implements IEventListener {
 	public const CODE_HIDDEN = 'state-field-hidden';
 
 	/**
-	 * Resolves the object's schema.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Records a refusal for the rule run log.
-	 *
-	 * @var RuleRunRecorderInterface
-	 */
-	private readonly RuleRunRecorderInterface $ruleRuns;
-
-	/**
-	 * PSR logger for lookup failures.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param StateFieldRulePlatform $platform Schema lookup, rule-run recorder and logger.
@@ -123,13 +99,11 @@ class StateFieldRuleListener implements IEventListener {
 	 * @return void
 	 */
 	public function __construct(
-		StateFieldRulePlatform $platform,
+		private readonly StateFieldRulePlatform $platform,
 		private readonly StateFieldRuleResolverInterface $resolver,
 		private readonly StateConditionEvaluatorInterface $stateConditions,
 	) {
-		$this->schemaMapper = $platform->schemaMapper;
-		$this->ruleRuns = $platform->ruleRuns;
-		$this->logger = $platform->logger;
+
 	}//end __construct()
 
 	/**
@@ -496,7 +470,7 @@ class StateFieldRuleListener implements IEventListener {
 		} catch (Throwable $e) {
 			// The run log is a courtesy on a decision already taken. Losing the
 			// row must never turn a refusal into a 500.
-			$this->logger->warning(sprintf('State field rule run could not be recorded: %s', $e->getMessage()));
+			$this->platform->logger->warning(sprintf('State field rule run could not be recorded: %s', $e->getMessage()));
 		}
 	}//end record()
 
@@ -514,7 +488,7 @@ class StateFieldRuleListener implements IEventListener {
 	private function recordRefusal(StateFieldSaveRun $run, array $refusal): void {
 		$slug = $run->slug();
 		$object = $run->newObject;
-		$this->ruleRuns->record(
+		$this->platform->ruleRuns->record(
 			subject: new RuleRunSubject(
 				ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_STATE_FIELD_RULE, schemaSlug: $slug, key: (string)$refusal['state']),
 				schemaSlug: $slug,
@@ -554,9 +528,9 @@ class StateFieldRuleListener implements IEventListener {
 		}
 
 		try {
-			return $this->schemaMapper->find($schemaRef, _multitenancy: false);
+			return $this->platform->schemaMapper->find($schemaRef, _multitenancy: false);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				sprintf('State field rule listener could not load schema "%s": %s', (string)$schemaRef, $e->getMessage())
 			);
 			return null;
