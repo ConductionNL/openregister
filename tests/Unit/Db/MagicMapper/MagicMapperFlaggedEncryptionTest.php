@@ -102,7 +102,7 @@ class MagicMapperFlaggedEncryptionTest extends TestCase {
 		$register->setId(3);
 		$method = new ReflectionMethod(MagicMapper::class, 'prepareObjectDataForTable');
 
-		return $method->invoke($mapper, ['bsn' => self::SECRET], $register, $schema);
+		return $method->invoke($mapper, ['bsn' => self::SECRET], new \OCA\OpenRegister\Db\RegisterSchema($register, $schema));
 	}//end prepare()
 
 	private function bulk(MagicMapper $mapper, array $rows, Schema $schema): void {
