@@ -118,10 +118,8 @@ class StateHistoryProjectionListener implements IEventListener {
 		}
 
 		$this->projector->record(
-			objectUuid: $uuid,
+			transition: $event,
 			schema: $this->resolveSchema(event: $event),
-			register: $event->getRegister(),
-			to: $event->getTo(),
 			stampedAt: new DateTime()
 		);
 	}//end project()

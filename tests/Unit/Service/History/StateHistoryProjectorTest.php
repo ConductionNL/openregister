@@ -17,10 +17,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\History;
 
 use DateTime;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\StateHistory;
 use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Service\History\StateHistoryProjector;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -90,10 +92,8 @@ class StateHistoryProjectorTest extends TestCase {
 
 		$this->assertTrue(
 			$this->projector->record(
-				objectUuid: 'uuid-1',
+				transition: $this->transition(uuid: 'uuid-1', register: 'zaken', to: 'bezwaar'),
 				schema: $schema,
-				register: 'zaken',
-				to: 'bezwaar',
 				stampedAt: $at
 			)
 		);
@@ -118,10 +118,8 @@ class StateHistoryProjectorTest extends TestCase {
 
 		$this->assertFalse(
 			$this->projector->record(
-				objectUuid: 'uuid-1',
+				transition: $this->transition(uuid: 'uuid-1', register: 'zaken', to: 'bezwaar'),
 				schema: $this->schema(['x-openregister-something-else' => ['field' => 'status']]),
-				register: 'zaken',
-				to: 'bezwaar',
 				stampedAt: new DateTime()
 			)
 		);
@@ -137,10 +135,8 @@ class StateHistoryProjectorTest extends TestCase {
 
 		$this->assertFalse(
 			$this->projector->record(
-				objectUuid: 'uuid-1',
+				transition: $this->transition(uuid: 'uuid-1', register: 'zaken', to: 'bezwaar'),
 				schema: null,
-				register: 'zaken',
-				to: 'bezwaar',
 				stampedAt: new DateTime()
 			)
 		);
@@ -180,4 +176,19 @@ class StateHistoryProjectorTest extends TestCase {
 
 		$this->assertSame([], $this->projector->projectedProperties());
 	}//end testAFailingSchemaLookupAnswersNoProjectedProperties()
+
+	/**
+	 * A transition of one object into a state.
+	 *
+	 * @param string $uuid     The object uuid.
+	 * @param string $register The register slug.
+	 * @param string $to       The target state.
+	 *
+	 * @return ObjectTransitionedEvent
+	 */
+	private function transition(string $uuid, string $register, string $to): ObjectTransitionedEvent {
+		$object = new ObjectEntity();
+		$object->setUuid($uuid);
+		return new ObjectTransitionedEvent($object, 'move', 'open', $to, null, $register, 'zaak');
+	}//end transition()
 }//end class
