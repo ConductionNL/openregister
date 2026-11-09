@@ -217,7 +217,6 @@ class TimelineEntriesControllerGoldenTest extends TestCase
         );
 
         return TimelineEntriesControllerFactory::create(
-            'openregister',
             $request,
             $objects,
             $entries,

@@ -10,6 +10,7 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
+use OCA\OpenRegister\Mcp\ToolScanSubject;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
@@ -118,7 +119,7 @@ class AttributeToolScannerScanClassGoldenTest extends TestCase {
 			}
 		};
 
-		$descriptors = (new AttributeToolScanner())->scanClass(appId: 'demo', className: $className, logger: $logger);
+		$descriptors = (new AttributeToolScanner())->scanClass(subject: new ToolScanSubject(appId: 'demo', className: $className, logger: $logger));
 		$actual = json_decode(json_encode(['descriptors' => $descriptors, 'log' => $trace]), true);
 
 		$name = $this->dataName();

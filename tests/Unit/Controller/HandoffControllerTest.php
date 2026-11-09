@@ -50,10 +50,11 @@ class HandoffControllerTest extends TestCase {
 	protected function setUp(): void {
 		$this->handoffService = $this->createMock(HandoffService::class);
 		$this->controller = new HandoffController(
-			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
-			handoffService: $this->handoffService,
-			logger: $this->createMock(LoggerInterface::class),
+			services: new \OCA\OpenRegister\Controller\Support\HandoffControllerServices(
+				handoffService: $this->handoffService,
+				logger: $this->createMock(LoggerInterface::class),
+			)
 		);
 
 	}//end setUp()
