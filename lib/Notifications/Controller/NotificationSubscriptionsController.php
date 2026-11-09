@@ -153,7 +153,7 @@ class NotificationSubscriptionsController extends Controller {
 			return $refusal;
 		}
 
-		return $this->subscribe(userId: $userId, registerId: $registerId, schemaId: $schemaId);
+		return $this->subscribe(registerId: $registerId, schemaId: $schemaId);
 	}//end create()
 
 	/**
@@ -204,15 +204,16 @@ class NotificationSubscriptionsController extends Controller {
 	/**
 	 * Subscribe the caller, answering 422 when the mapper refuses the scope.
 	 *
-	 * @param string   $userId     The caller.
+	 * The caller is the signed-in user; create() has already refused anyone else.
+	 *
 	 * @param int|null $registerId The register, or null.
 	 * @param int|null $schemaId   The schema, or null.
 	 *
 	 * @return JSONResponse The subscription, or a 422.
 	 */
-	private function subscribe(string $userId, ?int $registerId, ?int $schemaId): JSONResponse {
+	private function subscribe(?int $registerId, ?int $schemaId): JSONResponse {
 		try {
-			$entity = $this->mapper->subscribe(userId: $userId, registerId: $registerId, schemaId: $schemaId);
+			$entity = $this->mapper->subscribe(userId: (string)$this->resolveUserId(), registerId: $registerId, schemaId: $schemaId);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
