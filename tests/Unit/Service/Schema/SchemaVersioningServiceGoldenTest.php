@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 
+use OCA\OpenRegister\Service\Schema\SchemaRunStores;
+use OCA\OpenRegister\Service\Schema\SchemaVersionStores;
 use DateTime;
 use OCA\OpenRegister\Db\SchemaChangelog;
 use OCA\OpenRegister\Db\OutcomeFilter;
@@ -64,9 +66,7 @@ class SchemaVersioningServiceGoldenTest extends TestCase {
 
 		$this->service = new SchemaVersioningService(
 			new SchemaDiffService(),
-			$this->changelogMapper,
-			$this->runMapper,
-			$this->runEntryMapper,
+			new SchemaVersionStores($this->changelogMapper, new SchemaRunStores($this->runMapper, $this->runEntryMapper)),
 			$userSession,
 			$this->logger
 		);

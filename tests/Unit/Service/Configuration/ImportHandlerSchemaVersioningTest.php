@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Service\Schema\SchemaRunStores;
+use OCA\OpenRegister\Service\Schema\SchemaVersionStores;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -103,9 +105,7 @@ class ImportHandlerSchemaVersioningTest extends TestCase {
 		$handler->setSchemaVersioning(
 			new SchemaVersioningService(
 				diffService: new SchemaDiffService(),
-				changelogMapper: $this->changelogMapper,
-				runMapper: $this->createMock(SchemaRunMapper::class),
-				runEntryMapper: $this->createMock(SchemaRunEntryMapper::class),
+				stores: new SchemaVersionStores($this->changelogMapper, new SchemaRunStores($this->createMock(SchemaRunMapper::class), $this->createMock(SchemaRunEntryMapper::class))),
 				userSession: $this->createMock(IUserSession::class),
 				logger: $this->logger
 			)

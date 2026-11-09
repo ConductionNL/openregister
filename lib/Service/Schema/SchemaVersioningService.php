@@ -57,24 +57,43 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaVersioningService {
 	/**
+	 * Changelog persistence.
+	 *
+	 * @var SchemaChangelogMapperInterface
+	 */
+	private readonly SchemaChangelogMapperInterface $changelogMapper;
+
+	/**
+	 * Run persistence (for invalid counts).
+	 *
+	 * @var SchemaRunMapperInterface
+	 */
+	private readonly SchemaRunMapperInterface $runMapper;
+
+	/**
+	 * Per-object run entries.
+	 *
+	 * @var SchemaRunEntryMapperInterface
+	 */
+	private readonly SchemaRunEntryMapperInterface $runEntryMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SchemaDiffService $diffService Pure diff/classification.
-	 * @param SchemaChangelogMapperInterface $changelogMapper Changelog persistence.
-	 * @param SchemaRunMapperInterface $runMapper Run persistence (for invalid counts).
-	 * @param SchemaRunEntryMapperInterface $runEntryMapper Per-object run entries.
-	 * @param IUserSession $userSession Current user resolution.
-	 * @param LoggerInterface $logger Logger.
+	 * @param SchemaDiffService   $diffService Pure diff/classification.
+	 * @param SchemaVersionStores $stores      Changelog and run persistence.
+	 * @param IUserSession        $userSession Current user resolution.
+	 * @param LoggerInterface     $logger      Logger.
 	 */
 	public function __construct(
 		private readonly SchemaDiffService $diffService,
-		private readonly SchemaChangelogMapperInterface $changelogMapper,
-		private readonly SchemaRunMapperInterface $runMapper,
-		private readonly SchemaRunEntryMapperInterface $runEntryMapper,
+		SchemaVersionStores $stores,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->changelogMapper = $stores->changelogMapper;
+		$this->runMapper       = $stores->runs->runMapper;
+		$this->runEntryMapper  = $stores->runs->runEntryMapper;
 	}//end __construct()
 
 	/**

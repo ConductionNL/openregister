@@ -70,24 +70,51 @@ class SchemaRevalidationService {
 	private const MAX_ERRORS_PER_OBJECT = 25;
 
 	/**
+	 * Run persistence.
+	 *
+	 * @var SchemaRunMapperInterface
+	 */
+	private readonly SchemaRunMapperInterface $runMapper;
+
+	/**
+	 * Per-object run entries.
+	 *
+	 * @var SchemaRunEntryMapperInterface
+	 */
+	private readonly SchemaRunEntryMapperInterface $runEntryMapper;
+
+	/**
+	 * Object read/save pipeline.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Single write-path validator.
+	 *
+	 * @var ObjectValidatorInterface
+	 */
+	private readonly ObjectValidatorInterface $validateObject;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SchemaRunMapperInterface $runMapper Run persistence.
-	 * @param SchemaRunEntryMapperInterface $runEntryMapper Per-object run entries.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
-	 * @param ObjectOperationsInterface $objectService Object read/save pipeline.
-	 * @param ObjectValidatorInterface $validateObject Single write-path validator.
-	 * @param LoggerInterface $logger Logger.
+	 * @param SchemaRunStores          $runs         Run persistence and per-object run entries.
+	 * @param SchemaMapperInterface    $schemaMapper Schema lookup.
+	 * @param ObjectValidationPipeline $objects      Object read/save pipeline and its validator.
+	 * @param LoggerInterface          $logger       Logger.
 	 */
 	public function __construct(
-		private readonly SchemaRunMapperInterface $runMapper,
-		private readonly SchemaRunEntryMapperInterface $runEntryMapper,
+		SchemaRunStores $runs,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly ObjectValidatorInterface $validateObject,
+		ObjectValidationPipeline $objects,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->runMapper      = $runs->runMapper;
+		$this->runEntryMapper = $runs->runEntryMapper;
+		$this->objectService  = $objects->objectService;
+		$this->validateObject = $objects->validateObject;
 	}//end __construct()
 
 	/**

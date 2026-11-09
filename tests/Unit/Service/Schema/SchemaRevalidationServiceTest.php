@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 
+use OCA\OpenRegister\Service\Schema\SchemaRunStores;
+use OCA\OpenRegister\Service\Schema\ObjectValidationPipeline;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -80,11 +82,9 @@ class SchemaRevalidationServiceTest extends TestCase {
 		$this->validator      = $this->createMock(ValidateObjectInterface::class);
 
 		$this->service = new SchemaRevalidationService(
-			$this->runMapper,
-			$this->runEntryMapper,
+			new SchemaRunStores($this->runMapper, $this->runEntryMapper),
 			$this->schemaMapper,
-			$this->objectService,
-			$this->validator,
+			new ObjectValidationPipeline($this->objectService, $this->validator),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()

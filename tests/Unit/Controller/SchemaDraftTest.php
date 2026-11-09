@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Service\Schema\SchemaRunStores;
+use OCA\OpenRegister\Service\Schema\SchemaVersionStores;
 use OCA\OpenRegister\Controller\SchemasController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -122,9 +124,7 @@ class SchemaDraftTest extends TestCase {
 
 		$versioning = new SchemaVersioningService(
 			new SchemaDiffService(),
-			$this->changelogMapper,
-			$this->createMock(SchemaRunMapper::class),
-			$this->createMock(SchemaRunEntryMapper::class),
+			new SchemaVersionStores($this->changelogMapper, new SchemaRunStores($this->createMock(SchemaRunMapper::class), $this->createMock(SchemaRunEntryMapper::class))),
 			$userSession,
 			$this->createMock(LoggerInterface::class)
 		);
