@@ -179,8 +179,8 @@ class SecuritySettingRegistry {
 	public function snapshot(): array {
 		$blobs = [];
 		$values = [];
-		foreach (self::SETTINGS as $path => $definition) {
-			$values[$path] = $this->read(path: $path, definition: $definition, blobs: $blobs);
+		foreach (array_keys(self::SETTINGS) as $path) {
+			$values[$path] = $this->read(path: $path, blobs: $blobs);
 		}
 
 		return $values;
@@ -189,24 +189,23 @@ class SecuritySettingRegistry {
 	/**
 	 * Read one marked setting.
 	 *
-	 * @param string                                                        $path       The setting path.
-	 * @param array{label: string, default: mixed, secret: bool, type: string} $definition Its registry entry.
-	 * @param array<string, array<mixed>>                                   $blobs      Decoded blobs, cached per snapshot. `json_decode`
-	 *                                                                                  answers an array whose keys it read from the
-	 *                                                                                  document, so the inner shape is not narrower
-	 *                                                                                  than this and claiming it was is what the
-	 *                                                                                  by-ref check caught.
+	 * @param string                      $path  The setting path, a key of SETTINGS.
+	 * @param array<string, array<mixed>> $blobs Decoded blobs, cached per snapshot. `json_decode`
+	 *                                           answers an array whose keys it read from the
+	 *                                           document, so the inner shape is not narrower
+	 *                                           than this and claiming it was is what the
+	 *                                           by-ref check caught.
 	 *
 	 * @return mixed The stored value, or the default.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function read(string $path, array $definition, array &$blobs): mixed {
-		$default = $definition['default'];
+	private function read(string $path, array &$blobs): mixed {
+		$default = self::SETTINGS[$path]['default'];
 
 		try {
 			if (str_starts_with($path, '@') === true) {
-				return $this->readKey(key: substr($path, 1), type: $definition['type'], default: $default);
+				return $this->readKey(path: $path);
 			}
 
 			[$blob, $field] = explode('.', $path, 2);
@@ -227,16 +226,16 @@ class SecuritySettingRegistry {
 	/**
 	 * Read a setting stored under its own key.
 	 *
-	 * @param string $key     The app config key.
-	 * @param string $type    `bool` or `string`.
-	 * @param mixed  $default The default value.
+	 * @param string $path The setting path: `@` and the app config key, a key of SETTINGS.
 	 *
 	 * @return mixed The stored value.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function readKey(string $key, string $type, mixed $default): mixed {
-		if ($type === 'bool') {
+	private function readKey(string $path): mixed {
+		$key = substr($path, 1);
+		$default = self::SETTINGS[$path]['default'];
+		if (self::SETTINGS[$path]['type'] === 'bool') {
 			return $this->appConfig->getValueBool(self::APP, $key, (bool)$default);
 		}
 
