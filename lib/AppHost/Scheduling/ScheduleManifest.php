@@ -79,7 +79,11 @@ final class ScheduleManifest {
 	 */
 	private static function parse(mixed $raw, ?CronScheduleEvaluator $cron): array {
 		$parsed = ['schedules' => [], 'diagnostics' => []];
-		foreach ((is_array($raw) === true ? $raw : []) as $index => $entry) {
+		if (is_array($raw) === false) {
+			return $parsed;
+		}
+
+		foreach ($raw as $index => $entry) {
 			$result = self::checkCron(result: self::descriptor(entry: $entry, index: (int)$index), cron: $cron);
 			if (is_string($result) === true) {
 				$parsed['diagnostics'][] = $result;
