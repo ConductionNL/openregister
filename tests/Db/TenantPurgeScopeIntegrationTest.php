@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Db;
 
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\TenantPurgeJob;
 use OCA\OpenRegister\Db\Organisation;
@@ -21,7 +23,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\BackgroundJob\Support\TenantPurgeStores;
+use OCA\OpenRegister\BackgroundJob\TenantRecords;
 
 /**
  * What a purge deletes, against a real database.
@@ -203,10 +205,8 @@ class TenantPurgeScopeIntegrationTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn('90');
 
 		$job = new TenantPurgeJob(
-			$this->createMock(ITimeFactory::class),
-			new TenantPurgeStores($mapper, $this->usage),
-			$appConfig,
-			$this->createMock(LoggerInterface::class)
+			new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $this->createMock(LoggerInterface::class)),
+			new TenantRecords($mapper, $this->usage, $this->createMock(TenantLifecycleServiceInterface::class))
 		);
 
 		// Protected methods are invokable through reflection since PHP 8.1.

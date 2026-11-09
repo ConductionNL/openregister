@@ -9,6 +9,11 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
+use OCA\OpenRegister\Db\TenantUsageMapperInterface;
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
+use OCA\OpenRegister\BackgroundJob\TenantRecords;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\TenantDeprovisionJob;
 use OCA\OpenRegister\BackgroundJob\TenantPurgeJob;
@@ -22,7 +27,6 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
-use OCA\OpenRegister\BackgroundJob\Support\TenantPurgeStores;
 
 /**
  * What the three tenant background jobs consider a tenant.
@@ -113,10 +117,8 @@ class TenantJobsScopeTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn('30');
 
 		$job = new TenantPurgeJob(
-			$this->createMock(ITimeFactory::class),
-			new TenantPurgeStores($mapper, $this->createMock(TenantUsageMapper::class)),
-			$appConfig,
-			$this->createMock(LoggerInterface::class)
+			new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $this->createMock(LoggerInterface::class)),
+			new TenantRecords($mapper, $this->createMock(TenantUsageMapper::class), $this->createMock(TenantLifecycleServiceInterface::class))
 		);
 
 		$this->runJob($job);
@@ -148,10 +150,8 @@ class TenantJobsScopeTest extends TestCase {
 
 		$this->runJob(
 			new TenantPurgeJob(
-				$this->createMock(ITimeFactory::class),
-				new TenantPurgeStores($mapper, $this->createMock(TenantUsageMapper::class)),
-				$appConfig,
-				$this->createMock(LoggerInterface::class)
+				new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $this->createMock(LoggerInterface::class)),
+				new TenantRecords($mapper, $this->createMock(TenantUsageMapper::class), $this->createMock(TenantLifecycleServiceInterface::class))
 			)
 		);
 
@@ -183,10 +183,8 @@ class TenantJobsScopeTest extends TestCase {
 
 		$this->runJob(
 			new TenantPurgeJob(
-				$this->createMock(ITimeFactory::class),
-				new TenantPurgeStores($mapper, $this->createMock(TenantUsageMapper::class)),
-				$appConfig,
-				$this->createMock(LoggerInterface::class)
+				new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $this->createMock(LoggerInterface::class)),
+				new TenantRecords($mapper, $this->createMock(TenantUsageMapper::class), $this->createMock(TenantLifecycleServiceInterface::class))
 			)
 		);
 
@@ -231,10 +229,8 @@ class TenantJobsScopeTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn('30');
 
 		return new TenantPurgeJob(
-			$this->createMock(ITimeFactory::class),
-			new TenantPurgeStores($mapper, $usage),
-			$appConfig,
-			$this->createMock(LoggerInterface::class)
+			new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $this->createMock(LoggerInterface::class)),
+			new TenantRecords($mapper, $usage, $this->createMock(TenantLifecycleServiceInterface::class))
 		);
 
 	}//end purgeJobOver()
@@ -335,10 +331,8 @@ class TenantJobsScopeTest extends TestCase {
 
 		$this->runJob(
 			new TenantDeprovisionJob(
-				$this->createMock(ITimeFactory::class),
-				$mapper,
-				$this->createMock(TenantLifecycleService::class),
-				$this->createMock(LoggerInterface::class),
+				new JobRuntime($this->createMock(ITimeFactory::class), $this->createMock(LoggerInterface::class)),
+				new TenantRecords($mapper, $this->createMock(TenantUsageMapperInterface::class), $this->createMock(TenantLifecycleService::class)),
 			)
 		);
 
@@ -366,10 +360,8 @@ class TenantJobsScopeTest extends TestCase {
 
 		$this->runJob(
 			new TenantUsageSyncJob(
-				$this->createMock(ITimeFactory::class),
-				$mapper,
-				$this->createMock(TenantUsageMapper::class),
-				$this->createMock(LoggerInterface::class),
+				new JobRuntime($this->createMock(ITimeFactory::class), $this->createMock(LoggerInterface::class)),
+				new TenantRecords($mapper, $this->createMock(TenantUsageMapper::class), $this->createMock(TenantLifecycleServiceInterface::class)),
 			)
 		);
 

@@ -20,6 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Db\TenantUsageMapperInterface;
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
+use OCA\OpenRegister\BackgroundJob\TenantRecords;
 use OCA\OpenRegister\BackgroundJob\TenantDeprovisionJob;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
@@ -67,7 +70,7 @@ class TenantDeprovisionJobBehaviourTest extends TestCase {
 			);
 		}
 
-		$this->job = new TenantDeprovisionJob($this->createMock(ITimeFactory::class), $this->mapper, $this->lifecycle, $logger);
+		$this->job = new TenantDeprovisionJob(new JobRuntime($this->createMock(ITimeFactory::class), $logger), new TenantRecords($this->mapper, $this->createMock(TenantUsageMapperInterface::class), $this->lifecycle));
 	}
 
 	private function runJob(): void {

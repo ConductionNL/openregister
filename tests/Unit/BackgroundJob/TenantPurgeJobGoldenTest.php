@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\BackgroundJob\TenantPurgeJob;
@@ -41,7 +43,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
-use OCA\OpenRegister\BackgroundJob\Support\TenantPurgeStores;
+use OCA\OpenRegister\BackgroundJob\TenantRecords;
 
 /**
  * Golden outcomes of the tenant purge, allowed and refused.
@@ -145,7 +147,7 @@ class TenantPurgeJobGoldenTest extends TestCase {
 			);
 		}
 
-		$job = new TenantPurgeJob($this->createMock(ITimeFactory::class), new TenantPurgeStores($mapper, $usage), $appConfig, $logger);
+		$job = new TenantPurgeJob(new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $logger), new TenantRecords($mapper, $usage, $this->createMock(TenantLifecycleServiceInterface::class)));
 		$run = new ReflectionMethod($job, 'run');
 		$run->setAccessible(true);
 		$run->invoke($job, null);

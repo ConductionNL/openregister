@@ -35,11 +35,9 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\BackgroundJob\Support\TenantPurgeStores;
 
 /**
  * Purges archived organisations after retention period.
@@ -67,22 +65,34 @@ class TenantPurgeJob extends TimedJob {
 	private readonly TenantUsageMapperInterface $tenantUsageMapper;
 
 	/**
+	 * App config, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor
 	 *
-	 * @param ITimeFactory $time Time factory
-	 * @param TenantPurgeStores $stores Organisations and their usage rows.
-	 * @param IAppConfig $appConfig App config
-	 * @param LoggerInterface $logger Logger
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
+	 * @param TenantRecords        $tenants The organisations and their usage rows.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		TenantPurgeStores $stores,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
+		ConfiguredJobRuntime $runtime,
+		TenantRecords $tenants,
 	) {
-		$this->organisationMapper = $stores->organisationMapper;
-		$this->tenantUsageMapper = $stores->tenantUsageMapper;
-		parent::__construct(time: $time);
+		$this->appConfig = $runtime->appConfig;
+		$this->logger = $runtime->logger;
+		$this->organisationMapper = $tenants->organisationMapper;
+		$this->tenantUsageMapper = $tenants->tenantUsageMapper;
+		parent::__construct(time: $runtime->time);
 		// Run daily.
 		$this->setInterval(seconds: 86400);
 	}//end __construct()
