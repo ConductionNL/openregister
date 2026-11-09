@@ -1,8 +1,9 @@
 <?php
 
 /**
- * TalkGateway: the user-scoped room lookup of a current Talk manager, its fallback
- * to the raw token lookup, and the no-op paths when Talk's classes are absent.
+ * TalkGateway: the user-scoped room lookup of a current Talk manager and its
+ * fallback to the raw token lookup. Paths that resolve Talk services depend on
+ * whether the Talk app is installed, so they are not asserted here.
  *
  * TalkGatewayTest covers a disabled Talk and an old manager with the raw lookup only.
  *
@@ -87,15 +88,5 @@ class TalkGatewayUserScopedLookupTest extends TestCase {
 
 		$this->assertEquals((object)['token' => 'not-a-member', 'for' => null], $room);
 		$this->assertSame(['user:not-a-member:bob', 'raw:not-a-member'], $manager->calls);
-	}
-
-	public function testAnEnabledTalkWithoutItsClassesHasNoManagerAndTheContainerIsNotAsked(): void {
-		$container = $this->createMock(ContainerInterface::class);
-		$container->expects($this->never())->method('get');
-		$gateway = $this->gateway($container);
-
-		$this->assertTrue($gateway->isAvailable());
-		$this->assertNull($gateway->manager());
-		$this->assertNull($gateway->participantService());
 	}
 }
