@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Db;
 /**
  * Builds the execution and failure values {@see SyncRecordMapperInterface}
  * takes, so callers outside lib/Db do not construct them by name.
+ *
+ * @spec openspec/specs/data-sync-harvesting/spec.md
  */
 final class SyncRecordInputs {
 
@@ -37,6 +39,8 @@ final class SyncRecordInputs {
 	 * @param string $executionId Unique id of this run.
 	 *
 	 * @return SyncExecution The execution.
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public static function execution(Source $source, string $executionId): SyncExecution {
 		return new SyncExecution(source: $source, executionId: $executionId);
@@ -49,6 +53,8 @@ final class SyncRecordInputs {
 	 * @param string $message The error message.
 	 *
 	 * @return SyncFailure The failure.
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public static function failure(string $status, string $message): SyncFailure {
 		return new SyncFailure(status: $status, message: $message);

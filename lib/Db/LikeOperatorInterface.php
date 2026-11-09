@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Db;
  * The `like` filter key and the SQL it builds for a list of terms.
  *
  * Callers outside lib/Db get an instance from {@see LikeOperators::forPlatform()}.
+ *
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
  */
 interface LikeOperatorInterface {
 
@@ -42,6 +44,8 @@ interface LikeOperatorInterface {
 	 * @param mixed $value The value under the `like` key.
 	 *
 	 * @return array<int, string> The non-empty terms.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	public function terms(mixed $value): array;
 
@@ -51,6 +55,8 @@ interface LikeOperatorInterface {
 	 * @param string $term The user's search term.
 	 *
 	 * @return string The pattern, to bind as a parameter.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	public function pattern(string $term): string;
 
@@ -61,6 +67,8 @@ interface LikeOperatorInterface {
 	 * @param array<int, string> $patternSqls The patterns as SQL (placeholders or quoted literals).
 	 *
 	 * @return string|null The SQL condition, or null when there is nothing to match.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	public function anyCondition(string $column, array $patternSqls): ?string;
 }//end interface

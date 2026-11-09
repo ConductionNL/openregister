@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Db;
 /**
  * Builds the `like` operator for a database platform, so callers outside
  * lib/Db depend on {@see LikeOperatorInterface} only.
+ *
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
  */
 final class LikeOperators {
 
@@ -36,6 +38,8 @@ final class LikeOperators {
 	 * @param object $databasePlatform A Doctrine platform, from IDBConnection or a DBAL connection.
 	 *
 	 * @return LikeOperatorInterface The operator.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	public static function forPlatform(object $databasePlatform): LikeOperatorInterface {
 		return new LikeOperator(databasePlatform: $databasePlatform);
