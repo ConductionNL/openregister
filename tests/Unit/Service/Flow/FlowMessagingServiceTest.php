@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
+use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityFactory;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
@@ -392,6 +393,25 @@ class FlowMessagingServiceTest extends TestCase {
 		self::assertSame([['channel' => 'talk', 'to' => ['abc123'], 'subject' => '', 'body' => 'News on Case 7']], $messages);
 		self::assertSame([], $this->talkSender->posts);
 	}//end testTalkPreviewNamesTheConversationAndPostsNothing()
+
+	/**
+	 * The MessageSend preview composes exactly what the four-argument preview composes.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 *
+	 * @return void
+	 */
+	public function testPreviewFromAMessageSendMatchesThePreviewFromItsParts(): void {
+		$config = ['recipients' => ['bob'], 'subject' => 'About {{ name }}', 'body' => 'Hello'];
+		$items  = $this->itemsOf(['name' => 'Case 7']);
+
+		$messages = $this->makeService()->preview(
+			channel: 'email',
+			step: new MessageSend(config: $config, items: $items, context: $this->contextFor())
+		);
+
+		self::assertSame([['channel' => 'email', 'to' => ['bob'], 'subject' => 'About Case 7', 'body' => 'Hello']], $messages);
+	}//end testPreviewFromAMessageSendMatchesThePreviewFromItsParts()
 
 	// ---- Attribution -------------------------------------------------------
 
