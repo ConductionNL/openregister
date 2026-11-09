@@ -1384,6 +1384,10 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		// Should still return results from regex fallback.
 		$this->assertIsArray($entities);
+		$this->assertCount(1, $entities);
+		$this->assertSame('EMAIL', $entities[0]['type']);
+		$this->assertSame('user@test.com', $entities[0]['value']);
+		$this->assertSame([8, 21], [$entities[0]['position_start'], $entities[0]['position_end']]);
 	}
 
 	// =========================================================================
@@ -1399,6 +1403,10 @@ class EntityRecognitionHandlerTest extends TestCase {
 		]);
 
 		$this->assertIsArray($entities);
+		$this->assertCount(1, $entities);
+		$this->assertSame('EMAIL', $entities[0]['type']);
+		$this->assertSame('user@test.com', $entities[0]['value']);
+		$this->assertSame([8, 21], [$entities[0]['position_start'], $entities[0]['position_end']]);
 	}
 
 	// =========================================================================
@@ -1749,6 +1757,10 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		// Since curl will fail in test environment, it falls back to regex.
 		$this->assertIsArray($result);
+		$this->assertCount(1, $result);
+		$this->assertSame('EMAIL', $result[0]['type']);
+		$this->assertSame('test@example.com', $result[0]['value']);
+		$this->assertSame([0, 16], [$result[0]['position_start'], $result[0]['position_end']]);
 	}
 
 	// =========================================================================
