@@ -565,11 +565,7 @@ import ReferencedByTab from '../../components/object-relations/ReferencedByTab.v
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
-import {
-	formatFileSize,
-	openFile,
-	openFolder,
-} from '../../composables/nextcloudFiles.js'
+import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { navigationStore, objectStore } from '../../store/store.js'
 
 export default {
@@ -1219,9 +1215,9 @@ export default {
 			this.getRelations()
 		},
 
-		openFolder,
-		openFile,
-		formatFileSize,
+		openFolder: nextcloudFiles.openFolder,
+		openFile: nextcloudFiles.openFile,
+		formatFileSize: nextcloudFiles.formatFileSize,
 	},
 }
 </script>

@@ -286,7 +286,7 @@ import Minus from 'vue-material-design-icons/Minus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TagEdit from 'vue-material-design-icons/TagEdit.vue'
 import UploadNotice from './UploadNotice.vue'
-import { openFolder } from '../../composables/nextcloudFiles.js'
+import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { useFileSelection } from './../../composables/UseFileSelection.js'
 
 const dropzone = ref(null)
@@ -522,7 +522,7 @@ export default {
 			this.labelOptionsEdit.options = Array.from(new Set(tags))
 		},
 
-		openFolder,
+		openFolder: nextcloudFiles.openFolder,
 
 		/**
 		 * @param {File} file

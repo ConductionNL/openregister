@@ -2,6 +2,9 @@
  * Links into the Nextcloud Files app and file-size formatting, shared by the
  * views and modals that show an object's folder and attachments. Plain
  * functions: list them in a component's `methods` to use them in a template.
+ * Import the module as a namespace (`import * as nextcloudFiles`): in an SFC
+ * that also has <script setup>, a named import with the same name as the
+ * method shadows it in the dev/test template build.
  *
  * @spec exclude UI plumbing — opens the Nextcloud Files app in a new tab; pure presentation helper
  * @license EUPL-1.2
