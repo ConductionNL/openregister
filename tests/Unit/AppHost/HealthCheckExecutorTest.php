@@ -24,6 +24,8 @@ use OCA\OpenRegister\AppHost\Observability\HealthCheckDescriptor;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckTarget;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityManifest;
+use OCA\OpenRegister\AppHost\Observability\HealthResponsePolicy;
+use OCA\OpenRegister\AppHost\Observability\ObservabilityProbes;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
 use OCP\DB\IResult;
@@ -88,7 +90,7 @@ class HealthCheckExecutorTest extends TestCase {
 	}
 
 	private function manifest(array $checks, string $policy = ObservabilityManifest::POLICY_ADR006): ObservabilityManifest {
-		return new ObservabilityManifest('myapp', $checks, [], $policy);
+		return new ObservabilityManifest('myapp', new ObservabilityProbes($checks, []), new HealthResponsePolicy($policy));
 	}
 
 	public function testDatabaseCheckPasses(): void {
