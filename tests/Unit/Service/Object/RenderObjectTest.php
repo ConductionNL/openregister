@@ -3553,7 +3553,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['@self.register', '@self.schema'];
 
 		$result = $this->invokePrivate('extendObject', [
-			$entity, $objectData, new RenderContext($extend, 0, [], [], [], null, null, null, [], true),
+			$entity, $objectData, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true),
 		]);
 
 		$this->assertArrayHasKey('@self', $result);
@@ -3581,7 +3581,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['ref'];
 
 		$result = $this->invokePrivate('extendObject', [
-			$entity, $objectData, new RenderContext($extend, 0, [], [], [], null, null, null, [], true),
+			$entity, $objectData, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true),
 		]);
 
 		// ref should be extended to the full object.
@@ -3609,7 +3609,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['all'];
 
 		$result = $this->invokePrivate('extendObject', [
-			$entity, $objectData, new RenderContext($extend, 0, [], [], [], null, null, null, [], true),
+			$entity, $objectData, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true),
 		]);
 
 		$this->assertIsArray($result);

@@ -2200,8 +2200,8 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		$context = new RenderContext(
-			$_extend, $depth, $filter, self::withIdentityFields(fields: $fields), $unset,
-			$registers, $schemas, $objects, self::withVisitedId(entity: $entity, visitedIds: $visitedIds), $_rbac
+			new RenderSelection($_extend, $filter, self::withIdentityFields(fields: $fields), $unset), new RenderPreloads($registers, $schemas, $objects),
+			new RenderPath($depth, self::withVisitedId(entity: $entity, visitedIds: $visitedIds)), $_rbac
 		);
 		$this->primeRenderCaches(context: $context);
 
@@ -2226,26 +2226,26 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function renderWithContext(ObjectEntity $entity, RenderContext $context): ObjectEntity {
-		$entity = $this->hydrateEntityFiles(entity: $entity, extend: $context->extend);
+		$entity = $this->hydrateEntityFiles(entity: $entity, extend: $context->selection->extend);
 
 		// The object before any caller-supplied projection. The lifecycle state's
 		// field rules are resolved against this, so `?fields=onderwerp` cannot change
 		// which rules apply by hiding the lifecycle field from the resolver.
 		$unprojectedData = $entity->getObject();
 
-		$objectData = $this->applyFieldSelection(entity: $entity, objectData: $unprojectedData, fields: $context->fields);
-		if (self::matchesFilter(objectData: $objectData, filter: $context->filter) === false) {
+		$objectData = $this->applyFieldSelection(entity: $entity, objectData: $unprojectedData, fields: $context->selection->fields);
+		if (self::matchesFilter(objectData: $objectData, filter: $context->selection->filter) === false) {
 			$entity->setObject([]);
 			return $entity;
 		}
 
-		$objectData = $this->applyUnset(entity: $entity, objectData: $objectData, unset: $context->unset);
+		$objectData = $this->applyUnset(entity: $entity, objectData: $objectData, unset: $context->selection->unset);
 		$objectData = $this->redactWriteOnlyForRbac(entity: $entity, objectData: $objectData, rbac: $context->rbac);
 		$objectData = $this->applyInversedProperties(entity: $entity, objectData: $objectData, context: $context);
 
-		$context    = $context->withExtend(self::normalizeExtend(extend: $context->extend, objectData: $objectData));
+		$context    = $context->withExtend(self::normalizeExtend(extend: $context->selection->extend, objectData: $objectData));
 		$objectData = $this->applyExtensions(entity: $entity, objectData: $objectData, context: $context);
-		$this->enrichLinkedEntities(entity: $entity, extend: $context->extend);
+		$this->enrichLinkedEntities(entity: $entity, extend: $context->selection->extend);
 
 		return $this->finishRender(entity: $entity, objectData: $objectData, unprojectedData: $unprojectedData, context: $context);
 	}//end renderWithContext()
@@ -2293,12 +2293,12 @@ class RenderObject implements RenderObjectInterface {
 			entity: $entity,
 			schema: $renderSchema,
 			objectData: $objectData,
-			extend: $context->extend
+			extend: $context->selection->extend
 		);
 		$objectData   = $this->applyLens(schema: $renderSchema, objectData: $objectData, rbac: $context->rbac);
 
 		$entity->setObject($objectData);
-		$this->applyRenderMarkers(entity: $entity, schema: $renderSchema, extend: $context->extend);
+		$this->applyRenderMarkers(entity: $entity, schema: $renderSchema, extend: $context->selection->extend);
 
 		return $entity;
 	}//end finishRender()
@@ -2313,9 +2313,9 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function primeRenderCaches(RenderContext $context): void {
-		self::primeCache(cache: $this->registersCache, entries: $context->registers);
-		self::primeCache(cache: $this->schemasCache, entries: $context->schemas);
-		self::primeCache(cache: $this->objectsCache, entries: $context->objects);
+		self::primeCache(cache: $this->registersCache, entries: $context->preloads->registers);
+		self::primeCache(cache: $this->schemasCache, entries: $context->preloads->schemas);
+		self::primeCache(cache: $this->objectsCache, entries: $context->preloads->objects);
 	}//end primeRenderCaches()
 
 	/**
@@ -2590,11 +2590,11 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function applyInversedProperties(ObjectEntity $entity, array $objectData, RenderContext $context): array {
-		if ($context->depth >= 10 || empty($context->extend) === true) {
+		if ($context->path->depth >= 10 || empty($context->selection->extend) === true) {
 			return $objectData;
 		}
 
-		if ($this->extendsInverseProperty(entity: $entity, extend: $context->extend) === false) {
+		if ($this->extendsInverseProperty(entity: $entity, extend: $context->selection->extend) === false) {
 			return $objectData;
 		}
 
@@ -2857,7 +2857,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function applyExtensions(ObjectEntity $entity, array $objectData, RenderContext $context): array {
-		if (empty($context->extend) === true || $context->depth >= 10) {
+		if (empty($context->selection->extend) === true || $context->path->depth >= 10) {
 			return $objectData;
 		}
 
@@ -4309,7 +4309,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function extendObject(ObjectEntity $entity, array $objectData, RenderContext $context): array {
-		$_extend = $context->extend;
+		$_extend = $context->selection->extend;
 
 		// Add register and schema context to @self if requested.
 		if (in_array('@self.register', $_extend) === true || in_array('@self.schema', $_extend) === true) {
@@ -4332,9 +4332,9 @@ class RenderObject implements RenderObjectInterface {
 		$this->preloadOwnExtendTargets(run: $run);
 
 		$dotRun = new ExtendDotRun();
-		$dotRun->depth      = $context->depth;
+		$dotRun->depth      = $context->path->depth;
 		$dotRun->allFlag    = in_array('all', $run->extend, true);
-		$dotRun->visitedIds = $context->visitedIds;
+		$dotRun->visitedIds = $context->path->visitedIds;
 
 		return $this->handleExtendDot(
 			data: $run->objectData,
@@ -4357,9 +4357,9 @@ class RenderObject implements RenderObjectInterface {
 	private static function sourceRefRun(ObjectEntity $entity, RenderContext $context): SourceRefRun {
 		$run = new SourceRefRun();
 		$run->entity = $entity;
-		$run->extend = $context->extend;
-		$run->depth = $context->depth;
-		$run->visitedIds = ($context->visitedIds ?? []);
+		$run->extend = $context->selection->extend;
+		$run->depth = $context->path->depth;
+		$run->visitedIds = ($context->path->visitedIds ?? []);
 
 		return $run;
 	}//end sourceRefRun()
