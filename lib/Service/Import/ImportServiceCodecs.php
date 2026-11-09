@@ -24,12 +24,9 @@ namespace OCA\OpenRegister\Service\Import;
 
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\Translation\TranslationCsvCodec;
-use Psr\Container\ContainerInterface;
 
 /**
- * The translation codec, the migration-pack mapping engine and the container
- * ImportService resolves its optional collaborators (the configuration import
- * handler, the push queue) from lazily.
+ * The translation codec and the migration-pack mapping engine of an import.
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
@@ -40,12 +37,10 @@ final class ImportServiceCodecs {
 	 *
 	 * @param TranslationCsvCodec $translationCsvCodec Projects translation columns on import.
 	 * @param MappingEngine       $mappingEngine       Maps rows through a migration pack.
-	 * @param ContainerInterface  $container           Resolves optional collaborators lazily.
 	 */
 	public function __construct(
 		public readonly TranslationCsvCodec $translationCsvCodec,
 		public readonly MappingEngine $mappingEngine,
-		public readonly ContainerInterface $container,
 	) {
 	}//end __construct()
 }//end class

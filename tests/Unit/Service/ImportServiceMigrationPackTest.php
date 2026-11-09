@@ -74,9 +74,9 @@ class ImportServiceMigrationPackTest extends TestCase {
 
 		$this->service = new ImportService(
 			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->schemaMapper, $this->objectService, $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class), $this->validateObjectHandler),
-			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($translationCsvCodec, new MappingEngine($this->passThroughL10n()), $this->createMock(\Psr\Container\ContainerInterface::class)),
-			$groupManager,
-			$logger
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($translationCsvCodec, new MappingEngine($this->passThroughL10n())),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($this->createMock(\Psr\Container\ContainerInterface::class), new \OCA\OpenRegister\Listener\NotifyPushBatch(), $logger),
+			$groupManager
 		);
 	}
 

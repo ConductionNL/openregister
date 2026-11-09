@@ -277,9 +277,9 @@ class ImportServiceImportFromJsonGoldenTest extends TestCase {
 
 		return new ImportService(
 			new \OCA\OpenRegister\Service\Import\ImportServiceStores($schemaMapper, $objectService, $audit, $validator),
-			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($this->createMock(TranslationCsvCodec::class), $mapping, $container),
-			$this->createMock(IGroupManager::class),
-			$logger
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($this->createMock(TranslationCsvCodec::class), $mapping),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($container, new \OCA\OpenRegister\Listener\NotifyPushBatch(), $logger),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end buildService()
 

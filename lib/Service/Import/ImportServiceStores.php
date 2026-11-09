@@ -40,16 +40,16 @@ final class ImportServiceStores {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface     $schemaMapper          Finds the schema rows are imported into.
-	 * @param ObjectOperationsInterface $objectService         Saves and deletes the imported objects.
-	 * @param AuditTrailMapperInterface $auditTrailMapper      Tags and finds the rows of one import job.
-	 * @param ValidateObjectInterface   $validateObjectHandler Validates rows on a side-effect-free dry run.
+	 * @param SchemaMapperInterface     $schemaMapper     Finds the schema rows are imported into.
+	 * @param ObjectOperationsInterface $objectService    Saves and deletes the imported objects.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Tags and finds the rows of one import job.
+	 * @param ValidateObjectInterface   $validator        Validates rows on a side-effect-free dry run.
 	 */
 	public function __construct(
 		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly AuditTrailMapperInterface $auditTrailMapper,
-		public readonly ValidateObjectInterface $validateObjectHandler,
+		public readonly ValidateObjectInterface $validator,
 	) {
 	}//end __construct()
 }//end class

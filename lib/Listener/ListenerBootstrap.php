@@ -44,6 +44,7 @@ final class ListenerBootstrap {
 	public const BINDINGS = [
 		DecisionTableValidationListenerInterface::class => DecisionTableValidationListener::class,
 		PresencePushInterface::class => NotifyPushListener::class,
+		NotifyPushBatchInterface::class => NotifyPushBatch::class,
 	];
 
 	/**

@@ -54,9 +54,9 @@ class ImportServiceErrorsCsvTest extends TestCase {
 
 		$this->service = new ImportService(
 			new \OCA\OpenRegister\Service\Import\ImportServiceStores($schemaMapper, $objectService, $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class), $this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class)),
-			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($translationCsvCodec, $this->createMock(\OCA\OpenRegister\Service\MigrationPack\MappingEngine::class), $this->createMock(\Psr\Container\ContainerInterface::class)),
-			$groupManager,
-			$logger
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($translationCsvCodec, $this->createMock(\OCA\OpenRegister\Service\MigrationPack\MappingEngine::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($this->createMock(\Psr\Container\ContainerInterface::class), new \OCA\OpenRegister\Listener\NotifyPushBatch(), $logger),
+			$groupManager
 		);
 
 	}//end setUp()
