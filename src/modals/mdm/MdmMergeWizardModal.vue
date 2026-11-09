@@ -87,16 +87,14 @@
 			<NcButton :disabled="executing" @click="$emit('close')">
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
-			<NcButton
+			<BusyButton
+				:busy="executing"
 				variant="primary"
 				data-testid="mdm-merge-confirm"
 				:disabled="!canConfirm"
 				@click="confirm">
-				<template #icon>
-					<NcLoadingIcon v-if="executing" :size="20" />
-				</template>
 				{{ t('openregister', 'Confirm merge') }}
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
@@ -110,6 +108,7 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
 import { qualityStore } from '../../store/store.js'
 
 /**
@@ -128,6 +127,7 @@ export default {
 	name: 'MdmMergeWizardModal',
 
 	components: {
+		BusyButton,
 		NcButton,
 		NcDialog,
 		NcLoadingIcon,
