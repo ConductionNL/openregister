@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ContactsControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
@@ -75,18 +76,16 @@ class ContactsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
 	 * @param ContactsControllerServices $services The contacts controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ContactsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
 
 		$this->contactService = $services->domain->contactService;

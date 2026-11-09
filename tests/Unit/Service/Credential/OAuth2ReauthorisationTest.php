@@ -86,7 +86,7 @@ class OAuth2ReauthorisationTest extends TestCase {
 		$this->assertSame('existing-uuid', $credentialId);
 		$this->assertSame(0, $this->mints, 'a repair must not create a second credential for the same account');
 		$this->assertCount(1, $this->persists);
-		$this->assertSame('active', $this->persists[0]['extraMetadata']['status']);
+		$this->assertSame('existing-uuid', $this->persists[0]['credentialId']);
 	}
 
 	public function testReauthorisingCannotChangeTheProvider(): void {
@@ -248,8 +248,8 @@ class OAuth2ReauthorisationTest extends TestCase {
 
 		$refresh = $this->createMock(OAuth2RefreshService::class);
 		$refresh->method('persist')->willReturnCallback(
-			function (string $credentialId, string $scope, OAuth2TokenSet $set, array $extraMetadata = []): void {
-				$this->persists[] = ['credentialId' => $credentialId, 'scope' => $scope, 'extraMetadata' => $extraMetadata];
+			function (\OCA\OpenRegister\Service\Credential\TokenSetAddress $address, OAuth2TokenSet $set): void {
+				$this->persists[] = ['credentialId' => $address->credentialId, 'scope' => $address->scope];
 			}
 		);
 
