@@ -46,6 +46,8 @@ final class LinkedEventMerge {
 	 * @param array<string,mixed> $payload The serialised link row.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function addLinkRow(string $key, array $payload): void {
 		$this->rows[$key] = $payload;
@@ -64,6 +66,8 @@ final class LinkedEventMerge {
 	 * @param string              $calendarUri Resolved calendar URI (may be '').
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function addXorEvent(array $event, string $calendarUri): void {
 		$eventUid = (string)($event['uid'] ?? '');
@@ -86,6 +90,8 @@ final class LinkedEventMerge {
 	 * The merged rows.
 	 *
 	 * @return array<int,array<string,mixed>>
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function rows(): array {
 		return array_values($this->rows);
