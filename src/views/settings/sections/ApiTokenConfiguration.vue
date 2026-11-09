@@ -717,7 +717,8 @@ export default {
 	line-height: 1.5;
 }
 
-.scope-item code {
+.scope-item code,
+.scope-list code {
 	background: var(--color-background-dark);
 	padding: 2px 6px;
 	border-radius: 3px;
@@ -742,15 +743,6 @@ export default {
 	margin: 6px 0;
 	font-size: 14px;
 	line-height: 1.5;
-}
-
-.scope-list code {
-	background: var(--color-background-dark);
-	padding: 2px 6px;
-	border-radius: 3px;
-	font-family: monospace;
-	color: var(--color-primary-element);
-	font-weight: 600;
 }
 
 .scope-note {
@@ -856,7 +848,8 @@ export default {
 	flex: 1;
 }
 
-.saved-indicator {
+.saved-indicator,
+.test-result-success {
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -866,12 +859,6 @@ export default {
 }
 
 .test-result-success {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	color: var(--color-success);
-	font-weight: 500;
-	font-size: 14px;
 	padding: 8px 12px;
 	background-color: var(--color-success-light);
 	border-radius: var(--border-radius);
