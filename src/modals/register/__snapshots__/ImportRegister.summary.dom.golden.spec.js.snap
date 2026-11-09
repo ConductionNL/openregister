@@ -1,5 +1,25 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`ImportRegister import summary lists the supported file types before a file is picked 1`] = `
+"<div class="fileTypes">
+  <p class="fileTypesTitle">Supported file types:</p>
+  <ul class="fileTypesList">
+    <li><strong>JSON</strong> - Register configuration and objects.<br><em>You can create or update objects for multiple schemas at once.</em></li>
+    <li><strong>Excel</strong> (.xlsx, .xls) - Objects data.<br><em>You can create or update objects for multiple schemas at once.</em></li>
+    <li><strong>CSV</strong> - Objects data.<br><em>You can only update one schema within a register.</em></li>
+  </ul>
+  <div class="importRequirements">
+    <p class="requirementsTitle"><strong>Import Requirements:</strong></p>
+    <ul class="requirementsList">
+      <li> Every sheet must have an <strong>"id"</strong> column for object identification </li>
+      <li> Empty "id" values create new objects, existing "id" values update objects </li>
+      <li> ID values must be valid UUID format (e.g., 123e4567-e89b-12d3-a456-426614174000) </li>
+      <li> Metadata columns (starting with "_") are automatically ignored </li>
+    </ul>
+  </div>
+</div>"
+`;
+
 exports[`ImportRegister import summary renders the summary rows and every expanded error table 1`] = `
 "<div class="importResults">
   <!-- Summary Table -->

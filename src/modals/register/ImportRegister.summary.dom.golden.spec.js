@@ -43,6 +43,11 @@ describe('ImportRegister import summary', () => {
 		await wrapper.vm.$nextTick()
 		expect(wrapper.find('.importResults').html()).toMatchSnapshot()
 	})
+
+	it('lists the supported file types before a file is picked', () => {
+		const wrapper = mount(withStubs(ImportRegister))
+		expect(wrapper.find('.fileTypes').html()).toMatchSnapshot()
+	})
 })
 
 /**
