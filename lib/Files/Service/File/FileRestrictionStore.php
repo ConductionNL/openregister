@@ -103,23 +103,20 @@ class FileRestrictionStore {
 	/**
 	 * Store the restriction of one file, replacing the one it had.
 	 *
-	 * @param int               $fileId The Nextcloud file id.
-	 * @param list<string>      $users  The users.
-	 * @param list<string>      $groups The groups.
-	 * @param string            $reason Why.
-	 * @param string            $setBy  Who set it.
-	 * @param DateTimeImmutable $setAt  When.
+	 * @param int               $fileId      The Nextcloud file id.
+	 * @param FileRestriction   $restriction Who may read it, why, and who said so.
+	 * @param DateTimeImmutable $setAt       When.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
 	 */
-	public function save(int $fileId, array $users, array $groups, string $reason, string $setBy, DateTimeImmutable $setAt): void {
+	public function save(int $fileId, FileRestriction $restriction, DateTimeImmutable $setAt): void {
 		$values = [
-			'user_ids' => json_encode(array_values($users)),
-			'group_ids' => json_encode(array_values($groups)),
-			'reason' => $reason,
-			'set_by' => $setBy,
+			'user_ids' => json_encode(array_values($restriction->users)),
+			'group_ids' => json_encode(array_values($restriction->groups)),
+			'reason' => $restriction->reason,
+			'set_by' => $restriction->setBy,
 			'set_at' => $setAt->format('Y-m-d H:i:s'),
 		];
 

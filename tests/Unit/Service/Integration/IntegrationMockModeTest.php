@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactory;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
@@ -239,7 +240,7 @@ class IntegrationMockModeTest extends TestCase {
 			}
 		);
 
-		$controller = new CompanyLookupController('openregister', $request, $kvk, $oc);
+		$controller = new CompanyLookupController($request, $kvk, $oc, new CompanySearchFactory());
 		$response = $controller->kvkCompany();
 
 		$this->assertSame(200, $response->getStatus());
