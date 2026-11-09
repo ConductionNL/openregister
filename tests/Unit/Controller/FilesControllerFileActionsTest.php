@@ -60,7 +60,6 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->fileService->method('getAuditHandler')->willReturn($auditHandler);
 
 		$this->controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -106,7 +105,6 @@ class FilesControllerFileActionsTest extends TestCase {
 		// Rebuild the controller with the authenticated user session wired in.
 		// The audit handler is irrelevant on the denied path (never reached).
 		$this->controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -392,7 +390,6 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		$controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -440,7 +437,6 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		$controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -486,7 +482,6 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession->method('getUser')->willReturn($authedUser);
 
 		$controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -823,7 +818,6 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		return FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,

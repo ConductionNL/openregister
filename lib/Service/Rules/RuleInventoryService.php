@@ -120,21 +120,12 @@ final class RuleInventoryService implements RuleInventoryServiceInterface {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function inventory(
-		Schema $schema,
-		int $idleDays = self::DEFAULT_IDLE_DAYS,
-		?DateTime $now = null,
-		array $scope = []
-	): array {
+	public function inventory(Schema $schema, int $idleDays = self::DEFAULT_IDLE_DAYS, ?DateTime $now = null, array $scope = []): array {
 		$summaries = $this->summaries->findBySchema(schemaSlug: (string)($schema->getSlug() ?? ''));
 		$window = new RuleInventoryWindow(idleDays: $idleDays, now: ($now ?? new DateTime()));
+		$rowOf = static fn (RuleDescriptor $rule): array => $window->rowOf(descriptor: $rule, summary: ($summaries[$rule->getId()] ?? null));
 
-		$rows = [];
-		foreach ($this->admitted(schema: $schema, filter: $scope) as $descriptor) {
-			$rows[] = $window->rowOf(descriptor: $descriptor, summary: ($summaries[$descriptor->getId()] ?? null));
-		}
-
-		return $rows;
+		return array_map($rowOf, $this->admitted(schema: $schema, filter: $scope));
 	}//end inventory()
 
 	/**
