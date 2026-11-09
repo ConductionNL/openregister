@@ -925,7 +925,7 @@ class CasePlanService implements CasePlanServiceInterface {
 	 */
 	private function evaluateQuietly(CasePlanTrigger $trigger): void {
 		try {
-			$this->mechanics->cascade->evaluate(objectUuid: $trigger->objectUuid, event: $trigger->event, payload: $trigger->payload);
+			$this->mechanics->cascade->evaluateOn(trigger: $trigger);
 		} catch (Throwable $failure) {
 			$this->store->logger->error(
 				'[CasePlanService] Event-driven evaluation failed: ' . $failure->getMessage(),
