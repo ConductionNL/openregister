@@ -7430,4 +7430,55 @@ class ObjectsControllerTest extends TestCase {
 			$data['results'][0]['url']
 		);
 	}
+
+	/**
+	 * The `publishedOnly` flag downloadFiles() hands the ZIP builder.
+	 *
+	 * @param \OCP\IUser|null $user The signed-in user, or null.
+	 *
+	 * @return bool|null The flag, or null when the ZIP was not built.
+	 */
+	private function zipPublishedOnlyFor(?\OCP\IUser $user): ?bool {
+		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+		$objectEntity->setUuid('uuid-123');
+		$objectEntity->setOwner('author');
+		$objectEntity->setObject(['title' => 'Test']);
+
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('find')->willReturn($objectEntity);
+
+		$captured = null;
+		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
+		$fileService->method('createObjectFilesZip')->willReturnCallback(
+			static function (...$args) use (&$captured): array {
+				$captured = ($args['publishedOnly'] ?? $args[2] ?? null);
+				throw new \Exception('stop after the flag');
+			}
+		);
+		$this->container->method('get')->willReturn($fileService);
+		$this->request->method('getParam')->willReturn(null);
+
+		$this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
+
+		return $captured;
+	}
+
+	/**
+	 * obj-f2: a signed-in reader who is not the owner gets the files the listing shows them.
+	 */
+	public function testDownloadFilesGivesASignedInNonOwnerEveryFile(): void {
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('colleague');
+
+		$this->assertFalse($this->zipPublishedOnlyFor(user: $user));
+	}
+
+	/**
+	 * obj-f2: without a user the ZIP holds published files only.
+	 */
+	public function testDownloadFilesGivesAnAnonymousCallerPublishedFilesOnly(): void {
+		$this->assertTrue($this->zipPublishedOnlyFor(user: null));
+	}
 }

@@ -1843,7 +1843,7 @@ class FileService {
 	 *
 	 * @param ObjectEntity|string $object The object entity or object UUID/ID
 	 * @param string|null $zipName Optional custom name for the ZIP file
-	 * @param bool $publishedOnly Only the object's published files (default); false only for its owner or an administrator
+	 * @param bool $publishedOnly Only the object's published files (default); false for a signed-in reader of the object
 	 *
 	 * @throws Exception If ZIP creation fails or object not found
 	 * @throws NotFoundException If the object folder is not found

@@ -530,8 +530,9 @@ class FilePublishingHandler {
 	 * @param ObjectEntity|string $object        The object entity or ID.
 	 * @param string|null         $zipName       Optional custom name for the ZIP file.
 	 * @param bool                $publishedOnly Only the object's published (shared) files. Defaults to
-	 *                                           true; only a caller that may see the object's unpublished
-	 *                                           files (its owner, an administrator) passes false.
+	 *                                           true; a caller that may see the object's unpublished
+	 *                                           files (a signed-in reader of the object, as in the file
+	 *                                           listing) passes false.
 	 *
 	 * @return (int|string)[]
 	 *
