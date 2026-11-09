@@ -106,17 +106,18 @@ import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ManagedBadge from '../../components/shared/ManagedBadge.vue'
 import {
+	headerListData,
+	headerListMethods,
+} from '../../composables/headerListControls.js'
+import {
 	isExternalConfiguration,
 	isLocalConfiguration,
 	managedRowClass,
 } from '../../composables/managedConfiguration.js'
-import { applyFilterChange, filterRows } from '../../services/listFilter.js'
+import { filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
 import { deleteAction, editAction } from '../../services/menuActions.js'
-import {
-	BUILTIN_ACTIONS_OFF,
-	timestampColumns,
-} from '../indexPageOptions.js'
+import { timestampColumns } from '../indexPageOptions.js'
 
 /**
  * The value a schema row is filtered on: the properties column shows a count.
@@ -144,14 +145,8 @@ export default {
 
 	data() {
 		return {
-			builtinActionsOff: BUILTIN_ACTIONS_OFF,
+			...headerListData(),
 			selectedSchemas: [],
-			isRefreshing: false,
-			// The header the list is sorted by; null keeps newest first.
-			sortKey: null,
-			sortOrder: 'asc',
-			// The header filters, as `{ paramKey: values[] }` (`title[like]`).
-			activeFilters: {},
 		}
 	},
 
@@ -274,6 +269,8 @@ export default {
 	},
 
 	methods: {
+		...headerListMethods(() => schemaStore),
+
 		/**
 		 * The row menu of a schema.
 		 *
@@ -311,35 +308,6 @@ export default {
 					},
 				),
 			]
-		},
-
-		/**
-		 * Sort by a clicked header. The list is loaded whole, so it is sorted
-		 * here, and paging goes back to page 1 so the top of the new order shows.
-		 *
-		 * @param {{key: string, order: string}} payload The header and direction.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md
-		 */
-		onSort(payload) {
-			this.sortKey = payload && payload.key ? payload.key : null
-			this.sortOrder = payload && payload.order === 'desc' ? 'desc' : 'asc'
-			schemaStore.setPagination(1, schemaStore.pagination.limit || 20)
-		},
-
-		/**
-		 * Apply a header filter. The list is loaded whole, so it is filtered
-		 * here, and paging goes back to page 1.
-		 *
-		 * @param {{key: string, values: Array}} payload The filter change.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
-		 */
-		onFilterChange(payload) {
-			this.activeFilters = applyFilterChange(this.activeFilters, payload)
-			schemaStore.setPagination(1, schemaStore.pagination.limit || 20)
 		},
 
 		/**

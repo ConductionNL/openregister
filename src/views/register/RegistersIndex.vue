@@ -152,11 +152,15 @@ import RegisterFormFields from '../../components/register/RegisterFormFields.vue
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ManagedBadge from '../../components/shared/ManagedBadge.vue'
 import {
+	headerListData,
+	headerListMethods,
+} from '../../composables/headerListControls.js'
+import {
 	isExternalConfiguration,
 	isLocalConfiguration,
 	managedRowClass,
 } from '../../composables/managedConfiguration.js'
-import { applyFilterChange, filterRows } from '../../services/listFilter.js'
+import { filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
 import { deleteAction, editAction } from '../../services/menuActions.js'
 import {
@@ -164,10 +168,7 @@ import {
 	registerPayload,
 	schemaOptionsOf,
 } from '../../services/registerForm.js'
-import {
-	BUILTIN_ACTIONS_OFF,
-	timestampColumns,
-} from '../indexPageOptions.js'
+import { timestampColumns } from '../indexPageOptions.js'
 
 /**
  * How the names cache changed in size, in words.
@@ -241,16 +242,10 @@ export default {
 
 	data() {
 		return {
-			builtinActionsOff: BUILTIN_ACTIONS_OFF,
+			...headerListData(),
 			selectedRegisters: [],
-			isRefreshing: false,
 			schemaSelectOptions: [],
 			schemasLoading: false,
-			// The header the list is sorted by; null keeps the store's order.
-			sortKey: null,
-			sortOrder: 'asc',
-			// The header filters, as `{ paramKey: values[] }` (`title[like]`).
-			activeFilters: {},
 		}
 	},
 
@@ -372,6 +367,8 @@ export default {
 	},
 
 	methods: {
+		...headerListMethods(() => registerStore),
+
 		/**
 		 * The menu of one register.
 		 *
@@ -504,34 +501,6 @@ export default {
 			} finally {
 				this.isRefreshing = false
 			}
-		},
-
-		/**
-		 * Sort by a clicked header. The list is loaded whole, so it is sorted
-		 * here, and paging goes back to page 1.
-		 *
-		 * @param {{key: string, order: string}} payload The header and direction.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
-		 */
-		onSort(payload) {
-			this.sortKey = payload && payload.key ? payload.key : null
-			this.sortOrder = payload && payload.order === 'desc' ? 'desc' : 'asc'
-			registerStore.setPagination(1, registerStore.pagination.limit || 20)
-		},
-
-		/**
-		 * Apply a header filter on the loaded list and go back to page 1.
-		 *
-		 * @param {{key: string, values: Array}} payload The filter change.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
-		 */
-		onFilterChange(payload) {
-			this.activeFilters = applyFilterChange(this.activeFilters, payload)
-			registerStore.setPagination(1, registerStore.pagination.limit || 20)
 		},
 
 		/**
