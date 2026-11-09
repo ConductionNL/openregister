@@ -47,7 +47,7 @@ class ExampleSetCastShapeBehaviourTest extends TestCase {
 
 		$this->assertSame('example-set-demo-sanne', $keyed['people']['sanne']['contactsUid']);
 		$this->assertSame('own-uid', $keyed['people']['esra']['contactsUid']);
-		$this->assertSame('example-set-demo-7', $keyed['organisations']['7']['contactsUid']);
+		$this->assertSame('example-set-demo-7', $keyed['organisations'][7]['contactsUid']);
 		$this->assertSame(['key' => 'staff'], $keyed['groups']['staff']);
 		$this->assertSame(['sanne', 'esra', 7, 'staff'], array_keys($keyed['entries']));
 	}
