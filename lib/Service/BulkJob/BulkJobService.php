@@ -167,15 +167,41 @@ class BulkJobService implements BulkJobServiceInterface {
 	}//end getUndoCeiling()
 
 	/**
+	 * The action a job runs: its id and its parameters.
+	 *
+	 * @param string               $actionId   The action to run.
+	 * @param array<string, mixed> $parameters The action's parameters.
+	 *
+	 * @return BulkJobActionCall The call.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
+	 */
+	public function actionCall(string $actionId, array $parameters): BulkJobActionCall {
+		return new BulkJobActionCall(actionId: $actionId, parameters: $parameters);
+	}//end actionCall()
+
+	/**
+	 * The objects a job runs on: the criteria, and the register and schema they live in.
+	 *
+	 * @param array<string, mixed> $criteria   Either `{"ids": [...]}` or `{"query": {...}}`.
+	 * @param int|null             $registerId The register the selection lives in.
+	 * @param int|null             $schemaId   The schema the selection lives in.
+	 *
+	 * @return BulkJobSelection The selection.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
+	 */
+	public function selection(array $criteria, ?int $registerId, ?int $schemaId): BulkJobSelection {
+		return new BulkJobSelection(criteria: $criteria, registerId: $registerId, schemaId: $schemaId);
+	}//end selection()
+
+	/**
 	 * Create a job, rehearse it, and write nothing.
 	 *
-	 * @param string $actionId The action to run.
-	 * @param array<string, mixed> $parameters The action's parameters.
-	 * @param array<string, mixed> $selection Either `{"ids": [...]}` or `{"query": {...}}`.
-	 * @param string|null $justification The reason the operator typed.
-	 * @param string $actorUid The actor's uid.
-	 * @param int|null $registerId The register the selection lives in.
-	 * @param int|null $schemaId The schema the selection lives in.
+	 * @param BulkJobActionCall $call          The action to run and its parameters.
+	 * @param BulkJobSelection  $selection     The objects to run it on, and the register and schema they live in.
+	 * @param string            $actorUid      The actor's uid.
+	 * @param string|null       $justification The reason the operator typed.
 	 *
 	 * @return BulkJob The previewed job.
 	 *
@@ -185,22 +211,9 @@ class BulkJobService implements BulkJobServiceInterface {
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function create(
-		string $actionId,
-		array $parameters,
-		array $selection,
-		?string $justification,
-		string $actorUid,
-		?int $registerId = null,
-		?int $schemaId = null
-	): BulkJob {
+	public function create(BulkJobActionCall $call, BulkJobSelection $selection, string $actorUid, ?string $justification): BulkJob {
 		return $this->preview(
-			request: new BulkJobRequest(
-				call: new BulkJobActionCall(actionId: $actionId, parameters: $parameters),
-				selection: new BulkJobSelection(criteria: $selection, registerId: $registerId, schemaId: $schemaId),
-				actorUid: $actorUid,
-				justification: $justification
-			)
+			request: new BulkJobRequest(call: $call, selection: $selection, actorUid: $actorUid, justification: $justification)
 		);
 	}//end create()
 
