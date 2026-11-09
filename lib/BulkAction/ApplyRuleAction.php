@@ -38,7 +38,7 @@ use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\BulkAction\Support\ApplyRuleServices;
+use OCA\OpenRegister\Service\Rules\ApplyRuleServices;
 
 /**
  * Applying a rule to objects that already exist.

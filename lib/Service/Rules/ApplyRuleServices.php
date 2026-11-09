@@ -6,8 +6,8 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category BulkAction
- * @package  OCA\OpenRegister\BulkAction\Support
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Rules
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,10 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\BulkAction\Support;
+namespace OCA\OpenRegister\Service\Rules;
 
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
-use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
 
 /**
  * The rule inventory and calculation evaluator the apply-rule action finds and replays a rule with.
