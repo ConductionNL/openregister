@@ -32,7 +32,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
+use OCA\OpenRegister\Service\Merge\MergeReportingServices;
 use OCA\OpenRegister\Service\Merge\MergeService;
+use OCA\OpenRegister\Service\Merge\MergeSurvivorshipServices;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
@@ -94,14 +96,9 @@ class MergeFieldDecisionTest extends TestCase {
 
 		$this->service = new MergeService(
 			$this->objectService,
-			$this->schemaMapper,
-			new SurvivorshipResolver(),
-			new TrustTierResolver(),
-			new SourceRecordResolver($this->objectService, $this->schemaMapper, $logger),
-			$this->createMock(IEventDispatcher::class),
-			$logger,
 			$this->propertyRbac,
-			$this->auditTrailMapper
+			new MergeSurvivorshipServices($this->schemaMapper, new SurvivorshipResolver(), new TrustTierResolver(), new SourceRecordResolver($this->objectService, $this->schemaMapper, $logger)),
+			new MergeReportingServices($this->createMock(IEventDispatcher::class), $this->auditTrailMapper, $logger)
 		);
 	}//end setUp()
 
