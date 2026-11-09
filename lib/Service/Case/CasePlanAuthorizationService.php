@@ -128,12 +128,7 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function assertMayAct(string $verb, ?CaseItem $item, CasePlanTree $tree, ?string $uid): void {
-		$identity = $this->assertIdentified(uid: $uid, verb: $verb);
-		if ($this->isAdministrator(uid: $identity) === true) {
-			return;
-		}
-
-		$this->assertHolds(act: new CasePlanAct(verb: $verb, actor: $identity), rules: $this->effectiveRules(item: $item, tree: $tree));
+		$this->assertGranted(act: new CasePlanAct(verb: $verb, actor: $uid), rules: $this->effectiveRules(item: $item, tree: $tree));
 	}//end assertMayAct()
 
 	/**
@@ -151,13 +146,30 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function assertMayAdminister(string $verb, array $settings, ?string $uid): void {
-		$identity = $this->assertIdentified(uid: $uid, verb: $verb);
+		$this->assertGranted(act: new CasePlanAct(verb: $verb, actor: $uid), rules: ($settings['authorization'] ?? null));
+	}//end assertMayAdminister()
+
+	/**
+	 * Require an identified caller, let an administrator pass, and otherwise
+	 * require the caller to hold one of the rules.
+	 *
+	 * @param CasePlanAct $act   The verb and the acting identity, possibly none.
+	 * @param mixed       $rules The rules that apply (computed without side effects).
+	 *
+	 * @return void
+	 *
+	 * @throws CaseAccessDeniedException When anonymous, or when no rule admits the caller.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	private function assertGranted(CasePlanAct $act, mixed $rules): void {
+		$identity = $this->assertIdentified(uid: $act->actor, verb: $act->verb);
 		if ($this->isAdministrator(uid: $identity) === true) {
 			return;
 		}
 
-		$this->assertHolds(act: new CasePlanAct(verb: $verb, actor: $identity), rules: ($settings['authorization'] ?? null));
-	}//end assertMayAdminister()
+		$this->assertHolds(act: new CasePlanAct(verb: $act->verb, actor: $identity), rules: $rules);
+	}//end assertGranted()
 
 	/**
 	 * The rules that govern an item: its own, else its nearest ancestor's,
