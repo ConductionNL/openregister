@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorStores;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -66,11 +67,9 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->locator = new FlowLocator(
-			mapper: $this->mapper,
-			triggerMapper: $this->triggerMapper,
+			stores: new FlowLocatorStores(mapper: $this->mapper, triggerMapper: $this->triggerMapper, versions: $this->publishedVersions()),
 			objectService: $this->createMock(ObjectService::class),
-			logger: $this->logger,
-			versions: $this->publishedVersions()
+			logger: $this->logger
 		);
 
 	}//end setUp()
@@ -140,11 +139,9 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 		);
 
 		$locator = new FlowLocator(
-			mapper: $this->mapper,
-			triggerMapper: $this->triggerMapper,
+			stores: new FlowLocatorStores(mapper: $this->mapper, triggerMapper: $this->triggerMapper, versions: $versions),
 			objectService: $this->createMock(ObjectService::class),
-			logger: $this->logger,
-			versions: $versions
+			logger: $this->logger
 		);
 
 		$this->assertSame(
@@ -170,11 +167,9 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 		$versions->method('findPublished')->willThrowException(new RuntimeException('table gone'));
 
 		$locator = new FlowLocator(
-			mapper: $this->mapper,
-			triggerMapper: $this->triggerMapper,
+			stores: new FlowLocatorStores(mapper: $this->mapper, triggerMapper: $this->triggerMapper, versions: $versions),
 			objectService: $this->createMock(ObjectService::class),
-			logger: $this->logger,
-			versions: $versions
+			logger: $this->logger
 		);
 
 		$this->assertSame(
