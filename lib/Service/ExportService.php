@@ -46,6 +46,8 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
+use OCP\IUserSession;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -148,6 +150,7 @@ class ExportService implements ObjectExporterInterface {
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
 	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler The translation handler.
 	 * @param NcOfficeConverterInterface|null $officeConverter Office server conversion; PDF output needs it.
+	 * @param IUserSession|null $userSession The session, to judge who may widen the organisation filter.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
@@ -160,6 +163,7 @@ class ExportService implements ObjectExporterInterface {
 		PropertyRbacHandler $propertyRbacHandler,
 		\OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
 		private readonly ?NcOfficeConverterInterface $officeConverter = null,
+		private readonly ?IUserSession $userSession = null,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->groupManager = $groupManager;
@@ -829,13 +833,21 @@ class ExportService implements ObjectExporterInterface {
 			$objectFilters[$metaField] = $value;
 		}
 
-		// Check if multitenancy was explicitly requested via _multi parameter.
-		$multiExplicitlySet = isset($filters['_multi']) || isset($filters['multi']);
+		// `_multi` / `multi` arrive from the request. Only a caller who could
+		// already see every organisation (an administrator, or the app's own
+		// system/CLI work) may switch the organisation filter with them; for
+		// anyone else the filter stays on, as on the object index
+		// (buildListingScope). Otherwise `?_multi=false` exported other
+		// organisations' rows that row RBAC happened to admit.
+		$multiExplicitlySet = false;
 		$multitenancy = true;
-		if (isset($filters['_multi']) === true) {
-			$multitenancy = filter_var($filters['_multi'], FILTER_VALIDATE_BOOLEAN);
-		} elseif (isset($filters['multi']) === true) {
-			$multitenancy = filter_var($filters['multi'], FILTER_VALIDATE_BOOLEAN);
+		if ($this->mayWidenOrganisationFilter() === true) {
+			$multiExplicitlySet = isset($filters['_multi']) || isset($filters['multi']);
+			if (isset($filters['_multi']) === true) {
+				$multitenancy = filter_var($filters['_multi'], FILTER_VALIDATE_BOOLEAN);
+			} else if (isset($filters['multi']) === true) {
+				$multitenancy = filter_var($filters['multi'], FILTER_VALIDATE_BOOLEAN);
+			}
 		}
 
 		// `_ids` (a list or a comma-separated string) narrows the export to the
@@ -867,6 +879,24 @@ class ExportService implements ObjectExporterInterface {
 			uses: null
 		);
 	}//end fetchObjectsForExport()
+
+	/**
+	 * Whether the caller may set the export's organisation filter from the request.
+	 *
+	 * @return bool True for an administrator, a system operation, or CLI work without a user.
+	 */
+	private function mayWidenOrganisationFilter(): bool {
+		if (SystemOperationContext::isActive() === true) {
+			return true;
+		}
+
+		$user = $this->userSession?->getUser();
+		if ($user === null) {
+			return PHP_SAPI === 'cli';
+		}
+
+		return $this->isUserAdmin(user: $user);
+	}//end mayWidenOrganisationFilter()
 
 
 	/**

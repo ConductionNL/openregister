@@ -92,6 +92,9 @@ final class FilterParams {
 	 * `SearchQueryHandler::buildSearchQuery()` drops it from request parameters
 	 * (a query string or a JSON body, which Nextcloud also decodes on a GET), so
 	 * a caller can never switch row RBAC or the organisation filter off.
+	 * The export reads its own `_multi` / `multi` request switch and honours it
+	 * only for administrators and system work
+	 * (`ExportService::mayWidenOrganisationFilter()`).
 	 *
 	 * @var string[]
 	 */
