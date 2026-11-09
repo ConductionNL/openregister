@@ -1815,6 +1815,26 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\IntegrationProvider",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Integration\\LeafDescriptor": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\Dto\\LeafDescriptor",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Form\\FormDependent": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\Dto\\FormDependent",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\ListenerClassesInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ListenerClassesInterface",
+			"eager": false,
+			"service": true
 		}
 	}
 }

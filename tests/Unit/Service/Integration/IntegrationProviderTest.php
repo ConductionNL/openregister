@@ -9,7 +9,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\Integration\IntegrationProvider;
+use OCA\OpenRegister\Kernel\Contracts\IntegrationProvider;
 use PHPUnit\Framework\TestCase;
 
 /**

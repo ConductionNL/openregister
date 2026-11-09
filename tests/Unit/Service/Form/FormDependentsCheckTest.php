@@ -15,7 +15,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\FormDestinationDependentsEvent;
-use OCA\OpenRegister\Service\Form\FormDependent;
+use OCA\OpenRegister\Kernel\Contracts\Dto\FormDependent;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Form\FormDependentsSignals;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
  * Q9 (Ruben): the check refuses from day one, no report mode. A broken form is unpublished (default) or the save refused, per the owning app.
  *
  * @covers \OCA\OpenRegister\Service\Form\FormDependentsCheck
- * @covers \OCA\OpenRegister\Service\Form\FormDependent
+ * @covers \OCA\OpenRegister\Kernel\Contracts\Dto\FormDependent
  * @covers \OCA\OpenRegister\Event\FormDestinationDependentsEvent
  * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
  * @uses \OCA\OpenRegister\Service\Form\FormFieldRules

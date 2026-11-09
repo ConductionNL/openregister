@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Listener\ListenerClassesInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListenerClassesInterface;
 use OCA\OpenRegister\Listener\ObjectEventProxyListener;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

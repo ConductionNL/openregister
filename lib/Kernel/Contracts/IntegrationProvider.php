@@ -27,7 +27,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Integration;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Provider contract for pluggable integrations.

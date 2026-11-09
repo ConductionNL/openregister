@@ -13,12 +13,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 
-use OCA\OpenRegister\Service\Form\FormDependent;
+use OCA\OpenRegister\Kernel\Contracts\Dto\FormDependent;
 use OCA\OpenRegister\Service\Form\PublishedForm;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenRegister\Service\Form\FormDependent
+ * @covers \OCA\OpenRegister\Kernel\Contracts\Dto\FormDependent
  */
 final class FormDependentTest extends TestCase {
 

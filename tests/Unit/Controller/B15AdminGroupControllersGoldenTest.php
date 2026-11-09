@@ -28,7 +28,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowTimerDiagnosticController
 use OCA\OpenRegister\Tests\Unit\Controller\Support\IntegrationsControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\LinkedEntityControllerFactory;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
-use OCA\OpenRegister\Service\Integration\IntegrationProvider;
+use OCA\OpenRegister\Kernel\Contracts\IntegrationProvider;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 

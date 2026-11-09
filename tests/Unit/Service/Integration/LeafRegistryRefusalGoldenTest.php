@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
-use OCA\OpenRegister\Service\Integration\LeafDescriptor;
+use OCA\OpenRegister\Kernel\Contracts\Dto\LeafDescriptor;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\IEventDispatcher;

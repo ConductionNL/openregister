@@ -19,7 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\FormDestinationDependentsEvent;
-use OCA\OpenRegister\Service\Form\FormDependent;
+use OCA\OpenRegister\Kernel\Contracts\Dto\FormDependent;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Form\FormDependentsSignals;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;

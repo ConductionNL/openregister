@@ -52,7 +52,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
-use OCA\OpenRegister\Service\Integration\IntegrationProvider;
+use OCA\OpenRegister\Kernel\Contracts\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationWiring;
 use OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider;
 use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;

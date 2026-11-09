@@ -49,8 +49,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Service\Integration\IntegrationProvider;
-use OCA\OpenRegister\Service\Integration\LeafDescriptor;
+use OCA\OpenRegister\Kernel\Contracts\Dto\LeafDescriptor;
+use OCA\OpenRegister\Kernel\Contracts\IntegrationProvider;
 use OCP\EventDispatcher\Event;
 
 /**

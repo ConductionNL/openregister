@@ -32,7 +32,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Integration;
+namespace OCA\OpenRegister\Kernel\Contracts\Dto;
 
 /**
  * Immutable value object describing one contributed leaf.

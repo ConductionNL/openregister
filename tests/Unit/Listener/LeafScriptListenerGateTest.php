@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Listener\LeafScriptListener;
-use OCA\OpenRegister\Service\Integration\LeafDescriptor;
+use OCA\OpenRegister\Kernel\Contracts\Dto\LeafDescriptor;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;

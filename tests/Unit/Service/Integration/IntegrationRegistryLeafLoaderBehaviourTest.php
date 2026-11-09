@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
-use OCA\OpenRegister\Service\Integration\IntegrationProvider;
+use OCA\OpenRegister\Kernel\Contracts\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

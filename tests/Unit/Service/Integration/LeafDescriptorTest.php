@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
-use OCA\OpenRegister\Service\Integration\LeafDescriptor;
+use OCA\OpenRegister\Kernel\Contracts\Dto\LeafDescriptor;
 use PHPUnit\Framework\TestCase;
 
 /**
