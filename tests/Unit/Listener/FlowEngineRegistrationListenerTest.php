@@ -25,6 +25,7 @@ use OCP\EventDispatcher\Event;
 use OCP\WorkflowEngine\Events\RegisterOperationsEvent;
 use OCP\WorkflowEngine\IManager;
 use OCP\WorkflowEngine\IOperation;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 
@@ -36,8 +37,13 @@ final class FlowEngineRegistrationListenerTest extends TestCase {
 	/**
 	 * The operation is resolved under its class name and registered.
 	 *
+	 * Runs in its own process: the listener queues a script through the
+	 * static \OCP\Util::addScript(), and that state would leak into later
+	 * tests that queue scripts.
+	 *
 	 * @return void
 	 */
+	#[RunInSeparateProcess]
 	public function testTheOperationIsResolvedByItsClassName(): void {
 		$operation = $this->createMock(IOperation::class);
 		$asked = [];
