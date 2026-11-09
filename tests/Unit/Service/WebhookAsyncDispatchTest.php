@@ -31,7 +31,9 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\WebhookDispatchServices;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Service\WebhookStores;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -61,12 +63,16 @@ class WebhookAsyncDispatchTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList
+			),
+			logger: $this->logger
 		);
 	}
 
@@ -182,13 +188,9 @@ class WebhookAsyncDispatchTest extends TestCase {
 		$partialService = $this->getMockBuilder(WebhookService::class)
 			->setConstructorArgs(
 				[
-					$this->webhookMapper,
+					new WebhookStores($this->webhookMapper, $this->webhookLogMapper, $this->mappingMapper, $this->mappingService),
+					new WebhookDispatchServices($this->jobList, null),
 					$this->logger,
-					$this->webhookLogMapper,
-					$this->mappingService,
-					$this->mappingMapper,
-					$this->jobList,
-					null,
 				]
 			)
 			->onlyMethods(['deliverWebhook'])
