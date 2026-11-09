@@ -168,23 +168,8 @@ class SharePrincipalDeriver implements SharePrincipalDeriverInterface {
 	 * @return bool True when a matching principal holds one of the permissions.
 	 */
 	public function grants(mixed $sharedWith, string $userId, array $userGroups, array $permissions): bool {
-		if ($userId === '') {
-			return false;
-		}
+		$grantee = new ShareGrantee(userId: $userId, groups: $userGroups);
 
-		foreach ($this->validEntries(sharedWith: $sharedWith) as $entry) {
-			$matchesPrincipal = ($entry['type'] === self::TYPE_USER && $entry['id'] === $userId)
-				|| ($entry['type'] === self::TYPE_GROUP && in_array($entry['id'], $userGroups, true) === true);
-
-			if ($matchesPrincipal === false) {
-				continue;
-			}
-
-			if (in_array($entry['permission'], $permissions, true) === true) {
-				return true;
-			}
-		}//end foreach
-
-		return false;
+		return $grantee->holdsAnyOf(entries: $this->validEntries(sharedWith: $sharedWith), permissions: $permissions);
 	}//end grants()
 }//end class
