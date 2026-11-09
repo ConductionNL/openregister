@@ -47,6 +47,8 @@ final class ValidatedWrite {
 	 * The schema's slug, empty when it has none.
 	 *
 	 * @return string The slug.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
 	public function schemaSlug(): string {
 		return (string)($this->schema->getSlug() ?? '');
@@ -56,6 +58,8 @@ final class ValidatedWrite {
 	 * The schema's configuration, empty when it has none.
 	 *
 	 * @return array<string, mixed> The configuration.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
 	public function configuration(): array {
 		return ($this->schema->getConfiguration() ?? []);

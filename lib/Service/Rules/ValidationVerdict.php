@@ -44,6 +44,8 @@ final class ValidationVerdict {
 	 * The validation's declared name, empty when the entry carries none.
 	 *
 	 * @return string The name.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
 	public function validation(): string {
 		return (string)($this->entry['validation'] ?? '');
@@ -53,6 +55,8 @@ final class ValidationVerdict {
 	 * The trace a run row records: an unevaluable check is an error, not a verdict.
 	 *
 	 * @return RuleTrace The trace.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
 	public function trace(): RuleTrace {
 		$verdict = $this->verdict;

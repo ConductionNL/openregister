@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 
 use OCA\OpenRegister\Service\Rules\AdministeredValidations;
+use OCA\OpenRegister\Service\Rules\ConditionEvaluation;
 use OCA\OpenRegister\Service\Rules\ConditionRefusedException;
 use OCA\OpenRegister\Service\Rules\NamedConditionEvaluator;
 use OCA\OpenRegister\Service\Rules\ValidationInput;
@@ -57,8 +58,8 @@ class AdministeredValidationsGoldenTest extends TestCase {
 	protected function setUp(): void {
 		$evaluator = $this->createMock(NamedConditionEvaluator::class);
 		$evaluator->method('holds')->willReturnCallback(
-			function (mixed $node, array $document, array $library): bool {
-				$this->calls[] = json_encode([$node, $document, $library]);
+			function (mixed $node, ConditionEvaluation $evaluation): bool {
+				$this->calls[] = json_encode([$node, $evaluation->document, $evaluation->library]);
 				if ($node === 'broken') {
 					throw new ConditionRefusedException('lib.broken', 'it references itself');
 				}
