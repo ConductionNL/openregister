@@ -84,16 +84,28 @@ class ExampleSetDeckStore {
 			return ['id' => $found, 'created' => false];
 		}
 
-		$id = $this->insert(
-			table: 'deck_boards',
-			values: ['title' => $title, 'owner' => $owner, 'color' => $color, 'archived' => false, 'deleted_at' => 0, 'last_modified' => time()]
-		);
+		$id = $this->insertBoard(board: new DeckTitled(parent: $owner, title: $title), color: $color);
 		foreach ($groups as $group) {
 			$this->shareBoard(board: $id, group: $group);
 		}
 
 		return ['id' => $id, 'created' => true];
 	}//end board()
+
+	/**
+	 * Write a board and return its id.
+	 *
+	 * @param DeckTitled $board The board's owner and title.
+	 * @param string     $color The board's colour, hex without '#'.
+	 *
+	 * @return int
+	 */
+	private function insertBoard(DeckTitled $board, string $color): int {
+		return $this->insert(
+			table: 'deck_boards',
+			values: ['title' => $board->title, 'owner' => $board->parent, 'color' => $color, 'archived' => false, 'deleted_at' => 0, 'last_modified' => time()]
+		);
+	}//end insertBoard()
 
 	/**
 	 * Share a board for editing with a group.
