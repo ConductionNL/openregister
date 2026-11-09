@@ -90,44 +90,30 @@ class DeadlineDateResolver {
 	/**
 	 * The date a deadline publishes on, or null when it publishes nothing.
 	 *
-	 * @param string $objectUuid The object carrying the deadline.
-	 * @param ObjectDateDeclaration $declaration The declaration for the property.
-	 * @param DateTimeImmutable|null $rawDate The property's own value, when it has one.
-	 * @param string|null $organisation The object's organisation, for calendar resolution.
+	 * @param DeadlineLookup $lookup The object, declaration, raw date and organisation.
 	 *
 	 * @return DateTimeImmutable|null The resolved date, or null.
 	 *
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
-	public function resolve(
-		string $objectUuid,
-		ObjectDateDeclaration $declaration,
-		?DateTimeImmutable $rawDate,
-		?string $organisation,
-	): ?DateTimeImmutable {
-		return ($this->fromTimer(objectUuid: $objectUuid, declaration: $declaration)
-			?? $this->rollRawDate(date: $rawDate, declaration: $declaration, organisation: $organisation));
+	public function resolve(DeadlineLookup $lookup): ?DateTimeImmutable {
+		return ($this->fromTimer(objectUuid: $lookup->objectUuid, declaration: $lookup->declaration)
+			?? $this->rollRawDate(lookup: $lookup));
 	}//end resolve()
 
 	/**
 	 * The working day a raw date rolls to, or null when there is no raw date.
 	 *
-	 * @param DateTimeImmutable|null $date The property's own value, when it has one.
-	 * @param ObjectDateDeclaration $declaration The declaration.
-	 * @param string|null $organisation The object's organisation.
+	 * @param DeadlineLookup $lookup The lookup carrying the raw date.
 	 *
 	 * @return DateTimeImmutable|null The working day, or null.
 	 */
-	private function rollRawDate(
-		?DateTimeImmutable $date,
-		ObjectDateDeclaration $declaration,
-		?string $organisation,
-	): ?DateTimeImmutable {
-		if ($date === null) {
+	private function rollRawDate(DeadlineLookup $lookup): ?DateTimeImmutable {
+		if ($lookup->rawDate === null) {
 			return null;
 		}
 
-		return $this->rollToWorkingDay(date: $date, declaration: $declaration, organisation: $organisation);
+		return $this->rollToWorkingDay(date: $lookup->rawDate, lookup: $lookup);
 	}//end rollRawDate()
 
 	/**
@@ -206,22 +192,18 @@ class DeadlineDateResolver {
 	 * Roll a date forward onto the first working day of the resolved calendar.
 	 *
 	 * @param DateTimeImmutable $date The raw date.
-	 * @param ObjectDateDeclaration $declaration The declaration, which may name a calendar.
-	 * @param string|null $organisation The object's organisation.
+	 * @param DeadlineLookup $lookup The declaration, which may name a calendar, and the organisation.
 	 *
 	 * @return DateTimeImmutable|null The working day, or null when no calendar resolves.
 	 *
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
-	private function rollToWorkingDay(
-		DateTimeImmutable $date,
-		ObjectDateDeclaration $declaration,
-		?string $organisation,
-	): ?DateTimeImmutable {
+	private function rollToWorkingDay(DateTimeImmutable $date, DeadlineLookup $lookup): ?DateTimeImmutable {
+		$declaration = $lookup->declaration;
 		try {
 			$calendar = $this->calendars->resolve(
 				calendarSlug: $declaration->calendarSlug,
-				organisation: $organisation
+				organisation: $lookup->organisation
 			);
 		} catch (Throwable $failure) {
 			// Fail closed. Publishing a date the engine would not enforce is
