@@ -121,7 +121,7 @@
 					{{
 						t(
 							'openregister',
-							'Checking browser web push configuration …',
+							'Checking browser web push configuration …',
 						)
 					}}
 				</div>
