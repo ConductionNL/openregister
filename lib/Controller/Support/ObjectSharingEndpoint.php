@@ -81,35 +81,31 @@ final class ObjectSharingEndpoint {
 	public function resolve(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
 		// Aimed outside the try: an unknown register or schema is not an
 		// unreadable object, and is left to propagate as it always has.
-		$this->aimAt(register: $register, schema: $schema, id: $id);
-
-		try {
-			$object = $this->objectService->getObject();
-		} catch (\Throwable $e) {
-			return self::notFound();
-		}
-
-		if (($object instanceof ObjectEntity) === false) {
-			return self::notFound();
-		}
-
-		return $object;
-	}//end resolve()
-
-	/**
-	 * Point the object service at the register, schema and object of the route.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema   Schema slug or id.
-	 * @param string $id       Object uuid.
-	 *
-	 * @return void
-	 */
-	private function aimAt(string $register, string $schema, string $id): void {
 		$this->objectService->setRegister($register);
 		$this->objectService->setSchema($schema);
 		$this->objectService->setObject($id);
-	}//end aimAt()
+
+		return ($this->current() ?? self::notFound());
+	}//end resolve()
+
+	/**
+	 * The object the service is aimed at, or null when the caller cannot read it or it is missing.
+	 *
+	 * @return ObjectEntity|null The readable object.
+	 */
+	private function current(): ?ObjectEntity {
+		try {
+			$object = $this->objectService->getObject();
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		if (($object instanceof ObjectEntity) === false) {
+			return null;
+		}
+
+		return $object;
+	}//end current()
 
 	/**
 	 * The one answer for an object the caller cannot read.
@@ -157,18 +153,30 @@ final class ObjectSharingEndpoint {
 	public function run(Closure $operation, string $context, bool $validates = false): mixed {
 		try {
 			return $operation();
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\InvalidArgumentException $e) {
-			if ($validates === false) {
-				return $this->unexpected(exception: $e, context: $context);
-			}
-
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: $context);
+			return ($this->refusal(exception: $e, validates: $validates) ?? $this->unexpected(exception: $e, context: $context));
 		}
 	}//end run()
+
+	/**
+	 * The answer for a failure the caller caused: a refusal, or a rejected input of a validating operation.
+	 *
+	 * @param \Throwable $exception The failure.
+	 * @param bool       $validates Whether a rejected input answers 400 rather than 500.
+	 *
+	 * @return JSONResponse|null The 403 or 400, or null when the failure is unexpected.
+	 */
+	private function refusal(\Throwable $exception, bool $validates): ?JSONResponse {
+		if ($exception instanceof NotAuthorizedException) {
+			return new JSONResponse(['message' => $exception->getMessage()], Http::STATUS_FORBIDDEN);
+		}
+
+		if ($validates === true && $exception instanceof \InvalidArgumentException) {
+			return new JSONResponse(['message' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		return null;
+	}//end refusal()
 
 	/**
 	 * Log an unexpected failure and return a generic error.
