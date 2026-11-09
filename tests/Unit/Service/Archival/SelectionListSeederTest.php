@@ -26,13 +26,15 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
-use OCA\OpenRegister\Service\Archival\SelectielijstStores;
 use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
 use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 
 class SelectionListSeederTest extends TestCase {
 
@@ -87,22 +89,9 @@ class SelectionListSeederTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
 
-		$this->seeder = new SelectionListSeeder(
-			settingsHandler: $settings,
-			mappers: new ArchivalRegisterMappers(registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper),
-			saveObject: $saveObject,
-			logger: $this->createMock(LoggerInterface::class)
-		);
+		$this->seeder = new SelectionListSeeder(storage: new SelectielijstStorage(settings: $settings, catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper), writer: $saveObject), logger: $this->createMock(LoggerInterface::class));
 
-		$this->resolver = new SelectielijstResolver(
-			new SelectielijstStores(
-				$objectMapper,
-				$schemaMapper,
-				$registerMapper
-			),
-			$settings,
-			$this->createMock(LoggerInterface::class)
-		);
+		$this->resolver = new SelectielijstResolver(new SelectielijstStorage(settings: $settings, catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper), writer: $this->createMock(SaveObjectWriterInterface::class)), $this->createMock(LoggerInterface::class));
 	}//end setUp()
 
 	/**

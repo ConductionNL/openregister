@@ -49,6 +49,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 /**
  * Golden outcomes of the destruction workflow.
@@ -772,7 +773,7 @@ class DestructionGoldenTest extends TestCase {
 		$schemas->method('find')->willReturn(new Schema());
 
 		$repository = new DestructionListRepository(
-			mappers: new ArchivalRegisterMappers(registerMapper: $registers, schemaMapper: $schemas, objectMapper: $mapper),
+			mappers: new ArchivalRegisterMappers(new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $mapper)),
 			settingsHandler: $handler,
 			logger: $this->createMock(LoggerInterface::class)
 		);

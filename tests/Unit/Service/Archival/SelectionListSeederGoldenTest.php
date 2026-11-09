@@ -29,6 +29,8 @@ use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 /**
  * Golden outcomes of SelectionListSeeder.
@@ -70,12 +72,7 @@ class SelectionListSeederGoldenTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
 
-		return new SelectionListSeeder(
-			settingsHandler: $handler,
-			mappers: new ArchivalRegisterMappers(registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper),
-			saveObject: $saveObject,
-			logger: new NullLogger()
-		);
+		return new SelectionListSeeder(storage: new SelectielijstStorage(settings: $handler, catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper), writer: $saveObject), logger: new NullLogger());
 	}
 
 	/**

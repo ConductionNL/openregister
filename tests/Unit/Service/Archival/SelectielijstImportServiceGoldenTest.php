@@ -30,6 +30,8 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 /**
  * Golden outcomes of SelectielijstImportService.
@@ -78,7 +80,7 @@ class SelectielijstImportServiceGoldenTest extends TestCase {
 			}
 		);
 
-		return new SelectielijstImportService($handler, new ArchivalRegisterMappers($registerMapper, $schemaMapper, $objectMapper), $saveObject, new NullLogger());
+		return new SelectielijstImportService(storage: new SelectielijstStorage(settings: $handler, catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper), writer: $saveObject), logger: new NullLogger());
 	}
 
 	/**
