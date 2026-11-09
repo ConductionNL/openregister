@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 
 /**
  * The triggering object, its data, and the schema that declares what each of
@@ -35,16 +35,16 @@ final class ReferenceOrigin {
 	/**
 	 * Hold the origin.
 	 *
-	 * @param ObjectEntity         $object The triggering object.
-	 * @param array<string, mixed> $data   Its data.
-	 * @param Schema|null          $schema The triggering object's schema.
+	 * @param ObjectEntityInterface $object The triggering object.
+	 * @param array<string, mixed>  $data   Its data.
+	 * @param SchemaInterface|null  $schema The triggering object's schema.
 	 *
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
 	 */
 	public function __construct(
-		public readonly ObjectEntity $object,
+		public readonly ObjectEntityInterface $object,
 		public readonly array $data,
-		public readonly ?Schema $schema = null,
+		public readonly ?SchemaInterface $schema = null,
 	) {
 	}//end __construct()
 }//end class

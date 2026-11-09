@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Export;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Records a completed or refused export on the hash-chained audit trail.

@@ -37,7 +37,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Config;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The contract every shareable configuration type implements.

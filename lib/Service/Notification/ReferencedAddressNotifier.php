@@ -28,8 +28,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
@@ -103,26 +105,26 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 	 * does not resolve, or that integriq refuses, is reported with its reason,
 	 * never dropped in silence.
 	 *
-	 * @param ObjectEntity         $object         The triggering object.
-	 * @param array<string, mixed> $data           Its data.
-	 * @param array<int, mixed>    $recipientsSpec The rule's `recipients` declaration.
-	 * @param string               $subject        The rule's subject.
-	 * @param string               $body           The rule's message.
-	 * @param string               $category       The rule's message category.
-	 * @param Schema|null          $schema         The triggering object's schema, which declares what each reference may point at.
+	 * @param ObjectEntityInterface $object         The triggering object.
+	 * @param array<string, mixed>  $data           Its data.
+	 * @param array<int, mixed>     $recipientsSpec The rule's `recipients` declaration.
+	 * @param string                $subject        The rule's subject.
+	 * @param string                $body           The rule's message.
+	 * @param string                $category       The rule's message category.
+	 * @param SchemaInterface|null  $schema         The triggering object's schema, which declares what each reference may point at.
 	 *
 	 * @return array<int, array{field: string, outcome: string}> One outcome per `email` entry.
 	 *
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
 	 */
 	public function notify(
-		ObjectEntity $object,
+		ObjectEntityInterface $object,
 		array $data,
 		array $recipientsSpec,
 		string $subject,
 		string $body,
 		string $category,
-		?Schema $schema = null,
+		?SchemaInterface $schema = null,
 	): array {
 		$origin = new ReferenceOrigin(object: $object, data: $data, schema: $schema);
 		$entries = [];
@@ -321,12 +323,12 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 	 * name, so a property without one accepts nothing: the value is data the
 	 * person saving the object controls.
 	 *
-	 * @param Schema|null $schema   The schema that declares the property.
-	 * @param string      $property The reference property.
+	 * @param SchemaInterface|null $schema   The schema that declares the property.
+	 * @param string               $property The reference property.
 	 *
 	 * @return ReferenceProperty|null
 	 */
-	private function declaredReference(?Schema $schema, string $property): ?ReferenceProperty {
+	private function declaredReference(?SchemaInterface $schema, string $property): ?ReferenceProperty {
 		$declared = (($schema?->getProperties() ?? [])[$property] ?? null);
 		$ref = null;
 		if (is_array($declared) === true) {
@@ -398,12 +400,12 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 	 * be read. One with an organisation is read only for an object of that
 	 * same organisation; an object without one may not reach into a tenant.
 	 *
-	 * @param ObjectEntity $origin  The triggering object.
-	 * @param ObjectEntity $related The referenced object.
+	 * @param ObjectEntityInterface $origin  The triggering object.
+	 * @param ObjectEntityInterface $related The referenced object.
 	 *
 	 * @return bool
 	 */
-	private function sameTenant(ObjectEntity $origin, ObjectEntity $related): bool {
+	private function sameTenant(ObjectEntityInterface $origin, ObjectEntityInterface $related): bool {
 		$mine = (string)($origin->getOrganisation() ?? '');
 		$theirs = (string)($related->getOrganisation() ?? '');
 		if ($theirs === '') {

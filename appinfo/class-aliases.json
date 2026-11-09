@@ -1815,6 +1815,41 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Config\\FederatedConfigAccessInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FederatedConfigAccessInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Config\\IShareableConfigType": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\IShareableConfigType",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Config\\ShareableConfigTypeRegistryInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ShareableConfigTypeRegistryInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Export\\ExportAuditRecorderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ExportAuditRecorderInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Settings\\ArchivalSettingsReaderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ArchivalSettingsReaderInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Settings\\RetentionSettingsReaderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RetentionSettingsReaderInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\ReferencedAddressNotifierInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ReferencedAddressNotifierInterface",
+			"eager": false,
+			"service": true
 		}
 	}
 }
