@@ -25,7 +25,8 @@ namespace OCA\OpenRegister\Service\Rbac;
 use OCA\OpenRegister\Db\Schema;
 
 /**
- * The schema, the provider asked and the matrix field the rows are read against. Built and consumed by MatrixRowsFromApps only; it never leaves that class.
+ * The schema, the provider asked and the matrix field the rows are read against.
+ * Built and consumed by MatrixRowsFromApps only; it never leaves that class.
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
