@@ -37,6 +37,10 @@ import {
 <script>
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 import {
+	objectUsageGuard,
+	refreshSchemaObjects,
+} from '../../composables/objectUsageGuard.js'
+import {
 	confirmDialogState,
 	settleConfirmRequest,
 } from '../shared/confirmDialogState.js'
@@ -47,32 +51,15 @@ export default {
 		ConfirmDialogFrame,
 	},
 
-	mixins: [confirmDialogState(false)],
+	mixins: [
+		confirmDialogState(false),
+		objectUsageGuard(() => navigationStore.dialog === 'deleteSchema'),
+	],
 
 	data() {
 		return {
 			objects: [],
 			registerName: '',
-			isUpdated: false,
-		}
-	},
-
-	computed: {
-		/**
-		 * @spec exclude UI state helper — enables deletion only when no objects reference the schema.
-		 */
-		canDelete() {
-			return this.objects.length === 0
-		},
-	},
-
-	/**
-	 * @spec exclude Vue lifecycle hook — initializes the dialog once when it opens.
-	 */
-	updated() {
-		if (!this.isUpdated && navigationStore.dialog === 'deleteSchema') {
-			this.isUpdated = true
-			this.initDialog()
 		}
 	},
 
@@ -135,11 +122,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async collectFromRegister(reg) {
-			await objectStore.refreshObjectList({
-				register: reg.id,
-				schema: schemaStore.schemaItem.id,
-				search: '',
-			})
+			await refreshSchemaObjects(reg)
 			if (objectStore.getCollection(objectStore.currentType).length) {
 				this.objects.push(
 					...objectStore.getCollection(objectStore.currentType),
