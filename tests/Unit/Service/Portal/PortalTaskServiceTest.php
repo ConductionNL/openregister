@@ -30,6 +30,7 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Portal\PortalCompletion;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalTaskService;
 use OCA\OpenRegister\Service\Portal\PortalTaskSources;
@@ -210,9 +211,7 @@ class PortalTaskServiceTest extends TestCase {
 		$completed = $this->service->complete(
 			subject: new PortalSubject(subjectRef: 'bsn-1'),
 			uuid: 't-1',
-			answers: ['remarks' => 'ok'],
-			comment: null,
-			files: [['name' => 'payslip.pdf', 'type' => 'application/pdf', 'size' => 1200, 'content' => 'PDFBYTES']]
+			completion: new PortalCompletion(answers: ['remarks' => 'ok'], files: [['name' => 'payslip.pdf', 'type' => 'application/pdf', 'size' => 1200, 'content' => 'PDFBYTES']])
 		);
 
 		$this->assertSame(Task::STATE_COMPLETED, $completed->getState());
@@ -235,7 +234,7 @@ class PortalTaskServiceTest extends TestCase {
 			$this->service->complete(
 				subject: new PortalSubject(subjectRef: 'bsn-2'),
 				uuid: 't-1',
-				files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']]
+				completion: new PortalCompletion(files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']])
 			);
 			$this->fail('Another subject completed the task.');
 		} catch (TaskAccessDeniedException $denied) {
@@ -327,7 +326,7 @@ class PortalTaskServiceTest extends TestCase {
 				logger: new NullLogger()
 			);
 			try {
-				$service->complete(subject: $subject, uuid: 't-1', files: $files);
+				$service->complete(subject: $subject, uuid: 't-1', completion: new PortalCompletion(files: $files));
 				$this->fail("Expected a refusal naming $constraint");
 			} catch (TaskValidationException $refused) {
 				$this->assertStringContainsString($constraint, $refused->getMessage());
@@ -462,7 +461,7 @@ class PortalTaskServiceTest extends TestCase {
 		$this->tasks->expects($this->once())->method('complete')->willReturn($task);
 
 		try {
-			$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1', files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']]);
+			$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1', completion: new PortalCompletion(files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']]));
 			$this->fail('The seam completed a task its app completes.');
 		} catch (TaskCompleteViaAppException $elsewhere) {
 			$this->assertSame(['app' => 'dossiq', 'action' => 'completeChecklistTask'], $elsewhere->completeVia());

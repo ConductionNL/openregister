@@ -51,6 +51,7 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Portal\PortalCompletion;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalSubjectAssertionInterface;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryServiceInterface;
@@ -383,10 +384,12 @@ class PortalTaskController extends Controller {
 		$task = $this->portal->complete(
 			subject: $subject,
 			uuid: $completion['uuid'],
-			answers: $this->answers(),
-			comment: $completion['comment'],
-			files: $this->uploads(),
-			outcome: $completion['outcome']
+			completion: new PortalCompletion(
+				answers: $this->answers(),
+				comment: $completion['comment'],
+				files: $this->uploads(),
+				outcome: $completion['outcome']
+			)
 		);
 
 		return new JSONResponse($this->portal->row(task: $task));
