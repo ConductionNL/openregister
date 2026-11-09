@@ -38,7 +38,7 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
+import l10nMethods from '../../composables/l10nMethods.js'
 
 /**
  * One trace, rendered as the three facts it carries.
@@ -49,6 +49,7 @@ import { translate as t } from '@nextcloud/l10n'
  */
 export default {
 	name: 'RuleTraceView',
+	mixins: [l10nMethods],
 
 	props: {
 		/** The trace: verdict, operand, operandValue, message. */
@@ -72,10 +73,6 @@ export default {
 			)
 			return found ? found.description : ''
 		},
-	},
-
-	methods: {
-		t,
 	},
 }
 </script>
