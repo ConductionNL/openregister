@@ -28,8 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
 use OCA\OpenRegister\Service\RegisterService;
+use RuntimeException;
 
 /**
  * RegistersToolProvider
@@ -52,10 +55,12 @@ class RegistersToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param RegisterService $registerService Register service for CRUD operations
+	 * @param RegisterService       $registerService Register service for CRUD operations
+	 * @param DefinitionWriteRights $rights          The rights of the signed-in user
 	 */
 	public function __construct(
 		private readonly RegisterService $registerService,
+		private readonly DefinitionWriteRights $rights,
 	) {
 	}//end __construct()
 
@@ -184,6 +189,10 @@ class RegistersToolProvider implements IMcpToolProvider {
 	 */
 	private function createRegister(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'data');
+		if ($this->rights->isAdmin() === false) {
+			throw new RuntimeException('Only administrators may create registers');
+		}
+
 		$register = $this->registerService->createFromArray(data: $arguments['data']);
 		return $register->jsonSerialize();
 	}//end createRegister()
@@ -198,9 +207,12 @@ class RegistersToolProvider implements IMcpToolProvider {
 	private function updateRegister(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
 		$this->requireParam(arguments: $arguments, param: 'data');
+		$this->manageableRegister(id: $arguments['id']);
+		$data = $arguments['data'];
+		unset($data['id'], $data['organisation'], $data['owner'], $data['created']);
 		$register = $this->registerService->updateFromArray(
 			id: $arguments['id'],
-			data: $arguments['data']
+			data: $data
 		);
 		return $register->jsonSerialize();
 	}//end updateRegister()
@@ -214,10 +226,28 @@ class RegistersToolProvider implements IMcpToolProvider {
 	 */
 	private function deleteRegister(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
-		$register = $this->registerService->find(id: $arguments['id']);
+		$register = $this->manageableRegister(id: $arguments['id']);
 		$this->registerService->delete(register: $register);
 		return ['deleted' => true, 'id' => $arguments['id']];
 	}//end deleteRegister()
+
+	/**
+	 * The register with this id, when the signed-in user may manage it.
+	 *
+	 * @param mixed $id The register id
+	 *
+	 * @return Register The register
+	 *
+	 * @throws RuntimeException When the user may not manage it
+	 */
+	private function manageableRegister(mixed $id): Register {
+		$register = $this->registerService->find(id: $id);
+		if ($this->rights->mayManage(authorization: $register->getAuthorization()) === false) {
+			throw new RuntimeException('User does not have permission to manage this register');
+		}
+
+		return $register;
+	}//end manageableRegister()
 
 	/**
 	 * Assert a parameter is present in arguments.
