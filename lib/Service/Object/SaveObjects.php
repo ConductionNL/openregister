@@ -2843,7 +2843,7 @@ class SaveObjects {
 	private function timedSideEffects(BulkChunkRun $chunk, array $sideEffects): void {
 		$run = $chunk->run;
 		$phaseStart = microtime(true);
-		$this->emitChunkSideEffects(sideEffects: $sideEffects, _events: $run->events, _audit: $run->audit);
+		$this->emitChunkSideEffects(sideEffects: $sideEffects, run: $run);
 		$this->emitTargetedEvents(sideEffects: $sideEffects, targets: $chunk->eventTargets);
 		$chunk->finishPhase(phase: 'sideEffects', start: $phaseStart);
 	}//end timedSideEffects()
@@ -3013,11 +3013,9 @@ class SaveObjects {
 			return;
 		}
 
-		$this->emitChunkSideEffects(
-			sideEffects: $this->sideEffectsWithin(sideEffects: $sideEffects, targets: $targets),
-			_events: true,
-			_audit: false
-		);
+		if ($this->dispatchesChunkEvents(events: true) === true) {
+			$this->dispatchChunkEvents(sideEffects: $this->sideEffectsWithin(sideEffects: $sideEffects, targets: $targets));
+		}
 	}//end emitTargetedEvents()
 
 	/**
@@ -3289,34 +3287,43 @@ class SaveObjects {
 	 * so peak memory never holds a whole 20k-object chunk's audit entities (each
 	 * embeds an old+new payload diff). Update rows carry the REAL pre-update
 	 * state so their changeset is an accurate old-vs-new diff.
-	 * ObjectCreated/ObjectUpdatedEvent are only dispatched when $_events is true.
+	 * Audit rows are written only when the run's audit flag (the bulk mirror of
+	 * the single-object path's `silent` flag) is on; ObjectCreated/ObjectUpdatedEvent
+	 * are only dispatched when the run's events flag is on. The audit trail is
+	 * written before any event is dispatched.
 	 *
-	 * @param array $sideEffects Side-effect payload from buildChunkResults():
-	 *                           'created' => list<ObjectEntity>,
-	 *                           'updated' => list<array{old: ObjectEntity|null, new: ObjectEntity}>
-	 * @param bool $_events Whether to dispatch object lifecycle events
-	 * @param bool $_audit Whether to write audit trail rows; the bulk mirror of
-	 *                     the single-object path's `silent` flag
+	 * @param array       $sideEffects Side-effect payload from buildChunkResults():
+	 *                                 'created' => list<ObjectEntity>,
+	 *                                 'updated' => list<array{old: ObjectEntity|null, new: ObjectEntity}>
+	 * @param BulkSaveRun $run         The bulk save call, carrying the events and audit flags
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function emitChunkSideEffects(array $sideEffects, bool $_events, bool $_audit = true): void {
-		$createdEntities = ($sideEffects['created'] ?? []);
-		$updatedEntities = ($sideEffects['updated'] ?? []);
-
-		if ($this->writesChunkAudit(audit: $_audit) === true) {
-			$this->insertAuditEntries(auditEntries: $this->chunkAuditEntries(created: $createdEntities, updated: $updatedEntities));
+	private function emitChunkSideEffects(array $sideEffects, BulkSaveRun $run): void {
+		if ($this->writesChunkAudit(audit: $run->audit) === true) {
+			$this->insertAuditEntries(
+				auditEntries: $this->chunkAuditEntries(created: ($sideEffects['created'] ?? []), updated: ($sideEffects['updated'] ?? []))
+			);
 		}
 
-		if ($this->dispatchesChunkEvents(events: $_events) === false) {
-			return;
+		if ($this->dispatchesChunkEvents(events: $run->events) === true) {
+			$this->dispatchChunkEvents(sideEffects: $sideEffects);
 		}
-
-		$this->dispatchCreatedEvents(createdEntities: $createdEntities);
-		$this->dispatchUpdatedEvents(updatedEntities: $updatedEntities);
 	}//end emitChunkSideEffects()
+
+	/**
+	 * Dispatch the created and updated events of a chunk's side effects, created first.
+	 *
+	 * @param array $sideEffects Side-effect payload from buildChunkResults().
+	 *
+	 * @return void
+	 */
+	private function dispatchChunkEvents(array $sideEffects): void {
+		$this->dispatchCreatedEvents(createdEntities: ($sideEffects['created'] ?? []));
+		$this->dispatchUpdatedEvents(updatedEntities: ($sideEffects['updated'] ?? []));
+	}//end dispatchChunkEvents()
 
 	/**
 	 * Whether the chunk's audit trail is written: an audit mapper is wired and the caller did not opt out.
