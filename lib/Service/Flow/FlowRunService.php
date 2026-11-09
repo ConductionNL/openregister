@@ -1194,11 +1194,11 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * direct-invoked node still needs to know WHOSE rights it writes with and
 	 * WHICH published graph it belongs to.
 	 *
-	 * @param FlowRun $run The queued run.
-	 * @param array $flow The flow document (used only to resolve the published pin).
 	 * The node to run is the one the run was queued for, named in its context
 	 * under {@see FlowRunServiceInterface::NODE_ID_CONTEXT_KEY}.
 	 *
+	 * @param FlowRun $run The queued run.
+	 * @param array $flow The flow document (used only to resolve the published pin).
 	 * @param object $subject The subject object the node acts on.
 	 * @param array $config The caller's config, overlaid on the published step's config after
 	 *                      pinning (caller keys win). The pin replaces the graph's nodes, so
