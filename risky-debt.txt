@@ -211,3 +211,5 @@ OCA\OpenRegister\Tests\Unit\Service\WebhookServiceTest::testDeliverWebhookReturn
 OCA\OpenRegister\Tests\Unit\Service\WebhookServiceTest::testDeliverWebhookSchedulesRetryOnFailure
 /root/sigint/or/vendor/composer/ClassLoader.php:576
 /root/sigint/or/tests/Unit/Architecture/HubClassesAreReachedThroughInterfacesTest.php:153
+/root/sigint/or/tests/Unit/AppHost/Scheduling/ManifestScheduleEndToEndTest.php:256
+/root/sigint/or/tests/Unit/AppHost/Scheduling/ManifestScheduleEndToEndTest.php:483
