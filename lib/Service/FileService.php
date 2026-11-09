@@ -1843,6 +1843,7 @@ class FileService {
 	 *
 	 * @param ObjectEntity|string $object The object entity or object UUID/ID
 	 * @param string|null $zipName Optional custom name for the ZIP file
+	 * @param bool $publishedOnly Only the object's published files (default); false only for its owner or an administrator
 	 *
 	 * @throws Exception If ZIP creation fails or object not found
 	 * @throws NotFoundException If the object folder is not found
@@ -1855,10 +1856,11 @@ class FileService {
 	 *
 	 * @spec exclude Object-files ZIP build; deferred to the file-actions FilePublishingHandler follow-up pass (see file-actions tasks.md DROP list).
 	 */
-	public function createObjectFilesZip(ObjectEntity|string $object, ?string $zipName = null): array {
+	public function createObjectFilesZip(ObjectEntity|string $object, ?string $zipName = null, bool $publishedOnly = true): array {
 		return $this->filePublishingHandler->createObjectFilesZip(
 			object: $object,
-			zipName: $zipName
+			zipName: $zipName,
+			publishedOnly: $publishedOnly
 		);
 	}//end createObjectFilesZip()
 

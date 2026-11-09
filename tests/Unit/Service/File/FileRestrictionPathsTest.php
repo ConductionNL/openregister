@@ -252,6 +252,54 @@ class FileRestrictionPathsTest extends TestCase {
 		$handler->createObjectFilesZip($this->object);
 	}//end testTheZipLeavesTheRestrictedFileOut()
 
+	/**
+	 * The ZIP holds only published files unless the caller asks otherwise (oc-f1).
+	 *
+	 * @return void
+	 */
+	public function testTheZipAsksForPublishedFilesByDefault(): void {
+		$container = $this->createMock(IServerContainer::class);
+		$container->method('get')->willReturn($this->guard(admitted: true));
+		$this->fileService->expects($this->once())
+			->method('getFiles')
+			->with($this->object, true)
+			->willReturn([]);
+		$handler = new FilePublishingHandler(
+			$this->createMock(MagicMapper::class),
+			$this->createMock(FileMapper::class),
+			new NullLogger(),
+			$container
+		);
+		$handler->setFileService($this->fileService);
+
+		$this->expectException(Exception::class);
+		$handler->createObjectFilesZip($this->object);
+	}//end testTheZipAsksForPublishedFilesByDefault()
+
+	/**
+	 * An owner or administrator caller passes publishedOnly: false and gets every file.
+	 *
+	 * @return void
+	 */
+	public function testTheZipTakesEveryFileWhenTheCallerMaySeeThem(): void {
+		$container = $this->createMock(IServerContainer::class);
+		$container->method('get')->willReturn($this->guard(admitted: true));
+		$this->fileService->expects($this->once())
+			->method('getFiles')
+			->with($this->object, false)
+			->willReturn([]);
+		$handler = new FilePublishingHandler(
+			$this->createMock(MagicMapper::class),
+			$this->createMock(FileMapper::class),
+			new NullLogger(),
+			$container
+		);
+		$handler->setFileService($this->fileService);
+
+		$this->expectException(Exception::class);
+		$handler->createObjectFilesZip($this->object, null, false);
+	}//end testTheZipTakesEveryFileWhenTheCallerMaySeeThem()
+
 	public function testSearchDropsTheRestrictedHit(): void {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('anna');

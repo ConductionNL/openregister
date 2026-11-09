@@ -6605,7 +6605,11 @@ class ObjectsController extends Controller {
 			$customFilename = $this->request->getParam(key: 'filename');
 
 			// Create the ZIP archive.
-			$zipInfo = $fileService->createObjectFilesZip(object: $object, zipName: $customFilename);
+			// Unpublished attachments only for the object's owner or an administrator.
+			$callerUid     = $this->userSession->getUser()?->getUID();
+			$publishedOnly = ($this->isCurrentUserAdmin() === false
+				&& ($callerUid === null || $callerUid !== $object->getOwner()));
+			$zipInfo       = $fileService->createObjectFilesZip(object: $object, zipName: $customFilename, publishedOnly: $publishedOnly);
 
 			// Read the ZIP file content.
 			$zipContent = file_get_contents($zipInfo['path']);
