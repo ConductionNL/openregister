@@ -165,51 +165,57 @@ class Bootstrap {
 	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
 	 */
 	public static function register(IRegistrationContext $context, string $appId, array $options = []): void {
-		$studly = self::studly(appId: $appId);
-		$base = rtrim(string: (string)($options['namespace'] ?? ('OCA\\' . $studly)), characters: '\\');
-		$controllerNs = (string)($options['controllerNamespace'] ?? ($base . '\\Controller'));
-		$repairNs = (string)($options['repairNamespace'] ?? ($base . '\\Repair'));
-		$settingsNs = (string)($options['settingsNamespace'] ?? ($base . '\\Settings'));
-		$sectionsNs = (string)($options['sectionsNamespace'] ?? ($base . '\\Sections'));
-		$listenerNs = (string)($options['listenerNamespace'] ?? ($base . '\\Listener'));
-		$serviceNs = (string)($options['serviceNamespace'] ?? ($base . '\\Service'));
+		$adoption = new LeafAdoption(appId: $appId, options: $options);
+		self::registerPlanes(leaf: new LeafRegistration(context: $context, appId: $appId), adoption: $adoption);
+		self::registerExtras(context: $context, adoption: $adoption);
+	}//end register()
 
-		$section = [
-			'id' => (string)($options['sectionId'] ?? $appId),
-			'name' => (string)($options['sectionName'] ?? $studly),
-			'icon' => (string)($options['sectionIcon'] ?? 'app-dark.svg'),
-			'priority' => (int)($options['sectionPriority'] ?? 75),
-			'adminPriority' => (int)($options['adminPriority'] ?? 10),
-		];
-		$registerDeepLinks = ($options['deepLinks'] ?? true) !== false;
-		$registerObserv = ($options['observability'] ?? true) !== false;
-
-		$leaf = new LeafRegistration(context: $context, appId: $appId);
+	/**
+	 * Wire the controllers, services, repair steps, admin panel and deep links one leaf asked for.
+	 *
+	 * @param LeafRegistration $leaf     The leaf's registration.
+	 * @param LeafAdoption     $adoption The leaf's app id and overrides.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
+	 */
+	private static function registerPlanes(LeafRegistration $leaf, LeafAdoption $adoption): void {
+		$controllerNs = $adoption->namespace(option: 'controllerNamespace', suffix: 'Controller');
 		$leaf->registerControllers(controllerNs: $controllerNs);
-		if ($registerObserv === true) {
+		if ($adoption->enabled(flag: 'observability') === true) {
 			$leaf->registerObservabilityControllers(controllerNs: $controllerNs);
 		}
 
-		$leaf->registerServices(serviceNs: $serviceNs);
-		$leaf->registerRepairSteps(repairNs: $repairNs);
-		$leaf->registerAdminForm(settingsNs: $settingsNs, section: $section);
-		$leaf->registerSettingsSection(sectionsNs: $sectionsNs, section: $section);
-
-		if ($registerDeepLinks === true) {
-			$leaf->registerDeepLinkListener(listenerNs: $listenerNs);
+		$leaf->registerServices(serviceNs: $adoption->namespace(option: 'serviceNamespace', suffix: 'Service'));
+		$leaf->registerRepairSteps(repairNs: $adoption->namespace(option: 'repairNamespace', suffix: 'Repair'));
+		$leaf->registerAdminForm(settingsNs: $adoption->namespace(option: 'settingsNamespace', suffix: 'Settings'), section: $adoption->section());
+		$leaf->registerSettingsSection(sectionsNs: $adoption->namespace(option: 'sectionsNamespace', suffix: 'Sections'), section: $adoption->section());
+		if ($adoption->enabled(flag: 'deepLinks') === true) {
+			$leaf->registerDeepLinkListener(listenerNs: $adoption->namespace(option: 'listenerNamespace', suffix: 'Listener'));
 		}
+	}//end registerPlanes()
 
-		foreach ((array)($options['dashboardWidgets'] ?? []) as $widgetClass) {
+	/**
+	 * Register the dashboard widgets and the MCP provider alias one leaf named.
+	 *
+	 * @param IRegistrationContext $context  Leaf registration context.
+	 * @param LeafAdoption         $adoption The leaf's app id and overrides.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
+	 */
+	private static function registerExtras(IRegistrationContext $context, LeafAdoption $adoption): void {
+		foreach ($adoption->dashboardWidgets() as $widgetClass) {
 			$context->registerDashboardWidget((string)$widgetClass);
 		}
 
-		if (isset($options['mcpProvider']) === true) {
-			$context->registerServiceAlias(
-				'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::' . $appId,
-				(string)$options['mcpProvider']
-			);
+		$mcpProvider = $adoption->mcpProvider();
+		if ($mcpProvider !== null) {
+			$context->registerServiceAlias('OCA\\OpenRegister\\Mcp\\IMcpToolProvider::' . $adoption->appId, $mcpProvider);
 		}
-	}//end register()
+	}//end registerExtras()
 
 	/**
 	 * Bind the store controller for one leaf app.
@@ -239,26 +245,4 @@ class Bootstrap {
 	public static function aliasStoreController(IRegistrationContext $context, string $appId, string $controllerNs): void {
 		(new LeafRegistration(context: $context, appId: $appId))->aliasStoreController(controllerNs: $controllerNs);
 	}//end aliasStoreController()
-
-	/**
-	 * Convert a dash/underscore app id into a StudlyCase namespace segment
-	 * (e.g. `pet_store` / `pet-store` → `PetStore`).
-	 *
-	 * @param string $appId The app id.
-	 *
-	 * @return string StudlyCase form.
-	 */
-	private static function studly(string $appId): string {
-		$parts = preg_split(pattern: '/[_\-]+/', subject: $appId);
-		if ($parts === false || count($parts) === 0) {
-			$parts = [$appId];
-		}
-
-		$studly = '';
-		foreach ($parts as $part) {
-			$studly .= ucfirst($part);
-		}//end foreach
-
-		return $studly;
-	}//end studly()
 }//end class

@@ -108,7 +108,6 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 		});
 
 		$controller = new ViewsController(
-			'openregister',
 			$request,
 			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
 				$this->viewService($case),
