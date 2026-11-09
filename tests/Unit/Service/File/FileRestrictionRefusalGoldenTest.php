@@ -31,6 +31,7 @@ use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Service\File\FileRestriction;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionRecords;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionRequest;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionService;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCP\IUserSession;
@@ -81,7 +82,7 @@ class FileRestrictionRefusalGoldenTest extends TestCase {
 
 		$refused = null;
 		try {
-			$service->restrict($fileId, $users, $groups, $reason);
+			$service->restrict(new FileRestrictionRequest(fileId: $fileId, users: $users, groups: $groups, reason: $reason));
 		} catch (InvalidArgumentException $e) {
 			$refused = $e->getMessage();
 		}
