@@ -175,10 +175,12 @@ class ViewAlertCrossedListener implements IEventListener {
 		}
 
 		$alert = $event->getAlert();
-		$parameters = self::parametersOf(event: $event);
-		$uids = $this->onlyThoseWhoMayRead(view: $event->getView()->jsonSerialize(), uids: $this->resolve(viewId: $parameters['viewId'], alert: $alert));
+		$run = new ViewAlertDeliveryRun();
+		$run->parameters = self::parametersOf(event: $event);
+		$resolved = $this->resolve(viewId: $run->parameters['viewId'], alert: $alert);
+		$run->uids = $this->onlyThoseWhoMayRead(view: $event->getView()->jsonSerialize(), uids: $resolved);
 		foreach ($alert->channels as $channel) {
-			$this->deliver(channel: $channel, uids: $uids, parameters: $parameters);
+			$this->deliver(run: $run, channel: $channel);
 		}
 	}//end handle()
 
@@ -204,20 +206,19 @@ class ViewAlertCrossedListener implements IEventListener {
 	/**
 	 * Deliver the crossing over one channel, or name a channel nothing delivers.
 	 *
-	 * @param string               $channel    The channel the alert names.
-	 * @param array<int, string>   $uids       The recipients.
-	 * @param array<string, mixed> $parameters The subject parameters.
+	 * @param ViewAlertDeliveryRun $run     The delivery: recipients and subject parameters.
+	 * @param string               $channel The channel the alert names.
 	 *
 	 * @return void
 	 */
-	private function deliver(string $channel, array $uids, array $parameters): void {
+	private function deliver(ViewAlertDeliveryRun $run, string $channel): void {
 		if ($channel === self::CHANNEL_NOTIFICATION) {
-			$this->notifyAll(uids: $uids, parameters: $parameters);
+			$this->notifyAll(run: $run);
 			return;
 		}
 
 		if ($channel === self::CHANNEL_EMAIL) {
-			$this->mailAll(uids: $uids, parameters: $parameters);
+			$this->mailAll(run: $run);
 			return;
 		}
 
@@ -226,7 +227,7 @@ class ViewAlertCrossedListener implements IEventListener {
 		// waiting on a pager that never rings deserves a line in the log.
 		$this->logger->warning(
 			'[ViewAlertCrossedListener] View {view} alert names channel {channel}, which nothing delivers; it was skipped.',
-			['view' => $parameters['viewId'], 'channel' => $channel]
+			['view' => $run->parameters['viewId'], 'channel' => $channel]
 		);
 	}//end deliver()
 
@@ -371,13 +372,13 @@ class ViewAlertCrossedListener implements IEventListener {
 	/**
 	 * Put the crossing in each recipient's Nextcloud notifications.
 	 *
-	 * @param array<int, string> $uids The recipients.
-	 * @param array<string, mixed> $parameters The subject parameters Notifier renders.
+	 * @param ViewAlertDeliveryRun $run The delivery: recipients and the subject parameters Notifier renders.
 	 *
 	 * @return void
 	 */
-	private function notifyAll(array $uids, array $parameters): void {
-		foreach ($uids as $uid) {
+	private function notifyAll(ViewAlertDeliveryRun $run): void {
+		$parameters = $run->parameters;
+		foreach ($run->uids as $uid) {
 			try {
 				$this->notifyOne(uid: $uid, parameters: $parameters);
 			} catch (Throwable $e) {
@@ -410,13 +411,13 @@ class ViewAlertCrossedListener implements IEventListener {
 	/**
 	 * Mail the crossing to each recipient, in their own language.
 	 *
-	 * @param array<int, string> $uids The recipients.
-	 * @param array<string, mixed> $parameters The view, count and threshold.
+	 * @param ViewAlertDeliveryRun $run The delivery: recipients and the view, count and threshold.
 	 *
 	 * @return void
 	 */
-	private function mailAll(array $uids, array $parameters): void {
-		foreach ($uids as $uid) {
+	private function mailAll(ViewAlertDeliveryRun $run): void {
+		$parameters = $run->parameters;
+		foreach ($run->uids as $uid) {
 			$l = $this->l10nFactory->get('openregister', $this->l10nFactory->getUserLanguage($this->userManager->get($uid)));
 			$subject = $l->t('%1$s is at %2$s', [$parameters['view'], $parameters['count']]);
 			$outcome = $this->email->send(uid: $uid, subject: $subject, body: self::mailBody(l: $l, parameters: $parameters));
