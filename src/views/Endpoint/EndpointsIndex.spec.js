@@ -5,8 +5,8 @@
  * @copyright 2026 Conduction B.V.
  */
 import { mount } from '@vue/test-utils'
-import { endpointStore, navigationStore } from '../../store/store.js'
 import EndpointsIndex from './EndpointsIndex.vue'
+import { endpointStore, navigationStore } from '../../store/store.js'
 
 jest.mock('../../store/store.js', () => {
 	const { reactive } = require('vue')

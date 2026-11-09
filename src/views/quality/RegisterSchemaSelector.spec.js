@@ -6,8 +6,8 @@
  * @copyright 2026 Conduction B.V.
  */
 import { flushPromises, mount } from '@vue/test-utils'
-import { qualityStore } from '../../store/store.js'
 import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
+import { qualityStore } from '../../store/store.js'
 
 jest.mock('@nextcloud/l10n', () => ({ translate: (app, text) => text }))
 jest.mock('@nextcloud/vue', () => {
