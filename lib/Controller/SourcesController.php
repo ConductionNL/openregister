@@ -25,6 +25,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\SourcePayload;
 use OCA\OpenRegister\Controller\Support\SourcesControllerServices;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
@@ -173,11 +174,12 @@ class SourcesController extends Controller {
 		// Return all sources that match the filters.
 		// Strip databaseUrl from non-admin responses to prevent credential exposure.
 		$limit = $this->getIntParam(params: $params, key: '_limit');
-		$sources = $this->sourceMapper->findAll(
-			limit: $limit,
+		$query = new ListQuery(
+			limit: ($limit ?? ListQuery::UNBOUNDED),
 			offset: $this->pageOffset(params: $params, limit: $limit),
 			filters: $filters
 		);
+		$sources = $this->sourceMapper->findSources(query: $query);
 		return new JSONResponse(
 			data: ['results' => array_map(fn (Source $src) => $this->serializeSource(source: $src), $sources)]
 		);

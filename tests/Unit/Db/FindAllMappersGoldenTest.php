@@ -36,7 +36,9 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Db\SqlSearchClause;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -77,6 +79,18 @@ final class FindAllMappersGoldenTest extends TestCase {
 	}//end readCases()
 
 	/**
+	 * The findSources() arguments for one findAll() argument set.
+	 *
+	 * @param array<int, mixed> $args Limit, offset, filters, search conditions, search params.
+	 *
+	 * @return array{0: ListQuery, 1: SqlSearchClause}
+	 */
+	private function sourceArgs(array $args): array {
+		[$limit, $offset, $filters, $conditions, $params] = ($args + [null, null, [], [], []]);
+		return [new ListQuery(($limit ?? ListQuery::UNBOUNDED), $offset, ($filters ?? [])), new SqlSearchClause($conditions, $params)];
+	}//end sourceArgs()
+
+	/**
 	 * The callers a read is made as.
 	 *
 	 * @return array<string, array<string, mixed>>
@@ -107,7 +121,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 
 			foreach (self::personas() as $who => $persona) {
 				$actual['application ' . $who . ': ' . $name] = $this->recorded(fn () => $this->applicationMapper(persona: $persona)->findAll(...$this->applicationArgs($args)));
-				$actual['source ' . $who . ': ' . $name] = $this->recorded(fn () => $this->sourceMapper(persona: $persona)->findAll(...$args));
+				$actual['source ' . $who . ': ' . $name] = $this->recorded(fn () => $this->sourceMapper(persona: $persona)->findSources(...$this->sourceArgs($args)));
 			}
 		}
 
