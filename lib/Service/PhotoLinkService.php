@@ -162,26 +162,25 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 			throw new Exception('Album already linked to this object', 409);
 		}
 
-		$info = $this->fetchAlbumInfo(albumId: $albumId, uid: $uid) ?? throw new Exception('Photos album not found', 404);
+		$run       = new AlbumLinkRun(uid: $uid, albumId: $albumId);
+		$run->info = $this->fetchAlbumInfo(run: $run) ?? throw new Exception('Photos album not found', 404);
 
-		return $this->persistLink(target: $target, uid: $uid, albumId: $albumId, info: $info);
+		return $this->persistLink(target: $target, run: $run);
 	}//end linkAlbum()
 
 	/**
 	 * Build, stamp and insert the link row for an album.
 	 *
-	 * @param LinkTarget          $target  The object to link to.
-	 * @param string              $uid     The linking user.
-	 * @param int                 $albumId NC Photos album id.
-	 * @param array<string,mixed> $info    Album info `{ name, coverPhotoUrl, photoCount, lastEdited }`.
+	 * @param LinkTarget   $target The object to link to.
+	 * @param AlbumLinkRun $run    The linking user, the album id and its fetched info.
 	 *
 	 * @return PhotoLink The persisted link row.
 	 */
-	private function persistLink(LinkTarget $target, string $uid, int $albumId, array $info): PhotoLink {
+	private function persistLink(LinkTarget $target, AlbumLinkRun $run): PhotoLink {
 		$link = new PhotoLink();
-		$link->setAlbumId($albumId);
-		$this->applyAlbumInfo(link: $link, info: $info);
-		$target->stamp(link: $link, linkedBy: $uid);
+		$link->setAlbumId($run->albumId);
+		$this->applyAlbumInfo(link: $link, info: $run->info);
+		$target->stamp(link: $link, linkedBy: $run->uid);
 
 		return $this->photoLinkMapper->insert($link);
 	}//end persistLink()
@@ -222,10 +221,10 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 			throw new Exception('Album name is required', 400);
 		}
 
-		$albumId = $this->createAlbum(uid: $uid, name: $name);
-		$info    = ['name' => $name, 'coverPhotoUrl' => null, 'photoCount' => 0, 'lastEdited' => new DateTime()];
+		$run       = new AlbumLinkRun(uid: $uid, albumId: $this->createAlbum(uid: $uid, name: $name));
+		$run->info = ['name' => $name, 'coverPhotoUrl' => null, 'photoCount' => 0, 'lastEdited' => new DateTime()];
 
-		return $this->persistLink(target: $target, uid: $uid, albumId: $albumId, info: $info);
+		return $this->persistLink(target: $target, run: $run);
 	}//end createAndLinkAlbum()
 
 	/**
@@ -284,12 +283,14 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	 */
 	public function getLinkedAlbums(string $objectUuid): array {
 		$links = $this->photoLinkMapper->findByObjectUuid($objectUuid);
-		$available = $this->isPhotosAvailable();
-		$uid = $this->runtime->userSession()->getUser()?->getUID();
+		$refreshAs = null;
+		if ($this->isPhotosAvailable() === true) {
+			$refreshAs = $this->runtime->userSession()->getUser()?->getUID();
+		}
 
 		$results = [];
 		foreach ($links as $link) {
-			$results[] = $this->linkedRow(link: $this->currentLink(link: $link, available: $available, uid: $uid));
+			$results[] = $this->linkedRow(link: $this->currentLink(link: $link, refreshAs: $refreshAs));
 		}
 
 		return $results;
@@ -299,14 +300,13 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	 * The link, refreshed from NC Photos first when Photos and a user are there and its cache is stale.
 	 *
 	 * @param PhotoLink   $link      The link row.
-	 * @param bool        $available Whether NC Photos is available.
-	 * @param string|null $uid       The current user, if any.
+	 * @param string|null $refreshAs The current user when NC Photos is available, else null.
 	 *
 	 * @return PhotoLink
 	 */
-	private function currentLink(PhotoLink $link, bool $available, ?string $uid): PhotoLink {
-		if ($available === true && $uid !== null && $this->isStale(link: $link) === true) {
-			return $this->refreshLink(link: $link, uid: $uid);
+	private function currentLink(PhotoLink $link, ?string $refreshAs): PhotoLink {
+		if ($refreshAs !== null && $this->isStale(link: $link) === true) {
+			return $this->refreshLink(link: $link, uid: $refreshAs);
 		}
 
 		return $link;
@@ -479,7 +479,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	 * @return PhotoLink The (possibly updated) link row.
 	 */
 	private function refreshLink(PhotoLink $link, string $uid): PhotoLink {
-		$info = $this->fetchAlbumInfo(albumId: (int)$link->getAlbumId(), uid: $uid);
+		$info = $this->fetchAlbumInfo(run: new AlbumLinkRun(uid: $uid, albumId: (int)$link->getAlbumId()));
 		if ($info === null) {
 			return $link;
 		}
@@ -498,20 +498,19 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	/**
 	 * Fetch normalised album metadata from NC Photos.
 	 *
-	 * @param int $albumId The album id.
-	 * @param string $uid The owning user id.
+	 * @param AlbumLinkRun $run The owning user and the album id.
 	 *
 	 * @return array{name:string,coverPhotoUrl:?string,photoCount:?int,lastEdited:?DateTime}|null
 	 */
-	private function fetchAlbumInfo(int $albumId, string $uid): ?array {
+	private function fetchAlbumInfo(AlbumLinkRun $run): ?array {
 		$mapper = $this->getAlbumMapper();
-		$album  = $this->findAlbum(mapper: $mapper, albumId: $albumId);
+		$album  = $this->findAlbum(mapper: $mapper, albumId: $run->albumId);
 		if ($album === null) {
 			return null;
 		}
 
 		$lastEdited = $this->lastEdited(album: $album);
-		$photoCount = $this->countPhotos(mapper: $mapper, albumId: $albumId, uid: $uid);
+		$photoCount = $this->countPhotos(mapper: $mapper, run: $run);
 
 		return [
 			'name' => (string)$album->getTitle(),
@@ -565,15 +564,14 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	/**
 	 * Best-effort photo count for an album.
 	 *
-	 * @param object $mapper The AlbumMapper instance.
-	 * @param int $albumId The album id.
-	 * @param string $uid The owning user id.
+	 * @param object       $mapper The AlbumMapper instance.
+	 * @param AlbumLinkRun $run    The owning user and the album id.
 	 *
 	 * @return int|null The count, or null when it can't be resolved.
 	 */
-	private function countPhotos(object $mapper, int $albumId, string $uid): ?int {
+	private function countPhotos(object $mapper, AlbumLinkRun $run): ?int {
 		try {
-			$withFiles = $mapper->getForAlbumIdAndUserWithFiles($albumId, $uid, []);
+			$withFiles = $mapper->getForAlbumIdAndUserWithFiles($run->albumId, $run->uid, []);
 			return count($withFiles);
 		} catch (Throwable $e) {
 			$this->runtime->logger()->debug('PhotoLinkService::countPhotos failed: ' . $e->getMessage());
