@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners;
 use OCA\OpenRegister\Service\Decision\DecisionService;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
+use OCA\OpenRegister\Service\Decision\RelationDecisionStores;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
 use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -127,8 +128,7 @@ class EntityRelationsControllerTest extends TestCase {
 			}
 		);
 		$this->relationDecisions = new RelationDecisionService(
-			relationMapper: $this->mapper,
-			decisions: new DecisionService(decisionMapper: $decisionMapper),
+			stores: new RelationDecisionStores(relationMapper: $this->mapper, decisions: new DecisionService(decisionMapper: $decisionMapper), db: $this->createMock(IDBConnection::class)),
 			ownership: new DecisionOwnership(
 				groupManager: $this->createMock(IGroupManager::class),
 				eventDispatcher: $this->createMock(IEventDispatcher::class),
@@ -139,8 +139,7 @@ class EntityRelationsControllerTest extends TestCase {
 				fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
 				fileOwners: new ReviewPolicyFileOwners($this->rootFolder, $this->createMock(ManagedFileOwnerLookup::class)),
 				logger: $this->logger
-			),
-			db: $this->createMock(IDBConnection::class)
+			)
 		);
 	}//end setUp()
 
