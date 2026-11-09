@@ -74,6 +74,7 @@ use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppAndHistoryRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetHistoryRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds;
@@ -428,17 +429,19 @@ abstract class ExampleSetTestCase extends TestCase {
 						accessLinks: new ExampleSetAccessLinks(container: $container),
 						grants: new ExampleSetGrants(container: $container)
 					),
-					apps: new ExampleSetAppRowKinds(
-						deckCards: new ExampleSetDeckCards(container: $container),
-						appointments: new ExampleSetAppointments(container: $container),
-						collectivesPages: new ExampleSetCollectivesPages(container: $container),
-						talkConversations: new ExampleSetTalkConversations(container: $container)
-					),
-					history: new ExampleSetHistoryRowKinds(
-						exportRuns: new ExampleSetExportRuns(container: $container),
-						archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
-						auditEntries: new ExampleSetAuditEntries(container: $container),
-						timelineEntries: new ExampleSetTimelineEntries(container: $container)
+					elsewhere: new ExampleSetAppAndHistoryRowKinds(
+						apps: new ExampleSetAppRowKinds(
+							deckCards: new ExampleSetDeckCards(container: $container),
+							appointments: new ExampleSetAppointments(container: $container),
+							collectivesPages: new ExampleSetCollectivesPages(container: $container),
+							talkConversations: new ExampleSetTalkConversations(container: $container)
+						),
+						history: new ExampleSetHistoryRowKinds(
+							exportRuns: new ExampleSetExportRuns(container: $container),
+							archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
+							auditEntries: new ExampleSetAuditEntries(container: $container),
+							timelineEntries: new ExampleSetTimelineEntries(container: $container)
+						)
 					)
 				),
 			),
@@ -467,17 +470,19 @@ abstract class ExampleSetTestCase extends TestCase {
 						accessLinks: new ExampleSetAccessLinks(container: $container),
 						grants: new ExampleSetGrants(container: $container)
 					),
-					apps: new ExampleSetAppRowKinds(
-						deckCards: new ExampleSetDeckCards(container: $container),
-						appointments: new ExampleSetAppointments(container: $container),
-						collectivesPages: new ExampleSetCollectivesPages(container: $container),
-						talkConversations: new ExampleSetTalkConversations(container: $container)
-					),
-					history: new ExampleSetHistoryRowKinds(
-						exportRuns: new ExampleSetExportRuns(container: $container),
-						archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
-						auditEntries: new ExampleSetAuditEntries(container: $container),
-						timelineEntries: new ExampleSetTimelineEntries(container: $container)
+					elsewhere: new ExampleSetAppAndHistoryRowKinds(
+						apps: new ExampleSetAppRowKinds(
+							deckCards: new ExampleSetDeckCards(container: $container),
+							appointments: new ExampleSetAppointments(container: $container),
+							collectivesPages: new ExampleSetCollectivesPages(container: $container),
+							talkConversations: new ExampleSetTalkConversations(container: $container)
+						),
+						history: new ExampleSetHistoryRowKinds(
+							exportRuns: new ExampleSetExportRuns(container: $container),
+							archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
+							auditEntries: new ExampleSetAuditEntries(container: $container),
+							timelineEntries: new ExampleSetTimelineEntries(container: $container)
+						)
 					)
 				)
 			),

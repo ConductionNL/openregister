@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
 use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppAndHistoryRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival;
@@ -109,8 +110,10 @@ class ExampleSetEngineKindsGoldenTest extends TestCase {
 			work: new ExampleSetWorkRowKinds(...$of('tasks', 'notes', 'readStates', 'watchers')),
 			own: new ExampleSetOwnRowKinds(...$of('views', 'flows', 'casePlans')),
 			links: new ExampleSetLinkRowKinds(...$of('parties', 'emailLinks', 'accessLinks', 'grants')),
-			apps: new ExampleSetAppRowKinds(...$of('deckCards', 'appointments', 'collectivesPages', 'talkConversations')),
-			history: new ExampleSetHistoryRowKinds(...$of('exportRuns', 'archival', 'auditEntries', 'timelineEntries'))
+			elsewhere: new ExampleSetAppAndHistoryRowKinds(
+				apps: new ExampleSetAppRowKinds(...$of('deckCards', 'appointments', 'collectivesPages', 'talkConversations')),
+				history: new ExampleSetHistoryRowKinds(...$of('exportRuns', 'archival', 'auditEntries', 'timelineEntries'))
+			)
 		);
 	}//end kinds()
 

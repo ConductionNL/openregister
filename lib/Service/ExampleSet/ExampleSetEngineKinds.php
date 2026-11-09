@@ -47,8 +47,7 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetWorkRowKinds    $work    Writes the tasks, notes, read states and follows.
 	 * @param ExampleSetOwnRowKinds     $own     Writes the saved views, flows and case plans.
 	 * @param ExampleSetLinkRowKinds    $links   Writes the party links, email links, access links and grants.
-	 * @param ExampleSetAppRowKinds     $apps    Writes the Deck cards, appointments, Collectives pages and Talk conversations.
-	 * @param ExampleSetHistoryRowKinds $history Writes the exports, the archival setting, audit and timeline entries.
+	 * @param ExampleSetAppAndHistoryRowKinds $elsewhere Writes the rows in other apps and in the history.
 	 *
 	 * @return void
 	 */
@@ -56,8 +55,7 @@ class ExampleSetEngineKinds {
 		private readonly ExampleSetWorkRowKinds $work=new ExampleSetWorkRowKinds(),
 		private readonly ExampleSetOwnRowKinds $own=new ExampleSetOwnRowKinds(),
 		private readonly ExampleSetLinkRowKinds $links=new ExampleSetLinkRowKinds(),
-		private readonly ExampleSetAppRowKinds $apps=new ExampleSetAppRowKinds(),
-		private readonly ExampleSetHistoryRowKinds $history=new ExampleSetHistoryRowKinds(),
+		private readonly ExampleSetAppAndHistoryRowKinds $elsewhere=new ExampleSetAppAndHistoryRowKinds(),
 	) {
 	}//end __construct()
 
@@ -332,8 +330,8 @@ class ExampleSetEngineKinds {
 	 * @return array<string, array{0: ExampleSetEngineRows|null, 1: string}>
 	 */
 	private function kinds(): array {
-		$writers = ($this->work->writers() + $this->own->writers() + $this->links->writers() + $this->apps->writers()
-			+ $this->history->writers());
+		$writers = ($this->work->writers() + $this->own->writers() + $this->links->writers()
+			+ $this->elsewhere->writers());
 		$kinds   = [];
 		foreach (ExampleSetFragmentShape::KEYED_ROWS as $part => $noun) {
 			$kinds[$part] = [$writers[$part], $noun];
