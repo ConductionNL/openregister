@@ -55,6 +55,7 @@ class ServiceHoursDeclarationBehaviourTest extends TestCase {
 			'negative minute bound' => [['monday' => [['start' => -1, 'end' => 60]]], 'without a readable start and end (HH:MM).'],
 			'hour 25' => [['monday' => [['start' => '09:00', 'end' => '25:00']]], 'without a readable start and end (HH:MM).'],
 			'minute 60' => [['monday' => [['start' => '09:60', 'end' => '17:00']]], 'without a readable start and end (HH:MM).'],
+			'bound as words' => [['monday' => [['start' => 'nine', 'end' => '17:00']]], 'without a readable start and end (HH:MM).'],
 			'bound a float' => [['monday' => [['start' => 9.5, 'end' => '17:00']]], 'without a readable start and end (HH:MM).'],
 			'ends before it starts' => [['monday' => [['start' => '17:00', 'end' => '09:00']]], 'that ends at or before it starts.'],
 			'overlap' => [['monday' => [['start' => '12:00', 'end' => '17:00'], ['start' => '09:00', 'end' => '12:30']]], 'declares overlapping service hours on'],
