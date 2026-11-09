@@ -8,7 +8,7 @@
 		"
 		size="large"
 		:open="true"
-		@update:open="handleDialogClose">
+		@update:open="closeModal">
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
@@ -968,13 +968,6 @@ export default {
 					}),
 				)
 			}
-		},
-
-		/**
-		 * @spec exclude UI event handler — closes the modal on dialog dismiss.
-		 */
-		handleDialogClose() {
-			this.closeModal()
 		},
 
 		/**
