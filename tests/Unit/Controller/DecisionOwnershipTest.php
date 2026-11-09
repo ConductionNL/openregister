@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Decision\DecisionOwnership;
 use OCA\OpenRegister\Service\Decision\DecisionService;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
+use OCA\OpenRegister\Service\Decision\RelationDecisionStores;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
 use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -196,8 +197,7 @@ class DecisionOwnershipTest extends TestCase {
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$decide = new RelationDecisionService(
-			relationMapper: $relations,
-			decisions: new DecisionService(decisionMapper: $decisionMapper),
+			stores: new RelationDecisionStores(relationMapper: $relations, decisions: new DecisionService(decisionMapper: $decisionMapper), db: $this->createMock(IDBConnection::class)),
 			ownership: new DecisionOwnership(groupManager: $groups, eventDispatcher: $this->createMock(IEventDispatcher::class), logger: $logger),
 			policies: new ReviewPolicyResolver(
 				schemaMapper: $schemas,
@@ -205,8 +205,7 @@ class DecisionOwnershipTest extends TestCase {
 				rootFolder: $this->createMock(IRootFolder::class),
 				owners: $this->createMock(ManagedFileOwnerLookup::class),
 				logger: $logger
-			),
-			db: $this->createMock(IDBConnection::class)
+			)
 		);
 
 		return EntityRelationsControllerFactory::create(

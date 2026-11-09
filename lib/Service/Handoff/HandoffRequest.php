@@ -40,19 +40,15 @@ final class HandoffRequest {
 	/**
 	 * Name the request.
 	 *
-	 * @param string $register      The source register slug or id.
-	 * @param string $schema        The source schema slug or id.
-	 * @param string $id            The source object id/uuid.
-	 * @param string $handoffId     The declared handoff entry id.
-	 * @param bool   $deferred      True when draining a parked queue entry.
-	 * @param string $correlationId The correlation id of this execution.
+	 * @param HandoffSourceRef $source        The source object.
+	 * @param string           $handoffId     The declared handoff entry id.
+	 * @param bool             $deferred      True when draining a parked queue entry.
+	 * @param string           $correlationId The correlation id of this execution.
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 */
 	public function __construct(
-		public readonly string $register,
-		public readonly string $schema,
-		public readonly string $id,
+		public readonly HandoffSourceRef $source,
 		public readonly string $handoffId,
 		public readonly bool $deferred,
 		public readonly string $correlationId,
