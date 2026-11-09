@@ -38,6 +38,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -351,7 +352,17 @@ class MagicStatisticsHandler {
 		int|array|null $schemaId = null,
 		array $exclude = [],
 	): array {
-		$filter = new StatisticsPairFilter(wanted: ['register' => $registerId, 'schema' => $schemaId], exclude: $exclude);
+		return $this->pairStatistics(filter: new StatisticsPairFilter(wanted: ['register' => $registerId, 'schema' => $schemaId], exclude: $exclude));
+	}//end getStatistics()
+
+	/**
+	 * The object count over every register-schema pair the filter keeps.
+	 *
+	 * @param StatisticsPairFilter $filter Which pairs count.
+	 *
+	 * @return array Statistics array with keys: total, size, invalid, deleted, locked.
+	 */
+	private function pairStatistics(StatisticsPairFilter $filter): array {
 		$total = 0;
 		foreach ($this->getAllRegisterSchemaPairs() as $pair) {
 			$ids = [(int)$pair['registerId'], (int)$pair['schemaId']];
@@ -361,7 +372,7 @@ class MagicStatisticsHandler {
 		}
 
 		return ['total' => $total, 'size' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0];
-	}//end getStatistics()
+	}//end pairStatistics()
 
 	/**
 	 * Count one pair's objects, reading its register and schema through the request cache.
@@ -554,10 +565,24 @@ class MagicStatisticsHandler {
 	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	public function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity {
-		try {
-			$objectEntity = $this->entityInContext(register: $_register, schema: $_schema);
+		return $this->rowToEntity(row: $row, table: new RegisterSchema(register: $_register, schema: $_schema));
+	}//end convertRowToObjectEntity()
 
-			[$metadata, $objectData] = $this->splitRow(row: $row, propertyMap: $this->propertyColumnMap(schema: $_schema));
+	/**
+	 * Convert a row of a magic table to an ObjectEntity; a row that fails is logged and skipped.
+	 *
+	 * @param array          $row   Database row data.
+	 * @param RegisterSchema $table The register and schema the table belongs to.
+	 *
+	 * @return ObjectEntity|null ObjectEntity or null if conversion fails.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 */
+	private function rowToEntity(array $row, RegisterSchema $table): ?ObjectEntity {
+		try {
+			$objectEntity = $this->entityInContext(register: $table->register, schema: $table->schema);
+
+			[$metadata, $objectData] = $this->splitRow(row: $row, propertyMap: $this->propertyColumnMap(schema: $table->schema));
 
 			$this->applyMetadata(objectEntity: $objectEntity, metadata: $metadata);
 			$objectEntity->setObject($objectData);
@@ -568,7 +593,7 @@ class MagicStatisticsHandler {
 			$this->logConversionFailure(exception: $e, row: $row);
 			return null;
 		}
-	}//end convertRowToObjectEntity()
+	}//end rowToEntity()
 
 	/**
 	 * Log a row that could not be converted to an ObjectEntity.
