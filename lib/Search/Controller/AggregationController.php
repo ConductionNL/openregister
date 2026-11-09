@@ -49,14 +49,12 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
-use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices;
 use OCA\OpenRegister\Support\FilterParams;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -73,16 +71,12 @@ class AggregationController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest $request The current request.
-	 * @param AggregationRunnerInterface $runner The aggregation runner.
-	 * @param TimeseriesRequestValidator $validator Ad-hoc request validator.
-	 * @param LoggerInterface|null $logger Where the unknown-filter-key warning goes (optional).
+	 * @param IRequest                      $request  The current request.
+	 * @param AggregationControllerServices $services The runner, the ad-hoc validator and the logger.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly AggregationRunnerInterface $runner,
-		private readonly TimeseriesRequestValidator $validator,
-		private readonly ?LoggerInterface $logger = null,
+		private readonly AggregationControllerServices $services,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -137,7 +131,7 @@ class AggregationController extends Controller {
 
 		$resolvedSchema = $schemaEntity;
 		if ($resolvedSchema === null) {
-			$resolvedSchema = $this->runner->findSchema(schemaRef: $schema, registerRef: $register);
+			$resolvedSchema = $this->services->runner->findSchema(schemaRef: $schema, registerRef: $register);
 		}
 
 		$normalised = FilterParams::forAggregation(
@@ -148,7 +142,7 @@ class AggregationController extends Controller {
 		);
 
 		FilterParams::warnUnknownKeys(
-			logger: $this->logger,
+			logger: $this->services->logger,
 			keys: $normalised['unknown'],
 			endpoint: 'aggregation#' . $action,
 			register: $register,
@@ -195,7 +189,7 @@ class AggregationController extends Controller {
 			// `administrationId=X` reach the runner as the same constraint.
 			$extraFilter = $this->resolveFilter(action: 'aggregate', register: $register, schema: $schema);
 
-			$result = $this->runner->run(
+			$result = $this->services->runner->run(
 				registerRef: $register,
 				schemaRef: $schema,
 				name: $name,
@@ -424,7 +418,7 @@ class AggregationController extends Controller {
 	 */
 	private function runAndRespond(string $register, string $schema, AggregationQuery $query): JSONResponse {
 		try {
-			$result = $this->runner->runAdhocByRef(registerRef: $register, schemaRef: $schema, query: $query);
+			$result = $this->services->runner->runAdhocByRef(registerRef: $register, schemaRef: $schema, query: $query);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
 		} catch (RuntimeException $e) {
@@ -550,7 +544,7 @@ class AggregationController extends Controller {
 		// the validator would police one app's property list while the
 		// aggregate ran over another's rows.
 		try {
-			$schemaEntity = $this->runner->findSchema(schemaRef: $schema, registerRef: $register);
+			$schemaEntity = $this->services->runner->findSchema(schemaRef: $schema, registerRef: $register);
 		} catch (RuntimeException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}
@@ -575,7 +569,7 @@ class AggregationController extends Controller {
 		];
 
 		try {
-			$query = $this->validator->validate(input: $input, schema: $schemaEntity);
+			$query = $this->services->validator->validate(input: $input, schema: $schemaEntity);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}

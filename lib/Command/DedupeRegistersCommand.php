@@ -120,8 +120,8 @@ class DedupeRegistersCommand extends Command {
 
 		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
 
-		foreach ($this->groupBySlug(registers: $registers) as $slug => $group) {
-			$this->dedupeGroup(slug: (string)$slug, group: $group, run: $run, output: $output);
+		foreach ($this->groupBySlug(registers: $registers) as $group) {
+			$output->writeln($this->dedupeGroup(group: $group, run: $run));
 		}
 
 		if ($run->duplicateGroups === 0) {
@@ -171,16 +171,14 @@ class DedupeRegistersCommand extends Command {
 	/**
 	 * Keep the lowest-id register of a slug group and handle every other one.
 	 *
-	 * @param string               $slug   The lowercased slug.
-	 * @param array<int, Register> $group  The registers sharing it.
-	 * @param DedupeRegistersRun   $run    The run's flags and tally.
-	 * @param OutputInterface      $output Console output stream.
+	 * @param array<int, Register> $group The registers sharing one lowercased slug.
+	 * @param DedupeRegistersRun   $run   The run's flags and tally.
 	 *
-	 * @return void
+	 * @return array<int, string> The lines to print, in order.
 	 */
-	private function dedupeGroup(string $slug, array $group, DedupeRegistersRun $run, OutputInterface $output): void {
+	private function dedupeGroup(array $group, DedupeRegistersRun $run): array {
 		if (count($group) < 2) {
-			return;
+			return [];
 		}
 
 		$run->duplicateGroups++;
@@ -189,18 +187,20 @@ class DedupeRegistersCommand extends Command {
 		usort($group, static fn (Register $a, Register $b) => ((int)$a->getId() <=> (int)$b->getId()));
 		$canonical = array_shift($group);
 
-		$output->writeln(
+		$lines = [
 			sprintf(
 				'<info>Slug "%s": keeping canonical register id=%d, %d duplicate(s)</info>',
-				$slug,
+				strtolower((string)$canonical->getSlug()),
 				(int)$canonical->getId(),
 				count($group)
-			)
-		);
+			),
+		];
 
 		foreach ($group as $duplicate) {
-			$this->dedupeOne(duplicate: $duplicate, run: $run, output: $output);
+			$lines[] = $this->dedupeOne(duplicate: $duplicate, run: $run);
 		}
+
+		return $lines;
 	}//end dedupeGroup()
 
 	/**
@@ -208,55 +208,43 @@ class DedupeRegistersCommand extends Command {
 	 *
 	 * @param Register           $duplicate The duplicate register.
 	 * @param DedupeRegistersRun $run       The run's flags and tally.
-	 * @param OutputInterface    $output    Console output stream.
 	 *
-	 * @return void
+	 * @return string The line reporting what happened to it.
 	 */
-	private function dedupeOne(Register $duplicate, DedupeRegistersRun $run, OutputInterface $output): void {
+	private function dedupeOne(Register $duplicate, DedupeRegistersRun $run): string {
 		$objectCount = $this->countObjectsForRegister(register: $duplicate);
+		$id = (int)$duplicate->getId();
 
 		if ($objectCount > 0 && $run->force === false) {
 			$run->keptNonEmpty++;
-			$output->writeln(
-				sprintf(
-					'  <comment>SKIP duplicate id=%d (owns %d object(s) — re-run with --force to drop, or merge manually)</comment>',
-					(int)$duplicate->getId(),
-					$objectCount
-				)
+			return sprintf(
+				'  <comment>SKIP duplicate id=%d (owns %d object(s) — re-run with --force to drop, or merge manually)</comment>',
+				$id,
+				$objectCount
 			);
-			return;
 		}
 
 		if ($run->dryRun === true) {
-			$output->writeln(
-				sprintf(
-					'  <comment>WOULD DELETE duplicate id=%d (objects=%d)</comment>',
-					(int)$duplicate->getId(),
-					$objectCount
-				)
-			);
-			return;
+			return sprintf('  <comment>WOULD DELETE duplicate id=%d (objects=%d)</comment>', $id, $objectCount);
 		}
 
-		$this->deleteDuplicate(duplicate: $duplicate, objectCount: $objectCount, run: $run, output: $output);
+		$refusal = $this->deleteDuplicate(duplicate: $duplicate, run: $run);
+		if ($refusal !== null) {
+			return sprintf('  <comment>SKIP duplicate id=%d (delete refused: %s)</comment>', $id, $refusal);
+		}
+
+		return sprintf('  <info>DELETED duplicate id=%d (objects=%d)</info>', $id, $objectCount);
 	}//end dedupeOne()
 
 	/**
 	 * Delete one duplicate, keeping it when the mapper's own guard refuses.
 	 *
-	 * @param Register           $duplicate   The duplicate register.
-	 * @param int                $objectCount Its object count, for the report.
-	 * @param DedupeRegistersRun $run         The run's tally.
-	 * @param OutputInterface    $output      Console output stream.
+	 * @param Register           $duplicate The duplicate register.
+	 * @param DedupeRegistersRun $run       The run's tally.
 	 *
-	 * @return void
+	 * @return string|null The refusal message, or null when it was deleted.
 	 */
-	private function deleteDuplicate(
-		Register $duplicate,
-		int $objectCount,
-		DedupeRegistersRun $run,
-		OutputInterface $output
-	): void {
+	private function deleteDuplicate(Register $duplicate, DedupeRegistersRun $run): ?string {
 		try {
 			$this->registerMapper->delete($duplicate);
 		} catch (\Throwable $e) {
@@ -264,24 +252,11 @@ class DedupeRegistersCommand extends Command {
 			// guard. If it refuses, keep the duplicate rather than
 			// aborting the whole sweep.
 			$run->keptNonEmpty++;
-			$output->writeln(
-				sprintf(
-					'  <comment>SKIP duplicate id=%d (delete refused: %s)</comment>',
-					(int)$duplicate->getId(),
-					$e->getMessage()
-				)
-			);
-			return;
+			return $e->getMessage();
 		}
 
 		$run->deleted++;
-		$output->writeln(
-			sprintf(
-				'  <info>DELETED duplicate id=%d (objects=%d)</info>',
-				(int)$duplicate->getId(),
-				$objectCount
-			)
-		);
+		return null;
 	}//end deleteDuplicate()
 
 	/**
