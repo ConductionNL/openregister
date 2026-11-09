@@ -149,7 +149,8 @@ class FormUploadStore implements FormUploadStoreInterface {
 	private function fileConfigFor(string $property, array $rule): array {
 		$fileConfig = $this->rules->fileConfigOf(property: $rule);
 		if ($fileConfig === null) {
-			$this->refuse(finding: new FormFinding(property: $property, code: 'property-holds-no-files', message: $this->l10n->t('"%1$s" does not hold files.', [$property])));
+			$message = $this->l10n->t('"%1$s" does not hold files.', [$property]);
+			$this->refuse(finding: new FormFinding(property: $property, code: 'property-holds-no-files', message: $message));
 		}
 
 		return $fileConfig;
@@ -168,7 +169,8 @@ class FormUploadStore implements FormUploadStoreInterface {
 	private function arrivedPath(string $property, array $file): string {
 		$path = (string)($file['tmp_name'] ?? '');
 		if ((int)($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || is_readable($path) === false) {
-			$this->refuse(finding: new FormFinding(property: $property, code: 'upload-failed', message: $this->l10n->t('The file did not arrive. Please try again.')));
+			$message = $this->l10n->t('The file did not arrive. Please try again.');
+			$this->refuse(finding: new FormFinding(property: $property, code: 'upload-failed', message: $message));
 		}
 
 		return $path;
