@@ -86,7 +86,7 @@ class EdepotTransferServiceBehaviourTest extends TestCase {
 			static fn (string $app, string $key, string $default=''): string => ($key === 'edepot_endpoint_url' ? 'https://edepot.test/in' : $default)
 		);
 		$settings = new TransferSettings($appConfig, $this->logger);
-		$auditLog = new TransferAuditLog($this->createMock(AuditTrailMapperInterface::class), $settings, $this->notifications, $this->logger);
+		$auditLog = new TransferAuditLog(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->createMock(AuditTrailMapperInterface::class), $this->logger), $settings, $this->notifications);
 		$recorder = new TransferOutcomeRecorder($mapper, $this->createMock(TransferRecordService::class), $auditLog, $this->logger);
 
 		$this->pipeline   = new TransferPipeline(

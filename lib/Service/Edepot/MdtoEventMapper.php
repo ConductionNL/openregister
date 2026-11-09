@@ -108,15 +108,27 @@ class MdtoEventMapper {
 	];
 
 	/**
+	 * Source of the event history.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Logger for truncation and lookup failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapperInterface $auditTrailMapper Source of the event history.
-	 * @param LoggerInterface $logger Logger for truncation and lookup failures.
+	 * @param AuditRecording $audit The source of the event history and the logger for truncation and lookup failures.
 	 */
-	public function __construct(
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly LoggerInterface $logger,
-	) {
+	public function __construct(AuditRecording $audit) {
+		$this->auditTrailMapper = $audit->auditTrailMapper;
+		$this->logger           = $audit->logger;
 	}//end __construct()
 
 	/**
