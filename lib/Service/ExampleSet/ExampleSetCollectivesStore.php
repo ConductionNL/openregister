@@ -144,17 +144,34 @@ class ExampleSetCollectivesStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function page(int $collective, string $owner, string $title, string $content): array {
-		$pages = $this->container->get(self::PAGES);
-		foreach ($pages->findAll($collective, $owner) as $page) {
-			if ($page->getTitle() === $title) {
-				return ['id' => (int) $page->getId(), 'created' => false];
-			}
+		$seat  = new CollectiveSeat(collective: $collective, owner: $owner);
+		$found = $this->titledPage(seat: $seat, title: $title);
+		if ($found !== null) {
+			return ['id' => $found, 'created' => false];
 		}
 
-		$page = $pages->createBase($collective, 0, $title, null, $owner, null, $content);
+		$page = $this->container->get(self::PAGES)->createBase($collective, 0, $title, null, $owner, null, $content);
 
 		return ['id' => (int) $page->getId(), 'created' => true];
 	}//end page()
+
+	/**
+	 * The id of the collective's page of this title, as the account reads the collective, or null.
+	 *
+	 * @param CollectiveSeat $seat  The collective id and the account that reads it.
+	 * @param string         $title The page title.
+	 *
+	 * @return int|null
+	 */
+	private function titledPage(CollectiveSeat $seat, string $title): ?int {
+		foreach ($this->container->get(self::PAGES)->findAll($seat->collective, $seat->owner) as $page) {
+			if ($page->getTitle() === $title) {
+				return (int) $page->getId();
+			}
+		}
+
+		return null;
+	}//end titledPage()
 
 	/**
 	 * Whether the page is still in the collective.
@@ -168,14 +185,26 @@ class ExampleSetCollectivesStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function pageExists(int $collective, int $page, string $owner): bool {
+		return $this->pageFound(seat: new CollectiveSeat(collective: $collective, owner: $owner), page: $page);
+	}//end pageExists()
+
+	/**
+	 * Whether the page is still in the collective, as the account reads it.
+	 *
+	 * @param CollectiveSeat $seat The collective id and the account that reads it.
+	 * @param int            $page The page id.
+	 *
+	 * @return bool
+	 */
+	private function pageFound(CollectiveSeat $seat, int $page): bool {
 		try {
-			$this->container->get(self::PAGES)->find($collective, $page, $owner);
+			$this->container->get(self::PAGES)->find($seat->collective, $page, $seat->owner);
 		} catch (Throwable) {
 			return false;
 		}
 
 		return true;
-	}//end pageExists()
+	}//end pageFound()
 
 	/**
 	 * Delete a page the set wrote, without passing through the trash.
