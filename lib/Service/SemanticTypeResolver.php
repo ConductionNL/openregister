@@ -47,9 +47,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -79,40 +77,22 @@ final class SemanticTypeResolver implements SemanticTypeResolverInterface {
 	private array $resolveCache = [];
 
 	/**
-	 * Cross-register, org/RBAC-scoped schema enumeration.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Register enumeration for register/app resolution + tie-break.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
 	 * Wire the resolver against the canonical OR mappers + JSON-LD helper.
 	 *
 	 * Constructor-injection only; the service is autowired (no explicit DI
 	 * registration needed, matching RegisterResolverService).
 	 *
-	 * @param RegisterSchemaMappers $mappers The register and schema mappers.
-	 * @param JsonLdContextService $jsonLdContextService Computes a schema's implemented semantic types.
-	 * @param LoggerInterface $logger Logger for ambiguity WARN.
-	 * @param IAppManager|null $appManager App manager used to treat a provider whose owning
-	 *                                     app is disabled as unavailable; null-safe (when
-	 *                                     unavailable the app-enabled filter is skipped).
+	 * @param RegisterSchemaMappers $mappers              The register and schema mappers.
+	 * @param JsonLdContextService  $jsonLdContextService Computes a schema's implemented semantic types.
+	 * @param LoggerInterface       $logger               Logger for ambiguity WARN.
+	 * @param ?IAppManager          $appManager           App manager used to treat a provider whose owning
 	 */
 	public function __construct(
-		RegisterSchemaMappers $mappers,
+		private readonly RegisterSchemaMappers $mappers,
 		private readonly JsonLdContextService $jsonLdContextService,
 		private readonly LoggerInterface $logger,
 		private readonly ?IAppManager $appManager = null,
 	) {
-		$this->schemaMapper = $mappers->schemaMapper;
-		$this->registerMapper = $mappers->registerMapper;
 	}//end __construct()
 
 	/**
@@ -199,7 +179,7 @@ final class SemanticTypeResolver implements SemanticTypeResolverInterface {
 	 */
 	private function allSchemas(string $uri): array {
 		try {
-			return $this->schemaMapper->findAll();
+			return $this->mappers->schemaMapper->findAll();
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				message: '[SemanticTypeResolver] schema enumeration failed — treating as no providers',
@@ -317,7 +297,7 @@ final class SemanticTypeResolver implements SemanticTypeResolverInterface {
 	 */
 	private function findAncestor(int|string $parentRef): ?Schema {
 		try {
-			return $this->schemaMapper->find(id: $parentRef);
+			return $this->mappers->schemaMapper->find(id: $parentRef);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				message: '[SemanticTypeResolver] allOf ancestor unresolved — skipping',
@@ -362,7 +342,7 @@ final class SemanticTypeResolver implements SemanticTypeResolverInterface {
 	 */
 	private function allRegisters(?int $schemaId): array {
 		try {
-			return $this->registerMapper->findAll();
+			return $this->mappers->registerMapper->findAll();
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				message: '[SemanticTypeResolver] register enumeration failed',
@@ -581,7 +561,7 @@ final class SemanticTypeResolver implements SemanticTypeResolverInterface {
 	 */
 	private function schemaIdsOfRegister(int $registerId): array {
 		try {
-			return $this->memberIds(register: $this->registerMapper->find(id: (string)$registerId));
+			return $this->memberIds(register: $this->mappers->registerMapper->find(id: (string)$registerId));
 		} catch (\Throwable $e) {
 			return [];
 		}

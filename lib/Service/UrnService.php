@@ -29,9 +29,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -74,35 +72,19 @@ class UrnService implements UrnServiceInterface {
 	private const URN_REGEX = '/^urn:([a-zA-Z0-9][a-zA-Z0-9-]{1,31}):(.+)$/i';
 
 	/**
-	 * The register mapper.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * The schema mapper.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param RegisterSchemaMappers $mappers The register and schema mappers.
-	 * @param IURLGenerator $urlGenerator The URL generator.
-	 * @param IAppConfig $appConfig The app configuration.
-	 * @param LoggerInterface $logger The logger.
+	 * @param RegisterSchemaMappers $mappers      The register and schema mappers.
+	 * @param IURLGenerator         $urlGenerator The URL generator.
+	 * @param IAppConfig            $appConfig    The app configuration.
+	 * @param LoggerInterface       $logger       The logger.
 	 */
 	public function __construct(
-		RegisterSchemaMappers $mappers,
+		private readonly RegisterSchemaMappers $mappers,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->registerMapper = $mappers->registerMapper;
-		$this->schemaMapper = $mappers->schemaMapper;
 	}//end __construct()
 
 	/**
@@ -480,7 +462,7 @@ class UrnService implements UrnServiceInterface {
 	private function findRegister(string $ref): ?Register {
 		return $this->quietly(
 			failure: sprintf('register lookup failed for "%s"', $ref),
-			lookup: fn (): Register => $this->registerMapper->find($ref, _rbac: false, _multitenancy: false)
+			lookup: fn (): Register => $this->mappers->registerMapper->find($ref, _rbac: false, _multitenancy: false)
 		);
 	}//end findRegister()
 
@@ -494,7 +476,7 @@ class UrnService implements UrnServiceInterface {
 	private function findSchema(string $ref): ?Schema {
 		return $this->quietly(
 			failure: sprintf('schema lookup failed for "%s"', $ref),
-			lookup: fn (): Schema => $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false)
+			lookup: fn (): Schema => $this->mappers->schemaMapper->find($ref, _rbac: false, _multitenancy: false)
 		);
 	}//end findSchema()
 
