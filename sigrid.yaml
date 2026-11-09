@@ -99,8 +99,9 @@ dependencychecker:
     - license: "^@nextcloud[:/]capabilities$"
 
 # Architecture Quality. Knowledge Awareness and Team Stability are computed from
-# commit authors. Most commits here are made by AI agents and pull requests are
-# squash-merged, so the author of a commit does not represent who wrote the code.
+# commit authors. Most commits here are made by AI agents, recorded either as
+# "Claude" or under the name of the developer running them, so the author of a
+# commit does not represent who wrote the code.
 # Sigrid documents disabled_metrics for exactly that case ("Excluding
 # process-related metrics" in the reference above).
 architecture:
