@@ -58,6 +58,7 @@ use ReflectionMethod;
 use ReflectionProperty;
 use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * A boolean filter value reaches every object-filter builder as its string form.
@@ -134,7 +135,7 @@ class MagicSearchHandlerBooleanFilterValueTest extends TestCase {
 	public function testQueryBuilderPath(array $filters, string $expected): void {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $this->makeQueryBuilder(), $filters, $this->makeSchema());
+		$method->invoke($this->handler, new TableFilterRun(qb: $this->makeQueryBuilder(), query: [], table: new MagicReadTable(schema: $this->makeSchema())), $filters);
 
 		$this->assertSame([$expected], $this->captured);
 	}//end testQueryBuilderPath()

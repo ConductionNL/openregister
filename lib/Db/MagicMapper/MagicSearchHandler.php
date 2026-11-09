@@ -869,7 +869,7 @@ class MagicSearchHandler {
 
 		// Apply object field filters (schema-specific columns).
 		if (empty($objectFilters) === false) {
-			$this->applyObjectFilters(qb: $qb, filters: $objectFilters, schema: $schema);
+			$this->applyObjectFilters(run: $run, filters: $objectFilters);
 		}
 
 		// Apply ID filtering if provided.
@@ -2087,10 +2087,8 @@ class MagicSearchHandler {
 	 */
 	private function rawColumnRef(RawObjectFieldFilter $field, mixed $value): string {
 		return $this->buildFilterColumnRef(
-			columnRef: $field->quotedCol,
-			propertyType: $field->propertyType,
-			value: $value,
-			isPostgres: $field->isPostgres
+			column: new TypedColumnRef(ref: $field->quotedCol, propertyType: $field->propertyType, isPostgres: $field->isPostgres),
+			value: $value
 		);
 	}//end rawColumnRef()
 
@@ -3002,9 +3000,8 @@ class MagicSearchHandler {
 	/**
 	 * Apply object field filters based on schema properties
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param array $filters Object field filters to apply
-	 * @param Schema $schema Schema for column mapping
+	 * @param TableFilterRun       $run     The filter pass: query builder and the table whose schema types the columns.
+	 * @param array<string, mixed> $filters The object-field filters.
 	 *
 	 * @return void
 	 *
@@ -3017,7 +3014,9 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
-	private function applyObjectFilters(IQueryBuilder $qb, array $filters, Schema $schema): void {
+	private function applyObjectFilters(TableFilterRun $run, array $filters): void {
+		$qb     = $run->qb;
+		$schema = $run->schema();
 		$properties = $schema->getProperties();
 
 		// Fail loud BEFORE any query work rather than silently returning zero rows:
@@ -3037,7 +3036,7 @@ class MagicSearchHandler {
 		$isPostgres = $this->isPostgresPlatform();
 
 		[$filters, $nestedFilters] = $this->nestedPaths->split(filters: $filters, properties: $properties ?? []);
-		$this->applyNestedPathFilters(qb: $qb, nestedFilters: $nestedFilters, isPostgres: $isPostgres, schema: $schema);
+		$this->applyNestedPathFilters(run: $run, nestedFilters: $nestedFilters);
 
 		foreach ($filters as $field => $value) {
 			// Check if this field exists as a column in the schema.
@@ -3138,21 +3137,21 @@ class MagicSearchHandler {
 	 */
 	private function typedFieldPredicates(ObjectFieldFilter $field, mixed $value): array {
 		if ($field->propertyType === 'array') {
-			return [$this->jsonArrayCondition(qb: $field->qb, columnName: $field->columnName, value: $value)];
+			return [$this->jsonArrayCondition(field: $field, value: $value)];
 		}
 
 		if ($field->propertyType === 'object') {
-			return [$this->jsonObjectCondition(qb: $field->qb, columnName: $field->columnName, value: $value, isPostgres: $field->isPostgres)];
+			return [$this->jsonObjectCondition(field: $field, value: $value)];
 		}
 
 		// A PHP boolean compares in its string form (boolean-filter-values).
 		$value = FilterParams::comparableValue(value: $value, propertyType: $field->propertyType);
 		if (is_array($value) === false) {
-			return [$this->comparisonPredicate(field: $field, operator: 'eq', value: $value)];
+			return [$this->comparisonPredicate(field: $field, comparison: new FieldComparison(operator: 'eq', operand: $value))];
 		}
 
 		if (empty(array_intersect(array_keys($value), self::COMPARISON_OPERATORS)) === true) {
-			return [$this->listPredicate(field: $field, operator: 'in', values: $value)];
+			return [$this->listPredicate(field: $field, comparison: new FieldComparison(operator: 'in', operand: $value))];
 		}
 
 		return $this->objectOperatorPredicates(field: $field, value: $value);
@@ -3165,26 +3164,28 @@ class MagicSearchHandler {
 	 * UUID) value, so PostgreSQL does not abort the query with SQLSTATE[22P02];
 	 * numeric values keep the indexed numeric path.
 	 *
-	 * @param ObjectFieldFilter $field    The field being filtered
-	 * @param string            $operator The expression builder method: eq, neq, gt, gte, lt or lte
-	 * @param mixed             $value    The value to compare with
+	 * @param ObjectFieldFilter $field The field: query builder, column, type and platform.
+	 * @param FieldComparison   $comparison The operator and the value compared with.
 	 *
 	 * @return string The predicate.
 	 */
-	private function comparisonPredicate(ObjectFieldFilter $field, string $operator, mixed $value): string {
+	private function comparisonPredicate(ObjectFieldFilter $field, FieldComparison $comparison): string {
+		$operator = $comparison->operator;
+		$value    = $comparison->operand;
 		return $field->qb->expr()->$operator($this->filterColumnRef(field: $field, value: $value), $field->qb->createNamedParameter($value));
 	}//end comparisonPredicate()
 
 	/**
 	 * One `in` or `notIn` of a field against a bound list.
 	 *
-	 * @param ObjectFieldFilter $field    The field being filtered
-	 * @param string            $operator The expression builder method: in or notIn
-	 * @param array             $values   The list to compare with
+	 * @param ObjectFieldFilter $field The field: query builder, column, type and platform.
+	 * @param FieldComparison   $comparison The operator (`in` or `notIn`) and the list compared with.
 	 *
 	 * @return string The predicate.
 	 */
-	private function listPredicate(ObjectFieldFilter $field, string $operator, array $values): string {
+	private function listPredicate(ObjectFieldFilter $field, FieldComparison $comparison): string {
+		$operator = $comparison->operator;
+		$values   = $comparison->operand;
 		return $field->qb->expr()->$operator(
 			$this->filterColumnRef(field: $field, value: $values),
 			$field->qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)
@@ -3201,10 +3202,8 @@ class MagicSearchHandler {
 	 */
 	private function filterColumnRef(ObjectFieldFilter $field, mixed $value): string {
 		return $this->buildFilterColumnRef(
-			columnRef: $field->columnRef(),
-			propertyType: $field->propertyType,
-			value: $value,
-			isPostgres: $field->isPostgres
+			column: new TypedColumnRef(ref: $field->columnRef(), propertyType: $field->propertyType, isPostgres: $field->isPostgres),
+			value: $value
 		);
 	}//end filterColumnRef()
 
@@ -3222,12 +3221,12 @@ class MagicSearchHandler {
 		$predicates = [];
 		foreach (['gte', 'lte', 'gt', 'lt'] as $operator) {
 			if (isset($value[$operator]) === true) {
-				$predicates[] = $this->comparisonPredicate(field: $field, operator: $operator, value: $value[$operator]);
+				$predicates[] = $this->comparisonPredicate(field: $field, comparison: new FieldComparison(operator: $operator, operand: $value[$operator]));
 			}
 		}
 
 		if (isset($value['in']) === true) {
-			$predicates[] = $this->listPredicate(field: $field, operator: 'in', values: $this->asList(value: $value['in']));
+			$predicates[] = $this->listPredicate(field: $field, comparison: new FieldComparison(operator: 'in', operand: $this->asList(value: $value['in'])));
 		}
 
 		return array_merge($predicates, $this->exclusionPredicates(field: $field, value: $value));
@@ -3249,11 +3248,11 @@ class MagicSearchHandler {
 		$predicates = [];
 		$notIn = $this->asList(value: $value['notIn'] ?? []);
 		if ($notIn !== []) {
-			$predicates[] = $this->listPredicate(field: $field, operator: 'notIn', values: $notIn);
+			$predicates[] = $this->listPredicate(field: $field, comparison: new FieldComparison(operator: 'notIn', operand: $notIn));
 		}
 
 		if (isset($value['ne']) === true) {
-			$predicates[] = $this->comparisonPredicate(field: $field, operator: 'neq', value: $value['ne']);
+			$predicates[] = $this->comparisonPredicate(field: $field, comparison: new FieldComparison(operator: 'neq', operand: $value['ne']));
 		}
 
 		if (isset($value['isnull']) === true) {
@@ -3297,13 +3296,14 @@ class MagicSearchHandler {
 	/**
 	 * Apply filter for JSON array columns using PostgreSQL jsonb operators
 	 *
-	 * @param IQueryBuilder $qb Query builder that binds the parameters
-	 * @param string $columnName Column name to filter
-	 * @param mixed $value Filter value (string or array of strings)
+	 * @param ObjectFieldFilter $field The field: query builder, column, type and platform.
+	 * @param mixed             $value The filter value (single value or array of values).
 	 *
 	 * @return string|ICompositeExpression The condition
 	 */
-	private function jsonArrayCondition(IQueryBuilder $qb, string $columnName, mixed $value): string|ICompositeExpression {
+	private function jsonArrayCondition(ObjectFieldFilter $field, mixed $value): string|ICompositeExpression {
+		$qb         = $field->qb;
+		$columnName = $field->columnName;
 		// Normalize value to array.
 		$values = [$value];
 		if (is_array($value) === true) {
@@ -3337,10 +3337,8 @@ class MagicSearchHandler {
 	 * name) matches nothing and is reported as an ignored filter, the way an
 	 * unknown property is.
 	 *
-	 * @param IQueryBuilder                                                  $qb            Query builder to modify.
-	 * @param list<array{root: string, path: list<string>, value: mixed}> $nestedFilters The path filters from NestedPathFilter::split().
-	 * @param bool                                                           $isPostgres    Whether the platform is PostgreSQL.
-	 * @param Schema                                                         $schema        The schema, for its properties and the property read rule.
+	 * @param TableFilterRun $run           The filter pass: query builder and the table read.
+	 * @param array<int, array{root: string, path: list<string>, value: mixed}> $nestedFilters The dotted-path filters.
 	 *
 	 * @return void
 	 *
@@ -3349,7 +3347,10 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
-	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, bool $isPostgres, Schema $schema): void {
+	private function applyNestedPathFilters(TableFilterRun $run, array $nestedFilters): void {
+		$qb         = $run->qb;
+		$schema     = $run->schema();
+		$isPostgres = $this->isPostgresPlatform();
 		$properties = ($schema->getProperties() ?? []);
 		foreach ($nestedFilters as $filter) {
 			if (($properties[$filter['root']]['x-openregister-encrypted'] ?? false) === true) {
@@ -3400,14 +3401,15 @@ class MagicSearchHandler {
 	 *
 	 * Uses text-based matching to work with both column types safely.
 	 *
-	 * @param IQueryBuilder $qb Query builder that binds the parameters
-	 * @param string $columnName Column name to filter
-	 * @param mixed $value Filter value (UUID string or array of UUIDs)
-	 * @param bool $isPostgres Whether the backing database is PostgreSQL.
+	 * @param ObjectFieldFilter $field The field: query builder, column, type and platform.
+	 * @param mixed             $value The filter value (single value or array of values).
 	 *
 	 * @return string|ICompositeExpression The condition
 	 */
-	private function jsonObjectCondition(IQueryBuilder $qb, string $columnName, mixed $value, bool $isPostgres): string|ICompositeExpression {
+	private function jsonObjectCondition(ObjectFieldFilter $field, mixed $value): string|ICompositeExpression {
+		$qb         = $field->qb;
+		$columnName = $field->columnName;
+		$isPostgres = $field->isPostgres;
 		// Normalize value to array.
 		$values = [$value];
 		if (is_array($value) === true) {
@@ -4662,20 +4664,15 @@ class MagicSearchHandler {
 	 * columns are left untouched so ordinary integer filters keep using the
 	 * indexed numeric comparison.
 	 *
-	 * @param string $columnRef The already-qualified, quoted column reference
-	 *                          (e.g. `t."amount"` or `t.amount`).
-	 * @param string $propertyType The declared JSON-Schema property type.
-	 * @param mixed $value The filter value (scalar or array of scalars).
-	 * @param bool $isPostgres Whether the active platform is PostgreSQL.
+	 * @param TypedColumnRef $column The column reference, its declared type and the platform.
+	 * @param mixed          $value  The filter value (or list of values).
 	 *
 	 * @return string The (optionally text-cast) column reference.
 	 */
-	private function buildFilterColumnRef(
-		string $columnRef,
-		string $propertyType,
-		mixed $value,
-		bool $isPostgres,
-	): string {
+	private function buildFilterColumnRef(TypedColumnRef $column, mixed $value): string {
+		$columnRef    = $column->ref;
+		$propertyType = $column->propertyType;
+		$isPostgres   = $column->isPostgres;
 		if ($this->isNumericColumnType(propertyType: $propertyType) === false) {
 			return $columnRef;
 		}
