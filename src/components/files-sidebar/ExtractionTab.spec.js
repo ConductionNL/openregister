@@ -90,8 +90,9 @@ async function mountTab() {
 	return wrapper
 }
 
-const values = (wrapper) =>
-	wrapper.findAll('.extraction-tab__value').map((v) => v.text())
+function values (wrapper) {
+  return wrapper.findAll('.extraction-tab__value').map((v) => v.text())
+}
 
 beforeEach(() => {
 	jest.clearAllMocks()
