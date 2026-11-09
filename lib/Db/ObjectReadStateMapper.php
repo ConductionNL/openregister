@@ -202,7 +202,6 @@ class ObjectReadStateMapper extends QBMapper implements ObjectReadStateMapperInt
 		$now = ($sighting->getLastSeenAt() ?? new DateTime());
 
 		$sighting->setLastSeenAt($now);
-		$sighting->setCreated($now);
 
 		$existing = $this->findOne(userId: (string)$sighting->getUserId(), objectUuid: (string)$sighting->getObjectUuid());
 		if ($existing !== null) {
@@ -210,6 +209,7 @@ class ObjectReadStateMapper extends QBMapper implements ObjectReadStateMapperInt
 		}
 
 		$sighting->setSubSeen(($subSeen ?? []));
+		$sighting->setCreated($now);
 		return $this->insertSeen(row: $sighting);
 
 	}//end markSeen()
