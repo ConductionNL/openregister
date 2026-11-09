@@ -155,22 +155,27 @@ export default {
 		 * @spec exclude Delete-confirm handler delegating to organisationStore.deleteOrganisation; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
 		deleteOrganisation() {
-			return runDialogRequest(this, async () => {
-				const { response } = await organisationStore.deleteOrganisation({
-					...organisationStore.organisationItem,
-				})
+			return runDialogRequest(
+				this,
+				async () => {
+					const { response } = await organisationStore.deleteOrganisation({
+						...organisationStore.organisationItem,
+					})
 
-				this.success = response.ok
+					this.success = response.ok
 
-				if (response.ok) {
-					// Navigate back to organisations list
-					this.$router.push('/organisation')
-					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
-				}
-			}, 'An error occurred while deleting the organisation', (error) => {
-				console.error('Error deleting organisation:', error)
-				this.success = false
-			})
+					if (response.ok) {
+						// Navigate back to organisations list
+						this.$router.push('/organisation')
+						this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
+					}
+				},
+				'An error occurred while deleting the organisation',
+				(error) => {
+					console.error('Error deleting organisation:', error)
+					this.success = false
+				},
+			)
 		},
 	},
 }

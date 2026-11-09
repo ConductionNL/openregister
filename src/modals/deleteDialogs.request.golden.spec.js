@@ -41,7 +41,8 @@ async function run(component, method) {
 	const seen = []
 	const watched = new Proxy(dialog, {
 		set(target, key, value) {
-			if (['loading', 'error', 'success'].includes(key)) seen.push([key, value])
+			if (['loading', 'error', 'success'].includes(key))
+				seen.push([key, value])
 			target[key] = value
 			return true
 		},
@@ -58,7 +59,11 @@ async function run(component, method) {
 	return {
 		calls,
 		seen,
-		state: { loading: watched.loading, error: watched.error, success: watched.success },
+		state: {
+			loading: watched.loading,
+			error: watched.error,
+			success: watched.success,
+		},
 	}
 }
 
@@ -72,36 +77,57 @@ afterEach(() => {
 
 describe('DeleteConfiguration request', () => {
 	it('closes after a success', async () => {
-		stores.configurationStore.deleteConfiguration = jest.fn().mockResolvedValue(undefined)
-		expect(await run(DeleteConfiguration, 'deleteConfiguration')).toMatchSnapshot()
+		stores.configurationStore.deleteConfiguration = jest
+			.fn()
+			.mockResolvedValue(undefined)
+		expect(
+			await run(DeleteConfiguration, 'deleteConfiguration'),
+		).toMatchSnapshot()
 	})
 
 	it('shows the error message of a refusal', async () => {
-		stores.configurationStore.deleteConfiguration = jest.fn().mockRejectedValue(new Error('Nope'))
-		expect(await run(DeleteConfiguration, 'deleteConfiguration')).toMatchSnapshot()
+		stores.configurationStore.deleteConfiguration = jest
+			.fn()
+			.mockRejectedValue(new Error('Nope'))
+		expect(
+			await run(DeleteConfiguration, 'deleteConfiguration'),
+		).toMatchSnapshot()
 	})
 
 	it('shows the fallback text for a refusal without a message', async () => {
-		stores.configurationStore.deleteConfiguration = jest.fn().mockRejectedValue({})
-		expect(await run(DeleteConfiguration, 'deleteConfiguration')).toMatchSnapshot()
+		stores.configurationStore.deleteConfiguration = jest
+			.fn()
+			.mockRejectedValue({})
+		expect(
+			await run(DeleteConfiguration, 'deleteConfiguration'),
+		).toMatchSnapshot()
 	})
 })
 
 describe('DeleteOrganisation request', () => {
 	it('navigates and schedules the close after a success', async () => {
-		stores.organisationStore.deleteOrganisation = jest.fn().mockResolvedValue({ response: { ok: true } })
+		stores.organisationStore.deleteOrganisation = jest
+			.fn()
+			.mockResolvedValue({ response: { ok: true } })
 		expect(await run(DeleteOrganisation, 'deleteOrganisation')).toMatchSnapshot()
 	})
 
 	it('records a not-ok answer', async () => {
-		stores.organisationStore.deleteOrganisation = jest.fn().mockResolvedValue({ response: { ok: false } })
+		stores.organisationStore.deleteOrganisation = jest
+			.fn()
+			.mockResolvedValue({ response: { ok: false } })
 		expect(await run(DeleteOrganisation, 'deleteOrganisation')).toMatchSnapshot()
 	})
 
 	it('logs and shows the error message of a refusal', async () => {
-		stores.organisationStore.deleteOrganisation = jest.fn().mockRejectedValue(new Error('Nope'))
+		stores.organisationStore.deleteOrganisation = jest
+			.fn()
+			.mockRejectedValue(new Error('Nope'))
 		const result = await run(DeleteOrganisation, 'deleteOrganisation')
-		expect({ ...result, logged: console.error.mock.calls.length }).toMatchSnapshot()
+		expect({
+			...result,
+			logged: console.error.mock.calls.length,
+		}).toMatchSnapshot()
 	})
 
 	it('shows the fallback text for a refusal without a message', async () => {

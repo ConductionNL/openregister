@@ -62,12 +62,16 @@ export default {
 		 * @spec exclude Delete-confirm handler delegating to configurationStore.deleteConfiguration; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
 		deleteConfiguration() {
-			return runDialogRequest(this, async () => {
-				await configurationStore.deleteConfiguration(
-					configurationStore.configurationItem,
-				)
-				this.closeModal()
-			}, 'Failed to delete configuration')
+			return runDialogRequest(
+				this,
+				async () => {
+					await configurationStore.deleteConfiguration(
+						configurationStore.configurationItem,
+					)
+					this.closeModal()
+				},
+				'Failed to delete configuration',
+			)
 		},
 	},
 }
