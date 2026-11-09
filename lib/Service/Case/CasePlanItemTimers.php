@@ -106,18 +106,32 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	public function onEntered(CaseItem $item, ?string $actor, ?DateTimeInterface $now = null): int {
-		$moment = DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable());
+		$act = new FlowTimerAct(actor: $actor, now: DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable()));
+
+		return $this->armDeadlines(item: $item, act: $act);
+	}//end onEntered()
+
+	/**
+	 * Arm a timer for each deadline the item carries; a passed one arms none.
+	 *
+	 * @param CaseItem     $item The item that became active.
+	 * @param FlowTimerAct $act  The arming identity and the moment of entry.
+	 *
+	 * @return integer How many timers were armed (0..2).
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	private function armDeadlines(CaseItem $item, FlowTimerAct $act): int {
 		$deadlines = array_filter([FlowTimer::PURPOSE_DUE => $item->getDueAt(), FlowTimer::PURPOSE_EXPIRY => $item->getExpiresAt()]);
 		$armed = 0;
-		$act = new FlowTimerAct(actor: $actor, now: $moment);
 		foreach ($deadlines as $purpose => $deadline) {
-			if ($this->arm(item: $item, purpose: (string)$purpose, deadline: $deadline, act: $act) === true) {
+			if ($this->arm(due: new CaseItemDeadline(item: $item, purpose: (string)$purpose, deadline: $deadline), act: $act) === true) {
 				$armed++;
 			}
 		}
 
 		return $armed;
-	}//end onEntered()
+	}//end armDeadlines()
 
 	/**
 	 * Mark an active item for the re-arm pass when it carries a statutory expiry.
@@ -158,22 +172,35 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	public function rearmStatutoryExpiry(CaseItem $item, DateTimeInterface $now, ?string $actor = null): string {
+		return $this->rearmExpiry(item: $item, act: new FlowTimerAct(actor: $actor, now: DateTimeImmutable::createFromInterface($now)));
+	}//end rearmStatutoryExpiry()
+
+	/**
+	 * Arm the statutory expiry of an active item again: see {@see rearmStatutoryExpiry()}.
+	 *
+	 * @param CaseItem     $item The active item.
+	 * @param FlowTimerAct $act  The arming identity and the moment of the pass.
+	 *
+	 * @return string One of the REARM_* outcomes.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	private function rearmExpiry(CaseItem $item, FlowTimerAct $act): string {
 		if ($this->hasStatutoryExpiry(item: $item) === false) {
 			return self::REARM_NONE;
 		}
 
 		$expires = $item->getExpiresAt();
-		$moment = DateTimeImmutable::createFromInterface($now);
-		if ($expires->getTimestamp() <= $moment->getTimestamp()) {
+		if ($expires->getTimestamp() <= $act->now->getTimestamp()) {
 			return self::REARM_OVERDUE;
 		}
 
-		if ($this->arm(item: $item, purpose: FlowTimer::PURPOSE_EXPIRY, deadline: $expires, act: new FlowTimerAct(actor: $actor, now: $moment)) === true) {
+		if ($this->arm(due: new CaseItemDeadline(item: $item, purpose: FlowTimer::PURPOSE_EXPIRY, deadline: $expires), act: $act) === true) {
 			return self::REARM_ARMED;
 		}
 
 		return self::REARM_FAILED;
-	}//end rearmStatutoryExpiry()
+	}//end rearmExpiry()
 
 	/**
 	 * Cancel the open timers of an item that reached a terminal state.
@@ -229,26 +256,24 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	 * is a whole number of hours (calendar days past the hour bound), and the
 	 * anchor is set back so anchor + budget is the deadline.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param string $purpose `due` or `expiry`.
-	 * @param DateTimeInterface $deadline The moment.
-	 * @param FlowTimerAct $act The arming identity and the clock.
+	 * @param CaseItemDeadline $due The item, `due` or `expiry`, and the moment.
+	 * @param FlowTimerAct     $act The arming identity and the clock.
 	 *
 	 * @return boolean True when armed.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	private function arm(CaseItem $item, string $purpose, DateTimeInterface $deadline, FlowTimerAct $act): bool {
-		$seconds = ($deadline->getTimestamp() - $act->now->getTimestamp());
+	private function arm(CaseItemDeadline $due, FlowTimerAct $act): bool {
+		$seconds = ($due->deadline->getTimestamp() - $act->now->getTimestamp());
 		if ($seconds <= 0) {
-			$this->passedBeforeEntry(item: $item, purpose: $purpose);
+			$this->passedBeforeEntry(item: $due->item, purpose: $due->purpose);
 
 			return false;
 		}
 
-		$config = $this->configFor(item: $item, purpose: $purpose, deadline: $deadline, seconds: $seconds);
+		$config = $this->configFor(due: $due, seconds: $seconds);
 
-		return $this->submit(item: $item, config: $config, actor: $act->actor);
+		return $this->submit(run: new CaseTimerArmRun(item: $due->item, config: $config, actor: $act->actor));
 	}//end arm()
 
 	/**
@@ -308,24 +333,22 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	/**
 	 * The timer configuration whose deadline lands exactly on `$deadline`.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param string $purpose `due` or `expiry`.
-	 * @param DateTimeInterface $deadline The moment.
-	 * @param int $seconds How far ahead it is.
+	 * @param CaseItemDeadline $due     The item, `due` or `expiry`, and the moment.
+	 * @param int              $seconds How far ahead it is.
 	 *
 	 * @return array<string, mixed> The configuration the clock arms.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	private function configFor(CaseItem $item, string $purpose, DateTimeInterface $deadline, int $seconds): array {
+	private function configFor(CaseItemDeadline $due, int $seconds): array {
 		$config = [
 			'subjectType' => self::SUBJECT_TYPE,
-			'subjectUuid' => (string)$item->getUuid(),
-			'purpose' => $purpose,
-			'legalEffect' => $this->legalEffect(item: $item, purpose: $purpose),
+			'subjectUuid' => (string)$due->item->getUuid(),
+			'purpose' => $due->purpose,
+			'legalEffect' => $this->legalEffect(item: $due->item, purpose: $due->purpose),
 		];
-		$config += self::timing(deadline: $deadline, seconds: $seconds);
-		$config += self::labels(item: $item);
+		$config += self::timing(deadline: $due->deadline, seconds: $seconds);
+		$config += self::labels(item: $due->item);
 		if ($config['legalEffect'] === FlowTimer::LEGAL_WETTELIJK) {
 			$config['onExpiry'] = self::ON_EXPIRY;
 		}
@@ -383,21 +406,19 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	/**
 	 * Hand a configuration to the clock; a refusal is reported, never thrown.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param array<string, mixed> $config The configuration.
-	 * @param string|null $actor The arming identity.
+	 * @param CaseTimerArmRun $run The item, the configuration and the arming identity.
 	 *
 	 * @return bool True when armed.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	private function submit(CaseItem $item, array $config, ?string $actor): bool {
+	private function submit(CaseTimerArmRun $run): bool {
 		try {
-			$this->timers->arm(config: $config, actor: $actor);
+			$this->timers->arm(config: $run->config, actor: $run->actor);
 
 			return true;
 		} catch (Throwable $failure) {
-			$this->reportRefused(item: $item, config: $config, failure: $failure);
+			$this->reportRefused(run: $run, failure: $failure);
 
 			return false;
 		}
@@ -411,51 +432,46 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	 * without the timer that enforces its expiry, and leave a durable marker
 	 * the re-arm job acts on.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param array<string, mixed> $config The refused configuration.
-	 * @param Throwable $failure Why.
+	 * @param CaseTimerArmRun $run     The item and the refused configuration.
+	 * @param Throwable       $failure Why.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	private function reportRefused(CaseItem $item, array $config, Throwable $failure): void {
-		$purpose = (string)$config['purpose'];
-		if ($config['legalEffect'] === FlowTimer::LEGAL_WETTELIJK) {
-			$this->mark(item: $item);
-			$this->logger->error(
-				self::unarmedMessage(item: $item, purpose: $purpose, failure: $failure),
-				self::unarmedContext(item: $item, purpose: $purpose, failure: $failure)
-			);
+	private function reportRefused(CaseTimerArmRun $run, Throwable $failure): void {
+		if ($run->config['legalEffect'] === FlowTimer::LEGAL_WETTELIJK) {
+			$this->mark(item: $run->item);
+			$this->logger->error(self::unarmedMessage(run: $run, failure: $failure), self::unarmedContext(run: $run, failure: $failure));
 
 			return;
 		}
 
 		$this->logger->warning(
 			'[CasePlanItemTimers] A plan-item timer was refused; the transition stands: ' . $failure->getMessage(),
-			['item' => $item->getUuid(), 'purpose' => $purpose, 'exception' => $failure]
+			['item' => $run->item->getUuid(), 'purpose' => $run->purpose(), 'exception' => $failure]
 		);
 	}//end reportRefused()
 
 	/**
 	 * The loud message of an item left active without its statutory timer.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param string $purpose `due` or `expiry`.
-	 * @param Throwable $failure Why the arm was refused.
+	 * @param CaseTimerArmRun $run     The item and the refused `due` or `expiry` configuration.
+	 * @param Throwable       $failure Why the arm was refused.
 	 *
 	 * @return string The message.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	private static function unarmedMessage(CaseItem $item, string $purpose, Throwable $failure): string {
+	private static function unarmedMessage(CaseTimerArmRun $run, Throwable $failure): string {
+		$item = $run->item;
 		return sprintf(
 			'[CasePlanItemTimers] Plan item %s of case object %s is active WITHOUT its statutory (%s) %s timer: '
 			. 'the term will not run until the re-arm pass arms it. %s',
 			(string)$item->getItemKey(),
 			(string)$item->getObjectUuid(),
 			FlowTimer::LEGAL_WETTELIJK,
-			$purpose,
+			$run->purpose(),
 			$failure->getMessage()
 		);
 	}//end unarmedMessage()
@@ -463,20 +479,19 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	/**
 	 * The log context of an item left active without its statutory timer.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param string $purpose `due` or `expiry`.
-	 * @param Throwable $failure Why the arm was refused.
+	 * @param CaseTimerArmRun $run     The item and the refused `due` or `expiry` configuration.
+	 * @param Throwable       $failure Why the arm was refused.
 	 *
 	 * @return array<string, mixed> The context.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	private static function unarmedContext(CaseItem $item, string $purpose, Throwable $failure): array {
+	private static function unarmedContext(CaseTimerArmRun $run, Throwable $failure): array {
 		return [
-			'item' => $item->getUuid(),
-			'case' => $item->getObjectUuid(),
+			'item' => $run->item->getUuid(),
+			'case' => $run->item->getObjectUuid(),
 			'legalEffect' => FlowTimer::LEGAL_WETTELIJK,
-			'purpose' => $purpose,
+			'purpose' => $run->purpose(),
 			'exception' => $failure,
 		];
 	}//end unarmedContext()
