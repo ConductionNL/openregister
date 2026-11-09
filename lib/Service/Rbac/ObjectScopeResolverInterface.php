@@ -171,13 +171,12 @@ interface ObjectScopeResolverInterface {
 	/**
 	 * The predicate for "this row is reachable at all by this caller".
 	 *
-	 * @param string $notPrivateSql The not-private term for the row, from notPrivateSql().
-	 * @param string $uuidColumn The `_uuid` column, qualified by the caller.
-	 * @param string[] $quotedUuids Granted object UUIDs, ALREADY quoted as SQL literals.
+	 * @param string      $notPrivateSql The not-private term for the row, from notPrivateSql().
+	 * @param GrantedRows $granted       The `_uuid` column and the granted uuids, quoted.
 	 *
 	 * @return string A SQL predicate true for rows this caller may reach.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function notPrivateOrGrantedSql(string $notPrivateSql, string $uuidColumn, array $quotedUuids): string;
+	public function notPrivateOrGrantedSql(string $notPrivateSql, GrantedRows $granted): string;
 }//end interface
