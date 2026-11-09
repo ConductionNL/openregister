@@ -78,13 +78,6 @@ interface ObjectSharingServiceInterface {
 	 * @param string $type One of the GRANTABLE_TYPES keys.
 	 * @param string $shareWith The principal to grant.
 	 * @param integer $permissions Core permission bitmask.
-	 * @param string[] $verbs Extension verbs (e.g. `use`, `run`) carried in the share's
-	 *                        attribute bag. Core's bitmask has no room for a verb it does
-	 *                        not define, so ADR-010 puts them here rather than widening
-	 *                        the RBAC vocabulary.
-	 * @param DateTime|null $expiresAt When the grant ends; null for no end.
-	 * @param DateTime|null $sharedAt The share time to record; null for now. Core stamps a new
-	 *                                share with the current time, so it is written after creation.
 	 *
 	 * @throws NotAuthorizedException When the caller is neither owner nor admin.
 	 * @throws InvalidArgumentException On an unsupported type or unresolvable folder.
@@ -92,17 +85,8 @@ interface ObjectSharingServiceInterface {
 	 * @return array<string, mixed> The created grant.
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
-	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
-	public function grant(
-		ObjectEntity $object,
-		string $type,
-		string $shareWith,
-		int $permissions = 1,
-		array $verbs = [],
-		?DateTime $expiresAt = null,
-		?DateTime $sharedAt = null,
-	): array;
+	public function grant(ObjectEntity $object, string $type, string $shareWith, int $permissions = 1): array;
 
 	/**
 	 * Create a tokenised LINK to an object, optionally expiring and passworded.

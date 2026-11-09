@@ -29,9 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Rbac\GrantTerms;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
@@ -257,14 +257,14 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 * @return array<string, mixed> The share the service made.
 	 */
 	private function grant(ObjectEntity $object, array $data): array {
-		return $this->sharing()->grant(
+		return $this->sharing()->grantWithTerms(
 			object: $object,
 			type: (string) $data['type'],
 			shareWith: (string) $data['shareWith'],
-			permissions: (int) ($data['permissions'] ?? 1),
-			verbs: array_values((array) ($data['verbs'] ?? [])),
-			expiresAt: $this->moment(value: ($data['expiresAt'] ?? null)),
-			sharedAt: $this->moment(value: ($data['sharedAt'] ?? null))
+			terms: (new GrantTerms(
+				permissions: (int) ($data['permissions'] ?? 1),
+				verbs: array_values((array) ($data['verbs'] ?? []))
+			))->dated(expiresAt: ($data['expiresAt'] ?? null), sharedAt: ($data['sharedAt'] ?? null))
 		);
 	}//end grant()
 
@@ -352,21 +352,6 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 
 		return 'removed';
 	}//end deleteShare()
-
-	/**
-	 * A checked date as a moment, or null when it is not declared.
-	 *
-	 * @param mixed $value The filled value.
-	 *
-	 * @return DateTime|null
-	 */
-	private function moment(mixed $value): ?DateTime {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		return new DateTime($value);
-	}//end moment()
 
 	/**
 	 * The object sharing service, which holds the guard.

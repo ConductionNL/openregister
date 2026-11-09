@@ -118,41 +118,116 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 	private const LISTABLE_TYPES = ObjectShareReader::LISTABLE_TYPES;
 
 	/**
+	 * The one writer of the stored authorization block.
+	 *
+	 * @var ObjectAuthorizationWriter
+	 */
+	private readonly ObjectAuthorizationWriter $authorizationWriter;
+
+	/**
+	 * Resolves the caller.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Resolves the caller's groups.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Resolves an object's NC folder.
+	 *
+	 * @var FolderManagementHandler
+	 */
+	private readonly FolderManagementHandler $folders;
+
+	/**
+	 * The scope vocabulary.
+	 *
+	 * @var ObjectScopeResolver
+	 */
+	private readonly ObjectScopeResolver $scopeResolver;
+
+	/**
+	 * The grant resolver, to drop its per-request memo.
+	 *
+	 * @var ObjectGrantResolver
+	 */
+	private readonly ObjectGrantResolver $grantResolver;
+
+	/**
+	 * Core share manager.
+	 *
+	 * @var IManager
+	 */
+	private readonly IManager $shareManager;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Lists the grants an ancestor's share confers.
+	 *
+	 * @var InheritedGrantLister
+	 */
+	private readonly InheritedGrantLister $inheritedGrants;
+
+	/**
+	 * Writes an audit-trail entry for every grant and revoke. Null only in legacy fixtures.
+	 *
+	 * @var GrantChangeAuditor|null
+	 */
+	private readonly ?GrantChangeAuditor $auditor;
+
+	/**
+	 * Reads the shares on the object folder. Null only in legacy fixtures.
+	 *
+	 * @var ObjectShareReader|null
+	 */
+	private readonly ?ObjectShareReader $shareReader;
+
+	/**
+	 * Dates a new share in the past. Null only in legacy fixtures.
+	 *
+	 * @var ShareTimeWriter|null
+	 */
+	private readonly ?ShareTimeWriter $shareTimes;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectAuthorizationWriter $authorizationWriter The one writer of the stored authorization block.
-	 * @param IUserSession $userSession Resolves the caller.
-	 * @param IGroupManager $groupManager Resolves the caller's groups.
-	 * @param FolderManagementHandler $folders Resolves an object's NC folder.
-	 * @param ObjectScopeResolver $scopeResolver The scope vocabulary.
-	 * @param ObjectGrantResolver $grantResolver The grant resolver, to drop its per-request memo.
-	 * @param IManager $shareManager Core share manager.
-	 * @param LoggerInterface $logger Logger.
-	 * @param InheritedGrantLister $inheritedGrants Lists the grants an ancestor's share confers.
-	 * @param GrantManageGuard $grantManage Who may manage a record's grants: the owner, an administrator,
-	 *                                      or a holder of the special right `grant_manage`.
-	 * @param GrantChangeAuditor|null $auditor Writes an audit-trail entry for every grant and revoke. Null only in legacy fixtures.
-	 * @param ObjectShareReader|null $shareReader Reads the shares on the object folder. Null only in legacy fixtures.
-	 * @param ShareTimeWriter|null $shareTimes Dates a new share in the past. Null only in legacy fixtures.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection; each dependency is named in the
-	 *                                                 class docblock, and the guard is the tenth.
+	 * @param ObjectShareSurface   $shares      The object folder, core's share manager, the share reader and the share-time writer.
+	 * @param ObjectGrantRecords   $records     The authorization writer, the scope vocabulary, the grant resolver and the inherited grants.
+	 * @param ObjectSharingContext $context     The session, the group manager, the logger and the grant auditor.
+	 * @param GrantManageGuard     $grantManage Who may manage a record's grants: the owner, an administrator,
+	 *                                          or a holder of the special right `grant_manage`.
 	 */
 	public function __construct(
-		private readonly ObjectAuthorizationWriter $authorizationWriter,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly FolderManagementHandler $folders,
-		private readonly ObjectScopeResolver $scopeResolver,
-		private readonly ObjectGrantResolver $grantResolver,
-		private readonly IManager $shareManager,
-		private readonly LoggerInterface $logger,
-		private readonly InheritedGrantLister $inheritedGrants,
+		ObjectShareSurface $shares,
+		ObjectGrantRecords $records,
+		ObjectSharingContext $context,
 		private readonly GrantManageGuard $grantManage,
-		private readonly ?GrantChangeAuditor $auditor = null,
-		private readonly ?ObjectShareReader $shareReader = null,
-		private readonly ?ShareTimeWriter $shareTimes = null,
 	) {
+		$this->authorizationWriter = $records->authorizationWriter;
+		$this->userSession = $context->userSession;
+		$this->groupManager = $context->groupManager;
+		$this->folders = $shares->folders;
+		$this->scopeResolver = $records->scopeResolver;
+		$this->grantResolver = $records->grantResolver;
+		$this->shareManager = $shares->shareManager;
+		$this->logger = $context->logger;
+		$this->inheritedGrants = $records->inheritedGrants;
+		$this->auditor = $context->auditor;
+		$this->shareReader = $shares->shareReader;
+		$this->shareTimes = $shares->shareTimes;
 	}//end __construct()
 
 	/**
@@ -276,13 +351,30 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 	 * @param string $type One of the GRANTABLE_TYPES keys.
 	 * @param string $shareWith The principal to grant.
 	 * @param integer $permissions Core permission bitmask.
-	 * @param string[] $verbs Extension verbs (e.g. `use`, `run`) carried in the share's
-	 *                        attribute bag. Core's bitmask has no room for a verb it does
-	 *                        not define, so ADR-010 puts them here rather than widening
-	 *                        the RBAC vocabulary.
-	 * @param DateTime|null $expiresAt When the grant ends; null for no end.
-	 * @param DateTime|null $sharedAt The share time to record; null for now. Core stamps a new
-	 *                                share with the current time, so it is written after creation.
+	 *
+	 * @throws NotAuthorizedException When the caller is neither owner nor admin.
+	 * @throws InvalidArgumentException On an unsupported type or unresolvable folder.
+	 *
+	 * @return array<string, mixed> The created grant.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 */
+	public function grant(ObjectEntity $object, string $type, string $shareWith, int $permissions = 1): array {
+		return $this->grantWithTerms(object: $object, type: $type, shareWith: $shareWith, terms: new GrantTerms(permissions: $permissions));
+	}//end grant()
+
+	/**
+	 * Grant one principal access to one object, on declared terms.
+	 *
+	 * The terms carry the extension verbs (ADR-010: core's bitmask has no room
+	 * for a verb it does not define), the end of the grant and the share time to
+	 * record, which core stamps with the current time, so it is written after
+	 * creation.
+	 *
+	 * @param ObjectEntity $object The object to share.
+	 * @param string $type One of the GRANTABLE_TYPES keys.
+	 * @param string $shareWith The principal to grant.
+	 * @param GrantTerms $terms The permission mask, the verbs, the end and the share time.
 	 *
 	 * @throws NotAuthorizedException When the caller is neither owner nor admin.
 	 * @throws InvalidArgumentException On an unsupported type or unresolvable folder.
@@ -292,32 +384,24 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
-	public function grant(
-		ObjectEntity $object,
-		string $type,
-		string $shareWith,
-		int $permissions = 1,
-		array $verbs = [],
-		?DateTime $expiresAt = null,
-		?DateTime $sharedAt = null,
-	): array {
+	public function grantWithTerms(ObjectEntity $object, string $type, string $shareWith, GrantTerms $terms): array {
 		$admittedAs = $this->requireMayManageGrants(object: $object, grantType: $type, grantee: trim($shareWith));
 		$this->assertGrantRequest(type: $type, shareWith: $shareWith);
 
 		$share = $this->shareOnFolder(object: $object, shareType: self::GRANTABLE_TYPES[$type]);
 		$share->setSharedWith(trim($shareWith));
-		$share->setPermissions($this->withoutReshare(permissions: $permissions));
-		$this->applyVerbs(share: $share, verbs: $verbs);
-		if ($expiresAt !== null) {
-			$share->setExpirationDate($expiresAt);
+		$share->setPermissions($this->withoutReshare(permissions: $terms->permissions));
+		$this->applyVerbs(share: $share, verbs: $terms->verbs);
+		if ($terms->expiresAt !== null) {
+			$share->setExpirationDate($terms->expiresAt);
 		}
 
-		$created = $this->createDated(share: $share, sharedAt: $sharedAt);
+		$created = $this->createDated(share: $share, sharedAt: $terms->sharedAt);
 
 		// The caller may re-decide access within this same request.
 		$this->grantResolver->forget();
 
-		$grant = $this->grantRecord(created: $created, type: $type, verbs: $verbs);
+		$grant = $this->grantRecord(created: $created, type: $type, verbs: $terms->verbs);
 
 		// Who let this principal in, and when, is the question the trail has
 		// to be able to answer, whoever the caller was admitted as.
@@ -327,7 +411,7 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 		$identity = ['nodeId' => (int)$created->getNodeId(), 'sharedBy' => (string)$created->getSharedBy()];
 
 		return $grant + $identity + ['shareType' => (int)$created->getShareType()];
-	}//end grant()
+	}//end grantWithTerms()
 
 	/**
 	 * Refuse a grant of an unknown type, or to nobody.
@@ -817,9 +901,11 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 			admittedAs: $admittedAs,
 			userId: $uid,
 			userGroups: $groups,
-			user: ($principal['user'] ?? null),
-			group: ($principal['group'] ?? null),
-			remote: ($principal['remote'] ?? $principal['remote_group'] ?? null)
+			principal: new GrantedPrincipal(
+				user: ($principal['user'] ?? null),
+				group: ($principal['group'] ?? null),
+				remote: ($principal['remote'] ?? $principal['remote_group'] ?? null)
+			)
 		) === true
 		) {
 			throw new NotAuthorizedException(

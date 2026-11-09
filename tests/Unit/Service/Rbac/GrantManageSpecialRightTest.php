@@ -151,17 +151,10 @@ class GrantManageSpecialRightTest extends TestCase {
 		$auditor = new GrantChangeAuditor($this->trail, $this->createMock(SettingsChangeAuditor::class), new NullLogger());
 
 		$this->sharing = new ObjectSharingService(
-			$this->authorizationWriter,
-			$this->userSession,
-			$this->groupManager,
-			$folders,
-			new ObjectScopeResolver(),
-			$this->createMock(ObjectGrantResolver::class),
-			$this->shareManager,
-			new NullLogger(),
-			$this->createMock(InheritedGrantLister::class),
-			new GrantManageGuard(new ObjectScopeResolver(), $specialRights),
-			$auditor
+			shares: new \OCA\OpenRegister\Service\Rbac\ObjectShareSurface(folders: $folders, shareManager: $this->shareManager),
+			records: new \OCA\OpenRegister\Service\Rbac\ObjectGrantRecords(authorizationWriter: $this->authorizationWriter, scopeResolver: new ObjectScopeResolver(), grantResolver: $this->createMock(ObjectGrantResolver::class), inheritedGrants: $this->createMock(InheritedGrantLister::class)),
+			context: new \OCA\OpenRegister\Service\Rbac\ObjectSharingContext(userSession: $this->userSession, groupManager: $this->groupManager, logger: new NullLogger(), auditor: $auditor),
+			grantManage: new GrantManageGuard(new ObjectScopeResolver(), $specialRights)
 		);
 
 		$this->ownership = new ObjectOwnershipService(
