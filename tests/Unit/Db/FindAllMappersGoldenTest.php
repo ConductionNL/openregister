@@ -97,7 +97,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 	public function testOutcomesMatchGolden(): void {
 		$actual = [];
 		foreach (self::readCases() as $name => $args) {
-			$actual['consumer: ' . $name] = $this->recorded(fn () => $this->consumerMapper()->findAll(...$args));
+			$actual['consumer: ' . $name] = $this->recorded(fn () => $this->consumerMapper()->findAll(...array_slice($args, 0, 3)));
 			foreach ([[true, true], [false, true], [true, false], [false, false]] as [$rbac, $mt]) {
 				$label = 'register rbac ' . var_export($rbac, true) . ' mt ' . var_export($mt, true) . ': ' . $name;
 				$actual[$label] = $this->recorded(

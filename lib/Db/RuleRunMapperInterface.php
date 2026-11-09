@@ -75,21 +75,14 @@ interface RuleRunMapperInterface {
 	 * column the ordering and the window both use, so the console never
 	 * scans the run log (ADR-009).
 	 *
-	 * @param string|null   $verdict Narrow to one verdict.
-	 * @param DateTime|null $since   Only runs at or after this moment.
-	 * @param int           $limit   How many rows to return, capped at MAX_LIMIT.
-	 * @param int           $offset  Where to start.
+	 * @param DateTime|null $since Only runs at or after this moment.
+	 * @param int           $limit How many rows to return, capped at MAX_LIMIT.
 	 *
 	 * @return array<int, RuleRun> The rows, newest first.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
-	public function findRecent(
-		?string $verdict = null,
-		?DateTime $since = null,
-		int $limit = self::DEFAULT_LIMIT,
-		int $offset = 0,
-	): array;
+	public function findRecent(?DateTime $since = null, int $limit = self::DEFAULT_LIMIT): array;
 
 	/**
 	 * How many runs one rule has in the log, under the same filters.
