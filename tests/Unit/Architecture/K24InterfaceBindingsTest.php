@@ -63,7 +63,7 @@ final class K24InterfaceBindingsTest extends TestCase {
 		foreach ($statuses as $from) {
 			foreach ($statuses as $to) {
 				$fromTable = in_array($to, (SyncRecordStatusInterface::TRANSITIONS[$from] ?? []), true);
-				self::assertSame(SyncRecordStatus::canTransition($from, $to), $fromTable, $from.' -> '.$to);
+				self::assertSame(SyncRecordStatus::canTransition(from: $from, to: $to), $fromTable, $from.' -> '.$to);
 			}
 		}
 	}//end testTransitionTableMatchesTheStateMachine()
@@ -76,7 +76,7 @@ final class K24InterfaceBindingsTest extends TestCase {
 	public function testAliasMapMatchesCandidatesFor(): void {
 		$keys = array_merge(array_keys(RegisterSlugAliasesInterface::ALIASES), ['procest', 'unrelated']);
 		foreach ($keys as $key) {
-			self::assertSame(RegisterSlugAliases::candidatesFor($key), (RegisterSlugAliasesInterface::ALIASES[$key] ?? [$key]), $key);
+			self::assertSame(RegisterSlugAliases::candidatesFor(canonical: $key), (RegisterSlugAliasesInterface::ALIASES[$key] ?? [$key]), $key);
 		}
 	}//end testAliasMapMatchesCandidatesFor()
 
@@ -94,6 +94,6 @@ final class K24InterfaceBindingsTest extends TestCase {
 		$event = $this->createMock(RegisterEntitiesEvent::class);
 		$event->expects(self::once())->method('registerEntity')->with($entity);
 
-		(new FlowEngineRegistrationListener($container))->handle($event);
+		(new FlowEngineRegistrationListener(container: $container))->handle(event: $event);
 	}//end testListenerRegistersTheEntityByItsId()
 }//end class
