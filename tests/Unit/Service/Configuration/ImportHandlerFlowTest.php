@@ -441,6 +441,10 @@ class ImportHandlerFlowTest extends TestCase {
 		$this->flowMapper->method('findByUuid')
 			->willThrowException(new DoesNotExistException('not found'));
 
+		// The degrade path is a deliberate early return, not a swallowed
+		// Error from calling publish() on null: that would log a warning.
+		$this->logger->expects($this->never())->method('warning');
+
 		$result = $this->invokeMethod($this->handler, 'importFlow', [
 			['uuid' => 'flow-uuid-1', 'nodes' => ['n1']],
 			$this->configuration(),
@@ -450,6 +454,35 @@ class ImportHandlerFlowTest extends TestCase {
 
 		$this->assertSame(FlowVersion::STATUS_DRAFT, $result->getLifecycleStatus());
 	}//end testImportFlowWithoutFlowVersionServiceLeavesFlowUnpublished()
+
+	/**
+	 * importFlow() without a FlowVersionService demotes a changed published flow to a draft and does not re-publish it.
+	 */
+	public function testImportFlowWithoutFlowVersionServiceDemotesPublishedFlowToDraft(): void {
+		$this->handler->setFlowVersionService(null);
+
+		$existing = new Flow();
+		$existing->setUuid('flow-uuid-1');
+		$existing->setOrganisation('org-1');
+		$existing->setNodes(['old']);
+		$existing->setLifecycleStatus(FlowVersion::STATUS_PUBLISHED);
+
+		$this->flowMapper->method('findByUuid')->willReturn($existing);
+		$this->flowMapper->expects($this->once())->method('update')
+			->with($this->callback(static fn (Flow $flow): bool => $flow->getLifecycleStatus() === FlowVersion::STATUS_DRAFT))
+			->willReturnArgument(0);
+		$this->logger->expects($this->never())->method('warning');
+
+		$result = $this->invokeMethod($this->handler, 'importFlow', [
+			['uuid' => 'flow-uuid-1', 'nodes' => ['new']],
+			$this->configuration(),
+			null,
+			false,
+		]);
+
+		$this->assertSame(['new'], $result->getNodes());
+		$this->assertSame(FlowVersion::STATUS_DRAFT, $result->getLifecycleStatus());
+	}//end testImportFlowWithoutFlowVersionServiceDemotesPublishedFlowToDraft()
 
 	/**
 	 * importFlow() refuses a uuid that already belongs to another organisation instead of overwriting it.
