@@ -145,9 +145,8 @@ class DeleteObject {
 	 * @param MagicMapperInterface $objectEntityMapper Object entity data mapper.
 	 * @param CacheHandlerInterface $cacheHandler Object entity and query cache
 	 * @param IUserSession $userSession User session service
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logs
+	 * @param AuditRecording $audit Audit trail mapper for logs, and the logger for error handling
 	 * @param SettingsServiceInterface $settingsService Settings service for trail settings
-	 * @param LoggerInterface $logger Logger for error handling
 	 * @param ReferentialIntegrityService $integrityService Referential integrity service
 	 * @param IDBConnection $db Database connection for transactions
 	 * @param OrganisationMapperInterface $organisationMapper Resolves the deleting user's active organisation for the audit trail
@@ -164,9 +163,8 @@ class DeleteObject {
 		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly CacheHandlerInterface $cacheHandler,
 		private readonly IUserSession $userSession,
-		AuditTrailMapperInterface $auditTrailMapper,
+		AuditRecording $audit,
 		SettingsServiceInterface $settingsService,
-		LoggerInterface $logger,
 		ReferentialIntegrityService $integrityService,
 		IDBConnection $db,
 		private readonly OrganisationMapperInterface $organisationMapper,
@@ -175,9 +173,9 @@ class DeleteObject {
 		private readonly ?\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper = null,
 		private readonly ?DeletionWindowService $windowService = null,
 	) {
-		$this->auditTrailMapper = $auditTrailMapper;
+		$this->auditTrailMapper = $audit->trail;
 		$this->settingsService = $settingsService;
-		$this->logger = $logger;
+		$this->logger = $audit->logger;
 		$this->integrityService = $integrityService;
 		$this->db = $db;
 	}//end __construct()
