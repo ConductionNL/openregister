@@ -188,7 +188,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$ready     = $this->prerequisites->ensure(plan: $plan, record: $record);
 		$base      = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
 		$base['setGroups'] = $this->people->groupsOfSet(plan: $plan, record: $record);
-		$refusals  = array_merge($ready['refusals'], $this->people->refusals(plan: $plan, record: $record, adopt: $adopt));
+		$vouched   = new ExampleSetVouchedAccounts(record: $record, adopt: $adopt);
+		$refusals  = array_merge($ready['refusals'], $this->people->refusals(plan: $plan, vouched: $vouched));
 		$checked   = [];
 		$changes   = [];
 		$planned   = [];
@@ -339,12 +340,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		$set    = (string) $plan['set'];
 		$record = $this->record->read(set: $set);
-		$report = $this->people->install(
-			plan: $plan,
-			terms: new ExampleSetAccountTerms(set: (string) $plan['set'], adopt: $adopt, password: $password),
-			report: $report,
-			record: $record
-		);
+		$terms  = new ExampleSetAccountTerms(set: $set, adopt: $adopt, password: $password);
+		$report = array_merge($report, $this->people->install(install: new ExampleSetAccountsInstall(plan: $plan, terms: $terms), record: $record));
 
 		$base    = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
 		// A grant goes only to a group this set created (ExampleSetGrants).
