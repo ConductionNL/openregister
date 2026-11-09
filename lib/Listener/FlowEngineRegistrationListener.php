@@ -4,7 +4,7 @@
  * OpenRegister FlowEngineRegistrationListener
  *
  * Registers OpenRegister's native Nextcloud Flow (workflowengine) surfaces:
- * the {@see \OCA\OpenRegister\WorkflowEngine\RegisterObjectEntity} entity (so
+ * the {@see \OCA\OpenRegister\WorkflowEngine\RegisterObjectEntityInterface} entity (so
  * Flow rules can trigger on object events) and the
  * {@see \OCA\OpenRegister\WorkflowEngine\RunFlowOperation} operation (so a Flow
  * rule can run a named OpenRegister flow). One listener handles both the
@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\WorkflowEngine\RegisterObjectEntity;
+use OCA\OpenRegister\WorkflowEngine\RegisterObjectEntityInterface;
 use OCA\OpenRegister\WorkflowEngine\RunFlowOperation;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -71,7 +71,7 @@ class FlowEngineRegistrationListener implements IEventListener {
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof RegisterEntitiesEvent) {
-			$event->registerEntity($this->container->get(RegisterObjectEntity::class));
+			$event->registerEntity($this->container->get(RegisterObjectEntityInterface::ENTITY_ID));
 			return;
 		}
 
