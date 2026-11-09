@@ -35,6 +35,7 @@ use OCA\OpenRegister\BackgroundJob\FlowRunWorker;
 use OCA\OpenRegister\BackgroundJob\FlowRunWorkerServices;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunQueueExpiry;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -102,12 +103,10 @@ class FlowRunWorkerExpiryTest extends TestCase {
 
 		$this->mapper->expects($this->once())->method('expireQueuedBefore')
 			->with(
-				$this->anything(),
-				$this->callback(static function (string $reason): bool {
-					return str_contains($reason, 'Expired')
-						&& str_contains($reason, 'Retry');
-				}),
-				$this->anything()
+				$this->callback(static function (FlowRunQueueExpiry $expiry): bool {
+					return str_contains($expiry->reason, 'Expired')
+						&& str_contains($expiry->reason, 'Retry');
+				})
 			)
 			->willReturn([$this->expiredRun()]);
 
@@ -144,13 +143,11 @@ class FlowRunWorkerExpiryTest extends TestCase {
 
 		$this->mapper->expects($this->once())->method('expireQueuedBefore')
 			->with(
-				$this->callback(static function (DateTime $before): bool {
-					$hoursAgo = ((time() - $before->getTimestamp()) / 3600);
+				$this->callback(static function (FlowRunQueueExpiry $expiry): bool {
+					$hoursAgo = ((time() - $expiry->before->getTimestamp()) / 3600);
 					// ~72 hours ago, with room for the test's own runtime.
 					return $hoursAgo > 71.9 && $hoursAgo < 72.1;
-				}),
-				$this->anything(),
-				$this->anything()
+				})
 			)
 			->willReturn([]);
 
@@ -165,12 +162,10 @@ class FlowRunWorkerExpiryTest extends TestCase {
 
 		$this->mapper->expects($this->once())->method('expireQueuedBefore')
 			->with(
-				$this->callback(static function (DateTime $before): bool {
-					$hoursAgo = ((time() - $before->getTimestamp()) / 3600);
+				$this->callback(static function (FlowRunQueueExpiry $expiry): bool {
+					$hoursAgo = ((time() - $expiry->before->getTimestamp()) / 3600);
 					return $hoursAgo > 23.9 && $hoursAgo < 24.1;
-				}),
-				$this->anything(),
-				$this->anything()
+				})
 			)
 			->willReturn([]);
 
@@ -202,9 +197,7 @@ class FlowRunWorkerExpiryTest extends TestCase {
 
 		$this->mapper->expects($this->once())->method('expireQueuedBefore')
 			->with(
-				$this->anything(),
-				$this->anything(),
-				$this->callback(static fn (int $limit): bool => $limit > 0 && $limit <= 1000)
+				$this->callback(static fn (FlowRunQueueExpiry $expiry): bool => $expiry->limit > 0 && $expiry->limit <= 1000)
 			)
 			->willReturn([]);
 

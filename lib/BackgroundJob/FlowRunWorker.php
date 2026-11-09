@@ -37,6 +37,7 @@ use DateTime;
 use OCA\OpenRegister\Db\FlowClaimMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\FlowRunQueueExpiry;
 use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowConsentSweepInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
@@ -675,9 +676,7 @@ class FlowRunWorker extends TimedJob {
 		try {
 			$cutoff = (clone $now)->modify('-' . $hours . ' hours');
 			$expired = $this->mapper->expireQueuedBefore(
-				before: $cutoff,
-				reason: $reason,
-				limit: self::EXPIRE_BATCH
+				expiry: new FlowRunQueueExpiry(before: $cutoff, reason: $reason, limit: self::EXPIRE_BATCH)
 			);
 
 			if ($expired !== []) {

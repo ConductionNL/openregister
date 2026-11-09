@@ -28,8 +28,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\FlowActivityWindow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunViewer;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -74,7 +76,7 @@ class FlowRunMapperSummaryTest extends TestCase {
 	public function testEveryRequestedFlowIsAnsweredAndNeverRunReadsAsNull(): void {
 		$mapper = $this->mapper(['flow-a' => 31], [$this->latestRun('flow-a', FlowRun::STATUS_FAILED)]);
 
-		$summary = $mapper->summarizeByFlow(['flow-a', 'flow-b', ' '], new DateTime('-7 days'));
+		$summary = $mapper->summarizeByFlow(new FlowActivityWindow(['flow-a', 'flow-b', ' '], new DateTime('-7 days')), new FlowRunViewer(null, []));
 
 		$this->assertSame(['flow-a', 'flow-b'], array_keys($summary));
 		$this->assertSame(31, $summary['flow-a']['runsSince']);
@@ -89,7 +91,7 @@ class FlowRunMapperSummaryTest extends TestCase {
 		$run->setLog([['transition' => 'end', 'status' => 'stopped', 'checkId' => null]]);
 		$mapper = $this->mapper(['flow-a' => 1], [$run]);
 
-		$lastRun = $mapper->summarizeByFlow(['flow-a'], new DateTime('-7 days'))['flow-a']['lastRun'];
+		$lastRun = $mapper->summarizeByFlow(new FlowActivityWindow(['flow-a'], new DateTime('-7 days')), new FlowRunViewer(null, []))['flow-a']['lastRun'];
 
 		$this->assertSame('stopped', $lastRun['status']);
 		$this->assertSame('completed', $lastRun['outcome']);
@@ -99,7 +101,7 @@ class FlowRunMapperSummaryTest extends TestCase {
 	public function testRowsForFlowsNobodyAskedAboutAreIgnored(): void {
 		$mapper = $this->mapper(['flow-x' => 9], [$this->latestRun('flow-x', FlowRun::STATUS_COMPLETED)]);
 
-		$summary = $mapper->summarizeByFlow(['flow-a'], new DateTime('-7 days'));
+		$summary = $mapper->summarizeByFlow(new FlowActivityWindow(['flow-a'], new DateTime('-7 days')), new FlowRunViewer(null, []));
 
 		$this->assertSame(['flow-a' => ['lastRun' => null, 'runsSince' => 0]], $summary);
 	}
@@ -112,6 +114,6 @@ class FlowRunMapperSummaryTest extends TestCase {
 		$mapper->expects($this->never())->method('countSinceByFlow');
 		$mapper->expects($this->never())->method('latestRunsByFlow');
 
-		$this->assertSame([], $mapper->summarizeByFlow([], new DateTime()));
+		$this->assertSame([], $mapper->summarizeByFlow(new FlowActivityWindow([], new DateTime()), new FlowRunViewer(null, [])));
 	}
 }
