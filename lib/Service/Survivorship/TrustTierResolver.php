@@ -62,9 +62,10 @@ class TrustTierResolver implements TrustTierResolverInterface {
 	public function resolveTier(TrustTuple $tuple, array $trustRows, DateTimeImmutable $asOf): ?string {
 		$best = null;
 		$bestFrom = null;
+		$run = new TierResolutionRun(tuple: $tuple, asOf: $asOf);
 
 		foreach ($trustRows as $row) {
-			$candidate = $this->eligibleCandidate(row: $row, tuple: $tuple, asOf: $asOf);
+			$candidate = $this->eligibleCandidate(row: $row, run: $run);
 			if ($candidate === null) {
 				continue;
 			}
@@ -97,18 +98,17 @@ class TrustTierResolver implements TrustTierResolverInterface {
 	 * Evaluate a single candidate row for the tuple: matches the tuple, is
 	 * effective as of `$asOf`, and declares a non-empty tier.
 	 *
-	 * @param mixed $row Candidate row (validated to be an array here).
-	 * @param TrustTuple $tuple The tuple to match.
-	 * @param DateTimeImmutable $asOf Reference instant for effectiveFrom resolution.
+	 * @param mixed             $row Candidate row (validated to be an array here).
+	 * @param TierResolutionRun $run The tuple to match and the reference instant for effectiveFrom resolution.
 	 *
 	 * @return array{0: string, 1: int}|null [tier, effectiveFrom-rank], or null when ineligible.
 	 */
-	private function eligibleCandidate(mixed $row, TrustTuple $tuple, DateTimeImmutable $asOf): ?array {
-		if ($this->isMatchingRow(row: $row, tuple: $tuple) === false) {
+	private function eligibleCandidate(mixed $row, TierResolutionRun $run): ?array {
+		if ($this->isMatchingRow(row: $row, tuple: $run->tuple) === false) {
 			return null;
 		}
 
-		$rank = $this->effectiveRank(row: $row, asOf: $asOf);
+		$rank = $this->effectiveRank(row: $row, asOf: $run->asOf);
 		if ($rank === null) {
 			return null;
 		}
@@ -176,44 +176,33 @@ class TrustTierResolver implements TrustTierResolverInterface {
 	}//end applyFreshnessDecay()
 
 	/**
-	 * Whether the tier decays: a decay window and an anchor are present and
-	 * more whole days than the window have elapsed since the anchor.
+	 * Whether the tier decays: a positive decay window and an anchor are
+	 * present and more whole days than the window have elapsed since the
+	 * anchor. A non-positive window never decays.
 	 *
 	 * @param SourceFreshness $freshness Decay window, anchor date and reference instant.
 	 *
 	 * @return bool True when the tier steps down.
 	 */
 	private function hasDecayed(SourceFreshness $freshness): bool {
-		if ($freshness->decayDays === null || $freshness->anchor === null) {
+		if ($freshness->decayDays === null || $freshness->decayDays <= 0 || $freshness->anchor === null) {
 			return false;
 		}
 
-		return $this->elapsedBeyond(
-			freshnessDecayDays: $freshness->decayDays,
-			anchor: $freshness->anchor,
-			asOf: $freshness->asOf
-		);
+		return $this->elapsedDays(anchor: $freshness->anchor, asOf: $freshness->asOf) > $freshness->decayDays;
 	}//end hasDecayed()
 
 	/**
-	 * Whether more whole days than the decay window have elapsed since the
-	 * anchor. A non-positive window never decays.
+	 * The whole days elapsed between the anchor and the reference instant.
 	 *
-	 * @param int               $freshnessDecayDays Decay window in days.
-	 * @param DateTimeImmutable $anchor             The source's freshness anchor date.
-	 * @param DateTimeImmutable $asOf               Reference instant.
+	 * @param DateTimeImmutable $anchor The source's freshness anchor date.
+	 * @param DateTimeImmutable $asOf   Reference instant.
 	 *
-	 * @return bool True when the tier steps down.
+	 * @return int The elapsed whole days.
 	 */
-	private function elapsedBeyond(int $freshnessDecayDays, DateTimeImmutable $anchor, DateTimeImmutable $asOf): bool {
-		if ($freshnessDecayDays <= 0) {
-			return false;
-		}
-
-		$elapsedDays = (int)floor(($asOf->getTimestamp() - $anchor->getTimestamp()) / 86400);
-
-		return $elapsedDays > $freshnessDecayDays;
-	}//end elapsedBeyond()
+	private function elapsedDays(DateTimeImmutable $anchor, DateTimeImmutable $asOf): int {
+		return (int)floor(($asOf->getTimestamp() - $anchor->getTimestamp()) / 86400);
+	}//end elapsedDays()
 
 	/**
 	 * Step a tier down exactly one level on the ordered tier list (weakest
