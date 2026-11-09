@@ -70,6 +70,8 @@ interface StoreSourceInterface {
 	 * @param StoreSearch   $search   The free text and the kind filter.
 	 *
 	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/changes/store-plane-declarative-sources/specs/apphost-store-plane/spec.md#requirement-a-store-must-declare-its-discovery-source-defaulting-to-openregister
 	 */
 	public function find(StoreManifest $manifest, StoreSearch $search): array;
 }
