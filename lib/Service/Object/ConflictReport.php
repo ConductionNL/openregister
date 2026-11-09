@@ -149,8 +149,7 @@ class ConflictReport implements ConflictReportInterface {
 				schema: $schema,
 				current: $current,
 				property: $property,
-				sentValue: $sentValue,
-				readValue: $changedByOthers[$property]
+				readings: self::readings(sent: $sentValue, read: $changedByOthers[$property], stored: ($current[$property] ?? null))
 			);
 		}
 
@@ -202,36 +201,39 @@ class ConflictReport implements ConflictReportInterface {
 	/**
 	 * The three readings of one property, filtered by what the caller may read.
 	 *
-	 * @param Schema               $schema    The schema.
-	 * @param array<string, mixed> $current   The stored object.
-	 * @param string               $property  The property.
-	 * @param mixed                $sentValue What the caller sent.
-	 * @param mixed                $readValue What was there when they read it.
+	 * @param Schema               $schema   The schema.
+	 * @param array<string, mixed> $current  The stored object.
+	 * @param string               $property The property.
+	 * @param array<string, mixed> $readings The three readings, as {@see self::readings()} shapes them.
 	 *
 	 * @return array<string, mixed> The readings, or the withheld marker.
 	 *
 	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-the-conflict-body-discloses-no-more-than-a-read-would-req-cso-002
 	 */
-	private function readingsFor(
-		Schema $schema,
-		array $current,
-		string $property,
-		mixed $sentValue,
-		mixed $readValue,
-	): array {
+	private function readingsFor(Schema $schema, array $current, string $property, array $readings): array {
 		if ($this->properties->canReadProperty(schema: $schema, property: $property, object: $current) === false) {
 			// Named, valueless. The caller learns their write collided and
 			// learns nothing they could not have read.
 			return ['status' => self::WITHHELD];
 		}
 
-		return [
-			'status' => 'conflict',
-			'sent' => $sentValue,
-			'read' => $readValue,
-			'stored' => ($current[$property] ?? null),
-		];
+		return $readings;
 	}//end readingsFor()
+
+	/**
+	 * The three readings of one conflicting property: sent, read and stored.
+	 *
+	 * @param mixed $sent   What the caller sent.
+	 * @param mixed $read   What was there when they read it.
+	 * @param mixed $stored What is stored now.
+	 *
+	 * @return array<string, mixed> The readings.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 */
+	private static function readings(mixed $sent, mixed $read, mixed $stored): array {
+		return ['status' => 'conflict', 'sent' => $sent, 'read' => $read, 'stored' => $stored];
+	}//end readings()
 
 	/**
 	 * Which properties the intervening writes touched, and what each was before.
