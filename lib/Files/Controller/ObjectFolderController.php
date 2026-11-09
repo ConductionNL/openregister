@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\ObjectFolderControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
@@ -88,18 +89,16 @@ class ObjectFolderController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string              $appName          The app name.
 	 * @param IRequest            $request          The request.
 	 * @param ObjectFolderControllerServices $services The object folder controller services.
 	 * @param FileWriteGuardInterface        $fileWriteGuard   Refuses a change to the files of a frozen or archived object.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectFolderControllerServices $services,
 		private readonly FileWriteGuardInterface $fileWriteGuard,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
 		$this->objectFileAccess = $services->objectFileAccess;
 		$this->browser = $services->browser;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Files\Controller\Settings\FileSettingsController;
+use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
 use OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Files\Db\FileMapper;
@@ -50,9 +51,11 @@ class FileSettingsControllerBranchTest extends TestCase {
 		// double.
 		$this->controller = new FileSettingsController(
 			$this->request,
-			$this->container,
-			$this->settingsService,
-			$this->logger
+			new FileSettingsControllerServices(
+				$this->container,
+				$this->settingsService,
+				$this->logger
+			)
 		);
 	}
 
