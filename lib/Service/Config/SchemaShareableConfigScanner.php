@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\Config;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Config\Types\GenericObjectShareableConfigType;
+use OCA\OpenRegister\Service\Config\Types\ShareableTypeIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -102,9 +103,7 @@ class SchemaShareableConfigScanner implements SchemaShareableConfigScannerInterf
 
 				$types[] = new GenericObjectShareableConfigType(
 					objectService: $this->objectService,
-					id: $id,
-					name: $name,
-					topic: $topic,
+					identity: new ShareableTypeIdentity(id: $id, name: $name, topic: $topic),
 					register: $registerSlug,
 					schema: $schemaSlug
 				);
