@@ -879,20 +879,4 @@ export default {
 	background-color: var(--color-error) !important;
 	color: var(--color-main-background) !important;
 }
-
-.copySuccessIcon {
-	color: var(--color-success) !important;
-}
-
-:deep(.copySuccessIcon) {
-	animation: copySuccess 0.3s ease-in-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	:deep(.copySuccessIcon) {
-		animation: none;
-	}
-}
-
-@include keyframes-copy-success-rules;
 </style>
