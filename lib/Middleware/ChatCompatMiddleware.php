@@ -263,16 +263,25 @@ class ChatCompatMiddleware extends Middleware {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	public function afterController($controller, $methodName, Response $response): Response {
-		if ($this->isChatFamilyController(controller: $controller) === false) {
-			return $response;
+		if ($this->isChatFamilyController(controller: $controller) === true) {
+			self::addDeprecationHeaders(response: $response);
 		}
-
-		$response->addHeader('Deprecation', self::DEPRECATION_DATE);
-		$response->addHeader('Sunset', self::SUNSET_DATE);
-		$response->addHeader('Link', '<' . self::SUCCESSOR_LINK_PATH . '>; rel="successor-version"');
 
 		return $response;
 	}//end afterController()
+
+	/**
+	 * Add the compat-window deprecation headers to a response.
+	 *
+	 * @param Response $response The response to decorate.
+	 *
+	 * @return void
+	 */
+	private static function addDeprecationHeaders(Response $response): void {
+		$response->addHeader('Deprecation', self::DEPRECATION_DATE);
+		$response->addHeader('Sunset', self::SUNSET_DATE);
+		$response->addHeader('Link', '<' . self::SUCCESSOR_LINK_PATH . '>; rel="successor-version"');
+	}//end addDeprecationHeaders()
 
 	/**
 	 * Attempt the reachability-gated redirect for the streaming controller.
