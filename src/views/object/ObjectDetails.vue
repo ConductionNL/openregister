@@ -175,12 +175,17 @@
 						-->
 						<AppTab :title="t('openregister', 'Uses')">
 							<div v-if="objectStore.uses?.results?.length">
-								<ObjectRelationItem
+								<CountListItem
 									v-for="(relation, key) in objectStore.uses
 										.results"
 									:key="`uses-${relationKey(relation, key)}`"
 									:name="relationTitle(relation)"
-									:subname="relationLabel(relation)" />
+									:subname="relationLabel(relation)"
+									:forceDisplayActions="true">
+									<template #icon>
+										<CubeOutline disableMenu :size="44" />
+									</template>
+								</CountListItem>
 							</div>
 							<div v-else class="tabPanel">
 								{{ t('openregister', 'No relations found') }}
@@ -188,12 +193,17 @@
 						</AppTab>
 						<AppTab :title="t('openregister', 'Used by')">
 							<div v-if="objectStore.used?.results?.length">
-								<ObjectRelationItem
+								<CountListItem
 									v-for="(relation, key) in objectStore.used
 										.results"
 									:key="`used-${relationKey(relation, key)}`"
 									:name="relationTitle(relation)"
-									:subname="relationLabel(relation)" />
+									:subname="relationLabel(relation)"
+									:forceDisplayActions="true">
+									<template #icon>
+										<CubeOutline disableMenu :size="44" />
+									</template>
+								</CountListItem>
 								<CnPagination
 									v-if="
 										!relationsLoading
@@ -528,6 +538,7 @@ import {
 	NcNoteCard,
 } from '@nextcloud/vue'
 import { computed } from 'vue'
+import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
@@ -546,9 +557,9 @@ import EmailsTab from '../../components/object-relations/EmailsTab.vue'
 import EventsTab from '../../components/object-relations/EventsTab.vue'
 import ReferencedByTab from '../../components/object-relations/ReferencedByTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
+import CountListItem from '../../components/shared/CountListItem.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
-import ObjectRelationItem from './ObjectRelationItem.vue'
 import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { navigationStore, objectStore } from '../../store/store.js'
 
@@ -586,7 +597,8 @@ export default {
 		CnObjectAccessTab,
 		CnObjectMetadataWidget,
 		ObjectAccessLinks,
-		ObjectRelationItem,
+		CountListItem,
+		CubeOutline,
 	},
 
 	/**
