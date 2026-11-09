@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Edepot\MdtoPreconditions;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
 use OCA\OpenRegister\Service\Edepot\MdtoValueReader;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
+use OCA\OpenRegister\Service\Edepot\MdtoValueSources;
 use OCA\OpenRegister\Service\Edepot\SipPackageBuilder;
 use OCP\IAppConfig;
 use OCP\ITempManager;
@@ -231,9 +232,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 		$bestandGenerator = new MdtoBestandGenerator($writer);
 
 		return new MdtoXmlGenerator(
-			$appConfig,
-			$eventMapper,
-			$sourceReader,
+			new MdtoValueSources($appConfig, $eventMapper, $sourceReader),
 			$writer,
 			$bestandGenerator,
 			new MdtoPreconditions($appConfig, new NullLogger(), new MdtoInputReaders($sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class)))
