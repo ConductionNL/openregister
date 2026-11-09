@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Notifications\BackgroundJob;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
@@ -105,6 +106,16 @@ final class ScheduledNotificationJob extends TimedJob {
 			$this->stateCache = null;
 		}
 	}//end __construct()
+
+	/**
+	 * The object finder, typed against the role this job needs: it only reads
+	 * a schema's objects.
+	 *
+	 * @return MagicObjectFinderInterface The magic mapper of the schema catalog.
+	 */
+	private function objectFinder(): MagicObjectFinderInterface {
+		return $this->sources->catalog->tables();
+	}//end objectFinder()
 
 	/**
 	 * Iterate every schema and fire any due scheduled notifications.
@@ -339,7 +350,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	 */
 	private function loadObjects(ScheduledFire $fire): ?array {
 		try {
-			return $this->sources->catalog->tables()->findBySchema($fire->schemaId);
+			return $this->objectFinder()->findBySchema($fire->schemaId);
 		} catch (\Throwable $e) {
 			$message = '[ScheduledNotificationJob] findBySchema(%d, "%s") failed: %s';
 			$this->delivery->logger->warning(sprintf($message, $fire->schema->getId(), $fire->name, $e->getMessage()));
