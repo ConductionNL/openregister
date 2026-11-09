@@ -138,6 +138,7 @@ import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import OffsetPager from '../../components/shared/OffsetPager.vue'
 import WebhooksSidebar from '../../components/WebhooksSidebar.vue'
+import { sidebarToggle } from '../../composables/sidebarToggle.js'
 import { displayDateTime } from '../../services/displayDateTime.js'
 import { editAction, refreshAction } from '../../services/menuActions.js'
 import { navigationStore, webhookStore } from '../../store/store.js'
@@ -323,15 +324,7 @@ export default {
 
 		t,
 
-		/**
-		 * Toggle sidebar visibility
-		 *
-		 * @spec openspec/specs/admin-list-views/spec.md
-		 * @return {void}
-		 */
-		toggleSidebar() {
-			this.sidebarOpen = !this.sidebarOpen
-		},
+		...sidebarToggle,
 
 		/**
 		 * Handle search query update
