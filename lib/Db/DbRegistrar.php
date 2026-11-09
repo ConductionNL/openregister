@@ -99,6 +99,7 @@ final class DbRegistrar {
 		ExportProfileMapperInterface::class => ExportProfileMapper::class,
 		FederatedShareMapperInterface::class => FederatedShareMapper::class,
 		FeedbackMapperInterface::class => FeedbackMapper::class,
+		FlowClaimMapperInterface::class => FlowClaimMapper::class,
 		FlowDefinitionMapperInterface::class => FlowDefinitionMapper::class,
 		FlowLinkMapperInterface::class => FlowLinkMapper::class,
 		FlowMapperInterface::class => FlowMapper::class,

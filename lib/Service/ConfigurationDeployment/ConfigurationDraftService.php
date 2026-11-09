@@ -51,7 +51,7 @@ use OCP\IUserSession;
  * app config, plus the entity types it returns. Splitting it would put the
  * "a draft never writes a live value" rule in two places.
  */
-class ConfigurationDraftService {
+class ConfigurationDraftService implements ConfigurationDraftsInterface {
 
 	/**
 	 * The app config key holding the four-eyes requirement.

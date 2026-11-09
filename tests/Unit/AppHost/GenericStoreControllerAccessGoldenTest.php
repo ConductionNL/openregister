@@ -23,6 +23,9 @@ use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
 use OCA\OpenRegister\AppHost\Store\Source\GitHubStoreSource;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
+use OCA\OpenRegister\AppHost\Store\StoreManifestContent;
+use OCA\OpenRegister\AppHost\Store\StoreManifestPermissions;
+use OCA\OpenRegister\AppHost\Store\StoreManifestTarget;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -147,7 +150,7 @@ class GenericStoreControllerAccessGoldenTest extends TestCase
         $refusedAdmin  = ['success' => false, 'message' => 'Installing a store item requires an administrator.'];
         $installed     = ['success' => true, 'components' => ['local']];
         $unresolved    = ['success' => false, 'message' => 'The store item could not be resolved.'];
-        $weird         = new StoreManifest(appId: 'dossiq', enabled: true, schema: 's', installAuth: 'owner');
+        $weird         = new StoreManifest(appId: 'dossiq', enabled: true, content: new StoreManifestContent(target: new StoreManifestTarget(schema: 's')), permissions: new StoreManifestPermissions(installAuth: 'owner'));
         return [
             'malformed slug before anything' => ['anon', self::local(), [], 'Bad_Slug', 400, ['success' => false, 'message' => 'Malformed item slug.'], []],
             'one-char slug is malformed'     => ['admin', self::local(), [], 'a', 400, ['success' => false, 'message' => 'Malformed item slug.'], []],

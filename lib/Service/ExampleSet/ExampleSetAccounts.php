@@ -57,23 +57,43 @@ class ExampleSetAccounts {
 	private const PASSWORD_LENGTH = 24;
 
 	/**
+	 * Nextcloud accounts.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $users;
+
+	/**
+	 * Nextcloud groups.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groups;
+
+	/**
+	 * Nextcloud group sub-admins.
+	 *
+	 * @var ISubAdmin|null
+	 */
+	private readonly ?ISubAdmin $subAdmins;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IUserManager    $users  Nextcloud accounts.
-	 * @param IGroupManager   $groups Nextcloud groups.
-	 * @param ISecureRandom   $random Makes passwords.
-	 * @param LoggerInterface $logger Logger; never given a password.
-	 * @param ISubAdmin|null  $subAdmins Nextcloud group sub-admins.
+	 * @param ExampleSetAccountDirectory $directory Nextcloud's accounts, groups and group sub-admins.
+	 * @param ISecureRandom              $random    Makes passwords.
+	 * @param LoggerInterface            $logger    Logger; never given a password.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IUserManager $users,
-		private readonly IGroupManager $groups,
+		ExampleSetAccountDirectory $directory,
 		private readonly ISecureRandom $random,
 		private readonly LoggerInterface $logger,
-		private readonly ?ISubAdmin $subAdmins=null,
 	) {
+		$this->users     = $directory->users;
+		$this->groups    = $directory->groups;
+		$this->subAdmins = $directory->subAdmins;
 	}//end __construct()
 
 	/**

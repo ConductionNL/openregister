@@ -21,6 +21,8 @@ use OCA\OpenRegister\Db\EmptyPropertyClaim;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -53,6 +55,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssign;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriters;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
@@ -282,15 +285,18 @@ class ObjectActionSelfAssignTest extends TestCase {
 				return $saved;
 			}
 		);
-		$audit = $this->createMock(ObjectActionAudit::class);
-		$audit->method('record')->willReturnCallback(
-			function ($object, $definition, $outcome, $digest, $userId): void {
-				$this->audited[] = [$object, $definition->key, (string)$definition->kind, $outcome->run, $digest, $outcome->changes, $outcome->outcome, $userId];
+		// The real ObjectActionAudit writes the entry, so the acting user is
+		// the one its gate reads: record() no longer takes a userId argument.
+		$trail = $this->createMock(AuditTrailMapperInterface::class);
+		$trail->method('createAuditTrailEntry')->willReturnCallback(
+			function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
+				$this->audited[] = [$object, $context['declaredAction'], $context['kind'], $context['run'], $context['inputsDigest'], $context['changes'], $context['outcome'], $actorId];
+				return new AuditTrail();
 			}
 		);
 
 		$checks   = new ObjectActionRunnerChecks(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)), new ObjectActionInputs(new OasRequestValidator()));
-		$recorder = new ObjectActionRunRecorder($checks->inputs, $audit, $checks->gate);
+		$recorder = new ObjectActionRunRecorder($checks->inputs, new ObjectActionAudit($trail, new NullLogger(), $checks->gate));
 
 		return new ObjectActionRunner(
 			$checks,
@@ -311,11 +317,9 @@ class ObjectActionSelfAssignTest extends TestCase {
 	 */
 	private function take(Schema $schema, ObjectEntity $object, array $given = []): array {
 		return $this->runner(schema: $schema)->run(
-			object: $object,
-			schema: $schema,
+			target: new ObjectActionTarget(object: $object, schema: $schema, register: '3', schemaRef: '7'),
 			key: self::ACTION,
-			given: $given,
-			subject: ['uuid' => (string)$object->getUuid(), 'register' => '3', 'schema' => '7']
+			given: $given
 		);
 	}//end take()
 

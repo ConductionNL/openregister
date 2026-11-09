@@ -287,9 +287,8 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	 * and remove leave what they wrote alone, and the report names each under `left`. An entry another part keys
 	 * by an object (`<app>/<key>#references`) is not a declaration of this part and stays.
 	 *
+	 * @param ExampleSetRecordPart $part     The record part, which is also the fragment's list of declarations, and its noun.
 	 * @param array<string, mixed> $fragment The fragment, as gathered for this run.
-	 * @param string               $part     The record part, which is also the fragment's list of declarations.
-	 * @param string               $noun     The part's word in the report.
 	 * @param array<string, mixed> $report   The report; gains a `left` line per entry let go.
 	 * @param array<string, mixed> $record   The record; loses the entries let go.
 	 *
@@ -297,9 +296,11 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 */
-	public static function letGoUndeclared(array $fragment, string $part, string $noun, array &$report, array &$record): bool {
+	public static function letGoUndeclared(ExampleSetRecordPart $part, array $fragment, array &$report, array &$record): bool {
 		$prefix   = $fragment['app'].'/';
 		$declared = self::declared(fragment: $fragment, part: $part, prefix: $prefix);
+		$noun     = $part->noun;
+		$part     = $part->part;
 		$changed  = false;
 		foreach (array_keys((array) ($record[$part] ?? [])) as $name) {
 			$name = (string) $name;
@@ -319,14 +320,14 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	 * The record keys of the declarations of one part in a fragment.
 	 *
 	 * @param array<string, mixed> $fragment The fragment.
-	 * @param string               $part     The part.
+	 * @param ExampleSetRecordPart $part     The part.
 	 * @param string               $prefix   The app's prefix, `<app>/`.
 	 *
 	 * @return array<string, bool>
 	 */
-	private static function declared(array $fragment, string $part, string $prefix): array {
+	private static function declared(array $fragment, ExampleSetRecordPart $part, string $prefix): array {
 		$declared = [];
-		foreach ((array) ($fragment[$part] ?? []) as $entry) {
+		foreach ((array) ($fragment[$part->part] ?? []) as $entry) {
 			$declared[$prefix.($entry['key'] ?? '')] = true;
 		}
 

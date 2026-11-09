@@ -30,6 +30,7 @@ use OCA\OpenRegister\Controller\ObjectStateController;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
+use OCA\OpenRegister\Service\Object\ObjectStateRequest;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use OCP\IUser;
@@ -132,7 +133,7 @@ final class ObjectStateControllerA24GoldenTest extends TestCase {
 		$this->assertSame(['archived' => false], $controller->unarchive('1', '2', 'o')->getData());
 
 		$controller = $this->controller(signedIn: true, params: $params);
-		$this->handler->expects($this->once())->method('freeze')->with('o', 'done', 'woo', '1', '2')->willReturn(['frozen' => true]);
+		$this->handler->expects($this->once())->method('freeze')->with(new ObjectStateRequest('o', 'done', '1', '2'), 'woo')->willReturn(['frozen' => true]);
 		$this->assertSame(['frozen' => true], $controller->freeze('1', '2', 'o')->getData());
 
 		$controller = $this->controller(signedIn: true, params: ['reason' => '  ']);

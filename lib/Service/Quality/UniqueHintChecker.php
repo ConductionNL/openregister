@@ -82,8 +82,7 @@ class UniqueHintChecker {
 	 * not reported as a collision with yourself.
 	 *
 	 * @param array<string, mixed> $configuration The schema's configuration block.
-	 * @param int|string $register Register reference.
-	 * @param int|string $schema Schema reference.
+	 * @param UniqueHintScope $scope The register and schema references the write goes to.
 	 * @param array<string, mixed> $data The incoming payload.
 	 * @param string|null $selfUuid Uuid of the object being written, on an update.
 	 *
@@ -91,7 +90,7 @@ class UniqueHintChecker {
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
-	public function check(array $configuration, $register, $schema, array $data, ?string $selfUuid = null): void {
+	public function check(array $configuration, UniqueHintScope $scope, array $data, ?string $selfUuid = null): void {
 		$nominated = $this->annotation->nominated(configuration: $configuration);
 		if (count($nominated) === 0) {
 			return;
@@ -104,7 +103,7 @@ class UniqueHintChecker {
 			}
 
 			$this->checkOne(
-				lookup: new UniqueHintLookup(property: $property, value: $value, register: $register, schema: $schema),
+				lookup: $scope->lookup(property: $property, value: $value),
 				selfUuid: $selfUuid
 			);
 		}

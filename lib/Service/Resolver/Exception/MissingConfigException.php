@@ -44,8 +44,7 @@ class MissingConfigException extends ResolverConfigException {
 	 */
 	public function __construct(string $appId, string $configKey, ?Exception $previous = null) {
 		parent::__construct(
-			appId: $appId,
-			configKey: $configKey,
+			config: new ResolverConfigKey(appId: $appId, configKey: $configKey),
 			message: sprintf(
 				'Resolver config key "%s" is not set for app "%s" and no default was provided.',
 				$configKey,

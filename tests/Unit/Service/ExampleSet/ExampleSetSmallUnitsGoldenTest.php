@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use DateTime;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountDirectory;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccounts;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProfiles;
@@ -332,6 +333,6 @@ class ExampleSetSmallUnitsGoldenTest extends TestCase {
 			$warnings[] = [$message, $context];
 		});
 
-		return new ExampleSetAccounts($users, $this->createMock(IGroupManager::class), $this->createMock(ISecureRandom::class), $logger);
+		return new ExampleSetAccounts(new ExampleSetAccountDirectory($users, $this->createMock(IGroupManager::class)), $this->createMock(ISecureRandom::class), $logger);
 	}//end accounts()
 }//end class
