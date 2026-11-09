@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\CompanyLookupControllerServices;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactoryInterface;
 use OCA\OpenRegister\Service\Integration\Providers\KvkLookupInterface;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesSearchInterface;
@@ -56,20 +57,40 @@ use OCP\IRequest;
  */
 class CompanyLookupController extends Controller {
 	/**
+	 * KvK lookup leaf.
+	 *
+	 * @var KvkLookupInterface
+	 */
+	private readonly KvkLookupInterface $kvkProvider;
+
+	/**
+	 * OpenCorporates search leaf.
+	 *
+	 * @var OpenCorporatesSearchInterface
+	 */
+	private readonly OpenCorporatesSearchInterface $openCorporatesProvider;
+
+	/**
+	 * Builds the search either leaf takes.
+	 *
+	 * @var CompanySearchFactoryInterface
+	 */
+	private readonly CompanySearchFactoryInterface $searches;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest $request HTTP request.
-	 * @param KvkLookupInterface $kvkProvider KvK lookup leaf.
-	 * @param OpenCorporatesSearchInterface $openCorporatesProvider OpenCorporates search leaf.
-	 * @param CompanySearchFactoryInterface $searches Builds the search either leaf takes.
+	 * @param IRequest                        $request  HTTP request.
+	 * @param CompanyLookupControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly KvkLookupInterface $kvkProvider,
-		private readonly OpenCorporatesSearchInterface $openCorporatesProvider,
-		private readonly CompanySearchFactoryInterface $searches,
+		CompanyLookupControllerServices $services,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->kvkProvider = $services->kvkProvider;
+		$this->openCorporatesProvider = $services->openCorporatesProvider;
+		$this->searches = $services->searches;
 	}//end __construct()
 
 	/**

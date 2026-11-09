@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Controller\CompanyLookupController;
 use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
+use OCA\OpenRegister\Controller\Support\CompanyLookupControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Controller\MessageDispatchController;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
@@ -252,7 +253,7 @@ class IntegrationMockModeTest extends TestCase {
 			}
 		);
 
-		$controller = new CompanyLookupController($request, $kvk, $oc, new CompanySearchFactory());
+		$controller = new CompanyLookupController($request, new CompanyLookupControllerServices($kvk, $oc, new CompanySearchFactory()));
 		$response = $controller->kvkCompany();
 
 		$this->assertSame(200, $response->getStatus());
