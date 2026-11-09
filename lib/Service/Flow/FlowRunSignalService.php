@@ -47,8 +47,6 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
-use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
-use OCP\IGroupManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -61,39 +59,28 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapperInterface $mapper Resolves a run uuid to the run.
-	 * @param FlowRunServiceInterface $runner Owns the unguarded delivery primitive.
-	 * @param LoggerInterface|null $logger Audits a refusal. Nullable so the
-	 *                                     controller can build this seam on
-	 *                                     demand without one — there the
-	 *                                     refusal is surfaced to the caller as
-	 *                                     a 403, so nothing goes unrecorded;
-	 *                                     the container-built instance always
-	 *                                     has a logger.
-	 * @param IGroupManager|null $groupManager Resolves group assignment. Absent,
-	 *                                         a group-assigned step refuses
-	 *                                         rather than admits — the
-	 *                                         fail-closed direction.
-	 * @param FlowRunAssignee|null $assignees The access rule. Injectable so a
-	 *                                        consumer's test can drive the real
-	 *                                        contract; defaults to the real one.
-	 * @param PrincipalResolverRegistry|null $principals Resolves a TYPED performer
-	 *                             reference to whoever it means right now. Passed
-	 *                             through to the access rule so the guard the
-	 *                             engine builds is the same one the container
-	 *                             would have built.
+	 * @param FlowRunMapperInterface  $mapper    Resolves a run uuid to the run.
+	 * @param FlowRunServiceInterface $runner    Owns the unguarded delivery primitive.
+	 * @param FlowRunAssignee         $assignees The access rule. The caller builds it with
+	 *                                           the group manager and the principal
+	 *                                           registry it has; absent, a group-assigned
+	 *                                           or typed step refuses rather than admits.
+	 * @param LoggerInterface|null    $logger    Audits a refusal. Nullable so the
+	 *                                           controller can build this seam on
+	 *                                           demand without one — there the
+	 *                                           refusal is surfaced to the caller as
+	 *                                           a 403, so nothing goes unrecorded;
+	 *                                           the container-built instance always
+	 *                                           has a logger.
 	 *
 	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(
 		private readonly FlowRunMapperInterface $mapper,
 		private readonly FlowRunServiceInterface $runner,
+		private readonly FlowRunAssignee $assignees,
 		private readonly ?LoggerInterface $logger = null,
-		private readonly ?IGroupManager $groupManager = null,
-		private readonly ?FlowRunAssignee $assignees = null,
-		private readonly ?PrincipalResolverRegistry $principals = null,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -185,7 +172,7 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 	 */
 	public function answer(FlowRun $run, RunSignal $signal): FlowRun {
 		$actor = $signal->actor();
-		if ($this->rule()->mayAnswer(run: $run, uid: $actor, nodeId: $signal->nodeId) === false) {
+		if ($this->assignees->mayAnswer(run: $run, uid: $actor, nodeId: $signal->nodeId) === false) {
 			$this->auditRefusal(run: $run, signal: $signal);
 
 			throw new FlowSignalRefused(
@@ -199,23 +186,6 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 
 		return $this->deliver(run: $run, signal: $signal);
 	}//end answer()
-
-	/**
-	 * The access rule.
-	 *
-	 * 🔑 THE REGISTRY GOES IN HERE TOO. A rule built without it refuses
-	 * every TYPED assignment — the fail-closed direction, which is right
-	 * when nothing can resolve, and wrong the moment something can. The
-	 * fallback must build the same guard the container would.
-	 *
-	 * @return FlowRunAssignee The injected rule, or the real one.
-	 */
-	private function rule(): FlowRunAssignee {
-		return ($this->assignees ?? new FlowRunAssignee(
-			groupManager: $this->groupManager,
-			principals: $this->principals
-		));
-	}//end rule()
 
 	/**
 	 * Deliver an admitted signal; only a suspended run takes one.
@@ -265,7 +235,7 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 				'run' => (string)$run->getUuid(),
 				'flow' => (string)$run->getFlowId(),
 				'actor' => ($signal->actor() ?? '(anonymous)'),
-				'assignee' => $this->rule()->recordedFor(run: $run, nodeId: $signal->nodeId),
+				'assignee' => $this->assignees->recordedFor(run: $run, nodeId: $signal->nodeId),
 				'node' => ($signal->nodeId ?? ''),
 			]
 		);
