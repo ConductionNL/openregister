@@ -99,7 +99,7 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	): ObjectRelation {
 		$link ??= new ProvenanceLink();
 		return $this->stores->mapper->createFromArray(
-			$this->fields->objectLink(from: $created, to: $source, origin: ObjectRelation::ORIGIN_SPLIT)
+			$this->fields->splitLink(from: $created, to: $source)
 			+ ['relationType' => $link->relationType, 'sourceEntry' => $link->entry, 'createdBy' => $this->actor()]
 		);
 	}//end recordSplit()
@@ -172,7 +172,7 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	): ObjectRelation {
 		$link ??= new ProvenanceLink();
 		return $this->stores->mapper->createFromArray(
-			$this->fields->objectLink(from: $child, to: $parent, origin: ObjectRelation::ORIGIN_DERIVE)
+			$this->fields->derivedLink(from: $child, to: $parent)
 			+ ['relationType' => $link->relationType, 'sourceEntry' => $link->entry, 'inherited' => $this->fields->recordOf(inherited: $inherited)]
 			+ ['createdBy' => $this->actor()]
 		);

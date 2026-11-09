@@ -424,7 +424,8 @@ class RelationTypeResolver implements RelationTypeResolverInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	private function labelsFor(DescribeRun $run): array {
-		$label = ($this->values->text(value: ($run->merged['label'] ?? null), language: $run->language) ?? $this->values->titleOf(property: $run->property) ?? $run->name);
+		$label = ($this->values->text(value: ($run->merged['label'] ?? null), language: $run->language)
+			?? $this->values->titleOf(property: $run->property) ?? $run->name);
 
 		$inverse = $this->values->text(value: ($run->merged['inverseLabel'] ?? null), language: $run->language);
 		if (self::symmetricOf(merged: $run->merged) === true) {
