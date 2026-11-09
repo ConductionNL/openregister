@@ -162,6 +162,7 @@ exports[`quality tables golden queue health: renders empty 1`] = `
         <h1>t:Queue / sync health</h1>
         <p>t:Read-only webhook delivery telemetry: per-webhook delivered / failed / pending-retry counts and recent failures.</p>
       </div>
+      
       <x-ncemptycontent name="t:No webhooks configured" description="t:Configure a webhook to see its delivery health here.">
         <slot-icon>
           <x-webhook size="64"></x-webhook>
@@ -187,6 +188,7 @@ exports[`quality tables golden queue health: renders failures 1`] = `
         <h1>t:Queue / sync health</h1>
         <p>t:Read-only webhook delivery telemetry: per-webhook delivered / failed / pending-retry counts and recent failures.</p>
       </div>
+      
       <section class="webhookHealthSection">
         <h2>t:Per-webhook health</h2>
         <x-cndatatable rowkey="id">
@@ -254,6 +256,7 @@ exports[`quality tables golden queue health: renders loading 1`] = `
         <h1>t:Queue / sync health</h1>
         <p>t:Read-only webhook delivery telemetry: per-webhook delivered / failed / pending-retry counts and recent failures.</p>
       </div>
+      
       <x-ncloadingicon size="32"></x-ncloadingicon>
     </div>
   </slot-default>
@@ -275,6 +278,7 @@ exports[`quality tables golden queue health: renders noFailures 1`] = `
         <h1>t:Queue / sync health</h1>
         <p>t:Read-only webhook delivery telemetry: per-webhook delivered / failed / pending-retry counts and recent failures.</p>
       </div>
+      
       <section class="webhookHealthSection">
         <h2>t:Per-webhook health</h2>
         <x-cndatatable rowkey="id">
