@@ -1169,12 +1169,10 @@ export default {
 		},
 
 		/**
-		 * @spec exclude UI display helper — maps available registers to select options.
-		 */
-		/**
 		 * The props both SchemaRelationFields blocks share.
 		 *
 		 * @return {object} The props.
+		 * @spec exclude UI binding — the props of the relation field blocks.
 		 */
 		relationFieldProps() {
 			return {
@@ -1191,6 +1189,7 @@ export default {
 		 * The listeners both SchemaRelationFields blocks share.
 		 *
 		 * @return {object} The listeners.
+		 * @spec exclude UI binding — the listeners of the relation field blocks.
 		 */
 		relationFieldListeners() {
 			return {
@@ -1201,6 +1200,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude UI display helper — maps available registers to select options.
+		 */
 		availableRegisters() {
 			return registerStore.registerList.map((register) => ({
 				id: register.id,
@@ -1996,10 +1998,6 @@ export default {
 		},
 
 		/**
-		 * @param {object|string} property
-		 * @spec exclude Form-field binding — sets inversedBy and clears query params.
-		 */
-		/**
 		 * Clear the query parameters of the property and of its items.
 		 *
 		 * @spec exclude Form-field binding — clears query params after a relation change.
@@ -2025,6 +2023,10 @@ export default {
 			target[key] = value
 		},
 
+		/**
+		 * @param {object|string} property
+		 * @spec exclude Form-field binding — sets inversedBy and clears query params.
+		 */
 		handleInversedByChange(property) {
 			const propertyName =
 				typeof property === 'object'
