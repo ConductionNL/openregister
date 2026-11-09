@@ -66,8 +66,15 @@ An administrator manages trust at `GET`/`PUT /api/federated-config/trust`:
 - **`trustedKeys`** — comma-separated base64 publisher public keys you trust. Empty
   means signatures are not yet enforced; once set, an unsigned or untrusted-key
   bundle is refused. Append a key with `PUT {trustKey: "<base64>"}`.
-- **`publishGroups`** / **`installGroups`** — Nextcloud groups permitted to publish
-  / install. Empty means any signed-in user; admins are always allowed.
+- **`publishGroups`** — Nextcloud groups permitted to publish. Empty means any
+  signed-in user; admins are always allowed.
+- **`installGroups`** — Nextcloud groups permitted to install. Empty means
+  administrators only. A member of an install group may install a bundle only
+  when it seeds no objects (`components.objects`, top-level `objects` or
+  `x-openregister.seedData.objects`) and only overwrites registers and schemas
+  they may manage; a bundle that carries objects (for example a register export
+  made with `includeObjects`) is refused with 403 and must be installed by an
+  administrator.
 
 Share this instance's public key (`GET /api/federated-config/public-key`) with
 organisations that want to trust the configuration you publish.

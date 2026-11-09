@@ -467,6 +467,10 @@ After installation:
 - **Federated-config writes need the `OCS-APIRequest: true` header** when called
   from a script (`PUT /api/federated-config/trust`, `POST /api/federated-config/install`);
   see [Federated configuration](federated-configuration.md).
+- **Installing a federated configuration is for administrators by default.** An
+  empty `installGroups` used to let any signed-in user install; it now means
+  administrators only. Members of a configured install group can no longer
+  install a bundle that seeds objects (403); an administrator installs those.
 
 ### From Nextcloud App Store
 
