@@ -98,6 +98,7 @@ import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
 import TabErrorState from '../shared/TabErrorState.vue'
+import { relationLoad } from './relationLoad.js'
 import { relationTab } from './relationTab.js'
 
 /**
@@ -169,7 +170,7 @@ export default {
 		TableLargePlus,
 	},
 
-	mixins: [relationTab],
+	mixins: [relationTab, relationLoad],
 
 	data() {
 		return {
@@ -220,21 +221,12 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async load() {
-			this.loading = true
-			this.clearFailure()
-
-			const url = this.objectApiUrl('/relations')
-
-			try {
-				const response = await axios.get(url, {
+			await this.runLoad(async () => {
+				const response = await axios.get(this.objectApiUrl('/relations'), {
 					params: { view: 'timeline' },
 				})
 				this.relations = this.normaliseResponse(response.data)
-			} catch (err) {
-				this.showFailure(err)
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
