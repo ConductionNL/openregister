@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Resolver\Exception\MissingConfigException;
 use OCA\OpenRegister\Service\Resolver\Exception\PropertyNotFoundException;
 use OCA\OpenRegister\Service\Resolver\Exception\RegisterNotFoundException;
+use OCA\OpenRegister\Service\Resolver\Exception\ResolverConfigKey;
 use OCA\OpenRegister\Service\Resolver\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Service\Resolver\RegisterSchemaPair;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -430,8 +431,7 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 		}
 
 		throw new PropertyNotFoundException(
-			appId: $appId,
-			configKey: $configKey,
+			config: new ResolverConfigKey(appId: $appId, configKey: $configKey),
 			resolvedValue: $propertyId,
 			schemaIdentifier: $this->schemaIdentifier(schema: $schema),
 		);

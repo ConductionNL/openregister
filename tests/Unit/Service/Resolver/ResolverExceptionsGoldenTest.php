@@ -20,6 +20,7 @@ use Exception;
 use OCA\OpenRegister\Service\Resolver\Exception\MissingConfigException;
 use OCA\OpenRegister\Service\Resolver\Exception\PropertyNotFoundException;
 use OCA\OpenRegister\Service\Resolver\Exception\RegisterNotFoundException;
+use OCA\OpenRegister\Service\Resolver\Exception\ResolverConfigKey;
 use OCA\OpenRegister\Service\Resolver\Exception\SchemaNotFoundException;
 use PHPUnit\Framework\TestCase;
 
@@ -71,7 +72,7 @@ final class ResolverExceptionsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testPropertyNotFound(): void {
-		$e = new PropertyNotFoundException('openconnector', 'title_property', 'title', 'publication');
+		$e = new PropertyNotFoundException(new ResolverConfigKey('openconnector', 'title_property'), 'title', 'publication');
 
 		$this->assertSame('Property "title" (from config key "title_property" on app "openconnector") not found on schema "publication".', $e->getMessage());
 		$this->assertSame(404, $e->getCode());
