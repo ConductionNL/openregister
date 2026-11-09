@@ -3236,11 +3236,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return ObjectEntity|null Converted entity or null on failure
 	 */
 	public function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity {
-		return $this->statisticsHandler->convertRowToObjectEntity(
-			row: $row,
-			_register: $_register,
-			_schema: $_schema
-		);
+		return $this->statisticsHandler->convertRowToObjectEntity(row: $row, _register: $_register, _schema: $_schema);
 	}//end convertRowToObjectEntity()
 
 	/**
@@ -4468,12 +4464,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function findSlugHolders(
-		Register $register,
-		Schema $schema,
-		string $slug,
-		?string $excludeUuid=null,
-	): array {
+	public function findSlugHolders(Register $register, Schema $schema, string $slug, ?string $excludeUuid=null): array {
 		return ($this->slugTable(register: $register, schema: $schema)?->holders(slug: $slug, excludeUuid: $excludeUuid) ?? []);
 	}//end findSlugHolders()
 
@@ -4555,21 +4546,30 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	public function findSlugBackfillPage(
-		Register $register,
-		Schema $schema,
-		int $afterId,
-		int $pageSize,
-	): array {
-		$table = $this->slugTable(register: $register, schema: $schema);
-		if ($table === null) {
-			return ['rows' => [], 'fetched' => 0, 'lastId' => $afterId];
+	public function findSlugBackfillPage(Register $register, Schema $schema, int $afterId, int $pageSize): array {
+		$backfill = $this->slugBackfill(table: new RegisterSchema(register: $register, schema: $schema));
+		return ($backfill?->page(afterId: $afterId, pageSize: $pageSize) ?? ['rows' => [], 'fetched' => 0, 'lastId' => $afterId]);
+	}//end findSlugBackfillPage()
+
+	/**
+	 * The keyset pager over the live rows of a register+schema table for the slug backfill.
+	 *
+	 * @param RegisterSchema $table The register and schema whose table to page over.
+	 *
+	 * @return MagicSlugBackfill|null The pager, or null when the table does not exist.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	public function slugBackfill(RegisterSchema $table): ?MagicSlugBackfill {
+		$slugTable = $this->slugTable(register: $table->register, schema: $table->schema);
+		if ($slugTable === null) {
+			return null;
 		}
 
-		$convert = fn (array $row): ?ObjectEntity => $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
+		$convert = fn (array $row): ?ObjectEntity => $this->convertRowToObjectEntity(row: $row, _register: $table->register, _schema: $table->schema);
 
-		return (new MagicSlugBackfill(table: $table, convert: $convert, logger: $this->logger))->page(afterId: $afterId, pageSize: $pageSize);
-	}//end findSlugBackfillPage()
+		return new MagicSlugBackfill(table: $slugTable, convert: $convert, logger: $this->logger);
+	}//end slugBackfill()
 
 	/**
 	 * Write one object's slug column directly, for the slug backfill.
@@ -4589,14 +4589,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	public function updateSlugColumn(
-		Register $register,
-		Schema $schema,
-		string $uuid,
-		string $slug,
-	): int {
+	public function updateSlugColumn(Register $register, Schema $schema, string $uuid, string $slug): int {
 		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-
 		return (new MagicSlugTable(db: $this->db, tableName: $tableName))->fillEmpty(uuid: $uuid, slug: $slug);
 	}//end updateSlugColumn()
 
@@ -7120,14 +7114,27 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
 	 */
-	public function deleteObjectsBySchema(
-		Register $register,
-		Schema $schema,
-		bool $hardDelete = false,
-	): int {
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$scope     = [$register->getId(), $schema->getId()];
-		$context   = ['registerId' => $scope[0], 'schemaId' => $scope[1], 'tableName' => $tableName];
+	public function deleteObjectsBySchema(Register $register, Schema $schema, bool $hardDelete=false): int {
+		return $this->deleteAllIn(table: new RegisterSchema(register: $register, schema: $schema), hardDelete: $hardDelete);
+	}//end deleteObjectsBySchema()
+
+	/**
+	 * Delete all objects of one register+schema table (see deleteObjectsBySchema()).
+	 *
+	 * @param RegisterSchema $table      The register and schema whose table to empty.
+	 * @param bool           $hardDelete Whether to remove the rows (true) or soft-delete them (false).
+	 *
+	 * @throws Exception If deletion fails.
+	 *
+	 * @return int The number of objects deleted.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function deleteAllIn(RegisterSchema $table, bool $hardDelete=false): int {
+		$tableName = $this->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema);
+		$context   = ['registerId' => $table->register->getId(), 'schemaId' => $table->schema->getId(), 'tableName' => $tableName];
 
 		// Info: bulk destruction. Never routine, always worth explaining later.
 		$this->logger->info(
@@ -7135,7 +7142,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context, ['hardDelete' => $hardDelete])
 		);
 
-		if ($this->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
+		if ($this->tableExistsForRegisterSchema(register: $table->register, schema: $table->schema) === false) {
 			$this->logger->warning(
 				message: '[MagicMapper] Cannot delete from magic table - table does not exist',
 				context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context)
@@ -7143,25 +7150,26 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return 0;
 		}
 
-		$qb      = $this->db->getQueryBuilder();
-		$message = '[MagicMapper] Hard deleted objects from magic table';
+		return $this->executeBulkDelete(context: $context, hardDelete: $hardDelete);
+	}//end deleteAllIn()
+
+	/**
+	 * Build and run the bulk delete of one table, and log how many rows it touched.
+	 *
+	 * @param array{registerId: int|null, schemaId: int|null, tableName: string} $context    The table and its scope.
+	 * @param bool                                                               $hardDelete Remove (true) or soft-delete (false).
+	 *
+	 * @return int The number of rows deleted.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
+	 */
+	private function executeBulkDelete(array $context, bool $hardDelete): int {
+		$message = '[MagicMapper] Soft deleted objects in magic table';
 		if ($hardDelete === true) {
-			$qb->delete($tableName);
-			$this->whereRegisterAndSchema(qb: $qb, scope: $scope);
+			$message = '[MagicMapper] Hard deleted objects from magic table';
 		}
 
-		if ($hardDelete === false) {
-			$message = '[MagicMapper] Soft deleted objects in magic table';
-			$qb->update($tableName)->set(
-				self::METADATA_PREFIX . 'deleted',
-				$qb->createNamedParameter($this->bulkSoftDeleteMetadata(), \PDO::PARAM_STR)
-			);
-			$this->whereRegisterAndSchema(qb: $qb, scope: $scope);
-			// Only soft-delete objects that aren't already soft-deleted.
-			$qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
-		}
-
-		$deletedCount = $qb->executeStatement();
+		$deletedCount = $this->bulkDeleteQuery(context: $context, hardDelete: $hardDelete)->executeStatement();
 
 		$this->logger->debug(
 			message: $message,
@@ -7169,7 +7177,36 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		);
 
 		return $deletedCount;
-	}//end deleteObjectsBySchema()
+	}//end executeBulkDelete()
+
+	/**
+	 * The DELETE (hard) or UPDATE of `_deleted` (soft) over every live row of one register+schema.
+	 *
+	 * @param array{registerId: int|null, schemaId: int|null, tableName: string} $context    The table and its scope.
+	 * @param bool                                                               $hardDelete Remove (true) or soft-delete (false).
+	 *
+	 * @return IQueryBuilder The query, not yet executed.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
+	 */
+	private function bulkDeleteQuery(array $context, bool $hardDelete): IQueryBuilder {
+		$scope = [$context['registerId'], $context['schemaId']];
+		$qb    = $this->db->getQueryBuilder();
+		if ($hardDelete === true) {
+			$qb->delete($context['tableName']);
+			$this->whereRegisterAndSchema(qb: $qb, scope: $scope);
+			return $qb;
+		}
+
+		$qb->update($context['tableName'])->set(
+			self::METADATA_PREFIX . 'deleted',
+			$qb->createNamedParameter($this->bulkSoftDeleteMetadata(), \PDO::PARAM_STR)
+		);
+		$this->whereRegisterAndSchema(qb: $qb, scope: $scope);
+		// Only soft-delete objects that aren't already soft-deleted.
+		$qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+		return $qb;
+	}//end bulkDeleteQuery()
 
 	/**
 	 * Restrict a query to the rows of one register and schema.
@@ -7536,6 +7573,21 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @psalm-return list<ObjectEntity>
 	 */
 	public function findByRelation(string $uuid, ?string $_search = null, bool $_partialMatch = false): array {
+		return $this->findReferencing(uuid: $uuid);
+	}//end findByRelation()
+
+	/**
+	 * Find objects that reference a UUID in any of their columns, across all magic tables (see findByRelation()).
+	 *
+	 * @param string $uuid The UUID to search for.
+	 *
+	 * @return ObjectEntity[] Array of objects that contain the UUID
+	 *
+	 * @psalm-return list<ObjectEntity>
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function findReferencing(string $uuid): array {
 		if (empty($uuid) === true) {
 			return [];
 		}
@@ -7552,7 +7604,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		);
 
 		return $results;
-	}//end findByRelation()
+	}//end findReferencing()
 
 	/**
 	 * Find objects that reference a UUID using the _relations column.
@@ -9416,16 +9468,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
-	public function getStatistics(
-		int|array|null $registerId = null,
-		int|array|null $schemaId = null,
-		array $exclude = [],
-	): array {
-		return $this->statisticsHandler->getStatistics(
-			registerId: $registerId,
-			schemaId: $schemaId,
-			exclude: $exclude
-		);
+	public function getStatistics(int|array|null $registerId = null, int|array|null $schemaId = null, array $exclude = []): array {
+		return $this->statisticsHandler->getStatistics(registerId: $registerId, schemaId: $schemaId, exclude: $exclude);
 	}//end getStatistics()
 
 	/**
