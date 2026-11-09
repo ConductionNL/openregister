@@ -367,7 +367,7 @@ class TasksController extends Controller {
 		$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 		$action = fn (ObjectEntity $object): JSONResponse => $this->listing(tasks: $this->taskService->getTasksForObject($object->getUuid()));
 
-		return $this->onObject(route: $route, action: $action, failure: $this->listFailure(...));
+		return $this->listingOn(route: $route, action: $action);
 	}//end index()
 
 	/**
@@ -385,10 +385,7 @@ class TasksController extends Controller {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
-		$failure = fn (Exception $e): JSONResponse => $this->failure(e: $e, status: Http::STATUS_BAD_REQUEST);
-
-		return $this->onObject(route: $route, action: $this->createFor(...), failure: $failure);
+		return $this->creatingOn(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $this->createFor(...));
 	}//end create()
 
 	/**
@@ -410,7 +407,7 @@ class TasksController extends Controller {
 		$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 		$action = fn (ObjectEntity $object): JSONResponse => $this->updateFor(object: $object, taskId: $taskId);
 
-		return $this->onObject(route: $route, action: $action, failure: $this->writeFailure(...));
+		return $this->writingOn(route: $route, action: $action);
 	}//end update()
 
 	/**
@@ -432,22 +429,72 @@ class TasksController extends Controller {
 		$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 		$action = fn (ObjectEntity $object): JSONResponse => $this->destroyFor(object: $object, taskId: $taskId);
 
-		return $this->onObject(route: $route, action: $action, failure: $this->writeFailure(...));
+		return $this->writingOn(route: $route, action: $action);
 	}//end destroy()
+
+	/**
+	 * List on the object; a failure other than an absent object is answered by listFailure().
+	 *
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param callable        $action Receives the ObjectEntity.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function listingOn(ObjectLinkRoute $route, callable $action): JSONResponse {
+		try {
+			return $this->onObject(route: $route, action: $action);
+		} catch (Exception $e) {
+			return $this->listFailure(e: $e);
+		}
+	}//end listingOn()
+
+	/**
+	 * Create on the object; a failure other than an absent object is answered 400.
+	 *
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param callable        $action Receives the ObjectEntity.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function creatingOn(ObjectLinkRoute $route, callable $action): JSONResponse {
+		try {
+			return $this->onObject(route: $route, action: $action);
+		} catch (Exception $e) {
+			return $this->failure(e: $e, status: Http::STATUS_BAD_REQUEST);
+		}
+	}//end creatingOn()
+
+	/**
+	 * Update or delete on the object; a failure other than an absent object is answered by writeFailure().
+	 *
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param callable        $action Receives the ObjectEntity.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function writingOn(ObjectLinkRoute $route, callable $action): JSONResponse {
+		try {
+			return $this->onObject(route: $route, action: $action);
+		} catch (Exception $e) {
+			return $this->writeFailure(e: $e);
+		}
+	}//end writingOn()
 
 	/**
 	 * Resolve the object, then run the action on it; the object guard runs first.
 	 *
-	 * An absent object (null or DoesNotExistException) is answered 404 before
-	 * any task is touched; any other Exception goes to the verb's own mapping.
+	 * An absent object (null or DoesNotExistException, from the lookup or the
+	 * action) is answered 404 before any task is touched; any other Exception
+	 * goes to the caller, which maps it for its verb.
 	 *
-	 * @param ObjectLinkRoute $route   The object as the route names it.
-	 * @param callable        $action  Receives the ObjectEntity.
-	 * @param callable        $failure Maps an Exception to the response.
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param callable        $action Receives the ObjectEntity.
 	 *
 	 * @return JSONResponse The response.
+	 *
+	 * @throws Exception Any failure other than an absent object.
 	 */
-	private function onObject(ObjectLinkRoute $route, callable $action, callable $failure): JSONResponse {
+	private function onObject(ObjectLinkRoute $route, callable $action): JSONResponse {
 		try {
 			$object = $this->validateObject(route: $route);
 			if ($object === null) {
@@ -457,8 +504,6 @@ class TasksController extends Controller {
 			return $action($object);
 		} catch (DoesNotExistException $e) {
 			return $this->objectNotFound();
-		} catch (Exception $e) {
-			return $failure($e);
 		}
 	}//end onObject()
 
