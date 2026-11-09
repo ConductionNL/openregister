@@ -1026,6 +1026,26 @@ const TIER_ICONS = {
 	reminder: 'ClockOutline',
 }
 
+/**
+ * Run a case seam (identity check, regulator escalation) for the selected
+ * case, keep its result on the view and reload the case. A failure is
+ * surfaced through the store error, so it is swallowed here.
+ *
+ * @spec exclude UI plumbing — delegates to the given avgStore seam
+ * @param {object} view The AVG view
+ * @param {string} field The view property that keeps the seam result
+ * @param {Function} seam The store call, given the selected case id
+ * @return {Promise<void>}
+ */
+async function runSeam(view, field, seam) {
+	try {
+		view[field] = await seam(view.selectedCaseId)
+		await view.reloadSelectedCase()
+	} catch (e) {
+		// surfaced via store error
+	}
+}
+
 export default {
 	name: 'AvgIndex',
 
@@ -1940,14 +1960,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async runVerifyIdentity() {
-			try {
-				this.identityResult = await avgStore.verifyIdentity(
-					this.selectedCaseId,
-				)
-				await this.reloadSelectedCase()
-			} catch (e) {
-				// surfaced via store error
-			}
+			await runSeam(this, 'identityResult', (id) => avgStore.verifyIdentity(id))
 		},
 
 		/**
@@ -1957,14 +1970,9 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async runEscalate() {
-			try {
-				this.escalateResult = await avgStore.escalateRegulator(
-					this.selectedCaseId,
-				)
-				await this.reloadSelectedCase()
-			} catch (e) {
-				// surfaced via store error
-			}
+			await runSeam(this, 'escalateResult', (id) =>
+				avgStore.escalateRegulator(id),
+			)
 		},
 	},
 }
