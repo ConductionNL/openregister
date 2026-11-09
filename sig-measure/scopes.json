@@ -270,7 +270,8 @@
    "lib/Service/Audit/AuditTrailPageService.php AuditTrailPageService::export: caller or builder lib/Controller/AuditTrailController.php is in open #7417",
    "lib/Service/Audit/PurposeRefusedException.php PurposeRefusedException::__construct: caller or builder lib/Service/Audit/PurposeRegistry.php is in open #6965"
   ],
-  "away": {}
+  "away": {},
+  "status": "idle"
  },
  "K03": {
   "id": "K03",
@@ -505,7 +506,8 @@
    "lib/Db/RegisterMapper.php RegisterMapper::__construct: caller or builder lib/Db/MapperWiring.php is in open #7467",
    "lib/Db/RegisterMapper.php RegisterMapper::findAll: caller or builder lib/Calendar/RegisterCalendar.php is owned by lane K24"
   ],
-  "away": {}
+  "away": {},
+  "status": "idle"
  },
  "K05": {
   "id": "K05",
@@ -1550,7 +1552,8 @@
    "lib/Service/Object/GetObject.php GetObject::findAll: caller or builder lib/Controller/ContentReportController.php is in open #6965",
    "lib/Service/Object/GetObject.php GetObject::findLogs: caller or builder lib/Service/ObjectService.php is in open #5497"
   ],
-  "away": {}
+  "away": {},
+  "status": "idle"
  },
  "K15": {
   "id": "K15",
