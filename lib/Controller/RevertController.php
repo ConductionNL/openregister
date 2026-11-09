@@ -26,7 +26,9 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
+use OCA\OpenRegister\Controller\Support\RevertControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -61,21 +63,32 @@ class RevertController extends Controller {
 	];
 
 	/**
-	 * Constructor for RevertController
+	 * The revert service
 	 *
-	 * @param string $appName The name of the app
-	 * @param IRequest $request The request object
-	 * @param RevertHandlerInterface $revertService The revert service
-	 * @param ObjectOperationsInterface|null $objectService Renders the reverted object as every object read does
-	 *                                          (property rules, write-only, explicit reveal); null only in tests
+	 * @var RevertHandlerInterface
+	 */
+	private readonly RevertHandlerInterface $revertService;
+
+	/**
+	 * Renders the reverted object as every object read does
+	 *
+	 * @var ?ObjectOperationsInterface
+	 */
+	private readonly ?ObjectOperationsInterface $objectService;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest                 $request  The request object
+	 * @param RevertControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly RevertHandlerInterface $revertService,
-		private readonly ?ObjectOperationsInterface $objectService = null,
+		RevertControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->revertService = $services->revertService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
