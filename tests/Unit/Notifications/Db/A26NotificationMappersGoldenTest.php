@@ -47,6 +47,7 @@ use OCA\OpenRegister\Notifications\Db\TimelineEntryScope;
 use OCA\OpenRegister\Notifications\Db\TimelineKindMapper;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\TextBlockScope;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Exception as DbException;
@@ -249,9 +250,9 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'kind findAll schema only'       => [$kinds, 'findAll', [null, 'sch'], [[]], false],
 			'block findBySlug found'         => [$blocks, 'findBySlug', ['s'], [[self::ROW]], false],
 			'block findBySlug missing'       => [$blocks, 'findBySlug', ['s'], [[]], false],
-			'block findInScope'              => [$blocks, 'findInScope', [], [[self::ROW]], false],
-			'block findInScope groups'       => [$blocks, 'findInScope', ['reg', 'sch', ['g1', 'g2']], [[]], false],
-			'block findInScope register'     => [$blocks, 'findInScope', ['reg', null, []], [[]], false],
+			'block findInScope'              => [$blocks, 'findInScope', [new TextBlockScope()], [[self::ROW]], false],
+			'block findInScope groups'       => [$blocks, 'findInScope', [new TextBlockScope('reg', 'sch', ['g1', 'g2'])], [[]], false],
+			'block findInScope register'     => [$blocks, 'findInScope', [new TextBlockScope('reg', null, [])], [[]], false],
 			'pattern findBySlug found'       => [$patterns, 'findBySlug', ['s'], [[self::ROW]], false],
 			'pattern findBySlug missing'     => [$patterns, 'findBySlug', ['s'], [[]], false],
 			'pattern findAll'                => [$patterns, 'findAll', [], [[self::ROW]], false],
