@@ -149,6 +149,7 @@ import ActionMenu from '../../components/shared/ActionMenu.vue'
 import eventBus from '../../eventBus.js'
 import { AUDIT_SORT_FIELDS, headerSortOf } from '../../services/listSort.js'
 import { storePaging } from '../storePaging.js'
+import { recountOnChange } from './recountOnChange.js'
 
 export default {
 	name: 'AuditTrailIndex',
@@ -277,18 +278,10 @@ export default {
 	},
 
 	watch: {
-		paginatedAuditTrails: {
-			/**
-			 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-			 */
-			handler() {
-				this.$nextTick(() => {
-					this.updateCounts()
-				})
-			},
-
-			deep: false,
-		},
+		/**
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 */
+		paginatedAuditTrails: recountOnChange,
 	},
 
 	/**

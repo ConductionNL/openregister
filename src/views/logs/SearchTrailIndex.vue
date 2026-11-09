@@ -218,6 +218,7 @@ import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import eventBus from '../../eventBus.js'
 import { refreshAction } from '../../services/menuActions.js'
 import { storePaging } from '../storePaging.js'
+import { recountOnChange } from './recountOnChange.js'
 
 export default {
 	name: 'SearchTrailIndex',
@@ -324,18 +325,7 @@ export default {
 	},
 
 	watch: {
-		paginatedSearchTrails: {
-			/**
-			 * @spec exclude list-view watcher; re-emits counts when the trail list changes
-			 */
-			handler() {
-				this.$nextTick(() => {
-					this.updateCounts()
-				})
-			},
-
-			deep: false,
-		},
+		paginatedSearchTrails: recountOnChange,
 	},
 
 	/**
