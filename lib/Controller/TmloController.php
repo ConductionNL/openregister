@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TmloControllerServices;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -122,18 +123,16 @@ class TmloController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name
 	 * @param IRequest $request The request object
 	 * @param TmloControllerServices $services The tmlo controller services.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		TmloControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$records = $services->records;
 		$this->tmloService = $records->tmloService;
 		$this->objectService = $records->objectService;

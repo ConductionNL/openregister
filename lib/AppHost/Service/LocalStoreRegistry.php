@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\AppHost\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -40,6 +41,14 @@ use Throwable;
  * Reads store items from a register on this instance.
  */
 class LocalStoreRegistry {
+
+	/**
+	 * The most results a read returns when the query names no `_limit`;
+	 * the same cap GenericStoreService puts on a search.
+	 *
+	 * @var integer
+	 */
+	private const DEFAULT_LIMIT = 50;
 
 	/**
 	 * Constructor.
@@ -63,17 +72,15 @@ class LocalStoreRegistry {
 	 * to the search, so a filter that is not applied cannot hand back another
 	 * item.
 	 *
-	 * @param string               $register The register slug.
-	 * @param string               $schema   The schema slug.
-	 * @param array<string, mixed> $params   The query a remote registry would get (`_limit`, `_search`, `kind`, `slug`).
-	 * @param int                  $limit    The most results when `_limit` is not given.
+	 * @param RegisterSchemaRef    $store  The register and schema slugs.
+	 * @param array<string, mixed> $params The query a remote registry would get (`_limit`, `_search`, `kind`, `slug`).
 	 *
 	 * @return array{outcome: string, results: array<int, mixed>}
 	 *
 	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 */
-	public function read(string $register, string $schema, array $params, int $limit): array {
-		$limit = (int)($params['_limit'] ?? $limit);
+	public function read(RegisterSchemaRef $store, array $params): array {
+		$limit = (int)($params['_limit'] ?? self::DEFAULT_LIMIT);
 		unset($params['_limit']);
 
 		try {
@@ -84,8 +91,8 @@ class LocalStoreRegistry {
 			}
 
 			$found = $objects->searchObjectsBySlug(
-				registerSlug: $register,
-				schemaSlug: $schema,
+				registerSlug: (string)$store->register,
+				schemaSlug: (string)$store->schema,
 				filters: $params,
 				_rbac: true,
 				_multitenancy: false
@@ -115,18 +122,17 @@ class LocalStoreRegistry {
 	 * fields), so nothing the descriptor did not name is written. A failed
 	 * write answers unreachable, never ok.
 	 *
-	 * @param string               $register The register slug.
-	 * @param string               $schema   The schema slug.
-	 * @param array<string, mixed> $body     The publish body; carries `slug`.
+	 * @param RegisterSchemaRef    $store The register and schema slugs.
+	 * @param array<string, mixed> $body  The publish body; carries `slug`.
 	 *
 	 * @return array{outcome: string, slug: string}
 	 *
 	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 */
-	public function write(string $register, string $schema, array $body): array {
+	public function write(RegisterSchemaRef $store, array $body): array {
 		$slug = (string) ($body['slug'] ?? '');
 
-		$existing = $this->read(register: $register, schema: $schema, params: ['slug' => $slug], limit: 1);
+		$existing = $this->read(store: $store, params: ['slug' => $slug, '_limit' => 1]);
 		if ($existing['outcome'] !== GenericStoreService::OUTCOME_OK) {
 			return ['outcome' => $existing['outcome'], 'slug' => ''];
 		}
@@ -139,7 +145,7 @@ class LocalStoreRegistry {
 				return ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''];
 			}
 
-			$objects->saveObject($body, [], $register, $schema, $uuid);
+			$objects->saveObject($body, [], (string)$store->register, (string)$store->schema, $uuid);
 		} catch (Throwable $e) {
 			$this->logger->warning('AppHost store: local registry write failed: '.$e->getMessage());
 			return ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''];

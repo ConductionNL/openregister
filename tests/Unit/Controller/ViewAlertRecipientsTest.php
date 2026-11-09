@@ -110,7 +110,6 @@ class ViewAlertRecipientsTest extends TestCase {
 		$logger = new NullLogger();
 
 		return new ViewsController(
-			'openregister',
 			$this->request,
 			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
 				new ViewService(viewMapper: $this->mapper, logger: $logger, schemaMapper: $this->createMock(SchemaMapper::class)),
