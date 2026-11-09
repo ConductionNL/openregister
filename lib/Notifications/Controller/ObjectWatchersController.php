@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Controller\Support\ObjectWatchersControllerServices;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -89,16 +90,14 @@ class ObjectWatchersController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param ObjectWatchersControllerServices $services The controller's services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectWatchersControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->objectService = $services->objectService;
 		$this->watchers = $services->watchers;
