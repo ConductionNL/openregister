@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
+use OCA\OpenRegister\Service\Archival\HoldStamp;
 use OCA\OpenRegister\Service\Archival\LegalHoldLedger;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
 use OCA\OpenRegister\Service\Archival\LegalHoldRecords;
@@ -196,21 +197,21 @@ class RetentionHoldGoldenTest extends TestCase {
 					'history' => [],
 				],
 			],
-			$ledger->place($legacy, 'old2', '  ', 'u', 'now')
+			$ledger->place($legacy, 'old2', '  ', new HoldStamp('u', 'now'))
 		);
 
 		$this->assertSame(
 			['legalHold' => ['active' => true, 'reason' => 'old', 'placedBy' => 'p', 'placedDate' => 'd', 'holds' => $ledger->activeHolds($legacy), 'history' => []]],
-			$ledger->release($legacy, 'case:none', 'r', 'u', 'now')
+			$ledger->release($legacy, 'case:none', 'r', new HoldStamp('u', 'now'))
 		);
-		$this->assertSame([], $ledger->release($legacy, ' openregister:manual', 'r', 'u', 'now')['legalHold']['history']);
+		$this->assertSame([], $ledger->release($legacy, ' openregister:manual', 'r', new HoldStamp('u', 'now'))['legalHold']['history']);
 		$this->assertSame(
 			['active' => false, 'reason' => null, 'placedBy' => null, 'placedDate' => null, 'holds' => [], 'history' => [['h' => 1], ['ownerKey' => 'k', 'releasedBy' => 'u', 'releasedDate' => 'now', 'releaseReason' => 'r']]],
-			$ledger->release(['legalHold' => ['holds' => [['ownerKey' => 'k']], 'history' => [['h' => 1]]]], null, 'r', 'u', 'now')['legalHold']
+			$ledger->release(['legalHold' => ['holds' => [['ownerKey' => 'k']], 'history' => [['h' => 1]]]], null, 'r', new HoldStamp('u', 'now'))['legalHold']
 		);
 		$this->assertSame(
 			['active' => false, 'reason' => null, 'placedBy' => null, 'placedDate' => null, 'holds' => [], 'history' => []],
-			$ledger->release(['legalHold' => ['history' => 'bad']], null, 'r', 'u', 'now')['legalHold']
+			$ledger->release(['legalHold' => ['history' => 'bad']], null, 'r', new HoldStamp('u', 'now'))['legalHold']
 		);
 	}//end testTheLedgerReadsALegacySlotAndOddShapes()
 
