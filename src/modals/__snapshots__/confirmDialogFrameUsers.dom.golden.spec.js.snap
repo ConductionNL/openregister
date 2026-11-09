@@ -923,26 +923,23 @@ exports[`dialog rebaseDialog shows the busy state 1`] = `
 `;
 
 exports[`dialog rebaseModal asks 1`] = `
-"<x-ncdialog name="Confirm Rebase Operation" size="small" noclose="false">
-  <slot-actions>
-    <x-ncbutton>
-      <slot-default> Cancel</slot-default>
-      <slot-icon>
-        <x-cancel size="20"></x-cancel>
-      </slot-icon>
-    </x-ncbutton>
-    <x-ncbutton disabled="false" variant="error">
-      <slot-default> Confirm Rebase</slot-default>
-      <slot-icon>
-        <x-refresh size="20"></x-refresh>
-      </slot-icon>
-    </x-ncbutton>
-  </slot-actions>
+"<x-ncdialog open="true" name="Confirm Rebase Operation">
   <slot-default>
-    <div class="dialog-content">
+    <div class="rebase-dialog-content">
       <h3>⚠️ Confirm Rebase Operation</h3>
       <p> This operation will recalculate deletion times for all objects and logs based on current retention settings. It will also assign default owners and organizations to objects that don't have them assigned. </p>
       <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="false">
+          <slot-default> Confirm Rebase</slot-default>
+          <slot-icon>
+            <x-refresh size="20"></x-refresh>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
     </div>
   </slot-default>
 </x-ncdialog>"
@@ -960,26 +957,23 @@ exports[`dialog rebaseModal cancels 1`] = `
 `;
 
 exports[`dialog rebaseModal confirms 1`] = `
-"<x-ncdialog name="Confirm Rebase Operation" size="small" noclose="false">
-  <slot-actions>
-    <x-ncbutton>
-      <slot-default> Cancel</slot-default>
-      <slot-icon>
-        <x-cancel size="20"></x-cancel>
-      </slot-icon>
-    </x-ncbutton>
-    <x-ncbutton disabled="false" variant="error">
-      <slot-default> Confirm Rebase</slot-default>
-      <slot-icon>
-        <x-refresh size="20"></x-refresh>
-      </slot-icon>
-    </x-ncbutton>
-  </slot-actions>
+"<x-ncdialog open="true" name="Confirm Rebase Operation">
   <slot-default>
-    <div class="dialog-content">
+    <div class="rebase-dialog-content">
       <h3>⚠️ Confirm Rebase Operation</h3>
       <p> This operation will recalculate deletion times for all objects and logs based on current retention settings. It will also assign default owners and organizations to objects that don't have them assigned. </p>
       <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="false">
+          <slot-default> Confirm Rebase</slot-default>
+          <slot-icon>
+            <x-refresh size="20"></x-refresh>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
     </div>
   </slot-default>
 </x-ncdialog>"
@@ -1009,26 +1003,23 @@ exports[`dialog rebaseModal dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog rebaseModal shows the busy state 1`] = `
-"<x-ncdialog name="Confirm Rebase Operation" size="small" noclose="true">
-  <slot-actions>
-    <x-ncbutton disabled="true">
-      <slot-default> Cancel</slot-default>
-      <slot-icon>
-        <x-cancel size="20"></x-cancel>
-      </slot-icon>
-    </x-ncbutton>
-    <x-ncbutton disabled="true" variant="error">
-      <slot-default> Rebasing...</slot-default>
-      <slot-icon>
-        <x-ncloadingicon size="20"></x-ncloadingicon>
-      </slot-icon>
-    </x-ncbutton>
-  </slot-actions>
+"<x-ncdialog open="true" name="Confirm Rebase Operation">
   <slot-default>
-    <div class="dialog-content">
+    <div class="rebase-dialog-content">
       <h3>⚠️ Confirm Rebase Operation</h3>
       <p> This operation will recalculate deletion times for all objects and logs based on current retention settings. It will also assign default owners and organizations to objects that don't have them assigned. </p>
       <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="true">
+          <slot-default> Rebasing...</slot-default>
+          <slot-icon>
+            <x-ncloadingicon size="20"></x-ncloadingicon>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
     </div>
   </slot-default>
 </x-ncdialog>"
