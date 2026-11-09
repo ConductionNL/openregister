@@ -462,3 +462,4 @@
 7482 2065b7ca786ecd5254f2e0a1f9a338666bd691ef APPROVE behaviour identical: bundles and GrantTerms/GrantedPrincipal move types only; guard runs before share; phpstan clean; guard suites green merged on dev a1fd993f
 6746 d772a046d11c5f7dc4c40379b2d94b5db9fe3e27 APPROVE type-only swap to FlowMapperInterface/ConfigurationMapperInterface, aliases to same shared instances; phpstan no new errors; 6949 tests + merged guard suites (2637) green
 6965 a5be8b8a5bebc08babdd3c5b16debea55ccfa128 BLOCK behaviour identical (types only), but merged with dev a1fd993f the KEPT_CALLERS ratchets in C01Audit/C01Sharing/C03Audit InterfaceBindingsTest fail (4): fix: merge development, resolve 13 conflicts, drop the retyped callers from those KEPT_CALLERS lists
+7481 1dab7a1611cf15dfa05c09e63e2215efd25187bf APPROVE job class string and argument key unchanged via interface constants; guard suites green merged with development a1fd993f81
