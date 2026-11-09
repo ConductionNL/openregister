@@ -185,13 +185,29 @@ class ApiCallerMiddleware extends Middleware {
 	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function afterException($controller, $methodName, Exception $exception): Response {
+		return $this->refusalResponse(exception: $exception);
+
+	}//end afterException()
+
+	/**
+	 * The response of a CallerRefusedException; anything else is re-thrown.
+	 *
+	 * @param Exception $exception The thrown exception.
+	 *
+	 * @return Response The refusal.
+	 *
+	 * @throws Exception The passed-in exception when it is not ours to handle.
+	 *
+	 * @spec openspec/specs/api-surface-governance/spec.md
+	 */
+	private function refusalResponse(Exception $exception): Response {
 		if ($exception instanceof CallerRefusedException) {
 			return $exception->toResponse();
 		}
 
 		throw $exception;
 
-	}//end afterException()
+	}//end refusalResponse()
 
 	/**
 	 * Refuse a caller calling from off its address list, or over its ceiling.
