@@ -225,33 +225,16 @@ class WebhookService {
 	 */
 	private function initializeHttpClient(): void {
 		// Prepare Guzzle client configuration with TLS verification ON.
-		// Redirects are followed but every Location must pass the same
-		// SSRF guard that gates the initial URL — see assertSafeWebhookUri()
-		// and the on_redirect callback below.
 		// http_errors stays off because we handle 4xx/5xx manually downstream.
 		$clientConfig = [
 			'timeout' => 30,
 			'connect_timeout' => 10,
 			'verify' => true,
 			'http_errors' => false,
-			'allow_redirects' => [
-				'max' => 5,
-				'strict' => true,
-				'referer' => false,
-				'protocols' => ['http', 'https'],
-				'track_redirects' => true,
-				'on_redirect' => function (
-					RequestInterface $request,
-					ResponseInterface $response,
-					\Psr\Http\Message\UriInterface $uri,
-				): void {
-					// Re-validate every redirect target through the same SSRF
-					// allowlist used for the initial URL. Throwing here aborts
-					// the redirect chain and propagates a RequestException to
-					// deliverWebhook(), which logs it as a delivery failure.
-					$this->assertSafeWebhookUri(uri: (string)$uri);
-				},
-			],
+			// Redirects are not followed by default: a redirect to a second host
+			// would be resolved again by curl, past the address pin. sendRequest()
+			// follows them only for a hook opted into private targets.
+			'allow_redirects' => false,
 		];
 
 		$this->client = new GuzzleClient($clientConfig);
@@ -1280,20 +1263,28 @@ class WebhookService {
 		// the client default (max/strict/protocols) from initializeHttpClient();
 		// the only difference is the flag-aware re-validation. The shared client
 		// default keeps allowPrivate = false as the safe fallback.
-		$options['allow_redirects'] = [
-			'max' => 5,
-			'strict' => true,
-			'referer' => false,
-			'protocols' => ['http', 'https'],
-			'track_redirects' => true,
-			'on_redirect' => function (
-				RequestInterface $request,
-				ResponseInterface $response,
-				\Psr\Http\Message\UriInterface $uri,
-			) use ($allowPrivate): void {
-				$this->assertSafeWebhookUri(uri: (string)$uri, allowPrivate: $allowPrivate);
-			},
-		];
+		// A redirect is followed only for a hook an administrator opted into
+		// private targets (notificatie-engine spec: such a hook follows private
+		// redirects); nothing is pinned there anyway. For every other hook a
+		// redirect would reach a second host resolved again by curl, past the
+		// address pin, so it is not followed: the 3xx is a failed delivery.
+		$options['allow_redirects'] = false;
+		if ($allowPrivate === true) {
+			$options['allow_redirects'] = [
+				'max' => 5,
+				'strict' => true,
+				'referer' => false,
+				'protocols' => ['http', 'https'],
+				'track_redirects' => true,
+				'on_redirect' => function (
+					RequestInterface $request,
+					ResponseInterface $response,
+					\Psr\Http\Message\UriInterface $uri,
+				) use ($allowPrivate): void {
+					$this->assertSafeWebhookUri(uri: (string)$uri, allowPrivate: $allowPrivate);
+				},
+			];
+		}
 
 		// Connect to the addresses the guard checked, not a second DNS answer.
 		// A redirect to another host is re-checked by on_redirect but resolved

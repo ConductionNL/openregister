@@ -2293,13 +2293,9 @@ class WebhookServiceTest extends TestCase {
 		$clientProp->setAccessible(true);
 		$client = $clientProp->getValue($this->service);
 
-		$redirectsConfig = $client->getConfig('allow_redirects');
-		$this->assertIsArray(
-			$redirectsConfig,
-			'allow_redirects must be configured as an array with an on_redirect callback (C9).'
-		);
-		$this->assertArrayHasKey('on_redirect', $redirectsConfig);
-		$this->assertIsCallable($redirectsConfig['on_redirect']);
+		// pp-f6: the shared client follows no redirect; a second host would be
+		// resolved again by curl, past the address pin.
+		$this->assertFalse($client->getConfig('allow_redirects'));
 	}//end testGuzzleClientRedirectsUseAllowlistCallback()
 
 	/**
@@ -2660,6 +2656,8 @@ class WebhookServiceTest extends TestCase {
 		$this->invokePrivateMethod('sendRequest', ['webhook' => $webhook, 'payload' => []]);
 
 		$this->assertSame(['hooks.example.org:443:93.184.216.34'], $captured['curl'][CURLOPT_RESOLVE] ?? null);
+		// pp-f6: a hook not opted into private targets follows no redirect.
+		$this->assertFalse($captured['allow_redirects'] ?? null);
 	}//end testSendRequestPinsTheCheckedAddress()
 
 	/**
