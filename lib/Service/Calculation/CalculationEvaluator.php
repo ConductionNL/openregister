@@ -369,23 +369,34 @@ class CalculationEvaluator implements CalculationEvaluatorInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
 	 */
 	public function evaluate(array $object, mixed $expression, ?SequenceContext $sequenceContext = null): mixed {
-		// Outermost call installs the sequence context (when supplied); nested
-		// recursive calls pass null and therefore inherit the active context.
-		$restore = false;
-		$previous = $this->sequenceContext;
-		if ($sequenceContext !== null) {
-			$this->sequenceContext = $sequenceContext;
-			$restore = true;
-		}
-
+		$previous = $this->installSequenceContext(context: $sequenceContext);
 		try {
 			return $this->evaluateNode(object: $object, expression: $expression);
 		} finally {
-			if ($restore === true) {
-				$this->sequenceContext = $previous;
-			}
+			$this->sequenceContext = $previous;
 		}
 	}//end evaluate()
+
+	/**
+	 * Install a sequence context for one evaluate() call and hand back the one it replaces.
+	 *
+	 * The outermost call installs the context (when supplied); nested recursive
+	 * calls pass null and therefore inherit the active one. Restoring the
+	 * returned value afterwards is a no-op for a call that installed nothing,
+	 * since every call that does install restores its own predecessor.
+	 *
+	 * @param SequenceContext|null $context The context to install, or null to inherit the active one.
+	 *
+	 * @return SequenceContext|null The context that was active before this call.
+	 */
+	private function installSequenceContext(?SequenceContext $context): ?SequenceContext {
+		$previous = $this->sequenceContext;
+		if ($context !== null) {
+			$this->sequenceContext = $context;
+		}
+
+		return $previous;
+	}//end installSequenceContext()
 
 	/**
 	 * Evaluate a single AST node (the recursion target shared by every handler).
