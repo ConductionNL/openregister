@@ -29,6 +29,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Golden test for ScheduledNotificationJob::run().
@@ -119,7 +121,7 @@ class ScheduledNotificationJobGoldenTest extends TestCase
 
         $job = new ScheduledNotificationJob(
             $this->createMock(ITimeFactory::class),
-            new ScheduledObjectSources($this->schemas($case), $this->objects($case), new ScheduledFilterEvaluator()),
+            new ScheduledObjectSources(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemas($case), tables: $this->objects($case)), new ScheduledFilterEvaluator()),
             new ScheduledNotificationDelivery($this->dispatcher(), $this->dedupe(), $this->appConfig($case), $this->logger()),
             $factory
         );

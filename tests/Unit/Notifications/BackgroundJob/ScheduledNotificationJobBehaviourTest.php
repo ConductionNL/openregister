@@ -45,6 +45,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Behaviour of ScheduledNotificationJob on the paths the contract tests leave out.
@@ -420,7 +422,7 @@ class ScheduledNotificationJobBehaviourTest extends TestCase
     {
         $job = new ScheduledNotificationJob(
             $this->createMock(ITimeFactory::class),
-            new ScheduledObjectSources($this->schemaMapper, $this->objectMapper, new ScheduledFilterEvaluator(logger: $this->logger)),
+            new ScheduledObjectSources(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemaMapper, tables: $this->objectMapper), new ScheduledFilterEvaluator(logger: $this->logger)),
             new ScheduledNotificationDelivery($this->dispatcher, $this->dedupeMapper, $this->appConfig, $this->logger),
             $this->cacheFactory
         );
