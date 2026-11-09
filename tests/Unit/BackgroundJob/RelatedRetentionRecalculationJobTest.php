@@ -221,6 +221,51 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 	}//end testAClientsEndDateRecalculatesItsTwoContactPersons()
 
 	/**
+	 * A dependant that cannot be stored is logged and skipped; the others still follow.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function testADependantThatFailsToStoreIsSkippedAndTheRestFollow(): void {
+		$client = new ObjectEntity();
+		$client->setUuid(self::CLIENT);
+		$client->setSchema('7');
+		$client->setObject(['name' => 'Bakkerij Jansen', 'relationshipEndedAt' => '2026-10-01']);
+
+		$register = new Register();
+		$register->setId(3);
+		$this->registerMapper->method('getAllRegisterIdsWithSchema')->with(8)->willReturn([3]);
+		$this->registerMapper->method('find')->willReturn($register);
+
+		$first = $this->contact(uuid: 'k1', client: self::CLIENT);
+		$second = $this->contact(uuid: 'k2', client: self::CLIENT);
+		$rows = [self::CLIENT => $client, 'k1' => $first, 'k2' => $second];
+		$this->objectMapper->method('find')->willReturnCallback(
+			static fn (string $identifier): ObjectEntity => $rows[$identifier]
+		);
+		$this->objectMapper->method('findByRelationBatchInSchema')
+			->willReturn([$this->slim(row: $first), $this->slim(row: $second)]);
+
+		$stored = [];
+		$this->objectMapper->expects($this->exactly(2))
+			->method('update')
+			->willReturnCallback(
+				static function (ObjectEntity $entity) use (&$stored): ObjectEntity {
+					if ($entity->getUuid() === 'k1') {
+						throw new \RuntimeException('locked');
+					}
+
+					$stored[] = $entity->getUuid();
+					return $entity;
+				}
+			);
+
+		$this->assertSame(1, $this->job->recalculateDependantsOf(uuid: self::CLIENT));
+		$this->assertSame(['k2'], $stored);
+	}//end testADependantThatFailsToStoreIsSkippedAndTheRestFollow()
+
+	/**
 	 * A long-running worker drops the table memos before it looks the source up, so a
 	 * table created after the worker started is found.
 	 *
