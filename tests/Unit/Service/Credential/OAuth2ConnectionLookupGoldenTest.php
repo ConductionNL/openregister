@@ -185,7 +185,7 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 		$broker = $this->createMock(CredentialBrokerService::class);
 		$broker->expects($this->never())->method('mint');
 
-		$service = new OAuth2InstanceClient(broker: $broker, objectService: $this->objects(stored: null), clientService: $http);
+		$service = new OAuth2InstanceClient(credentials: new \OCA\OpenRegister\Service\Credential\BrokeredCredentials(broker: $broker, refresh: $this->createMock(\OCA\OpenRegister\Service\Credential\OAuth2RefreshService::class), objectService: $this->objects(stored: null)), clientService: $http);
 
 		try {
 			$service->ensure(provider: $this->mastodon(), claims: ['h' => 'https://m.example', 'sc' => ['read', 'write']], redirectUri: 'R');
@@ -230,7 +230,7 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 		$broker = $this->createMock(CredentialBrokerService::class);
 		$broker->method('mint')->willReturn($minted);
 
-		return new OAuth2InstanceClient(broker: $broker, objectService: $this->objects(stored: $stored), clientService: $http);
+		return new OAuth2InstanceClient(credentials: new \OCA\OpenRegister\Service\Credential\BrokeredCredentials(broker: $broker, refresh: $this->createMock(\OCA\OpenRegister\Service\Credential\OAuth2RefreshService::class), objectService: $this->objects(stored: $stored)), clientService: $http);
 	}
 
 	/**

@@ -531,12 +531,7 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 			),
 			steps: new OAuth2ConnectSteps(
 				exchange: new OAuth2CodeExchange(clientService: $clientService),
-				writer: new OAuth2ConnectionWriter(
-					broker: $broker,
-					refresh: $refresh,
-					identities: $identities,
-					objectService: $objectService
-				),
+				writer: new OAuth2ConnectionWriter(credentials: new \OCA\OpenRegister\Service\Credential\BrokeredCredentials(broker: $broker, refresh: $refresh, objectService: $objectService), identities: $identities),
 				revoker: new OAuth2UpstreamRevoker(refresh: $refresh, clients: $clients, clientService: $clientService, logger: $logger),
 			),
 		);

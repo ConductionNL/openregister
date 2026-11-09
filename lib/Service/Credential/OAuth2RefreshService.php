@@ -396,13 +396,7 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	 */
 	private function redeemOrRelink(OAuth2RefreshTarget $target, #[\SensitiveParameter] string $refreshToken): array {
 		try {
-			return $this->exchange->redeem(
-				credential: $target->credential,
-				provider: $target->provider,
-				credentialId: $target->credentialId,
-				refreshToken: $refreshToken,
-				actingUserId: $target->actingUserId
-			);
+			return $this->exchange->redeem(target: $target, refreshToken: $refreshToken);
 		} catch (CredentialRelinkRequiredException $grantGone) {
 			$this->markRelinkNeeded(credential: $target->credential, credentialId: $target->credentialId, reason: OAuth2RefreshExchange::TERMINAL_ERROR);
 			throw $grantGone;

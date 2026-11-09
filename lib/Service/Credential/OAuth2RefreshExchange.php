@@ -65,11 +65,8 @@ class OAuth2RefreshExchange {
 	/**
 	 * Spend a refresh token and return the decoded token response.
 	 *
-	 * @param array<string, mixed> $credential The credential object's serialised data.
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $credentialId The credential UUID.
-	 * @param string $refreshToken The refresh token being spent.
-	 * @param string|null $actingUserId The asserted user for a sessionless caller.
+	 * @param OAuth2RefreshTarget $target       The credential, its provider entry and the asserted user.
+	 * @param string              $refreshToken The refresh token being spent.
 	 *
 	 * @return array<string, mixed> The decoded token response.
 	 *
@@ -79,24 +76,33 @@ class OAuth2RefreshExchange {
 	 *
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
 	 */
-	public function redeem(
-		array $credential,
-		array $provider,
-		string $credentialId,
-		#[\SensitiveParameter] string $refreshToken,
-		?string $actingUserId,
-	): array {
-		$oauth2 = ($provider['oauth2'] ?? []);
-		if (is_array($oauth2) === false) {
-			$oauth2 = [];
-		}
-
-		$client = $this->clients->resolve(credential: $credential, provider: (string)($credential['provider'] ?? ''), actingUserId: $actingUserId);
-		$endpoint = $this->tokenEndpoint(oauth2: $oauth2, credential: $credential, credentialId: $credentialId);
+	public function redeem(OAuth2RefreshTarget $target, #[\SensitiveParameter] string $refreshToken): array {
+		$credential = $target->credential;
+		$oauth2 = $this->oauth2Of(provider: $target->provider);
+		$client = $this->clients->resolve(credential: $credential, provider: (string)($credential['provider'] ?? ''), actingUserId: $target->actingUserId);
+		$endpoint = $this->tokenEndpoint(oauth2: $oauth2, credential: $credential, credentialId: $target->credentialId);
 		$form = $this->refreshForm(oauth2: $oauth2, refreshToken: $refreshToken, client: $client);
 
 		return $this->accepted(decoded: $this->post(endpoint: $endpoint, form: $form, client: $client));
 	}//end redeem()
+
+	/**
+	 * The provider entry's `oauth2` block, or an empty block when it has none.
+	 *
+	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 *
+	 * @return array<string, mixed> The block.
+	 *
+	 * @spec exclude private catalogue accessor with no behaviour of its own
+	 */
+	private function oauth2Of(array $provider): array {
+		$oauth2 = ($provider['oauth2'] ?? []);
+		if (is_array($oauth2) === false) {
+			return [];
+		}
+
+		return $oauth2;
+	}//end oauth2Of()
 
 	/**
 	 * Build the refresh request's form body.

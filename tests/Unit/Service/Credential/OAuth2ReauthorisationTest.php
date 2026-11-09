@@ -275,12 +275,7 @@ class OAuth2ReauthorisationTest extends TestCase {
 			),
 			steps: new OAuth2ConnectSteps(
 				exchange: new OAuth2CodeExchange(clientService: $clientService),
-				writer: new OAuth2ConnectionWriter(
-					broker: $broker,
-					refresh: $refresh,
-					identities: $this->createMock(OAuth2AccountIdentity::class),
-					objectService: $objectService
-				),
+				writer: new OAuth2ConnectionWriter(credentials: new \OCA\OpenRegister\Service\Credential\BrokeredCredentials(broker: $broker, refresh: $refresh, objectService: $objectService), identities: $this->createMock(OAuth2AccountIdentity::class)),
 				revoker: new OAuth2UpstreamRevoker(refresh: $refresh, clients: $clients, clientService: $clientService, logger: $logger),
 			),
 		);

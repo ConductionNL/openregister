@@ -235,7 +235,7 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('warning');
 
-		(new OAuth2AccountIdentity(broker: $broker, refresh: $refresh, logger: $logger))->record(
+		(new OAuth2AccountIdentity(credentials: new \OCA\OpenRegister\Service\Credential\BrokeredCredentials(broker: $broker, refresh: $refresh, objectService: $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)), logger: $logger))->record(
 			provider: ['identity' => ['method' => 'POST', 'path' => '/me', 'idField' => 'id']],
 			address: new TokenSetAddress(credentialId: 'c', scope: 'personal'),
 			set: OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'AT']),
@@ -256,6 +256,6 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 			$this->persisted[] = [$credentialId, $scope, $set];
 		});
 
-		return new OAuth2AccountIdentity(broker: $broker, refresh: $refresh, logger: $this->createMock(LoggerInterface::class));
+		return new OAuth2AccountIdentity(credentials: new \OCA\OpenRegister\Service\Credential\BrokeredCredentials(broker: $broker, refresh: $refresh, objectService: $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)), logger: $this->createMock(LoggerInterface::class));
 	}
 }

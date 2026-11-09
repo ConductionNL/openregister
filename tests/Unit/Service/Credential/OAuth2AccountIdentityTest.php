@@ -221,10 +221,6 @@ class OAuth2AccountIdentityTest extends TestCase {
 			}
 		);
 
-		return new OAuth2AccountIdentity(
-			broker: $broker,
-			refresh: $refresh,
-			logger: $this->createMock(LoggerInterface::class)
-		);
+		return new OAuth2AccountIdentity(credentials: new \OCA\OpenRegister\Service\Credential\BrokeredCredentials(broker: $broker, refresh: $refresh, objectService: $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)), logger: $this->createMock(LoggerInterface::class));
 	}
 }

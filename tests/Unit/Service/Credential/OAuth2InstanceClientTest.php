@@ -262,10 +262,6 @@ class OAuth2InstanceClientTest extends TestCase {
 		$clientService = $this->createMock(IClientService::class);
 		$clientService->method('newClient')->willReturn($client);
 
-		return new OAuth2InstanceClient(
-			broker: $broker,
-			objectService: $objectService,
-			clientService: $clientService
-		);
+		return new OAuth2InstanceClient(credentials: new \OCA\OpenRegister\Service\Credential\BrokeredCredentials(broker: $broker, refresh: $this->createMock(\OCA\OpenRegister\Service\Credential\OAuth2RefreshService::class), objectService: $objectService), clientService: $clientService);
 	}
 }

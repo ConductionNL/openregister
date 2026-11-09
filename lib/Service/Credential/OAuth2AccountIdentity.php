@@ -56,15 +56,13 @@ class OAuth2AccountIdentity {
 	/**
 	 * Constructor.
 	 *
-	 * @param CredentialBrokerService $broker Makes the one bounded call.
-	 * @param OAuth2RefreshService $refresh Persists the set carrying the account.
-	 * @param LoggerInterface $logger Secret-free diagnostics.
+	 * @param BrokeredCredentials $credentials The broker making the one bounded call, and the refresh service persisting the set.
+	 * @param LoggerInterface     $logger      Secret-free diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CredentialBrokerService $broker,
-		private readonly OAuth2RefreshService $refresh,
+		private readonly BrokeredCredentials $credentials,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -92,7 +90,7 @@ class OAuth2AccountIdentity {
 			$decoded = $this->answer(identity: $identity, credentialId: $credentialId, owner: $owner);
 			if ($decoded !== null) {
 				$withAccount = $this->withAccount(set: $set, identity: $identity, decoded: $decoded);
-				$this->refresh->persist(credentialId: $credentialId, scope: $address->scope, set: $withAccount);
+				$this->credentials->refresh->persist(credentialId: $credentialId, scope: $address->scope, set: $withAccount);
 			}
 		} catch (Throwable $failure) {
 			$this->logger->warning('[OAuth2AccountIdentity] could not read the connected account for ' . $credentialId . ': ' . $failure->getMessage());
@@ -111,7 +109,7 @@ class OAuth2AccountIdentity {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
 	 */
 	private function answer(array $identity, string $credentialId, string $owner): ?array {
-		$response = $this->broker->request(
+		$response = $this->credentials->broker->request(
 			credentialId: $credentialId,
 			appId: self::BROKER_APP_ID,
 			method: (string)($identity['method'] ?? 'GET'),

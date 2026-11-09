@@ -33,7 +33,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Credential;
 
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use RuntimeException;
 
 /**
@@ -45,18 +44,14 @@ class OAuth2ConnectionWriter {
 	/**
 	 * Constructor.
 	 *
-	 * @param CredentialBrokerService $broker Mints the credential and its metadata object.
-	 * @param OAuth2RefreshService $refresh Persists a token set and mirrors its non-secret metadata.
-	 * @param OAuth2AccountIdentity $identities Reads and records whose account was connected.
-	 * @param ObjectOperationsInterface $objectService Loads the credential being re-authorised.
+	 * @param BrokeredCredentials   $credentials Mints the credential, persists a token set and loads the credential being re-authorised.
+	 * @param OAuth2AccountIdentity $identities  Reads and records whose account was connected.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CredentialBrokerService $broker,
-		private readonly OAuth2RefreshService $refresh,
+		private readonly BrokeredCredentials $credentials,
 		private readonly OAuth2AccountIdentity $identities,
-		private readonly ObjectOperationsInterface $objectService,
 	) {
 	}//end __construct()
 
@@ -100,7 +95,7 @@ class OAuth2ConnectionWriter {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-re-authorised-credential-returns-to-active-in-place
 	 */
 	private function storedData(string $credentialId): array {
-		$entity = (new OAuth2CredentialObjects(objectService: $this->objectService))->find(credentialId: $credentialId);
+		$entity = (new OAuth2CredentialObjects(objectService: $this->credentials->objectService))->find(credentialId: $credentialId);
 		if ($entity === null) {
 			throw new RuntimeException(message: 'the credential being re-authorised no longer exists');
 		}
@@ -152,7 +147,7 @@ class OAuth2ConnectionWriter {
 		}
 
 		if ($existing !== null) {
-			$this->refresh->persist(credentialId: $credentialId, scope: $scope, set: $tokenSet, extraMetadata: ['status' => 'active']);
+			$this->credentials->refresh->persist(credentialId: $credentialId, scope: $scope, set: $tokenSet, extraMetadata: ['status' => 'active']);
 		}
 
 		$this->identities->record(
@@ -178,7 +173,7 @@ class OAuth2ConnectionWriter {
 	 */
 	private function mintNew(OAuth2FlowClaims $flow, string $scope, OAuth2TokenSet $tokenSet): string {
 		$providerId = $flow->string(key: 'p');
-		$minted = $this->broker->mint(
+		$minted = $this->credentials->broker->mint(
 			name: $flow->string(key: 'nm', default: $providerId),
 			provider: $providerId,
 			owner: $flow->string(key: 'u'),

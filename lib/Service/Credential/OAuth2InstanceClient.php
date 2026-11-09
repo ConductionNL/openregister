@@ -37,7 +37,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Credential;
 
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\Http\Client\IClientService;
 use Throwable;
 
@@ -52,15 +51,13 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param CredentialBrokerService $broker Mints the client-secret credential.
-	 * @param ObjectOperationsInterface $objectService Reads the client already pinned to a credential.
-	 * @param IClientService $clientService NC HTTP client factory.
+	 * @param BrokeredCredentials $credentials   Mints the client-secret credential and reads the client already pinned to a credential.
+	 * @param IClientService      $clientService NC HTTP client factory.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CredentialBrokerService $broker,
-		private readonly ObjectOperationsInterface $objectService,
+		private readonly BrokeredCredentials $credentials,
 		private readonly IClientService $clientService,
 	) {
 	}//end __construct()
@@ -139,7 +136,7 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 		#[\SensitiveParameter] array $decoded,
 		OAuth2FlowClaims $flow,
 	): string {
-		$minted = $this->broker->mint(
+		$minted = $this->credentials->broker->mint(
 			name: 'OAuth2 client for ' . $instanceBaseUrl, provider: 'generic-oauth2', owner: $flow->string(key: 'u'), allowedApps: ['openregister'],
 			secret: (string)($decoded['client_secret'] ?? ''), scope: $flow->string(key: 's', default: 'personal'), organisation: $flow->organisation()
 		);
@@ -283,7 +280,7 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 		}
 
 		try {
-			$entity = (new OAuth2CredentialObjects(objectService: $this->objectService))->find(credentialId: $credentialId);
+			$entity = (new OAuth2CredentialObjects(objectService: $this->credentials->objectService))->find(credentialId: $credentialId);
 		} catch (Throwable $missing) {
 			return [];
 		}
