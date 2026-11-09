@@ -67,7 +67,26 @@ class UserLinkWriter {
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
 	public function write(string $objectUuid, int $registerId, ?int $schemaId, string $userId, ?string $role): ContactLink {
-		$user = $this->users->get($userId);
+		$target = new PersonLinkTarget(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId);
+		return $this->writeUser(placement: new PersonLinkPlacement(target: $target, role: $role), userId: $userId);
+	}//end write()
+
+	/**
+	 * Write a user link at a placement, or refresh the one the user already holds in that role.
+	 *
+	 * @param PersonLinkPlacement $placement The object, register, schema and role.
+	 * @param string              $userId    The account.
+	 *
+	 * @return ContactLink The link as stored.
+	 *
+	 * @throws Exception 404 when no account has the id, 401 when nobody is signed in.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
+	 */
+	public function writeUser(PersonLinkPlacement $placement, string $userId): ContactLink {
+		$target = $placement->target;
+		$role   = $placement->role;
+		$user   = $this->users->get($userId);
 		if ($user === null) {
 			throw new Exception('User not found', 404);
 		}
@@ -78,12 +97,12 @@ class UserLinkWriter {
 		}
 
 		$contactUid = ContactLink::USER_UID_PREFIX . $user->getUID();
-		$link = $this->links->findByObjectContactAndRole(objectUuid: $objectUuid, contactUid: $contactUid, role: $role);
+		$link = $this->links->findByObjectContactAndRole(objectUuid: $target->objectUuid, contactUid: $contactUid, role: $role);
 		$isNew = ($link === null);
-		$link = ($link ?? $this->newLink(objectUuid: $objectUuid, contactUid: $contactUid));
+		$link = ($link ?? $this->newLink(objectUuid: $target->objectUuid, contactUid: $contactUid));
 
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
+		$link->setRegisterId($target->registerId);
+		$link->setSchemaId($target->schemaId);
 		$link->setUserId($user->getUID());
 		$link->setDisplayName($user->getDisplayName());
 		$link->setEmail($user->getEMailAddress());
@@ -93,7 +112,7 @@ class UserLinkWriter {
 		$link->setLinkedAt(new DateTime());
 
 		return $this->persist(link: $link, isNew: $isNew);
-	}//end write()
+	}//end writeUser()
 
 	/**
 	 * A new, unsaved link of a contact on an object.
