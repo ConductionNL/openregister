@@ -192,8 +192,7 @@ class CacheSettingsHandler {
 	 * Constructor for CacheSettingsHandler
 	 *
 	 * @param ICacheFactory $cacheFactory Cache factory.
-	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler.
-	 * @param FacetResultCacheClearer $facetResults Clears the facet result caches.
+	 * @param SchemaCacheClearers $schemaCaches Schema cache handler and facet result cache clearer.
 	 * @param ObjectCacheMaintenanceInterface|null $objectCacheService Object cache service (optional, lazy-loaded).
 	 * @param IAppContainer|null $container Container for lazy loading (optional).
 	 *
@@ -201,14 +200,13 @@ class CacheSettingsHandler {
 	 */
 	public function __construct(
 		ICacheFactory $cacheFactory,
-		SchemaCacheHandler $schemaCacheService,
-		FacetResultCacheClearer $facetResults,
+		SchemaCacheClearers $schemaCaches,
 		?ObjectCacheMaintenanceInterface $objectCacheService = null,
 		?IAppContainer $container = null,
 	) {
 		$this->cacheFactory = $cacheFactory;
-		$this->schemaCacheService = $schemaCacheService;
-		$this->facetResults = $facetResults;
+		$this->schemaCacheService = $schemaCaches->schemaCache;
+		$this->facetResults = $schemaCaches->facetResults;
 		$this->objectCacheService = $objectCacheService;
 		$this->container = $container;
 	}//end __construct()

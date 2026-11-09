@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseStepRunner;
 use OCA\OpenRegister\Tests\Unit\Service\Case\CaseFixtures;
 use OCA\OpenRegister\Tests\Unit\Service\Case\FakeCaseItemMapper;
 use OCA\OpenRegister\Tests\Unit\Service\Case\RecordingAuditMapper;
@@ -156,7 +157,7 @@ class CaseFlowNodesTest extends TestCase {
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('imagePath')->willReturn('/icon.svg');
 
-		return ['plans' => $this->plans(), 'scope' => $scope, 'session' => $session, 'l10n' => $l10n, 'urls' => $urls];
+		return ['steps' => new CaseStepRunner(plans: $this->plans(), scope: $scope, session: $session), 'l10n' => $l10n, 'urls' => $urls];
 	}//end collaborators()
 
 	/**

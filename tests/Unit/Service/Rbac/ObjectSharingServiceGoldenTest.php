@@ -104,12 +104,11 @@ final class ObjectSharingServiceGoldenTest extends TestCase {
 		$object->setOwner('pjansen');
 
 		$calls = [
-			'grant group' => fn () => $sharing->grant(
+			'grant group' => fn () => $sharing->grantWithTerms(
 				object: $object,
 				type: 'group',
 				shareWith: ' juristen ',
-				permissions: 31,
-				verbs: ['read', '', 'read', 'export']
+				terms: new \OCA\OpenRegister\Service\Rbac\GrantTerms(permissions: 31, verbs: ['read', '', 'read', 'export'])
 			),
 			'grant user' => fn () => $sharing->grant(object: $object, type: 'user', shareWith: 'tvisser'),
 			'grant bad type' => fn () => $sharing->grant(object: $object, type: 'circle', shareWith: 'x'),
@@ -191,20 +190,13 @@ final class ObjectSharingServiceGoldenTest extends TestCase {
 		);
 
 		return new ObjectSharingService(
-			authorizationWriter: $this->createMock(ObjectAuthorizationWriter::class),
-			userSession: $session,
-			groupManager: $groups,
-			folders: $folders,
-			scopeResolver: new ObjectScopeResolver(),
-			grantResolver: $this->createMock(ObjectGrantResolver::class),
-			shareManager: $shares,
-			logger: new NullLogger(),
-			inheritedGrants: $this->createMock(InheritedGrantLister::class),
+			shares: new \OCA\OpenRegister\Service\Rbac\ObjectShareSurface(folders: $folders, shareManager: $shares),
+			records: new \OCA\OpenRegister\Service\Rbac\ObjectGrantRecords(authorizationWriter: $this->createMock(ObjectAuthorizationWriter::class), scopeResolver: new ObjectScopeResolver(), grantResolver: $this->createMock(ObjectGrantResolver::class), inheritedGrants: $this->createMock(InheritedGrantLister::class)),
+			context: new \OCA\OpenRegister\Service\Rbac\ObjectSharingContext(userSession: $session, groupManager: $groups, logger: new NullLogger(), auditor: $auditor),
 			grantManage: new GrantManageGuard(
 				scopeResolver: new ObjectScopeResolver(),
 				specialRights: $this->createMock(OrganisationSpecialRights::class)
-			),
-			auditor: $auditor
+			)
 		);
 	}
 

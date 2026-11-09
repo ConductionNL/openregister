@@ -41,11 +41,7 @@ namespace OCA\OpenRegister\Db;
  *
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
  */
-class LikeOperator {
-	/**
-	 * The operator key in a filter's operator bag.
-	 */
-	public const KEY = 'like';
+class LikeOperator implements LikeOperatorInterface {
 
 	/**
 	 * Platform families, as far as LIKE is concerned.

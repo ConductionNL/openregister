@@ -118,11 +118,8 @@ class FlowRunSubjects implements FlowRunSubjectsInterface {
 	 * silently attaches to the wrong record, so the log entry is what makes
 	 * "why is this task on the old decision" answerable in under a minute.
 	 *
-	 * @param FlowRun $run      The run to record on.
-	 * @param string  $role     The author's word for what this object is.
-	 * @param string  $uuid     The object.
-	 * @param string  $register Its register, when known.
-	 * @param string  $schema   Its schema, when known.
+	 * @param FlowRun          $run   The run to record on.
+	 * @param FlowSubjectClaim $claim The author's word for what the object is, the object, and its register and schema when known.
 	 *
 	 * @return void
 	 *
@@ -130,15 +127,9 @@ class FlowRunSubjects implements FlowRunSubjectsInterface {
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	public function record(
-		FlowRun $run,
-		string $role,
-		string $uuid,
-		string $register = '',
-		string $schema = ''
-	): void {
-		$role = trim($role);
-		$uuid = trim($uuid);
+	public function record(FlowRun $run, FlowSubjectClaim $claim): void {
+		$role = trim($claim->role);
+		$uuid = trim($claim->uuid);
 
 		if ($role === '' || $uuid === '') {
 			throw new UnexpectedValueException(
@@ -166,14 +157,36 @@ class FlowRunSubjects implements FlowRunSubjectsInterface {
 
 		$subjects[$role] = [
 			'uuid' => $uuid,
-			'register' => trim($register),
-			'schema' => trim($schema),
+			'register' => trim($claim->register),
+			'schema' => trim($claim->schema),
 			'recordedAt' => (new DateTime())->format(DATE_ATOM),
 		];
 
 		$run->setSubjects($subjects);
 
 	}//end record()
+
+	/**
+	 * Record the object the run fired on (its `subject_*` columns) under the `trigger` role.
+	 *
+	 * @param FlowRun $run The run to record on.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the run carries no subject uuid.
+	 *
+	 * @spec openspec/specs/flow-run-subjects/spec.md
+	 */
+	public function recordTrigger(FlowRun $run): void {
+		$claim = new FlowSubjectClaim(
+			role: self::ROLE_TRIGGER,
+			uuid: trim((string)$run->getSubjectUuid()),
+			register: trim((string)$run->getSubjectRegister()),
+			schema: trim((string)$run->getSubjectSchema())
+		);
+		$this->record(run: $run, claim: $claim);
+
+	}//end recordTrigger()
 
 	/**
 	 * The object a role names, for a step that addresses one.
