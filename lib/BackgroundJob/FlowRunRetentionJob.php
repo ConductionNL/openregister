@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\BackgroundJob\Support\FlowRunRetentionStores;
+use OCA\OpenRegister\BackgroundJob\Support\FlowRunRetentionServices;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
@@ -93,23 +93,32 @@ class FlowRunRetentionJob extends TimedJob {
 	private readonly FlowMapperInterface $flows;
 
 	/**
+	 * Reads the retention period.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $config;
+
+	/**
+	 * Records what was swept.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory           $time   The clock.
-	 * @param FlowRunRetentionStores $stores Runs, their steps, and the flows declaring an override.
-	 * @param IAppConfig             $config Reads the retention period.
-	 * @param LoggerInterface        $logger Records what was swept.
+	 * @param ITimeFactory             $time     The clock.
+	 * @param FlowRunRetentionServices $services The run history, the retention setting and the log.
 	 */
-	public function __construct(
-		ITimeFactory $time,
-		FlowRunRetentionStores $stores,
-		private readonly IAppConfig $config,
-		private readonly LoggerInterface $logger,
-	) {
+	public function __construct(ITimeFactory $time, FlowRunRetentionServices $services) {
 		parent::__construct(time: $time);
-		$this->runs = $stores->runs;
-		$this->steps = $stores->steps;
-		$this->flows = $stores->flows;
+		$this->runs = $services->stores->runs;
+		$this->steps = $services->stores->steps;
+		$this->flows = $services->stores->flows;
+		$this->config = $services->config;
+		$this->logger = $services->logger;
 
 		$this->setInterval(seconds: 86400);
 
