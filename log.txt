@@ -32,3 +32,4 @@
 2026-11-09T09:52:00Z reviewer-20261109T083848-41ffc10a 7716 e59e151eaf not reviewed: Newman-only collection (11107 lines) cannot run in a cloud reviewer; needs a CI Newman result or a reviewer with a booted Nextcloud
 2026-11-09T09:53:48Z integrator-20261109T092732-73c42b8a MERGED-TREE f7ffe03f4a: 20 PRs, main now e601776780 = tested tree
 2026-11-09T09:54:32Z integrator-20261109T092732-73c42b8a RESOLVED #7435 9dc9d612 -> d86f8935 use/map lines only
+2026-11-09T09:54:41Z integrator-20261109T092732-73c42b8a CONFLICT-DEV #7531 93673984
