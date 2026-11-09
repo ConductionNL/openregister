@@ -117,6 +117,19 @@ class MaintenanceModeMiddleware extends Middleware {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 */
 	public function afterException(Controller|string $controller, string $methodName, \Exception $exception): JSONResponse {
+		return $this->refusalResponse(exception: $exception);
+	}//end afterException()
+
+	/**
+	 * The 503 for this middleware's refusal; anything else is rethrown.
+	 *
+	 * @param \Exception $exception The exception a controller raised.
+	 *
+	 * @return JSONResponse The 503 carrying the message.
+	 *
+	 * @throws \Exception Anything that is not this middleware's refusal.
+	 */
+	private function refusalResponse(\Exception $exception): JSONResponse {
 		if (($exception instanceof MaintenanceModeHeldException) === false) {
 			throw $exception;
 		}
@@ -129,7 +142,7 @@ class MaintenanceModeMiddleware extends Middleware {
 			Http::STATUS_SERVICE_UNAVAILABLE
 		);
 
-	}//end afterException()
+	}//end refusalResponse()
 
 	/**
 	 * Is this controller one the mode never closes.

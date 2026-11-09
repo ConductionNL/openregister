@@ -69,6 +69,17 @@ class AnonymousEnvelopeMiddleware extends Middleware {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function afterController(Controller $controller, string $methodName, Response $response): Response {
+		return $this->redactedForAnonymous(response: $response);
+	}//end afterController()
+
+	/**
+	 * The answer, its JSON data redacted when the caller has no session.
+	 *
+	 * @param Response $response The answer.
+	 *
+	 * @return Response The same answer.
+	 */
+	private function redactedForAnonymous(Response $response): Response {
 		if ($this->userSession->getUser() !== null) {
 			return $response;
 		}
@@ -78,5 +89,5 @@ class AnonymousEnvelopeMiddleware extends Middleware {
 		}
 
 		return $response;
-	}//end afterController()
+	}//end redactedForAnonymous()
 }//end class
