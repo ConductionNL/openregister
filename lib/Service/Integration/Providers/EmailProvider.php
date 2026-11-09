@@ -133,8 +133,18 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-email/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		$paging = new EmailListPaging(filters: $filters);
+		return $this->emailPage(objectId: $objectId, paging: new EmailListPaging(filters: $filters));
+	}//end list()
 
+	/**
+	 * One page of the mails linked to an object.
+	 *
+	 * @param string          $objectId Owning object uuid.
+	 * @param EmailListPaging $paging   The page the caller asked for.
+	 *
+	 * @return array{items: array<int,array<string,mixed>>, total: int, nextCursor: ?string}
+	 */
+	private function emailPage(string $objectId, EmailListPaging $paging): array {
 		try {
 			$result = $this->emailService->getEmailsForObject(objectUuid: $objectId, limit: $paging->limit(), offset: $paging->offset());
 		} catch (Throwable $e) {
@@ -149,7 +159,7 @@ class EmailProvider extends AbstractIntegrationProvider {
 			'total' => $total,
 			'nextCursor' => $paging->nextCursor(seen: count($items), total: $total),
 		];
-	}//end list()
+	}//end emailPage()
 
 	/**
 	 * Link an existing email to an OR object.

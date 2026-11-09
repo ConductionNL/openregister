@@ -86,7 +86,6 @@ class EmailsControllerBehaviourTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn($params);
 		return new EmailsController(
-			'openregister',
 			$request,
 			new EmailsControllerServices(
 				new EmailsDomain($this->emails, $this->links),
