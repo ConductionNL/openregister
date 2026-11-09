@@ -810,7 +810,7 @@ class SaveObjectReferenceValidationTest extends TestCase {
 		// declare severity via `validationStrictness: 'warn'`. Should
 		// behave identically to validateReference: 'warn'.
 		$unifiedMapper = $this->createMock(MagicMapper::class);
-		$unifiedMapper->method('find')
+		$unifiedMapper->expects($this->once())->method('find')
 			->willThrowException(new DoesNotExistException('not found'));
 
 		$handler = $this->buildHandler(
@@ -849,9 +849,6 @@ class SaveObjectReferenceValidationTest extends TestCase {
 				'oldData' => null,
 			]
 		);
-
-		// Reaching here proves no exception was thrown.
-		$this->assertTrue(true);
 	}//end testStrictnessFieldDowngradesBooleanTrueToWarn()
 
 	/**
