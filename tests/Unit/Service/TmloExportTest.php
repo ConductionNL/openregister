@@ -37,6 +37,7 @@ use Psr\Log\NullLogger;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
 use OCA\OpenRegister\Service\Edepot\MdtoValueReader;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
+use OCA\OpenRegister\Service\Edepot\MdtoValueSources;
 use OCA\OpenRegister\Service\TmloService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -92,9 +93,7 @@ class TmloExportTest extends TestCase {
 		$bestandGenerator = new MdtoBestandGenerator($writer);
 		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class));
 		$generator = new MdtoXmlGenerator(
-			$appConfig,
-			$eventMapper,
-			$sourceReader,
+			new MdtoValueSources($appConfig, $eventMapper, $sourceReader),
 			$writer,
 			$bestandGenerator,
 			$preconditions

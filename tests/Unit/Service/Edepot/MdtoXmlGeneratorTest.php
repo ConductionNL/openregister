@@ -27,6 +27,7 @@ use Psr\Log\NullLogger;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
 use OCA\OpenRegister\Service\Edepot\MdtoValueReader;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
+use OCA\OpenRegister\Service\Edepot\MdtoValueSources;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -82,9 +83,7 @@ class MdtoXmlGeneratorTest extends TestCase {
 		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class));
 
 		return new MdtoXmlGenerator(
-			$appConfig,
-			$eventMapper,
-			$this->sourceReader,
+			new MdtoValueSources($appConfig, $eventMapper, $this->sourceReader),
 			$writer,
 			new MdtoBestandGenerator($writer),
 			$preconditions
