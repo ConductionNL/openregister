@@ -2,11 +2,10 @@
 	<!-- Re-importing takes the file's authorization over a local change, and
 	     re-imports the whole app's configuration where it has a base
 	     document: say so before it runs, not after. -->
-	<NcDialog
-		:open="true"
+	<CnDialog
 		:name="t('openregister', 'Re-import {register}?', { register: row.title })"
 		size="small"
-		@update:open="onOpenChange">
+		@closing="$emit('cancel')">
 		<p>
 			{{
 				t(
@@ -17,18 +16,17 @@
 			}}
 		</p>
 		<template #actions>
-			<NcButton @click="$emit('cancel')">
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
-			<NcButton variant="primary" @click="$emit('confirm')">
-				{{ t('openregister', 'Re-import') }}
-			</NcButton>
+			<CnDialogActions
+				:cancelLabel="t('openregister', 'Cancel')"
+				:confirmLabel="t('openregister', 'Re-import')"
+				@cancel="$emit('cancel')"
+				@submit="$emit('confirm')" />
 		</template>
-	</NcDialog>
+	</CnDialog>
 </template>
 
 <script>
-import { NcButton, NcDialog } from '@nextcloud/vue'
+import { CnDialog, CnDialogActions } from '@conduction/nextcloud-vue'
 
 /**
  * The question asked before a register descriptor is re-imported.
@@ -37,28 +35,12 @@ import { NcButton, NcDialog } from '@nextcloud/vue'
  */
 export default {
 	name: 'ReimportDescriptorDialog',
-	components: { NcButton, NcDialog },
+	components: { CnDialog, CnDialogActions },
 	props: {
 		/** The descriptor row to re-import ({appId, title, ...}). */
 		row: { type: Object, required: true },
 	},
 
 	emits: ['cancel', 'confirm'],
-
-	methods: {
-		/**
-		 * The dialog's own close button or Escape cancels.
-		 *
-		 * @param {boolean} open Whether the dialog stays open.
-		 * @return {void}
-		 *
-		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
-		 */
-		onOpenChange(open) {
-			if (!open) {
-				this.$emit('cancel')
-			}
-		},
-	},
 }
 </script>
