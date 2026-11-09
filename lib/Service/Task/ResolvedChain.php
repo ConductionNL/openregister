@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Task;
  *
  * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
  */
-final readonly class ApprovalChain {
+final readonly class ResolvedChain {
 
 	/**
 	 * @param array<string, mixed>                  $template      The compiled template (name, positions, outcomes, ...).

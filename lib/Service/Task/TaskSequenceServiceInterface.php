@@ -39,7 +39,7 @@ interface TaskSequenceServiceInterface {
 	 * schema edit or an amount edit cannot re-shape or re-route an approval
 	 * that is already running (design D-3).
 	 *
-	 * @param ApprovalChain  $chain  The compiled template
+	 * @param ResolvedChain  $chain  The compiled template
 	 *                               ({@see \OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller::compile()})
 	 *                               and the resolved amount tier, or null for every declared position.
 	 * @param SequenceAnchor $anchor The object the approval is about, who attempted the gated transition,
@@ -49,7 +49,7 @@ interface TaskSequenceServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
-	public function provision(ApprovalChain $chain, SequenceAnchor $anchor): TaskSequence;
+	public function provision(ResolvedChain $chain, SequenceAnchor $anchor): TaskSequence;
 
 	/**
 	 * The approval chain a sequence walks: a compiled template and its resolved tier.
@@ -59,11 +59,11 @@ interface TaskSequenceServiceInterface {
 	 * @param array<string, mixed>                  $template      The compiled template.
 	 * @param array<int, array<string, mixed>>|null $tierPositions The resolved amount tier, or null for every declared position.
 	 *
-	 * @return ApprovalChain The chain, to hand to {@see provision()}.
+	 * @return ResolvedChain The chain, to hand to {@see provision()}.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
-	public function chain(array $template, ?array $tierPositions = null): ApprovalChain;
+	public function chain(array $template, ?array $tierPositions = null): ResolvedChain;
 
 	/**
 	 * What a sequence is about: the object, the requester and the register.

@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskSequenceUndecidedEvent;
 use OCA\OpenRegister\Service\Task\TaskService;
-use OCA\OpenRegister\Service\Task\ApprovalChain;
+use OCA\OpenRegister\Service\Task\ResolvedChain;
 use OCA\OpenRegister\Service\Task\SequenceAnchor;
 use OCA\OpenRegister\Service\Task\SequenceProvenance;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
@@ -209,12 +209,12 @@ class TaskSequenceServiceGoldenTest extends TestCase {
 		$service = $this->service();
 		$template = self::template();
 		$sequence = match ($variant) {
-			'minimal' => $service->provision(chain: new ApprovalChain(template: $template), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice')),
-			'everything' => $service->provision(chain: new ApprovalChain(template: $template, tierPositions: null), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice', registerId: 7, provenance: new SequenceProvenance(runUuid: 'run-1', nodeId: 'node-1'))),
-			'tier' => $service->provision(chain: new ApprovalChain(template: $template, tierPositions: [['order' => 4, 'role' => 'board', 'statusOnApprove' => 'x']]), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice', registerId: 7)),
-			'approving' => $service->provision(chain: new ApprovalChain(template: $template + ['approvingOutcomes' => [' Approved ', 'ok', 3]]), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice')),
-			'empty' => $service->provision(chain: new ApprovalChain(template: []), anchor: new SequenceAnchor(objectUuid: 'obj-2', requesterId: null)),
-			'no-requester' => $service->provision(chain: new ApprovalChain(template: $template), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: null, provenance: new SequenceProvenance(runUuid: 'run-2'))),
+			'minimal' => $service->provision(chain: new ResolvedChain(template: $template), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice')),
+			'everything' => $service->provision(chain: new ResolvedChain(template: $template, tierPositions: null), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice', registerId: 7, provenance: new SequenceProvenance(runUuid: 'run-1', nodeId: 'node-1'))),
+			'tier' => $service->provision(chain: new ResolvedChain(template: $template, tierPositions: [['order' => 4, 'role' => 'board', 'statusOnApprove' => 'x']]), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice', registerId: 7)),
+			'approving' => $service->provision(chain: new ResolvedChain(template: $template + ['approvingOutcomes' => [' Approved ', 'ok', 3]]), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice')),
+			'empty' => $service->provision(chain: new ResolvedChain(template: []), anchor: new SequenceAnchor(objectUuid: 'obj-2', requesterId: null)),
+			'no-requester' => $service->provision(chain: new ResolvedChain(template: $template), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: null, provenance: new SequenceProvenance(runUuid: 'run-2'))),
 		};
 
 		$this->assertGolden('provision:' . $this->dataName(), ['calls' => $this->calls, 'returned' => self::row($sequence)]);

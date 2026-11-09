@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\ApprovalChainGateListener;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
-use OCA\OpenRegister\Service\Task\ApprovalChain;
+use OCA\OpenRegister\Service\Task\ResolvedChain;
 use OCA\OpenRegister\Service\Task\SequenceAnchor;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCP\IUser;
@@ -79,7 +79,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$this->sequenceMapper = $this->createMock(TaskSequenceMapper::class);
 		$this->sequenceService = $this->createMock(TaskSequenceService::class);
 		$this->sequenceService->method('chain')->willReturnCallback(
-			static fn (array $template, ?array $tierPositions = null): ApprovalChain => new ApprovalChain(template: $template, tierPositions: $tierPositions)
+			static fn (array $template, ?array $tierPositions = null): ResolvedChain => new ResolvedChain(template: $template, tierPositions: $tierPositions)
 		);
 		$this->sequenceService->method('anchorOf')->willReturnCallback(
 			static fn (string $objectUuid, ?string $requesterId, ?int $registerId = null): SequenceAnchor => new SequenceAnchor(objectUuid: $objectUuid, requesterId: $requesterId, registerId: $registerId)
@@ -204,7 +204,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$this->sequenceService->expects($this->once())
 			->method('provision')
 			->with(
-				$this->callback(static fn (ApprovalChain $chain): bool => $chain->template['name'] === 'submit-approval'
+				$this->callback(static fn (ResolvedChain $chain): bool => $chain->template['name'] === 'submit-approval'
 					&& count($chain->template['positions']) === 2 && $chain->tierPositions === [['order' => 1, 'role' => 'finance-clerks', 'min' => 1, 'minAmount' => 0]]),
 				$this->callback(static fn (SequenceAnchor $anchor): bool => $anchor->objectUuid === 'obj-1' && $anchor->requesterId === 'requester1')
 			);
@@ -303,7 +303,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$this->sequenceService->expects($this->once())
 			->method('provision')
 			->with(
-				$this->callback(static fn (ApprovalChain $chain): bool => $chain->tierPositions === [['order' => 1, 'role' => 'finance-directors', 'min' => 1, 'minAmount' => 100000]]),
+				$this->callback(static fn (ResolvedChain $chain): bool => $chain->tierPositions === [['order' => 1, 'role' => 'finance-directors', 'min' => 1, 'minAmount' => 100000]]),
 				$this->callback(static fn (SequenceAnchor $anchor): bool => $anchor->objectUuid === 'obj-1' && $anchor->requesterId === 'requester1')
 			);
 
@@ -333,7 +333,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$this->sequenceService->expects($this->once())
 			->method('provision')
 			->with(
-				$this->callback(static fn (ApprovalChain $chain): bool => $chain->tierPositions === [
+				$this->callback(static fn (ResolvedChain $chain): bool => $chain->tierPositions === [
 					['order' => 1, 'role' => 'teamleider', 'min' => 1, 'minAmount' => 1],
 					['order' => 2, 'role' => 'facility_manager', 'min' => 1, 'minAmount' => 1000000],
 				]),

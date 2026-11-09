@@ -82,7 +82,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 * schema edit or an amount edit cannot re-shape or re-route an approval
 	 * that is already running (design D-3).
 	 *
-	 * @param ApprovalChain  $chain  The compiled template
+	 * @param ResolvedChain  $chain  The compiled template
 	 *                               ({@see \OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller::compile()})
 	 *                               and the resolved amount tier, or null for every declared position.
 	 * @param SequenceAnchor $anchor The object the approval is about, who asked, its register, and optional flow provenance.
@@ -91,7 +91,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
-	public function provision(ApprovalChain $chain, SequenceAnchor $anchor): TaskSequence {
+	public function provision(ResolvedChain $chain, SequenceAnchor $anchor): TaskSequence {
 		$sequence = self::newSequence(chain: $chain);
 		self::anchor(sequence: $sequence, anchor: $anchor);
 		self::open(sequence: $sequence, provenance: $anchor->provenance);
@@ -107,12 +107,12 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 * @param array<string, mixed>                  $template      The compiled template.
 	 * @param array<int, array<string, mixed>>|null $tierPositions The resolved amount tier, or null for every declared position.
 	 *
-	 * @return ApprovalChain The chain, to hand to {@see provision()}.
+	 * @return ResolvedChain The chain, to hand to {@see provision()}.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
-	public function chain(array $template, ?array $tierPositions = null): ApprovalChain {
-		return new ApprovalChain(template: $template, tierPositions: $tierPositions);
+	public function chain(array $template, ?array $tierPositions = null): ResolvedChain {
+		return new ResolvedChain(template: $template, tierPositions: $tierPositions);
 	}//end chain()
 
 	/**
@@ -135,11 +135,11 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	/**
 	 * A new sequence row carrying the frozen template and, when given, the resolved tier.
 	 *
-	 * @param ApprovalChain $chain The compiled template, its positions and the resolved tier, or null.
+	 * @param ResolvedChain $chain The compiled template, its positions and the resolved tier, or null.
 	 *
 	 * @return TaskSequence The unsaved row.
 	 */
-	private static function newSequence(ApprovalChain $chain): TaskSequence {
+	private static function newSequence(ResolvedChain $chain): TaskSequence {
 		$template = $chain->template;
 		$sequence = new TaskSequence();
 		$sequence->setUuid(Uuid::v4()->toRfc4122());
@@ -205,11 +205,11 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 * Insert the sequence, then import one task per position, the first enabled.
 	 *
 	 * @param TaskSequence  $sequence The unsaved row.
-	 * @param ApprovalChain $chain    The compiled template and the positions to provision.
+	 * @param ResolvedChain $chain    The compiled template and the positions to provision.
 	 *
 	 * @return TaskSequence The inserted sequence.
 	 */
-	private function insertWithPositions(TaskSequence $sequence, ApprovalChain $chain): TaskSequence {
+	private function insertWithPositions(TaskSequence $sequence, ResolvedChain $chain): TaskSequence {
 		$positions = $chain->positions();
 		$sequence = $this->services->sequences->insert($sequence);
 		$creator = ($sequence->getRequesterId() ?? self::ACTOR_PREFIX . (string)$sequence->getUuid());

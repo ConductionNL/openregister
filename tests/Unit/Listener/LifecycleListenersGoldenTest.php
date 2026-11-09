@@ -53,7 +53,7 @@ use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\SystemOperationContext;
-use OCA\OpenRegister\Service\Task\ApprovalChain;
+use OCA\OpenRegister\Service\Task\ResolvedChain;
 use OCA\OpenRegister\Service\Task\SequenceAnchor;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCP\EventDispatcher\Event;
@@ -129,7 +129,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 		$this->sequenceMapper  = $this->createMock(TaskSequenceMapper::class);
 		$this->sequenceService = $this->createMock(TaskSequenceService::class);
 		$this->sequenceService->method('chain')->willReturnCallback(
-			static fn (array $template, ?array $tierPositions = null): ApprovalChain => new ApprovalChain(template: $template, tierPositions: $tierPositions)
+			static fn (array $template, ?array $tierPositions = null): ResolvedChain => new ResolvedChain(template: $template, tierPositions: $tierPositions)
 		);
 		$this->sequenceService->method('anchorOf')->willReturnCallback(
 			static fn (string $objectUuid, ?string $requesterId, ?int $registerId = null): SequenceAnchor => new SequenceAnchor(objectUuid: $objectUuid, requesterId: $requesterId, registerId: $registerId)
