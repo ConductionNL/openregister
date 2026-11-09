@@ -28,6 +28,8 @@ use Psr\Log\LoggerInterface;
 /**
  * Looks up the schema, register and table of the object an event carries, and
  * logs what goes wrong without failing the event.
+ *
+ * @spec exclude collaborator aggregate under ADR-011 Rule 4, no behaviour of its own
  */
 final class EventSchemaLookup {
 	/**
