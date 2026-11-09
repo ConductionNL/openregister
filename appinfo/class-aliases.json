@@ -1815,6 +1815,141 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\BulkAction\\BulkActionOutcomeInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\BulkActionOutcomeInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\AvgComplianceServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AvgComplianceServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\DemoDataServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DemoDataServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\ManifestServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ManifestServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\RegisterDescriptorServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RegisterDescriptorServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\RegisterResolverServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RegisterResolverServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\TenantKeyRotationInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TenantKeyRotationInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Aggregation\\WidgetAnnotationValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\WidgetAnnotationValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\ApiVersion\\ApiVersionInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ApiVersionInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\ApiVersion\\ApiVersionNegotiationInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ApiVersionNegotiationInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Geo\\PdokGeocoderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PdokGeocoderInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Merge\\MasterRecomputeInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\MasterRecomputeInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Oas\\OasETagComputerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\OasETagComputerInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Oas\\OasRequestValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\OasRequestValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Object\\ObjectNameWriterInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectNameWriterInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\ObjectSource\\TablesSchemaReconcilerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TablesSchemaReconcilerInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\AnonymousEnvelopeInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AnonymousEnvelopeInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\ExplicitRevealTrailMaskerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ExplicitRevealTrailMaskerInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Registry\\RegistryAnnotationValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RegistryAnnotationValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Schema\\SchemaObjectReaderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SchemaObjectReaderInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Schemas\\FacetResultCacheClearerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FacetResultCacheClearerInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PropertyVocabularyInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Schemas\\SemanticRoleHandlerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SemanticRoleHandlerInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Sharing\\AccessLinkSubjectInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AccessLinkSubjectInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Survivorship\\SourceRecordResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SourceRecordResolverInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Survivorship\\SurvivorshipAnnotationValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SurvivorshipAnnotationValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Vocabulary\\ConceptRepositoryInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ConceptRepositoryInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }

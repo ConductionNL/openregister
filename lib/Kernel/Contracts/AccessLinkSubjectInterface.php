@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Sharing;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Reads what an access link's subject names.

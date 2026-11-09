@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Oas;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The ETag the OAS endpoint answers with and compares against If-None-Match.

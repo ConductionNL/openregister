@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Schemas;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Clearing cached facet results, as the schemas controller uses it. Only the

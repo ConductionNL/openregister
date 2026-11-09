@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\ApiVersion;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * ApiVersionNegotiation, typed for callers outside the Service component.

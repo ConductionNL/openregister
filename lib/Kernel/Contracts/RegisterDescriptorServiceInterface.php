@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The descriptor inventory and re-import the descriptor endpoint and occ command call on RegisterDescriptorService.

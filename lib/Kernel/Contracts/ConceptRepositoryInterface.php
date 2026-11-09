@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Vocabulary;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Reads a concept scheme out of the vocabulary register, as the concept delete guard asks for it.

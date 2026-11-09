@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\ObjectSource;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Reconciles the managed virtual schemas with the Tables tables that exist.

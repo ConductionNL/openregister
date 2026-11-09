@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Survivorship;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Validates the `x-openregister-survivorship` annotation of a schema.

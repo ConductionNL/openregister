@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Survivorship;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Finds the source records linked to a golden record, as callers outside lib/Service ask for them.

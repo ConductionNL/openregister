@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Schemas;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Semantic property roles and help texts, as the schemas controller and the

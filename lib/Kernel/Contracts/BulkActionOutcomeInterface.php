@@ -24,7 +24,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\BulkAction;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * An immutable per-object outcome.

@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Merge;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Recomputing one master record from its sources, as the recompute job does. Only the method that caller calls.

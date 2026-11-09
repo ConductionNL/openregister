@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Schemas;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The property vocabulary a schema may use, as the property-vocabulary

@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Oas;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * OasRequestValidator, typed for callers outside the Service component.

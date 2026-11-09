@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Geo;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The methods of PdokGeocoder that callers outside its component use.
