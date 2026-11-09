@@ -94,12 +94,9 @@ class TimeTrackerLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		return $this->whenTimeManagerInstalled(
-			answer: fn (): JSONResponse => $this->listLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-				action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->linkService->getLinkedEntries($object->getUuid()))
-			)
-		);
+		$action = $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->linkService->getLinkedEntries($object->getUuid()));
+
+		return $this->listWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end index()
 
 	/**
@@ -121,12 +118,9 @@ class TimeTrackerLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		return $this->whenTimeManagerInstalled(
-			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-				action: LinkedSourceActions::linkByTexts(request: $this->request, params: ['entryType', 'id'], link: $this->linkEntry(...))
-			)
-		);
+		$action = LinkedSourceActions::linkByTexts(request: $this->request, params: ['entryType', 'id'], link: $this->linkEntry(...));
+
+		return $this->onWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end link()
 
 	/**
@@ -148,12 +142,9 @@ class TimeTrackerLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
-		return $this->whenTimeManagerInstalled(
-			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-				action: $this->namedLinkOf(create: $this->linkService->createAndLinkClient(...))
-			)
-		);
+		$action = $this->namedLinkOf(create: $this->linkService->createAndLinkClient(...));
+
+		return $this->onWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end createAndLink()
 
 	/**
@@ -174,12 +165,9 @@ class TimeTrackerLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $entryId): JSONResponse {
-		return $this->whenTimeManagerInstalled(
-			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-				action: LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->linkService->unlink($uuid, $entryId))
-			)
-		);
+		$action = LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->linkService->unlink($uuid, $entryId));
+
+		return $this->onWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end destroy()
 
 	/**
@@ -217,6 +205,30 @@ class TimeTrackerLinksController extends Controller {
 	private function linkEntry(ObjectEntity $object, string $entryType, string $entryId): TimeTrackerLink {
 		return $this->linkService->linkEntry($this->linkTargetOf(object: $object), $entryType, $entryId);
 	}//end linkEntry()
+
+	/**
+	 * List for the object its route names, when the TimeManager app is installed; 501 otherwise.
+	 *
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param Closure         $action Receives the object; returns the response.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function listWhenInstalled(ObjectLinkRoute $route, Closure $action): JSONResponse {
+		return $this->whenTimeManagerInstalled(answer: fn (): JSONResponse => $this->listLinkedObject(route: $route, action: $action));
+	}//end listWhenInstalled()
+
+	/**
+	 * Run a link action on the object its route names, when the TimeManager app is installed; 501 otherwise.
+	 *
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param Closure         $action Receives the object; returns the response.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function onWhenInstalled(ObjectLinkRoute $route, Closure $action): JSONResponse {
+		return $this->whenTimeManagerInstalled(answer: fn (): JSONResponse => $this->onLinkedObject(route: $route, action: $action));
+	}//end onWhenInstalled()
 
 	/**
 	 * Run the answer when the TimeManager app is installed; 501 otherwise.
