@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
  * The content of one uploaded file being screened for executable code, with its name and the prefix of every refusal.
  *
  * Built by FileUploadGuard::blockExecutableContent() and never leaves FileUploadGuard.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class UploadedContent {
 	/**

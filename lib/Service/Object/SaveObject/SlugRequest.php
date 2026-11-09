@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\Schema;
  * One entity asking for its slug on a single save or a seed import: the entity, its schema, and the slug the client sent.
  *
  * Built by ObjectSlugHandler and never leaves ObjectSlugHandler.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class SlugRequest {
 	/**

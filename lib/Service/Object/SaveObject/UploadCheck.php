@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
  * One uploaded file being checked against its property: the parsed file data, the prefix of every refusal, and the property's file configuration.
  *
  * Built by FileUploadGuard for one check and never leaves FileUploadGuard.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class UploadCheck {
 	/**

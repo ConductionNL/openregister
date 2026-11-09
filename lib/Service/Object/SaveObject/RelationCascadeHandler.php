@@ -146,7 +146,9 @@ class RelationCascadeHandler {
 	}//end directIdMatch()
 
 	/**
-	 * The id of the entity whose slug is the reference's last path segment (the whole reference without a `/`); a failing lookup is logged and yields null.
+	 * The id of the entity whose slug is the reference's last path segment (the whole reference without a `/`).
+	 *
+	 * A failing lookup is logged and yields null.
 	 *
 	 * @param string       $reference The reference without query parameters.
 	 * @param EntityLookup $lookup    Lists the candidate entities, and names what is looked up for the log line.
@@ -297,8 +299,12 @@ class RelationCascadeHandler {
 			return $this->singleRelation(scan: $scan, key: $key);
 		}
 
-		// An array holding a reference is one relation; any other array is scanned for nested ones.
+		// The declaration at the path is read for an array too, as it always was: a
+		// declaration that is no array refuses the scan here, whatever the value holds.
 		$path = self::pathOf(scan: $scan, key: $key);
+		$this->declaresRef(schema: $scan->schema, path: $path);
+
+		// An array holding a reference is one relation; any other array is scanned for nested ones.
 		if ($this->isArrayOfReferences(array: $value) === true) {
 			return [$path];
 		}
