@@ -85,7 +85,19 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider {
 	 * @return ObjectEntity|null The virtual object, or null when absent/unreachable.
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		$base = $this->baseUrl(config: $config);
+		return $this->findRecord(peer: $this->peer(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config), id: $id);
+	}//end find()
+
+	/**
+	 * Read one record from the peer.
+	 *
+	 * @param FederatedPeer $peer The peer and the local binding.
+	 * @param string        $id   The remote object id.
+	 *
+	 * @return ObjectEntity|null The record, or null when unconfigured or unreachable.
+	 */
+	private function findRecord(FederatedPeer $peer, string $id): ?ObjectEntity {
+		$base = $peer->baseUrl;
 		if ($base === null) {
 			return null;
 		}
@@ -97,8 +109,8 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider {
 			return null;
 		}
 
-		return $this->recordEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), body: $body);
-	}//end find()
+		return $this->recordEntity(binding: $peer->binding, body: $body);
+	}//end findRecord()
 
 	/**
 	 * {@inheritDoc}
@@ -111,7 +123,19 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider {
 	 * @return ObjectEntity[] The matching virtual objects (possibly empty).
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$base = $this->baseUrl(config: $config);
+		return $this->listRecords(peer: $this->peer(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config), query: $query);
+	}//end findAll()
+
+	/**
+	 * Read one page of records from the peer.
+	 *
+	 * @param FederatedPeer        $peer  The peer and the local binding.
+	 * @param array<string, mixed> $query Query (filters/search/limit/offset).
+	 *
+	 * @return ObjectEntity[] The records, or an empty list when unconfigured or unreachable.
+	 */
+	private function listRecords(FederatedPeer $peer, array $query): array {
+		$base = $peer->baseUrl;
 		if ($base === null) {
 			return [];
 		}
@@ -123,8 +147,20 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider {
 			return [];
 		}//end try
 
-		return $this->listEntities(binding: new SourcedObjectBinding(register: $register, schema: $schema), body: $body);
-	}//end findAll()
+		return $this->listEntities(binding: $peer->binding, body: $body);
+	}//end listRecords()
+
+	/**
+	 * The peer a schema's object-source config names.
+	 *
+	 * @param SourcedObjectBinding $binding The local register and schema.
+	 * @param array<string, mixed> $config  The object-source config (`remoteUrl`, `shareToken`).
+	 *
+	 * @return FederatedPeer
+	 */
+	private function peer(SourcedObjectBinding $binding, array $config): FederatedPeer {
+		return new FederatedPeer(binding: $binding, baseUrl: $this->baseUrl(config: $config));
+	}//end peer()
 
 	/**
 	 * GET a remote URL and decode its JSON body.
