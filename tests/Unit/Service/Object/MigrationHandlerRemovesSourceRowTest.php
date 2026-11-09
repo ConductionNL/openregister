@@ -262,7 +262,7 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 		);
 
 		return new MigrationHandler(
-			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(objects: $mapper, validator: $this->validator(), reporting: new \OCA\OpenRegister\Service\Object\MoveReporting(audit: $audit, logger: $logger), events: ($this->guards ?? $this->createStub(IEventDispatcher::class))), auditTrail: $audit),
+			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($mapper, $audit, $logger, ($this->guards ?? $this->createStub(IEventDispatcher::class))), validator: $this->validator()), auditTrail: $audit),
 			mapping: new MigrationMapping(utilityHandler: $this->utility(), dataManipHandler: $manipulation, relationScanner: $scanner),
 			logger: $logger
 		);

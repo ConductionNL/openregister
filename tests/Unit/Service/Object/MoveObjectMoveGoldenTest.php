@@ -18,7 +18,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\MoveObject;
-use OCA\OpenRegister\Service\Object\MoveReporting;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\Errors\ValidationError;
@@ -110,7 +109,7 @@ class MoveObjectMoveGoldenTest extends TestCase {
 		$object->setOwner(($setup['owner'] ?? 'owner-1'));
 		$object->setObject(array_key_exists('data', $setup) === true ? $setup['data'] : ['title' => 'x', 'number' => '2026-0042']);
 
-		$service  = new MoveObject($this->objects(), $this->validator(), new MoveReporting($this->audit(), $this->logger()), $this->createStub(IEventDispatcher::class));
+		$service  = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects(), $this->audit(), $this->logger(), $this->createStub(IEventDispatcher::class)), $this->validator());
 		$returned = $service->move(
 			object: $object,
 			sourceRegister: $this->register(id: 1),
