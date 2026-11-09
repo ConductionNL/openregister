@@ -72,3 +72,4 @@ openregister#7331 4440264874ffe8a7a53dc08a160071ce7bdf998b cloud in int/r9-2
 openregister#7336 541918a3b406c77e9071b8f5ff41b68f154fd26c cloud in int/r9-2
 openregister#7488 6fffc72a71893ec7c7055285ad59c751eae12af0 bisect-park: jest initial-data.golden + groupSelect.dom.golden fail with this PR alone on main 869b97c27d
 openregister#7502 0469bb38e166e5bb081df64e5c2e0172fcba67d7 bisect-park: jest listPages.dom.golden snapshot fails with this PR alone on main 869b97c27d
+openregister#7576 7be67d785511db6873298db2888520cd8d106bbf bisect-park: HardeningControllerBehaviourTest (2 tests) fails with this PR alone on main fdd553e4ed
