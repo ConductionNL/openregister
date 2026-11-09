@@ -28,7 +28,6 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 
 use OCA\OpenRegister\Db\ErasurePreview;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -61,61 +60,57 @@ class ErasureDestroyer {
 	/**
 	 * Destroy one object through the recorded destruction.
 	 *
-	 * @param ObjectEntity         $object  The object to destroy.
-	 * @param ErasurePreview       $record  The preview being run.
-	 * @param array<string, mixed> $outcome The outcome (mutated by reference).
+	 * Answers with the run-report bucket the object lands in and its entry:
+	 * `destroyed`, `refused` (a right or clock said no, before any write) or
+	 * `failed`.
 	 *
-	 * @return void
+	 * @param ObjectEntity   $object The object to destroy.
+	 * @param ErasurePreview $record The preview being run.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>} [bucket, entry].
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
-	public function destroy(ObjectEntity $object, ErasurePreview $record, array &$outcome): void {
-		$uuid = (string)($object->getUuid() ?? '');
+	public function destroy(ObjectEntity $object, ErasurePreview $record): array {
 		$schema = $this->steps->schemas->schemaOf(object: $object);
 
 		// THE RIGHT AND THE CLOCKS ARE ASKED AGAIN, PER OBJECT. An approval is
 		// not a permission, and a hold placed after the approval has to win.
 		$refusal = $this->guard->refusalFor(object: $object, schema: $schema);
 		if ($refusal !== null) {
-			$outcome['refused'][] = $this->refused(uuid: $uuid, refusal: $refusal);
-			return;
+			return ['refused', $this->refused(uuid: (string)($object->getUuid() ?? ''), refusal: $refusal)];
 		}
 
-		$scopeReport = $this->destroyAndRecord(object: $object, schema: $schema, record: $record, outcome: $outcome);
-		if ($scopeReport === null || $this->deleteRow(object: $object, outcome: $outcome) === false) {
-			return;
-		}
-
-		$outcome['destroyed'][] = ['uuid' => $uuid, 'scope' => ($scopeReport['destroyed'] ?? []), 'total' => ($scopeReport['total'] ?? 0)];
+		return $this->destroyAndRecord(destruction: new ErasureDestruction(object: $object, schema: $schema, record: $record));
 	}//end destroy()
 
 	/**
-	 * Destroy the scope and write the record that names the request.
+	 * Destroy the scope, write the record that names the request, delete the row.
 	 *
-	 * @param ObjectEntity         $object  The object.
-	 * @param Schema|null          $schema  Its schema.
-	 * @param ErasurePreview       $record  The preview being run.
-	 * @param array<string, mixed> $outcome The outcome (mutated by reference on failure).
+	 * @param ErasureDestruction $destruction The object, its schema and the preview being run.
 	 *
-	 * @return array<string, mixed>|null The scope report, or null when it was refused or failed.
+	 * @return array{0: string, 1: array<string, mixed>} [bucket, entry].
 	 */
-	private function destroyAndRecord(ObjectEntity $object, ?Schema $schema, ErasurePreview $record, array &$outcome): ?array {
+	private function destroyAndRecord(ErasureDestruction $destruction): array {
 		try {
-			$scopeReport = $this->steps->scopeService->destroy(object: $object, schema: $schema);
+			$scopeReport = $this->steps->scopeService->destroy(object: $destruction->object, schema: $destruction->schema);
 
 			// THE DESTRUCTION RECORD NAMES THE REQUEST (D-3). Without this the
 			// destruction log and the data subject request are two histories of
 			// the same act that nobody can join.
-			$this->steps->recorder->record(object: $object, scope: $scopeReport, rule: ErasureRunner::RULE, context: $this->recordContext(record: $record));
+			$this->steps->recorder->record(
+				object: $destruction->object,
+				scope: $scopeReport,
+				rule: ErasureRunner::RULE,
+				context: $this->recordContext(record: $destruction->record)
+			);
 		} catch (DestructionRefusedException $e) {
-			$outcome['refused'][] = $this->refused(uuid: (string)($object->getUuid() ?? ''), refusal: $e);
-			return null;
+			return ['refused', $this->refused(uuid: $destruction->uuid(), refusal: $e)];
 		} catch (Throwable $e) {
-			$outcome['failed'][] = ['uuid' => (string)($object->getUuid() ?? ''), 'error' => $e->getMessage()];
-			return null;
+			return ['failed', ['uuid' => $destruction->uuid(), 'error' => $e->getMessage()]];
 		}
 
-		return $scopeReport;
+		return $this->deleteRow(object: $destruction->object, scopeReport: $scopeReport);
 	}//end destroyAndRecord()
 
 	/**
@@ -141,12 +136,12 @@ class ErasureDestroyer {
 	/**
 	 * Delete the object row after its destruction was recorded.
 	 *
-	 * @param ObjectEntity         $object  The object.
-	 * @param array<string, mixed> $outcome The outcome (mutated by reference on failure).
+	 * @param ObjectEntity         $object      The object.
+	 * @param array<string, mixed> $scopeReport What the scope destruction reported.
 	 *
-	 * @return bool True when the row is gone.
+	 * @return array{0: string, 1: array<string, mixed>} [bucket, entry]: destroyed, or failed when the row stays.
 	 */
-	private function deleteRow(ObjectEntity $object, array &$outcome): bool {
+	private function deleteRow(ObjectEntity $object, array $scopeReport): array {
 		$uuid = (string)($object->getUuid() ?? '');
 		try {
 			$this->steps->objectMapper->delete($object);
@@ -158,11 +153,10 @@ class ErasureDestroyer {
 				message: '[ErasureRunner] The destruction was recorded but the object could not be deleted',
 				context: ['uuid' => $uuid, 'error' => $e->getMessage()]
 			);
-			$outcome['failed'][] = ['uuid' => $uuid, 'error' => $e->getMessage()];
-			return false;
+			return ['failed', ['uuid' => $uuid, 'error' => $e->getMessage()]];
 		}
 
-		return true;
+		return ['destroyed', ['uuid' => $uuid, 'scope' => ($scopeReport['destroyed'] ?? []), 'total' => ($scopeReport['total'] ?? 0)]];
 	}//end deleteRow()
 
 	/**
