@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -86,7 +87,7 @@ class AuthorizationAuditServiceEntryGoldenTest extends TestCase {
 			}
 		);
 
-		return new AuthorizationAuditService($session, $registers, $logger);
+		return new AuthorizationAuditService(new LinkSessionRuntime($session, $logger), $registers);
 	}//end service()
 
 	/**

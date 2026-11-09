@@ -7,6 +7,7 @@ namespace Unit\Service;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -28,9 +29,8 @@ class AuthorizationAuditServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new AuthorizationAuditService(
-			$this->userSession,
-			$this->registerMapper,
-			$this->logger
+			new LinkSessionRuntime($this->userSession, $this->logger),
+			$this->registerMapper
 		);
 	}
 
