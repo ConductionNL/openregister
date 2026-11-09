@@ -173,28 +173,26 @@ class MapLinkService implements MapLinkServiceInterface {
 			throw new Exception('Maps POI not found', 404);
 		}
 
-		return $this->insertLink(target: $target, favoriteId: $favoriteId, info: $info, uid: $uid);
+		return $this->insertLink(target: $target, favorite: $info + ['favoriteId' => $favoriteId, 'linkedBy' => $uid]);
 	}//end linkPoi()
 
 	/**
 	 * Persist a link row for a favorite, caching its metadata.
 	 *
-	 * @param LinkTarget $target     The object to link to.
-	 * @param int        $favoriteId NC Maps favorite id.
-	 * @param array      $info       The POI metadata: name, category, lat, lng, comment.
-	 * @param string     $uid        The user linking it.
+	 * @param LinkTarget $target   The object to link to.
+	 * @param array      $favorite The POI metadata (name, category, lat, lng, comment), its favoriteId and the linkedBy user.
 	 *
 	 * @return MapLink The persisted link row.
 	 */
-	private function insertLink(LinkTarget $target, int $favoriteId, array $info, string $uid): MapLink {
+	private function insertLink(LinkTarget $target, array $favorite): MapLink {
 		$link = new MapLink();
-		$link->setFavoriteId($favoriteId);
-		$link->setName($info['name']);
-		$link->setCategory($info['category']);
-		$link->setLat($info['lat']);
-		$link->setLng($info['lng']);
-		$link->setComment($info['comment']);
-		$target->stamp(link: $link, linkedBy: $uid);
+		$link->setFavoriteId($favorite['favoriteId']);
+		$link->setName($favorite['name']);
+		$link->setCategory($favorite['category']);
+		$link->setLat($favorite['lat']);
+		$link->setLng($favorite['lng']);
+		$link->setComment($favorite['comment']);
+		$target->stamp(link: $link, linkedBy: $favorite['linkedBy']);
 
 		return $this->mapLinkMapper->insert($link);
 	}//end insertLink()
@@ -220,27 +218,26 @@ class MapLinkService implements MapLinkServiceInterface {
 			throw new Exception('POI name is required', 400);
 		}
 
-		$favoriteId = $this->addFavorite(uid: $uid, name: $name, poi: $poi);
+		$favoriteId = $this->addFavorite(uid: $uid, poi: $poi);
 		$info = ['name' => $name, 'category' => $poi->category(), 'lat' => $poi->lat(), 'lng' => $poi->lng(), 'comment' => $poi->comment()];
 
-		return $this->insertLink(target: $target, favoriteId: $favoriteId, info: $info, uid: $uid);
+		return $this->insertLink(target: $target, favorite: $info + ['favoriteId' => $favoriteId, 'linkedBy' => $uid]);
 	}//end createAndLinkPoi()
 
 	/**
 	 * Create the favorite in NC Maps.
 	 *
-	 * @param string   $uid  The owning user id.
-	 * @param string   $name The trimmed POI name.
-	 * @param PoiDraft $poi  Position and optional category and comment.
+	 * @param string   $uid The owning user id.
+	 * @param PoiDraft $poi Name (trimmed here), position and optional category and comment.
 	 *
 	 * @return int The new favorite id.
 	 *
 	 * @throws Exception On Maps unavailable (503) or create failure (500).
 	 */
-	private function addFavorite(string $uid, string $name, PoiDraft $poi): int {
+	private function addFavorite(string $uid, PoiDraft $poi): int {
 		$service = $this->requireFavoritesService();
 		try {
-			$favoriteId = (int)$service->addFavoriteToDB($uid, $name, $poi->lat(), $poi->lng(), $poi->category(), $poi->comment(), null);
+			$favoriteId = (int)$service->addFavoriteToDB($uid, trim($poi->name), $poi->lat(), $poi->lng(), $poi->category(), $poi->comment(), null);
 		} catch (Throwable $e) {
 			$this->runtime->logger()->warning('MapLinkService::createAndLinkPoi failed: ' . $e->getMessage());
 			throw new Exception('Failed to create Maps POI', 500);
