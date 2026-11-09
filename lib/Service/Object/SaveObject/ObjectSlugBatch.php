@@ -86,8 +86,10 @@ class ObjectSlugBatch {
 
 		return $this->store->state(
 			scope: $scope,
-			slugs: array_values(array_unique(array_merge($candidates, array_values($suffixed)))),
-			uuids: array_values($uuids)
+			claims: new ObjectSlugClaims(
+				slugs: array_values(array_unique(array_merge($candidates, array_values($suffixed)))),
+				uuids: array_values($uuids)
+			)
 		);
 	}//end state()
 
@@ -184,9 +186,12 @@ class ObjectSlugBatch {
 		}
 
 		$decided = $this->handler->decide(
-			want: new ObjectSlugWant(slug: $row['candidate'], scope: $run->scope, objectUuid: (string)($row['uuid'] ?? '?'), path: 'bulk'),
-			holderOf: static fn (string $slug): string|null => $run->otherHolder(slug: $slug, uuid: $row['uuid']),
-			suffixed: $row['suffixed']
+			decision: new ObjectSlugDecision(
+				want: new ObjectSlugWant(slug: $row['candidate'], scope: $run->scope, objectUuid: (string)($row['uuid'] ?? '?'), path: 'bulk'),
+				holderOf: static fn (string $slug): string|null => $run->otherHolder(slug: $slug, uuid: $row['uuid']),
+				log: true,
+				suffixed: $row['suffixed']
+			)
 		);
 		$run->claim(row: $row, slug: $decided);
 
