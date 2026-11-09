@@ -330,7 +330,9 @@ class SchemaTool extends AbstractTool {
 	 * @param string|null $title Schema title
 	 * @param string|null $description Schema description
 	 * @param array|null $properties Schema properties
-	 * @param array|null $required Required properties
+	 *
+	 * The required list is not an update_schema parameter: the function
+	 * definition never declares it, so the model cannot send it.
 	 *
 	 * @return (mixed|string|true)[] Result with updated schema
 	 *
@@ -347,11 +349,10 @@ class SchemaTool extends AbstractTool {
 		?string $title = null,
 		?string $description = null,
 		?array $properties = null,
-		?array $required = null,
 	): array {
 		return $this->applyUpdate(
 			schema: $this->schemaMapper->find(id: $id),
-			changes: ['title' => $title, 'description' => $description, 'properties' => $properties, 'required' => $required]
+			changes: ['title' => $title, 'description' => $description, 'properties' => $properties, 'required' => null]
 		);
 	}//end updateSchema()
 

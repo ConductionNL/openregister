@@ -41,7 +41,6 @@ namespace OCA\OpenRegister\Service\Flow;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\FlowRun;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Workflow\MarkingStore\MarkingStoreInterface;
 use Symfony\Component\Workflow\Workflow;
 use Throwable;
 
@@ -281,42 +280,24 @@ class FlowEngine {
 	 * so a resume — whose marking is already mid-graph and comes from the store —
 	 * is unaffected.
 	 *
-	 * @param array $flow The flow document.
-	 * @param MarkingStoreInterface $store Where the marking lives (an OR object, in production).
-	 * @param object $subject The object the run is about; holds the marking.
-	 * @param FlowStepDispatcher $dispatcher Performs each step's side effect.
-	 * @param array $context Run-level metadata handed to every step.
-	 * @param array|null $items Seed items; defaults to one item from the subject.
-	 * @param string|null $startAt Node to start from; defaults to the flow's own start.
-	 * @param FlowStreamWalk|null $streams The per-run stream collaborator: claims before each
-	 *                                     firing, a locked delta commit after it, stream-scoped
-	 *                                     suspension. Null walks a single in-memory stream
-	 *                                     exactly as before — a flow with one stream IS the run.
+	 * The flow, the marking store, the subject, the dispatcher, the run-level
+	 * context and the per-run stream collaborator travel together in
+	 * `$start` ({@see FlowRunStart}); a null stream collaborator walks a single
+	 * in-memory stream exactly as before — a flow with one stream IS the run.
+	 *
+	 * @param FlowRunStart $start   The flow, its collaborators, the context and the streams.
+	 * @param array|null   $items   Seed items; defaults to one item from the subject.
+	 * @param string|null  $startAt Node to start from; defaults to the flow's own start.
 	 *
 	 * @return array The run result: `{status, log: [], context: [], items: []}`.
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	public function run(
-		array $flow,
-		MarkingStoreInterface $store,
-		object $subject,
-		FlowStepDispatcher $dispatcher,
-		array $context = [],
-		?array $items = null,
-		?string $startAt = null,
-		?FlowStreamWalk $streams = null,
-	): array {
-		if (($startAt ?? '') !== '') {
-			$flow['initial'] = $startAt;
-		}
+	public function run(FlowRunStart $start, ?array $items = null, ?string $startAt = null): array {
+		$begun = $start->startingAt(node: $startAt);
+		$begun->items = ($items ?? FlowItems::fromSubject(subject: $start->subject));
 
-		$start = new FlowRunStart(flow: $flow, store: $store, subject: $subject, dispatcher: $dispatcher);
-		$start->context = $context;
-		$start->items = ($items ?? FlowItems::fromSubject(subject: $subject));
-		$start->streams = $streams;
-
-		return $this->startRun(start: $start);
+		return $this->startRun(start: $begun);
 	}//end run()
 
 	/**
