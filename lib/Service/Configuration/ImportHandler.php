@@ -1599,6 +1599,7 @@ class ImportHandler {
 		$inheritable = [
 			'retentionDays' => ['setRetentionDays', static fn ($value) => max(1, (int)$value)],
 			'auditEnabled' => ['setAuditEnabled', static fn ($value) => (bool)$value],
+			'oversightEnabled' => ['setOversightEnabled', static fn ($value) => (bool)$value],
 		];
 
 		foreach ($inheritable as $key => [$setter, $cast]) {

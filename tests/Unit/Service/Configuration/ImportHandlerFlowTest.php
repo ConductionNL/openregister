@@ -339,4 +339,21 @@ class ImportHandlerFlowTest extends TestCase {
 
 		$this->assertSame(FlowVersion::STATUS_DRAFT, $result->getLifecycleStatus());
 	}//end testImportFlowWithoutFlowVersionServiceLeavesFlowUnpublished()
+
+	/**
+	 * applyImportedFlowFields() carries every inheritable setting FlowService does, oversightEnabled included.
+	 */
+	public function testApplyImportedFlowFieldsCarriesOversightEnabled(): void {
+		$flow = new Flow();
+
+		$this->invokeMethod($this->handler, 'applyImportedFlowFields', [$flow, ['oversightEnabled' => true]]);
+		$this->assertTrue($flow->getOversightEnabled());
+
+		// An explicit opt-out is a choice too, not "inherit the default".
+		$this->invokeMethod($this->handler, 'applyImportedFlowFields', [$flow, ['oversightEnabled' => false]]);
+		$this->assertFalse($flow->getOversightEnabled());
+
+		$this->invokeMethod($this->handler, 'applyImportedFlowFields', [$flow, ['oversightEnabled' => null]]);
+		$this->assertNull($flow->getOversightEnabled());
+	}//end testApplyImportedFlowFieldsCarriesOversightEnabled()
 }//end class
