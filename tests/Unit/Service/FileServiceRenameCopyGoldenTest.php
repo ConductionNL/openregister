@@ -171,7 +171,7 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$this->locks->method('assertCanModify')->willThrowException(new Exception('locked'));
 		$this->reader->expects($this->never())->method('getFile');
 
-		$this->assertSame('locked', $this->refusal(fn () => $service->renameFile(object: $this->object('a'), fileId: 7, newName: 'new.pdf')));
+		$this->assertSame('locked', $this->refusal(call: fn () => $service->renameFile(object: $this->object(uuid: 'a'), fileId: 7, newName: 'new.pdf')));
 	}//end testRenameOfALockedFileIsRefused()
 
 	/**
@@ -182,15 +182,16 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 	public function testRenameRefusals(): void {
 		$service = $this->service();
 		$this->locks->expects($this->exactly(4))->method('assertCanModify')->with(7);
-		$file = $this->fileIn(['taken.pdf']);
+		$file = $this->fileIn(taken: ['taken.pdf']);
 		$file->expects($this->never())->method('move');
 		$this->reader->method('getFile')->willReturnOnConsecutiveCalls(null, $file, $file, $file);
 
-		$object = $this->object('a');
-		$this->assertSame('File not found', $this->refusal(fn () => $service->renameFile(object: $object, fileId: 7, newName: 'x.pdf')));
-		$this->assertSame('File name is required', $this->refusal(fn () => $service->renameFile(object: $object, fileId: 7, newName: '  ')));
-		$this->assertSame('File name contains invalid characters', $this->refusal(fn () => $service->renameFile(object: $object, fileId: 7, newName: 'a/b.pdf')));
-		$this->assertSame('A file with name "taken.pdf" already exists for this object', $this->refusal(fn () => $service->renameFile(object: $object, fileId: 7, newName: 'taken.pdf')));
+		$object = $this->object(uuid: 'a');
+		$rename = fn (string $name) => fn () => $service->renameFile(object: $object, fileId: 7, newName: $name);
+		$this->assertSame('File not found', $this->refusal(call: $rename('x.pdf')));
+		$this->assertSame('File name is required', $this->refusal(call: $rename('  ')));
+		$this->assertSame('File name contains invalid characters', $this->refusal(call: $rename('a/b.pdf')));
+		$this->assertSame('A file with name "taken.pdf" already exists for this object', $this->refusal(call: $rename('taken.pdf')));
 	}//end testRenameRefusals()
 
 	/**
@@ -200,11 +201,11 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 	 */
 	public function testRenameMovesTheFileWithinItsFolder(): void {
 		$service = $this->service();
-		$file = $this->fileIn([]);
+		$file = $this->fileIn(taken: []);
 		$file->expects($this->once())->method('move')->with('/admin/files/obj/new.pdf');
 		$this->reader->expects($this->once())->method('getFile')->with($this->anything(), 7)->willReturn($file);
 
-		$this->assertSame($file, $service->renameFile(object: $this->object('a'), fileId: 7, newName: 'new.pdf'));
+		$this->assertSame($file, $service->renameFile(object: $this->object(uuid: 'a'), fileId: 7, newName: 'new.pdf'));
 	}//end testRenameMovesTheFileWithinItsFolder()
 
 	/**
@@ -217,7 +218,7 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$this->locks->expects($this->never())->method('assertCanModify');
 		$this->creator->expects($this->never())->method('addFile');
 
-		$message = $this->refusal(fn () => $service->copyFile(sourceObject: $this->object('a'), fileId: 7, targetObject: new ObjectEntity()));
+		$message = $this->refusal(call: fn () => $service->copyFile(sourceObject: $this->object(uuid: 'a'), fileId: 7, targetObject: new ObjectEntity()));
 		$this->assertSame('Target object has no UUID; cannot resolve target folder for file copy', $message);
 	}//end testCopyToATargetWithoutUuidIsRefused()
 
@@ -240,9 +241,9 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$this->reader->method('getFile')->willReturn(null);
 		$this->creator->expects($this->never())->method('addFile');
 
-		$copy = fn () => $service->copyFile(sourceObject: $this->object('a'), fileId: 7, targetObject: $this->object('b'));
-		$this->assertSame('locked', $this->refusal($copy));
-		$this->assertSame('Source file not found', $this->refusal($copy));
+		$copy = fn () => $service->copyFile(sourceObject: $this->object(uuid: 'a'), fileId: 7, targetObject: $this->object(uuid: 'b'));
+		$this->assertSame('locked', $this->refusal(call: $copy));
+		$this->assertSame('Source file not found', $this->refusal(call: $copy));
 	}//end testCopyOfALockedOrMissingSourceIsRefused()
 
 	/**
@@ -252,17 +253,17 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 	 */
 	public function testCopyAddsTheFileUnderAFreeName(): void {
 		$service = $this->service();
-		$this->reader->method('getFile')->willReturn($this->fileIn([]));
+		$this->reader->method('getFile')->willReturn($this->fileIn(taken: []));
 		$folder = $this->createMock(Folder::class);
 		$folder->method('nodeExists')->willReturnCallback(fn (string $name): bool => in_array($name, ['report.pdf', 'report (1).pdf'], true));
-		$target = $this->object('b');
+		$target = $this->object(uuid: 'b');
 		$this->folders->method('getObjectFolder')->with($target)->willReturn($folder);
 		$copy = $this->createMock(File::class);
 		$this->creator->expects($this->once())->method('addFile')
 			->with($target, new FileUpload(fileName: 'report (2).pdf', content: 'bytes', share: false))
 			->willReturn($copy);
 
-		$this->assertSame($copy, $service->copyFile(sourceObject: $this->object('a'), fileId: 7, targetObject: $target));
+		$this->assertSame($copy, $service->copyFile(sourceObject: $this->object(uuid: 'a'), fileId: 7, targetObject: $target));
 	}//end testCopyAddsTheFileUnderAFreeName()
 
 	/**
@@ -275,6 +276,7 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$this->locks->method('assertCanModify')->willThrowException(new Exception('locked'));
 		$this->creator->expects($this->never())->method('addFile');
 
-		$this->assertSame('locked', $this->refusal(fn () => $service->moveFile(sourceObject: $this->object('a'), fileId: 7, targetObject: $this->object('b'))));
+		$move = fn () => $service->moveFile(sourceObject: $this->object(uuid: 'a'), fileId: 7, targetObject: $this->object(uuid: 'b'));
+		$this->assertSame('locked', $this->refusal(call: $move));
 	}//end testMoveOfALockedFileIsRefused()
 }//end class

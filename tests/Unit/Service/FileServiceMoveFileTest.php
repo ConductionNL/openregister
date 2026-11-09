@@ -46,7 +46,7 @@ class FileServiceMoveFileTest extends TestCase {
 	private function service(): FileService&MockObject {
 		$service = $this->getMockBuilder(FileService::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['copyFile', 'deleteFile'])
+			->onlyMethods(['copyAttachedFile', 'deleteFile'])
 			->getMock();
 
 		foreach (['fileLockHandler' => $this->createMock(FileLockHandler::class), 'logger' => $this->createMock(LoggerInterface::class)] as $name => $value) {
@@ -68,7 +68,7 @@ class FileServiceMoveFileTest extends TestCase {
 		$target = new ObjectEntity();
 
 		$service = $this->service();
-		$service->method('copyFile')->willReturn($copy);
+		$service->method('copyAttachedFile')->willReturn($copy);
 		$deleted = [];
 		$service->method('deleteFile')->willReturnCallback(
 			function ($file) use (&$deleted, $copy): bool {
@@ -97,7 +97,7 @@ class FileServiceMoveFileTest extends TestCase {
 		$copy = $this->createMock(File::class);
 
 		$service = $this->service();
-		$service->method('copyFile')->willReturn($copy);
+		$service->method('copyAttachedFile')->willReturn($copy);
 		$service->expects($this->once())->method('deleteFile')->with(7)->willReturn(true);
 
 		$this->assertSame($copy, $service->moveFile(sourceObject: new ObjectEntity(), fileId: 7, targetObject: new ObjectEntity()));
