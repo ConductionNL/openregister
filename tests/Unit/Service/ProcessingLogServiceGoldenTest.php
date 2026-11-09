@@ -37,6 +37,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ProcessingLogService
@@ -149,7 +151,7 @@ final class ProcessingLogServiceGoldenTest extends TestCase {
 			});
 		}
 
-		return new ProcessingLogService($logMapper, $vrwMapper, $schemaMapper, $registerMapper, $session, $logger);
+		return new ProcessingLogService($logMapper, $vrwMapper, new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), $session, $logger);
 	}//end service()
 
 	/**

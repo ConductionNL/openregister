@@ -25,6 +25,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Coverage-focused unit tests for SchemaService
@@ -74,8 +76,7 @@ class SchemaServiceCoverageTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new SchemaService(
-			$this->schemaMapper,
-			$this->objectMapper,
+			new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemaMapper, tables: $this->objectMapper),
 			$this->logger
 		);
 	}
