@@ -278,8 +278,7 @@ class BulkJobExecutor {
 		$actor = $this->actorOf(job: $job);
 		$objects = $this->resolver->hydrate(
 			uuids: array_map(static fn (BulkJobMember $member): string => (string)$member->getObjectUuid(), $members),
-			registerId: $job->getRegisterId(),
-			schemaId: $job->getSchemaId()
+			scope: new BulkJobSelection(criteria: ($job->getSelection() ?? []), registerId: $job->getRegisterId(), schemaId: $job->getSchemaId())
 		);
 
 		foreach ($members as $member) {

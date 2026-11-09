@@ -28,6 +28,7 @@ namespace Unit\Service\BulkJob;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -75,11 +76,15 @@ class BulkSelectionResolverTest extends TestCase {
 	}//end resolver()
 
 	private function resolve(string $type, array $criteria, ?int $registerId, ?int $schemaId, int $ceiling): array {
-		return $this->resolver()->resolveUuids($type, $criteria, $registerId, $schemaId, $ceiling);
+		if ($type === BulkJob::SELECTION_IDS) {
+			return $this->resolver()->idsOf($criteria);
+		}
+
+		return $this->resolver()->queryUuids(new BulkJobSelection($criteria, $registerId, $schemaId), $ceiling);
 	}//end resolve()
 
 	private function hydrate(array $uuids, ?int $registerId, ?int $schemaId): array {
-		return $this->resolver()->hydrate($uuids, $registerId, $schemaId);
+		return $this->resolver()->hydrate($uuids, new BulkJobSelection([], $registerId, $schemaId));
 	}//end hydrate()
 
 	private function entity(string $uuid): ObjectEntity {

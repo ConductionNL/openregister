@@ -236,17 +236,14 @@ class BulkJobService implements BulkJobServiceInterface {
 		$selectionType = $this->selectionTypeOf(selection: $request->selection->criteria);
 		$ceiling = $this->getCeiling();
 
-		$uuids = $this->actions->resolver->resolveUuids(
-			selectionType: $selectionType,
-			selection: $request->selection->criteria,
-			registerId: $request->selection->registerId,
-			schemaId: $request->selection->schemaId,
-			ceiling: $ceiling
-		);
+		$uuids = match ($selectionType) {
+			BulkJob::SELECTION_IDS => $this->actions->resolver->idsOf(criteria: $request->selection->criteria),
+			default => $this->actions->resolver->queryUuids(selection: $request->selection, ceiling: $ceiling),
+		};
 
 		$this->guards()->assertCeiling(count: count($uuids), ceiling: $ceiling);
 
-		$objects = $this->actions->resolver->hydrate(uuids: $uuids, registerId: $request->selection->registerId, schemaId: $request->selection->schemaId);
+		$objects = $this->actions->resolver->hydrate(uuids: $uuids, scope: $request->selection);
 		$this->actions->executor->assertGuards(action: $action, objects: $objects);
 		$this->guards()->assertUndoCeiling(action: $action, objects: $objects, parameters: $request->call->parameters);
 
@@ -560,13 +557,8 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * @return void
 	 */
 	private function reconcileQuerySelection(BulkJob $job, BulkActionInterface $action): void {
-		$current = $this->actions->resolver->resolveUuids(
-			selectionType: BulkJob::SELECTION_QUERY,
-			selection: ($job->getSelection() ?? []),
-			registerId: $job->getRegisterId(),
-			schemaId: $job->getSchemaId(),
-			ceiling: $this->getCeiling()
-		);
+		$selection = new BulkJobSelection(criteria: ($job->getSelection() ?? []), registerId: $job->getRegisterId(), schemaId: $job->getSchemaId());
+		$current   = $this->actions->resolver->queryUuids(selection: $selection, ceiling: $this->getCeiling());
 
 		$known = $this->store->memberMapper->findUuidsByJob(jobId: (int)$job->getId());
 		$added = array_values(array_diff($current, $known));
@@ -585,11 +577,7 @@ class BulkJobService implements BulkJobServiceInterface {
 			return;
 		}
 
-		$objects = $this->actions->resolver->hydrate(
-			uuids: $added,
-			registerId: $job->getRegisterId(),
-			schemaId: $job->getSchemaId()
-		);
+		$objects = $this->actions->resolver->hydrate(uuids: $added, scope: $selection);
 
 		$this->actions->executor->writeAddedMembers(
 			pass: new BulkJobPass(
