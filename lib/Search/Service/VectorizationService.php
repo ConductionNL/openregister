@@ -411,7 +411,7 @@ class VectorizationService implements VectorizationServiceInterface {
 		$part = self::NO_ITEMS;
 		try {
 			$embeddingData = $this->vectorService->generateEmbedding($item[1]['text']);
-			$this->storeVector(target: $target, item: $item[1], embeddingData: $embeddingData);
+			$this->storeVector(target: $target, embedded: ['item' => $item[1], 'embeddingData' => $embeddingData]);
 			$part['vectorized'] = 1;
 		} catch (\Exception $e) {
 			$part['failed']   = 1;
@@ -479,7 +479,7 @@ class VectorizationService implements VectorizationServiceInterface {
 		$part = self::NO_ITEMS;
 		$embeddingData = $embedded['embeddingData'];
 		if ($embeddingData !== null && (($embeddingData['embedding'] ?? null) !== null)) {
-			$this->storeVector(target: $target, item: $embedded['item'], embeddingData: $embeddingData);
+			$this->storeVector(target: $target, embedded: $embedded);
 			$part['vectorized']++;
 			return $part;
 		}
@@ -513,17 +513,16 @@ class VectorizationService implements VectorizationServiceInterface {
 	/**
 	 * Store a vector using strategy-provided metadata
 	 *
-	 * @param VectorizedEntity $target        Original entity and its strategy
-	 * @param array            $item          Vectorization item with text
-	 * @param array            $embeddingData Embedding result
+	 * @param VectorizedEntity                     $target   Original entity and its strategy
+	 * @param array{item: array, embeddingData: array} $embedded The vectorization item (with text) and its embedding result
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	private function storeVector(VectorizedEntity $target, array $item, array $embeddingData): void {
-		$metadata = $target->strategy->prepareVectorMetadata(entity: $target->entity, item: $item);
-		$this->vectorService->storeVector(vector: $this->storedVector(metadata: $metadata, embeddingData: $embeddingData));
+	private function storeVector(VectorizedEntity $target, array $embedded): void {
+		$metadata = $target->strategy->prepareVectorMetadata(entity: $target->entity, item: $embedded['item']);
+		$this->vectorService->storeVector(vector: $this->storedVector(metadata: $metadata, embeddingData: $embedded['embeddingData']));
 	}//end storeVector()
 
 	/**
