@@ -68,11 +68,13 @@ final class ToolInvocationAudit {
 
 		try {
 			$result = $call();
-			$this->write(target: $target, paramsDigest: $paramsDigest, resultSummary: $summarise($result), result: $result);
+			$outcome = new ToolInvocationOutcome(paramsDigest: $paramsDigest, resultSummary: $summarise($result), result: $result);
+			$this->write(target: $target, outcome: $outcome);
 
 			return $result;
 		} catch (Throwable $e) {
-			$this->write(target: $target, paramsDigest: $paramsDigest, resultSummary: ToolInvocationDigest::errorSummary(error: $e), result: null);
+			$outcome = new ToolInvocationOutcome(paramsDigest: $paramsDigest, resultSummary: ToolInvocationDigest::errorSummary(error: $e), result: null);
+			$this->write(target: $target, outcome: $outcome);
 
 			throw $e;
 		}
@@ -81,20 +83,18 @@ final class ToolInvocationAudit {
 	/**
 	 * Write the audit record; a failed write is logged, never thrown.
 	 *
-	 * @param ToolAuditTarget           $target        What the record is about.
-	 * @param string                    $paramsDigest  SHA-256 hex digest of the arguments.
-	 * @param array<string, mixed>      $resultSummary Structured outcome summary.
-	 * @param array<string, mixed>|null $result        The result, or null on failure.
+	 * @param ToolAuditTarget       $target  What the record is about.
+	 * @param ToolInvocationOutcome $outcome What happened, digest included.
 	 *
 	 * @return void
 	 */
-	private function write(ToolAuditTarget $target, string $paramsDigest, array $resultSummary, ?array $result): void {
+	private function write(ToolAuditTarget $target, ToolInvocationOutcome $outcome): void {
 		try {
 			$this->auditTrailMapper->createToolInvocationEntry(
 				toolId: $target->toolId,
-				paramsDigest: $paramsDigest,
-				resultSummary: $resultSummary,
-				about: new AuditedObject(register: $target->register, schema: $target->schema, objectUuid: ToolInvocationDigest::resultId(result: $result))
+				paramsDigest: $outcome->paramsDigest,
+				resultSummary: $outcome->resultSummary,
+				about: new AuditedObject(register: $target->register, schema: $target->schema, objectUuid: $outcome->objectUuid())
 			);
 		} catch (Throwable $e) {
 			$message = '[' . $this->source . '] Failed to write invocation audit record';
