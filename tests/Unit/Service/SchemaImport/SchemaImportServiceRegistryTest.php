@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\SchemaImport;
 
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchema;
+use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaDefinition;
+use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaHeading;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaDialectImporter;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
@@ -112,10 +114,8 @@ class SchemaImportServiceRegistryTest extends TestCase {
 		$importer->method('dialect')->willReturn($dialect);
 		$importer->method('snapshotVersion')->willReturn($version);
 		$importer->method('import')->willReturn(new ImportedSchema(
-			'Thing',
-			'',
-			['name' => ['type' => 'string'], 'url' => ['type' => 'string']],
-			['@type' => 'Thing'],
+			new ImportedSchemaHeading('Thing', ''),
+			new ImportedSchemaDefinition(['name' => ['type' => 'string'], 'url' => ['type' => 'string']], ['@type' => 'Thing']),
 			['dialect' => $dialect, 'reference' => 'Thing']
 		));
 		return $importer;

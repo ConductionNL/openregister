@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\TalkLink;
 
 use OCA\OpenRegister\Service\TalkLink\TalkGateway;
 use OCP\App\IAppManager;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -89,6 +91,12 @@ class TalkGatewayUserScopedLookupTest extends TestCase {
 		$this->assertSame(['user:not-a-member:bob', 'raw:not-a-member'], $manager->calls);
 	}
 
+	/**
+	 * Own process: other Talk tests declare OCA\Talk stand-ins, which would make
+	 * the classes exist here when the suite runs them first.
+	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState(false)]
 	public function testAnEnabledTalkWithoutItsClassesHasNoManagerAndTheContainerIsNotAsked(): void {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->expects($this->never())->method('get');
