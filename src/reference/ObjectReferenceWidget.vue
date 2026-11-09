@@ -61,9 +61,11 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
+import l10nMethods from '../composables/l10nMethods.js'
 
 export default {
 	name: 'ObjectReferenceWidget',
+	mixins: [l10nMethods],
 
 	props: {
 		richObjectType: {
@@ -154,10 +156,6 @@ export default {
 				return this.updated
 			}
 		},
-	},
-
-	methods: {
-		t,
 	},
 }
 </script>
