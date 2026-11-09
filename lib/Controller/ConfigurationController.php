@@ -27,6 +27,7 @@ use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Controller\Support\ConfigurationAction;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ConfigurationControllerServices;
 use OCA\OpenRegister\Controller\Support\ConfigurationImport;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
@@ -170,16 +171,14 @@ class ConfigurationController extends Controller {
 	/**
 	 * Constructor
 	 *
-	 * @param string $appName The app name
 	 * @param IRequest $request The request object
 	 * @param ConfigurationControllerServices $services The configuration controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ConfigurationControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->session = $services->session;
 
 		$this->configurationMapper = $services->mappers->configurationMapper;
