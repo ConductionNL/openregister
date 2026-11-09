@@ -299,7 +299,8 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
 	 */
 	private function waitAndClaim(Task $task, array $data): void {
-		$slot = new ExampleSetRunSlot(runUuid: (string) ($data['runUuid'] ?? ''), nodeId: (string) ($data['nodeId'] ?? ''), taskUuid: (string) $task->getUuid());
+		$run  = (string) ($data['runUuid'] ?? '');
+		$slot = new ExampleSetRunSlot(runUuid: $run, nodeId: (string) ($data['nodeId'] ?? ''), taskUuid: (string) $task->getUuid());
 		(new ExampleSetFlowRuns(container: $this->container))->fill(slot: $slot);
 		(new ExampleSetTaskClaim(container: $this->container))->write(task: $task, data: $data);
 	}//end waitAndClaim()
