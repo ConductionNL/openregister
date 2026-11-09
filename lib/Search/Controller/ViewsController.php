@@ -200,25 +200,24 @@ class ViewsController extends Controller {
 	 * NAMES the fields, because a member needs to know which field was refused.
 	 *
 	 * Only fields whose VALUE changes are judged: the edit screen sends the
-	 * whole view. The caller resolves the view with requireReachableView().
+	 * whole view. The caller resolves the view with requireReachableView(),
+	 * and when this answers null it asks assertMayNameRecipients() next, with
+	 * the body as the save will write it.
 	 *
-	 * @param View $view The stored view.
-	 * @param string $userId The caller.
-	 * @param array<string, mixed> $data The request body.
-	 * @param array<string, mixed>|null $savedAs The body as the save will write it, when that differs (PUT writes `isPublic` false when omitted).
+	 * @param ViewPatch $write  The stored view and the request body.
+	 * @param string    $userId The caller.
 	 *
 	 * @return JSONResponse|null The refusal, or null when allowed.
-	 *
-	 * @throws InvalidViewAlertException When the alert names a recipient this caller may not add.
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
-	private function refuseForbiddenViewFields(View $view, string $userId, array $data, ?array $savedAs=null): ?JSONResponse {
+	private function refuseForbiddenViewFields(ViewPatch $write, string $userId): ?JSONResponse {
+		$view = $write->view;
 		// Only keys that name a view property are judged, so a `_limit` or
 		// routing key on the body cannot refuse an update a member may make.
 		$fields = array_intersect_key(
-			$data,
+			$write->data,
 			array_flip(
 				[
 					'name',
@@ -241,7 +240,6 @@ class ViewsController extends Controller {
 		);
 
 		if ($refused === []) {
-			$this->viewers->assertMayNameRecipients(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId), data: ($savedAs ?? $data));
 			return null;
 		}
 
@@ -533,8 +531,16 @@ class ViewsController extends Controller {
 		$update->id   = $id;
 		$update->data = $this->request->getParams();
 		$update->view = $this->requireReachableView(id: $id, userId: $userId);
-		$savedAs      = ($update->data + ['isPublic' => false]);
-		$refusal      = $this->refuseForbiddenViewFields(view: $update->view, userId: $userId, data: $update->data, savedAs: $savedAs);
+		$refusal      = $this->refuseForbiddenViewFields(write: $update, userId: $userId);
+		if ($refusal === null) {
+			// PUT writes `isPublic` false when omitted, so the recipients are judged on that body.
+			$this->viewers->assertMayNameRecipients(
+				view: $update->view->jsonSerialize(),
+				reach: $this->viewers->reachOf(userId: $userId),
+				data: ($update->data + ['isPublic' => false])
+			);
+		}
+
 		return $refusal ?? $this->refuseInvalidWrite(write: $update) ?? $this->saveUpdate(update: $update);
 	}//end updateView()
 
@@ -622,7 +628,11 @@ class ViewsController extends Controller {
 		// The same guard as `update()`. Leaving it off here would have
 		// left the hole open behind a different verb, and this method
 		// additionally carries `@NoCSRFRequired`.
-		$refusal = $this->refuseForbiddenViewFields(view: $patch->view, userId: $userId, data: $patch->data);
+		$refusal = $this->refuseForbiddenViewFields(write: $patch, userId: $userId);
+		if ($refusal === null) {
+			$this->viewers->assertMayNameRecipients(view: $patch->view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId), data: $patch->data);
+		}
+
 		return $refusal ?? $this->savePatch(patch: $patch);
 	}//end patchView()
 
