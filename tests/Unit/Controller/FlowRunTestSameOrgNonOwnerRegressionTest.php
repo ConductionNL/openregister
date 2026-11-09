@@ -99,7 +99,6 @@ class FlowRunTestSameOrgNonOwnerRegressionTest extends TestCase {
 		$mapper = $this->createMock(FlowRunMapper::class);
 
 		$controller = FlowTestRunControllerFactory::create(
-			appName: 'openregister',
 			request: $request,
 			runner: $runner,
 			resolvers: $resolvers,

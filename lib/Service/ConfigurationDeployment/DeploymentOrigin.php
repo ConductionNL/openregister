@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
-use DateTime;
 use OCA\OpenRegister\Db\ConfigurationDeployment;
 use OCA\OpenRegister\Db\ConfigurationDraftSet;
 
@@ -79,27 +78,17 @@ final class DeploymentOrigin {
 	}//end rollbackOf()
 
 	/**
-	 * The deployment row for this origin.
+	 * The state a deployment from this origin is recorded in: rolled back for a rollback, applied otherwise.
 	 *
-	 * @param string                           $uuid       The new deployment's UUID.
-	 * @param string                           $name       Its name.
-	 * @param string|null                      $deployedBy Who deploys it.
-	 * @param array<int, array<string, mixed>> $changes    The changes it applies.
-	 *
-	 * @return array<string, mixed>
+	 * @return string
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function row(string $uuid, string $name, ?string $deployedBy, array $changes): array {
-		$state = ConfigurationDeployment::STATE_APPLIED;
+	public function state(): string {
 		if ($this->restoresUuid !== null) {
-			$state = ConfigurationDeployment::STATE_ROLLED_BACK;
+			return ConfigurationDeployment::STATE_ROLLED_BACK;
 		}
 
-		return [
-			'uuid' => $uuid, 'name' => $name, 'setUuid' => $this->setUuid, 'author' => $this->author, 'approver' => $this->approver,
-			'deployedBy' => $deployedBy, 'deployedAt' => new DateTime(), 'restoresUuid' => $this->restoresUuid,
-			'changes' => $changes, 'state' => $state,
-		];
-	}//end row()
+		return ConfigurationDeployment::STATE_APPLIED;
+	}//end state()
 }//end class
