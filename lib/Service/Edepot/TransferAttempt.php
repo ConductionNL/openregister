@@ -3,7 +3,8 @@
 /**
  * OpenRegister e-Depot Transfer Attempt
  *
- * One delivery attempt of a transfer list: its number and its transport.
+ * One delivery attempt of a transfer list: its number, its transport, and the
+ * list and objects the attempt works on.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -32,9 +33,27 @@ use OCA\OpenRegister\Service\Edepot\Transport\TransportInterface;
 /**
  * One delivery attempt, and its record in the list's append-only `attempts[]`.
  *
+ * The run object of {@see EdepotTransferService::executeAttempt()}: it carries
+ * the transfer list as the attempt changes it and the objects the attempt
+ * (re)sends, so the steps of the attempt take the run instead of both.
+ *
  * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
  */
 final class TransferAttempt {
+
+	/**
+	 * The transfer list, as the attempt changes it.
+	 *
+	 * @var array<string,mixed>
+	 */
+	public array $transferList = [];
+
+	/**
+	 * The objects with files the attempt (re)builds and sends.
+	 *
+	 * @var array<int,array<string,mixed>>
+	 */
+	public array $objectsWithFiles = [];
 
 	/**
 	 * Constructor.
@@ -60,17 +79,16 @@ final class TransferAttempt {
 	/**
 	 * Append this attempt to the list's append-only `attempts[]`.
 	 *
-	 * @param array<string,mixed> $transferList The transfer list data.
-	 * @param string              $outcome      The resulting status.
-	 * @param string|null         $error        The error message, when any.
+	 * @param string      $outcome The resulting status.
+	 * @param string|null $error   The error message, when any.
 	 *
 	 * @return array<string,mixed> The transfer list with the appended attempt.
 	 *
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
 	 *   (Requirement: Append-only attempt records)
 	 */
-	public function appendTo(array $transferList, string $outcome, ?string $error): array {
-		$attempts = ($transferList['attempts'] ?? []);
+	public function recordOutcome(string $outcome, ?string $error): array {
+		$attempts = ($this->transferList['attempts'] ?? []);
 		if (is_array($attempts) === false) {
 			$attempts = [];
 		}
@@ -83,8 +101,8 @@ final class TransferAttempt {
 			'error' => $error,
 		];
 
-		$transferList['attempts'] = $attempts;
+		$this->transferList['attempts'] = $attempts;
 
-		return $transferList;
-	}//end appendTo()
+		return $this->transferList;
+	}//end recordOutcome()
 }//end class
