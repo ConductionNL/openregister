@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifierInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TransitionNotice;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Notification\IManager as INotificationManager;
@@ -93,8 +94,7 @@ class TaskNotificationListener implements IEventListener {
 				$this->withdraw(task: $task);
 			}
 
-			$this->notifier->notifyTransition(
-				task: $task,
+			$notice = new TransitionNotice(
 				extra: ['previousAssignee' => $event->getPreviousAssignee()],
 				context: [
 					'action' => $event->getAction(),
@@ -103,6 +103,7 @@ class TaskNotificationListener implements IEventListener {
 					'actor' => $event->getActor(),
 				]
 			);
+			$this->notifier->notifyTransition(task: $task, notice: $notice);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				'[TaskNotificationListener] Task notification failed; the transition is unaffected: ' . $failure->getMessage(),
