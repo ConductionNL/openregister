@@ -252,8 +252,12 @@ suite() {
 		  if ! npx jest --silent --testTimeout=30000 --maxWorkers=2 >> "$LOGS/front.log" 2>&1; then
 			sed -E 's/\x1b\[[0-9;]*m//g' "$LOGS/front.log" | grep -q 'Test suite failed to run' || exit 1
 			sed -E 's/\x1b\[[0-9;]*m//g' "$LOGS/front.log" | grep -qE '^Tests: .*[0-9]+ failed' && exit 1
+			# Only suites that failed to load (the intermittent "Unexpected token 'export'" parse error
+			# on vue-material-design-icons under parallel workers): rerun just those files in band.
 			mv "$LOGS/front.log" "$LOGS/front-try1.log"
-			npx jest --silent --testTimeout=30000 --maxWorkers=2 > "$LOGS/front.log" 2>&1 || exit 1
+			mapfile -t failed < <(sed -E 's/\x1b\[[0-9;]*m//g' "$LOGS/front-try1.log" | sed -nE 's/^FAIL +([^ ]+).*/\1/p' | sort -u)
+			[ ${#failed[@]} -gt 0 ] || exit 1
+			npx jest --silent --testTimeout=30000 --runInBand "${failed[@]}" > "$LOGS/front.log" 2>&1 || exit 1
 		  fi
 		  npm run build >> "$LOGS/front.log" 2>&1 ) &
 		local fpid=$!
