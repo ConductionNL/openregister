@@ -97,13 +97,6 @@ class ContentReportService implements ContentReportServiceInterface {
 	public const DEFAULT_RETENTION_DAYS = 1095;
 
 	/**
-	 * The audit action recorded when a removal is matched to a copy.
-	 *
-	 * @var string
-	 */
-	public const ACTION_REMOVAL_NAMED = 'content-report.removal-copied';
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ContentReportMapperInterface $reports      The reports and their copies.
