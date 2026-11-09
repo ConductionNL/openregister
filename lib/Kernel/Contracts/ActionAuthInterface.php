@@ -29,6 +29,8 @@ use OCP\IUser;
  * Implemented by the AppHost GenericActionAuthService (per leaf app) and by
  * OpenRegisterActionAuthService (OpenRegister's own matrix). Services type
  * against this contract instead of the AppHost class.
+ *
+ * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.2
  */
 interface ActionAuthInterface {
 
@@ -41,6 +43,8 @@ interface ActionAuthInterface {
 	 * @return void
 	 *
 	 * @throws OCSForbiddenException When the user's groups don't match.
+	 *
+	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.2
 	 */
 	public function requireAction(IUser $user, string $action): void;
 
@@ -51,6 +55,8 @@ interface ActionAuthInterface {
 	 * @param string $action Dot-separated action name.
 	 *
 	 * @return bool True if the user may perform the action.
+	 *
+	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.2
 	 */
 	public function can(IUser $user, string $action): bool;
 
@@ -60,6 +66,8 @@ interface ActionAuthInterface {
 	 * @param string $action Dot-separated action name.
 	 *
 	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.2
 	 */
 	public function getAllowedGroups(string $action): array;
 
@@ -67,6 +75,8 @@ interface ActionAuthInterface {
 	 * The full action-to-groups matrix.
 	 *
 	 * @return array<string, array<int, string>>
+	 *
+	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.2
 	 */
 	public function getMatrix(): array;
 
@@ -78,6 +88,8 @@ interface ActionAuthInterface {
 	 * @return void
 	 *
 	 * @throws \JsonException When the matrix cannot be encoded.
+	 *
+	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.2
 	 */
 	public function setMatrix(array $matrix): void;
 
@@ -85,6 +97,8 @@ interface ActionAuthInterface {
 	 * List all action keys currently in the matrix.
 	 *
 	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.2
 	 */
 	public function getActions(): array;
 }//end interface
