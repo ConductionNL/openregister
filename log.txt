@@ -201,3 +201,4 @@
 2026-11-09T15:47:23Z integrator-20261109T152612-5367949c RED tree 95ac21a770 prs 50 front=ok: Tests: 52503, Assertions: 171043, Errors: 15, Failures: 11, Warnings: 2, Deprecations: 4, ; first failures: OCA\OpenRegister\Tests\Unit\Service\LinkedEntityServiceBehaviourTest::testALegacyTypePassesAndAPresentIdIsNotW;OCA\OpenRegister\Tests\Unit\Service\LinkedEntityServiceBehaviourTest::testAnObjectWithoutASchemaIsNotWritten;OCA\OpenRegister\Tests\Unit\Service\LinkedEntityServiceBehaviourTest::testAnUnknownTypeIsRefusedWithEveryValid
 2026-11-09T15:47:35Z integrator-20261109T152612-5367949c CONFLICT-DEV #7653 f5eed6aa
 2026-11-09T15:47:34Z precheck-20261109T153806-9c8f02f7 GREEN tree e5b037ce3b on dev d5b335b4df prs 1 front=ok: Tests: 52004, Assertions: 169543, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
+2026-11-09T15:47:57Z integrator-20261109T152612-5367949c CONFLICT-DEV #7660 d5e9c640
