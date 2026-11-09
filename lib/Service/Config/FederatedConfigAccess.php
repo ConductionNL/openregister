@@ -6,9 +6,10 @@
  * The source allowlist governs WHERE a bundle may come from; this governs WHO on
  * this instance may push configuration out or pull it in. Beyond "any admin", an
  * org can nominate the groups allowed to publish and to install via app config.
- * Following the source-allowlist idiom, an empty group list means "not yet
- * enforced" (any signed-in user may act), so this is safe to ship before an org
- * curates its roles; admins are always allowed.
+ * An empty publish list means "not yet enforced" (any signed-in user may
+ * publish). An empty install list means administrators only: an install writes
+ * registers and schemas as the system, so it fails closed until an org names
+ * the groups it trusts with that. Admins are always allowed.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -82,6 +83,8 @@ class FederatedConfigAccess {
 	/**
 	 * Whether a user may install configuration.
 	 *
+	 * Without a configured install group list only administrators may install.
+	 *
 	 * @param IUser|null $user The acting user (null = no session).
 	 *
 	 * @return boolean Whether installing is allowed.
@@ -89,18 +92,19 @@ class FederatedConfigAccess {
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	public function canInstall(?IUser $user): bool {
-		return $this->isAllowed(user: $user, key: self::INSTALL_GROUPS);
+		return $this->isAllowed(user: $user, key: self::INSTALL_GROUPS, openWhenEmpty: false);
 	}//end canInstall()
 
 	/**
 	 * Whether a user satisfies a group allowlist.
 	 *
-	 * @param IUser|null $user The acting user.
-	 * @param string $key The app-config key holding the allowed groups.
+	 * @param IUser|null $user          The acting user.
+	 * @param string     $key           The app-config key holding the allowed groups.
+	 * @param bool       $openWhenEmpty Whether an empty list lets every signed-in user act.
 	 *
 	 * @return boolean Whether allowed.
 	 */
-	private function isAllowed(?IUser $user, string $key): bool {
+	private function isAllowed(?IUser $user, string $key, bool $openWhenEmpty=true): bool {
 		if ($user === null) {
 			return false;
 		}
@@ -112,8 +116,8 @@ class FederatedConfigAccess {
 
 		$raw = trim($this->appConfig->getValueString(self::APP_ID, $key, ''));
 		if ($raw === '') {
-			// Not yet enforced — any signed-in user may act.
-			return true;
+			// Not yet enforced: open for publishing, administrators only for installing.
+			return $openWhenEmpty;
 		}
 
 		$allowed = array_filter(array_map('trim', explode(',', $raw)));

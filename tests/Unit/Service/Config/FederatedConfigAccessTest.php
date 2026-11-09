@@ -20,13 +20,19 @@ class FederatedConfigAccessTest extends TestCase {
 
 	private string $publishGroups = '';
 
+	private string $installGroups = '';
+
 	private FederatedConfigAccess $access;
 
 	protected function setUp(): void {
 		$this->groups = $this->createMock(IGroupManager::class);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnCallback(
-			fn (string $app, string $key, string $default = '') => ($key === 'federated_config_publish_groups' ? $this->publishGroups : '')
+			fn (string $app, string $key, string $default = '') => match ($key) {
+				'federated_config_publish_groups' => $this->publishGroups,
+				'federated_config_install_groups' => $this->installGroups,
+				default => '',
+			}
 		);
 
 		$this->access = new FederatedConfigAccess($this->groups, $appConfig);
@@ -70,5 +76,21 @@ class FederatedConfigAccessTest extends TestCase {
 		$this->groups->method('getUserGroupIds')->willReturn(['staff']);
 
 		$this->assertFalse($this->access->canPublish($this->user('carol')));
+	}
+
+	public function testEmptyInstallListAllowsOnlyAdministrators(): void {
+		$this->installGroups = '';
+		$this->groups->method('isAdmin')->willReturnCallback(static fn (string $uid): bool => $uid === 'root');
+
+		$this->assertFalse($this->access->canInstall($this->user('alice')));
+		$this->assertTrue($this->access->canInstall($this->user('root')));
+	}
+
+	public function testSetInstallListGatesByMembership(): void {
+		$this->installGroups = 'beheer';
+		$this->groups->method('isAdmin')->willReturn(false);
+		$this->groups->method('getUserGroupIds')->willReturn(['staff', 'beheer']);
+
+		$this->assertTrue($this->access->canInstall($this->user('bob')));
 	}
 }

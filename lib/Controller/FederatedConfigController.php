@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCP\AppFramework\Controller;
@@ -162,6 +163,8 @@ class FederatedConfigController extends Controller {
 			);
 		} catch (UnexpectedValueException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => 'This bundle would change a register or schema you may not manage.'], Http::STATUS_FORBIDDEN);
 		} catch (Throwable $e) {
 			// A blocked source, an untrusted key, or a bad signature is a 403;
 			// anything else a 500.

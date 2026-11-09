@@ -26,7 +26,7 @@ class ConfigSetShareableConfigTypeTest extends TestCase {
 	protected function setUp(): void {
 		$this->mapper = $this->createMock(ConfigurationMapper::class);
 		$this->configService = $this->createMock(ConfigurationService::class);
-		$this->type = new ConfigSetShareableConfigType($this->mapper, $this->configService);
+		$this->type = new ConfigSetShareableConfigType($this->mapper, $this->configService, $this->createMock(\OCA\OpenRegister\Service\Config\BundleManageGuard::class));
 	}
 
 	public function testIdentity(): void {
