@@ -12,6 +12,7 @@ import { registerStore, schemaStore } from '../store/store.js'
  * Load the register list and then the schema list, each only when empty.
  *
  * @return {Promise<void>} Resolves once both lists are loaded; rejects with the first failure.
+ * @spec exclude UI plumbing — loads store lists a view needs.
  */
 export async function ensureRegisterAndSchemaLists() {
 	if (!registerStore.registerList.length) {
