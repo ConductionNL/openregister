@@ -87,12 +87,6 @@ class TypeMapperHandler {
 	 */
 	private array $connectionTypes = [];
 
-	/**
-	 * Custom scalar type instances.
-	 *
-	 * @var array<string, Type>
-	 */
-	private array $scalars = [];
 
 	/**
 	 * Shared PageInfo type.
@@ -136,12 +130,6 @@ class TypeMapperHandler {
 	 */
 	private $refTypeResolver;
 
-	/**
-	 * Converts a slug to a GraphQL field name and a PascalCase type name.
-	 *
-	 * @var GraphQLNames
-	 */
-	private GraphQLNames $names;
 
 	/**
 	 * Constructor.
@@ -152,14 +140,12 @@ class TypeMapperHandler {
 	 * @param PropertyRbacHandlerInterface $propertyRbac    Withholds a property the caller may not read
 	 */
 	public function __construct(
-		array $scalars,
+		private array $scalars,
 		callable $refTypeResolver,
-		GraphQLNames $names,
+		private readonly GraphQLNames $names,
 		private readonly PropertyRbacHandlerInterface $propertyRbac,
 	) {
-		$this->scalars = $scalars;
 		$this->refTypeResolver = $refTypeResolver;
-		$this->names = $names;
 		$this->aggregationTypes = new AggregationTypes();
 		$this->aggregationTypes->setScalars(scalars: $scalars);
 
@@ -193,7 +179,6 @@ class TypeMapperHandler {
 	 */
 	public function mapPropertyToGraphQLType(array $property): Type {
 		$type = ($property['type'] ?? 'string');
-		$format = ($property['format'] ?? null);
 
 		// Handle object references.
 		if ($type === 'object' && isset($property['$ref']) === true) {
@@ -220,7 +205,7 @@ class TypeMapperHandler {
 			return Type::listOf(Type::string());
 		}
 
-		return $this->primitiveType(type: $type, format: $format, formats: self::OUTPUT_FORMATS);
+		return $this->primitiveType(property: $property, formats: self::OUTPUT_FORMATS);
 
 	}//end mapPropertyToGraphQLType()
 
@@ -239,7 +224,6 @@ class TypeMapperHandler {
 	 */
 	public function mapPropertyToInputType(array $property): Type {
 		$type = ($property['type'] ?? 'string');
-		$format = ($property['format'] ?? null);
 
 		// Object references accept IDs.
 		if ($type === 'object' && isset($property['$ref']) === true) {
@@ -259,7 +243,7 @@ class TypeMapperHandler {
 			return $this->scalars['JSON'];
 		}
 
-		return $this->primitiveType(type: $type, format: $format, formats: self::INPUT_FORMATS);
+		return $this->primitiveType(property: $property, formats: self::INPUT_FORMATS);
 
 	}//end mapPropertyToInputType()
 
@@ -268,13 +252,14 @@ class TypeMapperHandler {
 	 * is listed maps to that custom scalar, the other primitives to their
 	 * built-in type, anything else to String.
 	 *
-	 * @param mixed                 $type    The JSON Schema type.
-	 * @param mixed                 $format  The JSON Schema format.
-	 * @param array<string, string> $formats Format => custom scalar name.
+	 * @param array<string, mixed>  $property The property definition.
+	 * @param array<string, string> $formats  Format => custom scalar name.
 	 *
 	 * @return Type The GraphQL type
 	 */
-	private function primitiveType(mixed $type, mixed $format, array $formats): Type {
+	private function primitiveType(array $property, array $formats): Type {
+		$type = ($property['type'] ?? 'string');
+		$format = ($property['format'] ?? null);
 		if ($type === 'string' && is_string($format) === true && isset($formats[$format]) === true) {
 			return $this->scalars[$formats[$format]];
 		}

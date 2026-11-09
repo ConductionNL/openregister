@@ -325,7 +325,7 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 		}
 
 		try {
-			foreach ($this->selectBackfillRows(columnDimension: $columnDimension, batchSize: $batchSize, afterId: $afterId) as $row) {
+			foreach ($this->selectBackfillRows(batchSize: $batchSize, afterId: $afterId) as $row) {
 				$tally['last_id'] = (int)$row['id'];
 				$tally[$this->backfillRow(row: $row, columnDimension: $columnDimension)]++;
 			}
@@ -350,13 +350,15 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 	/**
 	 * Select the next batch of sidecar-less, dimension-matched vector rows.
 	 *
-	 * @param int $columnDimension Sidecar column dimension
+	 * Only called once the sidecar column dimension is known.
+	 *
 	 * @param int $batchSize Maximum rows to select
-	 * @param int $afterId Only rows with id > this cursor
+	 * @param int $afterId   Only rows with id > this cursor
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	private function selectBackfillRows(int $columnDimension, int $batchSize, int $afterId): array {
+	private function selectBackfillRows(int $batchSize, int $afterId): array {
+		$columnDimension = (int)$this->pgVector->getVectorColumnDimension();
 		$sidecar = PgVectorPlatform::SIDECAR_TABLE;
 		$result = $this->db->executeQuery(
 			'SELECT v.id, v.embedding FROM *PREFIX*openregister_vectors v '
