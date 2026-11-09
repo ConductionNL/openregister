@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Db\ProcessingLog;
 
 /**
  * A subject identifier: its type and its value, either of which may be open.
+ *
+ * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
 final class ProcessingLogSubject {
 
@@ -43,6 +45,8 @@ final class ProcessingLogSubject {
 	 * Whether neither the type nor the value is given.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function isOpen(): bool {
 		return $this->type === null && $this->value === null;
