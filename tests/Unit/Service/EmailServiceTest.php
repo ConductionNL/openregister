@@ -133,6 +133,82 @@ class EmailServiceTest extends TestCase {
 		$this->assertSame(expected: '<a1@zuiddrecht.example>', actual: $link->getRfcMessageId());
 	}
 
+	/**
+	 * A message the Mail app does not hold is refused with 404 and nothing is stored.
+	 *
+	 * @return void
+	 */
+	public function testLinkEmailRefusesAMessageMailDoesNotHave(): void {
+		$this->emailLinkMapper->method('findByObjectAndMessage')->willReturn(null);
+		$this->db->method('getQueryBuilder')->willReturn($this->mailQuery(row: false));
+		$this->emailLinkMapper->expects($this->never())->method('insert');
+
+		$this->expectExceptionCode(404);
+
+		$this->service->linkEmail('abc-123', 5, 4, 44);
+	}
+
+	/**
+	 * Without a signed-in user nothing is stored.
+	 *
+	 * @return void
+	 */
+	public function testLinkEmailRefusesWithoutAUser(): void {
+		$this->emailLinkMapper->method('findByObjectAndMessage')->willReturn(null);
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->db->method('getQueryBuilder')->willReturn($this->mailQuery(row: ['uid' => '44', 'subject' => 'S']));
+		$this->emailLinkMapper->expects($this->never())->method('insert');
+
+		$this->expectExceptionMessage('No user logged in');
+
+		$this->service->linkEmail('abc-123', 5, 4, 44);
+	}
+
+	/**
+	 * The stored link carries the object, register, account, message and the linking user.
+	 *
+	 * @return void
+	 */
+	public function testLinkEmailStoresWhatWasAskedAndWhoAsked(): void {
+		$this->emailLinkMapper->method('findByObjectAndMessage')->willReturn(null);
+		$this->userSession->method('getUser')->willReturn($this->createUser(uid: 'pieter'));
+		$this->db->method('getQueryBuilder')->willReturn($this->mailQuery(row: ['uid' => '44', 'subject' => 'S', 'sent_at' => 1760512500]));
+		$this->emailLinkMapper->method('insert')->willReturnArgument(0);
+
+		$link = $this->service->linkEmail('abc-123', 5, 4, 44);
+
+		$this->assertSame('abc-123', $link->getObjectUuid());
+		$this->assertSame(5, $link->getRegisterId());
+		$this->assertSame(4, $link->getMailAccountId());
+		$this->assertSame(44, $link->getMailMessageId());
+		$this->assertSame('pieter', $link->getLinkedBy());
+		$this->assertSame('S', $link->getSubject());
+		$this->assertNotNull($link->getLinkedAt());
+		$this->assertNotNull($link->getMailDate());
+	}
+
+	/**
+	 * A query builder answering one Mail message row, or false for none.
+	 *
+	 * @param array<string, mixed>|false $row The row.
+	 *
+	 * @return \OCP\DB\QueryBuilder\IQueryBuilder&MockObject The builder.
+	 */
+	private function mailQuery(array|false $row): \OCP\DB\QueryBuilder\IQueryBuilder&MockObject {
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		foreach (['select', 'addSelect', 'from', 'leftJoin', 'where', 'andWhere', 'setMaxResults'] as $fluent) {
+			$qb->method($fluent)->willReturnSelf();
+		}
+		$qb->method('expr')->willReturn($this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class));
+		$qb->method('createFunction')->willReturn($this->createMock(\OCP\DB\QueryBuilder\IQueryFunction::class));
+		$qb->method('getSQL')->willReturn('');
+		$result = $this->createMock(\OCP\DB\IResult::class);
+		$result->method('fetch')->willReturn($row);
+		$qb->method('executeQuery')->willReturn($result);
+
+		return $qb;
+	}
+
 	public function testUnlinkEmailSuccess(): void {
 		$link = new EmailLink();
 		$this->emailLinkMapper->method('find')->with(7)->willReturn($link);
