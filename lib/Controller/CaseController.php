@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CaseControllerServices;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
@@ -103,18 +104,16 @@ class CaseController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param CaseControllerServices $services The case controller services.
 	 * @param LoggerInterface|null $logger Where an unexpected failure's detail goes, INSTEAD of the response.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		CaseControllerServices $services,
 		private readonly ?LoggerInterface $logger = null,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->plans = $services->plans;
 		$this->zaaktypes = $services->zaaktypes;
 		$this->authorization = $services->authorization;
