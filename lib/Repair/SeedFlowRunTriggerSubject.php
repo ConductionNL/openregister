@@ -142,13 +142,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 			return 0;
 		}
 
-		$subjects->record(
-			run: $run,
-			role: FlowRunSubjectsInterface::ROLE_TRIGGER,
-			uuid: $uuid,
-			register: trim((string)$run->getSubjectRegister()),
-			schema: trim((string)$run->getSubjectSchema())
-		);
+		$subjects->recordTrigger(run: $run);
 		$runs->update($run);
 
 		return 1;
