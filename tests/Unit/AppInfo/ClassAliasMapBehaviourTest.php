@@ -58,9 +58,11 @@ class ClassAliasMapBehaviourTest extends TestCase {
 	#[RunInSeparateProcess]
 	#[PreserveGlobalState(false)]
 	public function testOnlyEagerEntriesRegisterNoAutoloader(): void {
+		// A booted app may already have registered the autoloader; the eager map must add none.
+		$before = $this->autoloaderCount();
 		(new ClassAliasMap(entries: [self::OLD_EAGER => ['class' => ClassAliasMapBehaviourTarget::class, 'eager' => true]]))->aliasClasses();
 
-		$this->assertSame(0, $this->autoloaderCount());
+		$this->assertSame($before, $this->autoloaderCount());
 		$this->assertSame(ClassAliasMapBehaviourTarget::class, get_class(new (self::OLD_EAGER)()));
 	}//end testOnlyEagerEntriesRegisterNoAutoloader()
 
