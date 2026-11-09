@@ -265,7 +265,12 @@ class FederationController extends Controller {
 
 		try {
 			$this->setServeContext(share: $share);
-			$objects = $this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false);
+			$objects = $this->objectService->findAll(
+				config: $config,
+				// phpcs:ignore Squiz.Commenting.InlineComment.NotCapital -- ADR-055 marker.
+				_rbac: false, // rbac-bypass: a token request has no user; the share's scope config and applyShareVisibility() filter the rows.
+				_multitenancy: false
+			);
 		} catch (Throwable $e) {
 			$this->logger->error('[Federation] serve objects failed: ' . get_class($e) . ': ' . $e->getMessage()
 				. ' @ ' . $e->getFile() . ':' . $e->getLine());
@@ -356,11 +361,13 @@ class FederationController extends Controller {
 		// Pin the object to the sharing organisation — a federated writer can
 		// never plant an object into another organisation.
 		//
-		// ASSIGNED, not merged. This was `$self + ['organisation' => …]`, and
-		// `+` keeps the LEFT operand's keys: a caller who supplied
-		// `@self: {organisation: 'somebody-else'}` kept it, so the pin this
-		// comment describes did not hold. The same `+` is what let a supplied
-		// `@self.id` through. A pin has to overwrite, or it is a default.
+		// The payload's `@self.organisation` is overwritten so a caller-supplied
+		// one never survives, but SaveObject only honours that key for an admin
+		// or a verified member, and a token request has no user: on its own it
+		// was dropped and the object landed in the DEFAULT organisation. The
+		// pin that holds is `_organisation`, a service-level argument SaveObject
+		// applies to a new object whatever the session. The check after the
+		// save refuses (and removes) anything that still landed elsewhere.
 		$self['organisation'] = $share->getOrganisation();
 		$data['@self'] = $self;
 
@@ -369,11 +376,18 @@ class FederationController extends Controller {
 				object: $data,
 				register: $share->getRegister(),
 				schema: $share->getSchema(),
-				_rbac: false,
-				_multitenancy: false
+				// phpcs:ignore Squiz.Commenting.InlineComment.NotCapital -- ADR-055 marker.
+				_rbac: false, // rbac-bypass: a token request has no user; resolveWritableShare() checked the share grants writes here.
+				_multitenancy: false,
+				_organisation: $share->getOrganisation()
 			);
 		} catch (Throwable $e) {
 			$this->logger->error('[Federation] create object failed: ' . $e->getMessage());
+			return new JSONResponse(data: ['error' => 'Could not create object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		if ($saved->getOrganisation() !== $share->getOrganisation()) {
+			$this->removeMisplacedObject(saved: $saved, share: $share);
 			return new JSONResponse(data: ['error' => 'Could not create object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
@@ -404,7 +418,11 @@ class FederationController extends Controller {
 
 		$data = (array)$this->request->getParams();
 		unset($data['shareToken'], $data['id'], $data['_route']);
-		// Assigned, as on create: `+` would keep a caller-supplied organisation.
+		// The object keeps its stored organisation: writableTarget() already
+		// checked it is the share's, and SaveObject does not take a
+		// `@self.organisation` from a request without a verified member. The
+		// payload's value is overwritten with the share's so a caller-supplied
+		// one never reaches the save, not because the save would move it.
 		$self = (array)($data['@self'] ?? []);
 		$self['organisation'] = $share->getOrganisation();
 		$data['@self'] = $self;
@@ -415,7 +433,8 @@ class FederationController extends Controller {
 				register: $share->getRegister(),
 				schema: $share->getSchema(),
 				uuid: $target['uuid'],
-				_rbac: false,
+				// phpcs:ignore Squiz.Commenting.InlineComment.NotCapital -- ADR-055 marker.
+				_rbac: false, // rbac-bypass: a token request has no user; writableTarget() checked this record against the share.
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
@@ -452,7 +471,8 @@ class FederationController extends Controller {
 				uuid: $target['uuid'],
 				register: $share->getRegister(),
 				schema: $share->getSchema(),
-				_rbac: false,
+				// phpcs:ignore Squiz.Commenting.InlineComment.NotCapital -- ADR-055 marker.
+				_rbac: false, // rbac-bypass: a token request has no user; writableTarget() checked this record against the share.
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
@@ -462,6 +482,33 @@ class FederationController extends Controller {
 
 		return new JSONResponse(data: ['deleted' => $ok]);
 	}//end deleteObject()
+
+	/**
+	 * Remove an object a token write created outside the share's organisation.
+	 *
+	 * @param ObjectEntity   $saved The object the save returned.
+	 * @param FederatedShare $share The share it was written through.
+	 *
+	 * @return void
+	 */
+	private function removeMisplacedObject(ObjectEntity $saved, FederatedShare $share): void {
+		$this->logger->error(
+			'[Federation] a token create landed outside the share organisation; removing it',
+			['share' => $share->getId(), 'expected' => $share->getOrganisation(), 'stored' => $saved->getOrganisation()]
+		);
+		try {
+			$this->objectService->deleteObject(
+				uuid: (string)$saved->getUuid(),
+				register: $share->getRegister(),
+				schema: $share->getSchema(),
+				// phpcs:ignore Squiz.Commenting.InlineComment.NotCapital -- ADR-055 marker.
+				_rbac: false, // rbac-bypass: removes the object this same token request just created.
+				_multitenancy: false
+			);
+		} catch (Throwable $e) {
+			$this->logger->error('[Federation] could not remove a misplaced object: ' . $e->getMessage());
+		}
+	}//end removeMisplacedObject()
 
 	/**
 	 * Resolve a share that grants write access (accepted, read-write, bound to an organisation), or null.

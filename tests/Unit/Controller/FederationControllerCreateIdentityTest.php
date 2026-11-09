@@ -86,6 +86,20 @@ class FederationControllerCreateIdentityTest extends TestCase {
 	private ?string $deleted = null;
 
 	/**
+	 * The trusted organisation argument the last save received.
+	 *
+	 * @var string|null
+	 */
+	private ?string $pinned = null;
+
+	/**
+	 * When set, the organisation the stored object ends up in, whatever was pinned.
+	 *
+	 * @var string|null
+	 */
+	private ?string $storedOrganisation = null;
+
+	/**
 	 * The share the token resolves to; a case may narrow it after building the controller.
 	 *
 	 * @var FederatedShare
@@ -123,7 +137,11 @@ class FederationControllerCreateIdentityTest extends TestCase {
 				// saveObject is called with named arguments; the object is the
 				// first, however PHPUnit hands it back.
 				$this->written = (array)($args[0] ?? []);
-				return $this->createMock(ObjectEntity::class);
+				$this->pinned  = ($args[15] ?? $args['_organisation'] ?? null);
+				$saved = new ObjectEntity();
+				$saved->setUuid('new-1');
+				$saved->setOrganisation($this->storedOrganisation ?? $this->pinned ?? 'org-a');
+				return $saved;
 			}
 		);
 		$this->objectService->method('deleteObject')->willReturnCallback(
@@ -551,4 +569,30 @@ class FederationControllerCreateIdentityTest extends TestCase {
 
 		return $entity;
 	}//end recordOf()
+	/**
+	 * A token create passes the share's organisation through the trusted
+	 * `_organisation` argument: the `@self.organisation` key alone is dropped by
+	 * SaveObject for a request without a user (fed-f3).
+	 */
+	public function testACreatePinsTheShareOrganisationThroughTheTrustedArgument(): void {
+		$controller = $this->controller(['title' => 'Federated addition']);
+
+		$response = $controller->createObject(shareToken: 'tok');
+
+		$this->assertSame('org-a', $this->pinned);
+		$this->assertSame(201, $response->getStatus());
+	}//end testACreatePinsTheShareOrganisationThroughTheTrustedArgument()
+
+	/**
+	 * An object that still lands outside the share's organisation is removed and refused.
+	 */
+	public function testACreateThatLandsElsewhereIsRemovedAndRefused(): void {
+		$this->storedOrganisation = 'org-default';
+		$controller = $this->controller(['title' => 'Federated addition']);
+
+		$response = $controller->createObject(shareToken: 'tok');
+
+		$this->assertSame(500, $response->getStatus());
+		$this->assertSame('new-1', $this->deleted);
+	}//end testACreateThatLandsElsewhereIsRemovedAndRefused()
 }//end class
