@@ -69,13 +69,6 @@ class FlowService implements FlowServiceInterface {
 	private const DEFAULT_APP = 'openregister';
 
 	/**
-	 * Who is asking, and which flows are theirs.
-	 *
-	 * @var FlowCaller
-	 */
-	private FlowCaller $caller;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param FlowDefinitionStore $definitions The flow table and the trigger index derived from its nodes.
@@ -89,14 +82,26 @@ class FlowService implements FlowServiceInterface {
 		private readonly FlowDeletionSweep $sweep,
 		private readonly FlowServicePlatform $platform,
 	) {
-		$this->caller = new FlowCaller(
-			mapper: $definitions->mapper,
-			userSession: $platform->userSession,
-			container: $platform->container,
-			logger: $platform->logger
-		);
-
 	}//end __construct()
+
+	/**
+	 * Who is asking, and which flows are theirs.
+	 *
+	 * Stateless: every answer is read from the session and the flow table at
+	 * the moment it is asked, so a fresh reader per question answers the same.
+	 *
+	 * @return FlowCaller
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function caller(): FlowCaller {
+		return new FlowCaller(
+			mapper: $this->definitions->mapper,
+			userSession: $this->platform->userSession,
+			container: $this->platform->container,
+			logger: $this->platform->logger
+		);
+	}//end caller()
 
 	/**
 	 * List the caller's flows, newest first.
@@ -118,7 +123,7 @@ class FlowService implements FlowServiceInterface {
 		int $limit = 100,
 		int $offset = 0,
 	): array {
-		$organisation = $this->caller->activeOrganisation();
+		$organisation = $this->caller()->activeOrganisation();
 		if ($organisation === null) {
 			// No resolvable tenant means no flows, never every tenant's flows.
 			return [];
@@ -146,7 +151,7 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
 	public function count(?string $app = null, ?string $applicationSlug = null): int {
-		$organisation = $this->caller->activeOrganisation();
+		$organisation = $this->caller()->activeOrganisation();
 		if ($organisation === null) {
 			return 0;
 		}
@@ -172,7 +177,7 @@ class FlowService implements FlowServiceInterface {
 	public function find(string $uuid): Flow {
 		$flow = $this->definitions->mapper->findByUuid($uuid);
 
-		if ($flow->belongsTo($this->caller->activeOrganisation()) === false) {
+		if ($flow->belongsTo($this->caller()->activeOrganisation()) === false) {
 			throw new DoesNotExistException('No such flow');
 		}
 
@@ -253,7 +258,7 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function adopt(Flow $flow): Flow {
-		$uid = $this->caller->actingUser();
+		$uid = $this->caller()->actingUser();
 		if ($uid === null) {
 			throw new FlowAdoptionRefused(
 				reason: FlowAdoptionRefused::REASON_NO_ACTING_USER,
@@ -440,7 +445,7 @@ class FlowService implements FlowServiceInterface {
 			return $this->find(uuid: $uuid);
 		}
 
-		['owner' => $owner, 'organisation' => $organisation] = $this->caller->ownership();
+		['owner' => $owner, 'organisation' => $organisation] = $this->caller()->ownership();
 
 		// REFUSE rather than stamp nulls. `Flow::belongsTo()` is fail-closed on
 		// both sides, so a flow with no organisation belongs to nobody: it does
@@ -706,28 +711,7 @@ class FlowService implements FlowServiceInterface {
 		$flow = $this->find(uuid: $uuid);
 		$this->assertRunnable(flow: $flow);
 
-		$run = $this->dispatch->runner->queue(
-			flowId: (string)$flow->getUuid(),
-			subject: $subject,
-			trigger: $trigger,
-			context: $context,
-			user: $this->caller->actingUser()
-		);
-
-		if ($sync === false) {
-			return $run;
-		}
-
-		// Queue FIRST, then advance the queued row — never execute instead of
-		// queueing. The run record is what the retry endpoint, the run log and
-		// every observability surface read; a synchronous run that skipped it
-		// would execute invisibly and leave a person who pressed Run with
-		// nothing to look at afterwards.
-		//
-		// `rethrow: true` because this call is answering a request ABOUT this
-		// run: a caller who asked to wait has earned the error. The worker
-		// swallows for the opposite reason — one bad run must not stop a queue.
-		return $this->dispatch->advancer->advance(run: $run, rethrow: true);
+		return $this->start(flow: $flow, options: new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: $trigger));
 	}//end run()
 
 	/**
@@ -755,22 +739,46 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-inline-steps-are-a-straight-line-lowered-to-the-one-flow-engine
 	 */
 	public function runForAction(string $uuid, array $subject, array $context, bool $sync): FlowRun {
-		$flow = $this->definitions->mapper->findByUuid($uuid);
+		$options = new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: Flow::TRIGGER_MANUAL);
 
+		return $this->start(flow: $this->definitions->mapper->findByUuid($uuid), options: $options);
+	}//end runForAction()
+
+	/**
+	 * Queue a run of a flow already resolved and authorised, attributed to the
+	 * acting user, and advance it inline when the caller asked to wait.
+	 *
+	 * @param Flow           $flow    The flow to run.
+	 * @param FlowRunOptions $options The subject, run metadata, whether to wait, and the trigger.
+	 *
+	 * @return FlowRun The queued run, or the finished run when the caller waits.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function start(Flow $flow, FlowRunOptions $options): FlowRun {
 		$run = $this->dispatch->runner->queue(
 			flowId: (string)$flow->getUuid(),
-			subject: $subject,
-			trigger: Flow::TRIGGER_MANUAL,
-			context: $context,
-			user: $this->caller->actingUser()
+			subject: $options->subject,
+			trigger: $options->trigger,
+			context: $options->context,
+			user: $this->caller()->actingUser()
 		);
 
-		if ($sync === false) {
+		if ($options->sync === false) {
 			return $run;
 		}
 
+		// Queue FIRST, then advance the queued row — never execute instead of
+		// queueing. The run record is what the retry endpoint, the run log and
+		// every observability surface read; a synchronous run that skipped it
+		// would execute invisibly and leave a person who pressed Run with
+		// nothing to look at afterwards.
+		//
+		// `rethrow: true` because this call is answering a request ABOUT this
+		// run: a caller who asked to wait has earned the error. The worker
+		// swallows for the opposite reason — one bad run must not stop a queue.
 		return $this->dispatch->advancer->advance(run: $run, rethrow: true);
-	}//end runForAction()
+	}//end start()
 
 	/**
 	 * Mint a v4 uuid.
