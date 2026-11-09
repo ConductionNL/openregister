@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -113,19 +114,7 @@ class ObjectOwnershipController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function show(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		$block = ($object->getAuthorization() ?? []);
-
-		return new JSONResponse(
-			[
-				'owner' => $object->getOwner(),
-				'ownerGroup' => ($block[ObjectScopeResolverInterface::OWNER_GROUP_KEY] ?? null),
-			]
-		);
+		return $this->showOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end show()
 
 	/**
@@ -146,18 +135,7 @@ class ObjectOwnershipController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function claim(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		$claim = fn (): array => $this->services->ownership->claim(
-			register: $this->register(),
-			schema: $this->schema(),
-			object: $object,
-			cascade: $this->cascadeRequested()
-		);
-		return $this->endpoint->answer(operation: $claim, context: 'claim');
+		return $this->claimOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end claim()
 
 	/**
@@ -175,18 +153,7 @@ class ObjectOwnershipController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function assign(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		$owner = $this->requestedOwner();
-		if ($owner === null) {
-			return $this->badRequest(message: 'An owner is required');
-		}
-
-		$assign = fn (): array => $this->assigned(object: $object, owner: $owner);
-		return $this->endpoint->answer(operation: $assign, context: 'assign', validates: true);
+		return $this->assignOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end assign()
 
 	/**
@@ -204,19 +171,7 @@ class ObjectOwnershipController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function setOwnerGroup(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		$group = $this->request->getParam('ownerGroup');
-		if ($group !== null && is_string($group) === false) {
-			return $this->badRequest(message: 'An owner group must be a group id');
-		}
-
-		$key   = ObjectScopeResolverInterface::OWNER_GROUP_KEY;
-		$store = fn (): array => ['ownerGroup' => ($this->storeOwnerGroup(object: $object, group: $group)[$key] ?? null)];
-		return $this->endpoint->answer(operation: $store, context: 'setOwnerGroup', validates: true);
+		return $this->setOwnerGroupOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end setOwnerGroup()
 
 	/**
@@ -246,6 +201,117 @@ class ObjectOwnershipController extends Controller {
 		$reassign = fn (): array => $this->reassigned(objects: $objects, owner: $owner);
 		return $this->endpoint->answer(operation: $reassign, context: 'reassign', validates: true);
 	}//end reassign()
+
+	/**
+	 * Read who owns one record.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The owner and the owning group.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	private function showOn(ObjectRef $ref): JSONResponse {
+		$object = $this->resolved(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		$block = ($object->getAuthorization() ?? []);
+
+		return new JSONResponse(
+			[
+				'owner' => $object->getOwner(),
+				'ownerGroup' => ($block[ObjectScopeResolverInterface::OWNER_GROUP_KEY] ?? null),
+			]
+		);
+	}//end showOn()
+
+	/**
+	 * Take ownership of one record, as the signed-in user.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The outcome, or an error.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	private function claimOn(ObjectRef $ref): JSONResponse {
+		$object = $this->resolved(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		$claim = fn (): array => $this->services->ownership->claim(
+			register: $this->register(),
+			schema: $this->schema(),
+			object: $object,
+			cascade: $this->cascadeRequested()
+		);
+		return $this->endpoint->answer(operation: $claim, context: 'claim');
+	}//end claimOn()
+
+	/**
+	 * Assign one record to a named owner. Administrators only.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The outcome, or an error.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	private function assignOn(ObjectRef $ref): JSONResponse {
+		$object = $this->resolved(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		$owner = $this->requestedOwner();
+		if ($owner === null) {
+			return $this->badRequest(message: 'An owner is required');
+		}
+
+		$assign = fn (): array => $this->assigned(object: $object, owner: $owner);
+		return $this->endpoint->answer(operation: $assign, context: 'assign', validates: true);
+	}//end assignOn()
+
+	/**
+	 * Name the group that owns one record, or take the owning group away.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The owning group, or an error.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	private function setOwnerGroupOn(ObjectRef $ref): JSONResponse {
+		$object = $this->resolved(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		$group = $this->request->getParam('ownerGroup');
+		if ($group !== null && is_string($group) === false) {
+			return $this->badRequest(message: 'An owner group must be a group id');
+		}
+
+		$key   = ObjectScopeResolverInterface::OWNER_GROUP_KEY;
+		$store = fn (): array => ['ownerGroup' => ($this->storeOwnerGroup(object: $object, group: $group)[$key] ?? null)];
+		return $this->endpoint->answer(operation: $store, context: 'setOwnerGroup', validates: true);
+	}//end setOwnerGroupOn()
+
+	/**
+	 * Resolve the record a route names through the RBAC boundary.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the response to return.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	private function resolved(ObjectRef $ref): ObjectEntity|JSONResponse {
+		return $this->endpoint->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+	}//end resolved()
 
 	/**
 	 * The owner the request names, or null when it names none.
