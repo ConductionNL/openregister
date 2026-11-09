@@ -86,6 +86,16 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Service\\AnonymousEvaluationContext": {
+			"class": "OCA\\OpenRegister\\Kernel\\Context\\AnonymousEvaluationContext",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Audit\\PurposeRefusedException": {
+			"class": "OCA\\OpenRegister\\Exception\\PurposeRefusedException",
+			"eager": true,
+			"service": false
+		},
 		"OCA\\OpenRegister\\Service\\DashboardService": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\DashboardService",
 			"eager": false,
@@ -201,6 +211,11 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Service\\OrganisationContext": {
+			"class": "OCA\\OpenRegister\\Kernel\\Context\\OrganisationContext",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Service\\Quality\\DedupCreatePolicy": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\Quality\\DedupCreatePolicy",
 			"eager": false,
@@ -258,6 +273,11 @@
 		},
 		"OCA\\OpenRegister\\Service\\Search\\SearchIndexMaintenance": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\Search\\SearchIndexMaintenance",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\SystemOperationContext": {
+			"class": "OCA\\OpenRegister\\Kernel\\Context\\SystemOperationContext",
 			"eager": false,
 			"service": true
 		},
@@ -1714,6 +1734,11 @@
 		"OCA\\OpenRegister\\Service\\ToolRegistry": {
 			"class": "OCA\\OpenRegister\\Mcp\\Service\\ToolRegistry",
 			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\WriteCause": {
+			"class": "OCA\\OpenRegister\\Kernel\\Context\\WriteCause",
+			"eager": false,
 			"service": true
 		},
 		"OCA\\OpenRegister\\Tool\\AbstractTool": {

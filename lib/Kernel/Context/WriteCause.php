@@ -39,7 +39,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Kernel\Context;
 
 /**
  * The cause of the write currently being made, as an ambient frame.

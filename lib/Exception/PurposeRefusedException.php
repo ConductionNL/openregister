@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Audit;
+namespace OCA\OpenRegister\Exception;
 
 use Exception;
 

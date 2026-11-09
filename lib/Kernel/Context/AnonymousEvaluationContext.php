@@ -14,7 +14,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Kernel\Context;
 
 /**
  * Marks that the current call evaluates access AS AN ANONYMOUS CALLER, whatever
