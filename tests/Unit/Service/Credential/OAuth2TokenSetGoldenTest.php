@@ -28,6 +28,7 @@ namespace Unit\Service\Credential;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\TokenSetAddress;
 use OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
@@ -216,8 +217,7 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 
 		$this->identity(broker: $broker)->record(
 			provider: $provider,
-			credentialId: 'cred-1',
-			scope: 'organisation',
+			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'organisation'),
 			set: OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'AT']),
 			owner: 'alice'
 		);
@@ -249,8 +249,7 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 
 		(new OAuth2AccountIdentity(broker: $broker, refresh: $refresh, logger: $logger))->record(
 			provider: ['identity' => ['method' => 'POST', 'path' => '/me', 'idField' => 'id']],
-			credentialId: 'c',
-			scope: 'personal',
+			address: new TokenSetAddress(credentialId: 'c', scope: 'personal'),
 			set: OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'AT']),
 			owner: 'alice'
 		);
