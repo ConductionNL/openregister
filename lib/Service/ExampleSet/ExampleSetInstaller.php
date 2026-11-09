@@ -684,7 +684,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$report['changes'][$name] = 'kept';
 			if (isset($record['changes'][$name]) === true) {
 				$made   = $this->changes->follow(change: $change, entry: $record['changes'][$name], context: $context, refresh: $refresh);
-				$report = $this->record->hold(set: (string) $plan['set'], part: 'changes', name: $name, made: $made, report: $report, record: $record);
+				$report = $this->record->hold(set: (string) $plan['set'], followed: new ExampleSetFollowedEntry(part: 'changes', name: $name, made: $made), report: $report, record: $record);
 				continue;
 			}
 
@@ -707,7 +707,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			}
 		}//end foreach
 
-		if (ExampleSetRecord::letGoUndeclared(fragment: $fragment, part: 'changes', noun: 'change', report: $report, record: $record) === true) {
+		if (ExampleSetRecord::letGoUndeclared(part: new ExampleSetRecordPart(part: 'changes', noun: 'change'), fragment: $fragment, report: $report, record: $record) === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 		}
 
@@ -1192,7 +1192,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$report['userPreferences'][$name] = 'kept';
 			if (isset($record['userPreferences'][$name]) === true) {
 				$made   = $this->userPreferences->follow(entry: $record['userPreferences'][$name], value: $value, refresh: $refresh && $gaps === []);
-				$report = $this->record->hold(set: (string) $plan['set'], part: 'userPreferences', name: $name, made: $made, report: $report, record: $record);
+				$report = $this->record->hold(set: (string) $plan['set'], followed: new ExampleSetFollowedEntry(part: 'userPreferences', name: $name, made: $made), report: $report, record: $record);
 				continue;
 			}
 
