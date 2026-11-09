@@ -27,6 +27,7 @@ use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactoryInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorSource;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use Psr\Container\ContainerInterface;
@@ -193,12 +194,14 @@ final class ChunkVectorizationBatch {
 	private function storeVector(Chunk $chunk, array $embeddingData): void {
 		$this->storageHandler->storeVector(
 			vector: $this->vectors->forChunk(
-				sourceType: $chunk->getSourceType(),
-				sourceId: $chunk->getSourceId(),
-				chunkIndex: $chunk->getChunkIndex(),
-				text: $chunk->getTextContent(),
-				startOffset: $chunk->getStartOffset(),
-				endOffset: $chunk->getEndOffset(),
+				source: new ChunkVectorSource(
+					sourceType: $chunk->getSourceType(),
+					sourceId: $chunk->getSourceId(),
+					chunkIndex: $chunk->getChunkIndex(),
+					text: $chunk->getTextContent(),
+					startOffset: $chunk->getStartOffset(),
+					endOffset: $chunk->getEndOffset()
+				),
 				embeddingData: $embeddingData,
 				totalChunks: $this->totalChunksOf(chunk: $chunk)
 			)
