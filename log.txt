@@ -114,3 +114,4 @@
 2026-11-09T13:26:25Z integrator-20261109T130654-5892e14f RED tree 62a9c79efb prs 3 front=red: Tests: 51967, Assertions: 169441, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprec; first failures: FAIL src/components/shared/refreshButton.spec.js
 2026-11-09T13:28:12Z reviewer-20261109T131013-4e13dbd9 6973 e37838719e0c24186d8f9279aca58947cbccca7a NOT REVIEWED: still conflicts with main 0a58def603 (main carries the same refactor); merged guard suites cannot run; needs a fresh branch or close
 2026-11-09T13:29:44Z integrator-20261109T130654-5892e14f GREEN tree 1ce20f17a9 on dev 0a58def603 prs 1 front=ok: Tests: 51967, Assertions: 169441, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
+2026-11-09T13:30:17Z integrator-20261109T130654-5892e14f MERGED-TREE 1ce20f17a9: 1 PRs in one push, main now 1ce20f17a9 = tested tree
