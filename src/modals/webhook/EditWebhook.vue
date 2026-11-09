@@ -370,12 +370,7 @@
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<CloseCancelButton @click="closeModal" />
 			<NcButton
 				:disabled="loading || !isValid"
 				variant="primary"
@@ -404,12 +399,12 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import Tune from 'vue-material-design-icons/Tune.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import FormCheckboxField from '../../components/shared/FormCheckboxField.vue'
 import FormSelectField from '../../components/shared/FormSelectField.vue'
 import SelectOption from '../../components/shared/SelectOption.vue'
@@ -438,7 +433,7 @@ export default {
 		FormSelectField,
 		SelectOption,
 		AppTab,
-		Cancel,
+		CloseCancelButton,
 		ContentSave,
 		Cog,
 		Database,
