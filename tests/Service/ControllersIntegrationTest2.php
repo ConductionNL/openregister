@@ -1767,7 +1767,6 @@ class ControllersIntegrationTest2 extends TestCase {
 	 */
 	private function buildChatController(): ChatController {
 		return ChatControllerFactory::create(
-			'openregister',
 			$this->request,
 			\OC::$server->get(ChatService::class),
 			\OC::$server->get(ConversationMapper::class),
@@ -1788,7 +1787,6 @@ class ControllersIntegrationTest2 extends TestCase {
 	 */
 	private function buildConversationController(): ConversationController {
 		return ConversationControllerFactory::create(
-			'openregister',
 			$this->request,
 			\OC::$server->get(ConversationMapper::class),
 			\OC::$server->get(MessageMapper::class),

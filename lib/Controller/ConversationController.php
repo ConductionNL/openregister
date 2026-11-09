@@ -31,6 +31,7 @@ use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
 use OCA\OpenRegister\Controller\Support\ConversationFailure;
 use OCA\OpenRegister\Db\FeedbackMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Mcp\Db\Conversation;
@@ -119,13 +120,12 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	/**
 	 * Constructor
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request Request object
 	 * @param ConversationControllerServices $services The conversation controller services.
 	 * @param string $userId User ID
 	 */
-	public function __construct(string $appName, IRequest $request, ConversationControllerServices $services, string $userId) {
-		parent::__construct(appName: $appName, request: $request);
+	public function __construct(IRequest $request, ConversationControllerServices $services, string $userId) {
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->conversationMapper = $services->mappers->conversationMapper;
 		$this->messageMapper = $services->mappers->messageMapper;
 		$this->feedbackMapper = $services->mappers->feedbackMapper;
