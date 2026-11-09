@@ -58,7 +58,6 @@ class ViewsControllerTest extends TestCase {
 		);
 
 		$this->controller = new ViewsController(
-			'openregister',
 			$this->request,
 			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
 				$this->viewService,
