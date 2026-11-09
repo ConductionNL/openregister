@@ -23,3 +23,4 @@
 2026-11-09T09:40:35Z fixer-F1-20261109T084925-fdca83bf FIXED #7686 1470231d9770 collection prerequest clears the cookie jar before every request
 2026-11-09T09:40:38Z fixer-F1-20261109T084925-fdca83bf FIX-SKIP #7686 the 7 remaining flowRun status asserts are not named in the verdict and need a live newman run to pin down; not changed
 2026-11-09T09:40:53Z integrator-20261109T092732-73c42b8a RED tree 4fb1def41d prs 20 front=red: Tests: 49250, Assertions: 161961, Errors: 7, Failures: 11, Deprecations: 4, PHPUnit Deprec; first failures: FAIL src/views/migrationPack/migrationPackTables.dom.golden.spec.js
+2026-11-09T09:42:18Z reviewer-20261109T083856-db31edfb 7688 ec3213f7950d not reviewed: Newman-only collection (217 requests) needs a live Nextcloud; no docker daemon in this cloud sandbox, so it could not be run. Static check: valid JSON, all requests disable cookies, setup/teardown present
