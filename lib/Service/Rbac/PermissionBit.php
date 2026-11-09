@@ -3,8 +3,8 @@
 /**
  * PermissionBit — one answer to "which core permission bit does this verb need?"
  *
- * @category Support
- * @package  OCA\OpenRegister\Support
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Rbac
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -16,7 +16,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Support;
+namespace OCA\OpenRegister\Service\Rbac;
 
 use OCP\Constants;
 
@@ -33,10 +33,10 @@ use OCP\Constants;
  *
  * Moving the table here makes the static call honest. This class holds no
  * state, has no collaborators, and takes the only thing it needs as an
- * argument, so there is nothing to inject and nothing to stub. It sits beside
- * `FleetAppId`, `QueryLimit` and `FilterParams` for the same reason those do:
- * several call paths must reach the SAME answer, and a service would let one
- * of them be constructed with a different implementation.
+ * argument, so there is nothing to inject and nothing to stub. Several call
+ * paths must reach the SAME answer, and a service would let one of them be
+ * constructed with a different implementation. It lives in the Rbac
+ * component because the grant paths here are its only callers.
  *
  * Core's bitmask has five verbs. An OpenRegister action outside that set — a
  * custom verb like ZGW's `besluit_nemen` — has NO bit, so `forAction()`

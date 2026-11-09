@@ -10,7 +10,7 @@
  * resolves to null so the caller fails closed rather than widening.
  *
  * @category Test
- * @package  OCA\OpenRegister\Tests\Unit\Support
+ * @package  OCA\OpenRegister\Tests\Unit\Service\Rbac
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,10 +21,10 @@
 
 declare(strict_types=1);
 
-namespace Unit\Support;
+namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
-use OCA\OpenRegister\Support\PermissionBit;
+use OCA\OpenRegister\Service\Rbac\PermissionBit;
 use OCP\Constants;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
