@@ -208,12 +208,13 @@ final class VerwerkingsactiviteitenControllerA24GoldenTest extends TestCase {
 		$organisations->method('getActiveOrganisation')->willReturn($organisation);
 
 		return new VerwerkingsactiviteitenController(
-			'openregister',
 			$request,
-			$this->mapper,
-			new ControllerSession($session, $groups, $this->createMock(LoggerInterface::class)),
-			$this->database($dbFail),
-			$organisations
+			new \OCA\OpenRegister\Controller\Support\VerwerkingsactiviteitenControllerServices(
+				$this->mapper,
+				new ControllerSession($session, $groups, $this->createMock(LoggerInterface::class)),
+				$this->database($dbFail),
+				$organisations,
+			)
 		);
 	}//end controller()
 

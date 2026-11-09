@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\TalkLinksController;
+use OCA\OpenRegister\Controller\Support\TalkLinksControllerServices;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Service\TalkLinkServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -52,7 +53,7 @@ class TalkLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->service    = $this->createMock(TalkLinkServiceInterface::class);
-		$this->controller = new TalkLinksController('openregister', $this->request, $this->service, $this->objectService);
+		$this->controller = new TalkLinksController($this->request, new TalkLinksControllerServices($this->service, $this->objectService));
 	}
 
 	private function link(): TalkLink {
