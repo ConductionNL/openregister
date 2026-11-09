@@ -261,6 +261,17 @@ class EmailLinkServiceBehaviourTest extends TestCase {
 		$this->assertNull($this->service()->getMessagesForMailbox(7, 'INBOX', '50', 2)['nextCursor']);
 	}
 
+	public function testAnExactlyFullPageHasNoNextCursor(): void {
+		$this->ownsAccount();
+		$this->answers['mail_mailboxes'][] = ['id' => 3];
+		$this->answers['mail_messages'][]  = [['id' => 10], ['id' => 9]];
+
+		$page = $this->service()->getMessagesForMailbox(7, 'INBOX', null, 2);
+
+		$this->assertCount(2, $page['items']);
+		$this->assertNull($page['nextCursor']);
+	}
+
 	public function testMessagesAreEmptyForAMissingMailbox(): void {
 		$this->ownsAccount();
 		$this->answers['mail_mailboxes'][] = false;
