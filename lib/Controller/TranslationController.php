@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TranslationControllerServices;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -79,24 +80,28 @@ class TranslationController extends Controller {
 	private readonly BulkTranslationServiceInterface $bulkService;
 
 	/**
+	 * The object mapper.
+	 *
+	 * @var MagicObjectFinderInterface
+	 */
+	private readonly MagicObjectFinderInterface $objectMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The application name.
 	 * @param IRequest $request The current request.
 	 * @param TranslationControllerServices $services The translation controller services.
-	 * @param MagicObjectFinderInterface $objectMapper The object mapper.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		TranslationControllerServices $services,
-		private readonly MagicObjectFinderInterface $objectMapper,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->statusService = $services->statusService;
-		$this->translationMapper = $services->translationMapper;
-		$this->schemaMapper = $services->schemaMapper;
+		$this->translationMapper = $services->mappers->translationMapper;
+		$this->schemaMapper = $services->mappers->schemaMapper;
 		$this->bulkService = $services->bulkService;
+		$this->objectMapper = $services->mappers->objectMapper;
 	}//end __construct()
 
 	/**
