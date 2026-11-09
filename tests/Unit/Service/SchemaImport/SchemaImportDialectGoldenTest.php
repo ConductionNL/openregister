@@ -361,7 +361,7 @@ class SchemaImportDialectGoldenTest extends TestCase {
 	}
 
 	public function testResolveUploadDialectEmptyExplicitFallsBackToDetection(): void {
-		$service = new SchemaImportService(new DialectDetector(), new ThreeWayMerge(), dirname(__DIR__, 4) . '/lib/Resources');
+		$service = new SchemaImportService(new DialectDetector(), new ThreeWayMerge());
 		$this->assertSame('ggm', $service->resolveUploadDialect(['standard' => 'ggm'], ''));
 		$this->assertSame('ggm', $service->resolveUploadDialect(['standard' => 'ggm'], 'ggm'));
 		try {

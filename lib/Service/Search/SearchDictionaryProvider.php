@@ -38,6 +38,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Search;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -125,14 +127,12 @@ class SearchDictionaryProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicObjectSearchInterface $objects   Reads the concepts.
-	 * @param SearchDictionaryMappers    $mappers   Resolve the vocabulary register's and concept schemas' ids.
-	 * @param IAppConfig                 $appConfig Holds the administered caps.
-	 * @param LoggerInterface            $logger    Diagnostics.
+	 * @param SchemaCatalogInterface $catalog   Resolves the vocabulary register's and concept schemas' ids, and reads the concepts.
+	 * @param IAppConfig             $appConfig Holds the administered caps.
+	 * @param LoggerInterface        $logger    Diagnostics.
 	 */
 	public function __construct(
-		private readonly MagicObjectSearchInterface $objects,
-		private readonly SearchDictionaryMappers $mappers,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
@@ -319,12 +319,12 @@ class SearchDictionaryProvider {
 		// `conceptscheme`, and a slug can legitimately resolve to several ids,
 		// so the value is a list even when there is one.
 		$registerId = self::firstId(
-			map: $this->mappers->registers->findIdsBySlugs([self::REGISTER]),
+			map: $this->catalog->registers()->findIdsBySlugs([self::REGISTER]),
 			slug: self::REGISTER
 		);
-		$conceptId = self::firstId(map: $this->mappers->schemas->findIdsBySlugs([self::SCHEMA]), slug: self::SCHEMA);
+		$conceptId = self::firstId(map: $this->catalog->schemas()->findIdsBySlugs([self::SCHEMA]), slug: self::SCHEMA);
 		$schemeSchemaId = self::firstId(
-			map: $this->mappers->schemas->findIdsBySlugs([self::SCHEME_SCHEMA]),
+			map: $this->catalog->schemas()->findIdsBySlugs([self::SCHEME_SCHEMA]),
 			slug: self::SCHEME_SCHEMA
 		);
 
@@ -336,8 +336,7 @@ class SearchDictionaryProvider {
 		}
 
 		$schemeUuid = $this->schemeUuid(
-			registerId: $registerId,
-			schemaId: $schemeSchemaId,
+			table: new RegisterSchemaRef(register: $registerId, schema: $schemeSchemaId),
 			schemeUri: $schemeUri
 		);
 		if ($schemeUuid === null) {
@@ -352,7 +351,7 @@ class SearchDictionaryProvider {
 		}
 
 		return $this->rowsOf(
-			result: $this->objects->searchObjectsPaginated(
+			result: $this->objectSearch()->searchObjectsPaginated(
 				searchQuery: [
 					'_register' => $registerId,
 					'_schema' => $conceptId,
@@ -367,19 +366,27 @@ class SearchDictionaryProvider {
 	}//end conceptsIn()
 
 	/**
+	 * The object search the concepts and schemes are read through.
+	 *
+	 * @return MagicObjectSearchInterface The search role of the object storage.
+	 */
+	private function objectSearch(): MagicObjectSearchInterface {
+		return $this->catalog->tables();
+	}//end objectSearch()
+
+	/**
 	 * The uuid of the scheme object carrying this uri.
 	 *
-	 * @param int    $registerId The vocabulary register.
-	 * @param int    $schemaId   The conceptScheme schema.
-	 * @param string $schemeUri  The canonical uri.
+	 * @param RegisterSchemaRef $table     The vocabulary register and the conceptScheme schema, by id.
+	 * @param string            $schemeUri The canonical uri.
 	 *
 	 * @return string|null The uuid, or null when no scheme carries it.
 	 */
-	private function schemeUuid(int $registerId, int $schemaId, string $schemeUri): ?string {
-		$result = $this->objects->searchObjectsPaginated(
+	private function schemeUuid(RegisterSchemaRef $table, string $schemeUri): ?string {
+		$result = $this->objectSearch()->searchObjectsPaginated(
 			searchQuery: [
-				'_register' => $registerId,
-				'_schema' => $schemaId,
+				'_register' => $table->register,
+				'_schema' => $table->schema,
 				'uri' => $schemeUri,
 				'_limit' => 1,
 			],
