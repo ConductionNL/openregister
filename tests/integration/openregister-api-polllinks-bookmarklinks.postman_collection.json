@@ -7725,6 +7725,326 @@
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{locked_schema_id}}/{{locked_object_id}}/file-shares"
 					}
+				},
+				{
+					"name": "upload a file to the open object",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('file stored on the object', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); const json = pm.response.json(); pm.expect(json.title).to.eql('t26-share.txt'); pm.collectionVariables.set('file_id', json.id); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{object_id}}/files",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"t26-share.txt\",\n  \"content\": \"T26 share payload\",\n  \"share\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "shareLinks#files open object -> the uploaded file",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('lists exactly the uploaded file', function () { const json = pm.response.json(); pm.expect(json.total).to.eql(1); pm.expect(json.results[0].fileName).to.eql('t26-share.txt'); pm.expect(String(json.results[0].fileId)).to.eql(String(pm.collectionVariables.get('file_id'))); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/shares/files/{{register_id}}/{{schema_id}}/{{object_id}}"
+					}
+				},
+				{
+					"name": "shareLinks#files open object non-admin -> same file",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('a user who may read the object sees its file', function () { pm.expect(pm.response.json().total).to.eql(1); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/shares/files/{{register_id}}/{{schema_id}}/{{object_id}}",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{user_id}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "shareLinks#create public link -> 201",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+									"pm.test('public link share created', function () { const json = pm.response.json(); pm.expect(json.shareType).to.eql(3); pm.expect(json.shareId).to.be.a('string').and.not.empty; pm.expect(json.token).to.be.a('string').and.not.empty; });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{object_id}}/file-shares",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fileId\": \"{{file_id}}\",\n  \"shareType\": 3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "shareLinks#index -> the new share",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('index lists the share on the uploaded file', function () { const json = pm.response.json(); pm.expect(json.total).to.eql(1); pm.expect(String(json.results[0].fileId)).to.eql(String(pm.collectionVariables.get('file_id'))); pm.expect(json.results[0].shareType).to.eql(3); pm.expect(json.results[0].canRevoke).to.eql(true); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{object_id}}/file-shares"
+					}
+				},
+				{
+					"name": "shareLinks#create on locked object non-admin -> 404, nothing shared",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', function () { pm.response.to.have.status(404); });",
+									"pm.test('non-admin without read right cannot see the locked object', function () { const json = pm.response.json(); pm.expect(json.error).to.eql('Object not found'); pm.expect(json).to.not.have.property('results'); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{locked_schema_id}}/{{locked_object_id}}/file-shares",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fileId\": \"{{file_id}}\",\n  \"shareType\": 3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{user_id}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "remove the uploaded file (drops its share)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('file deleted', function () { pm.expect(pm.response.json().success).to.eql(true); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{object_id}}/files/{{file_id}}"
+					}
+				},
+				{
+					"name": "shareLinks#index after file removal -> empty",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('lists nothing yet', function () { const json = pm.response.json(); pm.expect(json.results).to.be.an('array').that.is.empty; pm.expect(json.total).to.eql(0); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{object_id}}/file-shares"
+					}
 				}
 			]
 		},
