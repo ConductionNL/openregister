@@ -31,6 +31,8 @@ use Psr\Log\LoggerInterface;
  *
  * Shared by every repair step that imports a descriptor from lib/Settings:
  * AbstractRegisterImportStep and its subclasses, and ImportDsarRegisters.
+ *
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  */
 final class RegisterDescriptorImport {
 
