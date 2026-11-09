@@ -520,3 +520,4 @@
 2026-11-09T19:11:01Z integrator-20261109T183615-6540b4de RED tree 0d76e26599 prs 3 front=skip: Tests: 53907, Assertions: 175152, Errors: 6, Failures: 13, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\Architecture\ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline;OCA\OpenRegister\Tests\Unit\Architecture\ComponentDependencyRulesTest::testNoNewFileNamesTheBootstrapNamespace
 2026-11-09T19:11:13Z integrator-20261109T183615-6540b4de CONFLICT-DEV #7653 f5eed6aa
 2026-11-09T19:11:23Z integrator-20261109T183615-6540b4de CONFLICT-DEV #7701 aadd9d43
+2026-11-09T19:11:37Z integrator-20261109T183615-6540b4de CONFLICT-DEV #7721 06e07913
