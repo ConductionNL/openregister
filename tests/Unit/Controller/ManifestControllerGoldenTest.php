@@ -55,7 +55,6 @@ class ManifestControllerGoldenTest extends TestCase {
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->controller = ManifestControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->manifestService,
 			$this->appManager,
