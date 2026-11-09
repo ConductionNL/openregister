@@ -53,7 +53,7 @@ final class NotificationDispatchLogMapperTest extends TestCase {
 	}
 
 	private function throwingInsert(DbException $e): NotificationDispatchLogMapper {
-		$mapper = new class ($this->database()) extends NotificationDispatchLogMapper {
+		$mapper = new class($this->database()) extends NotificationDispatchLogMapper {
 			public ?DbException $error = null;
 			public function insert(Entity $entity): Entity {
 				throw $this->error;
@@ -95,7 +95,7 @@ final class NotificationDispatchLogMapperTest extends TestCase {
 	}
 
 	public function testRecordMapsAUniqueViolationToDuplicateDispatch(): void {
-		$violation = new class ('dup') extends DbException {
+		$violation = new class('dup') extends DbException {
 			public function getReason(): ?int {
 				return self::REASON_UNIQUE_CONSTRAINT_VIOLATION;
 			}

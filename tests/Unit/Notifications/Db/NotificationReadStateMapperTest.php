@@ -75,7 +75,7 @@ final class NotificationReadStateMapperTest extends TestCase {
 
 	public function testMarkReadRaceReturnsTheParallelWinner(): void {
 		$this->queuedRows = [[], [['id' => 8, 'user_id' => 'alice', 'notification_id' => 'n-1']]];
-		$mapper = new class ($this->database()) extends NotificationReadStateMapper {
+		$mapper = new class($this->database()) extends NotificationReadStateMapper {
 			public function insert(Entity $entity): Entity {
 				throw new DbException('dup');
 			}

@@ -51,7 +51,7 @@ final class NotificationBroadcastReceiptMapperTest extends TestCase {
 	}
 
 	private function failingInsert(): NotificationBroadcastReceiptMapper {
-		return new class ($this->database()) extends NotificationBroadcastReceiptMapper {
+		return new class($this->database()) extends NotificationBroadcastReceiptMapper {
 			public function insert(Entity $entity): Entity {
 				throw new RuntimeException('dup');
 			}
