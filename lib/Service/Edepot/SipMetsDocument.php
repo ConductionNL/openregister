@@ -106,42 +106,48 @@ final class SipMetsDocument {
 	/**
 	 * Add one object: its div, its content files, then its MDTO documents.
 	 *
-	 * @param string                           $uuid     The object uuid.
-	 * @param array<int, array<string, mixed>> $files    The object's content files.
-	 * @param array<int, array<string, mixed>> $metadata The object's MDTO documents (manifest rows).
+	 * @param array<string, mixed> $item     The object (`object`) with its content files (`files`).
+	 * @param SipContents          $contents The package contents, holding the object's MDTO documents.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
 	 */
-	public function addObject(string $uuid, array $files, array $metadata): void {
+	public function addObject(array $item, SipContents $contents): void {
+		$uuid      = $item['object']->getUuid();
 		$objectDiv = $this->element(name: 'mets:div', attributes: ['LABEL' => $uuid, 'TYPE' => 'object']);
 		$this->rootDiv->appendChild($objectDiv);
 
-		$this->addContentFiles(objectDiv: $objectDiv, uuid: $uuid, files: $files);
+		$this->addContentFiles(objectDiv: $objectDiv, item: $item);
 
-		foreach ($metadata as $row) {
-			$row['mime'] = 'application/xml';
-			$row['href'] = $row['path'];
-			$this->addFile(group: $this->groups['metadata'], objectDiv: $objectDiv, idPrefix: 'MD-', file: $row);
+		foreach (($contents->metadataFiles()[$uuid] ?? []) as $row) {
+			$row['mime']  = 'application/xml';
+			$row['href']  = $row['path'];
+			$row['group'] = 'metadata';
+			$this->addFile(objectDiv: $objectDiv, file: $row);
 		}
 	}//end addObject()
 
 	/**
 	 * Add an object's content files to the ORIGINAL or RENDITION group.
 	 *
-	 * @param DOMElement                       $objectDiv The object's div.
-	 * @param string                           $uuid      The object uuid.
-	 * @param array<int, array<string, mixed>> $files     The content files.
+	 * @param DOMElement           $objectDiv The object's div.
+	 * @param array<string, mixed> $item      The object with its content files.
 	 *
 	 * @return void
 	 */
-	private function addContentFiles(DOMElement $objectDiv, string $uuid, array $files): void {
-		foreach ($files as $file) {
-			$href = SipLayout::contentPath(uuid: $uuid, file: $file);
+	private function addContentFiles(DOMElement $objectDiv, array $item): void {
+		$uuid = $item['object']->getUuid();
+		foreach ($item['files'] as $file) {
 			$this->addFile(
-				group: $this->groups[SipLayout::subDir(file: $file)],
 				objectDiv: $objectDiv,
-				idPrefix: 'FILE-',
-				file: ['size' => $file['size'], 'mime' => $file['format'], 'checksum' => $file['checksum'], 'href' => $href]
+				file: [
+					'size' => $file['size'],
+					'mime' => $file['format'],
+					'checksum' => $file['checksum'],
+					'href' => SipLayout::contentPath(uuid: $uuid, file: $file),
+					'group' => SipLayout::subDir(file: $file),
+				]
 			);
 		}
 	}//end addContentFiles()
@@ -156,26 +162,41 @@ final class SipMetsDocument {
 	}//end xml()
 
 	/**
-	 * Add one file to a group, and a pointer to it to the object's div.
+	 * Add one file to its group, and a pointer to it to the object's div.
 	 *
-	 * @param DOMElement           $group     The file group.
+	 * Metadata files are numbered `MD-`, content files `FILE-`, on one counter.
+	 *
 	 * @param DOMElement           $objectDiv The object's div.
-	 * @param string               $idPrefix  `FILE-` or `MD-`.
-	 * @param array<string, mixed> $file      The size, mime, checksum and href.
+	 * @param array<string, mixed> $file      The size, mime, checksum, href and group (original|rendition|metadata).
 	 *
 	 * @return void
 	 */
-	private function addFile(DOMElement $group, DOMElement $objectDiv, string $idPrefix, array $file): void {
-		$fileId = $idPrefix.$this->fileCounter;
+	private function addFile(DOMElement $objectDiv, array $file): void {
+		$fileId = self::idPrefix(group: $file['group']).$this->fileCounter;
 		$this->fileCounter++;
 
 		$element = $this->element(name: 'mets:file', attributes: self::fileAttributes(fileId: $fileId, file: $file));
 		$locat = $this->element(name: 'mets:FLocat', attributes: ['LOCTYPE' => 'URL']);
 		$locat->setAttributeNS(self::XLINK_NAMESPACE, 'xlink:href', $file['href']);
 		$element->appendChild($locat);
-		$group->appendChild($element);
+		$this->groups[$file['group']]->appendChild($element);
 		$objectDiv->appendChild($this->element(name: 'mets:fptr', attributes: ['FILEID' => $fileId]));
 	}//end addFile()
+
+	/**
+	 * The file id prefix of a group: `MD-` for metadata, `FILE-` for content.
+	 *
+	 * @param string $group The group key.
+	 *
+	 * @return string The prefix.
+	 */
+	private static function idPrefix(string $group): string {
+		if ($group === 'metadata') {
+			return 'MD-';
+		}
+
+		return 'FILE-';
+	}//end idPrefix()
 
 	/**
 	 * The fileSec with its ORIGINAL, RENDITION and METADATA groups.

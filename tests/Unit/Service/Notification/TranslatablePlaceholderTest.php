@@ -51,6 +51,7 @@ use OCP\Notification\IManager as INotificationManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 
 /**
  * Locks how a language map fills a placeholder.
@@ -82,14 +83,14 @@ class TranslatablePlaceholderTest extends TestCase {
 		$text = $this->templating()->interpolate('Lead changed: {{title}}', ['title' => ['nl' => 'Offerte']], [], ['de']);
 
 		$this->assertSame('Lead changed: Offerte', $text);
-		$this->assertSame([], $this->templating()->unanswered('Lead changed: {{title}}', ['title' => ['nl' => 'Offerte']], []));
+		$this->assertSame([], $this->templating()->unanswered('Lead changed: {{title}}', new PlaceholderValues(['title' => ['nl' => 'Offerte']], [])));
 	}//end testWithoutAChainLanguageTheFirstValueShows()
 
 	public function testAnObjectThatIsNotALanguageMapStaysUnanswered(): void {
 		$data = ['address' => ['street' => 'Dam', 'number' => 1], 'tags' => ['a', 'b']];
 
 		$this->assertSame('{{address}} {{tags}}', $this->templating()->interpolate('{{address}} {{tags}}', $data, [], ['nl']));
-		$this->assertSame(['address', 'tags'], $this->templating()->unanswered('{{address}} {{tags}}', $data, []));
+		$this->assertSame(['address', 'tags'], $this->templating()->unanswered('{{address}} {{tags}}', new PlaceholderValues($data, [])));
 	}//end testAnObjectThatIsNotALanguageMapStaysUnanswered()
 
 	public function testAMappedValueIsStillEscaped(): void {
