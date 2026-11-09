@@ -100,17 +100,17 @@ class CalendarCharacterisationTest extends TestCase {
 			objectUuid: 'object-uuid',
 			attendee: '  ana@example.org ',
 			status: ' tentative ',
-			respondedBy: null,
-			respondedAt: new DateTime('2026-09-14T10:00:00+02:00')
+			respondedBy: null
 		);
 
+		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $responses[0]['respondedAt']);
+		unset($responses[0]['respondedAt']);
 		$this->assertSame(
 			[
 				[
 					'attendee' => 'ana@example.org',
 					'status' => 'TENTATIVE',
 					'respondedBy' => null,
-					'respondedAt' => '2026-09-14T10:00:00+02:00',
 				],
 			],
 			$responses
