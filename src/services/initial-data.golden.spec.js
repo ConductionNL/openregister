@@ -38,6 +38,8 @@ jest.mock('vue-material-design-icons/Star.vue', () => ({}))
 jest.mock('vue-material-design-icons/StarOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/ViewDashboardOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/Close.vue', () => ({}))
+// DeleteView (via SearchSideBar) builds on ConfirmDialogFrame, which shows this icon.
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/ShareVariant.vue', () => ({}))
 jest.mock('vue-material-design-icons/AlertCircle.vue', () => ({}))
 jest.mock('vue-material-design-icons/Check.vue', () => ({}))
