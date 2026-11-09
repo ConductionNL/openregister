@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Kernel\Contracts\AgentInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -32,7 +33,7 @@ abstract class AbstractAgentEvent extends Event {
 	/**
 	 * Constructor for AbstractAgentEvent.
 	 *
-	 * @param AgentInterface $agent The entity the event is about.
+	 * @param AgentInterface&Entity $agent The entity the event is about.
 	 *
 	 * @return void
 	 */
@@ -43,7 +44,7 @@ abstract class AbstractAgentEvent extends Event {
 	/**
 	 * Get the entity the event is about.
 	 *
-	 * @return AgentInterface The entity.
+	 * @return AgentInterface&Entity The entity.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */

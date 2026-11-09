@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Kernel\Contracts\ViewInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -32,7 +33,7 @@ abstract class AbstractViewEvent extends Event {
 	/**
 	 * Constructor for AbstractViewEvent.
 	 *
-	 * @param ViewInterface $view The entity the event is about.
+	 * @param ViewInterface&Entity $view The entity the event is about.
 	 *
 	 * @return void
 	 */
@@ -43,7 +44,7 @@ abstract class AbstractViewEvent extends Event {
 	/**
 	 * Get the entity the event is about.
 	 *
-	 * @return ViewInterface The entity.
+	 * @return ViewInterface&Entity The entity.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */

@@ -70,6 +70,8 @@ interface AgentInterface extends JsonSerializable {
 	 * @param string $userId The user ID to check
 	 *
 	 * @return bool True if user is invited
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
 	 */
 	public function hasInvitedUser(string $userId): bool;
 }//end interface

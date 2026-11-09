@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Kernel\Contracts\AgentInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -34,22 +35,22 @@ class AgentUpdatedEvent extends Event {
 	/**
 	 * The updated agent state.
 	 *
-	 * @var Agent The agent after update.
+	 * @var AgentInterface&Entity The agent after update.
 	 */
 	private AgentInterface $newAgent;
 
 	/**
 	 * The previous agent state.
 	 *
-	 * @var Agent The agent before update.
+	 * @var AgentInterface&Entity The agent before update.
 	 */
 	private AgentInterface $oldAgent;
 
 	/**
 	 * Constructor for AgentUpdatedEvent.
 	 *
-	 * @param AgentInterface $newAgent The agent after update.
-	 * @param AgentInterface $oldAgent The agent before update.
+	 * @param AgentInterface&Entity $newAgent The agent after update.
+	 * @param AgentInterface&Entity $oldAgent The agent before update.
 	 *
 	 * @return void
 	 */
@@ -62,7 +63,7 @@ class AgentUpdatedEvent extends Event {
 	/**
 	 * Get the updated agent.
 	 *
-	 * @return AgentInterface The agent after update.
+	 * @return AgentInterface&Entity The agent after update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
@@ -73,7 +74,7 @@ class AgentUpdatedEvent extends Event {
 	/**
 	 * Get the new agent state.
 	 *
-	 * @return AgentInterface The agent after update.
+	 * @return AgentInterface&Entity The agent after update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
@@ -84,7 +85,7 @@ class AgentUpdatedEvent extends Event {
 	/**
 	 * Get the old agent state.
 	 *
-	 * @return AgentInterface The agent before update.
+	 * @return AgentInterface&Entity The agent before update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */

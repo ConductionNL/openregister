@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Kernel\Contracts\ConversationInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -34,22 +35,22 @@ class ConversationUpdatedEvent extends Event {
 	/**
 	 * The updated conversation state.
 	 *
-	 * @var Conversation The conversation after update.
+	 * @var ConversationInterface&Entity The conversation after update.
 	 */
 	private ConversationInterface $newConversation;
 
 	/**
 	 * The previous conversation state.
 	 *
-	 * @var Conversation The conversation before update.
+	 * @var ConversationInterface&Entity The conversation before update.
 	 */
 	private ConversationInterface $oldConversation;
 
 	/**
 	 * Constructor for ConversationUpdatedEvent.
 	 *
-	 * @param ConversationInterface $newConversation The conversation after update.
-	 * @param ConversationInterface $oldConversation The conversation before update.
+	 * @param ConversationInterface&Entity $newConversation The conversation after update.
+	 * @param ConversationInterface&Entity $oldConversation The conversation before update.
 	 *
 	 * @return void
 	 */
@@ -62,7 +63,7 @@ class ConversationUpdatedEvent extends Event {
 	/**
 	 * Get the conversation (returns new conversation for compatibility)
 	 *
-	 * @return ConversationInterface The updated conversation entity
+	 * @return ConversationInterface&Entity The updated conversation entity
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
@@ -73,7 +74,7 @@ class ConversationUpdatedEvent extends Event {
 	/**
 	 * Get the new conversation
 	 *
-	 * @return ConversationInterface The conversation after update
+	 * @return ConversationInterface&Entity The conversation after update
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
@@ -84,7 +85,7 @@ class ConversationUpdatedEvent extends Event {
 	/**
 	 * Get the old conversation
 	 *
-	 * @return ConversationInterface The conversation before update
+	 * @return ConversationInterface&Entity The conversation before update
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
