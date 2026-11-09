@@ -382,12 +382,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		?string $fileKey = null,
 		?bool $preserveStructure = null,
 	): File {
-		// Reset any report/residuals/placeholder-map/structure-result from a
-		// prior call on this (potentially reused) handler.
-		$this->lastSanitizationReport = null;
-		$this->lastResidualEntities = [];
-		$this->lastPlaceholderMap = [];
-		$this->lastStructurePreservation = null;
+		$this->resetRunState();
 
 		// Resolve the source file id once — the substitution placeholder
 		// format and the post-redaction audit flag both key off it.
@@ -474,6 +469,19 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 
 		return $anonymizedFile;
 	}//end anonymizeDocument()
+
+	/**
+	 * Reset any report/residuals/placeholder-map/structure-result from a
+	 * prior call on this (potentially reused) handler.
+	 *
+	 * @return void
+	 */
+	private function resetRunState(): void {
+		$this->lastSanitizationReport = null;
+		$this->lastResidualEntities = [];
+		$this->lastPlaceholderMap = [];
+		$this->lastStructurePreservation = null;
+	}//end resetRunState()
 
 	/**
 	 * The replacement map of an anonymisation: trimmed entity text to its
