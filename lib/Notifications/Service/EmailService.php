@@ -31,6 +31,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicRelationReaderInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -58,6 +59,15 @@ class EmailService implements EmailServiceInterface {
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
+
+	/**
+	 * The magic mapper in its one role here: cross-table `_mail` containment reads.
+	 *
+	 * @return MagicRelationReaderInterface The relation reader.
+	 */
+	private function relations(): MagicRelationReaderInterface {
+		return $this->linkedSchemas->magicMapper;
+	}//end relations()
 
 	/**
 	 * Check if the Nextcloud Mail app is installed and enabled.
@@ -223,7 +233,7 @@ class EmailService implements EmailServiceInterface {
 		$results = [];
 		foreach ($this->getMailLinkedSchemas() as $schema) {
 			foreach ($messageIds as $linkedId) {
-				$entities = $this->linkedSchemas->magicMapper->findByLinkedEntity(
+				$entities = $this->relations()->findByLinkedEntity(
 					schema: $schema,
 					columnName: '_mail',
 					entityId: $linkedId
