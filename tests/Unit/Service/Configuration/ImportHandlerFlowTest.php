@@ -636,6 +636,11 @@ class ImportHandlerFlowTest extends TestCase {
 		$this->handler->setFlowTriggerValidator(
 			$this->triggerValidator(savedBy: 'admin', triggerTypes: ['trigger.schedule'])
 		);
+		$admin = $this->createMock(IUser::class);
+		$admin->method('getUID')->willReturn('admin');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($admin);
+		$this->handler->setUserSession($session);
 
 		$this->flowMapper->method('findByUuid')
 			->willThrowException(new DoesNotExistException('not found'));
@@ -657,6 +662,111 @@ class ImportHandlerFlowTest extends TestCase {
 		$this->assertSame(1, $result['skipped']['flows']);
 		$this->assertSame([], $result['flows']);
 	}//end testImportFromJsonRefusesRunAsWithoutDelegationGrant()
+
+	/**
+	 * A configuration synced from a remote source, as SyncConfigurationsJob and ConfigurationCheckJob import it.
+	 */
+	private function remoteConfiguration(): Configuration {
+		$configuration = $this->configuration();
+		$configuration->setSourceType('github');
+		$configuration->setIsLocal(false);
+		return $configuration;
+	}//end remoteConfiguration()
+
+	/**
+	 * A schedule trigger node naming the given user.
+	 */
+	private function scheduleNode(string $runAs, ?string $declaredBy = null): array {
+		$config = ['cron' => '*/5 * * * *', 'runAs' => $runAs];
+		if ($declaredBy !== null) {
+			$config[FlowTriggerValidator::CONFIG_DECLARED_BY] = $declaredBy;
+		}
+
+		return ['id' => 'n1', 'type' => 'trigger.schedule', 'config' => $config];
+	}//end scheduleNode()
+
+	/**
+	 * A sessionless import from a remote source refuses a new flow that schedules runs as someone.
+	 */
+	public function testSessionlessRemoteImportRefusesNewRunAsFlow(): void {
+		$this->handler->setFlowTriggerValidator($this->triggerValidator(triggerTypes: ['trigger.schedule']));
+
+		$this->flowMapper->method('findByUuid')
+			->willThrowException(new DoesNotExistException('not found'));
+		$this->flowMapper->expects($this->never())->method('insert');
+
+		$result = $this->handler->importFromJson(
+			data: ['components' => ['flows' => ['flow-uuid-1' => ['nodes' => [$this->scheduleNode('someone-else')]]]]],
+			configuration: $this->remoteConfiguration(),
+			owner: 'admin'
+		);
+
+		$this->assertSame(1, $result['skipped']['flows']);
+		$this->assertSame([], $result['flows']);
+	}//end testSessionlessRemoteImportRefusesNewRunAsFlow()
+
+	/**
+	 * A sessionless forced re-import keeps the stamp a user's save wrote on an unchanged runAs.
+	 */
+	public function testSessionlessForcedImportPreservesStoredDelegationStamp(): void {
+		$this->handler->setFlowTriggerValidator($this->triggerValidator(triggerTypes: ['trigger.schedule']));
+
+		$existing = new Flow();
+		$existing->setUuid('flow-uuid-1');
+		$existing->setOrganisation('org-1');
+		$existing->setLifecycleStatus(FlowVersion::STATUS_DRAFT);
+		$existing->setNodes([$this->scheduleNode('bob', 'alice')]);
+
+		$this->flowMapper->method('findByUuid')->willReturn($existing);
+
+		$stored = null;
+		$this->flowMapper->expects($this->once())->method('update')
+			->with($this->callback(static function (Flow $flow) use (&$stored): bool {
+				$stored = $flow->getNodes();
+				return true;
+			}))
+			->willReturnArgument(0);
+
+		// The bundle carries no stamp (or a foreign one): it is never trusted.
+		$this->invokeMethod($this->handler, 'importFlow', [
+			['uuid' => 'flow-uuid-1', 'nodes' => [$this->scheduleNode('bob', 'mallory')]],
+			$this->remoteConfiguration(),
+			null,
+			true,
+		]);
+
+		$this->assertSame('alice', $stored[0]['config'][FlowTriggerValidator::CONFIG_DECLARED_BY]);
+	}//end testSessionlessForcedImportPreservesStoredDelegationStamp()
+
+	/**
+	 * A sessionless import of a trusted local app bundle keeps the code-initiated behaviour: accepted, no stamp.
+	 */
+	public function testSessionlessLocalAppImportAcceptsRunAsFlow(): void {
+		$this->handler->setFlowTriggerValidator($this->triggerValidator(triggerTypes: ['trigger.schedule']));
+
+		$this->flowMapper->method('findByUuid')
+			->willThrowException(new DoesNotExistException('not found'));
+
+		$stored = null;
+		$this->flowMapper->expects($this->once())->method('insert')
+			->with($this->callback(static function (Flow $flow) use (&$stored): bool {
+				$stored = $flow->getNodes();
+				return true;
+			}));
+
+		$configuration = $this->configuration();
+		$configuration->setSourceType('local');
+		$configuration->setIsLocal(true);
+
+		$result = $this->handler->importFromJson(
+			data: ['components' => ['flows' => ['flow-uuid-1' => ['nodes' => [$this->scheduleNode('someone-else', 'forged')]]]]],
+			configuration: $configuration,
+			owner: 'myapp'
+		);
+
+		$this->assertSame(0, $result['skipped']['flows']);
+		$this->assertSame(['cron' => '*/5 * * * *', 'runAs' => 'someone-else'], $stored[0]['config']);
+	}//end testSessionlessLocalAppImportAcceptsRunAsFlow()
 
 	/**
 	 * importFlow() drops a delegation stamp the bundle carried, even on a node this instance cannot resolve.

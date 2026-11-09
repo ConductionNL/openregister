@@ -1427,7 +1427,12 @@ class ImportHandler {
 
 		// Validated before anything is written, so a refused flow leaves no draft behind.
 		if (array_key_exists('nodes', $data) === true) {
-			$data['nodes'] = $this->validatedImportNodes(uuid: $uuid, nodes: (array)($data['nodes'] ?? []));
+			$data['nodes'] = $this->validatedImportNodes(
+				uuid: $uuid,
+				nodes: (array)($data['nodes'] ?? []),
+				existingFlow: $existingFlow,
+				configuration: $configuration
+			);
 		}
 
 		$flow = $this->flowToMutate(existingFlow: $existingFlow, uuid: $uuid, owner: $owner, configuration: $configuration);
@@ -1446,17 +1451,27 @@ class ImportHandler {
 	 * trigger node reject its config and stamps the delegation against the
 	 * importing session, or refuses a `runAs` that session holds no grant for.
 	 *
-	 * @param string $uuid  The flow uuid, for the probe entity and messages.
-	 * @param array  $nodes The imported nodes.
+	 * Without a session (a cron sync or auto-update) the validator checks no
+	 * grant at all, so {@see self::sessionlessDelegation()} decides instead.
+	 *
+	 * @param string             $uuid          The flow uuid, for the probe entity and messages.
+	 * @param array              $nodes         The imported nodes.
+	 * @param Flow|null          $existingFlow  The flow already stored under this uuid, or null.
+	 * @param Configuration|null $configuration The configuration being imported into.
 	 *
 	 * @return array The nodes, with the delegation stamp the validator wrote.
 	 *
-	 * @throws Exception When no validator is wired.
+	 * @throws Exception When no validator is wired, or a sessionless import names a new `runAs`.
 	 * @throws \InvalidArgumentException When a trigger node or its delegation is refused.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function validatedImportNodes(string $uuid, array $nodes): array {
+	private function validatedImportNodes(
+		string $uuid,
+		array $nodes,
+		?Flow $existingFlow,
+		?Configuration $configuration
+	): array {
 		if ($this->flowTriggerValidator === null) {
 			throw new Exception('Flow "' . $uuid . '" not imported: no trigger validator is available to check it');
 		}
@@ -1472,8 +1487,86 @@ class ImportHandler {
 		$probe->setNodes($nodes);
 		$this->flowTriggerValidator->validate(flow: $probe);
 
-		return ($probe->getNodes() ?? []);
+		if ($this->userSession?->getUser() !== null) {
+			return ($probe->getNodes() ?? []);
+		}
+
+		return $this->sessionlessDelegation(
+			uuid: $uuid,
+			nodes: ($probe->getNodes() ?? []),
+			stored: ($existingFlow?->getNodes() ?? []),
+			configuration: $configuration
+		);
 	}//end validatedImportNodes()
+
+	/**
+	 * Decide the delegation of imported nodes when no user is present to check a grant against.
+	 *
+	 * A cron sync (SyncConfigurationsJob) or auto-update (ConfigurationCheckJob)
+	 * has no session, so the validator accepted every `runAs` and removed every
+	 * stamp. Left at that, a remote bundle could schedule unattended runs as
+	 * anyone, and a forced re-sync would strip the stamp a user's save wrote,
+	 * switching off the fire-time revocation check for that flow. So, per node
+	 * with a non-empty `runAs`:
+	 * - the stored node (matched by node `id`, else by position) names the same
+	 *   `runAs`: its stored `runAsDeclaredBy` is kept as it was;
+	 * - otherwise the flow is refused, unless the configuration is a trusted
+	 *   local bundle (not a github/gitlab/url source, and local), which keeps
+	 *   the code-initiated behaviour: no stamp, accepted.
+	 *
+	 * @param string             $uuid          The flow uuid, for messages.
+	 * @param array              $nodes         The validated imported nodes.
+	 * @param array              $stored        The nodes of the stored flow, or [] for a new flow.
+	 * @param Configuration|null $configuration The configuration being imported into.
+	 *
+	 * @return array The nodes, with stored stamps restored.
+	 *
+	 * @throws Exception When a node names a new `runAs` and the source is not trusted.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function sessionlessDelegation(string $uuid, array $nodes, array $stored, ?Configuration $configuration): array {
+		$trusted = ($configuration !== null
+			&& $configuration->isRemoteSource() === false
+			&& $configuration->getIsLocal() === true);
+
+		$storedById = [];
+		foreach ($stored as $index => $storedNode) {
+			if (is_array($storedNode) === true) {
+				$storedById[(string)($storedNode['id'] ?? '#' . $index)] = $storedNode;
+			}
+		}
+
+		foreach ($nodes as $index => $node) {
+			if (is_array($node) === false) {
+				continue;
+			}
+
+			$runAs = trim((string)($node['config']['runAs'] ?? ''));
+			if ($runAs === '') {
+				continue;
+			}
+
+			$storedNode   = ($storedById[(string)($node['id'] ?? '#' . $index)] ?? null);
+			$storedConfig = (array)($storedNode['config'] ?? []);
+			if ($storedNode !== null && trim((string)($storedConfig['runAs'] ?? '')) === $runAs) {
+				if (array_key_exists(FlowTriggerValidator::CONFIG_DECLARED_BY, $storedConfig) === true) {
+					$nodes[$index]['config'][FlowTriggerValidator::CONFIG_DECLARED_BY] = $storedConfig[FlowTriggerValidator::CONFIG_DECLARED_BY];
+				}
+
+				continue;
+			}
+
+			if ($trusted === false) {
+				throw new Exception(
+					'Flow "' . $uuid . '" not imported: it schedules runs as "' . $runAs . '" and no signed-in user '
+					. 'is present to hold that delegation; import it while signed in'
+				);
+			}
+		}//end foreach
+
+		return $nodes;
+	}//end sessionlessDelegation()
 
 	/**
 	 * The flow an import writes fields onto: a fresh one, or the caller's existing one opened for editing.
