@@ -79,6 +79,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectChange;
 use OCA\OpenRegister\Db\MagicMapper\UuidBatchLookup;
 use OCA\OpenRegister\Db\MagicMapper\MagicRelationSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugBackfill;
@@ -6565,6 +6566,26 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		Schema $schema,
 		?ObjectEntity $oldEntity = null,
 	): ObjectEntity {
+		$change = new MagicObjectChange(entity: $entity, oldEntity: $oldEntity);
+		return $this->updateObjectIn(table: new RegisterSchema(register: $register, schema: $schema), change: $change);
+	}//end updateObjectEntity()
+
+	/**
+	 * Update an object entity in its register+schema table (see updateObjectEntity()).
+	 *
+	 * @param RegisterSchema    $table  The register and schema whose table holds the object.
+	 * @param MagicObjectChange $change The object to write and, when known, the object as stored.
+	 *
+	 * @return ObjectEntity The updated entity.
+	 * @throws Exception If the update fails.
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function updateObjectIn(RegisterSchema $table, MagicObjectChange $change): ObjectEntity {
+		$register  = $table->register;
+		$schema    = $table->schema;
+		$entity    = $change->entity;
+		$oldEntity = $change->oldEntity;
+
 		$this->refusePartialRead(entity: $entity);
 
 		// Use provided oldEntity or fetch from database.
@@ -6652,7 +6673,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// (lib/private/DB/Connection.php), which logs a synthetic exception —
 		// ~5.9 MB of serialised backtrace per occurrence. On every object update.
 		return $entity;
-	}//end updateObjectEntity()
+	}//end updateObjectIn()
 
 	/**
 	 * Refuse to write back an entity that holds only part of its row.
@@ -8788,6 +8809,25 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			throw new Exception('Entity must be an instance of ObjectEntity');
 		}
 
+		return $this->updateChange(change: new MagicObjectChange(entity: $entity, oldEntity: $oldEntity), table: $this->registerSchemaOrNull(register: $register, schema: $schema));
+	}//end update()
+
+	/**
+	 * Update an existing object with event dispatching (see update()).
+	 *
+	 * @param MagicObjectChange   $change The object to write and, when known, the object as stored.
+	 * @param RegisterSchema|null $table  The register and schema to route to, or null to resolve them from the object.
+	 *
+	 * @return ObjectEntity Updated entity.
+	 * @throws Exception If update fails.
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function updateChange(MagicObjectChange $change, ?RegisterSchema $table=null): ObjectEntity {
+		$entity    = $change->entity;
+		$oldEntity = $change->oldEntity;
+		$register  = $table?->register;
+		$schema    = $table?->schema;
+
 		if ($register === null || $schema === null) {
 			[$register, $schema] = $this->getResolvedRegisterAndSchema(entity: $entity);
 		}
@@ -8841,7 +8881,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}
 
 		return $updatedEntity;
-	}//end update()
+	}//end updateChange()
 
 	/**
 	 * Whether object lifecycle events should be withheld for this write.
