@@ -95,3 +95,5 @@
 2026-11-09T11:22:14Z integrator-20261109T092732-73c42b8a CONFLICT-DEV #7721 06e07913
 2026-11-09T11:25:01Z integrator-20261109T092732-73c42b8a GREEN tree 57b2553563 on dev 8c6b2e9b4d prs 20 front=skip: Tests: 51870, Assertions: 169261, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-09T11:28:42Z integrator-20261109T092732-73c42b8a MERGED-TREE 57b2553563: 20 PRs, main now 34eb2d6c6c = tested tree
+2026-11-09T11:29:01Z fixer-F3-20261109T104024-64386ead UNPARK #7694 1696410596f3
+2026-11-09T11:29:01Z fixer-F3-20261109T104024-64386ead FIXED #7694 1696410596f3 merged main; ExampleSetConfigStoreBehaviourTest builds ExampleSetConfigValue from main's ExampleSetConfigKey; phpstan offset nit in CastShape test; ExampleSet suite (1041) + guard suites + phpstan green
