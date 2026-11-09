@@ -53,24 +53,54 @@ class OutboundHttpClientPassThroughTest extends TestCase {
 	}//end testAnUnreadableProxySettingLeavesTheOptionsAsGiven()
 
 	/**
-	 * A built request and a thrown error are forwarded unchanged, and the
-	 * proxy setting is not consulted for either.
+	 * Skip when the Nextcloud under test publishes an IClient without the
+	 * named method (older servers): there is no inner method to forward to.
+	 *
+	 * @param string $method The IClient method.
 	 *
 	 * @return void
 	 */
-	public function testBuiltRequestsAndThrowablesAreForwardedUnchanged(): void {
+	private function requireClientMethod(string $method): void {
+		if (method_exists(IClient::class, $method) === false) {
+			$this->markTestSkipped('This Nextcloud\'s IClient has no ' . $method . '().');
+		}
+	}//end requireClientMethod()
+
+	/**
+	 * A built request is forwarded unchanged, and the proxy setting is not
+	 * consulted for it.
+	 *
+	 * @return void
+	 */
+	public function testABuiltRequestIsForwardedUnchanged(): void {
+		$this->requireClientMethod(method: 'sendRequest');
 		$proxy = $this->createMock(ProxySettingsInterface::class);
 		$proxy->expects($this->never())->method('requestOptions');
 		$request = $this->createMock(RequestInterface::class);
 		$psrResponse = $this->createMock(ResponseInterface::class);
-		$mapped = $this->createMock(IResponse::class);
-		$error = new RuntimeException('refused');
 		$inner = $this->createMock(IClient::class);
 		$inner->expects($this->once())->method('sendRequest')->with($this->identicalTo($request))->willReturn($psrResponse);
-		$inner->expects($this->once())->method('getResponseFromThrowable')->with($this->identicalTo($error))->willReturn($mapped);
 		$client = new OutboundHttpClient(inner: $inner, proxy: $proxy);
 
 		$this->assertSame($psrResponse, $client->sendRequest(request: $request));
+	}//end testABuiltRequestIsForwardedUnchanged()
+
+	/**
+	 * A thrown error is mapped by the decorated client, and the proxy
+	 * setting is not consulted for it.
+	 *
+	 * @return void
+	 */
+	public function testAThrowableIsMappedByTheDecoratedClient(): void {
+		$this->requireClientMethod(method: 'getResponseFromThrowable');
+		$proxy = $this->createMock(ProxySettingsInterface::class);
+		$proxy->expects($this->never())->method('requestOptions');
+		$mapped = $this->createMock(IResponse::class);
+		$error = new RuntimeException('refused');
+		$inner = $this->createMock(IClient::class);
+		$inner->expects($this->once())->method('getResponseFromThrowable')->with($this->identicalTo($error))->willReturn($mapped);
+		$client = new OutboundHttpClient(inner: $inner, proxy: $proxy);
+
 		$this->assertSame($mapped, $client->getResponseFromThrowable(e: $error));
-	}//end testBuiltRequestsAndThrowablesAreForwardedUnchanged()
+	}//end testAThrowableIsMappedByTheDecoratedClient()
 }//end class
