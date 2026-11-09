@@ -18,7 +18,6 @@ final class SchemaMigrationControllerFactory {
 	/**
 	 * The constructor arguments of SchemaMigrationController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param SchemaMapper $schemaMapper Constructor argument.
 	 * @param SchemaChangelogMapper $changelogMapper Constructor argument.
@@ -35,7 +34,6 @@ final class SchemaMigrationControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Db\SchemaMapper $schemaMapper,
 		\OCA\OpenRegister\Db\SchemaChangelogMapper $changelogMapper,
@@ -50,7 +48,6 @@ final class SchemaMigrationControllerFactory {
 		?\OCA\OpenRegister\Service\Schema\PropertyConversionService $conversions = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\SchemaMigrationControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\SchemaMigrationMappers(
