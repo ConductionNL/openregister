@@ -62,11 +62,7 @@ final class BulkSaveOutcomes {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public static function fromBatchStatus(
-		BatchOperationStatusInterface $status,
-		int $requestedCount,
-		int $accountedCount
-	): BulkSaveOutcomeInterface {
+	public static function fromBatchStatus(BatchOperationStatusInterface $status, int $requestedCount, int $accountedCount): BulkSaveOutcomeInterface {
 		return BulkSaveOutcome::fromBatchStatus(status: $status, requestedCount: $requestedCount, accountedCount: $accountedCount);
 	}//end fromBatchStatus()
 }//end class
