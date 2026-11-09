@@ -68,6 +68,14 @@ trait RecordsQueries {
 	protected int $affected = 1;
 
 	/**
+	 * Outcomes of the next executeStatement() calls, in order: an int is
+	 * returned, a Throwable is thrown. When empty, `$affected` is returned.
+	 *
+	 * @var list<int|\Throwable>
+	 */
+	protected array $outcomes = [];
+
+	/**
 	 * Build a connection whose query builders record into this test.
 	 *
 	 * @return IDBConnection&MockObject
@@ -224,7 +232,12 @@ trait RecordsQueries {
 		$qb->method('executeStatement')->willReturnCallback(
 			function () use ($index): int {
 				$this->queries[$index][] = 'executeStatement()';
-				return $this->affected;
+				$outcome                 = array_shift($this->outcomes);
+				if ($outcome instanceof \Throwable) {
+					throw $outcome;
+				}
+
+				return ($outcome ?? $this->affected);
 			}
 		);
 		$qb->method('getLastInsertId')->willReturn(42);
