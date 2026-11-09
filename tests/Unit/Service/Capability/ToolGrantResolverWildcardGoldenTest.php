@@ -54,7 +54,9 @@ class ToolGrantResolverWildcardGoldenTest extends TestCase {
 	public function testReadWildcardAllowsOnlyCatalogReadVerbs(): void {
 		$resolver = new ToolGrantResolver();
 
-		$this->assertSame(['pipelinq.lead.get'], $resolver->resolve(['pipelinq.lead.*'], $this->partialCatalog()));
+		$resolved = $resolver->resolve(grants: ['pipelinq.lead.*'], catalog: $this->partialCatalog());
+
+		$this->assertSame(['pipelinq.lead.get'], $resolved);
 	}//end testReadWildcardAllowsOnlyCatalogReadVerbs()
 
 	/**
@@ -65,10 +67,9 @@ class ToolGrantResolverWildcardGoldenTest extends TestCase {
 	public function testWriteWildcardAllowsCatalogVerbsInVerbOrder(): void {
 		$resolver = new ToolGrantResolver();
 
-		$this->assertSame(
-			['pipelinq.lead.get', 'pipelinq.lead.update', 'pipelinq.lead.delete'],
-			$resolver->resolve(['pipelinq.lead.*:write'], $this->partialCatalog())
-		);
+		$resolved = $resolver->resolve(grants: ['pipelinq.lead.*:write'], catalog: $this->partialCatalog());
+
+		$this->assertSame(['pipelinq.lead.get', 'pipelinq.lead.update', 'pipelinq.lead.delete'], $resolved);
 	}//end testWriteWildcardAllowsCatalogVerbsInVerbOrder()
 
 	/**
@@ -79,8 +80,11 @@ class ToolGrantResolverWildcardGoldenTest extends TestCase {
 	public function testWildcardOverAnUnknownSchemaAllowsNothing(): void {
 		$resolver = new ToolGrantResolver();
 
-		$this->assertSame([], $resolver->resolve(['pipelinq.contact.*:write'], $this->partialCatalog()));
-		$this->assertSame([], $resolver->resolve(['pipelinq.lea.*:write'], $this->partialCatalog()));
+		$unknownSchema = $resolver->resolve(grants: ['pipelinq.contact.*:write'], catalog: $this->partialCatalog());
+		$schemaPrefix = $resolver->resolve(grants: ['pipelinq.lea.*:write'], catalog: $this->partialCatalog());
+
+		$this->assertSame([], $unknownSchema);
+		$this->assertSame([], $schemaPrefix);
 	}//end testWildcardOverAnUnknownSchemaAllowsNothing()
 
 	/**
@@ -91,11 +95,14 @@ class ToolGrantResolverWildcardGoldenTest extends TestCase {
 	public function testWaiverAppliesOnlyToASatisfiedWaivedAlternative(): void {
 		$sets = ['pipelinq.lead.update' => [['status' => ['mode' => 'pin', 'values' => ['won']]]], 'pipelinq.lead.delete' => [[]]];
 
-		$this->assertTrue(ToolGrantResolver::waives($sets, 'pipelinq.lead.update', ['status' => 'won']));
-		$this->assertFalse(ToolGrantResolver::waives($sets, 'pipelinq.lead.update', ['status' => 'lost']));
-		$this->assertFalse(ToolGrantResolver::waives($sets, 'pipelinq.lead.update', []));
-		$this->assertTrue(ToolGrantResolver::waives($sets, 'pipelinq.lead.delete', ['id' => 'x']));
-		$this->assertFalse(ToolGrantResolver::waives($sets, 'pipelinq.lead.get', []));
-		$this->assertFalse(ToolGrantResolver::waives(['pipelinq.lead.get' => []], 'pipelinq.lead.get', []));
+		$outcomes = [];
+		$outcomes[] = ToolGrantResolver::waives(waivedSets: $sets, toolId: 'pipelinq.lead.update', arguments: ['status' => 'won']);
+		$outcomes[] = ToolGrantResolver::waives(waivedSets: $sets, toolId: 'pipelinq.lead.update', arguments: ['status' => 'lost']);
+		$outcomes[] = ToolGrantResolver::waives(waivedSets: $sets, toolId: 'pipelinq.lead.update', arguments: []);
+		$outcomes[] = ToolGrantResolver::waives(waivedSets: $sets, toolId: 'pipelinq.lead.delete', arguments: ['id' => 'x']);
+		$outcomes[] = ToolGrantResolver::waives(waivedSets: $sets, toolId: 'pipelinq.lead.get', arguments: []);
+		$outcomes[] = ToolGrantResolver::waives(waivedSets: ['pipelinq.lead.get' => []], toolId: 'pipelinq.lead.get', arguments: []);
+
+		$this->assertSame([true, false, false, true, false, false], $outcomes);
 	}//end testWaiverAppliesOnlyToASatisfiedWaivedAlternative()
 }//end class
