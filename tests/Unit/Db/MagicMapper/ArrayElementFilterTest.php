@@ -29,8 +29,10 @@ use Doctrine\DBAL\Platforms\PostgreSQL120Platform;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\ArrayElementFilter;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
@@ -219,7 +221,7 @@ class ArrayElementFilterTest extends TestCase {
 		);
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyArrayElementFilters');
-		$method->invoke($this->handler(mayRead: $mayRead, postgres: true), $qb, $query, $schema);
+		$method->invoke($this->handler(mayRead: $mayRead, postgres: true), new TableFilterRun(qb: $qb, query: $query, table: new MagicReadTable(schema: $schema)));
 
 		return $this->captured;
 	}//end apply()
