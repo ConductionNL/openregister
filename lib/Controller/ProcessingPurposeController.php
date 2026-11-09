@@ -77,7 +77,7 @@ class ProcessingPurposeController extends Controller {
 	 * @param string                    $appName    App identifier.
 	 * @param IRequest                  $request    Active request.
 	 * @param ProcessingPurposeMapperInterface   $purposes   The administered list.
-	 * @param PurposeRegistryInterface           $registry   Resolves a purpose to its activity.
+	 * @param PurposeRegistryInterface  $registry   Resolves a purpose to its activity.
 	 * @param AuditTrailMapperInterface $auditTrail Counts entries per purpose.
 	 * @param ControllerSession         $session    Session, group manager and logger.
 	 */
