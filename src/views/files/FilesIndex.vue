@@ -138,6 +138,7 @@ import ActionMenu from '../../components/shared/ActionMenu.vue'
 import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import OffsetPager from '../../components/shared/OffsetPager.vue'
+import { sidebarToggle } from '../../composables/sidebarToggle.js'
 import { displayDateTime } from '../../services/displayDateTime.js'
 import { refreshAction } from '../../services/menuActions.js'
 import { offsetPaging } from '../offsetPaging.js'
@@ -232,15 +233,7 @@ export default {
 
 		t,
 
-		/**
-		 * Toggle sidebar visibility
-		 *
-		 * @spec exclude list-view detail-sidebar toggle plumbing
-		 * @return {void}
-		 */
-		toggleSidebar() {
-			this.sidebarOpen = !this.sidebarOpen
-		},
+		...sidebarToggle,
 
 		/**
 		 * Toggle sort field and direction
