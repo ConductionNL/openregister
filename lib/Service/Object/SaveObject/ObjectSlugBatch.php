@@ -33,17 +33,29 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 class ObjectSlugBatch {
 
 	/**
+	 * Slug state queries.
+	 *
+	 * @var ObjectSlugStore
+	 */
+	private readonly ObjectSlugStore $store;
+
+	/**
+	 * Receives the warnings.
+	 *
+	 * @var ObjectSlugLog
+	 */
+	private readonly ObjectSlugLog $log;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectSlugHandler $handler The single-save rules this batch reuses.
-	 * @param ObjectSlugStore   $store   Slug state queries.
-	 * @param ObjectSlugLog     $log     Receives the warnings.
+	 * @param ObjectSlugHandler $handler The single-save rules this batch reuses, with its slug store and log.
 	 */
 	public function __construct(
 		private readonly ObjectSlugHandler $handler,
-		private readonly ObjectSlugStore $store,
-		private readonly ObjectSlugLog $log,
 	) {
+		$this->store = $handler->store;
+		$this->log   = $handler->log;
 	}//end __construct()
 
 	/**

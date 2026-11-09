@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -58,21 +59,41 @@ class RelationCascadeHandler {
 	public const SYSTEM_SCOPE = ['_rbac' => false, '_multitenancy' => false];
 
 	/**
+	 * Object entity data mapper.
+	 *
+	 * @var MagicObjectFinderInterface
+	 */
+	private readonly MagicObjectFinderInterface $objectEntityMapper;
+
+	/**
+	 * Schema mapper for schema operations.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register mapper for register operations.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Constructor for RelationCascadeHandler.
 	 *
-	 * @param MagicObjectFinderInterface $objectEntityMapper Object entity data mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations.
-	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations.
-	 * @param LoggerInterface $logger Logger interface for logging operations.
+	 * @param SchemaCatalogInterface $catalog The register, schema and object mappers.
+	 * @param LoggerInterface        $logger  Logger interface for logging operations.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicObjectFinderInterface $objectEntityMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->objectEntityMapper = $catalog->tables();
+		$this->schemaMapper       = $catalog->schemas();
+		$this->registerMapper     = $catalog->registers();
 	}//end __construct()
 
 	/**

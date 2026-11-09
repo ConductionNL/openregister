@@ -76,11 +76,11 @@ class ObjectSlugHandler implements ObjectSlugTargetInterface {
 	 * @param ObjectSlugLog    $log    Writes the [ObjectSlug] warnings.
 	 */
 	public function __construct(
-		private readonly ObjectSlugStore $store,
+		public readonly ObjectSlugStore $store,
 		private readonly ObjectSlugSource $source,
-		private readonly ObjectSlugLog $log,
+		public readonly ObjectSlugLog $log,
 	) {
-		$this->batch = new ObjectSlugBatch(handler: $this, store: $store, log: $log);
+		$this->batch = new ObjectSlugBatch(handler: $this);
 	}//end __construct()
 
 	/**
