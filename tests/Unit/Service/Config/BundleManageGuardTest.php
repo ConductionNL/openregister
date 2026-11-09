@@ -132,18 +132,46 @@ class BundleManageGuardTest extends TestCase {
 		$this->guard->assertAllowed(['objects' => [['@self' => ['register' => 'woo', 'schema' => 'publication']]]]);
 	}
 
-	public function testSeedObjectsIntoTheBundlesOwnNewDefinitionsPass(): void {
+	/**
+	 * pp-f9: a non-admin may not seed objects at all, even into the bundle's own new definitions.
+	 *
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public static function seedBundles(): array {
+		$object = [['@self' => ['register' => 'nieuw', 'schema' => 'nieuw-schema']]];
+		return [
+			'components.objects'             => [['components' => ['objects' => $object]]],
+			'top-level objects'              => [['objects' => $object]],
+			'x-openregister.seedData.objects' => [['x-openregister' => ['seedData' => ['objects' => ['nieuw-schema' => $object]]]]],
+		];
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('seedBundles')]
+	public function testANonAdminMayNotSeedObjectsInAnyBucket(array $bundle): void {
 		$this->gate->method('isAdministrator')->willReturn(false);
 		$this->registers->method('findAllByIdentifier')->willReturn([]);
-		$this->schemas->expects($this->once())->method('findAllByIdentifier')->with('nieuw-schema')->willReturn([]);
+		$this->schemas->method('findAllByIdentifier')->willReturn([]);
 
-		$this->guard->assertAllowed([
-			'components' => [
-				'registers' => ['nieuw' => []],
-				'schemas'   => ['nieuw-schema' => []],
-				'objects'   => [['@self' => ['register' => 'nieuw', 'schema' => 'nieuw-schema']]],
-			],
-		]);
+		$this->expectException(NotAuthorizedException::class);
+		$this->guard->assertAllowed($bundle);
+	}
+
+	public function testEveryImporterSeedBucketIsListed(): void {
+		$importer = (string)file_get_contents(__DIR__ . '/../../../../lib/Service/Configuration/ImportHandler.php');
+		foreach (["['components']['objects']", "['objects']", "['x-openregister']['seedData']"] as $read) {
+			$this->assertStringContainsString($read, $importer, 'ImportHandler reads ' . $read);
+		}
+
+		$this->assertSame(
+			[['components', 'objects'], ['objects'], ['x-openregister', 'seedData', 'objects']],
+			BundleManageGuard::SEED_OBJECT_PATHS
+		);
+	}
+
+	public function testAnAdministratorMaySeedObjects(): void {
+		$this->gate->method('isAdministrator')->willReturn(true);
+
+		$this->guard->assertAllowed(['objects' => [['@self' => ['schema' => 'x']]]]);
 		$this->addToAssertionCount(1);
 	}
 

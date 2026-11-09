@@ -40,6 +40,19 @@ use Throwable;
 class BundleManageGuard {
 
 	/**
+	 * Every bundle path ImportHandler writes objects from (components.objects,
+	 * top-level objects, x-openregister.seedData.objects). A new seed bucket in
+	 * the importer belongs here too.
+	 *
+	 * @var list<list<string>>
+	 */
+	public const SEED_OBJECT_PATHS = [
+		['components', 'objects'],
+		['objects'],
+		['x-openregister', 'seedData', 'objects'],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RegisterMapper   $registerMapper Finds an existing register by slug.
@@ -57,7 +70,8 @@ class BundleManageGuard {
 	 * Refuse the bundle when it names an existing register or schema the caller may not manage.
 	 *
 	 * New registers and schemas are not judged here: who may install at all is
-	 * FederatedConfigAccess::canInstall(). Administrators always pass.
+	 * FederatedConfigAccess::canInstall(). A bundle that seeds objects (any of
+	 * SEED_OBJECT_PATHS) is refused for a non-administrator. Administrators always pass.
 	 *
 	 * @param array<string, mixed> $bundle The bundle.
 	 *
@@ -86,21 +100,12 @@ class BundleManageGuard {
 			}
 		}
 
-		// Seed objects are saved as the system into whatever register and schema
-		// their `@self` names. A target the bundle defines itself was judged above;
-		// any other existing target must be one the caller may manage.
-		foreach ($this->seedTargets(bundle: $bundle) as [$register, $schema]) {
-			if ($register !== '' && in_array($register, $registerSlugs, true) === false
-				&& $this->mayOverwriteRegister(slug: $register) === false
-			) {
-				throw new NotAuthorizedException(message: 'This bundle would write objects into a register you may not manage');
-			}
-
-			if ($schema !== '' && in_array($schema, $schemaSlugs, true) === false
-				&& $this->mayOverwriteSchema(slug: $schema) === false
-			) {
-				throw new NotAuthorizedException(message: 'This bundle would write objects into a schema you may not manage');
-			}
+		// Seed objects are written as the system, with no RBAC, into registers
+		// and schemas the importer resolves by several paths. Rather than chase
+		// each path, a bundle that seeds objects is for administrators only
+		// (and SystemOperationContext / CLI work, which do not come through here).
+		if ($this->carriesSeedObjects(bundle: $bundle) === true) {
+			throw new NotAuthorizedException(message: 'Only an administrator may install a bundle that seeds objects');
 		}
 	}//end assertAllowed()
 
@@ -158,63 +163,30 @@ class BundleManageGuard {
 	}//end mayOverwriteSchema()
 
 	/**
-	 * The register and schema each seed object of the bundle targets.
-	 *
-	 * Every bucket ImportHandler seeds objects from:
-	 *  - `components.objects` and top-level `objects` (`@self.register` / `@self.schema`);
-	 *  - `x-openregister.seedData.objects`, keyed by schema slug, written into the
-	 *    bundle's first register (or the app configuration's register when the
-	 *    bundle has none, which this guard cannot see, so only the schema is judged).
+	 * Whether the bundle holds objects in any bucket ImportHandler seeds from.
 	 *
 	 * @param array<string, mixed> $bundle The bundle.
 	 *
-	 * @return list<array{0: string, 1: string}> Register and schema identifier per seed object.
+	 * @return bool True when any seed bucket is a non-empty list.
 	 */
-	private function seedTargets(array $bundle): array {
-		$targets = [];
-		foreach ([($bundle['components']['objects'] ?? null), ($bundle['objects'] ?? null)] as $bucket) {
-			if (is_array($bucket) === false) {
-				continue;
-			}
-
-			foreach ($bucket as $object) {
-				if (is_array($object) === false || is_array($object['@self'] ?? null) === false) {
-					continue;
+	private function carriesSeedObjects(array $bundle): bool {
+		foreach (self::SEED_OBJECT_PATHS as $path) {
+			$value = $bundle;
+			foreach ($path as $key) {
+				if (is_array($value) === false) {
+					break;
 				}
 
-				$self = $object['@self'];
-				$targets[] = [
-					$this->identifier(value: ($self['register'] ?? null)),
-					$this->identifier(value: ($self['schema'] ?? null)),
-				];
+				$value = ($value[$key] ?? null);
+			}
+
+			if (is_array($value) === true && $value !== []) {
+				return true;
 			}
 		}
 
-		$seedData = ($bundle['x-openregister']['seedData']['objects'] ?? null);
-		if (is_array($seedData) === true) {
-			$firstRegister = ($this->slugs(documents: ($bundle['components']['registers'] ?? []))[0] ?? '');
-			foreach (array_keys($seedData) as $schemaSlug) {
-				$targets[] = [$firstRegister, (string)$schemaSlug];
-			}
-		}
-
-		return $targets;
-	}//end seedTargets()
-
-	/**
-	 * A scalar `@self` reference as a string, '' otherwise.
-	 *
-	 * @param mixed $value The reference.
-	 *
-	 * @return string The identifier.
-	 */
-	private function identifier(mixed $value): string {
-		if (is_scalar($value) === false) {
-			return '';
-		}
-
-		return (string)$value;
-	}//end identifier()
+		return false;
+	}//end carriesSeedObjects()
 
 	/**
 	 * The slugs of a bundle's register or schema documents.
