@@ -220,14 +220,7 @@ class AggregationCache implements AggregationCacheInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
 	 */
 	public function getAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query): ?array {
-		return $this->read(
-			slot: new AggregationSlot(
-				registerSlug: $registerSlug,
-				schemaSlug: $schemaSlug,
-				name: $this->adhocName(query: $query),
-				filter: $query->filter
-			)
-		);
+		return $this->read(slot: AggregationSlot::fromAdhocQuery(registerSlug: $registerSlug, schemaSlug: $schemaSlug, query: $query));
 	}//end getAdhoc()
 
 	/**
@@ -247,35 +240,9 @@ class AggregationCache implements AggregationCacheInterface {
 	 * @spec openspec/specs/aggregations-backend-native/spec.md
 	 */
 	public function setAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query, array $result): void {
-		$slot = new AggregationSlot(
-			registerSlug: $registerSlug,
-			schemaSlug: $schemaSlug,
-			name: $this->adhocName(query: $query),
-			filter: $query->filter
-		);
+		$slot = AggregationSlot::fromAdhocQuery(registerSlug: $registerSlug, schemaSlug: $schemaSlug, query: $query);
 		$this->write(slot: $slot, result: $result);
 	}//end setAdhoc()
-
-	/**
-	 * Derive the cache name slot for an ad-hoc query.
-	 *
-	 * Computes `'adhoc:'.sha1(json_encode($query->toArray()))`. The
-	 * `AggregationQuery::toArray()` output is ksort-stable so two
-	 * structurally-equivalent queries produce identical hashes.
-	 *
-	 * @param AggregationQuery $query The ad-hoc query value object.
-	 *
-	 * @return string The cache name slot, prefixed with `adhoc:`.
-	 */
-	private function adhocName(AggregationQuery $query): string {
-		$encoded = json_encode($query->toArray());
-		$encodedStr = '';
-		if ($encoded !== false) {
-			$encodedStr = $encoded;
-		}
-
-		return 'adhoc:' . sha1($encodedStr);
-	}//end adhocName()
 
 	/**
 	 * Evict every cached aggregation for a (register, schema). Called by
