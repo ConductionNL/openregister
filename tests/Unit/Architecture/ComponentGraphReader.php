@@ -241,8 +241,7 @@ final class ComponentGraphReader {
 	 * @return float
 	 */
 	public static function degreeOf(array $lines): float {
-		$total    = array_sum($lines);
-		$total    = $total === 0 ? 1 : $total;
+		$total = max(1, array_sum($lines));
 		$violated = [];
 		foreach ($lines as $pair => $weight) {
 			[$a, $b] = explode(' -> ', $pair);
@@ -287,7 +286,7 @@ final class ComponentGraphReader {
 		}
 
 		$sorted = array_keys($remaining);
-		usort($sorted, fn (string $l, string $r): int => self::pairLess(left: $l, right: $r) === true ? -1 : ($l === $r ? 0 : 1));
+		usort($sorted, fn (string $l, string $r): int => self::pairOrder(left: $l, right: $r));
 		foreach ($sorted as $pair) {
 			[$a, $b] = explode(' -> ', $pair);
 			if (($outgoing[$b] ?? 0) === 0) {
@@ -317,6 +316,25 @@ final class ComponentGraphReader {
 	}//end degreeOf()
 
 	/**
+	 * Comparison result of two "a -> b" pairs in Python tuple order.
+	 *
+	 * @param string $left  Pair.
+	 * @param string $right Pair.
+	 *
+	 * @return int
+	 */
+	private static function pairOrder(string $left, string $right): int {
+		[$la, $lb] = explode(' -> ', $left);
+		[$ra, $rb] = explode(' -> ', $right);
+		$first     = strcmp($la, $ra);
+		if ($first !== 0) {
+			return $first;
+		}
+
+		return strcmp($lb, $rb);
+	}//end pairOrder()
+
+	/**
 	 * Python tuple order of two "a -> b" pairs.
 	 *
 	 * @param string $left  Pair.
@@ -325,10 +343,7 @@ final class ComponentGraphReader {
 	 * @return bool
 	 */
 	private static function pairLess(string $left, string $right): bool {
-		[$la, $lb] = explode(' -> ', $left);
-		[$ra, $rb] = explode(' -> ', $right);
-		$first     = strcmp($la, $ra);
-		return $first < 0 || ($first === 0 && strcmp($lb, $rb) < 0);
+		return self::pairOrder(left: $left, right: $right) < 0;
 	}//end pairLess()
 
 	/**
@@ -412,7 +427,10 @@ final class ComponentGraphReader {
 		while ($todo !== []) {
 			$n = array_pop($todo);
 			foreach ($adj[$n] ?? [] as $m) {
-				$edge = $reverse === true ? [$m, $n] : [$n, $m];
+				$edge = [$n, $m];
+				if ($reverse === true) {
+					$edge = [$m, $n];
+				}
 				if ($edge !== $skip && isset($seen[$m]) === false) {
 					$seen[$m] = true;
 					$todo[]   = $m;
@@ -472,7 +490,12 @@ final class ComponentGraphReader {
 
 			if (preg_match('/^\s*-\s*(.+?)\s*$/', $line, $m) === 1 && $comps !== [] && $key !== null) {
 				$pattern = trim(trim($m[1], self::PY_WHITESPACE), '"\'');
-				$comps[count($comps) - 1][$key === 'include' ? 1 : 2][] = self::fullMatch(pattern: $pattern);
+				$slot = 2;
+				if ($key === 'include') {
+					$slot = 1;
+				}
+
+				$comps[count($comps) - 1][$slot][] = self::fullMatch(pattern: $pattern);
 			}
 		}//end foreach
 

@@ -192,8 +192,11 @@ class ComponentDependencyRulesTest extends TestCase {
 	 */
 	private function tree(): ComponentGraphReader {
 		if (self::$tree === null) {
-			$own        = self::ROOT . '/sigrid.components.yaml';
-			$components = is_file($own) === true ? $own : __DIR__ . '/fixtures/components.yaml';
+			$components = __DIR__ . '/fixtures/components.yaml';
+			if (is_file(self::ROOT . '/sigrid.components.yaml') === true) {
+				$components = self::ROOT . '/sigrid.components.yaml';
+			}
+
 			self::$tree = new ComponentGraphReader(self::ROOT, $components, $this->scopeExcludes(root: self::ROOT));
 		}
 
