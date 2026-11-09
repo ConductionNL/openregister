@@ -6,8 +6,8 @@
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { useSettingsStore } from '../../store/settings.js'
 import Settings from './Settings.vue'
+import { useSettingsStore } from '../../store/settings.js'
 
 jest.mock('../../store/settings.js', () => {
 	const { defineStore } = require('pinia')

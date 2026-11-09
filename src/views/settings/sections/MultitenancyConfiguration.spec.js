@@ -5,8 +5,8 @@
  * @copyright 2026 Conduction B.V.
  */
 import { mount } from '@vue/test-utils'
-import { useSettingsStore } from '../../../store/settings.js'
 import MultitenancyConfiguration from './MultitenancyConfiguration.vue'
+import { useSettingsStore } from '../../../store/settings.js'
 
 jest.mock('@nextcloud/l10n', () => ({ translate: (app, text) => text }))
 jest.mock('../../../store/settings.js', () => {

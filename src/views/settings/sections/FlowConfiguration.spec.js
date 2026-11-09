@@ -5,8 +5,8 @@
  * @copyright 2026 Conduction B.V.
  */
 import { flushPromises, mount } from '@vue/test-utils'
-import { useSettingsStore } from '../../../store/settings.js'
 import FlowConfiguration from './FlowConfiguration.vue'
+import { useSettingsStore } from '../../../store/settings.js'
 
 jest.mock('../../../store/settings.js', () => {
 	const { reactive } = require('vue')

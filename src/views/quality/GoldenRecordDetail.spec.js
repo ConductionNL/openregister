@@ -5,8 +5,8 @@
  * @copyright 2026 Conduction B.V.
  */
 import { flushPromises, mount } from '@vue/test-utils'
-import { qualityStore } from '../../store/store.js'
 import GoldenRecordDetail from './GoldenRecordDetail.vue'
+import { qualityStore } from '../../store/store.js'
 
 jest.mock('@nextcloud/l10n', () => ({
 	translate: (app, text, vars) => (vars ? text.replace(/\{(\w+)\}/g, (m, k) => vars[k]) : text),
