@@ -41,7 +41,9 @@ use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Relation\ObjectTreeMappers;
+use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
 use OCA\OpenRegister\Service\Relation\ObjectTreeService;
+use OCA\OpenRegister\Service\Relation\ObjectTreeSources;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
 use OCA\OpenRegister\Service\Relation\RelationGraphSources;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
@@ -218,10 +220,12 @@ class ObjectTreeServiceTest extends TestCase {
 		);
 
 		return new ObjectTreeService(
-			descender: $descender,
-			hierarchies: new HierarchyGrantExpander(descender: $descender, logger: $logger),
+			sources: new ObjectTreeSources(
+				descender: $descender,
+				hierarchies: new HierarchyGrantExpander(descender: $descender, logger: $logger),
+				graphs: $graphs
+			),
 			mappers: new ObjectTreeMappers(objectMapper: $objectMapper, registerMapper: $registerMapper, schemaMapper: $schemaMapper),
-			graphs: $graphs,
 			renderer: ($this->renderer ?? $this->createMock(RenderObject::class)),
 			logger: $logger
 		);
@@ -285,7 +289,7 @@ class ObjectTreeServiceTest extends TestCase {
 	public function testDescendantsCarryLevelNameAndFields(): void {
 		$tree = $this->service(parentOf: self::group())->tree(
 			root: $this->organisation(uuid: 'holding', parent: null),
-			fields: ['kvkNumber']
+			query: new ObjectTreeQuery(fields: ['kvkNumber'])
 		);
 
 		$this->assertSame(['holding' => 0, 'sub-a' => 1, 'sub-b' => 1, 'sub-a1' => 2], self::levels(tree: $tree));
@@ -310,7 +314,7 @@ class ObjectTreeServiceTest extends TestCase {
 		$this->assertSame(['a' => 0, 'b' => 1, 'c' => 2], self::levels(tree: $down));
 		$this->assertFalse($down['truncated']);
 
-		$up = $service->tree(root: $this->organisation(uuid: 'a', parent: 'c'), direction: ObjectTreeService::DIRECTION_ANCESTORS);
+		$up = $service->tree(root: $this->organisation(uuid: 'a', parent: 'c'), query: new ObjectTreeQuery(direction: ObjectTreeService::DIRECTION_ANCESTORS));
 		$this->assertSame(['b' => -2, 'c' => -1, 'a' => 0], self::levels(tree: $up));
 	}//end testACycleIsWalkedOnce()
 
@@ -322,7 +326,7 @@ class ObjectTreeServiceTest extends TestCase {
 	public function testTheDepthBoundIsReportedAsTruncation(): void {
 		$tree = $this->service(parentOf: self::group())->tree(
 			root: $this->organisation(uuid: 'holding', parent: null),
-			depth: 1
+			query: new ObjectTreeQuery(depth: 1)
 		);
 
 		$this->assertSame(['holding' => 0, 'sub-a' => 1, 'sub-b' => 1], self::levels(tree: $tree));
@@ -337,7 +341,7 @@ class ObjectTreeServiceTest extends TestCase {
 	 */
 	public function testTheDeclaredDepthCapsTheRequest(): void {
 		$chain = ['l0' => null, 'l1' => 'l0', 'l2' => 'l1', 'l3' => 'l2', 'l4' => 'l3', 'l5' => 'l4'];
-		$tree = $this->service(parentOf: $chain)->tree(root: $this->organisation(uuid: 'l0', parent: null), depth: 50);
+		$tree = $this->service(parentOf: $chain)->tree(root: $this->organisation(uuid: 'l0', parent: null), query: new ObjectTreeQuery(depth: 50));
 
 		$this->assertSame(4, $tree['depth']);
 		$this->assertArrayNotHasKey('l5', self::levels(tree: $tree));
@@ -351,7 +355,7 @@ class ObjectTreeServiceTest extends TestCase {
 	 */
 	public function testADepthBelowOneWalksOneLevel(): void {
 		$chain = ['l0' => null, 'l1' => 'l0', 'l2' => 'l1'];
-		$tree = $this->service(parentOf: $chain)->tree(root: $this->organisation(uuid: 'l0', parent: null), depth: 0);
+		$tree = $this->service(parentOf: $chain)->tree(root: $this->organisation(uuid: 'l0', parent: null), query: new ObjectTreeQuery(depth: 0));
 
 		$this->assertSame(1, $tree['depth']);
 		$this->assertSame(0, $tree['requestedDepth']);
@@ -412,12 +416,12 @@ class ObjectTreeServiceTest extends TestCase {
 	public function testAncestorsStopAtAnUnreadableOne(): void {
 		$root = $this->organisation(uuid: 'sub-a1', parent: 'sub-a');
 
-		$all = $this->service(parentOf: self::group())->tree(root: $root, direction: ObjectTreeService::DIRECTION_BOTH);
+		$all = $this->service(parentOf: self::group())->tree(root: $root, query: new ObjectTreeQuery(direction: ObjectTreeService::DIRECTION_BOTH));
 		$this->assertSame(['holding' => -2, 'sub-a' => -1, 'sub-a1' => 0], self::levels(tree: $all));
 
 		$hidden = $this->service(parentOf: self::group(), readable: ['sub-a1', 'holding'])->tree(
 			root: $root,
-			direction: ObjectTreeService::DIRECTION_ANCESTORS
+			query: new ObjectTreeQuery(direction: ObjectTreeService::DIRECTION_ANCESTORS)
 		);
 		$this->assertSame(['sub-a1' => 0], self::levels(tree: $hidden));
 	}//end testAncestorsStopAtAnUnreadableOne()
@@ -482,8 +486,7 @@ class ObjectTreeServiceTest extends TestCase {
 		$root = $this->organisation(uuid: 'sub-a', parent: 'holding', extra: ['secret' => 's3cret', 'restricted' => 'no', 'open' => 'yes']);
 		$tree = $this->service(parentOf: self::group())->tree(
 			root: $root,
-			direction: ObjectTreeService::DIRECTION_BOTH,
-			fields: ['secret', 'restricted', 'open']
+			query: new ObjectTreeQuery(direction: ObjectTreeService::DIRECTION_BOTH, fields: ['secret', 'restricted', 'open'])
 		);
 
 		$this->assertGreaterThanOrEqual(3, $redactions);
@@ -526,7 +529,7 @@ class ObjectTreeServiceTest extends TestCase {
 		$this->assertTrue($down['truncated']);
 		$this->assertSame(ObjectTreeService::TRUNCATED_UNREADABLE, $down['truncatedBy']);
 
-		$up = $service->tree(root: $this->organisation(uuid: 'sub-a', parent: 'holding'), direction: ObjectTreeService::DIRECTION_ANCESTORS);
+		$up = $service->tree(root: $this->organisation(uuid: 'sub-a', parent: 'holding'), query: new ObjectTreeQuery(direction: ObjectTreeService::DIRECTION_ANCESTORS));
 		$this->assertSame(['sub-a' => 0], self::levels(tree: $up));
 		$this->assertTrue($up['truncated']);
 		$this->assertSame(ObjectTreeService::TRUNCATED_UNREADABLE, $up['truncatedBy']);
@@ -560,7 +563,7 @@ class ObjectTreeServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnExhaustedCapWithUnreadChildrenBelowIsReportedAsCap(): void {
-		$tree = $this->service(parentOf: self::group(), cap: 3)->tree(root: $this->organisation(uuid: 'holding', parent: null), depth: 1);
+		$tree = $this->service(parentOf: self::group(), cap: 3)->tree(root: $this->organisation(uuid: 'holding', parent: null), query: new ObjectTreeQuery(depth: 1));
 
 		$this->assertSame(['holding' => 0, 'sub-a' => 1, 'sub-b' => 1], self::levels(tree: $tree));
 		$this->assertTrue($tree['truncated']);
@@ -587,7 +590,7 @@ class ObjectTreeServiceTest extends TestCase {
 	public function testTheTopmostAncestorDoesNotNameAHiddenParent(): void {
 		$tree = $this->service(parentOf: self::group(), readable: ['sub-a1', 'sub-a'])->tree(
 			root: $this->organisation(uuid: 'sub-a1', parent: 'sub-a'),
-			direction: ObjectTreeService::DIRECTION_ANCESTORS
+			query: new ObjectTreeQuery(direction: ObjectTreeService::DIRECTION_ANCESTORS)
 		);
 
 		$this->assertSame(['sub-a' => -1, 'sub-a1' => 0], self::levels(tree: $tree));
@@ -603,8 +606,7 @@ class ObjectTreeServiceTest extends TestCase {
 	public function testTheAncestorAtTheDepthBoundNamesItsReadableParent(): void {
 		$tree = $this->service(parentOf: self::group())->tree(
 			root: $this->organisation(uuid: 'sub-a1', parent: 'sub-a'),
-			direction: ObjectTreeService::DIRECTION_ANCESTORS,
-			depth: 1
+			query: new ObjectTreeQuery(direction: ObjectTreeService::DIRECTION_ANCESTORS, depth: 1)
 		);
 
 		$this->assertSame(['sub-a' => -1, 'sub-a1' => 0], self::levels(tree: $tree));

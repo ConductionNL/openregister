@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Service\ObjectAction;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
@@ -94,13 +94,13 @@ class ObjectActionStepsFlow {
 	 *
 	 * @param FlowNodeCatalogueInterface $registry The node types steps may name.
 	 * @param FlowDefinitionBuilder      $builder  Lowers steps to a flow document.
-	 * @param FlowMapper                 $flows    Finds and stores the lowered flow.
+	 * @param FlowMapperInterface        $flows    Finds and stores the lowered flow.
 	 * @param FlowVersionService         $versions Publishes the lowered flow.
 	 */
 	public function __construct(
 		private readonly FlowNodeCatalogueInterface $registry,
 		private readonly FlowDefinitionBuilder $builder,
-		private readonly FlowMapper $flows,
+		private readonly FlowMapperInterface $flows,
 		private readonly FlowVersionService $versions,
 	) {
 	}//end __construct()

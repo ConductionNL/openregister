@@ -163,27 +163,41 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	}//end resolve()
 
 	/**
+	 * The target of a run: the object, its schema, and the register and schema as the caller named them.
+	 *
+	 * @param ObjectEntity $object    The subject.
+	 * @param Schema       $schema    Its schema.
+	 * @param string       $register  The register as the caller named it.
+	 * @param string       $schemaRef The schema as the caller named it.
+	 *
+	 * @return ObjectActionTarget The target.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
+	 */
+	public function target(ObjectEntity $object, Schema $schema, string $register, string $schemaRef): ObjectActionTarget {
+		return new ObjectActionTarget(object: $object, schema: $schema, register: $register, schemaRef: $schemaRef);
+	}//end target()
+
+	/**
 	 * Run an action on one object.
 	 *
-	 * @param ObjectEntity         $object  The subject.
-	 * @param Schema               $schema  Its schema.
-	 * @param string               $key     The action key.
-	 * @param array<string, mixed> $given   The inputs the caller sent.
-	 * @param array<string, mixed> $subject `{uuid, register, schema}` as the caller named them.
+	 * @param ObjectActionTarget   $target The subject, its schema and its address as the caller named it.
+	 * @param string               $key    The action key.
+	 * @param array<string, mixed> $given  The inputs the caller sent.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The HTTP status and body.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
-	public function run(ObjectEntity $object, Schema $schema, string $key, array $given, array $subject): array {
-		$checked = $this->check(object: $object, schema: $schema, key: $key, given: $given);
+	public function run(ObjectActionTarget $target, string $key, array $given): array {
+		$checked = $this->check(object: $target->object, schema: $target->schema, key: $key, given: $given);
 		if ($checked['refusal'] !== null) {
 			return $checked['refusal'];
 		}
 
 		$definition = $checked['definition'];
 		$inputs     = $checked['inputs'];
-		$execute    = fn (): array => $this->execute(object: $object, schema: $schema, definition: $definition, inputs: $inputs, subject: $subject);
+		$execute    = fn (): array => $this->execute(target: $target, definition: $definition, inputs: $inputs);
 		if ($definition->elevate === []) {
 			return $execute();
 		}
@@ -316,24 +330,22 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	/**
 	 * Step 5: execute the body its kind names.
 	 *
-	 * @param ObjectEntity           $object     The subject.
-	 * @param Schema                 $schema     Its schema.
+	 * @param ObjectActionTarget     $target     The subject, its schema and its address.
 	 * @param ObjectActionDefinition $definition The checked action.
 	 * @param array<string, mixed>   $inputs     The inputs, defaults resolved.
-	 * @param array<string, mixed>   $subject    `{uuid, register, schema}`.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The answer.
 	 */
-	private function execute(ObjectEntity $object, Schema $schema, ObjectActionDefinition $definition, array $inputs, array $subject): array {
+	private function execute(ObjectActionTarget $target, ObjectActionDefinition $definition, array $inputs): array {
 		if ($definition->kind === ObjectActionDefinition::KIND_TRANSITION) {
-			return $this->runTransition(object: $object, definition: $definition, inputs: $inputs);
+			return $this->runTransition(object: $target->object, definition: $definition, inputs: $inputs);
 		}
 
 		if ($definition->kind === ObjectActionDefinition::KIND_SELF_ASSIGN) {
-			return $this->runSelfAssign(object: $object, definition: $definition);
+			return $this->runSelfAssign(object: $target->object, definition: $definition);
 		}
 
-		return $this->flowRun->run(object: $object, schema: $schema, definition: $definition, inputs: $inputs, subject: $subject);
+		return $this->flowRun->run(target: $target, definition: $definition, inputs: $inputs);
 	}//end execute()
 
 	/**

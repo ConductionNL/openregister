@@ -340,16 +340,13 @@ class FlowRunService implements FlowRunServiceInterface {
 		$guard = $this->guardFor(run: $run, flow: $flow);
 		$context = $this->nodeContextFor(run: $run, resuming: true, guard: $guard);
 
-		$result = $this->engine->run(
+		$start = new FlowRunStart(
 			flow: $flow,
 			store: new FlowRunMarkingStore(run: $run),
 			subject: $subject,
-			dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope()),
-			context: $context,
-			items: ($run->getItems() ?? []),
-			startAt: null,
-			streams: $walk
+			dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope())
 		);
+		$result = $this->engine->run(start: $start->withContext(context: $context)->withStreams(streams: $walk), items: ($run->getItems() ?? []));
 
 		return $this->persistResult(run: $run, result: $result);
 	}//end advanceStream()
@@ -1029,15 +1026,16 @@ class FlowRunService implements FlowRunServiceInterface {
 		$walk = $this->streamWalkFor(run: $run, flow: $flow);
 
 		try {
-			$result = $this->engine->run(
+			$begin = new FlowRunStart(
 				flow: $flow,
 				store: new FlowRunMarkingStore(run: $run),
 				subject: $subject,
-				dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope()),
-				context: $context,
+				dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope())
+			);
+			$result = $this->engine->run(
+				start: $begin->withContext(context: $context)->withStreams(streams: $walk),
 				items: $items,
-				startAt: $start,
-				streams: $walk
+				startAt: $start
 			);
 		} catch (Throwable $e) {
 			return $this->failWalk(run: $run, walk: $walk, error: $e);
@@ -1888,4 +1886,19 @@ class FlowRunService implements FlowRunServiceInterface {
 
 	}//end recordLastRun()
 
+	/**
+	 * The items a run starts from, read from a seed exactly as a caller sent it.
+	 *
+	 * @param mixed $value The seed as sent.
+	 *
+	 * @return array<int, array<string, mixed>> The well-formed items.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Moved here with the call from FlowTestRunController:
+	 * FlowItems::normalise is a pure value-normaliser with no state to inject.
+	 *
+	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 */
+	public function seedItemsFrom(mixed $value): array {
+		return FlowItems::normalise(value: $value);
+	}//end seedItemsFrom()
 }//end class

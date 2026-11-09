@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\DeleteObject;
-use OCA\OpenRegister\Service\Object\RetentionDestruction;
+use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
@@ -100,6 +100,13 @@ final class DestructionListRun {
 	private readonly DeleteObject $deleteObject;
 
 	/**
+	 * Opens the retention-destruction frame, so no lock or archive stops the delete.
+	 *
+	 * @var RetentionDestructionInterface
+	 */
+	private readonly RetentionDestructionInterface $retentionDestruction;
+
+	/**
 	 * Saves the destruction certificate.
 	 *
 	 * @var SaveObjectWriterInterface
@@ -146,13 +153,14 @@ final class DestructionListRun {
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->retentionService = $container->get(RetentionServiceInterface::class);
-		$settingsHandler        = $container->get(ArchivalSettingsReaderInterface::class);
-		$this->objectMapper     = $container->get(MagicMapperInterface::class);
-		$this->auditMapper      = $container->get(AuditTrailMapperInterface::class);
-		$this->deleteObject     = $container->get(DeleteObject::class);
-		$this->saveObject       = $container->get(SaveObjectWriterInterface::class);
-		$this->settings         = $settingsHandler->getArchivalSettingsOnly();
+		$this->retentionService     = $container->get(RetentionServiceInterface::class);
+		$settingsHandler            = $container->get(ArchivalSettingsReaderInterface::class);
+		$this->objectMapper         = $container->get(MagicMapperInterface::class);
+		$this->auditMapper          = $container->get(AuditTrailMapperInterface::class);
+		$this->deleteObject         = $container->get(DeleteObject::class);
+		$this->retentionDestruction = $container->get(RetentionDestructionInterface::class);
+		$this->saveObject           = $container->get(SaveObjectWriterInterface::class);
+		$this->settings             = $settingsHandler->getArchivalSettingsOnly();
 	}//end __construct()
 
 	/**
@@ -307,7 +315,7 @@ final class DestructionListRun {
 		$object->setRetention($retention);
 		$this->audit(object: $object, objRef: $objRef);
 
-		(new RetentionDestruction())->run(
+		$this->retentionDestruction->run(
 			fn (): bool => $this->deleteObject->deleteObject($object->getRegister(), $object->getSchema(), (string)$uuid, null, false, false)
 		);
 		$this->count['destroyed']++;

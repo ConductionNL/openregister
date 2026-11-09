@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunRecorder;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -82,7 +83,7 @@ class ObjectActionFlowRunTest extends TestCase {
 			}
 		);
 
-		$answer = $this->body()->run(new ObjectEntity(), new Schema(), $this->sign(), ['pin' => '1234'], []);
+		$answer = $this->body()->run(new ObjectActionTarget(new ObjectEntity(), new Schema(), '', ''), $this->sign(), ['pin' => '1234']);
 
 		$this->assertSame(200, $answer['status']);
 		$this->assertSame([], ObjectActionSecrets::read($ref));
@@ -92,7 +93,7 @@ class ObjectActionFlowRunTest extends TestCase {
 		$this->flows->method('runForAction')->willThrowException(new RuntimeException('No engine.'));
 		$this->logger->expects($this->once())->method('warning');
 
-		$answer = $this->body()->run(new ObjectEntity(), new Schema(), $this->sign(), [], []);
+		$answer = $this->body()->run(new ObjectActionTarget(new ObjectEntity(), new Schema(), '', ''), $this->sign(), []);
 
 		$this->assertSame(['status' => 422, 'body' => ['error' => 'No engine.', 'action' => 'sign']], $answer);
 	}//end testAFailedStartIsLoggedAndAnswered422()

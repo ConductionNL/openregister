@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Contract\RegisterSlugResolution;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Support\RegisterSlugAliases;
+use OCA\OpenRegister\Support\RegisterSlugAliasesInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -123,15 +123,6 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 	 * @param list<string> $candidates Explicit candidates, or empty.
 	 *
 	 * @return list<string> Lower-cased candidates, newest first, deduplicated.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) RegisterSlugAliases is a final class
-	 *  holding one `const` array and no state. StaticAccess exists to catch a
-	 *  hidden dependency that should have been injected; there is nothing here
-	 *  to inject and nothing a test would want to swap. Making it a service
-	 *  would mean a DI registration and a constructor argument whose only
-	 *  purpose is to reach a compile-time constant, and would let a caller
-	 *  substitute a different alias map, which is precisely the drift the
-	 *  single declared map exists to prevent.
 	 */
 	private function candidateList(string $canonical, array $candidates): array {
 		$key = strtolower(trim($canonical));
@@ -139,7 +130,7 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 			return [];
 		}
 
-		$declared = RegisterSlugAliases::candidatesFor(canonical: $key);
+		$declared = (RegisterSlugAliasesInterface::ALIASES[$key] ?? [$key]);
 		if ($candidates !== []) {
 			$declared = $candidates;
 		}

@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
 use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
@@ -350,14 +351,8 @@ class RunLockReleaseTerminalityTest extends TestCase {
 	 */
 	private function walkFlow(FlowStepDispatcher $dispatcher): array {
 		return $this->engine->run(
-			flow: $this->flow(),
-			store: new FlowRunMarkingStore(run: $this->row),
-			subject: new stdClass(),
-			dispatcher: $dispatcher,
-			context: [],
-			items: [FlowItems::item(json: ['n' => 1])],
-			startAt: null,
-			streams: $this->walk
+			start: (new FlowRunStart(flow: $this->flow(), store: new FlowRunMarkingStore(run: $this->row), subject: new stdClass(), dispatcher: $dispatcher))->withStreams(streams: $this->walk),
+			items: [FlowItems::item(json: ['n' => 1])]
 		);
 	}//end walkFlow()
 
@@ -413,14 +408,8 @@ class RunLockReleaseTerminalityTest extends TestCase {
 			}
 
 			$result = $this->engine->run(
-				flow: $flow,
-				store: new FlowRunMarkingStore(run: $this->row),
-				subject: new stdClass(),
-				dispatcher: $drivers[$status](),
-				context: [],
-				items: [FlowItems::item(json: ['n' => 1])],
-				startAt: null,
-				streams: $this->walk
+				start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->row), subject: new stdClass(), dispatcher: $drivers[$status]()))->withStreams(streams: $this->walk),
+				items: [FlowItems::item(json: ['n' => 1])]
 			);
 
 			$this->assertSame($status, $result['status'], 'the walk did not reach ' . $status);

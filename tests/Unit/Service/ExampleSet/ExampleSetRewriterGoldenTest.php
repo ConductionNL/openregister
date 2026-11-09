@@ -91,14 +91,12 @@ class ExampleSetRewriterGoldenTest extends TestCase {
 			'object'   => ['key' => 'o1', 'register' => 'r', 'schema' => 's'],
 			'row'      => $row,
 		];
-		$kept    = (new ExampleSetRewriter())->keep(
-			plan: ['refresh' => $refresh],
-			run: $run,
-			resolve: fn (): array => $resolved,
-			references: fn (): array => ['references' => true],
-			report: $report,
-			written: $written
-		);
+		// Without a refresh the installer refreshes only the references; with one it rewrites.
+		$kept = ['references' => true];
+		if ($refresh === true) {
+			$kept = (new ExampleSetRewriter())->rewrite(run: $run, resolved: $resolved, report: $report, written: $written);
+		}
+
 		return [$kept, $report, $written];
 	}//end keep()
 

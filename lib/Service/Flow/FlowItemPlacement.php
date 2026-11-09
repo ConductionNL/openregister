@@ -29,7 +29,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use Symfony\Component\Workflow\Definition;
 use Symfony\Component\Workflow\Workflow;
 
 /**
@@ -80,7 +79,6 @@ class FlowItemPlacement {
 	 *
 	 * @param Workflow $workflow The workflow.
 	 * @param object $subject The subject holding the marking.
-	 * @param Definition $definition The definition (for the initial-place fallback).
 	 * @param array $items The seed items.
 	 * @param array<string, array>|null $stored The per-place items persisted by the last commit, or null when none.
 	 *
@@ -89,7 +87,7 @@ class FlowItemPlacement {
 	 * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
-	public function seedPlaceItems(Workflow $workflow, object $subject, Definition $definition, array $items, ?array $stored = null): array {
+	public function seedPlaceItems(Workflow $workflow, object $subject, array $items, ?array $stored = null): array {
 		$placeItems = [];
 		foreach (array_keys($workflow->getMarking(subject: $subject)->getPlaces()) as $place) {
 			// PER-PLACE items persisted by the last commit win: a stream that
@@ -106,7 +104,8 @@ class FlowItemPlacement {
 		}
 
 		if ($placeItems === []) {
-			foreach ($definition->getInitialPlaces() as $place) {
+			// The definition's initial places, when no token is marked yet.
+			foreach ($workflow->getDefinition()->getInitialPlaces() as $place) {
 				$placeItems[(string)$place] = $items;
 			}
 		}
