@@ -728,3 +728,4 @@
 2026-11-09T23:06:38Z integrator-20261109T214134-37308df4 RESOLVED #8361 8aaabcca -> d4b80aa1 use/map lines only
 2026-11-09T23:07:34Z precheck-20261109T215756-57e3989d GREEN tree 3e46bafb0a on dev e130c21ce4 prs 1 front=skip: Tests: 54120, Assertions: 176566, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-09T23:09:51Z integrator-20261109T215605-00331343 GREEN tree c4cf7d165a on dev e130c21ce4 prs 1 front=skip: Tests: 54120, Assertions: 176563, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
+2026-11-09T23:11:32Z integrator-20261109T214134-37308df4 RED tree 6997bdd1ef prs 50 front=skip: Tests: 54197, Assertions: 177029, Errors: 7, Failures: 11, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\Controller\ObjectIntegrationsControllerTest::testALinkOfAnotherObjectAnswers404Not
