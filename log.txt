@@ -62,3 +62,4 @@
 2026-11-09T10:34:48Z integrator-20261109T092732-73c42b8a MERGED-TREE 3c6e42185b: 20 PRs, main now 3ea114a76f = tested tree
 2026-11-09T10:37:57Z integrator-20261109T092732-73c42b8a GREEN tree 96533992f5 on dev 3ea114a76f prs 20 front=skip: Tests: 50527, Assertions: 165814, Errors: 7, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 23.
 2026-11-09T10:41:45Z integrator-20261109T092732-73c42b8a MERGED-TREE 96533992f5: 20 PRs, main now ecffe73e2f = tested tree
+2026-11-09T10:42:33Z reviewer-20261109T103015-6061d5f6 6973 e37838719e0c24186d8f9279aca58947cbccca7a NOT REVIEWED to verdict: conflicts in 24 files with main, which already carries the same refactor as SchemaDeclarationValidators (51438f71d2); merged guard suites cannot run
