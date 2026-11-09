@@ -58,18 +58,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 								v-if="object.active !== undefined"
 								class="applicationInfoItem">
 								<strong>{{ t('openregister', 'Status') }}:</strong>
-								<span
-									:class="
-										object.active
-											? 'status-active'
-											: 'status-inactive'
-									">
-									{{
-										object.active
-											? t('openregister', 'Active')
-											: t('openregister', 'Inactive')
-									}}
-								</span>
+								<ActiveStatus :active="object.active" />
 							</div>
 							<div
 								v-if="object.configurations"
@@ -115,13 +104,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 
 			<!-- Custom column: active status -->
 			<template #column-active="{ row }">
-				<span :class="row.active ? 'status-active' : 'status-inactive'">
-					{{
-						row.active
-							? t('openregister', 'Active')
-							: t('openregister', 'Inactive')
-					}}
-				</span>
+				<ActiveStatus :active="row.active" />
 			</template>
 
 			<!-- Custom column: configurations count -->
@@ -157,6 +140,7 @@ import { CnIndexPage } from '@conduction/nextcloud-vue'
 import { NcAppContent } from '@nextcloud/vue'
 import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
+import ActiveStatus from './ActiveStatus.vue'
 import { deleteAction, editAction } from '../../services/menuActions.js'
 import {
 	BUILTIN_ACTIONS_OFF,
@@ -166,6 +150,7 @@ import {
 export default {
 	name: 'ApplicationsIndex',
 	components: {
+		ActiveStatus,
 		ActionMenu,
 		NcAppContent,
 		CnIndexPage,
