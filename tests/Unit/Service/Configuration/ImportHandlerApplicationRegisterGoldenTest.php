@@ -28,7 +28,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\AppImport;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportedConfigurationUpdate;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -294,7 +296,9 @@ class ImportHandlerApplicationRegisterGoldenTest extends TestCase {
 		$configuration->setRegisters($configRegisterIds);
 
 		$closure = (new \ReflectionMethod(ImportHandler::class, 'autoCreateRegisterIfApplication'))->getClosure($handler);
-		$closure($data, 'myapp', $schemas, $configuration, $result);
+		$update = new ImportedConfigurationUpdate(configuration: $configuration, result: ['schemas' => $schemas] + $result);
+		$closure(new AppImport(appId: 'myapp', data: $data, version: '1.0.0', force: false), $update);
+		$result = array_diff_key($update->result, ['schemas' => true]);
 
 		$registers = [];
 		foreach ($result['registers'] as $register) {

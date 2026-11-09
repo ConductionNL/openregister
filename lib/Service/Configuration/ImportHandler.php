@@ -3779,13 +3779,7 @@ class ImportHandler {
 			// Run under its own import job id so the objects it creates can be
 			// removed by job later (a setup wizard's "remove this example set").
 			$this->takeKeptLocalReport();
-			$result = $this->importFromJsonAsJob(
-				data: $import->data,
-				configuration: $configuration,
-				appId: $appId,
-				version: $version,
-				force: $force
-			);
+			$result = $this->importFromJsonAsJob(import: $import, configuration: $configuration);
 			$result['keptLocal'] = ['schemas' => $this->takeKeptLocalReport()];
 
 			$update = new ImportedConfigurationUpdate(configuration: $configuration, result: $result);
@@ -3913,13 +3907,7 @@ class ImportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function finishAppImport(AppImport $import, ImportedConfigurationUpdate $update): void {
-		$this->autoCreateRegisterIfApplication(
-			data: $import->data,
-			appId: $import->appId,
-			schemas: $update->result['schemas'],
-			configuration: $update->configuration,
-			result: $update->result
-		);
+		$this->autoCreateRegisterIfApplication(import: $import, update: $update);
 
 		try {
 			$this->folderProvisioner?->ensureFolders(registers: ($update->result['registers'] ?? []));
@@ -3941,56 +3929,31 @@ class ImportHandler {
 	 * objects is recorded per app id, and its id is returned as
 	 * `importJobId` (null when nothing traceable was created).
 	 *
-	 * @param array         $data          The configuration data.
+	 * @param AppImport     $import        The app import: its data, app id, version and force flag.
 	 * @param Configuration $configuration The configuration entity.
-	 * @param string        $appId         The app id the import runs under.
-	 * @param string        $version       The configuration version.
-	 * @param bool          $force         Force import regardless of version.
 	 *
 	 * @return array The importFromJson() result plus `importJobId`.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors importFromApp()'s force flag.
-	 *
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-configuration-import-must-run-under-its-own-import-job-id
 	 */
-	private function importFromJsonAsJob(
-		array $data,
-		Configuration $configuration,
-		string $appId,
-		string $version,
-		bool $force
-	): array {
+	private function importFromJsonAsJob(AppImport $import, Configuration $configuration): array {
 		if ($this->importJobRecorder === null) {
-			$result = $this->importFromJson(
-				data: $data,
-				configuration: $configuration,
-				owner: $appId,
-				appId: $appId,
-				version: $version,
-				force: $force
-			);
+			$result = $this->importAppJson(import: $import, configuration: $configuration);
 			$result['importJobId'] = null;
 			return $result;
 		}
 
 		$importJobId = $this->importJobRecorder->begin();
 		try {
-			$result = $this->importFromJson(
-				data: $data,
-				configuration: $configuration,
-				owner: $appId,
-				appId: $appId,
-				version: $version,
-				force: $force
-			);
+			$result = $this->importAppJson(import: $import, configuration: $configuration);
 		} finally {
 			$this->importJobRecorder->end();
 		}
 
 		$recorded = $this->importJobRecorder->record(
-			appId: $appId,
+			appId: $import->appId,
 			importJobId: $importJobId,
-			version: $version,
+			version: $import->version,
 			objectsWritten: count((array)($result['objects'] ?? []))
 		);
 		$result['importJobId'] = null;
@@ -4000,6 +3963,27 @@ class ImportHandler {
 
 		return $result;
 	}//end importFromJsonAsJob()
+
+	/**
+	 * Run importFromJson() for an app import, owned by the app.
+	 *
+	 * @param AppImport     $import        The app import.
+	 * @param Configuration $configuration The configuration entity.
+	 *
+	 * @return array The importFromJson() result.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importAppJson(AppImport $import, Configuration $configuration): array {
+		return $this->importFromJson(
+			data: $import->data,
+			configuration: $configuration,
+			owner: $import->appId,
+			appId: $import->appId,
+			version: $import->version,
+			force: $import->force
+		);
+	}//end importAppJson()
 
 	/**
 	 * Reconcile the magic table of every imported schema, in every register that holds it.
@@ -4099,27 +4083,24 @@ class ImportHandler {
 	 * Register ID so the (Configuration, Schemas, Register) triple stays
 	 * consistent.
 	 *
-	 * @param array $data The full OAS document.
-	 * @param string $appId The app identifier (caller).
-	 * @param array $schemas Imported schemas (Schema entities or stdClass with getId()).
-	 * @param Configuration $configuration The Configuration row already persisted.
-	 * @param array $result Mutable result array; the resulting Register entity is appended into $result['registers'].
+	 * @param AppImport                   $import The app import: the full OAS document and the app identifier.
+	 * @param ImportedConfigurationUpdate $update The Configuration row already persisted and the import result,
+	 *                                            whose `schemas` are the imported schemas (Schema entities or
+	 *                                            stdClass with getId()); the resulting Register entity is
+	 *                                            appended into its `registers`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function autoCreateRegisterIfApplication(
-		array $data,
-		string $appId,
-		array $schemas,
-		Configuration $configuration,
-		array &$result,
-	): void {
-		$details = $this->applicationRegisterDetails(data: $data, appId: $appId);
+	private function autoCreateRegisterIfApplication(AppImport $import, ImportedConfigurationUpdate $update): void {
+		$details = $this->applicationRegisterDetails(data: $import->data, appId: $import->appId);
 		if ($details === null) {
 			return;
 		}
+
+		$schemas = $update->result['schemas'];
+		$configuration = $update->configuration;
 
 		$details['schemas'] = $schemas;
 		$details['schemaIds'] = self::savedSchemaIds(schemas: $schemas);
@@ -4148,7 +4129,7 @@ class ImportHandler {
 
 		// Surface the auto-created register in the import result so callers
 		// see a complete (Configuration, Schemas, Register) triple.
-		$result['registers'] = self::withRegister(registers: ($result['registers'] ?? []), register: $register);
+		$update->result['registers'] = self::withRegister(registers: ($update->result['registers'] ?? []), register: $register);
 
 		// Keep the Configuration entity's registers[] field in sync so the
 		// triple stays consistent and a follow-up `_extend=registers` GET
