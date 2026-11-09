@@ -40,6 +40,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Unit tests for ReferentialIntegrityService
@@ -85,7 +87,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$this->db = $this->createMock(IDBConnection::class);
 
 		$this->service = new ReferentialIntegrityService(
-			index: new IntegrityRelationIndex(schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, cacheFactory: $this->createNullCacheFactory()),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->createNullCacheFactory()),
 			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->db),
 			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: $this->makeArchivalGuard()),
 			logger: $this->logger

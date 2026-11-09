@@ -50,6 +50,8 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * The cascade refuses an archival child, names it, and still deletes the parent.
@@ -123,7 +125,7 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 		);
 
 		$this->service = new ReferentialIntegrityService(
-			index: new IntegrityRelationIndex(schemaMapper: $schemaMapper, registerMapper: $this->createMock(RegisterMapper::class), cacheFactory: $this->nullCacheFactory()),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->nullCacheFactory()),
 			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
 			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class))),
 			logger: $this->createMock(LoggerInterface::class)

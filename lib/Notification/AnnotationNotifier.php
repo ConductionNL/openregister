@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notification;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -441,7 +442,7 @@ class AnnotationNotifier implements INotifier {
 			return null;
 		}
 
-		$owned = $this->resolveOwnedLink(registerId: $registerId, schemaId: $schemaId, objectUuid: $objectUuid);
+		$owned = $this->resolveOwnedLink(ref: new ObjectRef(register: $registerId, schema: $schemaId, id: $objectUuid));
 		if ($owned !== null) {
 			return $owned;
 		}
@@ -456,23 +457,21 @@ class AnnotationNotifier implements INotifier {
 	/**
 	 * The owning app's absolute detail link from the deep link registry, or null.
 	 *
-	 * @param string $registerId The register id.
-	 * @param string $schemaId The schema id.
-	 * @param string $objectUuid The object uuid.
+	 * @param ObjectRef $ref The register id, schema id and object uuid, as the notification carries them.
 	 *
 	 * @return string|null The absolute link, or null when no app claimed the schema.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
-	private function resolveOwnedLink(string $registerId, string $schemaId, string $objectUuid): ?string {
-		if ($this->deepLinks === null || is_numeric($registerId) === false || is_numeric($schemaId) === false) {
+	private function resolveOwnedLink(ObjectRef $ref): ?string {
+		if ($this->deepLinks === null || is_numeric($ref->register) === false || is_numeric($ref->schema) === false) {
 			return null;
 		}
 
 		$owned = $this->deepLinks->resolveUrl(
-			registerId: (int)$registerId,
-			schemaId: (int)$schemaId,
-			objectData: ['uuid' => $objectUuid, 'id' => $objectUuid]
+			registerId: (int)$ref->register,
+			schemaId: (int)$ref->schema,
+			objectData: ['uuid' => $ref->id, 'id' => $ref->id]
 		);
 		if ($owned === null || $owned === '') {
 			return null;

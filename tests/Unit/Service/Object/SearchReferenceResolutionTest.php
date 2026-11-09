@@ -43,6 +43,8 @@ use OCP\AppFramework\IAppContainer;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * The read path used to int-cast a register or schema reference.
@@ -146,11 +148,7 @@ class SearchReferenceResolutionTest extends TestCase {
 	 * @return SearchReferenceResolver
 	 */
 	private function resolver(): SearchReferenceResolver {
-		return new SearchReferenceResolver(
-			$this->registerMapper(),
-			$this->schemaMapper(),
-			$this->createMock(LoggerInterface::class)
-		);
+		return new SearchReferenceResolver(new SchemaCatalog(registers: $this->registerMapper(), schemas: $this->schemaMapper(), tables: $this->createMock(MagicMapperInterface::class)), $this->createMock(LoggerInterface::class));
 	}//end resolver()
 
 	/**
@@ -328,11 +326,7 @@ class SearchReferenceResolutionTest extends TestCase {
 			->getMock();
 		$schemaMapper->expects($this->never())->method('find');
 
-		$resolver = new SearchReferenceResolver(
-			$registerMapper,
-			$schemaMapper,
-			$this->createMock(LoggerInterface::class)
-		);
+		$resolver = new SearchReferenceResolver(new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), $this->createMock(LoggerInterface::class));
 
 		$query = $resolver->normaliseQuery(
 			query: ['@self' => ['register' => self::REGISTER_ID, 'schema' => (string)self::SCHEMA_ID]]
