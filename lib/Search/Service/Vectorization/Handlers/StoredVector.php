@@ -97,35 +97,25 @@ final class StoredVector {
 	/**
 	 * Constructor.
 	 *
-	 * @param string       $entityType  Entity type ('object' or 'file').
-	 * @param string       $entityId    Entity UUID.
-	 * @param array<mixed> $embedding   Vector embedding (array of floats).
-	 * @param string       $model       Model used to generate the embedding.
-	 * @param int          $dimensions  Number of dimensions.
-	 * @param int          $chunkIndex  Chunk index (0 for objects, N for file chunks).
-	 * @param int          $totalChunks Total number of chunks.
-	 * @param string|null  $chunkText   The text that was embedded.
-	 * @param array<mixed> $metadata    Additional metadata as associative array.
+	 * @param VectorSubject       $subject  The entity type and UUID.
+	 * @param VectorPayload       $payload  The embedding, model and dimensions.
+	 * @param VectorChunkPosition $position The chunk index, chunk count and text.
+	 * @param array<mixed>        $metadata Additional metadata as associative array.
 	 */
 	public function __construct(
-		string $entityType,
-		string $entityId,
-		array $embedding,
-		string $model,
-		int $dimensions,
-		int $chunkIndex,
-		int $totalChunks,
-		?string $chunkText,
+		VectorSubject $subject,
+		VectorPayload $payload,
+		VectorChunkPosition $position,
 		array $metadata,
 	) {
-		$this->entityType  = $entityType;
-		$this->entityId    = $entityId;
-		$this->embedding   = $embedding;
-		$this->model       = $model;
-		$this->dimensions  = $dimensions;
-		$this->chunkIndex  = $chunkIndex;
-		$this->totalChunks = $totalChunks;
-		$this->chunkText   = $chunkText;
+		$this->entityType  = $subject->entityType;
+		$this->entityId    = $subject->entityId;
+		$this->embedding   = $payload->embedding;
+		$this->model       = $payload->model;
+		$this->dimensions  = $payload->dimensions;
+		$this->chunkIndex  = $position->chunkIndex;
+		$this->totalChunks = $position->totalChunks;
+		$this->chunkText   = $position->chunkText;
 		$this->metadata    = $metadata;
 
 	}//end __construct()

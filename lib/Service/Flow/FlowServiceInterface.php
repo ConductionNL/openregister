@@ -45,13 +45,7 @@ interface FlowServiceInterface {
 	 *
 	 * @return array<int, Flow> The flows visible to the caller.
 	 */
-	public function findAll(
-		?string $app = null,
-		?string $applicationSlug = null,
-		?bool $enabled = null,
-		int $limit = 100,
-		int $offset = 0,
-	): array;
+	public function findAll(?string $app = null, ?string $applicationSlug = null, ?bool $enabled = null, int $limit = 100, int $offset = 0): array;
 
 	/**
 	 * Count the flows visible to the caller.
@@ -147,11 +141,5 @@ interface FlowServiceInterface {
 	 * @throws FlowLifecycleRefused When the trigger requires a published version and there is none.
 	 * @throws FlowRunRefused When the caller may not run this flow.
 	 */
-	public function run(
-		string $uuid,
-		array $subject = [],
-		array $context = [],
-		bool $sync = false,
-		string $trigger = Flow::TRIGGER_MANUAL
-	): FlowRun;
+	public function run(string $uuid, array $subject = [], array $context = [], bool $sync = false, string $trigger = Flow::TRIGGER_MANUAL): FlowRun;
 }//end interface

@@ -26,13 +26,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
-use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
+use OCA\OpenRegister\Files\Controller\Support\FileSidebarControllerServices;
 use OCA\OpenRegister\Files\Service\FileSidebarService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\Files\IRootFolder;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -55,34 +55,40 @@ class FileSidebarController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * The user session.
+	 * Whether the caller can open a file.
 	 *
-	 * @var IUserSession
+	 * @var CallerFileAccess
 	 */
-	private readonly IUserSession $userSession;
+	private readonly CallerFileAccess $fileAccess;
+
+	/**
+	 * File sidebar service.
+	 *
+	 * @var FileSidebarService
+	 */
+	private readonly FileSidebarService $fileSidebarService;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
-	 * @param IRequest $request HTTP request.
-	 * @param FileSidebarService $fileSidebarService File sidebar service.
-	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param IRootFolder $rootFolder Root folder for per-user file access checks.
+	 * @param IRequest                                                $request       HTTP request.
+	 * @param FileSidebarControllerServices                           $services      The sidebar service, the root folder, the session and the logger.
 	 * @param \OCA\OpenRegister\Files\Service\File\FileReadScope|null $fileReadScope The object read rule for an object's file.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly FileSidebarService $fileSidebarService,
-		ControllerSession $session,
-		private readonly IRootFolder $rootFolder,
-		private readonly ?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope = null,
+		FileSidebarControllerServices $services,
+		?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope = null,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
-		$this->logger = $session->logger;
-		$this->userSession = $session->userSession;
+		$this->fileSidebarService = $services->fileSidebarService;
+		$this->logger = $services->logger;
+		$this->fileAccess = new CallerFileAccess(
+			fileReadScope: $fileReadScope,
+			userSession: $services->userSession,
+			rootFolder: $services->rootFolder
+		);
 	}//end __construct()
 
 	/**
@@ -98,19 +104,7 @@ class FileSidebarController extends Controller {
 	 * @return bool True when the file is reachable in the caller's user folder.
 	 */
 	private function hasFileAccess(int $fileId): bool {
-		// An object's file sits in the openregister account's home, never in
-		// the caller's own tree: the object's read rule decides it.
-		if ($this->fileReadScope !== null) {
-			return $this->fileReadScope->mayReadFile(fileId: $fileId);
-		}
-
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		$userFolder = $this->rootFolder->getUserFolder($user->getUID());
-		return empty($userFolder->getById($fileId)) === false;
+		return $this->fileAccess->mayOpen(fileId: $fileId);
 	}//end hasFileAccess()
 
 	/**

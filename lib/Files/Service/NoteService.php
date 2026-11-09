@@ -111,26 +111,40 @@ class NoteService implements NoteServiceInterface {
 	private const SWEEP_PAGE = 100;
 
 	/**
+	 * Normalises the internal/public flag.
+	 *
+	 * @var TimelineVisibilityServiceInterface
+	 */
+	private readonly TimelineVisibilityServiceInterface $visibility;
+
+	/**
+	 * Keeps and reads what a note said before.
+	 *
+	 * @var NoteVersionService
+	 */
+	private readonly NoteVersionService $versions;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ICommentsManager $commentsManager Comments manager for CRUD operations
-	 * @param IUserSession $userSession User session for current user context
-	 * @param IUserManager $userManager User manager for display name resolution
-	 * @param TimelineVisibilityServiceInterface $visibility Normalises the internal/public flag
-	 * @param NoteVersionService $versions Keeps and reads what a note said before
+	 * @param ICommentsManager                   $commentsManager Comments manager for CRUD operations
+	 * @param NoteAccounts                       $accounts        User session and user manager
+	 * @param TimelineVisibilityServiceInterface $visibility      Normalises the internal/public flag
+	 * @param NoteVersionService                 $versions        Keeps and reads what a note said before
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ICommentsManager $commentsManager,
-		IUserSession $userSession,
-		IUserManager $userManager,
-		private readonly TimelineVisibilityServiceInterface $visibility,
-		private readonly NoteVersionService $versions,
+		NoteAccounts $accounts,
+		TimelineVisibilityServiceInterface $visibility,
+		NoteVersionService $versions,
 	) {
 		$this->commentsManager = $commentsManager;
-		$this->userSession = $userSession;
-		$this->userManager = $userManager;
+		$this->userSession = $accounts->userSession;
+		$this->userManager = $accounts->userManager;
+		$this->visibility = $visibility;
+		$this->versions = $versions;
 	}//end __construct()
 
 	/**
@@ -399,13 +413,7 @@ class NoteService implements NoteServiceInterface {
 				throw new NoteEditForbiddenException();
 			}
 
-			$this->versions->record(
-				noteId: $noteId,
-				previousMessage: $comment->getMessage(),
-				author: $comment->getActorId(),
-				authorType: $comment->getActorType(),
-				editedBy: $user->getUID()
-			);
+			$this->versions->record(noteId: $noteId, previous: $comment, editedBy: $user->getUID());
 
 			$comment->setMessage($message);
 		}

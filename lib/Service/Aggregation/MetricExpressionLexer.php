@@ -125,13 +125,24 @@ class MetricExpressionLexer {
 			return ['type' => 'number', 'value' => substr($expression, $pos, ($end - $pos))];
 		}
 
-		if (ctype_alpha($ch) === true || $ch === '_') {
+		if (self::startsIdentifier(ch: $ch) === true) {
 			$end = $this->scanIdentifier(expression: $expression, from: $pos);
 			return ['type' => 'ident', 'value' => substr($expression, $pos, ($end - $pos))];
 		}
 
 		return null;
 	}//end literalAt()
+
+	/**
+	 * Whether a character can start an identifier.
+	 *
+	 * @param string $ch The character.
+	 *
+	 * @return bool True for a letter or an underscore.
+	 */
+	private static function startsIdentifier(string $ch): bool {
+		return ctype_alpha($ch) === true || $ch === '_';
+	}//end startsIdentifier()
 
 	/**
 	 * Advance past a numeric literal and return the end offset.

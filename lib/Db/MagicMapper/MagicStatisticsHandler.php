@@ -220,15 +220,16 @@ class MagicStatisticsHandler {
 	}//end findSchemaCached()
 
 	/**
-	 * Count objects in a register-schema table via the injected callback.
+	 * Count all objects in a register-schema table via the injected callback.
 	 *
-	 * @param array $query Query filters
+	 * The callback is always asked with an empty query.
+	 *
 	 * @param Register $register Register context
-	 * @param Schema $schema Schema context
+	 * @param Schema   $schema   Schema context
 	 *
 	 * @return int Object count
 	 */
-	private function countObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): int {
+	private function countObjectsInRegisterSchemaTable(Register $register, Schema $schema): int {
 		if ($this->countCallback === null) {
 			$this->logger->warning(
 				message: '[MagicStatisticsHandler] Count callback not set, returning 0',
@@ -237,7 +238,7 @@ class MagicStatisticsHandler {
 			return 0;
 		}
 
-		return ($this->countCallback)($query, $register, $schema);
+		return ($this->countCallback)([], $register, $schema);
 	}//end countObjectsInRegisterSchemaTable()
 
 	/**
@@ -256,38 +257,57 @@ class MagicStatisticsHandler {
 		}
 
 		try {
-			$platform = $this->db->getDatabasePlatform();
-			$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
-			$sql = "SELECT table_name FROM information_schema.tables
-                    WHERE table_schema = DATABASE()
-                    AND table_name LIKE '*PREFIX*openregister_table_%'";
-			if ($isPostgres === true) {
-				$sql = "SELECT table_name FROM information_schema.tables
-                        WHERE table_schema = current_schema()
-                        AND table_name LIKE '*PREFIX*openregister_table_%'";
-			}
-
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute();
-			$tables = [];
-
-			while (($row = $stmt->fetch()) !== false) {
-				// The query builder adds the table prefix itself.
-				$tables[] = (string)strstr($row['table_name'], 'openregister_table_');
-			}
-
-			$this->magicTablesCache = $tables;
-
-			return $tables;
+			$this->magicTablesCache = $this->scanMagicMapperTables();
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[MagicStatisticsHandler] Failed to get magic mapper tables',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
 			return [];
-		}//end try
+		}
+
+		return $this->magicTablesCache;
 	}//end getAllMagicMapperTables()
+
+	/**
+	 * Read the magic mapper table names from information_schema.
+	 *
+	 * @return string[] Table names without the table prefix
+	 *
+	 * @psalm-return list<string>
+	 *
+	 * @throws Exception When the catalog cannot be read.
+	 */
+	private function scanMagicMapperTables(): array {
+		$stmt = $this->db->prepare($this->magicTablesSql());
+		$stmt->execute();
+		$tables = [];
+
+		while (($row = $stmt->fetch()) !== false) {
+			// The query builder adds the table prefix itself.
+			$tables[] = (string)strstr($row['table_name'], 'openregister_table_');
+		}
+
+		return $tables;
+	}//end scanMagicMapperTables()
+
+	/**
+	 * The information_schema query listing magic mapper tables on this platform.
+	 *
+	 * @return string The SQL.
+	 */
+	private function magicTablesSql(): string {
+		$platform = $this->db->getDatabasePlatform();
+		if (stripos($platform::class, 'PostgreSQL') !== false) {
+			return "SELECT table_name FROM information_schema.tables
+                        WHERE table_schema = current_schema()
+                        AND table_name LIKE '*PREFIX*openregister_table_%'";
+		}
+
+		return "SELECT table_name FROM information_schema.tables
+                    WHERE table_schema = DATABASE()
+                    AND table_name LIKE '*PREFIX*openregister_table_%'";
+	}//end magicTablesSql()
 
 	/**
 	 * Get all register/schema pairs that have magic tables in the database.
@@ -325,85 +345,42 @@ class MagicStatisticsHandler {
 	 *
 	 * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	public function getStatistics(
 		int|array|null $registerId = null,
 		int|array|null $schemaId = null,
 		array $exclude = [],
 	): array {
+		$filter = new StatisticsPairFilter(wanted: ['register' => $registerId, 'schema' => $schemaId], exclude: $exclude);
 		$total = 0;
-		$deleted = 0;
-		$locked = 0;
-
-		$allPairs = $this->getAllRegisterSchemaPairs();
-
-		foreach ($allPairs as $pair) {
-			$pairRegisterId = (int)$pair['registerId'];
-			$pairSchemaId = (int)$pair['schemaId'];
-
-			// Apply register filter.
-			if ($registerId !== null) {
-				if (is_array($registerId) === true) {
-					if (in_array($pairRegisterId, $registerId, true) === false) {
-						continue;
-					}
-				} elseif ($pairRegisterId !== $registerId) {
-					continue;
-				}
+		foreach ($this->getAllRegisterSchemaPairs() as $pair) {
+			$ids = [(int)$pair['registerId'], (int)$pair['schemaId']];
+			if ($filter->matches(ids: $ids) === true) {
+				$total += $this->cachedPairCount(ids: $ids);
 			}
+		}
 
-			// Apply schema filter.
-			if ($schemaId !== null) {
-				if (is_array($schemaId) === true) {
-					if (in_array($pairSchemaId, $schemaId, true) === false) {
-						continue;
-					}
-				} elseif ($pairSchemaId !== $schemaId) {
-					continue;
-				}
-			}
-
-			// Apply exclusion filter.
-			$excluded = false;
-			foreach ($exclude as $ex) {
-				if (isset($ex['register'], $ex['schema']) === true
-					&& (int)$ex['register'] === $pairRegisterId
-					&& (int)$ex['schema'] === $pairSchemaId
-				) {
-					$excluded = true;
-					break;
-				}
-			}
-
-			if ($excluded === true) {
-				continue;
-			}
-
-			try {
-				$register = $this->findRegisterCached(registerId: $pairRegisterId);
-				$schema = $this->findSchemaCached(schemaId: $pairSchemaId);
-
-				$count = $this->countObjectsInRegisterSchemaTable(
-					query: [],
-					register: $register,
-					schema: $schema
-				);
-				$total += $count;
-			} catch (\Exception $e) {
-				// Skip tables that can't be queried.
-			}
-		}//end foreach
-
-		return [
-			'total' => $total,
-			'size' => 0,
-			'invalid' => 0,
-			'deleted' => $deleted,
-			'locked' => $locked,
-		];
+		return ['total' => $total, 'size' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0];
 	}//end getStatistics()
+
+	/**
+	 * Count one pair's objects, reading its register and schema through the request cache.
+	 *
+	 * @param array{0: int, 1: int} $ids The register id and the schema id.
+	 *
+	 * @return int The count; 0 when a read or the count fails (the table is skipped).
+	 */
+	private function cachedPairCount(array $ids): int {
+		try {
+			$register = $this->findRegisterCached(registerId: $ids[0]);
+			$schema = $this->findSchemaCached(schemaId: $ids[1]);
+
+			return $this->countObjectsInRegisterSchemaTable(register: $register, schema: $schema);
+		} catch (Exception $e) {
+			// Skip tables that can't be queried.
+			return 0;
+		}
+	}//end cachedPairCount()
 
 	/**
 	 * Get object statistics grouped by schema for multiple schemas.
@@ -416,49 +393,56 @@ class MagicStatisticsHandler {
 	 * @return array<int, array{total: int, size: int}> Map of schemaId => statistics array.
 	 */
 	public function getStatisticsGroupedBySchema(array $schemaIds): array {
-		$emptyStats = [
-			'total' => 0,
-			'size' => 0,
-		];
-
 		if (empty($schemaIds) === true) {
 			return [];
 		}
 
-		// Initialize all schemas with empty stats.
-		$statsMap = [];
-		foreach ($schemaIds as $schemaId) {
-			$statsMap[$schemaId] = $emptyStats;
-		}
+		$statsMap = $this->emptySchemaStats(schemaIds: $schemaIds);
 
 		// Iterate all register-schema pairs and accumulate counts per schema.
-		$allPairs = $this->getAllRegisterSchemaPairs();
-
-		foreach ($allPairs as $pair) {
-			$pairSchemaId = (int)$pair['schemaId'];
-
-			if (in_array($pairSchemaId, $schemaIds, true) === false) {
-				continue;
+		foreach ($this->getAllRegisterSchemaPairs() as $pair) {
+			$entry = $this->schemaPairCount(pair: $pair, schemaIds: $schemaIds);
+			if ($entry !== null) {
+				$statsMap[$entry['schemaId']]['total'] += $entry['count'];
 			}
-
-			try {
-				$register = $this->registerMapper->find((int)$pair['registerId'], _multitenancy: false, _rbac: false);
-				$schema = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
-
-				$count = $this->countObjectsInRegisterSchemaTable(
-					query: [],
-					register: $register,
-					schema: $schema
-				);
-
-				$statsMap[$pairSchemaId]['total'] += $count;
-			} catch (\Exception $e) {
-				// Skip tables that can't be queried.
-			}
-		}//end foreach
+		}
 
 		return $statsMap;
 	}//end getStatisticsGroupedBySchema()
+
+	/**
+	 * Every requested schema with empty stats.
+	 *
+	 * @param int[] $schemaIds The requested schema ids.
+	 *
+	 * @return array<int, array{total: int, size: int}> Map of schemaId => zero statistics.
+	 */
+	private function emptySchemaStats(array $schemaIds): array {
+		$statsMap = [];
+		foreach ($schemaIds as $schemaId) {
+			$statsMap[$schemaId] = ['total' => 0, 'size' => 0];
+		}
+
+		return $statsMap;
+	}//end emptySchemaStats()
+
+	/**
+	 * Count a pair whose schema is one of the requested ones.
+	 *
+	 * @param array{registerId: int, schemaId: int} $pair      The register/schema pair.
+	 * @param int[]                                 $schemaIds The requested schema ids, compared strictly.
+	 *
+	 * @return array{registerId: int, schemaId: int, register: Register, schema: Schema, count: int}|null Null for
+	 *     another schema, or when a read or the count fails.
+	 */
+	private function schemaPairCount(array $pair, array $schemaIds): ?array {
+		$ids = [(int)$pair['registerId'], (int)$pair['schemaId']];
+		if (in_array($ids[1], $schemaIds, true) === false) {
+			return null;
+		}
+
+		return $this->countedPair(ids: $ids);
+	}//end schemaPairCount()
 
 	/**
 	 * Get register chart data.
@@ -537,7 +521,7 @@ class MagicStatisticsHandler {
 		try {
 			$register = $this->registerMapper->find($ids[0], _multitenancy: false, _rbac: false);
 			$schema = $this->schemaMapper->find($ids[1], _multitenancy: false, _rbac: false);
-			$count = $this->countObjectsInRegisterSchemaTable(query: [], register: $register, schema: $schema);
+			$count = $this->countObjectsInRegisterSchemaTable(register: $register, schema: $schema);
 		} catch (Exception $e) {
 			return null;
 		}
@@ -571,42 +555,76 @@ class MagicStatisticsHandler {
 	 */
 	public function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity {
 		try {
-			$objectEntity = new ObjectEntity();
-
-			// Set register and schema from parameters (these are the context we're in).
-			$objectEntity->setRegister((string)$_register->getId());
-			$objectEntity->setSchema((string)$_schema->getId());
+			$objectEntity = $this->entityInContext(register: $_register, schema: $_schema);
 
 			[$metadata, $objectData] = $this->splitRow(row: $row, propertyMap: $this->propertyColumnMap(schema: $_schema));
 
 			$this->applyMetadata(objectEntity: $objectEntity, metadata: $metadata);
 			$objectEntity->setObject($objectData);
-
-			// Explicitly set ID and UUID so they are never null: audit trails,
-			// rendering and API responses depend on them.
-			if (isset($metadata['id']) === true && is_numeric($metadata['id']) === true) {
-				$objectEntity->setId((int)$metadata['id']);
-			}
-
-			if (isset($metadata['uuid']) === true) {
-				$objectEntity->setUuid($metadata['uuid']);
-			}
+			$this->applyIdentity(objectEntity: $objectEntity, metadata: $metadata);
 
 			return $objectEntity;
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[MagicStatisticsHandler] Failed to convert row to ObjectEntity',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'uuid' => $row[self::METADATA_PREFIX . 'uuid'] ?? 'unknown',
-				]
-			);
-
+			$this->logConversionFailure(exception: $e, row: $row);
 			return null;
-		}//end try
+		}
 	}//end convertRowToObjectEntity()
+
+	/**
+	 * Log a row that could not be converted to an ObjectEntity.
+	 *
+	 * @param Exception $exception Why the conversion failed
+	 * @param array     $row       The database row
+	 *
+	 * @return void
+	 */
+	private function logConversionFailure(Exception $exception, array $row): void {
+		$this->logger->error(
+			message: '[MagicStatisticsHandler] Failed to convert row to ObjectEntity',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $exception->getMessage(),
+				'uuid' => $row[self::METADATA_PREFIX . 'uuid'] ?? 'unknown',
+			]
+		);
+	}//end logConversionFailure()
+
+	/**
+	 * A new entity in the register and schema context the row was read in.
+	 *
+	 * @param Register $register Register context
+	 * @param Schema   $schema   Schema context
+	 *
+	 * @return ObjectEntity The entity with its register and schema set.
+	 */
+	private function entityInContext(Register $register, Schema $schema): ObjectEntity {
+		$objectEntity = new ObjectEntity();
+		$objectEntity->setRegister((string)$register->getId());
+		$objectEntity->setSchema((string)$schema->getId());
+
+		return $objectEntity;
+	}//end entityInContext()
+
+	/**
+	 * Explicitly set ID and UUID so they are never null.
+	 *
+	 * Audit trails, rendering and API responses depend on them.
+	 *
+	 * @param ObjectEntity $objectEntity The entity being built
+	 * @param array        $metadata     The metadata, keyed by field without prefix
+	 *
+	 * @return void
+	 */
+	private function applyIdentity(ObjectEntity $objectEntity, array $metadata): void {
+		if (isset($metadata['id']) === true && is_numeric($metadata['id']) === true) {
+			$objectEntity->setId((int)$metadata['id']);
+		}
+
+		if (isset($metadata['uuid']) === true) {
+			$objectEntity->setUuid($metadata['uuid']);
+		}
+	}//end applyIdentity()
 
 	/**
 	 * The column-to-property mapping and the property types and formats of a schema.
@@ -640,8 +658,7 @@ class MagicStatisticsHandler {
 	 * @return array{0: array<string, mixed>, 1: array<string, mixed>} The metadata, keyed by field without prefix, and the object data.
 	 */
 	private function splitRow(array $row, array $propertyMap): array {
-		$metadata = [];
-		$objectData = [];
+		[$metadata, $objectData] = [[], []];
 		foreach ($row as $columnName => $value) {
 			$metadataField = $this->columnRoles->field(column: $columnName, columnToPropertyMap: $propertyMap['columns']);
 			if ($metadataField !== null) {
@@ -649,24 +666,39 @@ class MagicStatisticsHandler {
 				continue;
 			}
 
-			// In UNION queries, NULL placeholders exist for other schemas' columns.
-			if ($value === null && isset($propertyMap['columns'][$columnName]) === false) {
-				continue;
+			$property = $this->propertyEntry(cell: [$columnName, $value], propertyMap: $propertyMap);
+			if ($property !== null) {
+				$objectData[$property[0]] = $property[1];
 			}
-
-			// Falls back to camelCase conversion when the schema does not map the column.
-			$propertyName = $propertyMap['columns'][$columnName] ?? $this->columnNameToPropertyName(columnName: $columnName);
-			$objectData[$propertyName] = $this->propertyValue(
-				value: $value,
-				definition: [
-					'type' => $propertyMap['types'][$propertyName] ?? 'string',
-					'format' => $propertyMap['formats'][$propertyName] ?? null,
-				]
-			);
 		}
 
 		return [$metadata, $objectData];
 	}//end splitRow()
+
+	/**
+	 * The property name and value a non-metadata column holds.
+	 *
+	 * @param array{0: string, 1: mixed} $cell        The column name and its value.
+	 * @param array                      $propertyMap The maps from propertyColumnMap()
+	 *
+	 * @return array{0: string, 1: mixed}|null The property name and value; null for a UNION placeholder.
+	 */
+	private function propertyEntry(array $cell, array $propertyMap): ?array {
+		[$columnName, $value] = $cell;
+		// In UNION queries, NULL placeholders exist for other schemas' columns.
+		if ($value === null && isset($propertyMap['columns'][$columnName]) === false) {
+			return null;
+		}
+
+		// Falls back to camelCase conversion when the schema does not map the column.
+		$propertyName = $propertyMap['columns'][$columnName] ?? $this->columnNameToPropertyName(columnName: $columnName);
+		$definition = [
+			'type' => $propertyMap['types'][$propertyName] ?? 'string',
+			'format' => $propertyMap['formats'][$propertyName] ?? null,
+		];
+
+		return [$propertyName, $this->propertyValue(value: $value, definition: $definition)];
+	}//end propertyEntry()
 
 	/**
 	 * A metadata column value as its ObjectEntity attribute takes it.
@@ -743,27 +775,51 @@ class MagicStatisticsHandler {
 	private function applyMetadata(ObjectEntity $objectEntity, array $metadata): void {
 		foreach ($metadata as $field => $value) {
 			if ($value === null) {
-				// Owner can be null for public objects; id and uuid never should be.
-				if ($field === 'uuid' || $field === 'id') {
-					$this->logger->warning(
-						message: '[MagicStatisticsHandler] Critical metadata field is null',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
-					);
-				}
-
+				$this->warnIfIdentityNull(field: $field);
 				continue;
 			}
 
-			$attribute = $this->columnRoles->attribute(field: $field);
-			if ($attribute === null) {
-				$this->skipUnknownMetadataField(field: $field);
-				continue;
+			$method = $this->metadataSetter(field: $field);
+			if ($method !== null) {
+				$objectEntity->$method($value);
 			}
-
-			$method = 'set' . ucfirst($attribute);
-			$objectEntity->$method($value);
-		}//end foreach
+		}
 	}//end applyMetadata()
+
+	/**
+	 * Warn when an identity field is null.
+	 *
+	 * Owner can be null for public objects; id and uuid never should be.
+	 *
+	 * @param string $field The metadata field without its prefix.
+	 *
+	 * @return void
+	 */
+	private function warnIfIdentityNull(string $field): void {
+		if ($field === 'uuid' || $field === 'id') {
+			$this->logger->warning(
+				message: '[MagicStatisticsHandler] Critical metadata field is null',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
+			);
+		}
+	}//end warnIfIdentityNull()
+
+	/**
+	 * The ObjectEntity setter for a metadata field.
+	 *
+	 * @param string $field The metadata field without its prefix.
+	 *
+	 * @return string|null The setter name; null (noted once) when ObjectEntity has no such attribute.
+	 */
+	private function metadataSetter(string $field): ?string {
+		$attribute = $this->columnRoles->attribute(field: $field);
+		if ($attribute === null) {
+			$this->skipUnknownMetadataField(field: $field);
+			return null;
+		}
+
+		return 'set' . ucfirst($attribute);
+	}//end metadataSetter()
 
 	/**
 	 * Note, once per field and process, a metadata column ObjectEntity has no attribute for.

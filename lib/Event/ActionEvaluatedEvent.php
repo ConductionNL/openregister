@@ -52,6 +52,7 @@ use OCP\EventDispatcher\Event;
  * Telemetry event fired after any action's permission decision is reached.
  */
 class ActionEvaluatedEvent extends Event {
+	use EvaluatedSchemaActionAccessors;
 
 	/**
 	 * Constructor.
@@ -73,17 +74,6 @@ class ActionEvaluatedEvent extends Event {
 	}//end __construct()
 
 	/**
-	 * Schema the action was evaluated against.
-	 *
-	 * @return Schema The schema.
-	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
-	 */
-	public function getSchema(): Schema {
-		return $this->schema;
-	}//end getSchema()
-
-	/**
 	 * The register the object belongs to, when the decision concerned one.
 	 *
 	 * ⚠️ Null for a schema-level decision, and that is not a lookup failure. A
@@ -98,17 +88,6 @@ class ActionEvaluatedEvent extends Event {
 	public function getRegister(): string|int|null {
 		return $this->object?->getRegister();
 	}//end getRegister()
-
-	/**
-	 * The action verb that was evaluated.
-	 *
-	 * @return string The action — one of the canonical verbs, or one the schema declared.
-	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
-	 */
-	public function getAction(): string {
-		return $this->action;
-	}//end getAction()
 
 	/**
 	 * The object under evaluation, when there was one.

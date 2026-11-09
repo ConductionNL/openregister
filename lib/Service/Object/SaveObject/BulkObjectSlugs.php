@@ -89,7 +89,7 @@ class BulkObjectSlugs {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
-	public function clientSlugToCarry(mixed $selfData, array $object): ?string {
+	public function clientSlugToCarry(mixed $selfData, array $object): string|null {
 		$slug = ($object['slug'] ?? null);
 		if (isset($selfData['slug']) === true || is_string($slug) === false || $slug === '') {
 			return null;
@@ -110,13 +110,13 @@ class BulkObjectSlugs {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function apply(array $objects, Register|string|int|null $register=null, Schema|string|int|null $schema=null): array {
-		foreach ($this->groups(objects: $objects, register: $register, schema: $schema) as $group) {
+		foreach ($this->groups(objects: $objects, caller: new BulkSlugCaller(register: $register, schema: $schema)) as $group) {
 			$this->decideGroup(objects: $objects, group: $group);
 		}
 
 		foreach (array_keys($objects) as $index) {
 			unset($objects[$index][self::CLIENT_SLUG_KEY]);
-			if (isset($objects[$index]['@self']) === true && is_array($objects[$index]['@self']) === true) {
+			if ($this->hasSelf(row: $objects[$index]) === true) {
 				unset($objects[$index]['@self'][self::CLIENT_SLUG_KEY]);
 			}
 		}
@@ -125,75 +125,58 @@ class BulkObjectSlugs {
 	}//end apply()
 
 	/**
+	 * Whether a prepared row has the `@self` shape.
+	 *
+	 * @param mixed $row The prepared row.
+	 *
+	 * @return bool True when `@self` is an array.
+	 */
+	private function hasSelf(mixed $row): bool {
+		return isset($row['@self']) === true && is_array($row['@self']) === true;
+	}//end hasSelf()
+
+	/**
 	 * The register+schema groups of a batch: the table each row is written to.
 	 *
-	 * @param array                    $objects  The prepared rows.
-	 * @param Register|string|int|null $register The caller's register, if given.
-	 * @param Schema|string|int|null   $schema   The caller's schema, if given.
+	 * @param array          $objects The prepared rows.
+	 * @param BulkSlugCaller $caller  The register and schema the caller passed.
 	 *
 	 * @return array<string, array<string, mixed>> Group key => registerId, schemaId, indexes, and the register and
 	 *                                             schema entities when the caller passed the ones the group is written to.
 	 */
-	private function groups(array $objects, Register|string|int|null $register, Schema|string|int|null $schema): array {
-		$callerRegisterId = $this->idOf(entity: $register);
-		$callerSchemaId = $this->idOf(entity: $schema);
-
+	private function groups(array $objects, BulkSlugCaller $caller): array {
 		$groups = [];
 		foreach ($objects as $index => $object) {
-			$self = ($object['@self'] ?? $object);
-			[$registerId, $schemaId] = [($self['register'] ?? $callerRegisterId), ($self['schema'] ?? null)];
-			if ($callerSchemaId !== null) {
-				[$registerId, $schemaId] = [($callerRegisterId ?? $registerId), $callerSchemaId];
-			}
-
+			[$registerId, $schemaId] = $caller->idsOf(self: ($object['@self'] ?? $object));
 			if ($registerId === null || $schemaId === null) {
 				continue;
 			}
 
 			$key = $registerId . '|' . $schemaId;
-			$groups[$key] ??= [
-				'registerId' => (string)$registerId,
-				'schemaId' => (string)$schemaId,
-				'indexes' => [],
-				'register' => $this->given(entity: $register, id: (string)$registerId),
-				'schema' => $this->given(entity: $schema, id: (string)$schemaId),
-			];
+			$groups[$key] ??= $this->newGroup(ids: [(string)$registerId, (string)$schemaId], caller: $caller);
 			$groups[$key]['indexes'][] = $index;
-		}//end foreach
+		}
 
 		return $groups;
 	}//end groups()
 
 	/**
-	 * The id of a register or schema the caller passed, as an entity or an id.
+	 * A group without rows yet.
 	 *
-	 * @param Register|Schema|string|int|null $entity The entity or id.
+	 * @param array{0: string, 1: string} $ids    The register and schema id the group is written to.
+	 * @param BulkSlugCaller              $caller The register and schema the caller passed.
 	 *
-	 * @return string|int|null The id.
+	 * @return array<string, mixed> The group.
 	 */
-	private function idOf(Register|Schema|string|int|null $entity): string|int|null {
-		if ($entity instanceof Register || $entity instanceof Schema) {
-			return $entity->getId();
-		}
-
-		return $entity;
-	}//end idOf()
-
-	/**
-	 * The entity the caller passed, when it is the one a group is written to.
-	 *
-	 * @param Register|Schema|string|int|null $entity The caller's register or schema.
-	 * @param string                          $id     The group's id for it.
-	 *
-	 * @return Register|Schema|null The entity, or null when the caller passed only an id or another one.
-	 */
-	private function given(Register|Schema|string|int|null $entity, string $id): Register|Schema|null {
-		if (($entity instanceof Register || $entity instanceof Schema) && (string)$entity->getId() === $id) {
-			return $entity;
-		}
-
-		return null;
-	}//end given()
+	private function newGroup(array $ids, BulkSlugCaller $caller): array {
+		return [
+			'registerId' => $ids[0],
+			'schemaId' => $ids[1],
+			'indexes' => [],
+			'register' => $caller->registerFor(id: $ids[0]),
+			'schema' => $caller->schemaFor(id: $ids[1]),
+		];
+	}//end newGroup()
 
 	/**
 	 * Decide the slugs of one register+schema group and write them back.
@@ -209,15 +192,26 @@ class BulkObjectSlugs {
 			return;
 		}
 
+		foreach ($this->groupDecisions(objects: $objects, group: $group, schema: $schema) as $index => $slug) {
+			$this->writeDecision(objects: $objects, index: $index, slug: $slug);
+		}
+	}//end decideGroup()
+
+	/**
+	 * The slug decisions of one managed group.
+	 *
+	 * @param array                $objects The prepared rows.
+	 * @param array<string, mixed> $group   The group, as groups() builds it.
+	 * @param Schema               $schema  The group's schema (managed).
+	 *
+	 * @return array<int|string, string|null> Row index => slug.
+	 */
+	private function groupDecisions(array $objects, array $group, Schema $schema): array {
 		$register = $this->groupRegister(group: $group);
 		if ($register === null) {
 			// Fail closed: without the table there is no uniqueness check, so no
 			// client slug is written unchecked.
-			foreach ($group['indexes'] as $index) {
-				$this->writeDecision(objects: $objects, index: $index, slug: null);
-			}
-
-			return;
+			return array_fill_keys($group['indexes'], null);
 		}
 
 		$rows = [];
@@ -225,10 +219,8 @@ class BulkObjectSlugs {
 			$rows[$index] = $this->slugRow(object: $objects[$index]);
 		}
 
-		foreach ($this->slugHandler->decideBatch(rows: $rows, register: $register, schema: $schema) as $index => $slug) {
-			$this->writeDecision(objects: $objects, index: $index, slug: $slug);
-		}
-	}//end decideGroup()
+		return $this->slugHandler->decideBatch(rows: $rows, register: $register, schema: $schema);
+	}//end groupDecisions()
 
 	/**
 	 * The schema of a group, or null (logged) when it does not resolve.
@@ -285,27 +277,47 @@ class BulkObjectSlugs {
 	 * @return array{uuid: ?string, clientSlug: ?string, data: array}
 	 */
 	private function slugRow(array $object): array {
-		$self = $object;
-		$data = ($object['object'] ?? []);
-		if (isset($object['@self']) === true && is_array($object['@self']) === true) {
-			$self = $object['@self'];
-			$data = $object;
-			unset($data['@self']);
-		}
-
+		[$self, $data] = $this->selfAndData(object: $object);
 		$clientSlug = ($self['slug'] ?? $self[self::CLIENT_SLUG_KEY] ?? $data['slug'] ?? null);
-		$uuid = ($self['uuid'] ?? $self['id'] ?? null);
-
-		if (is_array($data) === false) {
-			$data = [];
-		}
 
 		return [
-			'uuid' => $this->nonEmptyString(value: $uuid, allowEmpty: true),
+			'uuid' => $this->nonEmptyString(value: ($self['uuid'] ?? $self['id'] ?? null), allowEmpty: true),
 			'clientSlug' => $this->nonEmptyString(value: $clientSlug, allowEmpty: false),
-			'data' => $data,
+			'data' => $this->dataArray(data: $data),
 		];
 	}//end slugRow()
+
+	/**
+	 * Business data as an array; anything else counts as none.
+	 *
+	 * @param mixed $data The business data as found.
+	 *
+	 * @return array The data, or an empty array.
+	 */
+	private function dataArray(mixed $data): array {
+		if (is_array($data) === false) {
+			return [];
+		}
+
+		return $data;
+	}//end dataArray()
+
+	/**
+	 * A prepared row's metadata and business data, whichever shape it has.
+	 *
+	 * @param array $object The prepared row (flat selfData or `@self` shape).
+	 *
+	 * @return array{0: array, 1: mixed} The metadata and the business data as found.
+	 */
+	private function selfAndData(array $object): array {
+		if ($this->hasSelf(row: $object) === false) {
+			return [$object, ($object['object'] ?? [])];
+		}
+
+		$data = $object;
+		unset($data['@self']);
+		return [$object['@self'], $data];
+	}//end selfAndData()
 
 	/**
 	 * A string value, or null when it is not one.
@@ -317,7 +329,7 @@ class BulkObjectSlugs {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) A uuid keeps '' (as before), a client slug does not.
 	 */
-	private function nonEmptyString(mixed $value, bool $allowEmpty): ?string {
+	private function nonEmptyString(mixed $value, bool $allowEmpty): string|null {
 		if (is_string($value) === false || ($allowEmpty === false && $value === '')) {
 			return null;
 		}
@@ -334,8 +346,8 @@ class BulkObjectSlugs {
 	 *
 	 * @return void
 	 */
-	private function writeDecision(array &$objects, int|string $index, ?string $slug): void {
-		if (isset($objects[$index]['@self']) === true && is_array($objects[$index]['@self']) === true) {
+	private function writeDecision(array &$objects, int|string $index, string|null $slug): void {
+		if ($this->hasSelf(row: $objects[$index]) === true) {
 			$objects[$index]['@self']['slug'] = $slug;
 			return;
 		}

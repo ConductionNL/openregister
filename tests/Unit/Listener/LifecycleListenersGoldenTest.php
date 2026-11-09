@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
+use OCA\OpenRegister\Service\Rules\RuleTrace;
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -43,6 +45,7 @@ use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -62,6 +65,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
+use OCA\OpenRegister\Listener\Support\ApprovalChainSequences;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ApprovalChainGateListener
@@ -142,9 +148,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 	private function gateListener(): ApprovalChainGateListener {
 		return new ApprovalChainGateListener(
 			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger),
-			$this->sequenceMapper,
-			$this->sequenceService,
-			new ApprovalChainAnnotationInstaller(logger: $this->logger),
+			new ApprovalChainSequences($this->sequenceMapper, $this->sequenceService, new ApprovalChainAnnotationInstaller(logger: $this->logger)),
 			$this->userSession,
 			$this->logger
 		);
@@ -171,12 +175,8 @@ class LifecycleListenersGoldenTest extends TestCase {
 		);
 
 		return new LifecycleValidationListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger),
-			new LifecycleGuardRegistry($this->guards, $server, $this->logger),
-			$this->userSession,
-			$this->permission,
-			new LifecycleConditionEvaluator($this->userSession, $groups, $l10n, $this->logger, $dialect),
-			new ConditionTracer(dialect: $dialect),
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger), $this->userSession, $this->permission),
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guards, $server, $this->logger), new LifecycleConditionEvaluator($this->userSession, $groups, new LifecycleConditionReporting($l10n, $this->logger), $dialect), new ConditionTracer(dialect: $dialect)),
 			$this->ruleRuns
 		);
 	}//end validationListener()
@@ -1114,8 +1114,8 @@ class LifecycleListenersGoldenTest extends TestCase {
 		);
 		$records = [];
 		$this->ruleRuns->method('record')->willReturnCallback(
-			static function (...$arguments) use (&$records): void {
-				$records[] = $arguments;
+			static function (RuleRunSubject $subject, RuleTrace $trace) use (&$records): void {
+				$records[] = [$subject->ruleId, $subject->schemaSlug, $trace, $subject->objectUuid, $subject->registerSlug];
 			}
 		);
 

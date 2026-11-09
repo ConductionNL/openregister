@@ -30,6 +30,7 @@ use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
+use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
@@ -42,6 +43,7 @@ use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
@@ -162,13 +164,9 @@ class CasePlanServiceTest extends TestCase {
 		$groups->method('groupExists')->willReturnCallback(static fn (string $gid): bool => $gid !== 'ghost');
 		$sentries = new CaseSentryEvaluator(catalog: new EventCatalogService());
 		$machine = new CasePlanStateMachine(
-			items: $this->items,
-			audits: $this->audits,
+			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()),
 			table: new CasePlanTransitions(),
-			realiser: $this->realiser,
-			writer: $this->writer,
-			db: $db,
-			logger: new NullLogger()
+			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->writer)
 		);
 
 		return new CasePlanService(
@@ -180,7 +178,7 @@ class CasePlanServiceTest extends TestCase {
 			),
 			mechanics: new CasePlanMechanics(
 				machine: $machine,
-				cascade: new CasePlanCascade(items: $this->items, machine: $machine, sentries: $sentries, realiser: $this->realiser, anchor: $this->anchor, db: $db, logger: new NullLogger()),
+				cascade: new CasePlanCascade(store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()), machine: $machine, readers: new CaseCascadeReaders(sentries: $sentries, realiser: $this->realiser, anchor: $this->anchor)),
 				sentries: $sentries,
 				definitions: new CasePlanDefinition(sentries: $sentries)
 			),

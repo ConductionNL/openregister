@@ -38,7 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -52,7 +52,7 @@ class LogDanglingLinkedTypes implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param IntegrationRegistry $registry Integration registry.
+	 * @param IntegrationIdIndexInterface $registry Integration registry.
 	 * @param ContainerInterface $container DI container — used to
 	 *                                      lazily resolve SchemaMapper
 	 *                                      since hard-binding it
@@ -63,7 +63,7 @@ class LogDanglingLinkedTypes implements IRepairStep {
 	 * @return void
 	 */
 	public function __construct(
-		private IntegrationRegistry $registry,
+		private IntegrationIdIndexInterface $registry,
 		private ContainerInterface $container,
 		private LoggerInterface $logger,
 	) {

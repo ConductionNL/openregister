@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hinge;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -60,25 +60,39 @@ class LensResolver {
 	];
 
 	/**
+	 * Object storage, to read the referenced record.
+	 *
+	 * @var MagicObjectFinderInterface
+	 */
+	private readonly MagicObjectFinderInterface $magicMapper;
+
+	/**
+	 * Schema lookup for the referenced record.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Wire the lookups a lens resolves through.
 	 *
-	 * @param MagicMapperInterface       $magicMapper       Object storage, to read the referenced record.
-	 * @param SchemaMapperInterface      $schemaMapper      Schema lookup for the referenced record.
+	 * @param LensLookups                $lookups           The object storage and the schema lookup.
 	 * @param PermissionHandlerInterface $permissionHandler The read check over the referenced record.
-	 * @param IUserSession      $userSession       The caller, for that check.
-	 * @param LoggerInterface   $logger            PSR logger for unresolvable lenses.
+	 * @param IUserSession               $userSession       The caller, for that check.
+	 * @param LoggerInterface            $logger            PSR logger for unresolvable lenses.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		LensLookups $lookups,
 		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->magicMapper = $lookups->magicMapper;
+		$this->schemaMapper = $lookups->schemaMapper;
 	}//end __construct()
 
 	/**

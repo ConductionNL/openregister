@@ -59,7 +59,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-runs-honour-their-declaration/specs/flow-engine/spec.md
  */
-class FlowRunAuthorization {
+class FlowRunAuthorization implements FlowRunAuthorizationInterface {
 
 	/**
 	 * The right that lets a caller run a flow that is not theirs.
@@ -67,13 +67,6 @@ class FlowRunAuthorization {
 	 * @var string
 	 */
 	public const RIGHT = 'flow.update';
-
-	/**
-	 * Refused: there is nobody to attribute the run to.
-	 *
-	 * @var string
-	 */
-	public const NO_SESSION = 'no-session';
 
 	/**
 	 * Refused: the flow belongs to nobody, so the engine would not dispatch it.

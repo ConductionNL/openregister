@@ -194,8 +194,8 @@ class ScheduledReportServiceProfileRunTest extends TestCase {
 		$runs->expects(self::once())->method('record')->willReturnCallback(
 			function (...$args) use (&$seen) {
 				// PHPUnit hands the declared parameters positionally;
-				// retentionSeconds is the eleventh.
-				$seen = (array_key_exists(10, $args) === true) ? $args[10] : 'absent';
+				// retentionSeconds is the fourth.
+				$seen = (array_key_exists(3, $args) === true) ? $args[3] : 'absent';
 
 				return new \OCA\OpenRegister\Db\ExportRun();
 			}
@@ -289,7 +289,7 @@ class ScheduledReportServiceProfileRunTest extends TestCase {
 		$runs = $this->createMock(ExportRunRecorder::class);
 		$runs->expects(self::once())->method('record')->willReturnCallback(
 			function (...$args) use (&$seen) {
-				$seen = (array_key_exists(10, $args) === true) ? $args[10] : 'absent';
+				$seen = (array_key_exists(3, $args) === true) ? $args[3] : 'absent';
 
 				return new \OCA\OpenRegister\Db\ExportRun();
 			}

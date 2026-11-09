@@ -32,6 +32,9 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -132,16 +135,22 @@ final class GraphQLResolverListGoldenTest extends TestCase {
 		$this->runner = $this->createMock(AggregationRunner::class);
 
 		return new GraphQLResolver(
-			$this->createMock(GetObject::class),
-			$this->objects,
-			$this->createMock(PermissionHandler::class),
-			$rbac,
-			$this->createMock(RelationHandler::class),
-			$registers,
-			$this->createMock(LoggerInterface::class),
-			$translations,
-			$this->runner,
-			new TimeseriesRequestValidator()
+			new GraphQLResolverObjects(
+				$this->createMock(GetObject::class),
+				$this->objects,
+				$this->createMock(RelationHandler::class),
+				$registers
+			),
+			new GraphQLResolverRights(
+				$this->createMock(PermissionHandler::class),
+				$rbac
+			),
+			new GraphQLResolverShaping(
+				$translations,
+				$this->runner,
+				new TimeseriesRequestValidator()
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end resolver()
 

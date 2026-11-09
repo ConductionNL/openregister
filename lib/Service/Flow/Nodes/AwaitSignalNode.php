@@ -283,30 +283,77 @@ class AwaitSignalNode implements IFlowNode, AwaitSignalNodeInterface, IFlowNodeC
 			);
 		}
 
-		$decision = strtolower(trim((string)($signal['decision'] ?? '')));
+		$this->refuseIfRejected(signal: $signal, config: $config);
 
-		if ($decision === 'reject' || $decision === 'rejected') {
-			if (($config['failOnReject'] ?? false) === true) {
-				throw new FlowStop(
-					reason: sprintf(
-						'Rejected: %s',
-						trim((string)($signal['reason'] ?? $config['question'] ?? 'no reason given'))
-					),
-					isError: true
-				);
-			}
+		return $this->placeAnswer(items: $items, key: $this->answerKey(config: $config), signal: $signal);
+	}//end execute()
+
+	/**
+	 * Stop the run on a rejection, when the step opted in with `failOnReject`.
+	 *
+	 * @param array<string, mixed> $signal The decision payload.
+	 * @param array                $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowStop On an opted-in rejection.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	private function refuseIfRejected(array $signal, array $config): void {
+		$decision = strtolower(trim((string)($signal['decision'] ?? '')));
+		if ($decision !== 'reject' && $decision !== 'rejected') {
+			return;
 		}
 
+		if (($config['failOnReject'] ?? false) === true) {
+			throw new FlowStop(
+				reason: sprintf(
+					'Rejected: %s',
+					trim((string)($signal['reason'] ?? $config['question'] ?? 'no reason given'))
+				),
+				isError: true
+			);
+		}
+
+	}//end refuseIfRejected()
+
+	/**
+	 * The item key the answer lands under: `signalKey`, or `signal` when unset.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return string The key.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	private function answerKey(array $config): string {
 		$key = trim((string)($config['signalKey'] ?? ''));
 		if ($key === '') {
 			$key = 'signal';
 		}
 
-		// Into every item's record (`json`), not beside it, and not into the
-		// token: the steps that follow route per item and read `json.<key>`
-		// (FlowExpression::dataFor exposes json.*, and a rebuilding node like
-		// set-fields keeps only [json, binary]). A key at the envelope level
-		// is invisible to a Switch and silently dropped by the next rebuild.
+		return $key;
+	}//end answerKey()
+
+	/**
+	 * Write the answer onto every item's record.
+	 *
+	 * Into every item's record (`json`), not beside it, and not into the
+	 * token: the steps that follow route per item and read `json.<key>`
+	 * (FlowExpression::dataFor exposes json.*, and a rebuilding node like
+	 * set-fields keeps only [json, binary]). A key at the envelope level
+	 * is invisible to a Switch and silently dropped by the next rebuild.
+	 *
+	 * @param array                $items  The items to pass on.
+	 * @param string               $key    The item key the answer lands under.
+	 * @param array<string, mixed> $signal The decision payload.
+	 *
+	 * @return array The items, each carrying the answer.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	private function placeAnswer(array $items, string $key, array $signal): array {
 		foreach ($items as $index => $item) {
 			if (is_array($item) === false) {
 				continue;
@@ -319,7 +366,7 @@ class AwaitSignalNode implements IFlowNode, AwaitSignalNodeInterface, IFlowNodeC
 		}
 
 		return $items;
-	}//end execute()
+	}//end placeAnswer()
 
 	/**
 	 * The decision this node is waiting for, if it has arrived.

@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
-use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCP\IL10N;
 use OCP\IUserSession;
 
@@ -151,7 +151,7 @@ class ObjectActionGate {
 		$probe->setOwner(null);
 		$authorization = $probe->getAuthorization();
 		if (is_array($authorization) === true) {
-			unset($authorization[ObjectScopeResolver::OWNER_GROUP_KEY]);
+			unset($authorization[ObjectScopeResolverInterface::OWNER_GROUP_KEY]);
 			$probe->setAuthorization($authorization);
 		}
 

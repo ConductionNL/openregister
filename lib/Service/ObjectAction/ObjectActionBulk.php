@@ -31,7 +31,6 @@ namespace OCA\OpenRegister\Service\ObjectAction;
 use OCA\OpenRegister\BulkAction\RunActionActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use InvalidArgumentException;
@@ -61,30 +60,18 @@ class ObjectActionBulk implements ObjectActionBulkInterface {
 	/**
 	 * Create the previewed job.
 	 *
-	 * @param Schema               $schema   The selection's schema.
-	 * @param string               $register The register as the caller named it.
-	 * @param string               $schemaRef The schema as the caller named it.
-	 * @param string               $action   The action key.
-	 * @param list<string>         $ids      The selection.
-	 * @param array<string, mixed> $inputs   The inputs.
+	 * @param ObjectActionSelection $selection The selection, its schema, and the register and schema as named.
+	 * @param string                $action    The action key.
+	 * @param array<string, mixed>  $inputs    The inputs.
 	 *
 	 * @return BulkJob The previewed job.
 	 *
 	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
 	 * @throws InvalidArgumentException When nobody is signed in to run it as.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One argument per part of the request being handed over.
-	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
 	 */
-	public function start(
-		Schema $schema,
-		string $register,
-		string $schemaRef,
-		string $action,
-		array $ids,
-		array $inputs,
-	): BulkJob {
+	public function start(ObjectActionSelection $selection, string $action, array $inputs): BulkJob {
 		$actorUid = $this->gate->userId();
 		if ($actorUid === null) {
 			throw new InvalidArgumentException('A bulk job runs as the person who starts it, so it needs a signed-in user.');
@@ -92,12 +79,12 @@ class ObjectActionBulk implements ObjectActionBulkInterface {
 
 		return $this->jobs->create(
 			actionId: RunActionActionInterface::ID,
-			parameters: ['action' => $action, 'inputs' => $inputs, 'register' => $register, 'schema' => $schemaRef],
-			selection: ['ids' => $ids],
+			parameters: ['action' => $action, 'inputs' => $inputs, 'register' => $selection->register, 'schema' => $selection->schemaRef],
+			selection: ['ids' => $selection->ids],
 			justification: null,
 			actorUid: $actorUid,
-			registerId: $this->registerId(register: $register),
-			schemaId: $schema->getId()
+			registerId: $this->registerId(register: $selection->register),
+			schemaId: $selection->schema->getId()
 		);
 	}//end start()
 

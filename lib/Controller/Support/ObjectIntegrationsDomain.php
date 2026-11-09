@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 
 /**
  * The integration registry and the object and schema services an integration call reads.
@@ -35,14 +35,14 @@ final class ObjectIntegrationsDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param IntegrationRegistry       $registry      Integration registry.
+	 * @param IntegrationCatalogueInterface       $registry      Integration registry.
 	 * @param ObjectOperationsInterface $objectService OpenRegister object service (RBAC boundary).
 	 * @param SchemaMapperInterface     $schemaMapper  Schema loader (external-source detection).
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-19
 	 */
 	public function __construct(
-		public readonly IntegrationRegistry $registry,
+		public readonly IntegrationCatalogueInterface $registry,
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly SchemaMapperInterface $schemaMapper,
 	) {

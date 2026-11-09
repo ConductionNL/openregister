@@ -126,35 +126,64 @@ class PartyAnnotationValidator {
 				continue;
 			}
 
-			$value = $annotation[$field];
-			if (is_string($value) === false || trim($value) === '') {
-				$errors[] = [
-					'code' => 'party.field-not-string',
-					'message' => sprintf('x-openregister-party "%s" must be a non-empty string.', $field),
-				];
-				continue;
+			$error = $this->propertyFieldError(field: $field, value: $annotation[$field], declared: $declared);
+			if ($error !== null) {
+				$errors[] = $error;
 			}
-
-			// Skipped when the schema declares no properties at all: an
-			// entity built in isolation has nothing to check against, and
-			// failing there would reject a valid declaration for the wrong
-			// reason.
-			if ($declared === [] || in_array(trim($value), $declared, true) === true) {
-				continue;
-			}
-
-			$errors[] = [
-				'code' => 'party.unknown-property',
-				'message' => sprintf(
-					'x-openregister-party "%s" names "%s", which is not a declared property of this schema.',
-					$field,
-					trim($value)
-				),
-			];
-		}//end foreach
+		}
 
 		return $errors;
 	}//end validatePropertyFields()
+
+	/**
+	 * The error for one property field: not a non-empty string, or naming a
+	 * property the schema does not declare; null when it is fine.
+	 *
+	 * @param string $field The field.
+	 * @param mixed $value Its value.
+	 * @param array<int, string> $declared The schema's declared property names.
+	 *
+	 * @return array{code: string, message: string}|null The error.
+	 */
+	private function propertyFieldError(string $field, mixed $value, array $declared): ?array {
+		if (is_string($value) === false || trim($value) === '') {
+			return [
+				'code' => 'party.field-not-string',
+				'message' => sprintf('x-openregister-party "%s" must be a non-empty string.', $field),
+			];
+		}
+
+		return self::unknownPropertyError(field: $field, name: trim($value), declared: $declared);
+	}//end propertyFieldError()
+
+	/**
+	 * The error for a property field naming a property the schema does not
+	 * declare; null when it names a declared one.
+	 *
+	 * Skipped when the schema declares no properties at all: an entity built
+	 * in isolation has nothing to check against, and failing there would
+	 * reject a valid declaration for the wrong reason.
+	 *
+	 * @param string $field The field.
+	 * @param string $name The property it names, trimmed.
+	 * @param array<int, string> $declared The schema's declared property names.
+	 *
+	 * @return array{code: string, message: string}|null The error.
+	 */
+	private static function unknownPropertyError(string $field, string $name, array $declared): ?array {
+		if ($declared === [] || in_array($name, $declared, true) === true) {
+			return null;
+		}
+
+		return [
+			'code' => 'party.unknown-property',
+			'message' => sprintf(
+				'x-openregister-party "%s" names "%s", which is not a declared property of this schema.',
+				$field,
+				$name
+			),
+		];
+	}//end propertyFieldError()
 
 	/**
 	 * The depth bound must be a positive integer.

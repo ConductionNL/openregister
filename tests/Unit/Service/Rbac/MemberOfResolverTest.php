@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
+use OCA\OpenRegister\Service\Rbac\SchemaRegisterLookup;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -96,8 +97,7 @@ class MemberOfResolverTest extends TestCase {
 	 */
 	private function resolver(): MemberOfResolver {
 		return new MemberOfResolver(
-			schemas: $this->schemas,
-			registers: $this->registers,
+			lookup: new SchemaRegisterLookup(schemas: $this->schemas, registers: $this->registers),
 			container: $this->containerGiving($this->objects),
 			operators: new OperatorEvaluator(new NullLogger()),
 			logger: new NullLogger()
@@ -326,8 +326,7 @@ class MemberOfResolverTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new \RuntimeException('no such service'));
 		$resolver = new MemberOfResolver(
-			schemas: $this->schemas,
-			registers: $this->registers,
+			lookup: new SchemaRegisterLookup(schemas: $this->schemas, registers: $this->registers),
 			container: $container,
 			operators: new OperatorEvaluator(new NullLogger()),
 			logger: new NullLogger()
@@ -465,8 +464,7 @@ class MemberOfResolverTest extends TestCase {
 		$container->expects($this->never())->method('get');
 
 		new MemberOfResolver(
-			schemas: $this->schemas,
-			registers: $this->registers,
+			lookup: new SchemaRegisterLookup(schemas: $this->schemas, registers: $this->registers),
 			container: $container,
 			operators: new OperatorEvaluator(new NullLogger()),
 			logger: new NullLogger()

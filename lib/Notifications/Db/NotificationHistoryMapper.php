@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Notifications\Db;
 use DateTime;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCA\OpenRegister\Db\Register;
@@ -60,6 +61,8 @@ use OCA\OpenRegister\Db\Schema;
  * argument {@see FlowTimerMapper} and {@see ContactLinkMapper} make.
  */
 class NotificationHistoryMapper extends QBMapper implements NotificationHistoryMapperInterface {
+	use NotificationQueryTrait;
+
 	/**
 	 * Filter key to column, for the list and its count.
 	 *
@@ -179,32 +182,9 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 		$qb->select('*')
 			->from($this->getTableName());
 
-		foreach (self::COLUMN_MAP as $filterKey => $column) {
-			if (array_key_exists($filterKey, $filters) === false) {
-				continue;
-			}
-
-			$value = $filters[$filterKey];
-			if ($value === null || $value === '') {
-				continue;
-			}
-
-			$qb->andWhere(
-				$qb->expr()->eq($column, $qb->createNamedParameter((string)$value))
-			);
-		}
-
-		$this->applyListStateFilters(qb: $qb, filters: $filters, asOf: ($asOf ?? new DateTime()));
-
+		$this->applyFilters(qb: $qb, filters: $filters, asOf: $asOf);
 		$qb->orderBy('dispatched_at', 'DESC');
-
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		$this->page(qb: $qb, limit: $limit, offset: $offset);
 
 		return $this->findEntities(query: $qb);
 	}//end findFiltered()
@@ -241,22 +221,7 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 			);
 		}
 
-		$result = $qb->executeQuery();
-		$counts = [];
-
-		foreach ($result->fetchAll() as $row) {
-			$status = ($row['status'] ?? null);
-
-			if ($status === null || $status === '') {
-				continue;
-			}
-
-			$counts[(string)$status] = (int)($row['status_count'] ?? 0);
-		}
-
-		$result->closeCursor();
-
-		return $counts;
+		return $this->statusCounts(result: $qb->executeQuery());
 	}//end countByStatus()
 
 	/**
@@ -272,22 +237,7 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 		$qb->select($qb->createFunction('COUNT(*)'))
 			->from($this->getTableName());
 
-		foreach (self::COLUMN_MAP as $filterKey => $column) {
-			if (array_key_exists($filterKey, $filters) === false) {
-				continue;
-			}
-
-			$value = $filters[$filterKey];
-			if ($value === null || $value === '') {
-				continue;
-			}
-
-			$qb->andWhere(
-				$qb->expr()->eq($column, $qb->createNamedParameter((string)$value))
-			);
-		}
-
-		$this->applyListStateFilters(qb: $qb, filters: $filters, asOf: ($asOf ?? new DateTime()));
+		$this->applyFilters(qb: $qb, filters: $filters, asOf: $asOf);
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
@@ -324,20 +274,84 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	private function applyListStateFilters(IQueryBuilder $qb, array $filters, DateTime $asOf): void {
-		if (filter_var(($filters['unreadOnly'] ?? false), FILTER_VALIDATE_BOOLEAN) === true) {
+		if ($this->flag(filters: $filters, key: 'unreadOnly') === true) {
 			$qb->andWhere($qb->expr()->isNull('read_at'));
 		}
 
-		if (filter_var(($filters['includeArchived'] ?? false), FILTER_VALIDATE_BOOLEAN) === false) {
+		if ($this->flag(filters: $filters, key: 'includeArchived') === false) {
 			$qb->andWhere($qb->expr()->isNull('archived_at'));
 		}
 
-		if (filter_var(($filters['includeSnoozed'] ?? false), FILTER_VALIDATE_BOOLEAN) === true) {
-			return;
+		if ($this->flag(filters: $filters, key: 'includeSnoozed') === false) {
+			$this->whereNotSnoozed(qb: $qb, asOf: $asOf);
+		}
+	}//end applyListStateFilters()
+
+
+	/**
+	 * Narrow by the mapped column filters, then by the list-state flags.
+	 *
+	 * A filter that is absent, null or empty narrows nothing.
+	 *
+	 * @param IQueryBuilder        $qb      The query.
+	 * @param array<string, mixed> $filters The filters, keyed as COLUMN_MAP plus the state flags.
+	 * @param DateTime|null        $asOf    The moment snoozes are judged against; null is now.
+	 *
+	 * @return void
+	 */
+	private function applyFilters(IQueryBuilder $qb, array $filters, ?DateTime $asOf): void {
+		$this->whereMappedColumns(qb: $qb, filters: $filters);
+		$this->applyListStateFilters(qb: $qb, filters: $filters, asOf: ($asOf ?? new DateTime()));
+
+	}//end applyFilters()
+
+	/**
+	 * Narrow by each COLUMN_MAP filter that carries a value.
+	 *
+	 * @param IQueryBuilder        $qb      The query.
+	 * @param array<string, mixed> $filters The filters.
+	 *
+	 * @return void
+	 */
+	private function whereMappedColumns(IQueryBuilder $qb, array $filters): void {
+		foreach (self::COLUMN_MAP as $filterKey => $column) {
+			$value = ($filters[$filterKey] ?? null);
+			if ($value === null || $value === '') {
+				continue;
+			}
+
+			$qb->andWhere(
+				$qb->expr()->eq($column, $qb->createNamedParameter((string)$value))
+			);
 		}
 
-		// A snooze that has expired is not a snooze: the notice is back, and
-		// still unread. Hence "null OR in the past", never "null".
+	}//end whereMappedColumns()
+
+	/**
+	 * Read a boolean list-state flag; absent is false.
+	 *
+	 * @param array<string, mixed> $filters The filters.
+	 * @param string               $key     The flag.
+	 *
+	 * @return bool The flag's value.
+	 */
+	private function flag(array $filters, string $key): bool {
+		return filter_var(($filters[$key] ?? false), FILTER_VALIDATE_BOOLEAN);
+
+	}//end flag()
+
+	/**
+	 * Leave out the notices still snoozed at the moment given.
+	 *
+	 * A snooze that has expired is not a snooze: the notice is back, and
+	 * still unread. Hence "null OR in the past", never "null".
+	 *
+	 * @param IQueryBuilder $qb   The query.
+	 * @param DateTime      $asOf The moment.
+	 *
+	 * @return void
+	 */
+	private function whereNotSnoozed(IQueryBuilder $qb, DateTime $asOf): void {
 		$qb->andWhere(
 			$qb->expr()->orX(
 				$qb->expr()->isNull('snoozed_until'),
@@ -345,7 +359,46 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 			)
 		);
 
-	}//end applyListStateFilters()
+	}//end whereNotSnoozed()
+
+	/**
+	 * Fold the status/count rows into a map, skipping rows without a status.
+	 *
+	 * @param IResult $result The grouped result.
+	 *
+	 * @return array<string, int> Status => count.
+	 */
+	private function statusCounts(IResult $result): array {
+		$counts = [];
+		foreach ($result->fetchAll() as $row) {
+			$status = (string)($row['status'] ?? '');
+			if ($status !== '') {
+				$counts[$status] = (int)($row['status_count'] ?? 0);
+			}
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+
+	}//end statusCounts()
+
+	/**
+	 * An UPDATE of the mapper's table setting one timestamp column.
+	 *
+	 * @param string   $column The column.
+	 * @param DateTime $value  The moment to write.
+	 *
+	 * @return IQueryBuilder The statement, ready for its narrowing.
+	 */
+	private function updateSetting(string $column, DateTime $value): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set($column, $qb->createNamedParameter($value, IQueryBuilder::PARAM_DATETIME_MUTABLE));
+
+		return $qb;
+
+	}//end updateSetting()
 
 	/**
 	 * Mark one notice read for the recipient it belongs to.
@@ -363,15 +416,11 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function markRead(int $id, string $recipient, ?DateTime $readAt = null): bool {
-		$qb = $this->db->getQueryBuilder();
-		$qb->update($this->getTableName())
-			->set('read_at', $qb->createNamedParameter(($readAt ?? new DateTime()), IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('recipient', $qb->createNamedParameter($recipient)))
-			->andWhere($qb->expr()->isNull('read_at'));
+		$qb = $this->updateSetting(column: 'read_at', value: ($readAt ?? new DateTime()));
+		$this->whereEquals(qb: $qb, columns: ['id' => $id, 'recipient' => $recipient]);
+		$qb->andWhere($qb->expr()->isNull('read_at'));
 
 		return ($qb->executeStatement() > 0);
-
 	}//end markRead()
 
 	/**
@@ -391,25 +440,16 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
-	public function markReadForSubject(
-		string $recipient,
-		string $objectUuid,
-		?string $subjectId = null,
-		?DateTime $readAt = null
-	): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->update($this->getTableName())
-			->set('read_at', $qb->createNamedParameter(($readAt ?? new DateTime()), IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			->where($qb->expr()->eq('recipient', $qb->createNamedParameter($recipient)))
-			->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->isNull('read_at'));
+	public function markReadForSubject(string $recipient, string $objectUuid, ?string $subjectId = null, ?DateTime $readAt = null): int {
+		$qb = $this->updateSetting(column: 'read_at', value: ($readAt ?? new DateTime()));
+		$this->whereEquals(qb: $qb, columns: ['recipient' => $recipient, 'object_uuid' => $objectUuid]);
+		$qb->andWhere($qb->expr()->isNull('read_at'));
 
 		if ($subjectId !== null && $subjectId !== '') {
 			$qb->andWhere($qb->expr()->eq('subject_id', $qb->createNamedParameter($subjectId)));
 		}
 
 		return $qb->executeStatement();
-
 	}//end markReadForSubject()
 
 	/**
@@ -424,14 +464,10 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function snooze(int $id, string $recipient, DateTime $until): bool {
-		$qb = $this->db->getQueryBuilder();
-		$qb->update($this->getTableName())
-			->set('snoozed_until', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('recipient', $qb->createNamedParameter($recipient)));
+		$qb = $this->updateSetting(column: 'snoozed_until', value: $until);
+		$this->whereEquals(qb: $qb, columns: ['id' => $id, 'recipient' => $recipient]);
 
 		return ($qb->executeStatement() > 0);
-
 	}//end snooze()
 
 	/**
@@ -450,14 +486,10 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function archive(int $id, string $recipient, ?DateTime $archivedAt = null): bool {
-		$qb = $this->db->getQueryBuilder();
-		$qb->update($this->getTableName())
-			->set('archived_at', $qb->createNamedParameter(($archivedAt ?? new DateTime()), IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('recipient', $qb->createNamedParameter($recipient)));
+		$qb = $this->updateSetting(column: 'archived_at', value: ($archivedAt ?? new DateTime()));
+		$this->whereEquals(qb: $qb, columns: ['id' => $id, 'recipient' => $recipient]);
 
 		return ($qb->executeStatement() > 0);
-
 	}//end archive()
 
 	/**
@@ -474,14 +506,11 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function archiveByObject(string $objectUuid, ?DateTime $archivedAt = null): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->update($this->getTableName())
-			->set('archived_at', $qb->createNamedParameter(($archivedAt ?? new DateTime()), IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->isNull('archived_at'));
+		$qb = $this->updateSetting(column: 'archived_at', value: ($archivedAt ?? new DateTime()));
+		$this->whereEquals(qb: $qb, columns: ['object_uuid' => $objectUuid]);
+		$qb->andWhere($qb->expr()->isNull('archived_at'));
 
 		return $qb->executeStatement();
-
 	}//end archiveByObject()
 
 	/**
@@ -495,18 +524,19 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function findOwn(int $id, string $recipient): ?NotificationHistory {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('recipient', $qb->createNamedParameter($recipient)))
-			->setMaxResults(1);
+		$qb = $this->selectWhereEquals(columns: ['id' => $id, 'recipient' => $recipient]);
+		$qb->setMaxResults(1);
 
 		try {
-			return $this->findEntity(query: $qb);
+			$found = $this->findEntity(query: $qb);
 		} catch (\Throwable $e) {
 			return null;
 		}
 
+		if ($found instanceof NotificationHistory) {
+			return $found;
+		}
+
+		return null;
 	}//end findOwn()
 }//end class

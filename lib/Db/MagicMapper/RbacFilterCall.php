@@ -22,47 +22,12 @@ use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 
 /**
- * One application of the RBAC read filter: the query it narrows, the schema
- * and action it decides, the caller, and the schema's authorization block.
+ * One application of the RBAC read filter: the query it narrows, on top of
+ * the access decision it applies (on the magic table aliased `t`).
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-final class RbacFilterCall {
-
-	/**
-	 * The CRUD action being checked.
-	 *
-	 * @var string
-	 */
-	public string $action = 'read';
-
-	/**
-	 * The bare magic table being read, or null.
-	 *
-	 * @var string|null
-	 */
-	public ?string $tableName = null;
-
-	/**
-	 * The calling user's id, or null for an anonymous caller.
-	 *
-	 * @var string|null
-	 */
-	public ?string $userId = null;
-
-	/**
-	 * The calling user's group ids.
-	 *
-	 * @var array<int, string>
-	 */
-	public array $userGroups = [];
-
-	/**
-	 * The schema's resolved authorization block; null when it has none.
-	 *
-	 * @var array|null
-	 */
-	public ?array $authorization = null;
+final class RbacFilterCall extends RbacAccessCall {
 
 	/**
 	 * Constructor.
@@ -74,8 +39,9 @@ final class RbacFilterCall {
 	 */
 	public function __construct(
 		public readonly IQueryBuilder $qb,
-		public readonly Schema $schema,
+		Schema $schema,
 	) {
+		parent::__construct(schema: $schema, columnPrefix: 't.');
 	}//end __construct()
 
 	/**

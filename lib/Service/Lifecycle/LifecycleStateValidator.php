@@ -132,12 +132,11 @@ final class LifecycleStateValidator {
 	 * @return array<string, mixed> The declared properties.
 	 */
 	private static function declaredProperties(array $schema): array {
-		$properties = ($schema['properties'] ?? []);
-		if (is_array($properties) === false) {
-			return [];
+		if (is_array(($schema['properties'] ?? null)) === true) {
+			return $schema['properties'];
 		}
 
-		return $properties;
+		return [];
 	}//end declaredProperties()
 
 	/**
@@ -429,7 +428,8 @@ final class LifecycleStateValidator {
 	 */
 	private function validateFieldRuleGroups(array $entry, StateFieldRuleScope $scope): ?array {
 		$groups = ($entry['groups'] ?? null);
-		if ($groups === null || is_string($groups) === true) {
+		// Absent (read as '') and a single group id are both well-formed.
+		if (is_string(($groups ?? '')) === true) {
 			return null;
 		}
 

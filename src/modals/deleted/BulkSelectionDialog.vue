@@ -63,16 +63,7 @@
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="$emit('close')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success === null
-						? t('openregister', 'Cancel')
-						: t('openregister', 'Close')
-				}}
-			</NcButton>
+			<CloseCancelButton :label="success === null ? t('openregister', 'Cancel') : t('openregister', 'Close')" @click="$emit('close')" />
 			<NcButton
 				v-if="success === null"
 				:disabled="loading || objects.length === 0"
@@ -97,8 +88,8 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Close from 'vue-material-design-icons/Close.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { objectTitle } from './bulkSelection.js'
 
 /**
@@ -116,7 +107,7 @@ export default {
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,
-		Cancel,
+		CloseCancelButton,
 		Close,
 	},
 

@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\EmailLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
@@ -58,22 +59,42 @@ class EmailLinksController extends Controller {
 	use ChecksObjectUpdateRight;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var EmailLinkServiceInterface
+	 */
+	private readonly EmailLinkServiceInterface $emailLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Answers the object update right
+	 *
+	 * @var PermissionHandlerInterface
+	 */
+	private readonly PermissionHandlerInterface $permissions;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param EmailLinkServiceInterface $emailLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
-	 * @param PermissionHandlerInterface $permissions Answers the object update right
+	 * @param EmailLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly EmailLinkServiceInterface $emailLinkService,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly PermissionHandlerInterface $permissions,
+		EmailLinksControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->emailLinkService = $services->emailLinkService;
+		$this->objectService = $services->objectService;
+		$this->permissions = $services->permissions;
 	}//end __construct()
 
 	/**

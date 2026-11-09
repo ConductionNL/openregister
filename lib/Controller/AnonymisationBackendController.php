@@ -19,8 +19,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
-use OCA\OpenRegister\Service\Anonymisation\BackendState;
+use OCA\OpenRegister\Controller\Support\AnonymisationBackendControllerServices;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
+use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -36,22 +37,42 @@ use OCP\IUserSession;
  */
 class AnonymisationBackendController extends Controller {
 	/**
+	 * Current user session for admin gating.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin checks.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Backend state service (single source of truth).
+	 *
+	 * @var AnonymisationBackendServiceInterface
+	 */
+	private readonly AnonymisationBackendServiceInterface $service;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param IUserSession $userSession Current user session for admin gating.
-	 * @param IGroupManager $groupManager Group manager for admin checks.
-	 * @param AnonymisationBackendService $service Backend state service (single source of truth).
+	 * @param AnonymisationBackendControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly AnonymisationBackendService $service,
+		AnonymisationBackendControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
+		$this->service = $services->service;
 	}//end __construct()
 
 	/**
@@ -98,9 +119,9 @@ class AnonymisationBackendController extends Controller {
 		}
 
 		$method = (string)$this->request->getParam('method', '');
-		if (in_array($method, BackendState::METHODS, true) === false) {
+		if (in_array($method, BackendMethodsInterface::METHODS, true) === false) {
 			return new JSONResponse(
-				data: ['error' => 'Invalid method; expected one of: ' . implode(', ', BackendState::METHODS)],
+				data: ['error' => 'Invalid method; expected one of: ' . implode(', ', BackendMethodsInterface::METHODS)],
 				statusCode: Http::STATUS_BAD_REQUEST
 			);
 		}

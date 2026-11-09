@@ -53,7 +53,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess) PortalTaskDelivery::summarise is a
  * stateless fold over rows; an instance to call it would be a second copy.
  */
-class TaskInboxService {
+class TaskInboxService implements TaskInboxServiceInterface {
 
 	/**
 	 * Constructor.

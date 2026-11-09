@@ -115,8 +115,10 @@ class GetObjectFindAllGoldenTest extends TestCase {
 			objectMapper: $mapper,
 			auditTrailMapper: $this->createMock(AuditTrailMapperInterface::class),
 			readHistory: $this->createMock(ReadHistoryService::class),
-			objectSourceRegistry: $registry,
-			logger: new NullLogger()
+			sources: new \OCA\OpenRegister\Service\Object\GetObjectSources(
+				objectSourceRegistry: $registry,
+				logger: new NullLogger()
+			)
 		);
 	}//end getObject()
 

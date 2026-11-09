@@ -104,7 +104,7 @@ class PermissionHandlerRecordOrganisationTest extends TestCase {
 		);
 
 		$logger = new NullLogger();
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $userSession,
 			userManager: $userManager,
 			groupManager: $groupManager,

@@ -40,7 +40,7 @@
     "stylelint:fix": "stylelint \"{src,css}/**/*.{vue,scss,css}\" --fix",
     "test": "jest --silent",
     "test:coverage-ratchet": "npm run test:coverage-summary && bash tests/coverage-ratchet.sh vitest coverage-frontend/coverage-summary.json",
-    "test:coverage-summary": "jest --silent --coverage --coverageReporters=json-summary --coverageReporters=text-summary --coverageDirectory=coverage-frontend",
+    "test:coverage-summary": "jest --config jest.coverage.config.js --silent --no-cache --coverage --coverageReporters=json-summary --coverageReporters=text-summary --coverageDirectory=coverage-frontend",
     "test:e2e": "playwright test",
     "test:e2e:docs": "playwright test --project docs-capture",
     "test:e2e:install": "playwright install chromium",
@@ -83,6 +83,9 @@
     "rollup": ">=2.80.0",
     "stylelint": "$stylelint",
     "tar": ">=7.5.22",
+    "test-exclude@6": {
+      "minimatch": "^3.1.5"
+    },
     "test-exclude@7": {
       "glob": "^14.0.2"
     },

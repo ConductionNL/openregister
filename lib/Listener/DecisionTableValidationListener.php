@@ -30,8 +30,8 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
-use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
+use OCA\OpenRegister\Service\Dmn\DecisionTableLocation;
+use OCA\OpenRegister\Service\Dmn\DecisionTableValidatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\Event;
@@ -51,7 +51,8 @@ use Throwable;
  *
  * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
  */
-class DecisionTableValidationListener implements IEventListener {
+class DecisionTableValidationListener implements IEventListener, DecisionTableValidationListenerInterface {
+	use ValidatesPreWriteObject;
 
 	/**
 	 * The error code a refused save carries.
@@ -62,37 +63,17 @@ class DecisionTableValidationListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface           $schemas   Tells a decision-table row from any other.
-	 * @param DecisionTableValidator $validator The validator the inline step uses.
+	 * @param DecisionTableValidatorInterface $validator The validator the inline step uses.
 	 * @param ObjectOperationsInterface          $objects   Finds a table already carrying the key.
 	 * @param RegisterMapperInterface         $registers Tells the decision-tables register from another app's.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemas,
-		private readonly DecisionTableValidator $validator,
+		private readonly DecisionTableValidatorInterface $validator,
 		private readonly ObjectOperationsInterface $objects,
 		private readonly RegisterMapperInterface $registers,
 	) {
 	}//end __construct()
-
-	/**
-	 * Handle a create or update of any object; act only on decision tables.
-	 *
-	 * @param Event $event The event.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
-	 */
-	public function handle(Event $event): void {
-		if ($event instanceof ObjectCreatingEvent) {
-			$this->validate(event: $event, object: $event->getObject());
-			return;
-		}
-
-		if ($event instanceof ObjectUpdatingEvent) {
-			$this->validate(event: $event, object: $event->getNewObject());
-		}
-	}//end handle()
 
 	/**
 	 * Refuse the save when the object is a decision table that cannot be stored.
@@ -101,19 +82,12 @@ class DecisionTableValidationListener implements IEventListener {
 	 * @param ObjectEntity                            $object The object being saved.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
 	 */
-	private function validate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
-		$data = $object->getObject();
-		if (is_array($data) === false) {
-			$data = [];
-		}
-
-		$problems = $this->problemsFor(
-			schema: $object->getSchema(),
-			register: $object->getRegister(),
-			data: $data,
-			uuid: (string)$object->getUuid()
-		);
+	protected function validate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
+		$data = $this->writtenData(object: $object);
+		$problems = $this->problemsFor(schema: $object->getSchema(), register: $object->getRegister(), data: $data, uuid: (string)$object->getUuid());
 		if ($problems === null || $problems === []) {
 			return;
 		}
@@ -137,25 +111,52 @@ class DecisionTableValidationListener implements IEventListener {
 	 */
 	public function problemsFor(?string $schema, ?string $register, array $data, string $uuid): ?array {
 		$isTable = $this->isDecisionTableRef(schema: $schema, register: $register);
+		if ($isTable !== true) {
+			return $this->uncheckedProblems(isTable: $isTable);
+		}
+
+		$problems = $this->validator->validate(table: $data);
+		return array_merge($problems, $this->keyProblems(data: $data, uuid: $uuid));
+	}//end problemsFor()
+
+	/**
+	 * The answer for a row that is no decision table, or that could not be told apart from one.
+	 *
+	 * @param bool|null $isTable False for another object, null when it could not be told.
+	 *
+	 * @return array<int, string>|null Null for another object, the one problem when it could not be told.
+	 */
+	private function uncheckedProblems(?bool $isTable): ?array {
 		if ($isTable === false) {
 			return null;
 		}
 
-		if ($isTable === null) {
-			return ['The object could not be checked against the decision-table rules, so it was not saved: its schema or register could not be read'];
-		}
+		return ['The object could not be checked against the decision-table rules, so it was not saved: its schema or register could not be read'];
+	}//end uncheckedProblems()
 
-		$problems = $this->validator->validate(table: $data);
-		$key      = trim((string)($data['key'] ?? ''));
-		$clash    = $this->keyTakenBy(key: $key, uuid: $uuid);
+	/**
+	 * What is wrong with the table's key: taken by another table, or not checkable.
+	 *
+	 * @param array<string, mixed> $data The row's own properties.
+	 * @param string               $uuid The uuid of the row being saved.
+	 *
+	 * @return array<int, string> The problems, empty when the key is free.
+	 *
+	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
+	 */
+	private function keyProblems(array $data, string $uuid): array {
+		$key = trim((string)($data['key'] ?? ''));
+		$clash = $this->keyTakenBy(key: $key, uuid: $uuid);
 		if ($clash === null) {
-			$problems[] = sprintf('the key "%s" could not be checked against the tables already stored', $key);
-		} elseif ($clash !== '') {
-			$problems[] = sprintf('the key "%s" is already used by decision table %s', $key, $clash);
+			return [sprintf('the key "%s" could not be checked against the tables already stored', $key)];
 		}
 
-		return $problems;
-	}//end problemsFor()
+		if ($clash === '') {
+			return [];
+		}
+
+		return [sprintf('the key "%s" is already used by decision table %s', $key, $clash)];
+	}//end keyProblems()
 
 	/**
 	 * Refuse the save.
@@ -186,21 +187,10 @@ class DecisionTableValidationListener implements IEventListener {
 	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
 	 */
 	public function isDecisionTableRef(?string $schema, ?string $register): ?bool {
-		$reference = $schema;
-		if ($reference === null || $reference === '') {
-			return false;
-		}
-
-		try {
-			$schema = $this->schemas->find($reference, _rbac: false, _multitenancy: false);
-		} catch (DoesNotExistException $unresolved) {
-			return false;
-		} catch (Throwable $unreadable) {
-			return null;
-		}
-
-		if ($schema->getSlug() !== DecisionTableStore::SCHEMA) {
-			return false;
+		$find = fn (string $reference) => $this->schemas->find($reference, _rbac: false, _multitenancy: false);
+		$slug = $this->slugOf(find: $find, reference: (string)$schema);
+		if ($slug !== DecisionTableLocation::SCHEMA) {
+			return $this->notATable(slug: $slug);
 		}
 
 		// The slug alone is not the table: another app may still hold a schema
@@ -210,6 +200,21 @@ class DecisionTableValidationListener implements IEventListener {
 	}//end isDecisionTableRef()
 
 	/**
+	 * The answer for a schema that is not the decision-table one: false, or null when it could not be read.
+	 *
+	 * @param string|null $slug The schema's slug, null when it could not be read.
+	 *
+	 * @return bool|null
+	 */
+	private function notATable(?string $slug): ?bool {
+		if ($slug === null) {
+			return null;
+		}
+
+		return false;
+	}//end notATable()
+
+	/**
 	 * Whether the object lives in the decision-tables register.
 	 *
 	 * @param string|null $reference The register reference.
@@ -217,20 +222,41 @@ class DecisionTableValidationListener implements IEventListener {
 	 * @return bool|null True when its register is `decision-tables`, null when the register could not be read.
 	 */
 	private function inDecisionTableRegister(?string $reference): ?bool {
-		if ($reference === null || $reference === '') {
-			return false;
-		}
-
-		try {
-			$register = $this->registers->find($reference, _rbac: false, _multitenancy: false);
-		} catch (DoesNotExistException $unresolved) {
-			return false;
-		} catch (Throwable $unreadable) {
+		$find = fn (string $ref) => $this->registers->find($ref, _rbac: false, _multitenancy: false);
+		$slug = $this->slugOf(find: $find, reference: (string)$reference);
+		if ($slug === null) {
 			return null;
 		}
 
-		return $register->getSlug() === DecisionTableStore::REGISTER;
+		return $slug === DecisionTableLocation::REGISTER;
 	}//end inDecisionTableRegister()
+
+	/**
+	 * The slug of the schema or register a reference names.
+	 *
+	 * A reference that is empty or names nothing answers '': that is not a
+	 * decision table. One that could not be read (a database error) answers
+	 * null: it cannot be told, and the guard must not wave a table through
+	 * because it could not look.
+	 *
+	 * @param callable  $find      Reads the schema or register a reference names.
+	 * @param string    $reference The reference, '' when there is none.
+	 *
+	 * @return string|null The slug, '' when there is none, null when it could not be read.
+	 */
+	private function slugOf(callable $find, string $reference): ?string {
+		if ($reference === '') {
+			return '';
+		}
+
+		try {
+			return (string)$find($reference)->getSlug();
+		} catch (DoesNotExistException $unresolved) {
+			return '';
+		} catch (Throwable $unreadable) {
+			return null;
+		}
+	}//end slugOf()
 
 	/**
 	 * The uuid of another table already carrying the key, if any.
@@ -245,10 +271,26 @@ class DecisionTableValidationListener implements IEventListener {
 			return '';
 		}
 
+		$rows = $this->tablesWithKey(key: $key);
+		if ($rows === null) {
+			return null;
+		}
+
+		return $this->otherTableWithKey(rows: $rows, key: $key, uuid: $uuid);
+	}//end keyTakenBy()
+
+	/**
+	 * The stored tables the search finds under a key, or null when the search could not run.
+	 *
+	 * @param string $key The key being saved.
+	 *
+	 * @return array<int, ObjectEntity>|null The rows.
+	 */
+	private function tablesWithKey(string $key): ?array {
 		try {
 			$rows = $this->objects->searchObjectsBySlug(
-				registerSlug: DecisionTableStore::REGISTER,
-				schemaSlug: DecisionTableStore::SCHEMA,
+				registerSlug: DecisionTableLocation::REGISTER,
+				schemaSlug: DecisionTableLocation::SCHEMA,
 				filters: ['key' => $key],
 				_rbac: false,
 				_multitenancy: false
@@ -257,14 +299,38 @@ class DecisionTableValidationListener implements IEventListener {
 			return null;
 		}
 
-		foreach ((array)$rows as $entity) {
+		return (array)$rows;
+	}//end tablesWithKey()
+
+	/**
+	 * The uuid of the first row that is another table carrying the key, or ''.
+	 *
+	 * @param array<int, ObjectEntity> $rows The rows the search found.
+	 * @param string                   $key  The key being saved.
+	 * @param string                   $uuid The uuid of the row being saved.
+	 *
+	 * @return string The other table's uuid, '' when there is none.
+	 */
+	private function otherTableWithKey(array $rows, string $key, string $uuid): string {
+		foreach ($rows as $entity) {
 			$other = (string)$entity->getUuid();
-			$data  = $entity->getObject();
-			if ($other !== $uuid && is_array($data) === true && trim((string)($data['key'] ?? '')) === $key) {
+			if ($other !== $uuid && $this->carriesKey(data: $entity->getObject(), key: $key) === true) {
 				return $other;
 			}
 		}
 
 		return '';
-	}//end keyTakenBy()
+	}//end otherTableWithKey()
+
+	/**
+	 * Whether a row's data carries the key.
+	 *
+	 * @param array<string, mixed>|null $data The row's data.
+	 * @param string                    $key  The key.
+	 *
+	 * @return bool
+	 */
+	private function carriesKey(?array $data, string $key): bool {
+		return is_array($data) === true && trim((string)($data['key'] ?? '')) === $key;
+	}//end carriesKey()
 }//end class

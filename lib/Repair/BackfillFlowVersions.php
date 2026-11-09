@@ -43,8 +43,8 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
-use OCA\OpenRegister\Db\FlowVersionMapper;
-use OCA\OpenRegister\Service\Flow\FlowDefinitionPin;
+use OCA\OpenRegister\Db\FlowVersionMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -159,7 +159,7 @@ class BackfillFlowVersions implements IRepairStep {
 		// landing kept the rows, unreachable through any read path because
 		// every version read is keyed by flow.
 		try {
-			$orphans = $this->container->get(FlowVersionMapper::class)->deleteOrphaned();
+			$orphans = $this->container->get(FlowVersionMapperInterface::class)->deleteOrphaned();
 			if ($orphans > 0) {
 				$output->info(sprintf('Flow versions: removed %d orphaned version row(s).', $orphans));
 			}
@@ -217,7 +217,7 @@ class BackfillFlowVersions implements IRepairStep {
 	 */
 	private function backfillOne(Flow $flow): array {
 		$flowId = (string)$flow->getUuid();
-		$versions = $this->container->get(FlowVersionMapper::class);
+		$versions = $this->container->get(FlowVersionMapperInterface::class);
 
 		// Already versioned. Not "already run once" — the check is for any
 		// version row at all, so a flow that was drafted but never published
@@ -233,7 +233,7 @@ class BackfillFlowVersions implements IRepairStep {
 			'executionMode' => (string)($flow->getExecutionMode() ?? Flow::MODE_ASYNC),
 		];
 
-		$hash = $this->container->get(FlowDefinitionPin::class)->pin(flow: $graph, flowId: $flowId);
+		$hash = $this->container->get(FlowDefinitionPinInterface::class)->pin(flow: $graph, flowId: $flowId);
 		if ($hash === null) {
 			throw new RuntimeException('the definition could not be stored');
 		}

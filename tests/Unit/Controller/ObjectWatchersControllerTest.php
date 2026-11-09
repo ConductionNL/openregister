@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Notifications\Controller\ObjectWatchersController;
+use OCA\OpenRegister\Notifications\Controller\Support\ObjectWatchersControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -105,10 +106,12 @@ class ObjectWatchersControllerTest extends TestCase {
 		return new ObjectWatchersController(
 			'openregister',
 			$request,
-			$this->objects,
-			$this->watchers,
-			$this->users,
-			$this->logger
+			new ObjectWatchersControllerServices(
+				objectService: $this->objects,
+				watchers: $this->watchers,
+				userManager: $this->users,
+				logger: $this->logger
+			)
 		);
 	}//end controller()
 
@@ -132,10 +135,12 @@ class ObjectWatchersControllerTest extends TestCase {
 		$controller = new ObjectWatchersController(
 			'openregister',
 			$this->createMock(IRequest::class),
-			$this->objects,
-			$this->watchers,
-			$this->users,
-			$this->logger
+			new ObjectWatchersControllerServices(
+				objectService: $this->objects,
+				watchers: $this->watchers,
+				userManager: $this->users,
+				logger: $this->logger
+			)
 		);
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->watch('reg', 'sch', 'uuid-unknown')->getStatus());
@@ -217,7 +222,13 @@ class ObjectWatchersControllerTest extends TestCase {
 	public function testANonEntityIsNotFound(): void {
 		$request = $this->createMock(IRequest::class);
 		$this->objects->method('getObject')->willReturn(null);
-		$controller = new ObjectWatchersController('openregister', $request, $this->objects, $this->watchers, $this->users, $this->logger);
+		$services   = new ObjectWatchersControllerServices(
+			objectService: $this->objects,
+			watchers: $this->watchers,
+			userManager: $this->users,
+			logger: $this->logger
+		);
+		$controller = new ObjectWatchersController('openregister', $request, $services);
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->watch('r', 's', 'x')->getStatus());
 	}//end testANonEntityIsNotFound()

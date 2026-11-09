@@ -38,7 +38,7 @@ use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
  * @category Dto
  * @package  OCA\OpenRegister\Dto
  */
-class BulkSaveOutcome {
+class BulkSaveOutcome implements BulkSaveOutcomeInterface {
 
 	/**
 	 * How many batch-level (non per-object) error messages the summary repeats.
@@ -81,6 +81,30 @@ class BulkSaveOutcome {
 		$this->failures = $failures;
 
 	}//end __construct()
+
+	/**
+	 * Number of submitted objects that were not written.
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function failedCount(): int {
+		return $this->failedCount;
+
+	}//end failedCount()
+
+	/**
+	 * Per-object explanations, each `{index, uuid, error, type}`.
+	 *
+	 * @return array<int, array<string, mixed>> The explanations.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function failures(): array {
+		return $this->failures;
+
+	}//end failures()
 
 	/**
 	 * Whether every submitted object was accounted for.

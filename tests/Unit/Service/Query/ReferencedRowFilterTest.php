@@ -35,11 +35,14 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowExistsClause;
 use OCA\OpenRegister\Service\Query\RelatedRowFilter;
 use OCA\OpenRegister\Service\Query\RelatedRowFilterParser;
-use OCA\OpenRegister\Service\Query\RelatedRowAccess;
+use OCA\OpenRegister\Service\Query\RelatedRowInnerRow;
+use OCA\OpenRegister\Service\Query\RelatedRowLookups;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
+use OCA\OpenRegister\Service\Query\RelatedRowSqlTarget;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -80,13 +83,17 @@ class ReferencedRowFilterTest extends TestCase {
 	public function testAForwardClauseJoinsTheReferencedUuidToTheObjectsProperty(): void {
 		$clause = (new RelatedRowExistsClause())->render(
 			filter: $this->forwardFilter(),
-			engine: RelatedRowExistsClause::ENGINE_POSTGRES,
-			table: 'oc_openregister_table_1_7',
-			outerAlias: 't',
-			innerAlias: 'rel0',
-			accessPredicate: 'rel0._owner = :me',
-			parameterPrefix: 'rel0',
-			storage: RelatedRowExistsClause::STORAGE_COLUMNS
+			target: new RelatedRowSqlTarget(
+				engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+				table: 'oc_openregister_table_1_7',
+				outerAlias: 't',
+				storage: RelatedRowExistsClause::STORAGE_COLUMNS
+			),
+			inner: new RelatedRowInnerRow(
+				alias: 'rel0',
+				accessPredicate: 'rel0._owner = :me',
+				parameterPrefix: 'rel0'
+			)
 		);
 
 		$this->assertStringContainsString('rel0._uuid = t."subsidieaanvraag"', $clause['sql']);
@@ -99,12 +106,16 @@ class ReferencedRowFilterTest extends TestCase {
 	public function testAForwardClauseOnJsonStorageReadsTheObjectsPropertyFromItsJson(): void {
 		$clause = (new RelatedRowExistsClause())->render(
 			filter: $this->forwardFilter(),
-			engine: RelatedRowExistsClause::ENGINE_MARIADB,
-			table: 'oc_openregister_objects',
-			outerAlias: 'o',
-			innerAlias: 'r0',
-			accessPredicate: 'r0.owner = :me',
-			parameterPrefix: 'rel0'
+			target: new RelatedRowSqlTarget(
+				engine: RelatedRowExistsClause::ENGINE_MARIADB,
+				table: 'oc_openregister_objects',
+				outerAlias: 'o'
+			),
+			inner: new RelatedRowInnerRow(
+				alias: 'r0',
+				accessPredicate: 'r0.owner = :me',
+				parameterPrefix: 'rel0'
+			)
 		);
 
 		$this->assertStringContainsString("r0.uuid = JSON_UNQUOTE(JSON_EXTRACT(o.object, '$.subsidieaanvraag'))", $clause['sql']);
@@ -113,13 +124,17 @@ class ReferencedRowFilterTest extends TestCase {
 	public function testACamelCasePropertyReadsItsSnakeCaseColumn(): void {
 		$clause = (new RelatedRowExistsClause())->render(
 			filter: new RelatedRowFilter('caseProperty', 'case', [['field' => 'propertyDefinition', 'operator' => 'eq', 'value' => 'pd-7']]),
-			engine: RelatedRowExistsClause::ENGINE_POSTGRES,
-			table: 'oc_openregister_table_1_2',
-			outerAlias: 't',
-			innerAlias: 'rel0',
-			accessPredicate: 'rel0._owner = :me',
-			parameterPrefix: 'rel0',
-			storage: RelatedRowExistsClause::STORAGE_COLUMNS
+			target: new RelatedRowSqlTarget(
+				engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+				table: 'oc_openregister_table_1_2',
+				outerAlias: 't',
+				storage: RelatedRowExistsClause::STORAGE_COLUMNS
+			),
+			inner: new RelatedRowInnerRow(
+				alias: 'rel0',
+				accessPredicate: 'rel0._owner = :me',
+				parameterPrefix: 'rel0'
+			)
 		);
 
 		$this->assertStringContainsString('rel0."property_definition" = :rel0_c0', $clause['sql']);
@@ -153,8 +168,7 @@ class ReferencedRowFilterTest extends TestCase {
 		$register->setId(1);
 
 		$applied = (new RelatedRowQueryApplier(
-			schemaMapper: $schemaMapper,
-			tableHandler: $tableHandler,
+			lookups: new RelatedRowLookups(schemaMapper: $schemaMapper, tableHandler: $tableHandler),
 			db: $this->createMock(IDBConnection::class),
 			logger: new NullLogger(),
 			access: new RelatedRowAccess(rbac: $rbac, logger: new NullLogger())
@@ -168,13 +182,17 @@ class ReferencedRowFilterTest extends TestCase {
 	public function testAColumnNameFollowsTheRuleThatNamesTheColumns(): void {
 		$sql = fn (string $property): string => (new RelatedRowExistsClause())->render(
 			filter: new RelatedRowFilter('caseProperty', 'case', [['field' => $property, 'operator' => 'eq', 'value' => 'x']]),
-			engine: RelatedRowExistsClause::ENGINE_POSTGRES,
-			table: 'oc_openregister_table_1_2',
-			outerAlias: 't',
-			innerAlias: 'rel0',
-			accessPredicate: 'TRUE',
-			parameterPrefix: 'rel0',
-			storage: RelatedRowExistsClause::STORAGE_COLUMNS
+			target: new RelatedRowSqlTarget(
+				engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+				table: 'oc_openregister_table_1_2',
+				outerAlias: 't',
+				storage: RelatedRowExistsClause::STORAGE_COLUMNS
+			),
+			inner: new RelatedRowInnerRow(
+				alias: 'rel0',
+				accessPredicate: 'TRUE',
+				parameterPrefix: 'rel0'
+			)
 		)['sql'];
 
 		$this->assertStringContainsString('rel0."due_date" = :rel0_c0', $sql('due-date'));

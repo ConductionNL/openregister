@@ -36,12 +36,7 @@ import {
 				</template>
 				Back to Schema
 			</NcButton>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
+			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeModal" />
 			<NcButton
 				v-if="success === null"
 				:disabled="
@@ -135,8 +130,8 @@ import {
 import CodeMirror from 'vue-codemirror6'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import AutoFix from 'vue-material-design-icons/AutoFix.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { getTheme } from '../../services/getTheme.js'
 
 export default {
@@ -148,7 +143,7 @@ export default {
 		NcNoteCard,
 		NcSelect,
 		// Icons
-		Cancel,
+		CloseCancelButton,
 		Upload,
 	},
 

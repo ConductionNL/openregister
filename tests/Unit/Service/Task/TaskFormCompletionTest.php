@@ -27,6 +27,8 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
+use OCA\OpenRegister\Service\Task\TaskFormInlineSave;
+use OCA\OpenRegister\Service\Task\TaskFormSubjectWriter;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\IUser;
@@ -84,10 +86,10 @@ class TaskFormCompletionTest extends TestCase {
 		$this->completion = new TaskFormCompletion(
 			tasks: $this->tasks,
 			forms: $this->forms,
-			engine: $this->engine,
-			objects: $this->objects,
-			userSession: $session,
-			runContext: $this->runContext
+			writer: new TaskFormSubjectWriter(
+				engine: $this->engine,
+				inline: new TaskFormInlineSave(objects: $this->objects, userSession: $session, runContext: $this->runContext)
+			)
 		);
 	}//end setUp()
 

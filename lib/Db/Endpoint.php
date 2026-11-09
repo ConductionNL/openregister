@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Endpoint\EndpointFieldTypes;
 use OCP\AppFramework\Db\Entity;
 use RuntimeException;
 
@@ -48,6 +49,7 @@ use RuntimeException;
 class Endpoint extends Entity implements JsonSerializable {
 	use JsonFieldsTrait;
 	use HydrateBySettersTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Unique identifier for the endpoint.
@@ -210,27 +212,9 @@ class Endpoint extends Entity implements JsonSerializable {
 	 * Initialize the entity and define field types
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'reference', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
-		$this->addType(fieldName: 'endpoint', type: 'string');
-		$this->addType(fieldName: 'endpointArray', type: 'json');
-		$this->addType(fieldName: 'endpointRegex', type: 'string');
-		$this->addType(fieldName: 'method', type: 'string');
-		$this->addType(fieldName: 'targetType', type: 'string');
-		$this->addType(fieldName: 'targetId', type: 'string');
-		$this->addType(fieldName: 'conditions', type: 'json');
-		$this->addType(fieldName: 'inputMapping', type: 'string');
-		$this->addType(fieldName: 'outputMapping', type: 'string');
-		$this->addType(fieldName: 'rules', type: 'json');
-		$this->addType(fieldName: 'configurations', type: 'json');
-		$this->addType(fieldName: 'slug', type: 'string');
-		$this->addType(fieldName: 'groups', type: 'json');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
+		foreach (EndpointFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -316,46 +300,18 @@ class Endpoint extends Entity implements JsonSerializable {
 	}//end getSlug()
 
 	/**
-	 * Serialize the entity to JSON format
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return ((mixed|string[])[]|int|null|string)[]
-	 *
-	 * @phpstan-return array<string,mixed>
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
-		$result = [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'name' => $this->name,
-			'description' => $this->description,
-			'reference' => $this->reference,
-			'version' => $this->version,
-			'endpoint' => $this->endpoint,
+	protected function jsonOverrides(): array {
+		return [
 			'endpointArray' => $this->getEndpointArray(),
-			'endpointRegex' => $this->endpointRegex,
-			'method' => $this->method,
-			'targetType' => $this->targetType,
-			'targetId' => $this->targetId,
 			'conditions' => $this->getConditions(),
-			'inputMapping' => $this->inputMapping,
-			'outputMapping' => $this->outputMapping,
 			'rules' => $this->getRules(),
 			'configurations' => $this->getConfigurations(),
 			'slug' => $this->getSlug(),
 			'groups' => $this->getGroups(),
-			'organisation' => $this->organisation,
 		];
-
-		$result['created'] = null;
-		if (isset($this->created) === true) {
-			$result['created'] = $this->created->format('c');
-		}
-
-		$result['updated'] = null;
-		if (isset($this->updated) === true) {
-			$result['updated'] = $this->updated->format('c');
-		}
-
-		return $result;
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

@@ -66,10 +66,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
-use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
+use OCA\OpenRegister\Controller\Support\TaskLeafGuard;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
-use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -77,35 +76,38 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
-use Throwable;
+use OCA\OpenRegister\Controller\Support\TaskNotesControllerServices;
 
 /**
  * REST surface for the notes leaf on a task.
+ *
+ * The absent-or-invisible refusal is {@see TaskLeafGuard}'s, shared with
+ * {@see TaskEventsController} so both leaves answer it identically.
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 class TaskNotesController extends Controller {
 
 	/**
-	 * The body every refusal carries, whether the task is absent or unreadable.
+	 * The shared task guard: resolve, check visibility, or answer 404.
 	 *
-	 * One constant rather than a literal per verb, because the two cases
-	 * MUST stay indistinguishable on the wire: the day one verb answers
-	 * 'Task not found' and another answers 'Forbidden', the difference
-	 * between them is the existence oracle this controller exists to deny.
-	 *
-	 * @var array<string, string>
+	 * @var TaskLeafGuard
 	 */
-	private const NOT_FOUND = ['error' => 'No such task'];
+	private readonly TaskLeafGuard $guard;
+
+	/**
+	 * The same note storage the object leaf uses.
+	 *
+	 * @var NoteServiceInterface
+	 */
+	private readonly NoteServiceInterface $notes;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param TaskManagerInterface $tasks Resolves a task by uuid.
-	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
-	 * @param NoteServiceInterface $notes The same note storage the object leaf uses.
+	 * @param TaskNotesControllerServices $services The services, bundled.
 	 * @param IUserSession $userSession Names the acting identity.
 	 *
 	 * @return void
@@ -113,12 +115,12 @@ class TaskNotesController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TaskManagerInterface $tasks,
-		private readonly TaskAuthorizationService $authorization,
-		private readonly NoteServiceInterface $notes,
-		private readonly IUserSession $userSession,
+		TaskNotesControllerServices $services,
+		IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->notes = $services->notes;
+		$this->guard = new TaskLeafGuard(tasks: $services->tasks, authorization: $services->authorization, userSession: $userSession);
 
 	}//end __construct()
 
@@ -135,18 +137,7 @@ class TaskNotesController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(string $uuid): JSONResponse {
-		$task = $this->readableTask(uuid: $uuid);
-		if ($task === null) {
-			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
-		}
-
-		$params = $this->request->getParams();
-		$limit = (int)($params['limit'] ?? 50);
-		$offset = (int)($params['offset'] ?? 0);
-
-		$notes = $this->notes->getNotesForObject((string)$task->getUuid(), $limit, $offset);
-
-		return new JSONResponse(['results' => $notes, 'total' => count($notes)]);
+		return $this->guard->withReadableTask(uuid: $uuid, action: $this->listNotes(...));
 	}//end index()
 
 	/**
@@ -162,20 +153,7 @@ class TaskNotesController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function create(string $uuid): JSONResponse {
-		$task = $this->readableTask(uuid: $uuid);
-		if ($task === null) {
-			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
-		}
-
-		$message = $this->message();
-		if ($message === null) {
-			return new JSONResponse(['error' => 'Note message is required'], Http::STATUS_BAD_REQUEST);
-		}
-
-		return new JSONResponse(
-			$this->notes->createNote((string)$task->getUuid(), $message),
-			Http::STATUS_CREATED
-		);
+		return $this->guard->withReadableTask(uuid: $uuid, action: $this->writeNote(...));
 	}//end create()
 
 	/**
@@ -192,20 +170,10 @@ class TaskNotesController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function update(string $uuid, string $noteId): JSONResponse {
-		if ($this->readableTask(uuid: $uuid) === null) {
-			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
-		}
-
-		$message = $this->message();
-		if ($message === null) {
-			return new JSONResponse(['error' => 'Note message is required'], Http::STATUS_BAD_REQUEST);
-		}
-
-		if ($this->isNoteOfTask(uuid: $uuid, noteId: (int)$noteId) === false) {
-			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
-		}
-
-		return new JSONResponse($this->notes->updateNote((int)$noteId, $message));
+		return $this->guard->withReadableTask(
+			uuid: $uuid,
+			action: fn (): JSONResponse => $this->rewriteNote(uuid: $uuid, noteId: (int)$noteId)
+		);
 	}//end update()
 
 	/**
@@ -222,18 +190,95 @@ class TaskNotesController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function destroy(string $uuid, string $noteId): JSONResponse {
-		if ($this->readableTask(uuid: $uuid) === null) {
-			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
+		return $this->guard->withReadableTask(
+			uuid: $uuid,
+			action: fn (): JSONResponse => $this->removeNote(uuid: $uuid, noteId: (int)$noteId)
+		);
+	}//end destroy()
+
+	/**
+	 * The notes page of a readable task.
+	 *
+	 * @param TaskInterface $task The readable task.
+	 *
+	 * @return JSONResponse The notes and their count.
+	 */
+	private function listNotes(TaskInterface $task): JSONResponse {
+		$params = $this->request->getParams();
+		$limit = (int)($params['limit'] ?? 50);
+		$offset = (int)($params['offset'] ?? 0);
+
+		$notes = $this->notes->getNotesForObject((string)$task->getUuid(), $limit, $offset);
+
+		return new JSONResponse(['results' => $notes, 'total' => count($notes)]);
+	}//end listNotes()
+
+	/**
+	 * Write the request's note on a readable task.
+	 *
+	 * @param TaskInterface $task The readable task.
+	 *
+	 * @return JSONResponse The created note, or 400 without a message.
+	 */
+	private function writeNote(TaskInterface $task): JSONResponse {
+		$message = $this->message();
+		if ($message === null) {
+			return $this->messageRequired();
 		}
 
-		if ($this->isNoteOfTask(uuid: $uuid, noteId: (int)$noteId) === false) {
-			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
+		return new JSONResponse(
+			$this->notes->createNote((string)$task->getUuid(), $message),
+			Http::STATUS_CREATED
+		);
+	}//end writeNote()
+
+	/**
+	 * Rewrite a note: the message is checked before the note's ownership.
+	 *
+	 * @param string $uuid   The task uuid.
+	 * @param int    $noteId The note id.
+	 *
+	 * @return JSONResponse The updated note, 400 without a message, 404 for a foreign note.
+	 */
+	private function rewriteNote(string $uuid, int $noteId): JSONResponse {
+		$message = $this->message();
+		if ($message === null) {
+			return $this->messageRequired();
 		}
 
-		$this->notes->deleteNote((int)$noteId);
+		if ($this->isNoteOfTask(uuid: $uuid, noteId: $noteId) === false) {
+			return TaskLeafGuard::notFound();
+		}
+
+		return new JSONResponse($this->notes->updateNote($noteId, $message));
+	}//end rewriteNote()
+
+	/**
+	 * Remove a note that hangs on this task.
+	 *
+	 * @param string $uuid   The task uuid.
+	 * @param int    $noteId The note id.
+	 *
+	 * @return JSONResponse Confirmation, or 404 for a foreign note.
+	 */
+	private function removeNote(string $uuid, int $noteId): JSONResponse {
+		if ($this->isNoteOfTask(uuid: $uuid, noteId: $noteId) === false) {
+			return TaskLeafGuard::notFound();
+		}
+
+		$this->notes->deleteNote($noteId);
 
 		return new JSONResponse(['success' => true]);
-	}//end destroy()
+	}//end removeNote()
+
+	/**
+	 * The 400 a note without a message gets.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function messageRequired(): JSONResponse {
+		return new JSONResponse(['error' => 'Note message is required'], Http::STATUS_BAD_REQUEST);
+	}//end messageRequired()
 
 	/**
 	 * Whether the note hangs on this task.
@@ -254,37 +299,6 @@ class TaskNotesController extends Controller {
 	}//end isNoteOfTask()
 
 	/**
-	 * The task this request may act on, or null.
-	 *
-	 * Fail-closed on every path: absent, invisible and undeterminable all
-	 * return null, and every caller turns null into the same 404. A
-	 * `Throwable` from the mapper is caught here rather than propagated
-	 * because a lookup that could not answer must not be READ as a
-	 * permission, and because letting it out would put the mapper's message
-	 * (which for a database failure carries SQL and bound parameters) on the
-	 * wire, the finding {@see TaskController} already fixed.
-	 *
-	 * @param string $uuid The task uuid.
-	 *
-	 * @return TaskInterface|null The readable task, or null.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
-	 */
-	private function readableTask(string $uuid): ?TaskInterface {
-		try {
-			$task = $this->tasks->get(uuid: $uuid);
-		} catch (Throwable) {
-			return null;
-		}
-
-		if ($this->authorization->mayRead(task: $task, uid: $this->uid()) === false) {
-			return null;
-		}
-
-		return $task;
-	}//end readableTask()
-
-	/**
 	 * The note body the request carries, or null when it says nothing.
 	 *
 	 * A whitespace-only message is nothing: it is stored as a comment that
@@ -301,18 +315,4 @@ class TaskNotesController extends Controller {
 
 		return $message;
 	}//end message()
-
-	/**
-	 * The acting identity, or null without a session.
-	 *
-	 * @return string|null The uid.
-	 */
-	private function uid(): ?string {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return null;
-		}
-
-		return $user->getUID();
-	}//end uid()
 }//end class

@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Dmn;
  *
  * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
  */
-class DecisionTableValidator {
+class DecisionTableValidator implements DecisionTableValidatorInterface {
 
 	/**
 	 * One already-coerced probe value per effective type, used to exercise
@@ -94,8 +94,7 @@ class DecisionTableValidator {
 
 		$this->validateRules(
 			raw: ($table['rules'] ?? null),
-			inputs: $inputs,
-			outputCount: count($outputs),
+			columns: new DecisionTableColumns(inputs: $inputs, outputCount: count($outputs)),
 			problems: $problems
 		);
 
@@ -132,22 +131,13 @@ class DecisionTableValidator {
 		$columns = [];
 		$seen = [];
 		foreach (array_values($raw) as $position => $column) {
-			if (is_array($column) === false) {
-				$problems[] = sprintf('%s entry %d is not an object', $side, $position);
+			$read = $this->readColumn(column: $column, position: $position, side: $side, seen: $seen);
+			if ($read['problem'] !== null) {
+				$problems[] = $read['problem'];
 				continue;
 			}
 
-			$name = trim((string)($column['name'] ?? ''));
-			if ($name === '') {
-				$problems[] = sprintf('%s entry %d has no name', $side, $position);
-				continue;
-			}
-
-			if (in_array($name, $seen, true) === true) {
-				$problems[] = sprintf('%s name "%s" is declared twice; results are keyed by name, so the columns would collapse', $side, $name);
-				continue;
-			}
-
+			$name = $read['name'];
 			$seen[] = $name;
 			$columns[] = [
 				'name' => $name,
@@ -159,19 +149,49 @@ class DecisionTableValidator {
 	}//end validateColumns()
 
 	/**
+	 * Read one column entry: its trimmed name, and why it is dropped (not an
+	 * object, unnamed, a duplicate name) or a null problem when it is kept.
+	 *
+	 * @param mixed    $column   The raw column entry.
+	 * @param int      $position Its position in the column list.
+	 * @param string   $side     `inputs` or `outputs` (for messages).
+	 * @param string[] $seen     The names already declared on this side.
+	 *
+	 * @return array{problem: string|null, name: string}
+	 */
+	private function readColumn(mixed $column, int $position, string $side, array $seen): array {
+		if (is_array($column) === false) {
+			return ['problem' => sprintf('%s entry %d is not an object', $side, $position), 'name' => ''];
+		}
+
+		$name = trim((string)($column['name'] ?? ''));
+		if ($name === '') {
+			return ['problem' => sprintf('%s entry %d has no name', $side, $position), 'name' => $name];
+		}
+
+		if (in_array($name, $seen, true) === true) {
+			return [
+				'problem' => sprintf('%s name "%s" is declared twice; results are keyed by name, so the columns would collapse', $side, $name),
+				'name' => $name,
+			];
+		}
+
+		return ['problem' => null, 'name' => $name];
+	}//end readColumn()
+
+	/**
 	 * Validate the rules: positional alignment, integer priority, and every
 	 * input cell executed through the evaluator's grammar.
 	 *
 	 * @param mixed $raw The declared `rules`.
-	 * @param array<int, array{name: string, type: string}> $inputs The declared inputs, positionally.
-	 * @param int $outputCount The declared output count.
+	 * @param DecisionTableColumns $columns The declared inputs, positionally, and the output count.
 	 * @param array<int, string> $problems Collected problems, appended to.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
-	private function validateRules(mixed $raw, array $inputs, int $outputCount, array &$problems): void {
+	private function validateRules(mixed $raw, DecisionTableColumns $columns, array &$problems): void {
 		if (is_array($raw) === false || $raw === []) {
 			$problems[] = 'the table declares no rules; a table that can never match decides nothing';
 
@@ -184,57 +204,61 @@ class DecisionTableValidator {
 				continue;
 			}
 
-			$ruleId = trim((string)($rule['id'] ?? ''));
-			if ($ruleId === '') {
-				$ruleId = ('#' . $position);
-			}
-
-			$this->validateRule(rule: $rule, ruleId: $ruleId, inputs: $inputs, outputCount: $outputCount, problems: $problems);
+			$this->validateRule(rule: $rule, ruleId: $this->ruleIdOf(rule: $rule, position: $position), columns: $columns, problems: $problems);
 		}
 
 	}//end validateRules()
+
+	/**
+	 * The rule's trimmed id, or `#<position>` when it has none.
+	 *
+	 * @param array<string, mixed> $rule     The rule.
+	 * @param int                  $position Its position in the rule list.
+	 *
+	 * @return string
+	 */
+	private function ruleIdOf(array $rule, int $position): string {
+		$ruleId = trim((string)($rule['id'] ?? ''));
+		if ($ruleId === '') {
+			return ('#' . $position);
+		}
+
+		return $ruleId;
+	}//end ruleIdOf()
 
 	/**
 	 * Validate one rule row.
 	 *
 	 * @param array<string, mixed> $rule The rule row.
 	 * @param string $ruleId The rule's id or position, for the messages.
-	 * @param array<int, array{name: string, type: string}> $inputs The declared inputs, positionally.
-	 * @param int $outputCount The declared output count.
+	 * @param DecisionTableColumns $columns The declared inputs, positionally, and the output count.
 	 * @param array<int, string> $problems Collected problems, appended to.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
-	private function validateRule(array $rule, string $ruleId, array $inputs, int $outputCount, array &$problems): void {
-		$inputEntries = [];
-		if (is_array($rule['inputEntries'] ?? null) === true) {
-			$inputEntries = array_values($rule['inputEntries']);
-		}
+	private function validateRule(array $rule, string $ruleId, DecisionTableColumns $columns, array &$problems): void {
+		$inputEntries = $this->entriesOf(rule: $rule, key: 'inputEntries');
+		$outputEntries = $this->entriesOf(rule: $rule, key: 'outputEntries');
 
-		$outputEntries = [];
-		if (is_array($rule['outputEntries'] ?? null) === true) {
-			$outputEntries = array_values($rule['outputEntries']);
-		}
-
-		if (count($inputEntries) !== count($inputs)) {
+		if (count($inputEntries) !== count($columns->inputs)) {
 			// A short row would silently wildcard its missing tail: the
 			// evaluator reads an absent positional entry as `-`.
 			$problems[] = sprintf(
 				'rule %s has %d input entries for %d declared inputs; a short row would silently wildcard the missing columns',
 				$ruleId,
 				count($inputEntries),
-				count($inputs)
+				count($columns->inputs)
 			);
 		}
 
-		if (count($outputEntries) !== $outputCount) {
+		if (count($outputEntries) !== $columns->outputCount) {
 			$problems[] = sprintf(
 				'rule %s has %d output entries for %d declared outputs',
 				$ruleId,
 				count($outputEntries),
-				$outputCount
+				$columns->outputCount
 			);
 		}
 
@@ -242,7 +266,38 @@ class DecisionTableValidator {
 			$problems[] = sprintf('rule %s has a non-integer priority', $ruleId);
 		}
 
-		foreach ($inputs as $columnPosition => $column) {
+		$this->probeInputs(inputEntries: $inputEntries, ruleId: $ruleId, columns: $columns, problems: $problems);
+
+	}//end validateRule()
+
+	/**
+	 * A rule's positional entries under `$key`, or [] when that is not a list.
+	 *
+	 * @param array<string, mixed> $rule The rule.
+	 * @param string               $key  `inputEntries` or `outputEntries`.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function entriesOf(array $rule, string $key): array {
+		if (is_array($rule[$key] ?? null) === true) {
+			return array_values($rule[$key]);
+		}
+
+		return [];
+	}//end entriesOf()
+
+	/**
+	 * Probe every input cell present for a declared input column.
+	 *
+	 * @param array<int, mixed>    $inputEntries The rule's input entries.
+	 * @param string               $ruleId       The rule id (for messages).
+	 * @param DecisionTableColumns $columns      The validated columns.
+	 * @param array<int, string>   $problems     The problem list, appended to.
+	 *
+	 * @return void
+	 */
+	private function probeInputs(array $inputEntries, string $ruleId, DecisionTableColumns $columns, array &$problems): void {
+		foreach ($columns->inputs as $columnPosition => $column) {
 			if (array_key_exists($columnPosition, $inputEntries) === false) {
 				continue;
 			}
@@ -255,7 +310,7 @@ class DecisionTableValidator {
 			);
 		}
 
-	}//end validateRule()
+	}//end probeInputs()
 
 	/**
 	 * Execute one cell through the evaluator's grammar and record what it

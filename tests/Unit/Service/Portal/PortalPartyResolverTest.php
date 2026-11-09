@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\PortalPartyNotFoundException;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
+use OCA\OpenRegister\Service\Portal\PortalSubjectClaims;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -138,7 +139,7 @@ class PortalPartyResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheSubjectValueBuildsThePartyReference(): void {
-		$subject = new PortalSubject(subjectRef: 'sub-1', audience: 'client', organisation: 'org', trust: 'substantial', jti: 'j');
+		$subject = new PortalSubject(subjectRef: 'sub-1', claims: new PortalSubjectClaims(audience: 'client', organisation: 'org', trust: 'substantial', jti: 'j'));
 		$this->assertSame('party:sub-1', $subject->partyReference());
 		$this->assertSame('party:sub-1', $subject->actor());
 		$this->assertSame('party:sub-1', PortalSubject::partyReferenceFor(reference: ' sub-1 '));

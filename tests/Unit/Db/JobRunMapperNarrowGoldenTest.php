@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\JobRunFilter;
 use OCA\OpenRegister\Db\JobRunMapper;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -57,10 +58,7 @@ final class JobRunMapperNarrowGoldenTest extends TestCase {
 		$until = new DateTime('2026-01-03 04:05:06');
 
 		$rows = $this->mapper(rows: [])->findRecent(
-			jobClass: 'OCA\\Job',
-			outcome: 'failed',
-			since: $since,
-			until: $until,
+			filter: new JobRunFilter(jobClass: 'OCA\\Job', outcome: 'failed', since: $since, until: $until),
 			limit: 900,
 			offset: -4
 		);
@@ -103,7 +101,7 @@ final class JobRunMapperNarrowGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testFindRecentWithoutFilters(): void {
-		$this->mapper(rows: [])->findRecent(jobClass: '', outcome: '', limit: 0, offset: 7);
+		$this->mapper(rows: [])->findRecent(filter: new JobRunFilter(jobClass: '', outcome: ''), limit: 0, offset: 7);
 
 		$this->assertSame(
 			[

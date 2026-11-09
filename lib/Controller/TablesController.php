@@ -26,7 +26,8 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -62,9 +63,9 @@ class TablesController extends Controller {
 	 * mappers — exercising the REAL resolution path instead of a mock of the very
 	 * thing under test.
 	 *
-	 * @var RegisterScopedSchemaResolver
+	 * @var RegisterScopedSchemaResolverInterface
 	 */
-	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
+	private readonly RegisterScopedSchemaResolverInterface $scopedSchemaResolver;
 
 
 	/**
@@ -98,7 +99,7 @@ class TablesController extends Controller {
 		parent::__construct(appName: $appName, request: $request);
 		$this->magicMapper = $services->magicMapper;
 		$this->registerMapper = $services->registerMapper;
-		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
+		$this->scopedSchemaResolver = RegisterScopedSchemaResolvers::over(
 			registerMapper: $services->registerMapper,
 			schemaMapper: $services->schemaMapper
 		);

@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Service\RegisterDescriptorServiceInterface;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
@@ -35,30 +36,51 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Controller\Support\RegisterDescriptorControllerServices;
 
 /**
  * Serves the register-descriptor inventory and the forced re-import.
  */
 class RegisterDescriptorController extends Controller {
 	/**
+	 * The inventory and importer.
+	 *
+	 * @var RegisterDescriptorServiceInterface
+	 */
+	private readonly RegisterDescriptorServiceInterface $descriptors;
+
+	/**
+	 * Resolves the caller.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Answers whether they are an administrator.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                    $appName     The app id.
 	 * @param IRequest                  $request     The current request.
-	 * @param RegisterDescriptorServiceInterface $descriptors The inventory and importer.
-	 * @param IUserSession              $userSession Resolves the caller.
-	 * @param IGroupManager             $groupManager Answers whether they are an administrator.
+	 * @param RegisterDescriptorControllerServices $services The services, bundled.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RegisterDescriptorServiceInterface $descriptors,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		RegisterDescriptorControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->descriptors = $services->descriptors;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
 	}//end __construct()
 
 	/**
@@ -84,12 +106,7 @@ class RegisterDescriptorController extends Controller {
 	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function index(): JSONResponse {
-		$refusal = $this->requireAdmin();
-		if ($refusal !== null) {
-			return $refusal;
-		}
-
-		return new JSONResponse(data: $this->inventoryPayload());
+		return ($this->requireAdmin() ?? new JSONResponse(data: $this->inventoryPayload()));
 	}//end index()
 
 	/**
@@ -139,11 +156,20 @@ class RegisterDescriptorController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function import(string $appId, string $slug): JSONResponse {
-		$refusal = $this->requireAdmin();
-		if ($refusal !== null) {
-			return $refusal;
-		}
+		return ($this->requireAdmin() ?? $this->reimport(appId: $appId, slug: $slug));
+	}//end import()
 
+	/**
+	 * Re-import one descriptor and answer its outcome; 422 when it failed.
+	 *
+	 * @param string $appId The app that ships the descriptor.
+	 * @param string $slug  The register slug within it.
+	 *
+	 * @return JSONResponse The outcome.
+	 *
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
+	 */
+	private function reimport(string $appId, string $slug): JSONResponse {
 		$result = $this->descriptors->reimport(
 			appId: $appId,
 			slug: $slug,
@@ -154,7 +180,7 @@ class RegisterDescriptorController extends Controller {
 		}
 
 		return new JSONResponse(data: $result);
-	}//end import()
+	}//end reimport()
 
 	/**
 	 * Refuse a caller who is not an administrator.
@@ -162,18 +188,8 @@ class RegisterDescriptorController extends Controller {
 	 * @return JSONResponse|null A refusal, or null when the caller may proceed.
 	 */
 	private function requireAdmin(): ?JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
-		}
+		$gate = new AdministratorOnlyGate(userSession: $this->userSession, groupManager: $this->groupManager);
 
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return new JSONResponse(
-				data: ['error' => 'Forbidden: register descriptors are admin-only'],
-				statusCode: 403
-			);
-		}
-
-		return null;
+		return $gate->refusal(forbidden: 'Forbidden: register descriptors are admin-only');
 	}//end requireAdmin()
 }//end class

@@ -45,6 +45,7 @@ use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaDeletionStores;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -140,10 +141,12 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 
 		$this->service = new SchemaDeletionService(
 			$this->db,
-			$this->magicMapper,
-			$this->createMock(RegisterMapper::class),
-			$this->schemaMapper,
-			$this->auditTrailMapper,
+			new SchemaDeletionStores(
+				$this->magicMapper,
+				$this->createMock(RegisterMapper::class),
+				$this->schemaMapper,
+				$this->auditTrailMapper
+			),
 			$this->createMock(LoggerInterface::class)
 		);
 

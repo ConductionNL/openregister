@@ -80,7 +80,7 @@ class WorkingDayRoll {
 		$instant = DateTimeImmutable::createFromInterface($moment);
 		$unrolled = ['at' => $instant, 'unrolledAt' => null, 'rolledBy' => null];
 
-		if ($roll === SlaCalculator::ROLL_NONE || $calendar === null || $calendar->isWorkingDay(moment: $instant) === true) {
+		if ($roll === SlaCalculatorInterface::ROLL_NONE || $calendar === null || $calendar->isWorkingDay(moment: $instant) === true) {
 			return $unrolled;
 		}
 
@@ -89,16 +89,45 @@ class WorkingDayRoll {
 		// term that was really stopped by the Saturday before it.
 		$rolledBy = $this->nonWorkingReason(moment: $instant, calendar: $calendar);
 
-		$modifier = '+1 day';
-		if ($roll === SlaCalculator::ROLL_PREVIOUS) {
-			$modifier = '-1 day';
+		return [
+			'at' => $this->walk(from: $instant, modifier: $this->modifierFor(roll: $roll), calendar: $calendar),
+			'unrolledAt' => $instant,
+			'rolledBy' => $rolledBy,
+		];
+	}//end apply()
+
+	/**
+	 * The day step a roll walks by.
+	 *
+	 * @param string $roll One of ROLLS, other than none.
+	 *
+	 * @return string `-1 day` for previous, otherwise `+1 day`.
+	 */
+	private function modifierFor(string $roll): string {
+		if ($roll === SlaCalculatorInterface::ROLL_PREVIOUS) {
+			return '-1 day';
 		}
 
-		$walked = $instant;
+		return '+1 day';
+	}//end modifierFor()
+
+	/**
+	 * The first working day reached by stepping from a non-working one.
+	 *
+	 * @param DateTimeImmutable $from     The non-working moment.
+	 * @param string            $modifier The day step.
+	 * @param WorkingCalendar   $calendar The calendar.
+	 *
+	 * @return DateTimeImmutable The first working moment.
+	 *
+	 * @throws FlowTimerValidationException When no working day lies within MAX_ROLL_DAYS.
+	 */
+	private function walk(DateTimeImmutable $from, string $modifier, WorkingCalendar $calendar): DateTimeImmutable {
+		$walked = $from;
 		for ($step = 0; $step < self::MAX_ROLL_DAYS; $step++) {
 			$walked = $this->shift(moment: $walked, modifier: $modifier);
 			if ($calendar->isWorkingDay(moment: $walked) === true) {
-				return ['at' => $walked, 'unrolledAt' => $instant, 'rolledBy' => $rolledBy];
+				return $walked;
 			}
 		}
 
@@ -106,11 +135,11 @@ class WorkingDayRoll {
 			message: sprintf(
 				'No working day within %d days of %s on calendar %s: the calendar declares no working days to roll to.',
 				self::MAX_ROLL_DAYS,
-				$instant->format('Y-m-d'),
+				$from->format('Y-m-d'),
 				$calendar->getSlug()
 			)
 		);
-	}//end apply()
+	}//end walk()
 
 	/**
 	 * Why a day is not a working day, in the calendar's own words.
@@ -143,12 +172,7 @@ class WorkingDayRoll {
 	 * @throws FlowTimerValidationException When the modifier is unparseable.
 	 */
 	private function shift(DateTimeImmutable $moment, string $modifier): DateTimeImmutable {
-		$shifted = $moment->modify($modifier);
-		if ($shifted === false) {
-			throw new FlowTimerValidationException(message: sprintf("Date modifier '%s' is not parseable.", $modifier));
-		}
-
-		return $shifted;
+		return MomentShift::by(moment: $moment, modifier: $modifier);
 	}//end shift()
 
 }//end class

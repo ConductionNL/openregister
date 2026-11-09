@@ -42,6 +42,8 @@ use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\ExportService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Export\ExportProfileStores;
+use OCA\OpenRegister\Service\Export\ExportProfileSteps;
 
 final class ExportProfileServiceTest extends TestCase {
 	private ExportRightService&MockObject $rights;
@@ -70,14 +72,18 @@ final class ExportProfileServiceTest extends TestCase {
 		$schemas->method('find')->willReturn(new Schema());
 
 		return new ExportProfileService(
-			$this->mapper,
-			$registers,
-			$schemas,
-			$this->exportService,
-			$this->writer,
+			new ExportProfileStores(
+				$this->mapper,
+				$registers,
+				$schemas,
+			),
+			new ExportProfileSteps(
+				$this->exportService,
+				$this->writer,
+				new ExportProfileValidator(),
+			),
 			$this->rights,
 			$this->recorder,
-			new ExportProfileValidator()
 		);
 	}//end service()
 

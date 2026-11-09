@@ -39,7 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Service\SecurityService;
+use OCA\OpenRegister\Service\InboundAuthRateLimitInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -51,11 +51,14 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use Throwable;
+use OCA\OpenRegister\Middleware\Support\RateLimitPlatform;
 
 /**
  * Middleware that rate-limits failed inbound-API authentication attempts.
  *
  * @package OCA\OpenRegister\Middleware
+ *
+ * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Middleware must reference NC framework types
  * (Middleware, Controller, Response, JSONResponse, Http, IRequest, IUserSession,
@@ -64,21 +67,41 @@ use Throwable;
  */
 class RateLimitMiddleware extends Middleware {
 	/**
+	 * The user session
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Reflector for controller annotations
+	 *
+	 * @var IControllerMethodReflector
+	 */
+	private readonly IControllerMethodReflector $reflector;
+
+	/**
+	 * Logger for security events
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current request
-	 * @param IUserSession $userSession The user session
-	 * @param IControllerMethodReflector $reflector Reflector for controller annotations
-	 * @param SecurityService $securityService The security service
-	 * @param LoggerInterface $logger Logger for security events
+	 * @param RateLimitPlatform $platform Session, method reflector and logger.
+	 * @param InboundAuthRateLimitInterface $securityService The security service
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly IUserSession $userSession,
-		private readonly IControllerMethodReflector $reflector,
-		private readonly SecurityService $securityService,
-		private readonly LoggerInterface $logger,
+		RateLimitPlatform $platform,
+		private readonly InboundAuthRateLimitInterface $securityService,
 	) {
+		$this->userSession = $platform->userSession;
+		$this->reflector = $platform->reflector;
+		$this->logger = $platform->logger;
 	}//end __construct()
 
 	/**
@@ -97,28 +120,12 @@ class RateLimitMiddleware extends Middleware {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::beforeController() requires the
 	 * ($controller, $methodName) signature; $controller is forwarded to isPublicPage() but $methodName is
 	 * also needed there — PHPMD misclassifies the forwarded params as unused.
-	 * @SuppressWarnings(PHPMD.ShortVariable)         $ip is the established abbreviation for IP address in
-	 * network-security code; renaming to $ipAddress would conflict with the SecurityService parameter name.
 	 *
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
 	public function beforeController(Controller $controller, string $methodName): void {
 		try {
-			// Only guard protected endpoints. Public pages are out of scope.
-			if ($this->isPublicPage(controller: $controller, methodName: $methodName) === true) {
-				return;
-			}
-
-			$ip = $this->securityService->getTrustedClientIpAddress(request: $this->request);
-			$identity = $this->resolveIdentity();
-
-			$check = $this->securityService->checkAuthRateLimit(identity: $identity, ipAddress: $ip);
-			if (($check['allowed'] ?? true) === false) {
-				throw new AuthRateLimitExceededException(
-					message: (string)($check['reason'] ?? 'Too many failed authentication attempts.'),
-					lockoutUntil: (int)($check['lockout_until'] ?? 0)
-				);
-			}
+			$this->refuseLockedOut(controller: $controller, methodName: $methodName);
 		} catch (AuthRateLimitExceededException $e) {
 			// Intentional lockout — let it propagate to afterException().
 			throw $e;
@@ -145,20 +152,12 @@ class RateLimitMiddleware extends Middleware {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::afterController() mandates
 	 * ($controller, $methodName, $response) — $controller and $methodName are not used in this method's
 	 * body (only $response and the session are needed), but the framework dispatch requires all three.
-	 * @SuppressWarnings(PHPMD.ShortVariable)         $ip is the established abbreviation for IP address;
-	 * renaming disagrees with SecurityService's own parameter naming.
 	 *
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
 	public function afterController(Controller $controller, string $methodName, Response $response): Response {
 		try {
-			$user = $this->userSession->getUser();
-			if ($user === null) {
-				return $response;
-			}
-
-			$ip = $this->securityService->getTrustedClientIpAddress(request: $this->request);
-			$this->securityService->recordSuccessfulAuth(identity: $user->getUID(), ipAddress: $ip);
+			$this->recordSuccess();
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'[RateLimitMiddleware] recordSuccessfulAuth failed open: ' . $e->getMessage(),
@@ -193,39 +192,19 @@ class RateLimitMiddleware extends Middleware {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::afterException() requires
 	 * ($controller, $methodName, $exception) — $controller is forwarded to isPublicPage() but PHPMD
 	 * flags it; $methodName is also required by isPublicPage().
-	 * @SuppressWarnings(PHPMD.ShortVariable)         $ip is the established abbreviation for IP address;
-	 * renaming disagrees with SecurityService's own parameter naming.
 	 *
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
 	public function afterException(Controller $controller, string $methodName, \Exception $exception): ?Response {
 		// Enforced lockout: return a clean 429.
 		if ($exception instanceof AuthRateLimitExceededException) {
-			$response = new JSONResponse(
-				['error' => $exception->getMessage(), 'lockout_until' => $exception->getLockoutUntil()],
-				Http::STATUS_TOO_MANY_REQUESTS
-			);
-
-			$retryAfter = max(1, ($exception->getLockoutUntil() - time()));
-			$response->addHeader('Retry-After', (string)$retryAfter);
-
-			return $response;
+			return $this->lockoutResponse(exception: $exception);
 		}
 
 		// Otherwise: only count genuine auth failures on protected endpoints,
 		// then re-throw so Nextcloud handles the response unchanged.
 		try {
-			if ($this->isAuthFailure(exception: $exception) === true
-				&& $this->isPublicPage(controller: $controller, methodName: $methodName) === false
-			) {
-				$ip = $this->securityService->getTrustedClientIpAddress(request: $this->request);
-				$identity = $this->resolveIdentity();
-				$this->securityService->recordFailedAuthAttempt(
-					identity: $identity,
-					ipAddress: $ip,
-					reason: 'inbound_auth_failed'
-				);
-			}
+			$this->countFailure(controller: $controller, methodName: $methodName, exception: $exception);
 		} catch (Throwable $e) {
 			// FAIL-OPEN: recording must not interfere with the original error.
 			$this->logger->warning(
@@ -236,6 +215,102 @@ class RateLimitMiddleware extends Middleware {
 
 		throw $exception;
 	}//end afterException()
+
+	/**
+	 * Throw the lockout when the (identity + IP) pair of a protected endpoint is locked out.
+	 *
+	 * Public pages are out of scope.
+	 *
+	 * @param Controller $controller The controller being dispatched
+	 * @param string $methodName The method being dispatched
+	 *
+	 * @return void
+	 *
+	 * @throws AuthRateLimitExceededException When the identity+IP is locked out
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	private function refuseLockedOut(Controller $controller, string $methodName): void {
+		if ($this->isPublicPage(controller: $controller, methodName: $methodName) === true) {
+			return;
+		}
+
+		$ipAddress = $this->securityService->getTrustedClientIpAddress(request: $this->request);
+		$identity = $this->resolveIdentity();
+
+		$check = $this->securityService->checkAuthRateLimit(identity: $identity, ipAddress: $ipAddress);
+		if (($check['allowed'] ?? true) === false) {
+			throw new AuthRateLimitExceededException(
+				message: (string)($check['reason'] ?? 'Too many failed authentication attempts.'),
+				lockoutUntil: (int)($check['lockout_until'] ?? 0)
+			);
+		}
+	}//end refuseLockedOut()
+
+	/**
+	 * Clear the failure counters of the signed-in user, when there is one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	private function recordSuccess(): void {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return;
+		}
+
+		$ipAddress = $this->securityService->getTrustedClientIpAddress(request: $this->request);
+		$this->securityService->recordSuccessfulAuth(identity: $user->getUID(), ipAddress: $ipAddress);
+	}//end recordSuccess()
+
+	/**
+	 * The 429 response for an enforced lockout, with a Retry-After header.
+	 *
+	 * @param AuthRateLimitExceededException $exception The lockout
+	 *
+	 * @return JSONResponse The error and when the lockout ends
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	private function lockoutResponse(AuthRateLimitExceededException $exception): JSONResponse {
+		$response = new JSONResponse(
+			['error' => $exception->getMessage(), 'lockout_until' => $exception->getLockoutUntil()],
+			Http::STATUS_TOO_MANY_REQUESTS
+		);
+
+		$retryAfter = max(1, ($exception->getLockoutUntil() - time()));
+		$response->addHeader('Retry-After', (string)$retryAfter);
+
+		return $response;
+	}//end lockoutResponse()
+
+	/**
+	 * Record a failed attempt when the exception is an auth failure on a protected endpoint.
+	 *
+	 * @param Controller $controller The controller that was dispatched
+	 * @param string $methodName The method that was dispatched
+	 * @param \Exception $exception The thrown exception
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	private function countFailure(Controller $controller, string $methodName, \Exception $exception): void {
+		if ($this->isAuthFailure(exception: $exception) === false
+			|| $this->isPublicPage(controller: $controller, methodName: $methodName) === true
+		) {
+			return;
+		}
+
+		$ipAddress = $this->securityService->getTrustedClientIpAddress(request: $this->request);
+		$identity = $this->resolveIdentity();
+		$this->securityService->recordFailedAuthAttempt(
+			identity: $identity,
+			ipAddress: $ipAddress,
+			reason: 'inbound_auth_failed'
+		);
+	}//end countFailure()
 
 	/**
 	 * Determine whether the dispatched method is a public page.
@@ -308,14 +383,7 @@ class RateLimitMiddleware extends Middleware {
 				return $user->getUID();
 			}
 
-			$authHeader = $this->request->getHeader('Authorization');
-			if ($authHeader !== '' && stripos($authHeader, 'Basic ') === 0) {
-				$decoded = base64_decode(substr($authHeader, 6), true);
-				if ($decoded !== false && str_contains($decoded, ':') === true) {
-					[$username] = explode(':', $decoded, 2);
-					return $username;
-				}
-			}
+			return $this->basicAuthUsername();
 		} catch (Throwable $e) {
 			// Fall through to anonymous.
 			unset($e);
@@ -323,4 +391,23 @@ class RateLimitMiddleware extends Middleware {
 
 		return '';
 	}//end resolveIdentity()
+
+	/**
+	 * The username an HTTP Basic Authorization header attempts (NEVER the password).
+	 *
+	 * @return string The username, or '' when the header names none
+	 */
+	private function basicAuthUsername(): string {
+		$authHeader = $this->request->getHeader('Authorization');
+		if ($authHeader === '' || stripos($authHeader, 'Basic ') !== 0) {
+			return '';
+		}
+
+		$decoded = base64_decode(substr($authHeader, 6), true);
+		if ($decoded === false || str_contains($decoded, ':') === false) {
+			return '';
+		}
+
+		return explode(':', $decoded, 2)[0];
+	}//end basicAuthUsername()
 }//end class

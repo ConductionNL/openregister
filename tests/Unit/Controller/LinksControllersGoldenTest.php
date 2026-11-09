@@ -118,6 +118,16 @@ class LinksControllersGoldenTest extends TestCase {
 			return $context['request'];
 		}
 
+		$reflection = new ReflectionClass($class);
+		if ($reflection->isFinal() === true) {
+			$parts = [];
+			foreach ($reflection->getConstructor()->getParameters() as $part) {
+				$parts[] = $this->double(param: $part, context: $context);
+			}
+
+			return new $class(...$parts);
+		}
+
 		$mock = $this->createMock($class);
 		if ($class === IL10N::class) {
 			$mock->method('t')->willReturnCallback(fn ($text, $parameters = []) => vsprintf($text, $parameters));

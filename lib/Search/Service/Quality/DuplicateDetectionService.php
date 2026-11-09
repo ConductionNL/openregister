@@ -36,10 +36,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -88,9 +87,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * Wire collaborators.
 	 *
 	 * @param ObjectOperationsInterface $objectService Object query path (RBAC + tenant scoped).
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the dedup annotation.
-	 * @param RegisterMapperInterface $registerMapper Register lookup — the boundary the schema resolves inside.
-	 * @param SimilarityCalculator $similarity Pure field-similarity primitives, for the comparator.
+	 * @param DedupScoringSources $sources Schema and register lookup and the similarity primitives.
 	 * @param DismissedPairStore $dismissals Pairs a person has already ruled out.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -100,16 +97,14 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		SchemaMapperInterface $schemaMapper,
-		RegisterMapperInterface $registerMapper,
-		SimilarityCalculator $similarity,
+		DedupScoringSources $sources,
 		private readonly DismissedPairStore $dismissals,
 		private readonly LoggerInterface $logger,
 	) {
 		$this->ruleResolver = new DedupRuleResolver(
-			scopedSchemaResolver: new RegisterScopedSchemaResolver(registerMapper: $registerMapper, schemaMapper: $schemaMapper)
+			scopedSchemaResolver: RegisterScopedSchemaResolvers::over(registerMapper: $sources->registerMapper, schemaMapper: $sources->schemaMapper)
 		);
-		$this->comparator = new PayloadComparator(similarity: $similarity);
+		$this->comparator = new PayloadComparator(similarity: $sources->similarity);
 	}//end __construct()
 
 
@@ -176,7 +171,6 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * @param int|string $register Register id, uuid or slug — the boundary the schema resolves inside.
 	 * @param int|string $schema Schema id, uuid or slug.
 	 * @param array<string, mixed> $candidate The unsaved body.
-	 * @param array<int, mixed>|null $matchRules Optional caller-supplied rules; the annotation's when null.
 	 * @param float|null $threshold Optional cut-off; the annotation's, then {@see DedupRuleResolver::DEFAULT_THRESHOLD}, when null.
 	 *
 	 * @return array<int, array{
@@ -188,9 +182,9 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
-	public function checkCandidate($register, $schema, array $candidate, ?array $matchRules = null, ?float $threshold = null): array {
+	public function checkCandidate($register, $schema, array $candidate, ?float $threshold = null): array {
 		$run = $this->ruleResolver->resolve(
-			request: new DedupRun(register: $register, schema: $schema, matchRules: $matchRules, threshold: $threshold)
+			request: new DedupRun(register: $register, schema: $schema, threshold: $threshold)
 		);
 		if ($run === null) {
 			return [];

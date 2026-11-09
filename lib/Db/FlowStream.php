@@ -65,6 +65,7 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  */
 class FlowStream extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The root stream's ordinal path.
@@ -267,26 +268,4 @@ class FlowStream extends Entity implements JsonSerializable {
 
 		return implode('.', $segments);
 	}//end pathOrRoot()
-
-	/**
-	 * JSON shape.
-	 *
-	 * @return array<string, mixed> The stream as an array.
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'runUuid' => $this->runUuid,
-			'streamId' => $this->streamId,
-			'ordinalPath' => $this->ordinalPath,
-			'parentStreamId' => $this->parentStreamId,
-			'place' => $this->place,
-			'status' => $this->status,
-			'resumeAt' => $this->resumeAt?->format('c'),
-			'nextSequence' => $this->nextSequence,
-			'error' => $this->error,
-			'created' => $this->created?->format('c'),
-			'updated' => $this->updated?->format('c'),
-		];
-	}//end jsonSerialize()
 }//end class

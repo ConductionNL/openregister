@@ -24,8 +24,13 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Register\ExactKeyHydration;
+use OCA\OpenRegister\Db\Register\MagicMappingConfig;
+use OCA\OpenRegister\Db\Register\RegisterFieldTypes;
+use OCA\OpenRegister\Db\Register\RegisterJson;
+use OCA\OpenRegister\Db\Register\RegisterLanguages;
+use OCA\OpenRegister\Db\Register\RegisterSchemaIds;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCP\AppFramework\Db\Entity;
 
@@ -93,15 +98,14 @@ use OCP\AppFramework\Db\Entity;
  * @method array|null getDeck()
  * @method void setDeck(?array $deck)
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
- *
- * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
 class Register extends Entity implements JsonSerializable, RegisterInterface {
 	use JsonFieldsTrait;
+	use ManagedByConfigurationTrait;
+	use LinkedItemsTrait;
 
 	/**
 	 * Unique identifier for the register
@@ -296,88 +300,14 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 	protected ?array $configuration = [];
 
 	/**
-	 * Linked mail entity IDs for this register.
-	 *
-	 * @var array|null Linked mail entity IDs
-	 */
-	protected ?array $mail = null;
-
-	/**
-	 * Linked contact entity IDs for this register.
-	 *
-	 * @var array|null Linked contact entity IDs
-	 */
-	protected ?array $contacts = null;
-
-	/**
-	 * Linked note entity IDs for this register.
-	 *
-	 * @var array|null Linked note entity IDs
-	 */
-	protected ?array $notes = null;
-
-	/**
-	 * Linked todo entity IDs for this register.
-	 *
-	 * @var array|null Linked todo entity IDs
-	 */
-	protected ?array $todos = null;
-
-	/**
-	 * Linked calendar event entity IDs for this register.
-	 *
-	 * @var array|null Linked calendar event entity IDs
-	 */
-	protected ?array $calendar = null;
-
-	/**
-	 * Linked Talk conversation IDs for this register.
-	 *
-	 * @var array|null Linked Talk conversation IDs
-	 */
-	protected ?array $talk = null;
-
-	/**
-	 * Linked Deck card IDs for this register.
-	 *
-	 * @var array|null Linked Deck card IDs
-	 */
-	protected ?array $deck = null;
-
-	/**
 	 * Constructor for the Register class
 	 *
 	 * Sets up field types for all properties
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'slug', type: 'string');
-		$this->addType(fieldName: 'title', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'schemas', type: 'json');
-		$this->addType(fieldName: 'source', type: 'string');
-		$this->addType(fieldName: 'tablePrefix', type: 'string');
-		$this->addType(fieldName: 'folder', type: 'string');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'owner', type: 'string');
-		$this->addType(fieldName: 'application', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'authorization', type: 'json');
-		$this->addType(fieldName: 'sharedWith', type: 'json');
-		$this->addType(fieldName: 'groups', type: 'json');
-		$this->addType(fieldName: 'deleted', type: 'datetime');
-		$this->addType(fieldName: 'type', type: 'string');
-		$this->addType(fieldName: 'languages', type: 'json');
-		$this->addType(fieldName: 'configuration', type: 'json');
-		$this->addType(fieldName: 'mail', type: 'json');
-		$this->addType(fieldName: 'contacts', type: 'json');
-		$this->addType(fieldName: 'notes', type: 'json');
-		$this->addType(fieldName: 'todos', type: 'json');
-		$this->addType(fieldName: 'calendar', type: 'json');
-		$this->addType(fieldName: 'talk', type: 'json');
-		$this->addType(fieldName: 'deck', type: 'json');
+		foreach (RegisterFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -397,26 +327,9 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 	 * @return static Returns self for method chaining
 	 */
 	public function setSchemas($schemas): static {
-		if (is_string($schemas) === true) {
-			$decoded = json_decode($schemas, true);
-			$schemas = $decoded ?? [];
-		}
-
-		if (is_array($schemas) === false) {
-			$schemas = [];
-		}
-
-		// Only keep IDs (int or string).
-		$schemas = array_filter(
-			$schemas,
-			function ($item) {
-				return is_int($item) || is_string($item);
-			}
-		);
-
 		// phpcs:disable CustomSniffs.Functions.NamedParameters
 		// Reason: the "setSchemas" function in parent is a call to the magic method which does not take named parameter.
-		parent::setSchemas($schemas);
+		parent::setSchemas((new RegisterSchemaIds())->fromInput(schemas: $schemas));
 		// phpcs:enable CustomSniffs.Functions.NamedParameters
 
 		return $this;
@@ -447,11 +360,8 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 	 */
 	public function addSchemaId(int $schemaId): bool {
 		$existing = $this->getSchemas();
-
-		foreach ($existing as $candidate) {
-			if (is_numeric($candidate) === true && (int)$candidate === $schemaId) {
-				return false;
-			}
+		if ((new RegisterSchemaIds())->contains(schemas: $existing, schemaId: $schemaId) === true) {
+			return false;
 		}
 
 		$existing[] = $schemaId;
@@ -463,39 +373,14 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 	/**
 	 * Hydrate the entity with data from an array
 	 *
-	 * Sets entity properties based on input array values
+	 * Sets entity properties based on input array values; see ExactKeyHydration.
 	 *
 	 * @param array $object The data array to hydrate from
 	 *
 	 * @return static Returns $this for method chaining
 	 */
 	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		if (isset($object['metadata']) === false) {
-			$object['metadata'] = [];
-		}
-
-		// The setter call resolves `Organisation` to setOrganisation() too, and every
-		// check on a register body reads the exact key, so only exact names are stored.
-		$exactKeys = array_filter(
-			$object,
-			fn (int|string $key): bool => is_string($key) === true && property_exists($this, $key) === true,
-			ARRAY_FILTER_USE_KEY
-		);
-		foreach ($exactKeys as $key => $value) {
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
+		(new ExactKeyHydration(register: $this))->apply(object: $object);
 
 		return $this;
 	}//end hydrate()
@@ -503,252 +388,65 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 	/**
 	 * Convert entity to JSON serializable array
 	 *
-	 * Prepares the entity data for JSON serialization
+	 * Prepares the entity data for JSON serialization; see RegisterJson.
 	 *
-	 * @return ((int|mixed|null|string[])[]|int|null|string)[] Array of serializable entity data
-	 *
-	 * @psalm-return array{
-	 *     id: int,
-	 *     uuid: null|string,
-	 *     slug: null|string,
-	 *     title: null|string,
-	 *     version: null|string,
-	 *     description: null|string,
-	 *     schemas: array<int|string>,
-	 *     source: null|string,
-	 *     tablePrefix: null|string,
-	 *     folder: null|string,
-	 *     updated: null|string,
-	 *     created: null|string,
-	 *     owner: null|string,
-	 *     application: null|string,
-	 *     organisation: null|string,
-	 *     authorization: array|null,
-	 *     sharedWith: array<int, string>,
-	 *     groups: array<string, list<string>>,
-	 *     languages: array<string>|null,
-	 *     configuration: array|null,
-	 *     quota: array{
-	 *         storage: null,
-	 *         bandwidth: null,
-	 *         requests: null,
-	 *         users: null,
-	 *         groups: null
-	 *     },
-	 *     usage: array{
-	 *         storage: 0,
-	 *         bandwidth: 0,
-	 *         requests: 0,
-	 *         users: 0,
-	 *         groups: int<0, max>
-	 *     },
-	 *     deleted: null|string
-	 * }
+	 * @return array<string, mixed> Array of serializable entity data
 	 */
 	public function jsonSerialize(): array {
-		$updated = null;
-		if ($this->updated !== null) {
-			$updated = $this->updated->format('c');
-		}
-
-		$created = null;
-		if ($this->created !== null) {
-			$created = $this->created->format('c');
-		}
-
-		$deleted = null;
-		if ($this->deleted !== null) {
-			$deleted = $this->deleted->format('c');
-		}
-
-		// Always return schemas as array of IDs (int/string).
-		$schemas = array_filter(
-			$this->schemas ?? [],
-			function ($item) {
-				return is_int($item) || is_string($item);
-			}
-		);
-
-		$groups = $this->groups ?? [];
-
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'slug' => $this->slug,
-			'title' => $this->title,
-			'version' => $this->version,
-			'description' => $this->description,
-			'schemas' => $schemas,
-			'source' => $this->source,
-			'tablePrefix' => $this->tablePrefix,
-			'folder' => $this->folder,
-			'updated' => $updated,
-			'created' => $created,
-			'owner' => $this->owner,
-			'application' => $this->application,
-			'organisation' => $this->organisation,
-			'authorization' => $this->authorization,
-			'sharedWith' => ($this->sharedWith ?? []),
-			'groups' => $groups,
-			'type' => $this->type,
-			'languages' => $this->languages,
-			'configuration' => $this->configuration,
-			'quota' => [
-				'storage' => null,
-				// To be set via admin configuration.
-				'bandwidth' => null,
-				// To be set via admin configuration.
-				'requests' => null,
-				// To be set via admin configuration.
-				'users' => null,
-				// To be set via admin configuration.
-				'groups' => null,
-				// To be set via admin configuration.
-			],
-			'usage' => [
-				'storage' => 0,
-				// To be calculated from actual usage.
-				'bandwidth' => 0,
-				// To be calculated from actual usage.
-				'requests' => 0,
-				// To be calculated from actual usage.
-				'users' => 0,
-				// Registers don't have direct users.
-				'groups' => count($groups),
-			],
-			'deleted' => $deleted,
-			'_mail' => $this->mail,
-			'_contacts' => $this->contacts,
-			'_notes' => $this->notes,
-			'_todos' => $this->todos,
-			'_calendar' => $this->calendar,
-			'_talk' => $this->talk,
-			'_deck' => $this->deck,
-		];
+		return (new RegisterJson())->serialise(fields: get_object_vars($this));
 	}//end jsonSerialize()
 
 	/**
 	 * String representation of the register
 	 *
 	 * This magic method is required for proper entity handling in Nextcloud
-	 * when the framework needs to convert the object to a string.
+	 * when the framework needs to convert the object to a string: the title,
+	 * else the slug, else a descriptive string with the id.
 	 *
 	 * @return string String representation of the register
 	 */
 	public function __toString(): string {
-		// Return the register title if available, otherwise return a descriptive string.
 		if ($this->title !== null && $this->title !== '') {
 			return $this->title;
 		}
 
-		// Fallback to slug if title is not available.
 		if ($this->slug !== null && $this->slug !== '') {
 			return $this->slug;
 		}
 
-		// Final fallback with ID.
-		// Suppress redundant property initialization check.
-		//
 		return 'Register #' . ($this->id ?? 'unknown');
 	}//end __toString()
 
 	/**
-	 * Check if this register is managed by any configuration
+	 * The ids a configuration lists as its registers, see ManagedByConfigurationTrait.
 	 *
-	 * This method checks if the register's ID is present in the registers array
-	 * of any provided configuration entities.
+	 * @param Configuration $configuration The configuration.
 	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return bool True if this register is managed by at least one configuration
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
+	 * @return array|null
 	 */
-	public function isManagedByConfiguration(array $configurations): bool {
-		if (empty($configurations) === true || $this->id === null) {
-			return false;
-		}
-
-		foreach ($configurations as $configuration) {
-			$registers = $configuration->getRegisters();
-			if (in_array($this->id, $registers ?? [], true) === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isManagedByConfiguration()
+	protected function configurationMembers(Configuration $configuration): ?array {
+		return $configuration->getRegisters();
+	}//end configurationMembers()
 
 	/**
-	 * Get the configuration that manages this register
-	 *
-	 * Returns the first configuration that has this register's ID in its registers array.
-	 * Returns null if the register is not managed by any configuration.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return Configuration|null The configuration managing this register, or null
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
-	 */
-	public function getManagedByConfiguration(array $configurations): ?Configuration {
-		if (empty($configurations) === true || $this->id === null) {
-			return null;
-		}
-
-		foreach ($configurations as $configuration) {
-			$registers = $configuration->getRegisters();
-			if (in_array($this->id, $registers ?? [], true) === true) {
-				return $configuration;
-			}
-		}
-
-		return null;
-	}//end getManagedByConfiguration()
-
-	// ==================================================================================
-	// LANGUAGE CONFIGURATION HELPERS
-	// ==================================================================================
-
-	/**
-	 * Get the default language for this register.
-	 *
-	 * The default language is the first element in the languages array.
-	 * Falls back to 'nl' if no languages are configured.
+	 * Get the default language for this register: the first configured, else 'nl'.
 	 *
 	 * @return string The default language code (BCP 47)
 	 */
 	public function getDefaultLanguage(): string {
-		$languages = $this->languages;
-		if (is_array($languages) === true && empty($languages) === false) {
-			return $languages[0];
-		}
-
-		return 'nl';
+		return (new RegisterLanguages())->defaultOf(languages: $this->languages);
 	}//end getDefaultLanguage()
 
 	/**
-	 * Check if a language is available for this register.
+	 * Check if a language is available for this register; none configured means only 'nl'.
 	 *
 	 * @param string $language The language code to check
 	 *
 	 * @return bool True if the language is available
 	 */
 	public function hasLanguage(string $language): bool {
-		$languages = $this->languages;
-		if (is_array($languages) === false || empty($languages) === true) {
-			// No languages configured means only default 'nl' is available.
-			return $language === 'nl';
-		}
-
-		return in_array($language, $languages, true);
+		return (new RegisterLanguages())->has(languages: $this->languages, language: $language);
 	}//end hasLanguage()
-
-	// ==================================================================================
-	// MAGIC MAPPING CONFIGURATION HELPERS
-	// ==================================================================================
 
 	/**
 	 * Get configuration settings.
@@ -756,25 +454,7 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 	 * @return array Configuration settings or empty array if null.
 	 */
 	public function getConfiguration(): array {
-		if ($this->configuration === null) {
-			return [];
-		}
-
-		// If it's already an array, return it directly.
-		if (is_array($this->configuration) === true) {
-			return $this->configuration;
-		}
-
-		// If it's a JSON string, decode it.
-		if (is_string($this->configuration) === true) {
-			$decoded = json_decode($this->configuration, true);
-			if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-				return $decoded;
-			}
-		}
-
-		// If we get here, something is wrong - return empty array.
-		return [];
+		return (new JsonArrayColumn())->asArray(value: $this->configuration);
 	}//end getConfiguration()
 
 	/**
@@ -782,28 +462,15 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 	 *
 	 * **TYPE SAFETY**: Handle both array and JSON string inputs for database hydration.
 	 * The database stores configuration as JSON strings, but we want to work with arrays in PHP.
+	 * A string that is not JSON for an array is stored as null.
 	 *
 	 * @param array|string|null $configuration Configuration settings (array or JSON string).
 	 *
 	 * @return void
 	 */
 	public function setConfiguration(array|string|null $configuration): void {
-		// **TYPE SAFETY**: Handle JSON string from database.
 		if (is_string($configuration) === true) {
-			try {
-				$decoded = json_decode($configuration, true);
-				// Invalid JSON, set to null.
-				$this->configuration = null;
-				if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-					$this->configuration = $decoded;
-				}
-			} catch (Exception $e) {
-				// If decoding fails, set to null.
-				$this->configuration = null;
-			}
-
-			$this->markFieldUpdated(attribute: 'configuration');
-			return;
+			$configuration = (new JsonArrayColumn())->decoded(json: $configuration);
 		}
 
 		$this->configuration = $configuration;
@@ -814,51 +481,15 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 	 * Check if magic mapping is enabled for a specific schema in this register.
 	 *
 	 * This is the SINGLE SOURCE OF TRUTH for magic mapping checks.
-	 * All other classes should delegate to this method.
+	 * All other classes should delegate to this method. Formats: see MagicMappingConfig.
 	 *
-	 * Supports two configuration formats:
-	 * - New format: { "schemas": { "<slug>": { "magicMapping": true } } }
-	 * - Legacy format: { "enableMagicMapping": true, "magicMappingSchemas": ["<slug>", "<id>"] }
-	 *
-	 * @param int $schemaId The schema ID to check.
+	 * @param int         $schemaId   The schema ID to check.
 	 * @param string|null $schemaSlug Optional schema slug to also check in configuration.
 	 *
 	 * @return bool True if magic mapping is enabled for this schema.
 	 */
 	public function isMagicMappingEnabledForSchema(int $schemaId, ?string $schemaSlug = null): bool {
-		$config = $this->getConfiguration();
-
-		// Check NEW format first: { "schemas": { "<slug>": { "magicMapping": true } } }.
-		$schemaConfigs = $config['schemas'] ?? [];
-		if (empty($schemaConfigs) === false) {
-			// Try to find by schema slug (string key).
-			if ($schemaSlug !== null) {
-				$schemaConfig = $schemaConfigs[$schemaSlug] ?? null;
-				if ($schemaConfig !== null && ($schemaConfig['magicMapping'] ?? false) === true) {
-					return true;
-				}
-			}
-
-			// Try to find by schema ID (integer or string key).
-			$schemaConfig = $schemaConfigs[$schemaId] ?? $schemaConfigs[(string)$schemaId] ?? null;
-			if ($schemaConfig !== null && ($schemaConfig['magicMapping'] ?? false) === true) {
-				return true;
-			}
-		}
-
-		// Check LEGACY format: { "enableMagicMapping": true, "magicMappingSchemas": [...] }.
-		$magicMappingEnabled = ($config['enableMagicMapping'] ?? false) === true;
-		if ($magicMappingEnabled === false) {
-			return false;
-		}
-
-		$magicMappingSchemas = $config['magicMappingSchemas'] ?? [];
-
-		// Check if this schema is in the list (by ID or slug).
-		$isInList = in_array((string)$schemaId, $magicMappingSchemas, true) === true
-			|| ($schemaSlug !== null && in_array($schemaSlug, $magicMappingSchemas, true) === true);
-
-		return $isInList;
+		return $this->magicMapping()->isEnabled(schemaId: $schemaId, schemaSlug: $schemaSlug);
 	}//end isMagicMappingEnabledForSchema()
 
 	/**
@@ -867,65 +498,30 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 	 * Supports both configuration formats (new and legacy).
 	 * Note: Legacy format doesn't have per-schema autoCreateTable, so defaults to true if magicMapping is enabled.
 	 *
-	 * @param int $schemaId The schema ID to check.
+	 * @param int         $schemaId   The schema ID to check.
 	 * @param string|null $schemaSlug Optional schema slug to also check in configuration.
 	 *
 	 * @return bool True if auto-create table is enabled for this schema.
 	 */
 	public function isAutoCreateTableEnabledForSchema(int $schemaId, ?string $schemaSlug = null): bool {
-		$config = $this->getConfiguration();
-
-		// Check NEW format: { "schemas": { "<slug>": { "autoCreateTable": true } } }.
-		$schemaConfigs = $config['schemas'] ?? [];
-		if (empty($schemaConfigs) === false) {
-			// Try to find by schema slug (string key).
-			if ($schemaSlug !== null) {
-				$schemaConfig = $schemaConfigs[$schemaSlug] ?? null;
-				if ($schemaConfig !== null) {
-					return ($schemaConfig['autoCreateTable'] ?? false) === true;
-				}
-			}
-
-			// Try to find by schema ID (integer or string key).
-			$schemaConfig = $schemaConfigs[$schemaId] ?? $schemaConfigs[(string)$schemaId] ?? null;
-			if ($schemaConfig !== null) {
-				return ($schemaConfig['autoCreateTable'] ?? false) === true;
-			}
-		}
-
-		// Legacy format doesn't have per-schema autoCreateTable.
-		// Default to true if magic mapping is enabled for this schema.
-		return $this->isMagicMappingEnabledForSchema(schemaId: $schemaId, schemaSlug: $schemaSlug);
+		return $this->magicMapping()->isAutoCreateTable(schemaId: $schemaId, schemaSlug: $schemaSlug);
 	}//end isAutoCreateTableEnabledForSchema()
 
 	/**
 	 * Enable magic mapping for a specific schema in this register.
 	 *
-	 * @param int $schemaId The schema ID.
-	 * @param bool $autoCreateTable Whether to auto-create the table (default: true).
-	 * @param string|null $comment Optional comment describing why magic mapping is enabled.
+	 * @param int         $schemaId        The schema ID.
+	 * @param bool        $autoCreateTable Whether to auto-create the table (default: true).
+	 * @param string|null $comment         Optional comment describing why magic mapping is enabled.
 	 *
 	 * @return static Returns self for method chaining.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Auto-create table toggle is intentional
 	 */
 	public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable = true, ?string $comment = null): static {
-		$config = $this->getConfiguration();
-
-		if (isset($config['schemas']) === false) {
-			$config['schemas'] = [];
-		}
-
-		$config['schemas'][$schemaId] = [
-			'magicMapping' => true,
-			'autoCreateTable' => $autoCreateTable,
-		];
-
-		if ($comment !== null) {
-			$config['schemas'][$schemaId]['comment'] = $comment;
-		}
-
-		$this->setConfiguration(configuration: $config);
+		$mapping = $this->magicMapping();
+		$entry = $mapping->entry(autoCreateTable: $autoCreateTable, comment: $comment);
+		$this->setConfiguration(configuration: $mapping->with(schemaId: $schemaId, entry: $entry));
 
 		return $this;
 	}//end enableMagicMappingForSchema()
@@ -938,10 +534,8 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 	 * @return static Returns self for method chaining.
 	 */
 	public function disableMagicMappingForSchema(int $schemaId): static {
-		$config = $this->getConfiguration();
-
-		if (isset($config['schemas'][$schemaId]) === true) {
-			$config['schemas'][$schemaId]['magicMapping'] = false;
+		$config = $this->magicMapping()->withDisabled(schemaId: $schemaId);
+		if ($config !== null) {
 			$this->setConfiguration(configuration: $config);
 		}
 
@@ -956,16 +550,15 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 	 * @psalm-return list<int>
 	 */
 	public function getSchemasWithMagicMapping(): array {
-		$config = $this->getConfiguration();
-		$schemaConfigs = $config['schemas'] ?? [];
-		$schemaIds = [];
-
-		foreach ($schemaConfigs as $schemaId => $schemaConfig) {
-			if (($schemaConfig['magicMapping'] ?? false) === true) {
-				$schemaIds[] = (int)$schemaId;
-			}
-		}
-
-		return $schemaIds;
+		return $this->magicMapping()->enabledSchemaIds();
 	}//end getSchemasWithMagicMapping()
+
+	/**
+	 * The magic mapping view of the current configuration.
+	 *
+	 * @return MagicMappingConfig
+	 */
+	private function magicMapping(): MagicMappingConfig {
+		return new MagicMappingConfig(config: $this->getConfiguration());
+	}//end magicMapping()
 }//end class

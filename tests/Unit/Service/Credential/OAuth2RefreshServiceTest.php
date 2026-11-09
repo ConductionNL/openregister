@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientResolver;
+use OCA\OpenRegister\Service\Credential\OAuth2RefreshExchange;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
 use OCA\OpenRegister\Service\ObjectService;
@@ -51,6 +52,8 @@ use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Credential\OAuth2RefreshStores;
+use OCA\OpenRegister\Service\Credential\OAuth2RefreshSteps;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2RefreshService
@@ -563,13 +566,16 @@ class OAuth2RefreshServiceTest extends TestCase {
 		);
 
 		$service = new OAuth2RefreshService(
-			credentialStore: $store,
-			objectService: $objectService,
+			stores: new OAuth2RefreshStores(
+				credentialStore: $store,
+				objectService: $objectService,
+			),
 			lock: $lock,
-			clients: $clients,
-			clientService: $clientService,
-			relinkNotifier: $notifier,
-			logger: $this->createMock(LoggerInterface::class)
+			steps: new OAuth2RefreshSteps(
+				exchange: new OAuth2RefreshExchange(clients: $clients, clientService: $clientService),
+				relinkNotifier: $notifier,
+			),
+			logger: $this->createMock(LoggerInterface::class),
 		);
 
 		return $service;

@@ -71,7 +71,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			}
 		);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,
@@ -679,7 +679,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			}
 		);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,

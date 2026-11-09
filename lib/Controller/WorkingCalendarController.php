@@ -34,8 +34,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
-use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -47,7 +49,7 @@ use OCP\IUserSession;
 /**
  * Previews the non-working dates a calendar definition produces in a year.
  *
- * @SuppressWarnings(PHPMD.StaticAccess) WorkingCalendar::fromArray() is the
+ * @SuppressWarnings(PHPMD.StaticAccess) WorkingCalendars::fromDefinition() is the
  * value object's validating named constructor.
  */
 class WorkingCalendarController extends Controller {
@@ -120,7 +122,7 @@ class WorkingCalendarController extends Controller {
 		}
 
 		try {
-			$definition = WorkingCalendar::fromArray(definition: $calendar);
+			$definition = WorkingCalendars::fromDefinition(definition: $calendar);
 		} catch (FlowTimerValidationException $refused) {
 			return $this->invalidDefinition(refused: $refused);
 		}
@@ -173,12 +175,12 @@ class WorkingCalendarController extends Controller {
 	 * holidays but prints the opening time straight from its own form cannot
 	 * tell the reader that a malformed one was defaulted.
 	 *
-	 * @param WorkingCalendar $definition The validated definition.
+	 * @param WorkingCalendarInterface $definition The validated definition.
 	 * @param int $year The year to compute.
 	 *
 	 * @return array<string, mixed> The preview body.
 	 */
-	private function previewBody(WorkingCalendar $definition, int $year): array {
+	private function previewBody(WorkingCalendarInterface $definition, int $year): array {
 		$dates = $this->dateRows(definition: $definition, year: $year);
 
 		return [
@@ -197,12 +199,12 @@ class WorkingCalendarController extends Controller {
 	/**
 	 * The non-working dates of a year as `{date, name}` rows.
 	 *
-	 * @param WorkingCalendar $definition The validated definition.
+	 * @param WorkingCalendarInterface $definition The validated definition.
 	 * @param int $year The year to compute.
 	 *
 	 * @return list<array{date: string, name: string}> The rows.
 	 */
-	private function dateRows(WorkingCalendar $definition, int $year): array {
+	private function dateRows(WorkingCalendarInterface $definition, int $year): array {
 		$dates = [];
 		foreach ($definition->nonWorkingDates(year: $year) as $date => $name) {
 			$dates[] = ['date' => $date, 'name' => $name];
@@ -228,18 +230,8 @@ class WorkingCalendarController extends Controller {
 	 * @return JSONResponse|null A refusal, or null when the caller may proceed.
 	 */
 	private function requireAdmin(): ?JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
-		}
+		$gate = new AdministratorOnlyGate(userSession: $this->userSession, groupManager: $this->groupManager);
 
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return new JSONResponse(
-				data: ['error' => 'Forbidden: working calendars are administered by administrators'],
-				statusCode: 403
-			);
-		}
-
-		return null;
+		return $gate->refusal(forbidden: 'Forbidden: working calendars are administered by administrators');
 	}//end requireAdmin()
 }//end class

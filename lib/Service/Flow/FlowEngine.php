@@ -41,7 +41,6 @@ namespace OCA\OpenRegister\Service\Flow;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\FlowRun;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Workflow\MarkingStore\MarkingStoreInterface;
 use Symfony\Component\Workflow\Workflow;
 use Throwable;
 
@@ -125,13 +124,31 @@ class FlowEngine {
 	private readonly FlowHopRouting $routing;
 
 	/**
+	 * Decides which exit a token takes.
+	 *
+	 * @var FlowTokenRouter
+	 */
+	private readonly FlowTokenRouter $router;
+
+	/**
+	 * Decides which items sit on which place.
+	 *
+	 * @var FlowItemPlacement
+	 */
+	private readonly FlowItemPlacement $placement;
+
+	/**
+	 * The ambient attribution stack, when there is one.
+	 *
+	 * @var FlowRunContext|null
+	 */
+	private readonly ?FlowRunContext $runContext;
+
+	/**
 	 * Constructor.
 	 *
-	 * $router and $placement come after $oversight, and are defaulted: unit tests
-	 * construct the engine positionally and one passes the oversight registry
-	 * third, so slotting a parameter in ahead of it would silently rebind that
-	 * argument — a test that still passes while checking nothing. Neither holds
-	 * state, so a locally-made one is indistinguishable from an injected one.
+	 * $services comes after $oversight, and is defaulted: unit tests construct
+	 * the engine positionally and one passes the oversight registry third.
 	 *
 	 * @param FlowDefinitionBuilder $builder The document -> Petri-net translator.
 	 * @param LoggerInterface $logger The logger.
@@ -139,29 +156,24 @@ class FlowEngine {
 	 *                                              engine stays unit-testable without a
 	 *                                              container; absent, nothing objects,
 	 *                                              exactly as an empty registry does.
-	 * @param FlowTokenRouter $router Decides which exit a token takes.
-	 * @param FlowItemPlacement $placement Decides which items sit on which place.
-	 * @param FlowRunContext|null $runContext The ambient attribution stack. Nullable
-	 *                                       so the engine stays unit-testable without
-	 *                                       a container; absent, writes are simply
-	 *                                       unattributed rather than mis-attributed.
-	 * @param FlowTaskMootness|null $mootness Told which places a routing decision
-	 *                                        cleared, so a user task waiting on one
-	 *                                        of them is terminated rather than
-	 *                                        orphaned. Nullable on the same terms;
-	 *                                        absent, run-terminality propagation is
-	 *                                        the only backstop.
+	 * @param FlowEngineServices $services The router, the item placement, the
+	 *                                     optional attribution stack and the
+	 *                                     optional mootness hook.
 	 */
 	public function __construct(
 		private readonly FlowDefinitionBuilder $builder,
 		private readonly LoggerInterface $logger,
 		private readonly ?FlowOversightRegistry $oversight = null,
-		private readonly FlowTokenRouter $router = new FlowTokenRouter(),
-		private readonly FlowItemPlacement $placement = new FlowItemPlacement(),
-		private readonly ?FlowRunContext $runContext = null,
-		?FlowTaskMootness $mootness = null,
+		FlowEngineServices $services=new FlowEngineServices(),
 	) {
-		$this->routing = new FlowHopRouting(router: $router, placement: $placement, mootness: $mootness);
+		$this->router     = $services->router;
+		$this->placement  = $services->placement;
+		$this->runContext = $services->runContext;
+		$this->routing    = new FlowHopRouting(
+			router: $services->router,
+			placement: $services->placement,
+			mootness: $services->mootness
+		);
 	}//end __construct()
 
 	/**
@@ -268,42 +280,24 @@ class FlowEngine {
 	 * so a resume — whose marking is already mid-graph and comes from the store —
 	 * is unaffected.
 	 *
-	 * @param array $flow The flow document.
-	 * @param MarkingStoreInterface $store Where the marking lives (an OR object, in production).
-	 * @param object $subject The object the run is about; holds the marking.
-	 * @param FlowStepDispatcher $dispatcher Performs each step's side effect.
-	 * @param array $context Run-level metadata handed to every step.
-	 * @param array|null $items Seed items; defaults to one item from the subject.
-	 * @param string|null $startAt Node to start from; defaults to the flow's own start.
-	 * @param FlowStreamWalk|null $streams The per-run stream collaborator: claims before each
-	 *                                     firing, a locked delta commit after it, stream-scoped
-	 *                                     suspension. Null walks a single in-memory stream
-	 *                                     exactly as before — a flow with one stream IS the run.
+	 * The flow, the marking store, the subject, the dispatcher, the run-level
+	 * context and the per-run stream collaborator travel together in
+	 * `$start` ({@see FlowRunStart}); a null stream collaborator walks a single
+	 * in-memory stream exactly as before — a flow with one stream IS the run.
+	 *
+	 * @param FlowRunStart $start   The flow, its collaborators, the context and the streams.
+	 * @param array|null   $items   Seed items; defaults to one item from the subject.
+	 * @param string|null  $startAt Node to start from; defaults to the flow's own start.
 	 *
 	 * @return array The run result: `{status, log: [], context: [], items: []}`.
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	public function run(
-		array $flow,
-		MarkingStoreInterface $store,
-		object $subject,
-		FlowStepDispatcher $dispatcher,
-		array $context = [],
-		?array $items = null,
-		?string $startAt = null,
-		?FlowStreamWalk $streams = null,
-	): array {
-		if (($startAt ?? '') !== '') {
-			$flow['initial'] = $startAt;
-		}
+	public function run(FlowRunStart $start, ?array $items = null, ?string $startAt = null): array {
+		$begun = $start->startingAt(node: $startAt);
+		$begun->items = ($items ?? FlowItems::fromSubject(subject: $start->subject));
 
-		$start = new FlowRunStart(flow: $flow, store: $store, subject: $subject, dispatcher: $dispatcher);
-		$start->context = $context;
-		$start->items = ($items ?? FlowItems::fromSubject(subject: $subject));
-		$start->streams = $streams;
-
-		return $this->startRun(start: $start);
+		return $this->startRun(start: $begun);
 	}//end run()
 
 	/**
@@ -463,7 +457,7 @@ class FlowEngine {
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	private function runSingleHop(FlowWalkHop $hop): ?array {
+	private function runSingleHop(FlowWalkHop $hop): array|null {
 		$pass = $hop->pass;
 		$pinned = $this->placement->pinnedItems(pass: $pass, transitionName: $hop->name());
 		if ($pinned !== null) {
@@ -473,6 +467,26 @@ class FlowEngine {
 			return null;
 		}
 
+		$outcome = $this->dispatchSingleHop(hop: $hop);
+		if ($outcome !== null) {
+			return $outcome;
+		}
+
+		$this->advanceSingle(hop: $hop);
+		return null;
+	}//end runSingleHop()
+
+	/**
+	 * Attribute, check oversight for and dispatch one unpinned hop.
+	 *
+	 * @param FlowWalkHop $hop The hop.
+	 *
+	 * @return array|null The run result when the hop ends the run, null when the walk advances.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	private function dispatchSingleHop(FlowWalkHop $hop): array|null {
+		$pass = $hop->pass;
 		$this->enterHop(hop: $hop);
 
 		try {
@@ -487,17 +501,13 @@ class FlowEngine {
 			return $hop->suspended(suspension: $suspension);
 		} catch (Throwable $e) {
 			$pass->log[] = $hop->failedEntry(error: $e);
-			$outcome = $this->outcomeForFailedStep(hop: $hop, error: $e);
-			if ($outcome !== null) {
-				return $outcome;
-			}
+			return $this->outcomeForFailedStep(hop: $hop, error: $e);
 		} finally {
 			$this->runContext?->pop();
 		}//end try
 
-		$this->advanceSingle(hop: $hop);
 		return null;
-	}//end runSingleHop()
+	}//end dispatchSingleHop()
 
 	/**
 	 * Move the token and the items past a fired hop.

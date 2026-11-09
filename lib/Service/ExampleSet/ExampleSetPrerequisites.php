@@ -116,11 +116,7 @@ class ExampleSetPrerequisites {
 	private function ensureRegisters(array $plan, array &$record): array {
 		$result = ['refusals' => [], 'outcome' => []];
 		foreach ((array) ($plan['requires'] ?? []) as $slug => $required) {
-			$register = new ExampleSetRequiredRegister(
-				set: (string) ($plan['set'] ?? ''),
-				slug: (string) $slug,
-				mock: (($required['mock'] ?? false) === true)
-			);
+			$register = $this->required(plan: $plan, slug: (string) $slug, required: $required);
 			$why      = $this->ensureRegister(register: $register, record: $record);
 			$result['outcome'][$register->slug] = $this->outcomeOf(why: $why);
 			if ($why !== null && $why !== '') {
@@ -130,6 +126,23 @@ class ExampleSetPrerequisites {
 
 		return $result;
 	}//end ensureRegisters()
+
+	/**
+	 * One register the plan requires.
+	 *
+	 * @param array<string, mixed> $plan     The plan.
+	 * @param string               $slug     The register's slug.
+	 * @param mixed                $required How the plan requires it (`{mock?: bool}`).
+	 *
+	 * @return ExampleSetRequiredRegister
+	 */
+	private function required(array $plan, string $slug, mixed $required): ExampleSetRequiredRegister {
+		return new ExampleSetRequiredRegister(
+			set: (string) ($plan['set'] ?? ''),
+			slug: $slug,
+			mock: (($required['mock'] ?? false) === true)
+		);
+	}//end required()
 
 	/**
 	 * Import one required register when it needs it, and record the import.

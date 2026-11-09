@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\ContactsControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Service\ContactServiceInterface;
@@ -109,9 +110,7 @@ class ContactsController extends Controller {
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		return $this->withObject(
-			register: $register,
-			schema: $schema,
-			id: $id,
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
 			handler: function (ObjectEntity $object): JSONResponse {
 				return new JSONResponse(
 					$this->personLinks->listForObject(
@@ -239,17 +238,15 @@ class ContactsController extends Controller {
 	 * Every per-object route shares this frame, so the 404 for an unknown
 	 * object and the status of a service exception are decided once.
 	 *
-	 * @param string $register The register slug.
-	 * @param string $schema The schema slug.
-	 * @param string $id The object id.
+	 * @param ObjectLinkRoute $route The register, schema and object id of the route.
 	 * @param callable(ObjectEntity): JSONResponse $handler What to do with the object.
 	 * @param int $fallbackStatus The status for an exception carrying none.
 	 *
 	 * @return JSONResponse The handler's response, or the error's.
 	 */
-	private function withObject(string $register, string $schema, string $id, callable $handler, int $fallbackStatus = 400): JSONResponse {
+	private function withObject(ObjectLinkRoute $route, callable $handler, int $fallbackStatus = 400): JSONResponse {
 		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
+			$object = $this->validateObject(register: $route->register, schema: $route->schema, id: $route->id);
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
@@ -279,9 +276,7 @@ class ContactsController extends Controller {
 	 */
 	private function withWritableObject(string $register, string $schema, string $id, callable $handler): JSONResponse {
 		return $this->withObject(
-			register: $register,
-			schema: $schema,
-			id: $id,
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
 			handler: function (ObjectEntity $object) use ($handler): JSONResponse {
 				$schemaEntity = $this->objectService->getCurrentSchemaEntity();
 				if ($schemaEntity === null

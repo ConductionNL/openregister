@@ -27,32 +27,70 @@ use OCA\OpenRegister\Db\CaseItemAudit;
 
 /**
  * The item, target state, cause, cause reference, actor and reason of one
- * cascade transition. Each named constructor is one rule of the cascade.
+ * cascade transition; the last four arrive together as a CaseStepCause. Each named constructor is one rule of the cascade.
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
  */
 final class CaseCascadeStep {
 
 	/**
+	 * The row that moves.
+	 *
+	 * @var CaseItem
+	 */
+	public readonly CaseItem $item;
+
+	/**
+	 * The target state.
+	 *
+	 * @var string
+	 */
+	public readonly string $to;
+
+	/**
+	 * The audit cause.
+	 *
+	 * @var string
+	 */
+	public readonly string $cause;
+
+	/**
+	 * What caused it.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $causeRef;
+
+	/**
+	 * Who, or null for the system.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $actor;
+
+	/**
+	 * Why, in words.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $reason;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param CaseItem    $item     The row that moves.
-	 * @param string      $to       The target state.
-	 * @param string      $cause    The audit cause.
-	 * @param string|null $causeRef What caused it.
-	 * @param string|null $actor    Who, or null for the system.
-	 * @param string|null $reason   Why, in words.
+	 * @param CaseItem      $item The row that moves.
+	 * @param string        $to   The target state.
+	 * @param CaseStepCause $why  The cause, cause reference, actor and reason.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
-	public function __construct(
-		public readonly CaseItem $item,
-		public readonly string $to,
-		public readonly string $cause,
-		public readonly ?string $causeRef,
-		public readonly ?string $actor = null,
-		public readonly ?string $reason = null,
-	) {
+	public function __construct(CaseItem $item, string $to, CaseStepCause $why) {
+		$this->item     = $item;
+		$this->to       = $to;
+		$this->cause    = $why->cause;
+		$this->causeRef = $why->causeRef;
+		$this->actor    = $why->actor;
+		$this->reason   = $why->reason;
 	}//end __construct()
 
 	/**
@@ -72,9 +110,11 @@ final class CaseCascadeStep {
 		return new self(
 			item: $item,
 			to: $outcome,
-			cause: CaseItemAudit::CAUSE_REALISATION,
-			causeRef: $ref,
-			reason: sprintf("Realisation %s '%s' ended as '%s'.", $kind, (string)$ref, $outcome)
+			why: new CaseStepCause(
+				cause: CaseItemAudit::CAUSE_REALISATION,
+				causeRef: $ref,
+				reason: sprintf("Realisation %s '%s' ended as '%s'.", $kind, (string)$ref, $outcome)
+			)
 		);
 	}//end realisationEnded()
 
@@ -92,9 +132,11 @@ final class CaseCascadeStep {
 		return new self(
 			item: $item,
 			to: CaseItem::STATE_TERMINATED,
-			cause: CaseItemAudit::CAUSE_SENTRY,
-			causeRef: $sentry,
-			reason: sprintf("Exit criterion '%s' fired.", $sentry)
+			why: new CaseStepCause(
+				cause: CaseItemAudit::CAUSE_SENTRY,
+				causeRef: $sentry,
+				reason: sprintf("Exit criterion '%s' fired.", $sentry)
+			)
 		);
 	}//end exitFired()
 
@@ -115,7 +157,7 @@ final class CaseCascadeStep {
 			$target = CaseItem::STATE_COMPLETED;
 		}
 
-		return new self(item: $item, to: $target, cause: CaseItemAudit::CAUSE_SENTRY, causeRef: $sentry);
+		return new self(item: $item, to: $target, why: new CaseStepCause(cause: CaseItemAudit::CAUSE_SENTRY, causeRef: $sentry));
 	}//end entryFired()
 
 	/**
@@ -129,7 +171,11 @@ final class CaseCascadeStep {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public static function enabledStarts(CaseItem $item, ?string $actor): self {
-		return new self(item: $item, to: CaseItem::STATE_ACTIVE, cause: CaseItemAudit::CAUSE_USER, causeRef: 'enable', actor: $actor);
+		return new self(
+			item: $item,
+			to: CaseItem::STATE_ACTIVE,
+			why: new CaseStepCause(cause: CaseItemAudit::CAUSE_USER, causeRef: 'enable', actor: $actor)
+		);
 	}//end enabledStarts()
 
 	/**
@@ -145,9 +191,11 @@ final class CaseCascadeStep {
 		return new self(
 			item: $stage,
 			to: CaseItem::STATE_COMPLETED,
-			cause: CaseItemAudit::CAUSE_CASCADE,
-			causeRef: 'children',
-			reason: 'Every required child is terminal and no child is active.'
+			why: new CaseStepCause(
+				cause: CaseItemAudit::CAUSE_CASCADE,
+				causeRef: 'children',
+				reason: 'Every required child is terminal and no child is active.'
+			)
 		);
 	}//end stageCompletes()
 }//end class

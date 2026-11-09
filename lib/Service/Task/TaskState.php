@@ -133,18 +133,7 @@ final class TaskState {
 	 */
 	public static function normalise(string $value, ?array $sourceVocabulary = null): array {
 		$trimmed = trim($value);
-
-		if ($sourceVocabulary !== null && in_array($trimmed, $sourceVocabulary, true) === false) {
-			throw new TaskValidationException(
-				message: sprintf("Unmapped task status '%s': the declared source vocabulary does not define it, so it is refused, not defaulted.", $trimmed)
-			);
-		}
-
-		if (array_key_exists($trimmed, self::LEGACY) === false) {
-			throw new TaskValidationException(
-				message: sprintf("Unmapped task status '%s': it is in no known fleet vocabulary and is refused, not defaulted.", $trimmed)
-			);
-		}
+		self::assertMapped(value: $trimmed, sourceVocabulary: $sourceVocabulary);
 
 		[$state, $outcome] = self::LEGACY[$trimmed];
 
@@ -153,6 +142,30 @@ final class TaskState {
 			'outcome' => $outcome,
 		];
 	}//end normalise()
+
+	/**
+	 * Refuse a status the source vocabulary or the fleet mapping does not define.
+	 *
+	 * @param string $value The trimmed incoming status value.
+	 * @param array<int, string>|null $sourceVocabulary The source's declared enum, or null.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskValidationException When the value is unmapped. Never coerced to a default.
+	 */
+	private static function assertMapped(string $value, ?array $sourceVocabulary): void {
+		if ($sourceVocabulary !== null && in_array($value, $sourceVocabulary, true) === false) {
+			throw new TaskValidationException(
+				message: sprintf("Unmapped task status '%s': the declared source vocabulary does not define it, so it is refused, not defaulted.", $value)
+			);
+		}
+
+		if (array_key_exists($value, self::LEGACY) === false) {
+			throw new TaskValidationException(
+				message: sprintf("Unmapped task status '%s': it is in no known fleet vocabulary and is refused, not defaulted.", $value)
+			);
+		}
+	}//end assertMapped()
 
 	/**
 	 * Whether a state is terminal.

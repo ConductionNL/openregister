@@ -32,6 +32,7 @@ use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalTaskService;
+use OCA\OpenRegister\Service\Portal\PortalTaskSources;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskService;
@@ -106,10 +107,7 @@ class PortalTaskServiceTest extends TestCase {
 		$this->files = $this->createMock(FileService::class);
 		$inbox = new TaskInboxService(tasks: $this->mapper, temporal: new TaskTemporalProjection(), logger: new NullLogger());
 		$this->service = new PortalTaskService(
-			tasks: $this->tasks,
-			mapper: $this->mapper,
-			inbox: $inbox,
-			temporal: new TaskTemporalProjection(),
+			sources: new PortalTaskSources(tasks: $this->tasks, mapper: $this->mapper, inbox: $inbox, temporal: new TaskTemporalProjection()),
 			files: $this->files,
 			logger: new NullLogger()
 		);
@@ -324,10 +322,7 @@ class PortalTaskServiceTest extends TestCase {
 			$tasks = $this->createMock(TaskService::class);
 			$tasks->method('openFor')->willReturn($task);
 			$service = new PortalTaskService(
-				tasks: $tasks,
-				mapper: $this->mapper,
-				inbox: new TaskInboxService(tasks: $this->mapper, temporal: new TaskTemporalProjection(), logger: new NullLogger()),
-				temporal: new TaskTemporalProjection(),
+				sources: new PortalTaskSources(tasks: $tasks, mapper: $this->mapper, inbox: new TaskInboxService(tasks: $this->mapper, temporal: new TaskTemporalProjection(), logger: new NullLogger()), temporal: new TaskTemporalProjection()),
 				files: $this->files,
 				logger: new NullLogger()
 			);
@@ -412,10 +407,7 @@ class PortalTaskServiceTest extends TestCase {
 			objects: $objects
 		);
 		$service = new PortalTaskService(
-			tasks: $this->tasks,
-			mapper: $this->mapper,
-			inbox: $inbox,
-			temporal: new TaskTemporalProjection(),
+			sources: new PortalTaskSources(tasks: $this->tasks, mapper: $this->mapper, inbox: $inbox, temporal: new TaskTemporalProjection()),
 			files: $this->files,
 			logger: new NullLogger()
 		);

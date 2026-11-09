@@ -26,7 +26,7 @@
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Search;
-use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 
 /**
  * Reads a property's declared match type and input control, or works them out.
@@ -237,7 +237,7 @@ final class PropertySearchProfile {
 
 		// A value shown only through the logged reveal is not matched by free
 		// text either: a hit would confirm it without the reveal.
-		if (ExplicitReveal::isExplicit(definition: $property) === true) {
+		if (ExplicitRevealMasks::isExplicit(definition: $property) === true) {
 			return false;
 		}
 

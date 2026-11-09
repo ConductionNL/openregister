@@ -139,13 +139,23 @@ class NamedConditionEvaluator {
 			return 'it is not declared in this schema\'s condition library';
 		}
 
-		$declaration = $evaluation->library[$name];
-		if (is_array($declaration) === false || array_key_exists('expression', $declaration) === false) {
-			return 'it is declared with no expression behind it';
+		return $this->whyNoExpression(declaration: $evaluation->library[$name]);
+	}//end whyUnresolvable()
+
+	/**
+	 * Why a declared condition has nothing to evaluate, or null when it has.
+	 *
+	 * @param mixed $declaration The condition as the library declares it.
+	 *
+	 * @return string|null The reason.
+	 */
+	private function whyNoExpression(mixed $declaration): ?string {
+		if (is_array($declaration) === true && array_key_exists('expression', $declaration) === true) {
+			return null;
 		}
 
-		return null;
-	}//end whyUnresolvable()
+		return 'it is declared with no expression behind it';
+	}//end whyNoExpression()
 
 	/**
 	 * Evaluate a branch node whose children may hold references.

@@ -41,27 +41,7 @@ use Throwable;
  *
  * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
  */
-class DedupCreatePolicy {
-
-	/**
-	 * The payload key a caller sets to save through a blocking match.
-	 *
-	 * `SaveObject` strips it from the body before anything reads the body as
-	 * data, so it never reaches schema validation, never lands in the stored
-	 * object, and never has to be declared as a schema property. The constant
-	 * lives here, beside the policy it belongs to, so the two spellings cannot
-	 * drift apart.
-	 *
-	 * @var string
-	 */
-	public const OVERRIDE_KEY = '_dedupOverride';
-
-	/**
-	 * Audit action recorded when an override is exercised.
-	 *
-	 * @var string
-	 */
-	public const OVERRIDE_ACTION = 'dedup.overridden';
+class DedupCreatePolicy implements DedupCreatePolicyInterface {
 
 	/**
 	 * The policy a schema gets when it declares none.
@@ -78,13 +58,26 @@ class DedupCreatePolicy {
 	private const BLOCK = 'block';
 
 	/**
+	 * Audit writer for the override record.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Wire collaborators.
 	 *
 	 * @param DuplicateDetectionServiceInterface $duplicates The one scorer, reused rather than reimplemented.
 	 * @param IUserSession $userSession Current session, to name the caller.
 	 * @param IGroupManager $groupManager Group membership, to evaluate `overrideGroups`.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit writer for the override record.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param DedupOverrideAudit $audit Audit writer for the override record, and the logger for its failure.
 	 *
 	 * @return void
 	 */
@@ -92,9 +85,10 @@ class DedupCreatePolicy {
 		private readonly DuplicateDetectionServiceInterface $duplicates,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly LoggerInterface $logger,
+		DedupOverrideAudit $audit,
 	) {
+		$this->auditTrailMapper = $audit->auditTrailMapper;
+		$this->logger           = $audit->logger;
 	}//end __construct()
 
 	/**

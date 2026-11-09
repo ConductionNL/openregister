@@ -41,6 +41,8 @@ use OCA\OpenRegister\Db\Schema;
  * A named object is resolved by the caller, CalculationsController, with RBAC and tenancy
  * on. This service never looks an object up itself, so it cannot be handed an id that
  * skips the caller's read check.
+ *
+ * @spec openspec/specs/computed-fields/spec.md
  */
 final class CalculationTrialService implements CalculationTrialServiceInterface {
 
@@ -172,16 +174,9 @@ final class CalculationTrialService implements CalculationTrialServiceInterface 
 		$expression = ($declaration['expression'] ?? null);
 
 		try {
-			$value = $this->evaluator->evaluate($payload, $expression);
+			$value = $this->valueOf(payload: $payload, expression: $expression);
 		} catch (EvaluationException $e) {
-			return $this->failure(
-				error: ['code' => 'calculation-trial-failed', 'message' => $e->getMessage()],
-				declaration: $declaration
-			);
-		}
-
-		if ($value instanceof DateTimeInterface) {
-			$value = $value->format(DATE_ATOM);
+			return $this->failure(error: ['code' => 'calculation-trial-failed', 'message' => $e->getMessage()], declaration: $declaration);
 		}
 
 		return [
@@ -190,6 +185,25 @@ final class CalculationTrialService implements CalculationTrialServiceInterface 
 			'dependencies' => $this->evaluator->referencedProperties($expression),
 		];
 	}//end run()
+
+	/**
+	 * Evaluate the expression; a date comes back in ATOM form.
+	 *
+	 * @param array<string, mixed> $payload The payload to evaluate against.
+	 * @param mixed $expression The expression under trial.
+	 *
+	 * @return mixed The value.
+	 *
+	 * @throws EvaluationException When the expression fails.
+	 */
+	private function valueOf(array $payload, mixed $expression): mixed {
+		$value = $this->evaluator->evaluate($payload, $expression);
+		if ($value instanceof DateTimeInterface) {
+			$value = $value->format(DATE_ATOM);
+		}
+
+		return $value;
+	}//end valueOf()
 
 	/**
 	 * Shape a refusal, carrying the derived dependency list so the author

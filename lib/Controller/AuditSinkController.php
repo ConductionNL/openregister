@@ -22,8 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Audit\AuditSink;
-use OCA\OpenRegister\Service\Audit\AuditSinkStatus;
+use OCA\OpenRegister\Controller\Support\AuditSinkControllerServices;
+use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
+use OCA\OpenRegister\Service\Audit\AuditSinkStatusInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -42,24 +43,50 @@ use OCP\IUserSession;
  */
 class AuditSinkController extends Controller {
 	/**
+	 * The configured sink.
+	 *
+	 * @var AuditSinkInterface
+	 */
+	private readonly AuditSinkInterface $sink;
+
+	/**
+	 * The sink's health.
+	 *
+	 * @var AuditSinkStatusInterface
+	 */
+	private readonly AuditSinkStatusInterface $status;
+
+	/**
+	 * Current user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager, for the admin gate.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string          $appName      App identifier.
 	 * @param IRequest        $request      Active request.
-	 * @param AuditSink       $sink         The configured sink.
-	 * @param AuditSinkStatus $status       The sink's health.
-	 * @param IUserSession    $userSession  Current user session.
-	 * @param IGroupManager   $groupManager Group manager, for the admin gate.
+	 * @param AuditSinkControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly AuditSink $sink,
-		private readonly AuditSinkStatus $status,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		AuditSinkControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->sink = $services->sink;
+		$this->status = $services->status;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
 	}//end __construct()
 
 	/**

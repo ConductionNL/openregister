@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Files\Service\File\OfficeSession;
+use OCA\OpenRegister\Files\Service\File\OfficeSessionToken;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -143,7 +144,7 @@ class FilesControllerObjectAccessTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($this->schema);
 
 		$logger = new NullLogger();
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,
@@ -322,9 +323,11 @@ class FilesControllerObjectAccessTest extends TestCase {
 				return new OfficeSession(
 					urlSrc: 'https://office.test/browser/cool.html?',
 					wopiSrc: 'https://nc.test/index.php/apps/richdocuments/wopi/files/77_oc',
-					token: 'tok',
-					tokenTtl: 1,
-					readOnly: ($canWrite === false)
+					access: new OfficeSessionToken(
+						token: 'tok',
+						tokenTtl: 1,
+						readOnly: ($canWrite === false)
+					)
 				);
 			}
 		);

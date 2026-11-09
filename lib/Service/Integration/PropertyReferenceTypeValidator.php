@@ -49,13 +49,13 @@ class PropertyReferenceTypeValidator {
 	/**
 	 * Constructor.
 	 *
-	 * @param IntegrationRegistry $registry The integration registry —
+	 * @param IntegrationIdIndexInterface $registry The integration registry —
 	 *                                      used to look up valid ids.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private IntegrationRegistry $registry,
+		private IntegrationIdIndexInterface $registry,
 	) {
 	}//end __construct()
 

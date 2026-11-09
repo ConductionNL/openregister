@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
 use OCA\OpenRegister\Service\Flow\FlowStreamHalt;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
+use OCA\OpenRegister\Service\Flow\FlowStreamWalkLimits;
+use OCA\OpenRegister\Service\Flow\FlowStreamWalkParts;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Workflow\Transition;
@@ -97,13 +99,8 @@ class FlowStreamWalkTest extends TestCase {
 	private function walk(?string $only = null, ?int $budget = null): FlowStreamWalk {
 		return new FlowStreamWalk(
 			run: $this->run,
-			claims: $this->claims,
-			commit: $this->commit,
-			streamMapper: $this->streams,
-			owner: 'pass-1',
-			runCap: null,
-			onlyStream: $only,
-			budget: $budget
+			parts: new FlowStreamWalkParts(claims: $this->claims, commit: $this->commit, streamMapper: $this->streams),
+			limits: new FlowStreamWalkLimits(owner: 'pass-1', runCap: null, onlyStream: $only, budget: $budget)
 		);
 	}//end walk()
 

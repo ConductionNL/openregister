@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SyncRecord;
 use OCA\OpenRegister\Db\SyncRecordMapper;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Sync\HarvestImportServices;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCA\OpenRegister\Service\Sync\SyncConflictResolver;
@@ -101,10 +102,12 @@ class HarvestPipelineServiceTest extends TestCase {
 
 		$this->pipeline = new HarvestPipelineService(
 			$this->syncRecordMapper,
-			$this->mappingMapper,
-			$this->mappingService,
-			$this->objectService,
-			new SyncConflictResolver(),
+			new HarvestImportServices(
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService,
+				objectService: $this->objectService,
+				conflictResolver: new SyncConflictResolver()
+			),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()

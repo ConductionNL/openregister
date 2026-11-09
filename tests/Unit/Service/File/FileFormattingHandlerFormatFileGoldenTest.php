@@ -155,9 +155,6 @@ class FileFormattingHandlerFormatFileGoldenTest extends TestCase {
 		}
 
 		$handler = new FileFormattingHandler(
-			taggingHandler: $this->createMock(TaggingHandler::class),
-			fileSharingHandler: $this->createMock(FileSharingHandler::class),
-			urlGenerator: $this->createMock(IURLGenerator::class),
 			lockManager: $lockManager,
 			userSession: $session,
 			logger: $logger,

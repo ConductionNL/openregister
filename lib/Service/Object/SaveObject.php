@@ -91,11 +91,11 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
+use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
@@ -962,7 +962,7 @@ class SaveObject implements SaveObjectInterface {
 
 		$resolver = new ExpressionDefaultResolver(
 			evaluator: new CalculationEvaluator(
-				placeholders: new PlaceholderResolver(userSession: $this->userSession)
+				placeholders: PlaceholderResolvers::forSession(userSession: $this->userSession)
 			)
 		);
 
@@ -1705,15 +1705,15 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function takeDedupOverrideFromBody(ObjectSaveCall $call): void {
-		if (array_key_exists(DedupCreatePolicy::OVERRIDE_KEY, $call->data) === false) {
+		if (array_key_exists(DedupCreatePolicyInterface::OVERRIDE_KEY, $call->data) === false) {
 			return;
 		}
 
-		if (filter_var($call->data[DedupCreatePolicy::OVERRIDE_KEY], FILTER_VALIDATE_BOOLEAN) === true) {
+		if (filter_var($call->data[DedupCreatePolicyInterface::OVERRIDE_KEY], FILTER_VALIDATE_BOOLEAN) === true) {
 			$call->flags->dedupOverride = true;
 		}
 
-		unset($call->data[DedupCreatePolicy::OVERRIDE_KEY]);
+		unset($call->data[DedupCreatePolicyInterface::OVERRIDE_KEY]);
 	}//end takeDedupOverrideFromBody()
 
 	/**
@@ -2209,12 +2209,12 @@ class SaveObject implements SaveObjectInterface {
 	 * global container knows nothing of this app's registrations and would
 	 * autowire the cycle instead of failing.
 	 *
-	 * @return DedupCreatePolicy|null The policy, or null when unavailable.
+	 * @return DedupCreatePolicyInterface|null The policy, or null when unavailable.
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
-	private function resolveDedupCreatePolicy(): ?DedupCreatePolicy {
-		return $this->containerService(id: DedupCreatePolicy::class, label: 'DedupCreatePolicy');
+	private function resolveDedupCreatePolicy(): ?DedupCreatePolicyInterface {
+		return $this->containerService(id: DedupCreatePolicyInterface::class, label: 'DedupCreatePolicy');
 	}//end resolveDedupCreatePolicy()
 
 	/**

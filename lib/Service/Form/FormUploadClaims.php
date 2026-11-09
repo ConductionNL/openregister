@@ -97,20 +97,69 @@ class FormUploadClaims {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
 	public function isClaimedBy(?ISimpleFolder $folder, string $formId, string $token, string $property, ?string $draftId): bool {
-		if ($draftId === null || $folder === null || preg_match('/^[a-f0-9]{32}$/', $token) !== 1 || $folder->fileExists($token . self::SUFFIX) === false) {
+		if ($draftId === null || $folder === null) {
 			return false;
+		}
+
+		return $this->recordMatches(folder: $folder, token: $token, expected: ['formId' => $formId, 'property' => $property, 'draftId' => $draftId]);
+	}//end isClaimedBy()
+
+	/**
+	 * Whether a token's claim record exists and names exactly the expected form, property and draft.
+	 *
+	 * @param ISimpleFolder         $folder   The store folder.
+	 * @param string                $token    The token.
+	 * @param array<string, string> $expected Key => the value the record must hold.
+	 *
+	 * @return bool True when the record matches and is still live.
+	 */
+	private function recordMatches(ISimpleFolder $folder, string $token, array $expected): bool {
+		$record = $this->recordOf(folder: $folder, token: $token);
+		if ($record === null) {
+			return false;
+		}
+
+		return $this->matches(record: $record, expected: $expected);
+	}//end recordMatches()
+
+	/**
+	 * The claim record of a token, or null when the token is malformed, unclaimed or the record unreadable.
+	 *
+	 * @param ISimpleFolder $folder The store folder.
+	 * @param string        $token  The token.
+	 *
+	 * @return array<mixed>|null The record.
+	 */
+	private function recordOf(ISimpleFolder $folder, string $token): ?array {
+		if (preg_match('/^[a-f0-9]{32}$/', $token) !== 1 || $folder->fileExists($token . self::SUFFIX) === false) {
+			return null;
 		}
 
 		$record = json_decode($folder->getFile($token . self::SUFFIX)->getContent(), true);
 		if (is_array($record) === false) {
-			return false;
+			return null;
 		}
 
-		return ($record['formId'] ?? null) === $formId
-			&& ($record['property'] ?? null) === $property
-			&& ($record['draftId'] ?? null) === $draftId
-			&& (int)($record['expiresAt'] ?? 0) > $this->time->getTime();
-	}//end isClaimedBy()
+		return $record;
+	}//end recordOf()
+
+	/**
+	 * Whether a claim record names exactly the expected form, property and draft, and is still live.
+	 *
+	 * @param array<mixed>          $record   The record.
+	 * @param array<string, string> $expected Key => the value the record must hold.
+	 *
+	 * @return bool True when every value matches and the record has not expired.
+	 */
+	private function matches(array $record, array $expected): bool {
+		foreach ($expected as $key => $value) {
+			if (($record[$key] ?? null) !== $value) {
+				return false;
+			}
+		}
+
+		return (int)($record['expiresAt'] ?? 0) > $this->time->getTime();
+	}//end matches()
 
 	/**
 	 * Delete a record file that is expired or unreadable.

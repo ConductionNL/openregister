@@ -109,14 +109,44 @@ class ExampleSetTalkStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function room(string $owner, string $name, array $participants): array {
-		$manager = $this->container->get(self::MANAGER);
-		foreach ($manager->getRoomsForUser($owner) as $room) {
+		$found = $this->groupRoom(owner: $owner, name: $name);
+		if ($found !== null) {
+			return ['token' => (string) $found->getToken(), 'id' => (int) $found->getId(), 'created' => false];
+		}
+
+		$room = $this->container->get(self::ROOMS)->createConversation(self::GROUP_ROOM, $name, $this->userManager->get($owner));
+		$this->container->get(self::PARTICIPANTS)->addUsers($room, $this->people(owner: $owner, participants: $participants));
+
+		return ['token' => (string) $room->getToken(), 'id' => (int) $room->getId(), 'created' => true];
+	}//end room()
+
+	/**
+	 * The owner's group conversation with this name, or null.
+	 *
+	 * @param string $owner The owner.
+	 * @param string $name  The conversation name.
+	 *
+	 * @return mixed The Talk room, or null.
+	 */
+	private function groupRoom(string $owner, string $name): mixed {
+		foreach ($this->container->get(self::MANAGER)->getRoomsForUser($owner) as $room) {
 			if ($room->getName() === $name && (int) $room->getType() === self::GROUP_ROOM) {
-				return ['token' => (string) $room->getToken(), 'id' => (int) $room->getId(), 'created' => false];
+				return $room;
 			}
 		}
 
-		$room   = $this->container->get(self::ROOMS)->createConversation(self::GROUP_ROOM, $name, $this->userManager->get($owner));
+		return null;
+	}//end groupRoom()
+
+	/**
+	 * The participants to add to a new conversation: every existing account but the owner, who is in it already.
+	 *
+	 * @param string             $owner        The owner.
+	 * @param array<int, string> $participants The participants' accounts.
+	 *
+	 * @return array<int, array{actorType: string, actorId: string, displayName: string}>
+	 */
+	private function people(string $owner, array $participants): array {
 		$people = [];
 		foreach ($participants as $uid) {
 			if ($uid !== $owner && $this->userManager->get($uid) !== null) {
@@ -124,10 +154,8 @@ class ExampleSetTalkStore {
 			}
 		}
 
-		$this->container->get(self::PARTICIPANTS)->addUsers($room, $people);
-
-		return ['token' => (string) $room->getToken(), 'id' => (int) $room->getId(), 'created' => true];
-	}//end room()
+		return $people;
+	}//end people()
 
 	/**
 	 * Write a call that was held into the conversation's history.

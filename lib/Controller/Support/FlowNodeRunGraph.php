@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
-use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
+use OCA\OpenRegister\Service\Flow\FlowPublishedGraphInterface;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 
 /**
@@ -37,7 +37,7 @@ final class FlowNodeRunGraph {
 	 * Bundle the services.
 	 *
 	 * @param FlowServiceInterface        $flows           Org-scoped flow lookup — the same non-oracle
-	 * @param FlowPublishedGraph $publishedGraphs Resolves the flow's PUBLISHED
+	 * @param FlowPublishedGraphInterface $publishedGraphs Resolves the flow's PUBLISHED
 	 * @param FlowLocatorInterface        $subjects        Resolves the live flow document (for
 	 * @param FlowNodeRegistryInterface   $nodes           Resolves a
 	 *
@@ -45,7 +45,7 @@ final class FlowNodeRunGraph {
 	 */
 	public function __construct(
 		public readonly FlowServiceInterface $flows,
-		public readonly FlowPublishedGraph $publishedGraphs,
+		public readonly FlowPublishedGraphInterface $publishedGraphs,
 		public readonly FlowLocatorInterface $subjects,
 		public readonly FlowNodeRegistryInterface $nodes,
 	) {

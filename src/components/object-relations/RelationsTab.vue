@@ -90,7 +90,6 @@ SPDX-License-Identifier: EUPL-1.2
 <script>
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import CalendarOutline from 'vue-material-design-icons/CalendarOutline.vue'
@@ -224,14 +223,7 @@ export default {
 			this.loading = true
 			this.clearFailure()
 
-			const url = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/relations',
-				{
-					register: this.register,
-					schema: this.schema,
-					id: this.objectId,
-				},
-			)
+			const url = this.objectApiUrl('/relations')
 
 			try {
 				const response = await axios.get(url, {

@@ -40,28 +40,12 @@ use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
  * Suspends the run for a duration or until a moment.
  */
-class WaitNode implements IFlowNode, WaitNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
-
+class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	/**
 	 * The step type.
 	 *
@@ -97,17 +81,6 @@ class WaitNode implements IFlowNode, WaitNodeInterface, IFlowNodeConfigKeys, IFl
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/history.svg');
 	}//end getIcon()
-
-	/**
-	 * Waiting grants no privilege.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a wait step.
@@ -316,16 +289,4 @@ class WaitNode implements IFlowNode, WaitNodeInterface, IFlowNodeConfigKeys, IFl
 		return IFlowNodeTaxonomy::KIND_EVENT;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

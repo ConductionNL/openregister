@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\AccessLink;
-use OCA\OpenRegister\Db\AccessLinkMapper;
+use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use Psr\Container\ContainerInterface;
@@ -97,6 +97,23 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 			return 'field "'.implode('", "', $unknown).'" is not an access link field a set may write';
 		}
 
+		$why = $this->creatorRefusal(data: $data, users: $users);
+		if ($why !== '') {
+			return $why;
+		}
+
+		return $this->capabilitiesRefusal(capabilities: ($data['capabilities'] ?? []));
+	}//end refusal()
+
+	/**
+	 * Why the link's creator is no account the set creates or adopts, or its label is no text, or ''.
+	 *
+	 * @param array<string, mixed> $data  The filled link fields.
+	 * @param array<int, string>   $users The account ids the set creates or adopts.
+	 *
+	 * @return string
+	 */
+	private function creatorRefusal(array $data, array $users): string {
 		if (is_string($data['createdBy'] ?? null) === false || in_array($data['createdBy'], $users, true) === false) {
 			return 'createdBy '.(string) json_encode($data['createdBy'] ?? null).' is no account the set creates or adopts';
 		}
@@ -105,8 +122,8 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 			return 'label is not text';
 		}
 
-		return $this->capabilitiesRefusal(capabilities: ($data['capabilities'] ?? []));
-	}//end refusal()
+		return '';
+	}//end creatorRefusal()
 
 	/**
 	 * Why a filled link cannot be minted in this run, or '': refusal(), then the object and the expiry.
@@ -139,43 +156,51 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 	/**
 	 * Mint one link as its declared account, once the mint guard admits that account to the object.
 	 *
-	 * @param string               $app  The app that ships the fragment (unused: the link is the account's).
-	 * @param string               $key  The link's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled link fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{id: int, uuid: string, object: string}|null} The record entry, or why the mint failed.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $app and $key are the contract of every kind.
-	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		$object    = (string) $data['object'];
 		$createdBy = (string) $data['createdBy'];
 		try {
-			$link = $this->actingAs()->run(
-				uid: $createdBy,
-				operation: function () use ($object, $createdBy, $data): array {
-					if ($this->guard()->mayMint(subjectType: AccessLink::SUBJECT_OBJECT, subjectId: $object) === false) {
-						throw new ExampleSetException('"'.$createdBy.'" may not read object "'.$object.'", so may not publish it at a link');
-					}
-
-					return $this->links()->mint(
-						userId: $createdBy,
-						subjectType: AccessLink::SUBJECT_OBJECT,
-						subjectId: $object,
-						capabilities: array_values((array) ($data['capabilities'] ?? [])),
-						expiresAt: (string) $data['expiresAt'],
-						label: $this->labelOf(data: $data)
-					);
-				}
-			);
+			$link = $this->actingAs()->run(uid: $createdBy, operation: fn (): array => $this->mint(object: $object, createdBy: $createdBy, data: $data));
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
 		return ['error' => '', 'entry' => ['id' => (int) $link['id'], 'uuid' => (string) $link['uuid'], 'object' => $object]];
 	}//end write()
+
+	/**
+	 * Mint the link as the declared account, once the guard says that account may publish the object at a link;
+	 * run inside the acting scope.
+	 *
+	 * @param string               $object    The object's uuid.
+	 * @param string               $createdBy The declared account.
+	 * @param array<string, mixed> $data      The filled link fields.
+	 *
+	 * @return array<string, mixed> The minted link.
+	 *
+	 * @throws ExampleSetException When the guard refuses.
+	 */
+	private function mint(string $object, string $createdBy, array $data): array {
+		if ($this->guard()->mayMint(subjectType: AccessLink::SUBJECT_OBJECT, subjectId: $object) === false) {
+			throw new ExampleSetException('"'.$createdBy.'" may not read object "'.$object.'", so may not publish it at a link');
+		}
+
+		return $this->links()->mint(
+			userId: $createdBy,
+			subjectType: AccessLink::SUBJECT_OBJECT,
+			subjectId: $object,
+			capabilities: array_values((array) ($data['capabilities'] ?? [])),
+			expiresAt: (string) $data['expiresAt'],
+			label: $this->labelOf(data: $data)
+		);
+	}//end mint()
 
 	/**
 	 * Whether a minted link is gone: no row, another row under its id, or revoked.
@@ -240,23 +265,38 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 				continue;
 			}
 
-			$entry = ($record['accessLinks'][$fragment['app'].'/'.$key] ?? null);
-			$link  = null;
-			if (is_array($entry) === true) {
-				$link = $this->held(entry: $entry);
-			}
-
-			if ($link !== null) {
-				$links[$key] = [
-					'id'   => (int) $link->getId(),
-					'uuid' => (string) $link->getUuid(),
-					'url'  => $this->links()->linkUrl(anchor: (string) $link->getAnchor()),
-				];
+			$minted = $this->minted(entry: ($record['accessLinks'][$fragment['app'].'/'.$key] ?? null));
+			if ($minted !== null) {
+				$links[$key] = $minted;
 			}
 		}
 
 		return $links;
 	}//end placeholders()
+
+	/**
+	 * The placeholder values of a held link, or null when the record holds none or the link is gone.
+	 *
+	 * @param mixed $entry The record entry, or null.
+	 *
+	 * @return array{id: int, uuid: string, url: string}|null
+	 */
+	private function minted(mixed $entry): ?array {
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$link = $this->held(entry: $entry);
+		if ($link === null) {
+			return null;
+		}
+
+		return [
+			'id'   => (int) $link->getId(),
+			'uuid' => (string) $link->getUuid(),
+			'url'  => $this->links()->linkUrl(anchor: (string) $link->getAnchor()),
+		];
+	}//end minted()
 
 	/**
 	 * A stand-in link for the check: an id, a uuid and an address of the shapes a minted link has.
@@ -354,10 +394,10 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 	/**
 	 * The link mapper.
 	 *
-	 * @return AccessLinkMapper
+	 * @return AccessLinkMapperInterface
 	 */
-	private function mapper(): AccessLinkMapper {
-		return $this->container->get(AccessLinkMapper::class);
+	private function mapper(): AccessLinkMapperInterface {
+		return $this->container->get(AccessLinkMapperInterface::class);
 	}//end mapper()
 
 	/**

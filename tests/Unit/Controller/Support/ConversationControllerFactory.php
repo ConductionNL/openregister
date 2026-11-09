@@ -47,7 +47,7 @@ final class ConversationControllerFactory {
 			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ConversationControllerServices(
-				mappers: new \OCA\OpenRegister\Controller\Support\ConversationMappers(
+				mappers: new \OCA\OpenRegister\Controller\Support\ChatMappers(
 					conversationMapper: $conversationMapper,
 					messageMapper: $messageMapper,
 					feedbackMapper: $feedbackMapper,

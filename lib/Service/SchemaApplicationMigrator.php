@@ -75,26 +75,32 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public static function planCollisions(array $fromSlugs, array $toSlugs): array {
-		$target = [];
-		foreach ($toSlugs as $slug) {
-			$target[strtolower((string)$slug)] = true;
-		}
-
+		$target = self::lowerSlugSet(slugs: $toSlugs);
 		if (empty($target) === true) {
 			return [];
 		}
 
-		$hits = [];
-		foreach ($fromSlugs as $slug) {
-			$lower = strtolower((string)$slug);
-			if (isset($target[$lower]) === true) {
-				$hits[$lower] = true;
-			}
-		}
-
-		return array_keys($hits);
+		return array_keys(array_intersect_key(self::lowerSlugSet(slugs: $fromSlugs), $target));
 
 	}//end planCollisions()
+
+
+	/**
+	 * The lower-cased slugs as a set, in first-seen order.
+	 *
+	 * @param string[] $slugs The slugs.
+	 *
+	 * @return array<string, true> Lower-cased slug => true.
+	 */
+	private static function lowerSlugSet(array $slugs): array {
+		$set = [];
+		foreach ($slugs as $slug) {
+			$set[strtolower((string)$slug)] = true;
+		}
+
+		return $set;
+
+	}//end lowerSlugSet()
 
 
 	/**
@@ -207,13 +213,7 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function migrate(string $from, string $to): array {
-		$result = [
-			'ok'         => false,
-			'reason'     => '',
-			'collisions' => [],
-			'schemas'    => 0,
-			'registers'  => 0,
-		];
+		$result = ['ok' => false, 'reason' => '', 'collisions' => [], 'schemas' => 0, 'registers' => 0];
 
 		if ($from === '' || $to === '' || $from === $to) {
 			$result['reason'] = 'invalid-arguments';
@@ -227,6 +227,21 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 			return $result;
 		}
 
+		return $this->moveBoth(result: $result, from: $from, to: $to);
+
+	}//end migrate()
+
+
+	/**
+	 * Move the schemas, then the registers, and record the counts as a successful migration.
+	 *
+	 * @param array{ok: bool, reason: string, collisions: string[], schemas: int, registers: int} $result The outcome so far.
+	 * @param string                                                                              $from   The current application id.
+	 * @param string                                                                              $to     The new application id.
+	 *
+	 * @return array{ok: bool, reason: string, collisions: string[], schemas: int, registers: int} The outcome.
+	 */
+	private function moveBoth(array $result, string $from, string $to): array {
 		$result['schemas']   = $this->moveApplication(table: 'openregister_schemas', from: $from, to: $to);
 		$result['registers'] = $this->moveApplication(table: 'openregister_registers', from: $from, to: $to);
 		$result['ok']        = true;
@@ -234,7 +249,7 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 
 		return $result;
 
-	}//end migrate()
+	}//end moveBoth()
 
 
 }//end class

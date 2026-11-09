@@ -37,6 +37,16 @@ use Throwable;
 final class PollDraft {
 
 	/**
+	 * Lower-cased, trimmed type spellings and the canonical Polls type each stands for.
+	 */
+	private const TYPE_ALIASES = [
+		'text' => 'textPoll',
+		'textpoll' => 'textPoll',
+		'date' => 'datePoll',
+		'datepoll' => 'datePoll',
+	];
+
+	/**
 	 * The poll type as given, before normalisation.
 	 *
 	 * @var string
@@ -143,16 +153,11 @@ final class PollDraft {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function pollType(): string {
-		$lower = strtolower(trim($this->type));
-		if ($lower === 'text' || $lower === 'textpoll' || $this->type === '') {
+		if ($this->type === '') {
 			return 'textPoll';
 		}
 
-		if ($lower === 'date' || $lower === 'datepoll') {
-			return 'datePoll';
-		}
-
-		return $this->type;
+		return self::TYPE_ALIASES[strtolower(trim($this->type))] ?? $this->type;
 	}//end pollType()
 
 	/**

@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service;
 
-use OCA\OpenRegister\Db\GdprEntityMapper;
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
+use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCP\IDBConnection;
 
@@ -37,17 +37,17 @@ final class FileSidebarEntityStore {
 	 * Bundle the collaborators.
 	 *
 	 * @param IDBConnection                 $db                   Database connection for magic table queries.
-	 * @param ChunkMapper                   $chunkMapper          Chunk mapper for extraction data.
+	 * @param ChunkSourceReaderInterface    $chunkMapper          Chunk mapper for extraction data.
 	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper for PII data.
-	 * @param GdprEntityMapper              $gdprEntityMapper     GDPR entity mapper for entity type lookups.
+	 * @param GdprEntityMapperInterface              $gdprEntityMapper     GDPR entity mapper for entity type lookups.
 	 *
 	 * @spec openspec/specs/files-sidebar-tabs/spec.md
 	 */
 	public function __construct(
 		public readonly IDBConnection $db,
-		public readonly ChunkMapper $chunkMapper,
+		public readonly ChunkSourceReaderInterface $chunkMapper,
 		public readonly EntityRelationMapperInterface $entityRelationMapper,
-		public readonly GdprEntityMapper $gdprEntityMapper,
+		public readonly GdprEntityMapperInterface $gdprEntityMapper,
 	) {
 	}//end __construct()
 }//end class

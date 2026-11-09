@@ -27,8 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Calendar;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\Calendar\ICalendarProvider;
 use OCP\IUserSession;
@@ -55,18 +53,11 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	private SchemaMapperInterface $schemaMapper;
 
 	/**
-	 * The register mapper for loading registers
+	 * The collaborators every calendar reads through
 	 *
-	 * @var RegisterMapperInterface
+	 * @var RegisterCalendarSources
 	 */
-	private RegisterMapperInterface $registerMapper;
-
-	/**
-	 * The MagicMapper for querying objects
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private MagicMapperInterface $magicMapper;
+	private RegisterCalendarSources $sources;
 
 	/**
 	 * The user session for authentication context
@@ -83,13 +74,6 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	private LoggerInterface $logger;
 
 	/**
-	 * The event transformer
-	 *
-	 * @var CalendarEventTransformer
-	 */
-	private CalendarEventTransformer $transformer;
-
-	/**
 	 * Cached calendar-enabled schemas (per-request)
 	 *
 	 * @var array|null
@@ -99,27 +83,19 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper
-	 * @param RegisterMapperInterface $registerMapper The register mapper
-	 * @param MagicMapperInterface $magicMapper The MagicMapper
-	 * @param IUserSession $userSession The user session
-	 * @param LoggerInterface $logger Logger instance
-	 * @param CalendarEventTransformer $transformer The event transformer
+	 * @param SchemaMapperInterface   $schemaMapper The schema mapper
+	 * @param IUserSession            $userSession  The user session
+	 * @param RegisterCalendarSources $sources      Object/register lookup, transformer and logger
 	 */
 	public function __construct(
 		SchemaMapperInterface $schemaMapper,
-		RegisterMapperInterface $registerMapper,
-		MagicMapperInterface $magicMapper,
 		IUserSession $userSession,
-		LoggerInterface $logger,
-		CalendarEventTransformer $transformer,
+		RegisterCalendarSources $sources,
 	) {
 		$this->schemaMapper = $schemaMapper;
-		$this->registerMapper = $registerMapper;
-		$this->magicMapper = $magicMapper;
 		$this->userSession = $userSession;
-		$this->logger = $logger;
-		$this->transformer = $transformer;
+		$this->logger = $sources->logger;
+		$this->sources = $sources;
 	}//end __construct()
 
 	/**
@@ -164,11 +140,8 @@ class RegisterCalendarProvider implements ICalendarProvider {
 				$calendars[] = new RegisterCalendar(
 					schema: $schema,
 					calendarConfig: $config,
-					magicMapper: $this->magicMapper,
-					registerMapper: $this->registerMapper,
-					transformer: $this->transformer,
 					principalUri: $principalUri,
-					logger: $this->logger
+					sources: $this->sources
 				);
 			}
 

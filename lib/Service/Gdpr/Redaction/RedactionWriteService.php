@@ -37,12 +37,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Redaction;
 
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
+use OCA\OpenRegister\Service\Gdpr\Case\CasePayload;
 use RuntimeException;
 
 /**
  * Field-level redaction write path (distinct from erase pseudonymise).
  */
-class RedactionWriteService {
+class RedactionWriteService implements RedactionWriteServiceInterface {
 
 	/**
 	 * Marker distinguishing a redaction record from an erase pseudonymise.
@@ -81,51 +82,42 @@ class RedactionWriteService {
 	 * @spec openspec/specs/dsar-redaction-write/spec.md
 	 */
 	public function applyRedaction(string $caseUuid, string $field, string $after, string $ground): array {
-		$case = $this->accessor->load(caseUuid: $caseUuid);
-		if ($case === null) {
-			throw new RuntimeException(
-				message: sprintf('Case "%s" not found or not authorised.', $caseUuid)
-			);
-		}
-
+		$case = CasePayload::loaded(case: $this->accessor->load(caseUuid: $caseUuid), caseUuid: $caseUuid);
 		$data = $case->getObject();
 
 		// Snapshot the original value before we overwrite it. This is a
 		// field-level capture on the case object — NOT the statutory erase
 		// pseudonymise across the subject's objects.
-		$before = '';
-		if (isset($data[$field]) === true && is_scalar($data[$field]) === true) {
-			$before = (string)$data[$field];
-		}
-
-		// Apply the redacted value to the case field.
-		$data[$field] = $after;
-
 		$entry = [
 			'field' => $field,
-			'before' => $before,
+			'before' => $this->scalarOf(data: $data, field: $field),
 			'after' => $after,
 			'ground' => $ground,
 			'recordType' => self::RECORD_TYPE,
 		];
 
-		$redactions = [];
-		if (isset($data['redactions']) === true && is_array($data['redactions']) === true) {
-			$redactions = array_values($data['redactions']);
-		}
-
-		$redactions[] = $entry;
-		$data['redactions'] = $redactions;
+		// Apply the redacted value to the case field, and record it.
+		$data[$field] = $after;
+		$data['redactions'] = [...CasePayload::listField(data: $data, key: 'redactions'), $entry];
 
 		$this->accessor->save(case: $case, data: $data);
 
-		return [
-			'caseUuid' => $caseUuid,
-			'field' => $field,
-			'before' => $before,
-			'after' => $after,
-			'ground' => $ground,
-			'recordType' => self::RECORD_TYPE,
-		];
+		return ['caseUuid' => $caseUuid] + $entry;
 	}//end applyRedaction()
+
+	/**
+	 * A field's current scalar value as a string; '' when absent or non-scalar.
+	 *
+	 * @param array<string, mixed> $data  The case payload.
+	 * @param string               $field The field.
+	 *
+	 * @return string
+	 */
+	private function scalarOf(array $data, string $field): string {
+		if (isset($data[$field]) === true && is_scalar($data[$field]) === true) {
+			return (string)$data[$field];
+		}
+
+		return '';
+	}//end scalarOf()
 }//end class

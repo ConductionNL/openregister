@@ -264,12 +264,12 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		$resolver = $this->createMock(NotificationRecipientResolver::class);
 		$resolver->method('userExists')->willReturnCallback(fn (string $uid): bool => in_array($uid, $users, true));
 		$resolver->method('groupExists')->willReturnCallback(fn (string $gid): bool => $gid === 'team');
-		$resolver->method('resolve')->willReturnCallback(function (array $recipientsSpec, array $data) use ($users): array {
+		$resolver->method('resolveWithDiagnostics')->willReturnCallback(function (array $recipientsSpec, array $data) use ($users): array {
 			if (($recipientsSpec[0]['kind'] ?? '') === 'groups') {
-				return ['alice', 'bob'];
+				return ['uids' => ['alice', 'bob'], 'unresolved' => []];
 			}
 
-			return array_values(array_intersect((array)array_values($data)[0], $users));
+			return ['uids' => array_values(array_intersect((array)array_values($data)[0], $users)), 'unresolved' => []];
 		});
 		$resolver->method('extractUidsFromRelation')->willReturnCallback(fn ($value): array => array_values(array_filter((array)$value, 'is_string')));
 		return $resolver;

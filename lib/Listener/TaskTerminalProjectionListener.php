@@ -122,10 +122,23 @@ class TaskTerminalProjectionListener implements IEventListener {
 		}
 
 		$task = $event->getTask();
-		if (($task instanceof Task) === false || $task->isInTerminalState() === false || trim((string)$task->getUuid()) === '') {
+		if ($this->isTerminalTask(task: $task) === false) {
 			return null;
 		}
 
 		return $task;
 	}//end terminalTaskOf()
+
+	/**
+	 * Whether the value is a terminal task with a uuid.
+	 *
+	 * @param mixed $task What the event carries as its task.
+	 *
+	 * @return bool True for a terminal task with a uuid.
+	 *
+	 * @phpstan-assert-if-true Task $task
+	 */
+	private function isTerminalTask(mixed $task): bool {
+		return ($task instanceof Task) === true && $task->isInTerminalState() === true && trim((string)$task->getUuid()) !== '';
+	}//end isTerminalTask()
 }//end class

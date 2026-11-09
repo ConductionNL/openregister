@@ -179,7 +179,7 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 		$appConfig->method('getValueBool')->willReturnCallback(static fn (string $app, string $key, bool $default = false): bool => $default);
 		$container = $this->createMock(ContainerInterface::class);
 		$logger = new NullLogger();
-		$permissions = new PermissionHandler(
+		$permissions = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$users,
 			$groups,

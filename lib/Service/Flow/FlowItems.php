@@ -48,17 +48,17 @@ final class FlowItems {
 	/**
 	 * The key carrying an item's record.
 	 */
-	public const JSON = 'json';
+	public const JSON = FlowItemShape::JSON;
 
 	/**
 	 * The key carrying an item's file attachments.
 	 */
-	public const BINARY = 'binary';
+	public const BINARY = FlowItemShape::BINARY;
 
 	/**
 	 * The key carrying an item's provenance.
 	 */
-	public const PAIRED_ITEM = 'pairedItem';
+	public const PAIRED_ITEM = FlowItemShape::PAIRED_ITEM;
 
 	/**
 	 * The key naming which output branch an item is routed to.
@@ -68,7 +68,7 @@ final class FlowItems {
 	 * never lingers on an item a downstream step sees. An item without it is
 	 * broadcast to every output, which is the ordinary behaviour.
 	 */
-	public const OUTPUT = 'output';
+	public const OUTPUT = FlowItemShape::OUTPUT;
 
 	/**
 	 * Coerce whatever a step returned into a well-formed item list.
@@ -93,18 +93,7 @@ final class FlowItems {
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
 	public static function normalise(mixed $value, ?int $fromItemIndex = null): array {
-		if (is_array($value) === false || $value === []) {
-			return [];
-		}
-
-		// A list whose members are arrays is treated as an item list; each
-		// member is normalised in turn so a half-shaped list still lands well.
-		if (array_is_list($value) === true) {
-			return self::normaliseList(members: $value, fromItemIndex: $fromItemIndex);
-		}
-
-		// A single item, or a bare record standing in for one.
-		return [self::fromMember(member: $value, fallback: $fromItemIndex)];
+		return FlowItemShape::normalise(value: $value, fromItemIndex: $fromItemIndex);
 	}//end normalise()
 
 	/**
@@ -120,24 +109,7 @@ final class FlowItems {
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
 	public static function item(array $json, array $binary = [], ?int $fromItemIndex = null, ?string $output = null): array {
-		$paired = null;
-		if ($fromItemIndex !== null) {
-			$paired = ['item' => $fromItemIndex];
-		}
-
-		$item = [
-			self::JSON => $json,
-			self::BINARY => $binary,
-			self::PAIRED_ITEM => $paired,
-		];
-
-		// The output tag is added only when set, so an ordinary item keeps its
-		// exact three-key shape and nothing downstream has to know about routing.
-		if ($output !== null && $output !== '') {
-			$item[self::OUTPUT] = $output;
-		}
-
-		return $item;
+		return FlowItemShape::item(json: $json, binary: $binary, fromItemIndex: $fromItemIndex, output: $output);
 	}//end item()
 
 	/**
@@ -150,12 +122,7 @@ final class FlowItems {
 	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
 	 */
 	public static function outputOf(array $member): ?string {
-		$output = ($member[self::OUTPUT] ?? null);
-		if (is_string($output) === true && $output !== '') {
-			return $output;
-		}
-
-		return null;
+		return FlowItemShape::outputOf(member: $member);
 	}//end outputOf()
 
 	/**
@@ -171,27 +138,8 @@ final class FlowItems {
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
 	public static function fromSubject(object $subject): array {
-		return [self::item(json: self::recordOf(subject: $subject))];
+		return FlowSubjectItems::fromSubject(subject: $subject);
 	}//end fromSubject()
-
-	/**
-	 * The record an object serialises to: `jsonSerialize()`, else `getObject()`, else its public fields.
-	 *
-	 * @param object $subject The object.
-	 *
-	 * @return array The record.
-	 */
-	private static function recordOf(object $subject): array {
-		if (method_exists($subject, 'jsonSerialize') === true) {
-			return (array)$subject->jsonSerialize();
-		}
-
-		if (method_exists($subject, 'getObject') === true) {
-			return (array)$subject->getObject();
-		}
-
-		return get_object_vars($subject);
-	}//end recordOf()
 
 	/**
 	 * Refresh the subject's own fields on every item that IS the subject.
@@ -223,142 +171,7 @@ final class FlowItems {
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md#requirement-resuming-carries-the-runs-own-items-req-fr-003
 	 */
 	public static function refreshSubjectProjection(array $items, object $subject, string $subjectUuid): array {
-		$subjectUuid = trim($subjectUuid);
-		if ($subjectUuid === '' || $items === []) {
-			return $items;
-		}
-
-		$live = (array)(self::fromSubject(subject: $subject)[0][self::JSON] ?? []);
-		if ($live === []) {
-			return $items;
-		}
-
-		foreach (self::subjectIndexes(items: $items, subjectUuid: $subjectUuid) as $index) {
-			// Live wins on the subject's own keys; step-produced keys the
-			// subject does not serialise are kept as the run carried them.
-			$items[$index][self::JSON] = array_merge((array)($items[$index][self::JSON] ?? []), $live);
-		}
-
-		return $items;
+		return FlowSubjectItems::refreshSubjectProjection(items: $items, subject: $subject, subjectUuid: $subjectUuid);
 	}//end refreshSubjectProjection()
 
-	/**
-	 * The keys of the items that carry the subject's identity.
-	 *
-	 * @param array<int|string, mixed> $items       The stored items.
-	 * @param string                   $subjectUuid The run's subject uuid.
-	 *
-	 * @return array<int, int|string> The matching keys, in order.
-	 */
-	private static function subjectIndexes(array $items, string $subjectUuid): array {
-		return array_keys(
-			array_filter(
-				$items,
-				static fn (mixed $item): bool => is_array($item) === true
-					&& self::identityOf(json: (array)($item[self::JSON] ?? [])) === $subjectUuid
-			)
-		);
-	}//end subjectIndexes()
-
-	/**
-	 * The object identity an item's record carries, if any.
-	 *
-	 * A subject-seeded item serialises its uuid as `@self.id` mirrored at the
-	 * top-level `id`; older shapes carried a flat `uuid`. An item with none of
-	 * these has no object identity and can never be "the subject".
-	 *
-	 * @param array $json The item's record.
-	 *
-	 * @return string The identity, or '' when the item carries none.
-	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md#requirement-resuming-carries-the-runs-own-items-req-fr-003
-	 */
-	private static function identityOf(array $json): string {
-		$self = ($json['@self'] ?? null);
-		if (is_array($self) === true && trim((string)($self['id'] ?? '')) !== '') {
-			return trim((string)$self['id']);
-		}
-
-		return self::flatIdentity(json: $json);
-	}//end identityOf()
-
-	/**
-	 * The first non-blank string among the flat `id` and `uuid` keys.
-	 *
-	 * @param array $json The item's record.
-	 *
-	 * @return string The identity, or '' when neither carries one.
-	 */
-	private static function flatIdentity(array $json): string {
-		foreach (['id', 'uuid'] as $key) {
-			$value = ($json[$key] ?? null);
-			if (is_string($value) === true && trim($value) !== '') {
-				return trim($value);
-			}
-		}
-
-		return '';
-	}//end flatIdentity()
-
-	/**
-	 * The well-formed items of a list, skipping members that are not arrays.
-	 *
-	 * @param array<int, mixed> $members       The returned list.
-	 * @param int|null          $fromItemIndex Input item the list came from, when known.
-	 *
-	 * @return array<int, array<string, mixed>> The items.
-	 */
-	private static function normaliseList(array $members, ?int $fromItemIndex): array {
-		$items = [];
-		foreach ($members as $index => $member) {
-			if (is_array($member) === true) {
-				$items[] = self::fromMember(member: $member, fallback: ($fromItemIndex ?? $index));
-			}
-		}
-
-		return $items;
-	}//end normaliseList()
-
-	/**
-	 * One returned member as a well-formed item: a full item, or a bare record as its `json`.
-	 *
-	 * @param array    $member   The returned member.
-	 * @param int|null $fallback The paired index to use when the member carries none.
-	 *
-	 * @return array<string, mixed> The item.
-	 */
-	private static function fromMember(array $member, ?int $fallback): array {
-		return self::item(
-			json: (array)($member[self::JSON] ?? $member),
-			binary: (array)($member[self::BINARY] ?? []),
-			fromItemIndex: self::pairedIndex(member: $member, fallback: $fallback),
-			output: self::outputOf(member: $member)
-		);
-	}//end fromMember()
-
-	/**
-	 * Read an already-set `pairedItem` index, falling back when absent.
-	 *
-	 * A dispatcher that tracked provenance itself keeps it; one that did not
-	 * gets the engine's best guess rather than nothing.
-	 *
-	 * @param array $member The returned member.
-	 * @param int|null $fallback The index to use when the member carries none.
-	 *
-	 * @return int|null The paired input index.
-	 *
-	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
-	 */
-	private static function pairedIndex(array $member, ?int $fallback): ?int {
-		$paired = ($member[self::PAIRED_ITEM] ?? null);
-		if (is_array($paired) === true && isset($paired['item']) === true) {
-			return (int)$paired['item'];
-		}
-
-		if (is_int($paired) === true) {
-			return $paired;
-		}
-
-		return $fallback;
-	}//end pairedIndex()
 }//end class

@@ -167,9 +167,6 @@ class AdoptLeafOrganisationsCommand extends Command {
 	 *
 	 * @return int Symfony command exit code.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
@@ -189,6 +186,47 @@ class AdoptLeafOrganisationsCommand extends Command {
 			);
 		}
 
+		$rows = $this->readRows(registerSlug: $registerSlug, schemaSlug: $schemaSlug, output: $output);
+		if ($rows === null) {
+			return Command::FAILURE;
+		}
+
+		$tally = $this->adoptAll(rows: $rows, dryRun: $dryRun, output: $output);
+
+		$output->writeln(self::summaryLine(tally: $tally, dryRun: $dryRun));
+
+		$this->logger->info(
+			'OpenRegister: adopted leaf organisations',
+			[
+				'register' => $registerSlug,
+				'schema' => $schemaSlug,
+				'adopted' => $tally['adopted'],
+				'merged' => $tally['merged'],
+				'skipped' => $tally['skipped'],
+				'failed' => $tally['failed'],
+				'dryRun' => $dryRun,
+			]
+		);
+
+		if ($tally['failed'] > 0) {
+			return Command::FAILURE;
+		}
+
+		return Command::SUCCESS;
+	}//end execute()
+
+	/**
+	 * Read every leaf row, or report why they could not be read.
+	 *
+	 * @param string          $registerSlug The register slug.
+	 * @param string          $schemaSlug   The leaf schema slug.
+	 * @param OutputInterface $output       Console output stream.
+	 *
+	 * @return array<int|string, mixed>|null The rows, or null when the command must fail.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private function readRows(string $registerSlug, string $schemaSlug, OutputInterface $output): ?array {
 		try {
 			$rows = $this->objectService->searchObjectsBySlug(
 				$registerSlug,
@@ -199,19 +237,31 @@ class AdoptLeafOrganisationsCommand extends Command {
 			);
 		} catch (Throwable $e) {
 			$output->writeln(sprintf('<error>Could not read %s/%s: %s</error>', $registerSlug, $schemaSlug, $e->getMessage()));
-			return Command::FAILURE;
+			return null;
 		}
 
 		if (is_array($rows) === false) {
 			$output->writeln('<error>The object reader returned a count rather than rows.</error>');
-			return Command::FAILURE;
+			return null;
 		}
 
+		return $rows;
+	}//end readRows()
+
+	/**
+	 * Adopt every row against the organisations already on the instance.
+	 *
+	 * @param array<int|string, mixed> $rows   The leaf rows.
+	 * @param bool                     $dryRun Whether to report rather than write.
+	 * @param OutputInterface          $output Console output stream.
+	 *
+	 * @return array{adopted:int, merged:int, skipped:int, failed:int} The run's tally.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private function adoptAll(array $rows, bool $dryRun, OutputInterface $output): array {
 		$existing = $this->existingOrganisations();
-		$adopted = 0;
-		$merged = 0;
-		$skipped = 0;
-		$failed = 0;
+		$tally = ['adopted' => 0, 'merged' => 0, 'skipped' => 0, 'failed' => 0];
 
 		foreach ($rows as $row) {
 			$outcome = $this->adoptRow(
@@ -221,47 +271,39 @@ class AdoptLeafOrganisationsCommand extends Command {
 				output: $output
 			);
 
-			$adopted += $outcome['adopted'];
-			$merged += $outcome['merged'];
-			$skipped += $outcome['skipped'];
-			$failed += $outcome['failed'];
-		}//end foreach
+			foreach ($outcome as $key => $count) {
+				$tally[$key] += $count;
+			}
+		}
 
+		return $tally;
+	}//end adoptAll()
+
+	/**
+	 * The closing summary line.
+	 *
+	 * @param array{adopted:int, merged:int, skipped:int, failed:int} $tally  The run's tally.
+	 * @param bool                                                    $dryRun Whether nothing was written.
+	 *
+	 * @return string The line to print.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private static function summaryLine(array $tally, bool $dryRun): string {
 		$suffix = '';
 		if ($dryRun === true) {
 			$suffix = ' (dry run — nothing written)';
 		}
 
-		$output->writeln(
-			sprintf(
-				'<info>Done. Adopted=%d (of which merged=%d), skipped=%d, failed=%d%s</info>',
-				$adopted,
-				$merged,
-				$skipped,
-				$failed,
-				$suffix
-			)
+		return sprintf(
+			'<info>Done. Adopted=%d (of which merged=%d), skipped=%d, failed=%d%s</info>',
+			$tally['adopted'],
+			$tally['merged'],
+			$tally['skipped'],
+			$tally['failed'],
+			$suffix
 		);
-
-		$this->logger->info(
-			'OpenRegister: adopted leaf organisations',
-			[
-				'register' => $registerSlug,
-				'schema' => $schemaSlug,
-				'adopted' => $adopted,
-				'merged' => $merged,
-				'skipped' => $skipped,
-				'failed' => $failed,
-				'dryRun' => $dryRun,
-			]
-		);
-
-		if ($failed > 0) {
-			return Command::FAILURE;
-		}
-
-		return Command::SUCCESS;
-	}//end execute()
+	}//end summaryLine()
 
 	/**
 	 * Adopt one leaf row, reporting what happened to it.
@@ -285,23 +327,62 @@ class AdoptLeafOrganisationsCommand extends Command {
 		$fields = self::toFields(row: $row);
 		$uuid = (string)($fields['uuid'] ?? '');
 
-		if ($uuid === '') {
-			$output->writeln('  <comment>SKIP a row with no uuid: it has no idempotency key.</comment>');
-			return array_merge($none, ['skipped' => 1]);
-		}
-
-		if (isset($existing[$uuid]) === true) {
-			$output->writeln(sprintf('  <comment>SKIP %s: already adopted.</comment>', $uuid));
+		$skip = self::skipLine(uuid: $uuid, existing: $existing);
+		if ($skip !== null) {
+			$output->writeln($skip);
 			return array_merge($none, ['skipped' => 1]);
 		}
 
 		$target = self::findMergeTarget(row: $fields, existing: array_values($existing));
 
+		$this->reportCandidate(uuid: $uuid, fields: $fields, target: $target, output: $output);
+
+		if ($dryRun === true) {
+			$output->writeln('  <comment>WOULD ADOPT</comment>');
+			return $none;
+		}
+
+		return $this->insertRow(fields: $fields, target: $target, existing: $existing, output: $output);
+	}//end adoptRow()
+
+	/**
+	 * Why a row is skipped before any matching: no uuid, or already adopted.
+	 *
+	 * @param string                              $uuid     The row's uuid.
+	 * @param array<string, array<string, mixed>> $existing Organisations already on the instance.
+	 *
+	 * @return string|null The line to print, or null when the row is adopted.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private static function skipLine(string $uuid, array $existing): ?string {
+		if ($uuid === '') {
+			return '  <comment>SKIP a row with no uuid: it has no idempotency key.</comment>';
+		}
+
+		if (isset($existing[$uuid]) === true) {
+			return sprintf('  <comment>SKIP %s: already adopted.</comment>', $uuid);
+		}
+
+		return null;
+	}//end skipLine()
+
+	/**
+	 * Report the row about to be adopted, its merge and its dropped properties.
+	 *
+	 * @param string                    $uuid   The row's uuid.
+	 * @param array<string, mixed>      $fields The leaf row's fields.
+	 * @param array<string, mixed>|null $target The organisation it merges into, if any.
+	 * @param OutputInterface           $output Console output stream.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private function reportCandidate(string $uuid, array $fields, ?array $target, OutputInterface $output): void {
 		$mergeNote = '';
-		$mergedCount = 0;
 		if ($target !== null) {
 			$mergeNote = sprintf(' -> merges into %s', $target['uuid']);
-			$mergedCount = 1;
 		}
 
 		$output->writeln(
@@ -309,11 +390,22 @@ class AdoptLeafOrganisationsCommand extends Command {
 		);
 
 		$this->reportUndeclared(fields: $fields, output: $output);
+	}//end reportCandidate()
 
-		if ($dryRun === true) {
-			$output->writeln('  <comment>WOULD ADOPT</comment>');
-			return $none;
-		}
+	/**
+	 * Insert one adopted row and add it to the candidates for later rows.
+	 *
+	 * @param array<string, mixed>                $fields   The leaf row's fields.
+	 * @param array<string, mixed>|null           $target   The organisation it merges into, if any.
+	 * @param array<string, array<string, mixed>> $existing Organisations already on the instance; grows.
+	 * @param OutputInterface                     $output   Console output stream.
+	 *
+	 * @return array{adopted:int, merged:int, skipped:int, failed:int} The tally for this row.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private function insertRow(array $fields, ?array $target, array &$existing, OutputInterface $output): array {
+		$none = ['adopted' => 0, 'merged' => 0, 'skipped' => 0, 'failed' => 0];
 
 		try {
 			$saved = $this->organisationMapper->insert(
@@ -324,11 +416,16 @@ class AdoptLeafOrganisationsCommand extends Command {
 			return array_merge($none, ['failed' => 1]);
 		}
 
-		$existing[$uuid] = self::toCandidate(organisation: $saved);
+		$existing[(string)$fields['uuid']] = self::toCandidate(organisation: $saved);
 		$output->writeln('  <info>ADOPTED</info>');
 
+		$mergedCount = 0;
+		if ($target !== null) {
+			$mergedCount = 1;
+		}
+
 		return array_merge($none, ['adopted' => 1, 'merged' => $mergedCount]);
-	}//end adoptRow()
+	}//end insertRow()
 
 	/**
 	 * Name the properties this adoption will not carry over.
@@ -413,43 +510,61 @@ class AdoptLeafOrganisationsCommand extends Command {
 				continue;
 			}
 
-			$matches = [];
-			foreach ($existing as $candidate) {
-				if (self::normaliseIdentifier(value: ($candidate[$field] ?? null)) === $needle) {
-					$matches[] = $candidate;
-				}
-			}
-
+			$matches = self::matchesOn(field: $field, needle: $needle, existing: $existing);
 			if ($matches === []) {
 				continue;
 			}
 
-			usort(
-				$matches,
-				static function (array $a, array $b) {
-					$aMerged = 0;
-					if (($a['mergedInto'] ?? null) !== null) {
-						$aMerged = 1;
-					}
-
-					$bMerged = 0;
-					if (($b['mergedInto'] ?? null) !== null) {
-						$bMerged = 1;
-					}
-
-					if ($aMerged !== $bMerged) {
-						return ($aMerged <=> $bMerged);
-					}
-
-					return ((int)($a['id'] ?? 0) <=> (int)($b['id'] ?? 0));
-				}
-			);
+			usort($matches, self::compareCandidates(...));
 
 			return $matches[0];
-		}//end foreach
+		}
 
 		return null;
 	}//end findMergeTarget()
+
+	/**
+	 * The candidates whose identifier in one field equals the needle.
+	 *
+	 * @param string                           $field    The legal identifier field.
+	 * @param string                           $needle   The row's normalised identifier.
+	 * @param array<int, array<string, mixed>> $existing Candidate organisations.
+	 *
+	 * @return array<int, array<string, mixed>> The matches, in candidate order.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private static function matchesOn(string $field, string $needle, array $existing): array {
+		$matches = [];
+		foreach ($existing as $candidate) {
+			if (self::normaliseIdentifier(value: ($candidate[$field] ?? null)) === $needle) {
+				$matches[] = $candidate;
+			}
+		}
+
+		return $matches;
+	}//end matchesOn()
+
+	/**
+	 * Order candidates: live before merged-away, then lowest id first.
+	 *
+	 * @param array<string, mixed> $a A candidate.
+	 * @param array<string, mixed> $b Another candidate.
+	 *
+	 * @return int The comparison result.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private static function compareCandidates(array $a, array $b): int {
+		$aMerged = (int)(($a['mergedInto'] ?? null) !== null);
+		$bMerged = (int)(($b['mergedInto'] ?? null) !== null);
+
+		if ($aMerged !== $bMerged) {
+			return ($aMerged <=> $bMerged);
+		}
+
+		return ((int)($a['id'] ?? 0) <=> (int)($b['id'] ?? 0));
+	}//end compareCandidates()
 
 	/**
 	 * The leaf properties Organisation has nowhere to put.
@@ -467,7 +582,7 @@ class AdoptLeafOrganisationsCommand extends Command {
 	public static function undeclaredProperties(array $row): array {
 		$dropped = [];
 		foreach (array_keys($row) as $property) {
-			if (str_starts_with($property, '@') === true || $property === 'id' || $property === 'uuid') {
+			if (self::isReservedProperty(property: $property) === true) {
 				continue;
 			}
 
@@ -482,6 +597,19 @@ class AdoptLeafOrganisationsCommand extends Command {
 
 		return $dropped;
 	}//end undeclaredProperties()
+
+	/**
+	 * Whether a property is metadata or an identity key, never carried as a field.
+	 *
+	 * @param mixed $property The property name.
+	 *
+	 * @return bool True for `@`-prefixed names, `id` and `uuid`.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private static function isReservedProperty(mixed $property): bool {
+		return (str_starts_with($property, '@') === true || $property === 'id' || $property === 'uuid');
+	}//end isReservedProperty()
 
 	/**
 	 * Flatten an object row into a plain field map.
@@ -501,6 +629,21 @@ class AdoptLeafOrganisationsCommand extends Command {
 			return [];
 		}
 
+		$row['uuid'] = self::resolveUuid(row: $row);
+
+		return $row;
+	}//end toFields()
+
+	/**
+	 * The row's uuid: from `@self` first, then from the row itself.
+	 *
+	 * @param array<string, mixed> $row The row.
+	 *
+	 * @return string The uuid, or '' when the row carries none.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private static function resolveUuid(array $row): string {
 		$self = ($row['@self'] ?? []);
 		$uuid = '';
 		if (is_array($self) === true) {
@@ -511,10 +654,8 @@ class AdoptLeafOrganisationsCommand extends Command {
 			$uuid = (string)($row['uuid'] ?? ($row['id'] ?? ''));
 		}
 
-		$row['uuid'] = $uuid;
-
-		return $row;
-	}//end toFields()
+		return $uuid;
+	}//end resolveUuid()
 
 	/**
 	 * Build the Organisation to insert for one leaf row.
@@ -530,18 +671,7 @@ class AdoptLeafOrganisationsCommand extends Command {
 		$organisation = new Organisation();
 		$organisation->setUuid((string)$fields['uuid']);
 
-		foreach (self::FIELD_MAP as $property => $suffix) {
-			$value = ($fields[$property] ?? null);
-			if ($value === null || $value === '') {
-				continue;
-			}
-
-			if (is_scalar($value) === false) {
-				continue;
-			}
-
-			$organisation->{'set' . $suffix}((string)$value);
-		}
+		self::applyFields(organisation: $organisation, fields: $fields);
 
 		// A slug is derived from the uuid rather than the name. Two adopted rows
 		// can legitimately share a name, and a name-derived slug would collide.
@@ -554,6 +684,31 @@ class AdoptLeafOrganisationsCommand extends Command {
 
 		return $organisation;
 	}//end buildOrganisation()
+
+	/**
+	 * Copy every declared, non-empty scalar field onto the organisation.
+	 *
+	 * @param Organisation         $organisation The organisation being built.
+	 * @param array<string, mixed> $fields       The leaf row's fields.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private static function applyFields(Organisation $organisation, array $fields): void {
+		foreach (self::FIELD_MAP as $property => $suffix) {
+			$value = ($fields[$property] ?? null);
+			if ($value === null || $value === '') {
+				continue;
+			}
+
+			if (is_scalar($value) === false) {
+				continue;
+			}
+
+			$organisation->{'set' . $suffix}((string)$value);
+		}
+	}//end applyFields()
 
 	/**
 	 * Reduce an Organisation to the fields matching needs.

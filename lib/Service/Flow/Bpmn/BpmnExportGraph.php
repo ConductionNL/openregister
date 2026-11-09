@@ -30,23 +30,51 @@ namespace OCA\OpenRegister\Service\Flow\Bpmn;
 final class BpmnExportGraph {
 
 	/**
+	 * The nodes.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	public readonly array $nodes;
+
+	/**
+	 * The attached edges, each with an `id`.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	public readonly array $edges;
+
+	/**
+	 * One diagram box per node.
+	 *
+	 * @var array<int, array{id: string, x: int, y: int}>
+	 */
+	public readonly array $boxes;
+
+	/**
+	 * One diagram line per edge.
+	 *
+	 * @var array<int, array{id: string, from: array<int>, to: array<int>}>
+	 */
+	public readonly array $routes;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                                                        $id     The flow's uuid as an NCName.
-	 * @param string                                                        $name   The flow's name.
-	 * @param array<int, array<string, mixed>>                              $nodes  The nodes.
-	 * @param array<int, array<string, mixed>>                              $edges  The attached edges, each with an `id`.
-	 * @param array<int, array{id: string, x: int, y: int}>                 $boxes  One diagram box per node.
-	 * @param array<int, array{id: string, from: array<int>, to: array<int>}> $routes One diagram line per edge.
+	 * @param string             $id       The flow's uuid as an NCName.
+	 * @param string             $name     The flow's name.
+	 * @param BpmnExportElements $elements The nodes and attached edges.
+	 * @param BpmnExportDiagram  $diagram  The boxes and routes.
 	 */
 	public function __construct(
 		public readonly string $id,
 		public readonly string $name,
-		public readonly array $nodes,
-		public readonly array $edges,
-		public readonly array $boxes,
-		public readonly array $routes,
+		BpmnExportElements $elements,
+		BpmnExportDiagram $diagram,
 	) {
+		$this->nodes  = $elements->nodes;
+		$this->edges  = $elements->edges;
+		$this->boxes  = $diagram->boxes;
+		$this->routes = $diagram->routes;
 	}//end __construct()
 
 	/**

@@ -33,19 +33,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
-use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
-use OCA\OpenRegister\Service\Flow\IFlowTriggerNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
-use OCP\WorkflowEngine\IManager;
 
 /**
  * Starts the flow on a cron schedule.
  */
-class TriggerScheduleNode implements TriggerScheduleNodeInterface, IFlowNodeConfigKeys, IFlowTriggerNode, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class TriggerScheduleNode extends TriggerNodeBase implements TriggerScheduleNodeInterface {
 	/**
 	 * Constructor.
 	 *
@@ -57,11 +52,11 @@ class TriggerScheduleNode implements TriggerScheduleNodeInterface, IFlowNodeConf
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
 	 */
 	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		IL10N $l10n,
+		IURLGenerator $urls,
 		private readonly IUserManager $userManager,
 	) {
-
+		parent::__construct(l10n: $l10n, urls: $urls);
 	}//end __construct()
 
 	/**
@@ -109,19 +104,6 @@ class TriggerScheduleNode implements TriggerScheduleNodeInterface, IFlowNodeConf
 	}//end getIcon()
 
 	/**
-	 * Starting a flow grants no privilege of its own.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
-
-	/**
 	 * The config vocabulary of a schedule trigger.
 	 *
 	 * @return array<int, string> The accepted config keys.
@@ -158,6 +140,22 @@ class TriggerScheduleNode implements TriggerScheduleNodeInterface, IFlowNodeConf
 			);
 		}
 
+		$this->assertFiveFields(cron: $cron);
+		$this->validateActingIdentity(config: $config);
+	}//end validateConfig()
+
+	/**
+	 * Refuse a cron expression that is not five space-separated fields.
+	 *
+	 * @param string $cron The trimmed, non-empty expression.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it has any other number of fields.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	private function assertFiveFields(string $cron): void {
 		$fields = preg_split('/\s+/', $cron);
 		if (is_array($fields) === false || count($fields) !== 5) {
 			$fieldCount = 0;
@@ -166,17 +164,10 @@ class TriggerScheduleNode implements TriggerScheduleNodeInterface, IFlowNodeConf
 			}
 
 			throw new InvalidArgumentException(
-				sprintf(
-					'A cron expression has five space-separated fields (minute hour day month weekday); "%s" has %d.',
-					$cron,
-					$fieldCount
-				)
+				sprintf('A cron expression has five space-separated fields (minute hour day month weekday); "%s" has %d.', $cron, $fieldCount)
 			);
 		}
-
-		$this->validateActingIdentity(config: $config);
-
-	}//end validateConfig()
+	}//end assertFiveFields()
 
 	/**
 	 * A schedule trigger must name the user its runs execute as.
@@ -227,43 +218,4 @@ class TriggerScheduleNode implements TriggerScheduleNodeInterface, IFlowNodeConf
 		}
 
 	}//end validateActingIdentity()
-
-	/**
-	 * A trigger is an entry point, not work.
-	 *
-	 * @param array $items The input items.
-	 * @param array $config The node configuration.
-	 * @param array $context Run-level metadata.
-	 *
-	 * @return array The items, unchanged.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-	 */
-	public function execute(array $items, array $config, array $context): array {
-		return $items;
-	}//end execute()
-
-	/**
-	 * What kind of step this is. A start: the clock came round.
-	 *
-	 * @return string The BPMN kind.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
-	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_EVENT;
-
-	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_TRIGGERS;
-
-	}//end getCategory()
 }//end class

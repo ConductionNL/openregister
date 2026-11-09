@@ -33,7 +33,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<RunObjectLock>
  */
-class RunObjectLockMapper extends QBMapper {
+class RunObjectLockMapper extends QBMapper implements RunObjectLockMapperInterface {
 
 	/**
 	 * Constructor.

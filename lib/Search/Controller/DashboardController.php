@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Search\Controller;
 use DateTime;
 use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
+use OCA\OpenRegister\Search\Controller\Support\DashboardControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -80,34 +81,33 @@ class DashboardController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * Constructor for the DashboardController
+	 * Active user session for caller identity.
 	 *
-	 * Initializes controller with required dependencies for dashboard operations.
-	 * Calls parent constructor to set up base controller functionality.
-	 *
-	 * @param string $appName The name of the app
-	 * @param IRequest $request The HTTP request object
-	 * @param DashboardService $dashboardService The dashboard service instance
-	 * @param LoggerInterface $logger Logger instance for error tracking
-	 * @param IUserSession $userSession Active user session for caller identity
-	 * @param IGroupManager $groupManager Group manager for admin checks
-	 *
-	 * @return void
+	 * @var IUserSession
 	 */
-	public function __construct(
-		string $appName,
-		IRequest $request,
-		DashboardService $dashboardService,
-		LoggerInterface $logger,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-	) {
-		// Call parent constructor to initialize base controller.
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin checks.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param string                      $appName  The application name.
+	 * @param IRequest                    $request  The current request.
+	 * @param DashboardControllerServices $services The dashboard API services.
+	 */
+	public function __construct(string $appName, IRequest $request, DashboardControllerServices $services) {
 		parent::__construct(appName: $appName, request: $request);
 
-		// Store dependencies for use in controller methods.
-		$this->dashboardService = $dashboardService;
-		$this->logger = $logger;
+		$this->dashboardService = $services->dashboardService;
+		$this->logger           = $services->logger;
+		$this->userSession      = $services->userSession;
+		$this->groupManager     = $services->groupManager;
 	}//end __construct()
 
 	/**

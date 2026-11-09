@@ -37,9 +37,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Listener\Support\HandlesObjectDeletion;
 use OCA\OpenRegister\Service\Audit\ContentReportService;
-use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -52,6 +53,8 @@ use Throwable;
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class ContentReportRemovalListener implements IEventListener {
+	use HandlesObjectDeletion;
+
 	/**
 	 * Wire collaborators.
 	 *
@@ -69,51 +72,51 @@ class ContentReportRemovalListener implements IEventListener {
 	/**
 	 * Note the removal on every report filed against the removed content.
 	 *
-	 * @param Event $event Inbound dispatcher event.
+	 * @param ObjectEntity $object The removed object.
+	 * @param string       $uuid   Its uuid.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function handle(Event $event): void {
-		if (($event instanceof ObjectDeletedEvent) === false) {
+	private function onObjectDeleted(ObjectEntity $object, string $uuid): void {
+		$copies = $this->reports->noteRemoval(objectUuid: $uuid);
+		if ($copies === []) {
+			// Nothing was ever reported about this content, which is the
+			// ordinary case. No entry: an audit row per uneventful delete
+			// would double the largest table in the app for no reader.
 			return;
 		}
 
-		try {
-			$object = $event->getObject();
-			$objectUuid = (string)($object->getUuid() ?? '');
-			if ($objectUuid === '') {
-				return;
-			}
+		// The removal record names the copy, which is the half of the
+		// requirement the report row alone does not satisfy: somebody
+		// reading the TRAIL has to be able to get to the evidence too.
+		$this->auditTrail->createAuditTrailEntry(
+			object: $object,
+			action: ContentReportService::ACTION_REMOVAL_NAMED,
+			context: [
+				'contentReports' => $copies,
+				'reason' => 'reported content removed; the copies taken at filing time survive it',
+			]
+		);
+	}//end onObjectDeleted()
 
-			$copies = $this->reports->noteRemoval(objectUuid: $objectUuid);
-			if ($copies === []) {
-				// Nothing was ever reported about this content, which is the
-				// ordinary case. No entry: an audit row per uneventful delete
-				// would double the largest table in the app for no reader.
-				return;
-			}
-
-			// The removal record names the copy, which is the half of the
-			// requirement the report row alone does not satisfy: somebody
-			// reading the TRAIL has to be able to get to the evidence too.
-			$this->auditTrail->createAuditTrailEntry(
-				object: $object,
-				action: ContentReportService::ACTION_REMOVAL_NAMED,
-				context: [
-					'contentReports' => $copies,
-					'reason' => 'reported content removed; the copies taken at filing time survive it',
-				]
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[ContentReportRemovalListener] Could not name the copies on a removal',
-				context: [
-					'app' => 'openregister',
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
-	}//end handle()
+	/**
+	 * Warn that the copies could not be named; the removal itself stands.
+	 *
+	 * @param Throwable $error The failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function onDeletionFailure(Throwable $error): void {
+		$this->logger->warning(
+			message: '[ContentReportRemovalListener] Could not name the copies on a removal',
+			context: [
+				'app' => 'openregister',
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end onDeletionFailure()
 }//end class

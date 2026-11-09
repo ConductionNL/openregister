@@ -453,7 +453,7 @@ class AppHostSettingsService {
 				];
 			}
 
-			$configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationService');
+			$configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationServiceInterface');
 			$result = $configurationService->importFromApp(appId: $this->appId, data: $data, version: $version, force: $force);
 
 			if (empty($result) === false) {

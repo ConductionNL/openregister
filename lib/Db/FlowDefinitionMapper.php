@@ -36,7 +36,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-definition-versioning/spec.md
  */
-class FlowDefinitionMapper extends QBMapper {
+class FlowDefinitionMapper extends QBMapper implements FlowDefinitionMapperInterface {
 	/**
 	 * Constructor.
 	 *

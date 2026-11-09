@@ -25,8 +25,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 use OCA\OpenRegister\Lifecycle\Action\SetFieldsAction;
 use OCA\OpenRegister\Lifecycle\LifecycleActionInterface;
 use OCA\OpenRegister\Lifecycle\LifecycleActionProviderInterface;
+use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionRegistry;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCP\IServerContainer;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -47,6 +49,7 @@ use Throwable;
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleActionRegistry
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry
+ * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry
  */
 class LifecycleRegistriesGoldenTest extends TestCase {
 
@@ -197,6 +200,67 @@ class LifecycleRegistriesGoldenTest extends TestCase {
 			$this->assertSame($expected[$name], $this->trace, $name);
 		}
 	}//end testProviderRegistryMatchesTheRecordedTranscripts()
+
+	public function testGuardRegistryMatchesTheRecordedTranscripts(): void {
+		$guard = $this->createMock(LifecycleGuardInterface::class);
+		$this->labels = [spl_object_id($guard) => 'guard'];
+		$missing = new RuntimeException('app: not found');
+		$serverMissing = new RuntimeException('server: not found');
+
+		$scenarios = [
+			'app guard, cached' => [['g.tag', 'g.tag'], ['g.tag' => $guard], []],
+			'server fallback' => [['g.tag'], ['g.tag' => $missing], ['g.tag' => $guard]],
+			'nowhere, twice' => [['g.tag', 'g.tag'], ['g.tag' => $missing], ['g.tag' => $serverMissing]],
+			'unknown everywhere' => [['g.tag'], [], []],
+			'null from app' => [['g.tag'], ['g.tag' => null], ['g.tag' => $guard]],
+			'wrong type' => [['g.tag'], ['g.tag' => new stdClass()], []],
+			'wrong type, server' => [['g.tag'], ['g.tag' => $missing], ['g.tag' => new stdClass()]],
+		];
+
+		$unregistered = 'g.tag => RuntimeException: Lifecycle guard "g.tag" is not registered.';
+		$wrongType = 'g.tag => RuntimeException: Service "g.tag" does not implement ' . LifecycleGuardInterface::class . '.';
+		$expected = [
+			'app guard, cached' => ['app.get(g.tag)', 'g.tag => guard', 'g.tag => guard'],
+			'server fallback' => ['app.get(g.tag)', 'server.get(g.tag)', 'g.tag => guard'],
+			'nowhere, twice' => [
+				'app.get(g.tag)',
+				'server.get(g.tag)',
+				'log: Lifecycle guard tag "g.tag" could not be resolved: app: not found | server: not found',
+				$unregistered,
+				'app.get(g.tag)',
+				'server.get(g.tag)',
+				'log: Lifecycle guard tag "g.tag" could not be resolved: app: not found | server: not found',
+				$unregistered,
+			],
+			'unknown everywhere' => [
+				'app.get(g.tag)',
+				'server.get(g.tag)',
+				'log: Lifecycle guard tag "g.tag" could not be resolved: no app entry | no server entry',
+				$unregistered,
+			],
+			'null from app' => [
+				'app.get(g.tag)',
+				'log: Lifecycle guard tag "g.tag" could not be resolved: ',
+				$unregistered,
+			],
+			'wrong type' => ['app.get(g.tag)', $wrongType],
+			'wrong type, server' => ['app.get(g.tag)', 'server.get(g.tag)', $wrongType],
+		];
+
+		foreach ($scenarios as $name => [$ids, $app, $server]) {
+			$this->trace = [];
+			$registry = new LifecycleGuardRegistry(
+				$this->container('app', $app),
+				$this->serverContainer($server),
+				$this->logger()
+			);
+			foreach ($ids as $id) {
+				$this->record($id, fn () => $registry->resolve($id));
+			}
+
+			$this->assertSame($expected[$name], $this->trace, $name);
+		}
+	}//end testGuardRegistryMatchesTheRecordedTranscripts()
 
 	/**
 	 * Record a resolution: the label of the service, or the refusal.

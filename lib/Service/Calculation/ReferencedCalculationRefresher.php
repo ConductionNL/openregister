@@ -83,23 +83,43 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 	private array $found = [];
 
 	/**
+	 * The registers.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registers;
+
+	/**
+	 * The schemas.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
+	 * Finds the referring objects.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $rows;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface     $registers The registers.
-	 * @param SchemaMapperInterface       $schemas   The schemas.
-	 * @param MagicMapperInterface        $rows      Finds the referring objects.
-	 * @param ContainerInterface $container Hands out the object service on first use.
-	 * @param LoggerInterface    $logger    The logger.
-	 * @param SchemaTypeConverter $types    Restores the stored form of `type: string` values the read decoded.
+	 * @param ReferencedCalculationStores $stores    The register, schema and row stores the referenced-calculation refresher reads.
+	 * @param ContainerInterface          $container Hands out the object service on first use.
+	 * @param LoggerInterface             $logger    The logger.
+	 * @param SchemaTypeConverter         $types     Restores the stored form of `type: string` values the read decoded.
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly MagicMapperInterface $rows,
+		ReferencedCalculationStores $stores,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 		private readonly SchemaTypeConverter $types=new SchemaTypeConverter(),
 	) {
+		$this->registers = $stores->registers;
+		$this->schemas = $stores->schemas;
+		$this->rows = $stores->rows;
 	}//end __construct()
 
 	/**

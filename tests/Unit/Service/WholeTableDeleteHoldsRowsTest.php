@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaDeletionStores;
 use OCA\OpenRegister\Service\SchemaTeardownGuard;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -170,10 +171,7 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 
 		$this->service = new SchemaDeletionService(
 			$this->db,
-			$this->mapper,
-			$this->registers,
-			$this->schemas,
-			$this->audit,
+			new SchemaDeletionStores($this->mapper, $this->registers, $this->schemas, $this->audit),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
@@ -246,10 +244,7 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 		$mapper->method('deleteObjectsBySchema')->willThrowException(new RuntimeException('gone away'));
 		$service = new SchemaDeletionService(
 			$this->db,
-			$mapper,
-			$this->registers,
-			$this->schemas,
-			$this->audit,
+			new SchemaDeletionStores($mapper, $this->registers, $this->schemas, $this->audit),
 			$this->createMock(LoggerInterface::class)
 		);
 

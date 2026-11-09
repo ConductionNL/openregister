@@ -58,7 +58,7 @@ use Psr\Log\LoggerInterface;
  * retention guard: the pass must ask whether a record is legally retained
  * before it erases it, and that question has one owner.
  */
-class AvgRetentionService {
+class AvgRetentionService implements AvgRetentionPassInterface {
 	/**
 	 * Constructor.
 	 *

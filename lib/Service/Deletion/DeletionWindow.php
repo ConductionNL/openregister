@@ -35,7 +35,7 @@ use DateTimeImmutable;
  *
  * @spec openspec/specs/deletion-audit-trail/spec.md
  */
-final class DeletionWindow {
+final class DeletionWindow implements DeletionWindowInterface {
 	/**
 	 * The window came from the schema's own `archive.deleteRetention`.
 	 *

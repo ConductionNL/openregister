@@ -458,8 +458,12 @@ class AuthorizationServiceHardeningTest extends TestCase {
 		$this->sessionUser = $this->userNamed('piet');
 		$this->authorizationHeader = 'Bearer real-token';
 
-		$this->service()->authorizeOAuth('Bearer real-token', [], ['staff']);
-		$this->assertTrue(true);
+		$service = $this->service();
+		$service->authorizeOAuth('Bearer real-token', [], ['staff']);
+
+		$this->sessionUser = $this->userNamed('klaas');
+		$this->expectException(AuthenticationException::class);
+		$service->authorizeOAuth('Bearer real-token', [], ['staff']);
 	}//end testOAuthAcceptsTheBearerTheRequestCarried()
 
 	public function testACredentialNeverWritesTheIdentityIntoTheSession(): void {

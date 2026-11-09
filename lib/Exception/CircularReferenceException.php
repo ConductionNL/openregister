@@ -40,11 +40,31 @@ use Throwable;
  */
 class CircularReferenceException extends ValidationException {
 	/**
+	 * The UUID whose re-entry triggered detection.
+	 *
+	 * @var string
+	 */
+	private readonly string $referencedUuid;
+
+	/**
+	 * Slug of the target schema (or raw `$ref`).
+	 *
+	 * @var string
+	 */
+	private readonly string $targetSchemaSlug;
+
+	/**
+	 * Chain of (register, schema, uuid) entries that caused the cycle.
+	 *
+	 * @var array<int, array{register?:string|null,schema:string,uuid:string}>
+	 */
+	private readonly array $cycle;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $referencedUuid The UUID whose re-entry triggered detection.
-	 * @param string $targetSchemaSlug Slug of the target schema (or raw `$ref`).
-	 * @param array $cycle Chain of (register, schema, uuid) entries that caused the cycle.
+	 * @param ReferenceCycle $referenceCycle The UUID whose re-entry triggered detection,
+	 *                                       its target schema and the chain that caused the cycle.
 	 * @param string|null $message Optional override for the human-readable message.
 	 * @param int $code HTTP status code (default 422).
 	 * @param Throwable|null $previous Previous exception in the chain.
@@ -52,18 +72,20 @@ class CircularReferenceException extends ValidationException {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
 	 */
 	public function __construct(
-		private readonly string $referencedUuid,
-		private readonly string $targetSchemaSlug,
-		private readonly array $cycle = [],
+		ReferenceCycle $referenceCycle,
 		?string $message = null,
 		int $code = 422,
 		?Throwable $previous = null,
 	) {
+		$this->referencedUuid = $referenceCycle->referencedUuid;
+		$this->targetSchemaSlug = $referenceCycle->targetSchemaSlug;
+		$this->cycle = $referenceCycle->cycle;
+
 		if ($message === null || $message === '') {
 			$message = sprintf(
 				"Circular reference detected for object '%s' in schema '%s'",
-				$referencedUuid,
-				$targetSchemaSlug
+				$referenceCycle->referencedUuid,
+				$referenceCycle->targetSchemaSlug
 			);
 		}
 

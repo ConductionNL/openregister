@@ -538,30 +538,26 @@ exports[`list page action menus golden configurations 1`] = `
 </div>
 </div>
 <div>
-<div class="viewTableContainer">
-<table class="viewTable">
+<div data-stub="CnDataTable" data-loading="false" rowclicktoview="" selectalllabel="t:Select All">
+<table>
 <thead>
 <tr>
-<th class="tableColumnCheckbox">
-<x-nccheckboxradioswitch modelvalue="false" indeterminate="false" aria-label="t:Select All">
-</x-nccheckboxradioswitch>
+<th class="stub-checkbox">
 </th>
-<th scope="col">t:Title</th>
-<th scope="col">t:Source</th>
-<th scope="col">t:Local Version</th>
-<th scope="col">t:Remote Version</th>
-<th scope="col">t:Status</th>
-<th scope="col">t:Updated</th>
-<th scope="col" class="tableColumnActions">t:Actions</th>
+<th>t:Title</th>
+<th>t:Source</th>
+<th>t:Local Version</th>
+<th>t:Remote Version</th>
+<th>t:Status</th>
+<th>t:Updated</th>
+<th>t:Actions</th>
 </tr>
 </thead>
 <tbody>
-<tr class="viewTableRow">
-<td class="tableColumnCheckbox">
-<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="configuration-row-title-1">
-</x-nccheckboxradioswitch>
+<tr>
+<td class="stub-checkbox">
 </td>
-<td id="configuration-row-title-1" class="tableColumnTitle">
+<td>
 <div class="titleContent">
 <strong>Local</strong>
 </div>
@@ -577,7 +573,7 @@ exports[`list page action menus golden configurations 1`] = `
 </div>
 </td>
 <td>-</td>
-<td class="tableColumnActions">
+<td>
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
@@ -612,12 +608,10 @@ exports[`list page action menus golden configurations 1`] = `
 </x-ncactions>
 </td>
 </tr>
-<tr class="viewTableRow">
-<td class="tableColumnCheckbox">
-<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="configuration-row-title-2">
-</x-nccheckboxradioswitch>
+<tr>
+<td class="stub-checkbox">
 </td>
-<td id="configuration-row-title-2" class="tableColumnTitle">
+<td>
 <div class="titleContent">
 <strong>Remote</strong>
 </div>
@@ -636,7 +630,7 @@ exports[`list page action menus golden configurations 1`] = `
 </div>
 </td>
 <td>-</td>
-<td class="tableColumnActions">
+<td>
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
@@ -873,46 +867,38 @@ exports[`list page action menus golden deleted 1`] = `
 </x-ncactions>
 </div>
 </div>
-<div class="viewTableContainer">
-<table class="viewTable itemsTable">
+<div data-stub="CnDataTable" data-loading="false" class="itemsTable" selectalllabel="t:Select All">
+<table>
 <thead>
 <tr>
-<th class="tableColumnCheckbox">
-<x-nccheckboxradioswitch modelvalue="false" indeterminate="false" aria-label="t:Select All">
-</x-nccheckboxradioswitch>
+<th class="stub-checkbox">
 </th>
-<th scope="col">t:Title</th>
-<th scope="col" class="tableColumnConstrained">t:Register</th>
-<th scope="col" class="tableColumnConstrained">t:Schema</th>
-<th scope="col">t:Deleted Date</th>
-<th scope="col">t:Deleted By</th>
-<th scope="col">t:Destroyable from</th>
-<th scope="col" class="tableColumnConstrained">t:Days left</th>
-<th scope="col" class="tableColumnActions">t:Actions</th>
+<th>t:Title</th>
+<th>t:Register</th>
+<th>t:Schema</th>
+<th>t:Deleted Date</th>
+<th>t:Deleted By</th>
+<th>t:Destroyable from</th>
+<th>t:Days left</th>
+<th>t:Actions</th>
 </tr>
 </thead>
 <tbody>
-<tr class="viewTableRow itemRow table-row-selectable">
-<td class="tableColumnCheckbox">
-<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="deleted-row-title-1">
-</x-nccheckboxradioswitch>
+<tr>
+<td class="stub-checkbox">
 </td>
-<td id="deleted-row-title-1" class="tableColumnTitle">
+<td>
 <div class="titleContent">
 <strong>1</strong>
 </div>
 </td>
-<td class="tableColumnConstrained">t:Unknown Register</td>
-<td class="tableColumnConstrained">t:Unknown Schema</td>
-<td>
-<span>t:Unknown</span>
-</td>
+<td>t:Unknown Register</td>
+<td>t:Unknown Schema</td>
+<td>t:Unknown</td>
+<td>t:Unknown</td>
+<td>t:No purge date set</td>
 <td>t:Unknown</td>
 <td>
-<span>t:No purge date set</span>
-</td>
-<td class="tableColumnConstrained">t:Unknown</td>
-<td class="tableColumnActions">
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
@@ -2305,4 +2291,465 @@ exports[`list page action menus golden sources 2`] = `
     ],
   ],
 ]
+`;
+
+exports[`list page index-page settings golden applications 1`] = `
+[
+  "title",
+  "description",
+  "showTitle",
+  "objects",
+  "columns",
+  "pagination",
+  "selectable",
+  "selectedIds",
+  "showEditAction",
+  "showCopyAction",
+  "showDeleteAction",
+  "showMassImport",
+  "showMassExport",
+  "showMassCopy",
+  "showMassDelete",
+  "showViewToggle",
+  "addLabel",
+  "rowKey",
+  "refreshing",
+]
+`;
+
+exports[`list page index-page settings golden applications 2`] = `
+{
+  "addLabel": "t:Add Application",
+  "columns": [
+    {
+      "key": "name",
+      "label": "t:Name",
+      "sortable": true,
+    },
+    {
+      "key": "version",
+      "label": "t:Version",
+    },
+    {
+      "key": "active",
+      "label": "t:Status",
+    },
+    {
+      "key": "configurations",
+      "label": "t:Configurations",
+    },
+    {
+      "key": "registers",
+      "label": "t:Registers",
+    },
+    {
+      "key": "schemas",
+      "label": "t:Schemas",
+    },
+    {
+      "key": "created",
+      "label": "t:Created",
+      "sortable": true,
+    },
+  ],
+  "description": "t:Manage your applications and modules",
+  "objects": [],
+  "pagination": {
+    "limit": 20,
+    "page": 1,
+    "pages": 0,
+    "total": 0,
+  },
+  "refreshing": false,
+  "rowKey": "id",
+  "selectable": true,
+  "selectedIds": [],
+  "showCopyAction": false,
+  "showDeleteAction": false,
+  "showEditAction": false,
+  "showMassCopy": false,
+  "showMassDelete": false,
+  "showMassExport": false,
+  "showMassImport": false,
+  "showTitle": true,
+  "showViewToggle": "",
+  "title": "t:Applications",
+}
+`;
+
+exports[`list page index-page settings golden organisations 1`] = `
+[
+  "title",
+  "description",
+  "showTitle",
+  "objects",
+  "columns",
+  "pagination",
+  "selectable",
+  "selectedIds",
+  "showEditAction",
+  "showCopyAction",
+  "showDeleteAction",
+  "showMassImport",
+  "showMassExport",
+  "showMassCopy",
+  "showMassDelete",
+  "showViewToggle",
+  "addLabel",
+  "rowKey",
+  "emptyText",
+  "refreshing",
+]
+`;
+
+exports[`list page index-page settings golden organisations 2`] = `
+{
+  "addLabel": "t:Create Organisation",
+  "columns": [
+    {
+      "key": "name",
+      "label": "t:Name",
+      "sortable": true,
+    },
+    {
+      "key": "users",
+      "label": "t:Members",
+    },
+    {
+      "key": "owner",
+      "label": "t:Owner",
+    },
+    {
+      "key": "status",
+      "label": "t:Status",
+    },
+    {
+      "key": "created",
+      "label": "t:Created",
+      "sortable": true,
+    },
+    {
+      "key": "updated",
+      "label": "t:Updated",
+      "sortable": true,
+    },
+  ],
+  "description": "t:Manage your organisations and switch between them",
+  "emptyText": "t:Loading organisations...",
+  "objects": [],
+  "pagination": {
+    "limit": 20,
+    "page": 1,
+    "pages": 1,
+    "total": 2,
+  },
+  "refreshing": false,
+  "rowKey": "uuid",
+  "selectable": true,
+  "selectedIds": [],
+  "showCopyAction": false,
+  "showDeleteAction": false,
+  "showEditAction": false,
+  "showMassCopy": false,
+  "showMassDelete": false,
+  "showMassExport": false,
+  "showMassImport": false,
+  "showTitle": true,
+  "showViewToggle": "",
+  "title": "t:Organisations",
+}
+`;
+
+exports[`list page index-page settings golden registers 1`] = `
+[
+  "title",
+  "description",
+  "showTitle",
+  "objects",
+  "columns",
+  "sortKey",
+  "sortOrder",
+  "activeFilters",
+  "pagination",
+  "selectable",
+  "selectedIds",
+  "schema",
+  "showEditAction",
+  "showCopyAction",
+  "showDeleteAction",
+  "showMassImport",
+  "showMassExport",
+  "showMassCopy",
+  "showMassDelete",
+  "showViewToggle",
+  "addLabel",
+  "rowKey",
+  "refreshing",
+]
+`;
+
+exports[`list page index-page settings golden registers 2`] = `
+{
+  "activeFilters": {},
+  "addLabel": "t:Add Register",
+  "columns": [
+    {
+      "key": "title",
+      "label": "t:Title",
+      "sortable": true,
+    },
+    {
+      "key": "schemas",
+      "label": "t:Schemas",
+    },
+    {
+      "key": "created",
+      "label": "t:Created",
+      "sortable": true,
+    },
+    {
+      "key": "updated",
+      "label": "t:Updated",
+      "sortable": true,
+    },
+  ],
+  "description": "t:Manage your data registers and their configurations",
+  "objects": [],
+  "pagination": {
+    "limit": 20,
+    "page": 1,
+    "pages": 0,
+    "total": 0,
+  },
+  "refreshing": false,
+  "rowKey": "id",
+  "schema": {
+    "properties": {
+      "created": {
+        "format": "date-time",
+        "readOnly": true,
+        "title": "t:Created",
+        "type": "string",
+      },
+      "description": {
+        "order": 3,
+        "title": "t:Description",
+        "type": "string",
+      },
+      "schemas": {
+        "order": 4,
+        "title": "t:Schemas",
+        "type": "array",
+      },
+      "slug": {
+        "minLength": 1,
+        "order": 2,
+        "required": true,
+        "title": "t:Slug",
+        "type": "string",
+      },
+      "title": {
+        "minLength": 1,
+        "order": 1,
+        "required": true,
+        "title": "t:Title",
+        "type": "string",
+      },
+      "updated": {
+        "format": "date-time",
+        "readOnly": true,
+        "title": "t:Updated",
+        "type": "string",
+      },
+    },
+    "required": [
+      "title",
+      "slug",
+    ],
+    "title": "t:Register",
+  },
+  "selectable": true,
+  "selectedIds": [],
+  "showCopyAction": false,
+  "showDeleteAction": false,
+  "showEditAction": false,
+  "showMassCopy": false,
+  "showMassDelete": false,
+  "showMassExport": false,
+  "showMassImport": false,
+  "showTitle": true,
+  "showViewToggle": "",
+  "sortKey": null,
+  "sortOrder": "asc",
+  "title": "t:Registers",
+}
+`;
+
+exports[`list page index-page settings golden schemas 1`] = `
+[
+  "title",
+  "description",
+  "showTitle",
+  "objects",
+  "columns",
+  "sortKey",
+  "sortOrder",
+  "activeFilters",
+  "pagination",
+  "selectable",
+  "selectedIds",
+  "showEditAction",
+  "showCopyAction",
+  "showDeleteAction",
+  "showMassImport",
+  "showMassExport",
+  "showMassCopy",
+  "showMassDelete",
+  "showViewToggle",
+  "addLabel",
+  "rowKey",
+  "emptyText",
+  "refreshing",
+]
+`;
+
+exports[`list page index-page settings golden schemas 2`] = `
+{
+  "activeFilters": {},
+  "addLabel": "t:Add Schema",
+  "columns": [
+    {
+      "key": "title",
+      "label": "t:Title",
+      "sortable": true,
+    },
+    {
+      "key": "properties",
+      "label": "t:Properties",
+      "type": "integer",
+    },
+    {
+      "key": "created",
+      "label": "t:Created",
+      "sortable": true,
+      "type": "date-time",
+    },
+    {
+      "key": "updated",
+      "label": "t:Updated",
+      "sortable": true,
+      "type": "date-time",
+    },
+  ],
+  "description": "t:Manage your data schemas and their properties",
+  "emptyText": "t:No schemas found",
+  "objects": [],
+  "pagination": {
+    "limit": 20,
+    "page": 1,
+    "pages": 0,
+    "total": 0,
+  },
+  "refreshing": false,
+  "rowKey": "id",
+  "selectable": true,
+  "selectedIds": [],
+  "showCopyAction": false,
+  "showDeleteAction": false,
+  "showEditAction": false,
+  "showMassCopy": false,
+  "showMassDelete": false,
+  "showMassExport": false,
+  "showMassImport": false,
+  "showTitle": true,
+  "showViewToggle": "",
+  "sortKey": null,
+  "sortOrder": "asc",
+  "title": "t:Schemas",
+}
+`;
+
+exports[`list page index-page settings golden sources 1`] = `
+[
+  "title",
+  "description",
+  "showTitle",
+  "objects",
+  "columns",
+  "pagination",
+  "viewMode",
+  "selectable",
+  "selectedIds",
+  "showEditAction",
+  "showCopyAction",
+  "showDeleteAction",
+  "showMassImport",
+  "showMassExport",
+  "showMassCopy",
+  "showMassDelete",
+  "showViewToggle",
+  "addLabel",
+  "rowKey",
+  "emptyText",
+  "refreshing",
+]
+`;
+
+exports[`list page index-page settings golden sources 2`] = `
+{
+  "addLabel": "t:Add Source",
+  "columns": [
+    {
+      "key": "title",
+      "label": "t:Title",
+      "sortable": true,
+    },
+    {
+      "key": "type",
+      "label": "t:Type",
+    },
+    {
+      "key": "databaseUrl",
+      "label": "t:Database URL",
+    },
+    {
+      "key": "registers",
+      "label": "t:Registers",
+    },
+    {
+      "key": "created",
+      "label": "t:Created",
+      "sortable": true,
+    },
+    {
+      "key": "updated",
+      "label": "t:Updated",
+      "sortable": true,
+    },
+  ],
+  "description": "t:Manage your data sources and their configurations",
+  "emptyText": "t:No sources found",
+  "objects": [],
+  "pagination": {
+    "limit": 20,
+    "page": 1,
+    "pages": 0,
+    "total": 0,
+  },
+  "refreshing": false,
+  "rowKey": "id",
+  "selectable": true,
+  "selectedIds": [],
+  "showCopyAction": false,
+  "showDeleteAction": false,
+  "showEditAction": false,
+  "showMassCopy": false,
+  "showMassDelete": false,
+  "showMassExport": false,
+  "showMassImport": false,
+  "showTitle": true,
+  "showViewToggle": "",
+  "title": "t:Sources",
+  "viewMode": "cards",
+}
 `;

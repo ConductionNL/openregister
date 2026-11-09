@@ -60,9 +60,6 @@ class FileFormattingHandlerTest extends TestCase {
 		$this->fileService = $this->createMock(FileService::class);
 
 		$this->handler = new FileFormattingHandler(
-			$this->taggingHandler,
-			$this->fileSharingHandler,
-			$this->urlGenerator,
 			$this->lockManager,
 			$this->userSession,
 			$this->logger

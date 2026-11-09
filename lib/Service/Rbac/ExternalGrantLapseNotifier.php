@@ -38,7 +38,7 @@ use OCP\Notification\INotification;
  *
  * @spec openspec/specs/authorization-rbac/spec.md
  */
-class ExternalGrantLapseNotifier {
+class ExternalGrantLapseNotifier implements ExternalGrantLapseNotifierInterface {
 
 	/**
 	 * The notification subject.

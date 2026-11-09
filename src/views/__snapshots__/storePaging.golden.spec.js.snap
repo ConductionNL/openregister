@@ -1,0 +1,304 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`list paging golden auditTrails onPageChanged 1`] = `
+{
+  "log": [
+    [
+      "fetchAuditTrails",
+      {
+        "limit": 25,
+        "page": 3,
+      },
+      [
+        "a",
+        "b",
+      ],
+    ],
+  ],
+  "selection": [],
+}
+`;
+
+exports[`list paging golden auditTrails onPageChanged when the store fails 1`] = `
+{
+  "log": [
+    [
+      "fetchAuditTrails",
+      {
+        "limit": 25,
+        "page": 3,
+      },
+      [
+        "a",
+        "b",
+      ],
+    ],
+    [
+      "console.error",
+      "Error loading page:",
+      "Error: down",
+    ],
+  ],
+  "selection": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`list paging golden auditTrails onPageSizeChanged 1`] = `
+{
+  "log": [
+    [
+      "fetchAuditTrails",
+      {
+        "limit": 50,
+        "page": 1,
+      },
+      [
+        "a",
+        "b",
+      ],
+    ],
+  ],
+  "selection": [],
+}
+`;
+
+exports[`list paging golden auditTrails onPageSizeChanged when the store fails 1`] = `
+{
+  "log": [
+    [
+      "fetchAuditTrails",
+      {
+        "limit": 50,
+        "page": 1,
+      },
+      [
+        "a",
+        "b",
+      ],
+    ],
+    [
+      "console.error",
+      "Error changing page size:",
+      "Error: down",
+    ],
+  ],
+  "selection": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`list paging golden deleted handleObjectsDeleted 1`] = `
+{
+  "log": [
+    [
+      "loadItems",
+      [
+        "b",
+      ],
+    ],
+  ],
+  "selection": [
+    "b",
+  ],
+}
+`;
+
+exports[`list paging golden deleted handleObjectsRestored 1`] = `
+{
+  "log": [
+    [
+      "loadItems",
+      [
+        "b",
+      ],
+    ],
+  ],
+  "selection": [
+    "b",
+  ],
+}
+`;
+
+exports[`list paging golden deleted onPageChanged 1`] = `
+{
+  "log": [
+    [
+      "fetchDeleted",
+      {
+        "limit": 25,
+        "page": 3,
+      },
+      [
+        "a",
+        "b",
+      ],
+    ],
+  ],
+  "selection": [],
+}
+`;
+
+exports[`list paging golden deleted onPageChanged when the store fails 1`] = `
+{
+  "log": [
+    [
+      "fetchDeleted",
+      {
+        "limit": 25,
+        "page": 3,
+      },
+      [
+        "a",
+        "b",
+      ],
+    ],
+  ],
+  "selection": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`list paging golden deleted onPageSizeChanged 1`] = `
+{
+  "log": [
+    [
+      "fetchDeleted",
+      {
+        "limit": 50,
+        "page": 1,
+      },
+      [
+        "a",
+        "b",
+      ],
+    ],
+  ],
+  "selection": [],
+}
+`;
+
+exports[`list paging golden deleted onPageSizeChanged when the store fails 1`] = `
+{
+  "log": [
+    [
+      "fetchDeleted",
+      {
+        "limit": 50,
+        "page": 1,
+      },
+      [
+        "a",
+        "b",
+      ],
+    ],
+    [
+      "console.error",
+      "Error changing page size:",
+      "Error: down",
+    ],
+  ],
+  "selection": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`list paging golden searchTrails onPageChanged 1`] = `
+{
+  "log": [
+    [
+      "fetchSearchTrails",
+      {
+        "limit": 25,
+        "page": 3,
+      },
+      [
+        "a",
+        "b",
+      ],
+    ],
+  ],
+  "selection": [],
+}
+`;
+
+exports[`list paging golden searchTrails onPageChanged when the store fails 1`] = `
+{
+  "log": [
+    [
+      "fetchSearchTrails",
+      {
+        "limit": 25,
+        "page": 3,
+      },
+      [
+        "a",
+        "b",
+      ],
+    ],
+    [
+      "console.error",
+      "Error loading page:",
+      "Error: down",
+    ],
+  ],
+  "selection": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`list paging golden searchTrails onPageSizeChanged 1`] = `
+{
+  "log": [
+    [
+      "fetchSearchTrails",
+      {
+        "limit": 50,
+        "page": 1,
+      },
+      [
+        "a",
+        "b",
+      ],
+    ],
+  ],
+  "selection": [],
+}
+`;
+
+exports[`list paging golden searchTrails onPageSizeChanged when the store fails 1`] = `
+{
+  "log": [
+    [
+      "fetchSearchTrails",
+      {
+        "limit": 50,
+        "page": 1,
+      },
+      [
+        "a",
+        "b",
+      ],
+    ],
+    [
+      "console.error",
+      "Error changing page size:",
+      "Error: down",
+    ],
+  ],
+  "selection": [
+    "a",
+    "b",
+  ],
+}
+`;

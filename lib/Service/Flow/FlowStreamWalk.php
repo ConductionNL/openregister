@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
-use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 
 /**
  * One run's streams, for one worker pass.
@@ -89,29 +89,75 @@ class FlowStreamWalk {
 	private readonly FlowStreamEntries $entries;
 
 	/**
+	 * The run being walked (refreshed by every commit).
+	 *
+	 * @var FlowRun
+	 */
+	private readonly FlowRun $run;
+
+	/**
+	 * The claim protocol.
+	 *
+	 * @var FlowPlaceClaims
+	 */
+	private readonly FlowPlaceClaims $claims;
+
+	/**
+	 * The commit path.
+	 *
+	 * @var FlowRunCommit
+	 */
+	private readonly FlowRunCommit $commit;
+
+	/**
+	 * The stream rows.
+	 *
+	 * @var FlowStreamMapperInterface
+	 */
+	private readonly FlowStreamMapperInterface $streamMapper;
+
+	/**
+	 * This pass's claim token.
+	 *
+	 * @var string
+	 */
+	private readonly string $owner;
+
+	/**
+	 * The per-run stream cap; null for FlowConcurrency's default.
+	 *
+	 * @var integer|null
+	 */
+	private readonly ?int $runCap;
+
+	/**
+	 * Firings this walk may commit; null for unbounded (the ceiling still applies).
+	 *
+	 * @var integer|null
+	 */
+	private readonly ?int $budget;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowRun $run The run being walked (refreshed by every commit).
-	 * @param FlowPlaceClaims $claims The claim protocol.
-	 * @param FlowRunCommit $commit The commit path.
-	 * @param FlowStreamMapper $streamMapper The stream rows.
-	 * @param string $owner This pass's claim token.
-	 * @param int|null $runCap The per-run stream cap; null for FlowConcurrency's default.
-	 * @param string|null $onlyStream Restrict the walk to one stream (an in-request advance).
-	 * @param int|null $budget Firings this walk may commit; null for unbounded (the ceiling still applies).
+	 * @param FlowRun              $run    The run being walked (refreshed by every commit).
+	 * @param FlowStreamWalkParts  $parts  The claim protocol, commit path and stream rows.
+	 * @param FlowStreamWalkLimits $limits The pass's claim token, stream cap, scope and budget.
 	 */
 	public function __construct(
-		private readonly FlowRun $run,
-		private readonly FlowPlaceClaims $claims,
-		private readonly FlowRunCommit $commit,
-		private readonly FlowStreamMapper $streamMapper,
-		private readonly string $owner,
-		private readonly ?int $runCap = null,
-		?string $onlyStream = null,
-		private readonly ?int $budget = null,
+		FlowRun $run,
+		FlowStreamWalkParts $parts,
+		FlowStreamWalkLimits $limits,
 	) {
+		$this->run          = $run;
+		$this->claims       = $parts->claims;
+		$this->commit       = $parts->commit;
+		$this->streamMapper = $parts->streamMapper;
+		$this->owner        = $limits->owner;
+		$this->runCap       = $limits->runCap;
+		$this->budget       = $limits->budget;
 		$this->entries = new FlowStreamEntries(runUuid: (string)$run->getUuid());
-		$this->visits = new FlowStreamVisits(onlyStream: $onlyStream);
+		$this->visits = new FlowStreamVisits(onlyStream: $limits->onlyStream);
 	}//end __construct()
 
 	/**

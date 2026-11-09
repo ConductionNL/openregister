@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Service\ObjectAction;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 
 /**
@@ -36,24 +35,14 @@ interface ObjectActionBulkInterface {
 	/**
 	 * Preview a bulk job running an action over a selection.
 	 *
-	 * @param Schema               $schema    The selection's schema.
-	 * @param string               $register  The register as the caller named it.
-	 * @param string               $schemaRef The schema as the caller named it.
-	 * @param string               $action    The action key.
-	 * @param list<string>         $ids       The selection.
-	 * @param array<string, mixed> $inputs    The inputs.
+	 * @param ObjectActionSelection $selection The selection, its schema, and the register and schema as named.
+	 * @param string                $action    The action key.
+	 * @param array<string, mixed>  $inputs    The inputs.
 	 *
 	 * @return BulkJob The previewed job.
 	 *
 	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
 	 * @throws InvalidArgumentException When nobody is signed in to run it as.
 	 */
-	public function start(
-		Schema $schema,
-		string $register,
-		string $schemaRef,
-		string $action,
-		array $ids,
-		array $inputs,
-	): BulkJob;
+	public function start(ObjectActionSelection $selection, string $action, array $inputs): BulkJob;
 }//end interface

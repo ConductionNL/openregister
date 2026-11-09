@@ -74,22 +74,16 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 	/**
 	 * The most recent runs, narrowed by job, outcome and period.
 	 *
-	 * @param string|null   $jobClass Narrow to one job class.
-	 * @param string|null   $outcome  Narrow to one JobRun OUTCOME_ constant.
-	 * @param DateTime|null $since    Only runs started at or after this moment.
-	 * @param DateTime|null $until    Only runs started at or before this moment.
-	 * @param int           $limit    How many rows to return, capped at MAX_LIMIT.
-	 * @param int           $offset   Where to start.
+	 * @param JobRunFilter|null $filter The job, outcome and period to narrow to; none narrows nothing.
+	 * @param int               $limit  How many rows to return, capped at MAX_LIMIT.
+	 * @param int               $offset Where to start.
 	 *
 	 * @return array<int, JobRun> The rows, newest first.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function findRecent(
-		?string $jobClass = null,
-		?string $outcome = null,
-		?DateTime $since = null,
-		?DateTime $until = null,
+		?JobRunFilter $filter = null,
 		int $limit = self::DEFAULT_LIMIT,
 		int $offset = 0,
 	): array {
@@ -101,8 +95,7 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 			->setMaxResults(max(1, min($limit, self::MAX_LIMIT)))
 			->setFirstResult(max(0, $offset));
 
-		$filter = new JobRunFilter(jobClass: $jobClass, outcome: $outcome, since: $since, until: $until);
-		$this->narrow(qb: $qb, filter: $filter);
+		$this->narrow(qb: $qb, filter: $filter ?? new JobRunFilter());
 
 		return $this->findEntities(query: $qb);
 
@@ -121,10 +114,10 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function countRecent(
-		?string $jobClass = null,
-		?string $outcome = null,
-		?DateTime $since = null,
-		?DateTime $until = null,
+		string|null $jobClass = null,
+		string|null $outcome = null,
+		DateTime|null $since = null,
+		DateTime|null $until = null,
 	): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'total'))->from($this->getTableName());

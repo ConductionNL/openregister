@@ -63,6 +63,8 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class FlowLink extends Entity implements JsonSerializable {
+	use ObjectLinkTypesTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The object uuid.
@@ -139,9 +141,7 @@ class FlowLink extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addObjectLinkTypes();
 		$this->addType(fieldName: 'operationId', type: 'integer');
 		$this->addType(fieldName: 'operationClass', type: 'string');
 		$this->addType(fieldName: 'operationName', type: 'string');
@@ -152,23 +152,13 @@ class FlowLink extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * JSON serialization.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return array<string,mixed>
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'operationId' => $this->operationId,
-			'operationClass' => $this->operationClass,
-			'operationName' => $this->operationName,
-			'entityType' => $this->entityType,
 			'enabled' => (bool)$this->enabled,
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
 		];
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

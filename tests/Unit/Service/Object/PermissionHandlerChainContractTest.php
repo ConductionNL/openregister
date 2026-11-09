@@ -515,7 +515,7 @@ class PermissionHandlerChainContractTest extends TestCase {
 
 		$derived = ($case['derived'] ?? []);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $this->userSession(case: $case),
 			userManager: $this->userManager(case: $case),
 			groupManager: $this->groupManager(case: $case),

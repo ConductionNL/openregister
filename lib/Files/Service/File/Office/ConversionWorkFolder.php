@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File\Office;
 
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
@@ -50,11 +50,11 @@ class ConversionWorkFolder {
 	 * Constructor.
 	 *
 	 * @param IRootFolder          $rootFolder Root folder.
-	 * @param FileOwnershipHandler $ownership  Gives openregister's own account.
+	 * @param FileOwnershipHandlerInterface $ownership  Gives openregister's own account.
 	 */
 	public function __construct(
 		private readonly IRootFolder $rootFolder,
-		private readonly FileOwnershipHandler $ownership,
+		private readonly FileOwnershipHandlerInterface $ownership,
 	) {
 	}//end __construct()
 

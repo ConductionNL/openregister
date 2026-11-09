@@ -32,6 +32,8 @@ use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionBackends;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -39,6 +41,10 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeCall;
+use OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeDialect;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkEntityScan;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
 
 /**
  * Coverage tests for EntityRecognitionHandler
@@ -87,13 +93,17 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 		$this->anonymisationBackendService = $this->createMock(AnonymisationBackendService::class);
 
 		$this->handler = new EntityRecognitionHandler(
-			$this->chunkMapper,
-			$this->entityMapper,
-			$this->entityRelationMapper,
-			$this->db,
-			$this->logger,
-			$this->settingsService,
-			$this->anonymisationBackendService
+			stores: new EntityRecognitionStores(
+				chunkMapper: $this->chunkMapper,
+				entityMapper: $this->entityMapper,
+				entityRelationMapper: $this->entityRelationMapper,
+				db: $this->db
+			),
+			backends: new EntityRecognitionBackends(
+				settingsService: $this->settingsService,
+				anonymisationBackendService: $this->anonymisationBackendService
+			),
+			logger: $this->logger
 		);
 	}
 
@@ -204,10 +214,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('storeDetectedEntities', [
 			$detectedEntities,
-			$chunk,
-			'test@example.com',
-			'regex',
-			50,
+			new ChunkEntityScan($chunk, 'test@example.com', 'regex', 50),
 		]);
 
 		$this->assertEquals(1, $result['entities_found']);
@@ -287,10 +294,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('storeDetectedEntities', [
 			$detectedEntities,
-			$chunk,
-			'email@test.com more@test.com',
-			'regex',
-			50,
+			new ChunkEntityScan($chunk, 'email@test.com more@test.com', 'regex', 50),
 		]);
 
 		// First entity failed, second succeeded.
@@ -350,10 +354,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('storeDetectedEntities', [
 			$detectedEntities,
-			$chunk,
-			'NL12ABCD0123456789',
-			'regex',
-			50,
+			new ChunkEntityScan($chunk, 'NL12ABCD0123456789', 'regex', 50),
 		]);
 
 		$this->assertEquals(1, $result['entities_found']);
@@ -433,9 +434,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 
 		// Should fall back to regex after curl failure.
 		$result = $this->invokePrivate('detectWithPresidio', [
-			$text,
-			null,
-			0.5,
+			new EntityDetectionQuery($text, null, 0.5),
 		]);
 
 		// Should still find the email via regex fallback.
@@ -462,9 +461,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 		$text = 'Contact us at info@test.nl';
 
 		$result = $this->invokePrivate('detectWithOpenAnonymiser', [
-			$text,
-			null,
-			0.5,
+			new EntityDetectionQuery($text, null, 0.5),
 		]);
 
 		// Should still find the email via regex fallback.
@@ -489,9 +486,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 	 */
 	public function testPostAnalyzeRequestReturnsNullOnCurlError(): void {
 		$result = $this->invokePrivate('postAnalyzeRequest', [
-			'http://256.256.256.256:99999/analyze',
-			['text' => 'hello'],
-			'TestService',
+			new AnalyzeCall('http://256.256.256.256:99999/analyze', ['text' => 'hello'], 'TestService'),
 		]);
 
 		$this->assertNull($result);
@@ -504,9 +499,8 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 	 */
 	public function testBuildAnalyzeRequestBodyWithoutEntityTypes(): void {
 		$result = $this->invokePrivate('buildAnalyzeRequestBody', [
-			'Hello world',
-			'nl',
-			null,
+			new EntityDetectionQuery('Hello world', null, 0.0),
+			new AnalyzeDialect('nl', null, 'presidio', 0.0),
 		]);
 
 		$this->assertEquals('Hello world', $result['text']);
@@ -521,9 +515,8 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 	 */
 	public function testBuildAnalyzeRequestBodyWithMappedEntityTypes(): void {
 		$result = $this->invokePrivate('buildAnalyzeRequestBody', [
-			'Test text',
-			'en',
-			['EMAIL', 'PERSON'],
+			new EntityDetectionQuery('Test text', ['EMAIL', 'PERSON'], 0.0),
+			new AnalyzeDialect('en', null, 'presidio', 0.0),
 		]);
 
 		$this->assertEquals('Test text', $result['text']);
@@ -540,9 +533,8 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 	 */
 	public function testBuildAnalyzeRequestBodyWithEmptyEntityTypesArray(): void {
 		$result = $this->invokePrivate('buildAnalyzeRequestBody', [
-			'Test text',
-			'en',
-			[],
+			new EntityDetectionQuery('Test text', [], 0.0),
+			new AnalyzeDialect('en', null, 'presidio', 0.0),
 		]);
 
 		$this->assertArrayNotHasKey('entities', $result);
@@ -570,10 +562,8 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('convertApiResultsToEntities', [
 			$apiResults,
-			'John Doe is here',
-			0.5,
-			'openanonymiser',
-			0.85,
+			new EntityDetectionQuery('John Doe is here', null, 0.5),
+			new AnalyzeDialect('en', null, 'openanonymiser', 0.85),
 		]);
 
 		$this->assertCount(1, $result);
@@ -599,10 +589,8 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('convertApiResultsToEntities', [
 			$apiResults,
-			'Alice is here',
-			0.5,
-			'presidio',
-			0.3,
+			new EntityDetectionQuery('Alice is here', null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0.3),
 		]);
 
 		$this->assertCount(0, $result);
@@ -627,10 +615,8 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('convertApiResultsToEntities', [
 			$apiResults,
-			$text,
-			0.5,
-			'presidio',
-			0.0,
+			new EntityDetectionQuery($text, null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0.0),
 		]);
 
 		$this->assertCount(1, $result);
@@ -662,10 +648,8 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('convertApiResultsToEntities', [
 			$apiResults,
-			'test@test.com call +31612345678',
-			0.5,
-			'presidio',
-			0.0,
+			new EntityDetectionQuery('test@test.com call +31612345678', null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0.0),
 		]);
 
 		$this->assertCount(2, $result);
@@ -853,9 +837,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 		$text = 'Call +31612345678';
 
 		$result = $this->invokePrivate('detectWithRegex', [
-			$text,
-			null,
-			0.8,
+			new EntityDetectionQuery($text, null, 0.8),
 		]);
 
 		// Phone should be filtered (0.7 < 0.8).
@@ -879,9 +861,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 
 		// Only ask for EMAIL.
 		$result = $this->invokePrivate('detectWithRegex', [
-			$text,
-			['EMAIL'],
-			0.5,
+			new EntityDetectionQuery($text, ['EMAIL'], 0.5),
 		]);
 
 		foreach ($result as $entity) {
@@ -1008,10 +988,8 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 		// (via AnonymisationBackendService fallback) instead of throwing.
 		// "Some text" has no PII patterns → empty result.
 		$result = $this->invokePrivate('detectEntities', [
-			'Some text',
+			new EntityDetectionQuery('Some text', null, 0.5),
 			'foobar',
-			null,
-			0.5,
 		]);
 		$this->assertIsArray($result);
 		$this->assertEmpty($result);
@@ -1027,10 +1005,8 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 		$this->expectExceptionMessage('Unknown detection method: foobar');
 
 		$this->invokePrivate('detectEntities', [
-			'Some text',
+			new EntityDetectionQuery('Some text', null, 0.5),
 			'foobar',
-			null,
-			0.5,
 		]);
 	}
 

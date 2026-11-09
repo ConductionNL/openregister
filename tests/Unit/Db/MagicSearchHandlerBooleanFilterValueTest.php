@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
-use OCA\OpenRegister\Db\MagicMapper\TableTermsFacet;
+use OCA\OpenRegister\Db\MagicMapper\TermsFacetTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -180,7 +180,7 @@ class MagicSearchHandlerBooleanFilterValueTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicFacetHandler::class, 'applyObjectFieldFilters');
 		$method->setAccessible(true);
-		$facet = new TableTermsFacet('openregister_table_1_1', 'label', $filters, false, new Register(), $this->makeSchema());
+		$facet = (new TermsFacetTable('openregister_table_1_1', $filters, new Register(), $this->makeSchema()))->forPropertyField('label');
 		$method->invoke($facets, $this->makeQueryBuilder(), $facet);
 
 		$this->assertSame([str_replace('t.', '', $expected)], $this->captured);

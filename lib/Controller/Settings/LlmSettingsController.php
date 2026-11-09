@@ -23,7 +23,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
-use OCA\OpenRegister\Service\Connection\ConnectionReporter;
+use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -94,9 +94,9 @@ class LlmSettingsController extends Controller {
 	/**
 	 * Reports the saved provider to integriq's connection registry.
 	 *
-	 * @var ConnectionReporter
+	 * @var ConnectionReporterInterface
 	 */
-	private readonly ConnectionReporter $connectionReporter;
+	private readonly ConnectionReporterInterface $connectionReporter;
 
 	/**
 	 * Constructor.
@@ -262,13 +262,25 @@ class LlmSettingsController extends Controller {
 				return $invalid;
 			}
 
-			$chatService = $this->container->get('OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface');
-			$result = $chatService->testChat(provider: $provider, config: $config, _testMessage: $testMessage);
-			return $this->testResult(result: $result);
+			return $this->testResult(result: $this->runChatTest(provider: $provider, config: $config, message: $testMessage));
 		} catch (Exception $e) {
 			return $this->testFailure(prefix: 'Failed to test chat: ', e: $e);
 		}
 	}//end testChat()
+
+	/**
+	 * Send the test message through the chat service.
+	 *
+	 * @param string $provider The provider to test.
+	 * @param mixed  $config   The provider configuration.
+	 * @param string $message  The test message.
+	 *
+	 * @return array The chat service's test result
+	 */
+	private function runChatTest(string $provider, mixed $config, string $message): array {
+		$chatService = $this->container->get('OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface');
+		return $chatService->testChat(provider: $provider, config: $config, _testMessage: $message);
+	}//end runChatTest()
 
 	/**
 	 * The 400 answer for a connection test that names no provider or no config, if any.

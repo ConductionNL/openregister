@@ -12,6 +12,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\UserSettingsControllerFactory;
 
 class UserSettingsControllerTest extends TestCase {
 	private UserSettingsController $controller;
@@ -28,7 +29,7 @@ class UserSettingsControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new UserSettingsController(
+		$this->controller = UserSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->gitHubService,

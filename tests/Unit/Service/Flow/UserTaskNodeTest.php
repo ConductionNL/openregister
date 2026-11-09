@@ -19,7 +19,9 @@ use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskServices;
 use OCA\OpenRegister\Service\Task\TaskForm;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -74,11 +76,8 @@ class UserTaskNodeTest extends TestCase {
 		$this->timers = $this->createMock(FlowTimerService::class);
 
 		$this->node = new UserTaskNode(
-			$this->bridge,
-			$l10n,
-			$this->createMock(IURLGenerator::class),
-			$forms,
-			$this->timers
+			new UserTaskServices($this->bridge, $forms, $this->timers),
+			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class))
 		);
 	}//end setUp()
 

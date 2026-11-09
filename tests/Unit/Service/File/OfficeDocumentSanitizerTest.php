@@ -29,6 +29,7 @@ namespace Unit\Service\File;
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCA\OpenRegister\Files\Service\File\SanitizationReport;
+use OCA\OpenRegister\Files\Service\File\SanitizationRevisionCounts;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\SanitizerInterface;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -124,7 +125,12 @@ class OfficeDocumentSanitizerTest extends TestCase {
 	 * @return void
 	 */
 	public function testDispatchToMatchingStrategy(): void {
-		$report = new SanitizationReport(commentsRemoved: 9, sentinelApplied: 'X');
+		$report = new SanitizationReport(
+			revisions: new SanitizationRevisionCounts(
+				commentsRemoved: 9
+			),
+			sentinelApplied: 'X'
+		);
 
 		$matching = $this->makeStrategy('application/x-match', $report);
 		$other = $this->makeStrategy('application/x-other', new SanitizationReport());
@@ -196,7 +202,12 @@ class OfficeDocumentSanitizerTest extends TestCase {
 	 * @return void
 	 */
 	public function testLoggingIsPiiFree(): void {
-		$report = new SanitizationReport(commentsRemoved: 1, sentinelApplied: 'S');
+		$report = new SanitizationReport(
+			revisions: new SanitizationRevisionCounts(
+				commentsRemoved: 1
+			),
+			sentinelApplied: 'S'
+		);
 		$strategy = $this->makeStrategy('application/x-log', $report);
 
 		$captured = [];

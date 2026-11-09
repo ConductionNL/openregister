@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use Exception;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -135,11 +136,13 @@ class TalkLinkServiceTest extends TestCase {
 		$this->service = new TalkLinkService(
 			$this->mapper,
 			$this->container,
-			$this->appManager,
-			$this->userSession,
 			$this->l10n,
-			$this->logger,
-			$this->schemaMapper
+			$this->schemaMapper,
+			new LinkServiceRuntime(
+				$this->appManager,
+				$this->userSession,
+				$this->logger
+			)
 		);
 	}
 

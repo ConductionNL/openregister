@@ -45,7 +45,7 @@ use OCA\OpenRegister\Tests\Unit\Architecture\ControllerSources;
  * Status codes, bodies and the auth posture of each route.
  *
  * @covers \OCA\OpenRegister\Controller\FormsController
- * @uses \OCA\OpenRegister\Controller\Support\FormsMappers
+ * @uses \OCA\OpenRegister\Controller\Support\FlowNodeRunMappers
  * @uses \OCA\OpenRegister\Controller\Support\FormsDomain
  * @uses \OCA\OpenRegister\Controller\Support\FormsPlatform
  * @uses \OCA\OpenRegister\Controller\Support\FormsControllerServices

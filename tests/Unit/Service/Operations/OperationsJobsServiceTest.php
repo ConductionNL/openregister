@@ -32,9 +32,11 @@ use OCA\OpenRegister\Db\JobRun;
 use OCA\OpenRegister\Db\JobRunMapper;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 use OCA\OpenRegister\Service\Operations\JobAlertService;
+use OCA\OpenRegister\Service\Operations\JobRunFilter;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
 use OCA\OpenRegister\Service\Operations\JobScheduleService;
 use OCA\OpenRegister\Service\Operations\OperationsJobsService;
+use OCA\OpenRegister\Service\Operations\OperationsRunNowServices;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\TestCase;
@@ -126,9 +128,7 @@ final class OperationsJobsServiceTest extends TestCase {
 			$this->runs,
 			$this->createMock(JobScheduleService::class),
 			$this->createMock(JobAlertService::class),
-			$this->jobList,
-			$container,
-			$recorder
+			new OperationsRunNowServices($this->jobList, $container, $recorder)
 		);
 	}
 
@@ -235,7 +235,7 @@ final class OperationsJobsServiceTest extends TestCase {
 	public function testTheRunHistoryReportsTheFiltersItApplied(): void {
 		$this->runs->method('countRecent')->willReturn(0);
 
-		$answer = $this->service()->runs('Acme\\NightlyJob', JobRun::OUTCOME_FAILED, 24);
+		$answer = $this->service()->runs(new JobRunFilter('Acme\\NightlyJob', JobRun::OUTCOME_FAILED, 24));
 
 		$this->assertSame('Acme\\NightlyJob', $answer['filters']['job']);
 		$this->assertSame(JobRun::OUTCOME_FAILED, $answer['filters']['outcome']);

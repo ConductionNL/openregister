@@ -470,7 +470,7 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($flowMapper, $versions, $membership) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
 					FlowTenantMembership::class => $membership,
 					'OCA\OpenRegister\Db\FlowMapper' => $flowMapper,
 					IUserSession::class => $this->createConfiguredMock(IUserSession::class, ['getUser' => $this->user()]),

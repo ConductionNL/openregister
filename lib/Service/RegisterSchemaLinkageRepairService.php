@@ -23,7 +23,9 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCP\DB\IPreparedStatement;
 use OCP\IDBConnection;
 use PDO;
 use Psr\Log\LoggerInterface;
@@ -78,6 +80,13 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 	private const TABLE_MARKER = 'openregister_table_';
 
 	/**
+	 * Lists the shard tables; `information_schema` is honoured by PostgreSQL and MySQL.
+	 *
+	 * @var string
+	 */
+	private const SHARD_TABLES_QUERY = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection   $db             The database connection.
@@ -115,44 +124,79 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 		}
 
 		$report = [];
-		foreach ($this->registerMapper->findAll() as $register) {
-			// No null check on the id: Entity declares `@method int getId()`, and
-			// findAll() only ever yields persisted rows, so phpstan is right that
-			// `$id === null` can never be true here. The scope filter is the part
-			// that does work.
-			$id = $register->getId();
-			if ($registerId !== null && $id !== $registerId) {
-				continue;
+		foreach ($this->registersInScope(registerId: $registerId) as $register) {
+			$entry = $this->reportEntry(register: $register, candidates: ($pairs[$register->getId()] ?? []));
+			if ($entry !== null) {
+				$report[] = $entry;
 			}
-
-			$currentIds = $this->normaliseIds(candidates: ($register->getSchemas() ?? []));
-			$candidates = ($pairs[$id] ?? []);
-
-			// Additive only: a schema may legitimately be linked before its first
-			// object is written, so a missing table is NOT evidence of "not linked".
-			// Only ids absent from the stored list are proposed.
-			$recoverable = [];
-			foreach ($candidates as $schemaId => $rowCount) {
-				if (in_array($schemaId, $currentIds, true) === false) {
-					$recoverable[$schemaId] = $rowCount;
-				}
-			}
-
-			if ($recoverable === []) {
-				continue;
-			}
-
-			ksort($recoverable);
-			$report[] = [
-				'registerId'   => $id,
-				'registerSlug' => $register->getSlug(),
-				'currentIds'   => $currentIds,
-				'recoverable'  => $recoverable,
-			];
-		}//end foreach
+		}
 
 		return $report;
 	}//end inspect()
+
+	/**
+	 * Every register, or only the one asked for.
+	 *
+	 * No null check on the id: Entity declares `@method int getId()`, and
+	 * findAll() only ever yields persisted rows, so phpstan is right that
+	 * `$id === null` can never be true here. The scope filter is the part
+	 * that does work.
+	 *
+	 * @param int|null $registerId Only this register, or all when null.
+	 *
+	 * @return Register[] The registers to inspect, in mapper order.
+	 */
+	private function registersInScope(?int $registerId): array {
+		return array_filter(
+			$this->registerMapper->findAll(),
+			static fn (Register $register): bool => $registerId === null || $register->getId() === $registerId
+		);
+	}//end registersInScope()
+
+	/**
+	 * Build the report entry for one register, or null when nothing is recoverable.
+	 *
+	 * @param Register         $register   The register under inspection.
+	 * @param array<int, int>  $candidates Schema id => live row count from its tables.
+	 *
+	 * @return array{registerId:int, registerSlug:string|null, currentIds:int[], recoverable:array<int,int>}|null
+	 */
+	private function reportEntry(Register $register, array $candidates): ?array {
+		$currentIds = $this->normaliseIds(candidates: ($register->getSchemas() ?? []));
+
+		$recoverable = $this->unlinked(candidates: $candidates, currentIds: $currentIds);
+		if ($recoverable === []) {
+			return null;
+		}
+
+		ksort($recoverable);
+		return [
+			'registerId'   => $register->getId(),
+			'registerSlug' => $register->getSlug(),
+			'currentIds'   => $currentIds,
+			'recoverable'  => $recoverable,
+		];
+	}//end reportEntry()
+
+	/**
+	 * The physically evidenced schemas the stored list does not carry yet.
+	 *
+	 * Additive only: a schema may legitimately be linked before its first
+	 * object is written, so a missing table is NOT evidence of "not linked".
+	 * Only ids absent from the stored list are proposed.
+	 *
+	 * @param array<int, int> $candidates Schema id => live row count.
+	 * @param int[]           $currentIds The stored schema ids.
+	 *
+	 * @return array<int, int> Schema id => live row count, for unlinked ids only.
+	 */
+	private function unlinked(array $candidates, array $currentIds): array {
+		return array_filter(
+			$candidates,
+			static fn (int $schemaId): bool => in_array($schemaId, $currentIds, true) === false,
+			ARRAY_FILTER_USE_KEY
+		);
+	}//end unlinked()
 
 	/**
 	 * Apply a repair to one register.
@@ -172,17 +216,24 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 		$register = $this->registerMapper->find($registerId);
 		$current  = $this->normaliseIds(candidates: ($register->getSchemas() ?? []));
 
-		$merged = $current;
-		foreach ($this->normaliseIds(candidates: $schemaIds) as $candidate) {
-			if (in_array($candidate, $merged, true) === false) {
-				$merged[] = $candidate;
-			}
-		}
-
-		sort($merged);
+		$merged = $this->mergeIds(current: $current, additions: $this->normaliseIds(candidates: $schemaIds));
 		$register->setSchemas($merged);
 		$this->registerMapper->update($register);
+		$this->logRepair(registerId: $registerId, current: $current, merged: $merged);
 
+		return $merged;
+	}//end apply()
+
+	/**
+	 * Record a repaired register's before and after schema lists.
+	 *
+	 * @param int   $registerId The repaired register.
+	 * @param int[] $current    The ids before the repair.
+	 * @param int[] $merged     The ids after the repair.
+	 *
+	 * @return void
+	 */
+	private function logRepair(int $registerId, array $current, array $merged): void {
 		$this->logger->warning(
 			message: sprintf(
 				'[RegisterSchemaLinkageRepair] Register %d schemas list repaired: %s -> %s.',
@@ -192,9 +243,27 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 			),
 			context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $registerId]
 		);
+	}//end logRepair()
 
+	/**
+	 * Merge additional ids into the current ones, keeping every current id, sorted.
+	 *
+	 * @param int[] $current   The stored ids.
+	 * @param int[] $additions The ids to add.
+	 *
+	 * @return int[] The sorted union.
+	 */
+	private function mergeIds(array $current, array $additions): array {
+		$merged = $current;
+		foreach ($additions as $candidate) {
+			if (in_array($candidate, $merged, true) === false) {
+				$merged[] = $candidate;
+			}
+		}
+
+		sort($merged);
 		return $merged;
-	}//end apply()
+	}//end mergeIds()
 
 	/**
 	 * Map every register id to the schema ids it has physical tables for.
@@ -204,22 +273,46 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 	private function physicalPairs(): array {
 		$pairs = [];
 		foreach ($this->shardTableNames() as $name) {
-			$offset = strpos($name, self::TABLE_MARKER);
-			if ($offset === false) {
-				continue;
+			$pair = $this->parsePair(name: $name);
+			if ($pair !== null) {
+				$pairs[$pair[0]][$pair[1]] = $this->countRows(table: $name);
 			}
-
-			$suffix = substr($name, ($offset + strlen(self::TABLE_MARKER)));
-			$parts  = explode('_', $suffix);
-			if (count($parts) !== 2 || ctype_digit($parts[0]) === false || ctype_digit($parts[1]) === false) {
-				continue;
-			}
-
-			$pairs[(int)$parts[0]][(int)$parts[1]] = $this->countRows(table: $name);
 		}
 
 		return $pairs;
 	}//end physicalPairs()
+
+	/**
+	 * Read the register and schema id out of a shard table name.
+	 *
+	 * @param string $name The table name.
+	 *
+	 * @return array{0:int, 1:int}|null [registerId, schemaId], or null when the name is not a shard table.
+	 */
+	private function parsePair(string $name): ?array {
+		$offset = strpos($name, self::TABLE_MARKER);
+		if ($offset === false) {
+			return null;
+		}
+
+		$parts = explode('_', substr($name, ($offset + strlen(self::TABLE_MARKER))));
+		if ($this->isIdPair(parts: $parts) === false) {
+			return null;
+		}
+
+		return [(int)$parts[0], (int)$parts[1]];
+	}//end parsePair()
+
+	/**
+	 * Whether a split table suffix is exactly two digit-only segments.
+	 *
+	 * @param string[] $parts The suffix split on underscores.
+	 *
+	 * @return bool True for `<registerId>_<schemaId>`.
+	 */
+	private function isIdPair(array $parts): bool {
+		return count($parts) === 2 && ctype_digit($parts[0]) === true && ctype_digit($parts[1]) === true;
+	}//end isIdPair()
 
 	/**
 	 * List every shard table name.
@@ -231,9 +324,7 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 	 */
 	private function shardTableNames(): array {
 		try {
-			$stmt = $this->db->prepare(
-				'SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern'
-			);
+			$stmt = $this->db->prepare(self::SHARD_TABLES_QUERY);
 			$stmt->bindValue('pattern', '%openregister\_table\_%');
 			$stmt->execute();
 		} catch (Throwable $e) {
@@ -244,6 +335,17 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 			return [];
 		}
 
+		return $this->tableNamesFrom(stmt: $stmt);
+	}//end shardTableNames()
+
+	/**
+	 * Collect the non-empty table names from an executed information_schema statement.
+	 *
+	 * @param IPreparedStatement $stmt The executed statement.
+	 *
+	 * @return array<int, string> The table names.
+	 */
+	private function tableNamesFrom(IPreparedStatement $stmt): array {
 		$names = [];
 		while (($row = $stmt->fetch(PDO::FETCH_ASSOC)) !== false) {
 			$name = (string)($row['table_name'] ?? ($row['TABLE_NAME'] ?? ''));
@@ -253,7 +355,7 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 		}
 
 		return $names;
-	}//end shardTableNames()
+	}//end tableNamesFrom()
 
 	/**
 	 * Count the live rows in a shard table.

@@ -52,6 +52,8 @@ use OCP\IDBConnection;
  * @psalm-suppress PossiblyUnusedMethod
  */
 class NotificationDispatchLogMapper extends QBMapper {
+	use NotificationQueryTrait;
+
 
 	/**
 	 * Default deduplication window in seconds (24 hours).
@@ -85,43 +87,19 @@ class NotificationDispatchLogMapper extends QBMapper {
 	 *
 	 * @return bool True when a duplicate exists within the window.
 	 */
-	public function isDuplicate(
-		string $notificationSlug,
-		string $idempotencyKey,
-		int $windowSeconds = self::DEFAULT_WINDOW_SECONDS,
-	): bool {
+	public function isDuplicate(string $notificationSlug, string $idempotencyKey, int $windowSeconds = self::DEFAULT_WINDOW_SECONDS): bool {
 		// Use UTC consistently: PHP server timezone may differ from the DB
 		// session timezone, and 'Y-m-d H:i:s' in local time would let
 		// duplicates slip through (or, conversely, double-fire across DST
 		// boundaries). Keep the cutoff anchored to UTC and write `dispatched_at`
 		// rows the same way in record().
-		$cutoff = new DateTime('now', new DateTimeZone('UTC'));
-		$cutoff->modify(sprintf('-%d seconds', $windowSeconds));
+		$cutoff = $this->utcCutoff(windowSeconds: $windowSeconds);
 
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->createFunction('COUNT(*)'))
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq(
-					'notification_slug',
-					$qb->createNamedParameter($notificationSlug)
-				)
-			)
-			->andWhere(
-				$qb->expr()->eq(
-					'idempotency_key',
-					$qb->createNamedParameter($idempotencyKey)
-				)
-			)
-			->andWhere(
-				$qb->expr()->gte(
-					'dispatched_at',
-					$qb->createNamedParameter(
-						$cutoff->format('Y-m-d H:i:s'),
-						IQueryBuilder::PARAM_STR
-					)
-				)
-			);
+			->from($this->getTableName());
+		$this->whereEquals(qb: $qb, columns: ['notification_slug' => $notificationSlug, 'idempotency_key' => $idempotencyKey]);
+		$qb->andWhere($qb->expr()->gte('dispatched_at', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_STR)));
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
@@ -129,6 +107,22 @@ class NotificationDispatchLogMapper extends QBMapper {
 
 		return $count > 0;
 	}//end isDuplicate()
+
+
+	/**
+	 * The UTC moment the window starts, formatted as `dispatched_at` stores it.
+	 *
+	 * @param int $windowSeconds The window length in seconds.
+	 *
+	 * @return string The cutoff, 'Y-m-d H:i:s' in UTC.
+	 */
+	private function utcCutoff(int $windowSeconds): string {
+		$cutoff = new DateTime('now', new DateTimeZone('UTC'));
+		$cutoff->modify(sprintf('-%d seconds', $windowSeconds));
+
+		return $cutoff->format('Y-m-d H:i:s');
+
+	}//end utcCutoff()
 
 	/**
 	 * Record a new dispatch for the given (slug, key) pair.
@@ -167,15 +161,8 @@ class NotificationDispatchLogMapper extends QBMapper {
 			// second one's INSERT trips the unique constraint and we surface
 			// a clearly-typed exception so the caller stops the send.
 			if ($e->getReason() === DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
-				throw new DuplicateDispatchException(
-					sprintf(
-						'Duplicate dispatch: (slug=%s, key=%s) already recorded',
-						$notificationSlug,
-						$idempotencyKey
-					),
-					0,
-					$e
-				);
+				$message = sprintf('Duplicate dispatch: (slug=%s, key=%s) already recorded', $notificationSlug, $idempotencyKey);
+				throw new DuplicateDispatchException($message, 0, $e);
 			}
 
 			throw $e;
@@ -199,25 +186,6 @@ class NotificationDispatchLogMapper extends QBMapper {
 		// Match isDuplicate(): the prune cutoff is anchored to UTC so it is
 		// directly comparable to the UTC-formatted `dispatched_at` rows
 		// record() writes.
-		$cutoff = new DateTime('now', new DateTimeZone('UTC'));
-		$cutoff->modify(sprintf('-%d seconds', $windowSeconds));
-
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->delete($this->getTableName())
-				->where(
-					$qb->expr()->lt(
-						'dispatched_at',
-						$qb->createNamedParameter(
-							$cutoff->format('Y-m-d H:i:s'),
-							IQueryBuilder::PARAM_STR
-						)
-					)
-				);
-			return (int)$qb->executeStatement();
-		} catch (\Throwable) {
-			return 0;
-		}
-
+		return $this->deleteBeforeQuietly(column: 'dispatched_at', cutoff: $this->utcCutoff(windowSeconds: $windowSeconds));
 	}//end pruneExpired()
 }//end class

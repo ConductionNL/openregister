@@ -82,6 +82,16 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	];
 
 	/**
+	 * The parts that hold gid and uid pairs.
+	 */
+	private const PAIRS = ['memberships', 'subAdmins'];
+
+	/**
+	 * The parts that hold a list of names.
+	 */
+	private const NAMES = ['groups', 'organisations'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig Holds the records.
@@ -112,51 +122,55 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
 	public function read(string $set): array {
-		$record  = self::BLANK;
 		$decoded = json_decode($this->stored(set: $set), true);
 		if (is_array($decoded) === false) {
-			return $record;
+			return self::BLANK;
 		}
 
-		foreach ((array) ($decoded['users'] ?? []) as $uid => $how) {
-			if (in_array($how, ['created', 'adopted'], true) === true) {
-				$record['users'][(string) $uid] = $how;
-			}
+		$record = self::BLANK;
+		foreach (array_keys(self::BLANK) as $part) {
+			$record[$part] = $this->part(part: $part, stored: (array) ($decoded[$part] ?? []));
 		}
-
-		$record['groups']      = array_values(array_filter((array) ($decoded['groups'] ?? []), 'is_string'));
-		$record['groupNames']  = array_filter((array) ($decoded['groupNames'] ?? []), 'is_array');
-		$record['memberships'] = $this->memberships(decoded: (array) ($decoded['memberships'] ?? []));
-		$record['subAdmins']   = $this->memberships(decoded: (array) ($decoded['subAdmins'] ?? []));
-		$record['objects']     = $this->objects(decoded: (array) ($decoded['objects'] ?? []));
-		$record['changes']     = array_filter((array) ($decoded['changes'] ?? []), 'is_array');
-		$record['registers']   = array_filter((array) ($decoded['registers'] ?? []), 'is_array');
-		$record['files']       = array_filter((array) ($decoded['files'] ?? []), 'is_array');
-		$record['appConfig']   = array_filter((array) ($decoded['appConfig'] ?? []), 'is_array');
-		$record['userPreferences'] = array_filter((array) ($decoded['userPreferences'] ?? []), 'is_array');
-		$record['organisations'] = array_values(array_filter((array) ($decoded['organisations'] ?? []), 'is_string'));
-		$record['tasks']         = array_filter((array) ($decoded['tasks'] ?? []), 'is_array');
-		$record['views']         = array_filter((array) ($decoded['views'] ?? []), 'is_array');
-		$record['watchers']      = array_filter((array) ($decoded['watchers'] ?? []), 'is_array');
-		$record['parties']       = array_filter((array) ($decoded['parties'] ?? []), 'is_array');
-		$record['notes']         = array_filter((array) ($decoded['notes'] ?? []), 'is_array');
-		$record['readStates']    = array_filter((array) ($decoded['readStates'] ?? []), 'is_array');
-		$record['flows']         = array_filter((array) ($decoded['flows'] ?? []), 'is_array');
-		$record['exportRuns']    = array_filter((array) ($decoded['exportRuns'] ?? []), 'is_array');
-		$record['deckCards']     = array_filter((array) ($decoded['deckCards'] ?? []), 'is_array');
-		$record['appointments']  = array_filter((array) ($decoded['appointments'] ?? []), 'is_array');
-		$record['casePlans']     = array_filter((array) ($decoded['casePlans'] ?? []), 'is_array');
-		$record['collectivesPages'] = array_filter((array) ($decoded['collectivesPages'] ?? []), 'is_array');
-		$record['talkConversations'] = array_filter((array) ($decoded['talkConversations'] ?? []), 'is_array');
-		$record['auditEntries']  = array_filter((array) ($decoded['auditEntries'] ?? []), 'is_array');
-		$record['timelineEntries'] = array_filter((array) ($decoded['timelineEntries'] ?? []), 'is_array');
-		$record['emailLinks']    = array_filter((array) ($decoded['emailLinks'] ?? []), 'is_array');
-		$record['accessLinks']   = array_filter((array) ($decoded['accessLinks'] ?? []), 'is_array');
-		$record['grants']        = array_filter((array) ($decoded['grants'] ?? []), 'is_array');
-		$record['archival']      = array_filter((array) ($decoded['archival'] ?? []), 'is_array');
 
 		return $record;
 	}//end read()
+
+	/**
+	 * The well-formed entries of one stored part: accounts that were created or adopted, gid and uid pairs, objects
+	 * with an id, lists of names, or (every other part) the entries that are maps.
+	 *
+	 * @param string                   $part   The part.
+	 * @param array<int|string, mixed> $stored The stored part.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function part(string $part, array $stored): array {
+		return match (true) {
+			$part === 'users'   => $this->users(decoded: $stored),
+			$part === 'objects' => $this->objects(decoded: $stored),
+			in_array($part, self::PAIRS, true) => $this->memberships(decoded: $stored),
+			in_array($part, self::NAMES, true) => array_values(array_filter($stored, 'is_string')),
+			default => array_filter($stored, 'is_array'),
+		};
+	}//end part()
+
+	/**
+	 * The accounts of a stored record, each `created` or `adopted`.
+	 *
+	 * @param array<int|string, mixed> $decoded The stored accounts.
+	 *
+	 * @return array<string, string>
+	 */
+	private function users(array $decoded): array {
+		$users = [];
+		foreach ($decoded as $uid => $how) {
+			if (in_array($how, ['created', 'adopted'], true) === true) {
+				$users[(string) $uid] = $how;
+			}
+		}
+
+		return $users;
+	}//end users()
 
 	/**
 	 * The well-formed gid and uid pairs of a stored record.
@@ -187,20 +201,33 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 		$objects = [];
 		foreach ($decoded as $key => $object) {
 			if (is_array($object) === true && is_string($object['id'] ?? null) === true && $object['id'] !== '') {
-				$objects[(string) $key] = [
-					'register' => (string) ($object['register'] ?? ''),
-					'schema'   => (string) ($object['schema'] ?? ''),
-					'id'       => $object['id'],
-				];
-				// What the install wrote into the object's reference fields, so a later install can tell its own value from an edit.
-				if (is_array($object['refs'] ?? null) === true && $object['refs'] !== []) {
-					$objects[(string) $key]['refs'] = $object['refs'];
-				}
+				$objects[(string) $key] = $this->object(object: $object);
 			}
 		}
 
 		return $objects;
 	}//end objects()
+
+	/**
+	 * One well-formed object of a stored record.
+	 *
+	 * @param array<string, mixed> $object The stored object, with an id.
+	 *
+	 * @return array{register: string, schema: string, id: string, refs?: array<string, mixed>}
+	 */
+	private function object(array $object): array {
+		$kept = [
+			'register' => (string) ($object['register'] ?? ''),
+			'schema'   => (string) ($object['schema'] ?? ''),
+			'id'       => $object['id'],
+		];
+		// What the install wrote into the object's reference fields, so a later install can tell its own value from an edit.
+		if (is_array($object['refs'] ?? null) === true && $object['refs'] !== []) {
+			$kept['refs'] = $object['refs'];
+		}
+
+		return $kept;
+	}//end object()
 
 	/**
 	 * Whether a record names nothing.
@@ -272,15 +299,11 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	 */
 	public static function letGoUndeclared(array $fragment, string $part, string $noun, array &$report, array &$record): bool {
 		$prefix   = $fragment['app'].'/';
-		$declared = [];
-		foreach ((array) ($fragment[$part] ?? []) as $entry) {
-			$declared[$prefix.($entry['key'] ?? '')] = true;
-		}
-
-		$changed = false;
+		$declared = self::declared(fragment: $fragment, part: $part, prefix: $prefix);
+		$changed  = false;
 		foreach (array_keys((array) ($record[$part] ?? [])) as $name) {
 			$name = (string) $name;
-			if (str_starts_with($name, $prefix) === false || str_contains($name, '#') === true || isset($declared[$name]) === true) {
+			if (self::isUndeclared(name: $name, prefix: $prefix, declared: $declared) === false) {
 				continue;
 			}
 
@@ -291,6 +314,37 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 
 		return $changed;
 	}//end letGoUndeclared()
+
+	/**
+	 * The record keys of the declarations of one part in a fragment.
+	 *
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param string               $part     The part.
+	 * @param string               $prefix   The app's prefix, `<app>/`.
+	 *
+	 * @return array<string, bool>
+	 */
+	private static function declared(array $fragment, string $part, string $prefix): array {
+		$declared = [];
+		foreach ((array) ($fragment[$part] ?? []) as $entry) {
+			$declared[$prefix.($entry['key'] ?? '')] = true;
+		}
+
+		return $declared;
+	}//end declared()
+
+	/**
+	 * Whether a held entry is one of the app's own declarations of this part that the fragment no longer declares.
+	 *
+	 * @param string              $name     The record key.
+	 * @param string              $prefix   The app's prefix, `<app>/`.
+	 * @param array<string, bool> $declared The record keys the fragment declares.
+	 *
+	 * @return bool
+	 */
+	private static function isUndeclared(string $name, string $prefix, array $declared): bool {
+		return str_starts_with($name, $prefix) === true && str_contains($name, '#') === false && isset($declared[$name]) === false;
+	}//end isUndeclared()
 
 	/**
 	 * Hold what following a held change or preference made of its entry, and report a write or a failure.

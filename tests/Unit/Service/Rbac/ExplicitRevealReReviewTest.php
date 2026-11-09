@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowFilter;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
+use OCA\OpenRegister\Service\Rbac\RevealRecording;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
@@ -139,7 +140,7 @@ class ExplicitRevealReReviewTest extends TestCase {
 		$properties->method('canReadProperty')->willReturn(true);
 		$reveal = new ExplicitReveal();
 		$reveal->grantFor(objectId: '42', reveal: 'citizenServiceNumber');
-		$masker = new ExplicitRevealMasker($reveal, $properties, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+		$masker = new ExplicitRevealMasker($reveal, $properties, $this->createMock(IUserSession::class), new RevealRecording($this->createMock(LoggerInterface::class)));
 
 		[$byId] = $masker->maskObject(schema: $this->schema(), object: ['id' => '42', 'citizenServiceNumber' => self::BSN], objectIds: ['42']);
 		$this->assertSame('*****7609', $byId['citizenServiceNumber']);

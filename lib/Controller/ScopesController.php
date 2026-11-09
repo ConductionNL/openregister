@@ -28,7 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use Closure;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\ScopeCaller;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -38,7 +40,10 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Controller\Support\ScopesControllerServices;
 
 /**
  * Discovery endpoint for the current user's effective RBAC scopes.
@@ -56,6 +61,13 @@ class ScopesController extends Controller {
 	public const ACTIONS = ['read', 'create', 'update', 'delete', 'list'];
 
 	/**
+	 * What an administrator is told about each action: held by bypass, not by rule.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const ADMIN_PROVENANCE = ['granted' => true, 'source' => 'admin', 'rule' => null, 'principal' => 'admin', 'role' => null];
+
+	/**
 	 * The user session.
 	 *
 	 * @var IUserSession
@@ -70,25 +82,37 @@ class ScopesController extends Controller {
 	private readonly IGroupManager $groupManager;
 
 	/**
+	 * Register lookup.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application identifier.
 	 * @param IRequest $request Active HTTP request.
 	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param RegisterMapperInterface $registerMapper Register lookup.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
+	 * @param ScopesControllerServices $services Register and schema lookups.
 	 * @param PermissionHandlerInterface $permissionHandler RBAC evaluator that
 	 *                                             owns the rule chain.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		ControllerSession $session,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly ControllerSession $session,
+		ScopesControllerServices $services,
 		private readonly PermissionHandlerInterface $permissionHandler,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		$this->registerMapper = $services->registerMapper;
+		$this->schemaMapper = $services->schemaMapper;
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->userSession = $session->userSession;
 		$this->groupManager = $session->groupManager;
@@ -149,63 +173,95 @@ class ScopesController extends Controller {
 	public function index(?string $register = null, ?string $schema = null): JSONResponse {
 		$user = $this->userSession->getUser();
 		$userId = $user?->getUID();
-		$groups = [];
-		$isAdmin = false;
-		if ($user !== null) {
-			$groups = $this->groupManager->getUserGroupIds($user);
-			$isAdmin = in_array('admin', $groups, true);
-		}
+		$groups = $this->groupsOf(user: $user);
+		$isAdmin = in_array('admin', $groups, true);
 
 		$registers = $this->resolveRegisters(filter: $register);
 		$schemas = $this->resolveSchemas(filter: $schema);
-
-		$scopes = [];
-		foreach ($registers as $reg) {
-			$registerSchemaIds = $reg->getSchemas() ?? [];
-			foreach ($schemas as $sch) {
-				if (in_array($sch->getId(), $registerSchemaIds, false) === false) {
-					continue;
-				}
-
-				$actions = $this->collectActionsForUser(
-					schema: $sch,
-					userId: $userId,
-					isAdmin: $isAdmin
-				);
-				if ($actions === []) {
-					continue;
-				}
-
-				// `actions` keeps its shape, exactly. Every feature gate in the
-				// fleet reads it as a list of strings, and provenance is added
-				// BESIDE it rather than inside it so none of them has to change
-				// to keep working.
-				$scopes[] = [
-					'register' => $reg->getSlug(),
-					'schema' => $sch->getSlug(),
-					'actions' => $actions,
-					'provenance' => $this->provenanceFor(
-						schema: $sch,
-						userId: $userId,
-						isAdmin: $isAdmin
-					),
-				];
-			}//end foreach
-		}//end foreach
-
-		return new JSONResponse(
-			[
-				'user' => $userId,
-				'isAdmin' => $isAdmin,
-				'groups' => array_values($groups),
-				'scopes' => $scopes,
-			]
+		$scopes = $this->scopesFor(
+			catalogue: ['registers' => $registers, 'schemas' => $schemas],
+			caller: new ScopeCaller(userId: $userId, isAdmin: $isAdmin)
 		);
+
+		return new JSONResponse(['user' => $userId, 'isAdmin' => $isAdmin, 'groups' => array_values($groups), 'scopes' => $scopes]);
 
 	}//end index()
 
 	/**
+	 * The caller's group ids; none for an unauthenticated caller.
+	 *
+	 * @param IUser|null $user The session user.
+	 *
+	 * @return array<int|string, string> The group ids.
+	 */
+	private function groupsOf(?IUser $user): array {
+		if ($user === null) {
+			return [];
+		}
+
+		return $this->groupManager->getUserGroupIds($user);
+	}//end groupsOf()
+
+	/**
+	 * Every (register, schema) pair the caller holds at least one action on.
+	 *
+	 * @param array{registers: Register[], schemas: Schema[]} $catalogue The registers and schemas reported on.
+	 * @param ScopeCaller                                     $caller    The caller probed.
+	 *
+	 * @return array<int, array<string, mixed>> The scope entries.
+	 */
+	private function scopesFor(array $catalogue, ScopeCaller $caller): array {
+		$scopes = [];
+		foreach ($catalogue['registers'] as $reg) {
+			foreach ($catalogue['schemas'] as $sch) {
+				$scope = $this->scopeFor(pair: ['register' => $reg, 'schema' => $sch], caller: $caller);
+				if ($scope !== null) {
+					$scopes[] = $scope;
+				}
+			}
+		}
+
+		return $scopes;
+	}//end scopesFor()
+
+	/**
+	 * The scope entry for one pair, or null when the schema is not in the register or nothing is held.
+	 *
+	 * `actions` keeps its shape, exactly. Every feature gate in the fleet reads
+	 * it as a list of strings, and provenance is added BESIDE it rather than
+	 * inside it so none of them has to change to keep working.
+	 *
+	 * @param array{register: Register, schema: Schema} $pair   The register and the schema.
+	 * @param ScopeCaller                              $caller The caller probed.
+	 *
+	 * @return array<string, mixed>|null The scope entry, or null.
+	 */
+	private function scopeFor(array $pair, ScopeCaller $caller): ?array {
+		$register = $pair['register'];
+		$schema = $pair['schema'];
+		if (in_array($schema->getId(), ($register->getSchemas() ?? []), false) === false) {
+			return null;
+		}
+
+		$actions = $this->collectActionsForUser(schema: $schema, caller: $caller);
+		if ($actions === []) {
+			return null;
+		}
+
+		return [
+			'register' => $register->getSlug(),
+			'schema' => $schema->getSlug(),
+			'actions' => $actions,
+			'provenance' => $this->provenanceFor(schema: $schema, caller: $caller),
+		];
+	}//end scopeFor()
+
+	/**
 	 * Resolve the registers in scope for the response.
+	 *
+	 * SECURITY: the multitenancy filter stays on, so the discovery endpoint
+	 * cannot enumerate registers across tenants; only RBAC is bypassed because
+	 * the body computes the per-caller permission verdict downstream.
 	 *
 	 * @param string|null $filter Optional register filter (id|uuid|slug).
 	 *
@@ -214,40 +270,18 @@ class ScopesController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-5
 	 */
 	private function resolveRegisters(?string $filter): array {
-		if ($filter !== null && $filter !== '') {
-			try {
-				// SECURITY: keep multitenancy filter on so the discovery
-				// endpoint cannot enumerate registers across tenants. Body
-				// already short-circuits on anonymous + admin paths.
-				$register = $this->registerMapper->find(
-					$filter,
-					_rbac: false
-				);
-				if ($register === null) {
-					return [];
-				}
-
-				return [$register];
-			} catch (\Throwable $e) {
-				return [];
-			}
+		if ($this->isFilter(filter: $filter) === true) {
+			return $this->orNothing(read: fn (): array => [$this->registerMapper->find($filter, _rbac: false)]);
 		}
 
-		try {
-			// SECURITY: tenant-scope discovery via the default multitenancy
-			// filter; only RBAC is bypassed because the body computes the
-			// per-caller permission verdict downstream.
-			return $this->registerMapper->findAll(
-				_rbac: false
-			);
-		} catch (\Throwable $e) {
-			return [];
-		}
+		return $this->orNothing(read: fn (): array => $this->registerMapper->findAll(_rbac: false));
 
 	}//end resolveRegisters()
 
 	/**
 	 * Resolve the schemas in scope for the response.
+	 *
+	 * SECURITY: see resolveRegisters() — multitenancy stays on.
 	 *
 	 * @param string|null $filter Optional schema filter (id|uuid|slug).
 	 *
@@ -256,33 +290,39 @@ class ScopesController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-5
 	 */
 	private function resolveSchemas(?string $filter): array {
-		if ($filter !== null && $filter !== '') {
-			try {
-				// SECURITY: see resolveRegisters() — keep multitenancy on.
-				$schema = $this->schemaMapper->find(
-					$filter,
-					_rbac: false
-				);
-				if ($schema === null) {
-					return [];
-				}
-
-				return [$schema];
-			} catch (\Throwable $e) {
-				return [];
-			}
+		if ($this->isFilter(filter: $filter) === true) {
+			return $this->orNothing(read: fn (): array => [$this->schemaMapper->find($filter, _rbac: false)]);
 		}
 
+		return $this->orNothing(read: fn (): array => $this->schemaMapper->findAll(_rbac: false));
+
+	}//end resolveSchemas()
+
+	/**
+	 * Whether a narrowing filter was given.
+	 *
+	 * @param string|null $filter The filter.
+	 *
+	 * @return bool True for a non-empty filter.
+	 */
+	private function isFilter(?string $filter): bool {
+		return $filter !== null && $filter !== '';
+	}//end isFilter()
+
+	/**
+	 * Run a lookup, answering nothing when it fails.
+	 *
+	 * @param Closure(): array<int, mixed> $read The lookup.
+	 *
+	 * @return array<int, mixed> What it found, or an empty list.
+	 */
+	private function orNothing(Closure $read): array {
 		try {
-			// SECURITY: see resolveRegisters() — keep multitenancy on.
-			return $this->schemaMapper->findAll(
-				_rbac: false
-			);
+			return $read();
 		} catch (\Throwable $e) {
 			return [];
 		}
-
-	}//end resolveSchemas()
+	}//end orNothing()
 
 	/**
 	 * The rule behind each of this caller's answers on one schema.
@@ -293,31 +333,24 @@ class ScopesController extends Controller {
 	 * this person update this dossier" got a yes before, which answers a
 	 * different question.
 	 *
-	 * @param Schema      $schema  Schema being reported on.
-	 * @param string|null $userId  Active user (null = unauthenticated probe).
-	 * @param bool        $isAdmin Whether the caller is in the `admin` group.
+	 * An administrator holds everything by bypass, not by rule, and saying
+	 * so is more useful than naming a rule that did not decide. A report
+	 * that invented a rule here would send somebody looking for it.
+	 *
+	 * @param Schema      $schema Schema being reported on.
+	 * @param ScopeCaller $caller The caller probed: active user (null = unauthenticated probe) and admin fact.
 	 *
 	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function provenanceFor(Schema $schema, ?string $userId, bool $isAdmin): array {
-		// An administrator holds everything by bypass, not by rule, and saying
-		// so is more useful than naming a rule that did not decide. A report
-		// that invented a rule here would send somebody looking for it.
-		if ($isAdmin === true) {
-			return array_fill_keys(
-				self::ACTIONS,
-				['granted' => true, 'source' => 'admin', 'rule' => null, 'principal' => 'admin', 'role' => null]
-			);
+	private function provenanceFor(Schema $schema, ScopeCaller $caller): array {
+		if ($caller->isAdmin === true) {
+			return array_fill_keys(self::ACTIONS, self::ADMIN_PROVENANCE);
 		}
 
 		try {
-			return $this->permissionHandler->provenanceFor(
-				schema: $schema,
-				actions: self::ACTIONS,
-				userId: $userId
-			);
+			return $this->permissionHandler->provenanceFor(schema: $schema, actions: self::ACTIONS, userId: $caller->userId);
 		} catch (\Throwable $e) {
 			// The verdict above already answered. A provenance that throws must
 			// not take the scope list with it: a client that cannot read WHY is
@@ -332,39 +365,44 @@ class ScopesController extends Controller {
 	 * Admin callers short-circuit to the full action vocabulary, mirroring the
 	 * admin-bypass branch in `PermissionHandlerInterface::hasPermission`.
 	 *
-	 * @param Schema $schema Schema being evaluated.
-	 * @param string|null $userId Active user (null = unauthenticated probe).
-	 * @param bool $isAdmin Whether the caller is in the `admin` group.
+	 * @param Schema      $schema Schema being evaluated.
+	 * @param ScopeCaller $caller The caller probed: active user (null = unauthenticated probe) and admin fact.
 	 *
 	 * @return array<int, string> Permitted action vocabulary.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function collectActionsForUser(Schema $schema, ?string $userId, bool $isAdmin): array {
-		if ($isAdmin === true) {
+	private function collectActionsForUser(Schema $schema, ScopeCaller $caller): array {
+		if ($caller->isAdmin === true) {
 			return self::ACTIONS;
 		}
 
-		$allowed = [];
-		foreach (self::ACTIONS as $action) {
-			try {
-				$granted = $this->permissionHandler->hasPermission(
-					schema: $schema,
-					action: $action,
-					userId: $userId,
-					objectOwner: null,
-					_rbac: true,
-					object: null
-				);
-			} catch (\Throwable $e) {
-				$granted = false;
-			}
+		$userId = $caller->userId;
+		return array_values(
+			array_filter(
+				self::ACTIONS,
+				fn (string $action): bool => $this->grants(schema: $schema, action: $action, userId: $userId)
+			)
+		);
+	}//end collectActionsForUser()
 
-			if ($granted === true) {
-				$allowed[] = $action;
-			}
+	/**
+	 * Whether the RBAC chain grants one action on a schema; a failing probe grants nothing.
+	 *
+	 * @param Schema $schema Schema being evaluated.
+	 * @param string $action The canonical action.
+	 * @param string|null $userId Active user (null = unauthenticated probe).
+	 *
+	 * @return bool True when granted.
+	 */
+	private function grants(Schema $schema, string $action, ?string $userId): bool {
+		try {
+			// The owner and object stay at their null defaults: this is a schema-level probe.
+			$granted = $this->permissionHandler->hasPermission(schema: $schema, action: $action, userId: $userId, _rbac: true);
+		} catch (\Throwable $e) {
+			return false;
 		}
 
-		return $allowed;
-	}//end collectActionsForUser()
+		return $granted === true;
+	}//end grants()
 }//end class

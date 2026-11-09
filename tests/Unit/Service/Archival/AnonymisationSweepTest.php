@@ -108,6 +108,30 @@ class AnonymisationSweepTest extends TestCase {
 	}//end testASoundBatchIsAnonymised()
 
 	/**
+	 * The plan a sweep hands its targets is built from the candidate itself:
+	 * its uuid, its payload and the profile name the act is recorded under.
+	 *
+	 * @return void
+	 */
+	public function testThePlanCarriesTheCandidatesRecordAndProfileName(): void {
+		$seen = [];
+		$report = $this->sweep->run(
+			candidates: [$this->candidate('obj-7')],
+			targetsFor: static function (array $candidate, $plan) use (&$seen): array {
+				$seen = ['uuid' => $plan->objectUuid, 'profile' => $plan->profileName, 'before' => $plan->before, 'changed' => $plan->changedProperties];
+				return [new RecordingTarget(name: 'payload')];
+			},
+			salt: 'instance-salt'
+		);
+
+		$this->assertSame(
+			['uuid' => 'obj-7', 'profile' => 'zaak-statistiek', 'before' => ['naam' => 'Fatima El-Amrani', 'zaaknummer' => 'ZK-1'], 'changed' => ['naam']],
+			$seen
+		);
+		$this->assertSame('zaak-statistiek', $report['anonymised'][0]['marker']['profile']);
+	}//end testThePlanCarriesTheCandidatesRecordAndProfileName()
+
+	/**
 	 * 🔴 ONE HELD RECORD DOES NOT BLOCK THE REST, AND DOES NOT VANISH EITHER.
 	 * Stopping the batch would let a single hold block a retention obligation
 	 * for everything else; skipping it silently would report a clean run.

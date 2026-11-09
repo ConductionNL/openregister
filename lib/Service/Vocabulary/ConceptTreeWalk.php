@@ -28,8 +28,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use DateTimeInterface;
-
 /**
  * One position in a bounded, cycle-safe walk down a concept tree.
  */
@@ -38,16 +36,14 @@ final class ConceptTreeWalk {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConceptRelations  $relations The scheme's broader/narrower relations.
-	 * @param string            $language  The BCP-47 tag to read labels in.
-	 * @param DateTimeInterface $instant   The instant to judge each window at.
-	 * @param integer           $remaining How many more levels may be walked.
-	 * @param array<string,true> $visited  The uris already on this path.
+	 * @param ConceptRelations   $relations The scheme's broader/narrower relations.
+	 * @param ConceptReading     $reading   The language and instant every node is judged in.
+	 * @param integer            $remaining How many more levels may be walked.
+	 * @param array<string,true> $visited   The uris already on this path.
 	 */
 	public function __construct(
 		public readonly ConceptRelations $relations,
-		public readonly string $language,
-		public readonly DateTimeInterface $instant,
+		public readonly ConceptReading $reading,
 		public readonly int $remaining,
 		private readonly array $visited = [],
 	) {
@@ -76,8 +72,7 @@ final class ConceptTreeWalk {
 
 		return new self(
 			relations: $this->relations,
-			language: $this->language,
-			instant: $this->instant,
+			reading: $this->reading,
 			remaining: ($this->remaining - 1),
 			visited: $visited
 		);

@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\BulkAction\Support\ApplyRuleServices;
 
 /**
  * Applying a rule to objects that already exist.
@@ -62,12 +63,25 @@ use Throwable;
 class ApplyRuleAction implements ApplyRuleActionInterface {
 
 	/**
+	 * Finds the rule as declared.
+	 *
+	 * @var RuleInventoryServiceInterface
+	 */
+	private readonly RuleInventoryServiceInterface $inventory;
+
+	/**
+	 * The JSON-AST evaluator.
+	 *
+	 * @var CalculationEvaluatorInterface
+	 */
+	private readonly CalculationEvaluatorInterface $evaluator;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objectService The object write path.
 	 * @param SchemaMapperInterface $schemaMapper Resolves the schema the rule is declared on.
-	 * @param RuleInventoryServiceInterface $inventory Finds the rule as declared.
-	 * @param CalculationEvaluatorInterface $evaluator The JSON-AST evaluator.
+	 * @param ApplyRuleServices $rules Rule inventory and calculation evaluator.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @return void
@@ -75,10 +89,11 @@ class ApplyRuleAction implements ApplyRuleActionInterface {
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RuleInventoryServiceInterface $inventory,
-		private readonly CalculationEvaluatorInterface $evaluator,
+		ApplyRuleServices $rules,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->inventory = $rules->inventory;
+		$this->evaluator = $rules->evaluator;
 	}//end __construct()
 
 	/**

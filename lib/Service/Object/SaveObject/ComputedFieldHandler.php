@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
 use OCA\OpenRegister\Twig\MappingExtension;
@@ -93,13 +93,6 @@ class ComputedFieldHandler {
 	];
 
 	/**
-	 * Maximum depth for cross-reference resolution to prevent circular lookups.
-	 *
-	 * @var int
-	 */
-	private const MAX_REF_DEPTH = 3;
-
-	/**
 	 * The filters the Twig sandbox allows in computed expressions.
 	 */
 	private const SANDBOX_FILTERS = [
@@ -155,7 +148,7 @@ class ComputedFieldHandler {
 	/**
 	 * Constructor for ComputedFieldHandler.
 	 *
-	 * @param MagicMapperInterface $objectMapper Mapper for fetching referenced objects.
+	 * @param MagicObjectFinderInterface $objectMapper Mapper for fetching referenced objects.
 	 * @param MappingExtension $mappingExtension Twig extension with custom filters and functions.
 	 * @param MappingRuntimeLoader $mappingRuntimeLoader Twig runtime loader for mapping functions.
 	 * @param LoggerInterface $logger Logger for error and debug messages.
@@ -164,7 +157,7 @@ class ComputedFieldHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
+		private readonly MagicObjectFinderInterface $objectMapper,
 		private readonly MappingExtension $mappingExtension,
 		private readonly MappingRuntimeLoader $mappingRuntimeLoader,
 		private readonly LoggerInterface $logger,
@@ -252,17 +245,13 @@ class ComputedFieldHandler {
 		$cyclic = $this->cyclicFields(schema: $schema);
 
 		foreach ($this->expressionsFor(schema: $schema, evaluateOn: $evaluateOn) as $propertyName => $expression) {
-			if (isset($cyclic[$propertyName]) === true) {
-				$data[$propertyName] = null;
-				continue;
+			// A field in a cycle is not evaluated.
+			$value = null;
+			if (isset($cyclic[$propertyName]) === false) {
+				$value = $this->evaluateExpression(expression: $expression, data: $data, schema: $schema, propertyName: $propertyName);
 			}
 
-			$data[$propertyName] = $this->evaluateExpression(
-				expression: $expression,
-				data: $data,
-				schema: $schema,
-				propertyName: $propertyName
-			);
+			$data[$propertyName] = $value;
 		}
 
 		return $this->applyConceptScores(data: $data, schema: $schema);
@@ -349,12 +338,29 @@ class ComputedFieldHandler {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	private function applyConceptScores(array $data, Schema $schema): array {
+		foreach ($this->conceptScores(data: $data, schema: $schema) as $property => $score) {
+			$data[$property] = $score;
+		}
+
+		return $data;
+	}//end applyConceptScores()
+
+	/**
+	 * The rolled-up concept scores of an object; none without a coded-value guard or when the vocabulary
+	 * cannot be read.
+	 *
+	 * @param array<string,mixed> $data   The object data.
+	 * @param Schema              $schema The schema being evaluated.
+	 *
+	 * @return array<string,float> The scores, keyed by target property.
+	 */
+	private function conceptScores(array $data, Schema $schema): array {
 		if ($this->codedValues === null) {
-			return $data;
+			return [];
 		}
 
 		try {
-			$scores = $this->codedValues->rolledUpScores(object: $data, schema: $schema);
+			return $this->codedValues->rolledUpScores(object: $data, schema: $schema);
 		} catch (\Throwable $failure) {
 			// A vocabulary that cannot be read must not become the reason an
 			// object cannot be saved or rendered; the score is simply absent.
@@ -363,15 +369,9 @@ class ComputedFieldHandler {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schema->getId()]
 			);
 
-			return $data;
+			return [];
 		}
-
-		foreach ($scores as $property => $score) {
-			$data[$property] = $score;
-		}
-
-		return $data;
-	}//end applyConceptScores()
+	}//end conceptScores()
 
 	/**
 	 * Evaluate a single Twig expression with the given data context.
@@ -388,48 +388,56 @@ class ComputedFieldHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function evaluateExpression(
-		string $expression,
-		array $data,
-		Schema $schema,
-		string $propertyName,
-	): mixed {
+	private function evaluateExpression(string $expression, array $data, Schema $schema, string $propertyName): mixed {
 		try {
 			// Build the Twig context: object data + resolved cross-references.
 			$context = $this->buildTwigContext(data: $data, schema: $schema);
-
-			// Create a template from the expression.
-			$twig = $this->getTwig();
-			$templateName = 'computed_' . $propertyName . '_' . md5($expression);
-
-			/*
-			 * @var \Twig\Loader\ArrayLoader $loader
-			 */
-
-			$loader = $twig->getLoader();
-			$loader->setTemplate($templateName, $expression);
-
-			// Render the expression.
-			$result = trim($twig->render($templateName, $context));
+			$result = $this->render(name: 'computed_' . $propertyName . '_' . md5($expression), expression: $expression, context: $context);
 
 			// Attempt to cast numeric results to their appropriate types.
 			return $this->castResult(result: $result);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: 'Computed field evaluation error: ' . $e->getMessage(),
-				context: [
-					'app' => 'openregister',
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'propertyName' => $propertyName,
-					'expression' => $expression,
-					'error' => $e->getMessage(),
-				]
+				context: $this->failureContext(details: ['propertyName' => $propertyName, 'expression' => $expression, 'error' => $e->getMessage()])
 			);
 
 			return null;
-		}//end try
+		}
 	}//end evaluateExpression()
+
+	/**
+	 * The log context of a failed evaluation or lookup: the app name and location, then the details.
+	 *
+	 * @param array<string, mixed> $details The details.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function failureContext(array $details): array {
+		return ['app' => 'openregister', 'file' => __FILE__, 'line' => __LINE__] + $details;
+	}//end failureContext()
+
+	/**
+	 * Render an expression as a named template in the sandboxed environment, trimmed.
+	 *
+	 * @param string $name       The template name.
+	 * @param string $expression The Twig expression.
+	 * @param array  $context    The Twig context.
+	 *
+	 * @return string The rendered, trimmed result.
+	 */
+	private function render(string $name, string $expression, array $context): string {
+		$twig = $this->getTwig();
+
+		/*
+		 * @var \Twig\Loader\ArrayLoader $loader
+		 */
+
+		$loader = $twig->getLoader();
+		$loader->setTemplate($name, $expression);
+
+		return trim($twig->render($name, $context));
+	}//end render()
 
 	/**
 	 * Build the Twig context from object data, including cross-reference lookups.
@@ -437,23 +445,20 @@ class ComputedFieldHandler {
 	 * Resolves properties referenced via `_ref` by fetching related objects
 	 * and making their data available in the Twig context under the `_ref` key.
 	 *
+	 * References are resolved one level deep: a referenced object's own references are not followed.
+	 *
 	 * @param array $data The object data.
 	 * @param Schema $schema The schema for identifying reference properties.
-	 * @param int $depth Current resolution depth (for circular reference prevention).
 	 *
 	 * @return array The Twig context with data and resolved references.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function buildTwigContext(array $data, Schema $schema, int $depth = 0): array {
+	private function buildTwigContext(array $data, Schema $schema): array {
 		$context = $data;
-
-		// Resolve cross-references if within depth limit.
-		if ($depth < self::MAX_REF_DEPTH) {
-			$refs = $this->resolveReferences(data: $data, schema: $schema, depth: $depth);
-			if (empty($refs) === false) {
-				$context['_ref'] = $refs;
-			}
+		$refs = $this->resolveReferences(data: $data, schema: $schema);
+		if (empty($refs) === false) {
+			$context['_ref'] = $refs;
 		}
 
 		return $context;
@@ -467,77 +472,61 @@ class ComputedFieldHandler {
 	 *
 	 * @param array $data The object data containing reference UUIDs.
 	 * @param Schema $schema The schema with property definitions.
-	 * @param int $depth Current resolution depth.
 	 *
 	 * @return array Resolved reference data indexed by property name.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function resolveReferences(array $data, Schema $schema, int $depth): array {
-		// Guard against infinite recursion in nested reference resolution.
-		$maxDepth = 10;
-		if ($depth > $maxDepth) {
-			$this->logger->warning(
-				message: '[ComputedFieldHandler] Max reference resolution depth exceeded',
-				context: [
-					'app' => 'openregister',
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'depth' => $depth,
-					'maxDepth' => $maxDepth,
-					'schemaId' => $schema->getId(),
-				]
+	private function resolveReferences(array $data, Schema $schema): array {
+		$refs = [];
+		foreach (($schema->getProperties() ?? []) as $propertyName => $property) {
+			if ($this->isReferenceProperty(property: $property) === true) {
+				$refs[$propertyName] = $this->referencedData(propertyName: $propertyName, refValue: $data[$propertyName] ?? null);
+			}
+		}
+
+		return $refs;
+	}//end resolveReferences()
+
+	/**
+	 * Whether a property is a reference: it has a `$ref`, or is a string with format 'uuid'.
+	 *
+	 * @param mixed $property The property definition.
+	 *
+	 * @return bool
+	 */
+	private function isReferenceProperty(mixed $property): bool {
+		return isset($property['$ref']) === true
+			|| (($property['type'] ?? '') === 'string' && ($property['format'] ?? '') === 'uuid');
+	}//end isReferenceProperty()
+
+	/**
+	 * The data of the object a reference value names; [] for a value that is no non-blank string or names
+	 * no readable object.
+	 *
+	 * The object is read without RBAC and tenancy: it only feeds the computed value.
+	 *
+	 * @param int|string $propertyName The reference property (for logging).
+	 * @param mixed      $refValue     The reference value (a UUID).
+	 *
+	 * @return array
+	 */
+	private function referencedData(int|string $propertyName, mixed $refValue): array {
+		if (is_string($refValue) === false || trim($refValue) === '') {
+			return [];
+		}
+
+		try {
+			return $this->objectMapper->find(identifier: $refValue, _rbac: false, _multitenancy: false)->getObject() ?? [];
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				message: '[ComputedFieldHandler] Failed to resolve reference',
+				context: $this->failureContext(details: ['propertyName' => $propertyName, 'refValue' => $refValue, 'error' => $e->getMessage()])
 			);
 
 			return [];
 		}
-
-		$refs = [];
-		$properties = $schema->getProperties() ?? [];
-
-		foreach ($properties as $propertyName => $property) {
-			// Check if this property is a reference (has $ref or type 'string' with format 'uuid').
-			$isRef = isset($property['$ref'])
-				|| (($property['type'] ?? '') === 'string' && ($property['format'] ?? '') === 'uuid');
-
-			if ($isRef === false) {
-				continue;
-			}
-
-			// Get the reference value (UUID) from the data.
-			$refValue = $data[$propertyName] ?? null;
-			if ($refValue === null || is_string($refValue) === false || trim($refValue) === '') {
-				$refs[$propertyName] = [];
-				continue;
-			}
-
-			// Try to fetch the referenced object.
-			try {
-				$referencedObject = $this->objectMapper->find(
-					identifier: $refValue,
-					_rbac: false,
-					_multitenancy: false
-				);
-
-				$refs[$propertyName] = $referencedObject->getObject() ?? [];
-			} catch (\Exception $e) {
-				$this->logger->debug(
-					message: '[ComputedFieldHandler] Failed to resolve reference',
-					context: [
-						'app' => 'openregister',
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'propertyName' => $propertyName,
-						'refValue' => $refValue,
-						'error' => $e->getMessage(),
-					]
-				);
-				$refs[$propertyName] = [];
-			}//end try
-		}//end foreach
-
-		return $refs;
-	}//end resolveReferences()
+	}//end referencedData()
 
 	/**
 	 * Cast a string result to its appropriate PHP type.

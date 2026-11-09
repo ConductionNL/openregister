@@ -312,7 +312,7 @@ class PermissionHandlerEvaluatePermissionTest extends TestCase {
 		$appConfig->method('getValueBool')->willReturnArgument(2);
 		$appConfig->method('getValueString')->willReturn($case['denyMode'] ?? DenyEnforcementMode::MODE_ENFORCING);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $this->userSession(case: $case),
 			userManager: $this->userManager(case: $case),
 			groupManager: $this->groupManager(case: $case),

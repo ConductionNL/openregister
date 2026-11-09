@@ -275,7 +275,7 @@
       "count": 8
     },
     "no-console": {
-      "count": 8
+      "count": 1
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -604,9 +604,6 @@
     }
   },
   "src/modals/settings/LLMConfigModal.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 4
-    },
     "no-console": {
       "count": 2
     },
@@ -660,9 +657,6 @@
     }
   },
   "src/modals/source/ViewSource.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -956,7 +950,7 @@
       "count": 1
     },
     "no-console": {
-      "count": 3
+      "count": 2
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -979,7 +973,7 @@
   },
   "src/views/logs/AuditTrailIndex.vue": {
     "no-console": {
-      "count": 11
+      "count": 9
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -990,7 +984,7 @@
       "count": 1
     },
     "no-console": {
-      "count": 10
+      "count": 8
     },
     "vue/prefer-define-options": {
       "count": 1

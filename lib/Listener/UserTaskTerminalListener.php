@@ -4,7 +4,7 @@
  * A task the graph raised has ended: wake its run and spend the node's budget.
  *
  * Listens for {@see TaskTerminalEvent} and hands every task that carries a
- * `run_uuid` to {@see FlowTaskBridge::continueRun()}. A task with no run uuid
+ * `run_uuid` to {@see FlowTaskBridgeInterface::continueRun()}. A task with no run uuid
  * is a standalone task and nothing here concerns it.
  *
  * Everything the bridge does is best-effort by design: the completion has
@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
-use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\FlowTaskBridgeInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -52,11 +52,11 @@ class UserTaskTerminalListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTaskBridge $bridge Wakes and, per budget, advances the run.
+	 * @param FlowTaskBridgeInterface $bridge Wakes and, per budget, advances the run.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly FlowTaskBridge $bridge,
+		private readonly FlowTaskBridgeInterface $bridge,
 		private readonly LoggerInterface $logger,
 	) {
 

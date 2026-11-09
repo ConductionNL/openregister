@@ -38,7 +38,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/flow-definition-versioning/spec.md
  */
-class FlowVersionMapper extends QBMapper {
+class FlowVersionMapper extends QBMapper implements FlowVersionMapperInterface {
 
 	use SelectByColumnTrait;
 	/**

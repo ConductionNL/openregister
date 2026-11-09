@@ -38,8 +38,10 @@ use Psr\Log\LoggerInterface;
  *
  * A figure that cannot be measured is null, never 0: a 0 reads as "nothing
  * used", which is a claim this service only makes when it counted.
+ *
+ * @spec openspec/specs/organisation-usage-measured/spec.md
  */
-class OrganisationUsageService {
+class OrganisationUsageService implements OrganisationUsageServiceInterface {
 	/**
 	 * Constructor.
 	 *
@@ -100,8 +102,8 @@ class OrganisationUsageService {
 	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	private function measureStorage(Organisation $organisation): ?int {
-		$uuid = $organisation->getUuid();
-		if ($uuid === null || $uuid === '') {
+		$uuid = $this->measurableUuid(organisation: $organisation);
+		if ($uuid === null) {
 			return null;
 		}
 
@@ -109,11 +111,7 @@ class OrganisationUsageService {
 			$folderIds = $this->magicMapper->findFolderIdsByOrganisation(organisationUuid: $uuid);
 			return $this->fileMapper->sumSizesByFileIds(fileIds: $folderIds);
 		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[OrganisationUsageService] Could not measure storage',
-				context: ['uuid' => $uuid, 'error' => $e->getMessage()]
-			);
-			return null;
+			return $this->unmeasured(message: '[OrganisationUsageService] Could not measure storage', uuid: $uuid, error: $e);
 		}
 	}//end measureStorage()
 
@@ -127,32 +125,77 @@ class OrganisationUsageService {
 	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
 	 */
 	private function measureObjects(Organisation $organisation): ?int {
-		$uuid = $organisation->getUuid();
-		if ($uuid === null || $uuid === '' || $organisation->getObjectQuota() === null) {
+		$uuid = $this->measurableUuid(organisation: $organisation);
+		if ($uuid === null || $organisation->getObjectQuota() === null) {
 			return null;
 		}
 
 		try {
-			$schemaIds = [];
-			$slug      = (string) ($organisation->getObjectQuotaSchema() ?? '');
-			if ($slug !== '') {
-				$ids = ($this->schemaMapper->findIdsBySlugs(slugs: [$slug])[strtolower($slug)] ?? []);
-				if ($ids === []) {
-					return 0;
-				}
-
-				$schemaIds = array_map('intval', $ids);
-			}
-
-			return $this->magicMapper->countObjectsByOrganisation(organisationUuid: $uuid, schemaIds: $schemaIds);
+			return $this->countQuotaObjects(organisation: $organisation, uuid: $uuid);
 		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[OrganisationUsageService] Could not count objects',
-				context: ['uuid' => $uuid, 'error' => $e->getMessage()]
-			);
-			return null;
+			return $this->unmeasured(message: '[OrganisationUsageService] Could not count objects', uuid: $uuid, error: $e);
 		}
 	}//end measureObjects()
+
+	/**
+	 * Count the organisation's live objects of the schema its object quota names.
+	 *
+	 * @param Organisation $organisation The organisation.
+	 * @param string       $uuid         Its uuid.
+	 *
+	 * @return int The count; 0 when the named schema is unknown.
+	 *
+	 * @throws Exception When the objects cannot be counted.
+	 *
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 */
+	private function countQuotaObjects(Organisation $organisation, string $uuid): int {
+		$schemaIds = $this->quotaSchemaIds(organisation: $organisation);
+		if ($schemaIds === null) {
+			return 0;
+		}
+
+		return $this->magicMapper->countObjectsByOrganisation(organisationUuid: $uuid, schemaIds: $schemaIds);
+	}//end countQuotaObjects()
+
+	/**
+	 * Log a figure that could not be measured; it is null, never 0.
+	 *
+	 * @param string    $message What could not be measured.
+	 * @param string    $uuid    The organisation uuid.
+	 * @param Exception $error   Why.
+	 *
+	 * @return null Always null.
+	 *
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
+	 */
+	private function unmeasured(string $message, string $uuid, Exception $error): null {
+		$this->logger->warning(message: $message, context: ['uuid' => $uuid, 'error' => $error->getMessage()]);
+		return null;
+	}//end unmeasured()
+
+	/**
+	 * The schema ids the object quota counts.
+	 *
+	 * @param Organisation $organisation The organisation.
+	 *
+	 * @return list<int>|null Empty for every schema (the quota names none), null when the named schema is unknown.
+	 *
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 */
+	private function quotaSchemaIds(Organisation $organisation): ?array {
+		$slug = (string) ($organisation->getObjectQuotaSchema() ?? '');
+		if ($slug === '') {
+			return [];
+		}
+
+		$ids = ($this->schemaMapper->findIdsBySlugs(slugs: [$slug])[strtolower($slug)] ?? []);
+		if ($ids === []) {
+			return null;
+		}
+
+		return array_map('intval', $ids);
+	}//end quotaSchemaIds()
 
 	/**
 	 * The requests counted for the organisation this hour.
@@ -164,16 +207,32 @@ class OrganisationUsageService {
 	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	private function measureRequests(Organisation $organisation): ?int {
-		$uuid = $organisation->getUuid();
-		if ($uuid === null || $uuid === '' || $organisation->getRequestQuota() === null
-			|| $this->apcuAvailable() === false
-		) {
+		$uuid = $this->measurableUuid(organisation: $organisation);
+		if ($uuid === null || $organisation->getRequestQuota() === null || $this->apcuAvailable() === false) {
 			return null;
 		}
 
 		$hourBucket = (new DateTime())->format('YmdH');
 		return ($this->apcuFetchInt(key: "or_quota_{$uuid}_{$hourBucket}") ?? 0);
 	}//end measureRequests()
+
+	/**
+	 * The organisation's uuid, or null when it has none to measure by.
+	 *
+	 * @param Organisation $organisation The organisation.
+	 *
+	 * @return string|null The non-empty uuid, or null.
+	 *
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
+	 */
+	private function measurableUuid(Organisation $organisation): ?string {
+		$uuid = $organisation->getUuid();
+		if ($uuid === null || $uuid === '') {
+			return null;
+		}
+
+		return $uuid;
+	}//end measurableUuid()
 
 	/**
 	 * Whether APCu is enabled.

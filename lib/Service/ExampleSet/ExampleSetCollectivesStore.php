@@ -214,14 +214,27 @@ class ExampleSetCollectivesStore {
 		$circles->startSession($circles->getFederatedUser($owner, self::USER_MEMBER));
 		try {
 			foreach ($groups as $group) {
-				try {
-					$circles->addMember($circleId, $circles->getFederatedUser($group, self::GROUP_MEMBER));
-				} catch (Throwable) {
-					continue;
-				}
+				$this->addGroup(circles: $circles, circleId: $circleId, group: $group);
 			}
 		} finally {
 			$circles->stopSession();
 		}
 	}//end addGroups()
+
+	/**
+	 * Add one group to the circle; a group Circles refuses is left out.
+	 *
+	 * @param mixed  $circles  The Circles manager, in the owner's session.
+	 * @param string $circleId The circle id.
+	 * @param string $group    The group.
+	 *
+	 * @return void
+	 */
+	private function addGroup(mixed $circles, string $circleId, string $group): void {
+		try {
+			$circles->addMember($circleId, $circles->getFederatedUser($group, self::GROUP_MEMBER));
+		} catch (Throwable) {
+			return;
+		}
+	}//end addGroup()
 }//end class

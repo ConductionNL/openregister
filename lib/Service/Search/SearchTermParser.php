@@ -54,7 +54,7 @@ use OCA\OpenRegister\Exception\SearchTermSyntaxException;
  * constructor is private. Injecting a factory for four calls to `all`, `any`,
  * `not` and `term` would add a seam nothing else would ever use.
  */
-final class SearchTermParser {
+final class SearchTermParser implements SearchTermParserInterface {
 	/**
 	 * Token type for a literal word or quoted phrase.
 	 */
@@ -76,6 +76,20 @@ final class SearchTermParser {
 	 * @var string[]
 	 */
 	private const KEYWORDS = ['AND', 'OR', 'NOT'];
+
+	/**
+	 * The bracket characters, each with its token type.
+	 *
+	 * @var array<string, string>
+	 */
+	private const BRACKETS = ['(' => self::TOKEN_OPEN, ')' => self::TOKEN_CLOSE];
+
+	/**
+	 * Characters other than whitespace that end a bare word.
+	 *
+	 * @var string[]
+	 */
+	private const WORD_BREAKS = ['(', ')', '"'];
 
 	/**
 	 * Whether this term needs the boolean parser at all.
@@ -144,65 +158,69 @@ final class SearchTermParser {
 		$index = 0;
 
 		while ($index < $length) {
-			$character = mb_substr($term, $index, 1);
-
-			if (trim($character) === '') {
-				$index++;
-				continue;
+			[$token, $index] = $this->tokenAt(term: $term, index: $index, length: $length);
+			if ($token !== null) {
+				$tokens[] = $token;
 			}
-
-			if ($character === '(' || $character === ')') {
-				$type = self::TOKEN_OPEN;
-				if ($character === ')') {
-					$type = self::TOKEN_CLOSE;
-				}
-
-				$tokens[] = $this->makeToken(type: $type, value: $character, position: ($index + 1));
-				$index++;
-				continue;
-			}
-
-			if ($character === '"') {
-				$tokens[] = $this->readPhrase(term: $term, index: $index);
-				// Skip past the closing quote; readPhrase() proved it exists.
-				$index = (mb_strpos($term, '"', ($index + 1)) + 1);
-				continue;
-			}
-
-			$tokens[] = $this->readWord(term: $term, index: $index, length: $length);
-			$index = $this->wordEnd(term: $term, index: $index, length: $length);
-		}//end while
+		}
 
 		return $tokens;
 	}//end tokenize()
 
 	/**
-	 * Build a token array.
+	 * Read the token starting at one offset, and where the next one may start.
+	 *
+	 * @param string $term   The raw search term.
+	 * @param int    $index  Offset to read at.
+	 * @param int    $length Length of the term.
+	 *
+	 * @throws SearchTermSyntaxException When the term is malformed at this offset.
+	 *
+	 * @return array{0: array{type: string, value: string, position: int, leading: bool, trailing: bool}|null, 1: int}
+	 *     The token (null for whitespace) and the next offset.
+	 */
+	private function tokenAt(string $term, int $index, int $length): array {
+		$character = mb_substr($term, $index, 1);
+
+		if (trim($character) === '') {
+			return [null, ($index + 1)];
+		}
+
+		if (isset(self::BRACKETS[$character]) === true) {
+			return [
+				$this->makeToken(type: self::BRACKETS[$character], value: $character, position: ($index + 1)),
+				($index + 1),
+			];
+		}
+
+		if ($character === '"') {
+			$token = $this->readPhrase(term: $term, index: $index);
+			// Skip past the closing quote; readPhrase() proved it exists.
+			return [$token, (mb_strpos($term, '"', ($index + 1)) + 1)];
+		}
+
+		$token = $this->readWord(term: $term, index: $index, length: $length);
+		return [$token, $this->wordEnd(term: $term, index: $index, length: $length)];
+	}//end tokenAt()
+
+	/**
+	 * Build a token array, with neither wildcard flag set.
+	 *
+	 * A wildcarded word sets its flags on the returned array; see readWord().
 	 *
 	 * @param string $type     The token type.
 	 * @param string $value    The literal value.
 	 * @param int    $position The 1-based position.
-	 * @param bool   $leading  Whether a leading wildcard was present.
-	 * @param bool   $trailing Whether a trailing wildcard was present.
 	 *
 	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool} The token.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Both flags describe the token the
-	 * tokenizer just read, not a behaviour it should switch on.
 	 */
-	private function makeToken(
-		string $type,
-		string $value,
-		int $position,
-		bool $leading = false,
-		bool $trailing = false,
-	): array {
+	private function makeToken(string $type, string $value, int $position): array {
 		return [
 			'type' => $type,
 			'value' => $value,
 			'position' => $position,
-			'leading' => $leading,
-			'trailing' => $trailing,
+			'leading' => false,
+			'trailing' => false,
 		];
 	}//end makeToken()
 
@@ -254,7 +272,7 @@ final class SearchTermParser {
 		$end = $index;
 		while ($end < $length) {
 			$character = mb_substr($term, $end, 1);
-			if (trim($character) === '' || $character === '(' || $character === ')' || $character === '"') {
+			if (trim($character) === '' || in_array($character, self::WORD_BREAKS, true) === true) {
 				break;
 			}
 
@@ -296,13 +314,11 @@ final class SearchTermParser {
 			);
 		}
 
-		return $this->makeToken(
-			type: self::TOKEN_TERM,
-			value: $value,
-			position: $position,
-			leading: $leading,
-			trailing: $trailing
-		);
+		$token = $this->makeToken(type: self::TOKEN_TERM, value: $value, position: $position);
+		$token['leading'] = $leading;
+		$token['trailing'] = $trailing;
+
+		return $token;
 	}//end readWord()
 
 	/**

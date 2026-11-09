@@ -23,9 +23,19 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Quality;
 
 /**
- * Reads the properties a schema nominates through `x-openregister-unique-hint`.
+ * Validates `x-openregister-unique-hint` and reads the properties a schema nominates through it.
  */
 interface UniqueHintAnnotationValidatorInterface {
+
+	/**
+	 * Validate the `x-openregister-unique-hint` annotation against the
+	 * properties the schema declares.
+	 *
+	 * @param array<string, mixed> $schema Shape with `properties` and `x-openregister-unique-hint`.
+	 *
+	 * @return array<int, array{code: string, property: string, message: string}> Errors; empty when valid.
+	 */
+	public function validate(array $schema): array;
 
 	/**
 	 * The property names a schema configuration nominates, cleaned.

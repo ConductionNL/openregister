@@ -46,12 +46,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  */
-class ElementMappingValidator {
-
-	/**
-	 * The schema configuration key the mapping lives under.
-	 */
-	public const ANNOTATION_KEY = 'x-openregister-mdto-mapping';
+class ElementMappingValidator implements ElementMappingValidatorInterface {
 
 	/**
 	 * The key naming the object property that fills an element.
@@ -62,6 +57,17 @@ class ElementMappingValidator {
 	 * The key naming a fixed value that fills an element.
 	 */
 	public const SOURCE_CONST = 'const';
+
+	/**
+	 * The message for a mandatory element the mapping leaves out; takes the element.
+	 */
+	private const MISSING_MANDATORY = 'MDTO demands "%s" (minOccurs="1" in MDTO-XML1.0.1.xsd) and this mapping does not fill it. '
+		. 'A transfer of objects of this schema would be refused.';
+
+	/**
+	 * The message for an element MDTO does not have; takes the element and the catalogue.
+	 */
+	private const UNKNOWN_ELEMENT = '"%s" is not an MDTO informatieobject element. MDTO-XML1.0.1.xsd declares: %s.';
 
 	/**
 	 * Constructor.
@@ -76,69 +82,74 @@ class ElementMappingValidator {
 	/**
 	 * Check one schema's mapping against the MDTO catalogue and its own properties.
 	 *
+	 * Each rule's message names which element and which key was wrong; an
+	 * administrator reading "invalid mapping" learns nothing.
+	 *
 	 * @param array<string, mixed> $mapping    The annotation, as written.
 	 * @param array<string, mixed> $properties The schema's declared properties.
 	 *
 	 * @return array<int, array{code: string, message: string}> The errors, empty when the mapping is sound.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per rule, and each rule's
-	 *              message has to name which element and which key was wrong; an
-	 *              administrator reading "invalid mapping" learns nothing.
-	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function validate(array $mapping, array $properties): array {
 		if ($mapping === []) {
-			return [
-				[
-					'code' => 'mdto-mapping-empty',
-					'message' => 'The MDTO mapping is declared but empty. Remove the key, or map the elements MDTO demands.',
-				],
-			];
+			$message = 'The MDTO mapping is declared but empty. Remove the key, or map the elements MDTO demands.';
+			return [$this->error(code: 'mdto-mapping-empty', message: $message)];
 		}
 
 		try {
 			$known = $this->catalogue->elements();
 			$mandatory = $this->catalogue->mandatory();
 		} catch (Throwable $e) {
-			return [
-				[
-					'code' => 'mdto-mapping-catalogue-unreadable',
-					'message' => $e->getMessage(),
-				],
-			];
+			return [$this->error(code: 'mdto-mapping-catalogue-unreadable', message: $e->getMessage())];
 		}
 
+		$errors = $this->entryErrors(mapping: $mapping, known: $known, properties: $properties);
+
+		return array_merge($errors, $this->missingMandatory(mapping: $mapping, mandatory: $mandatory));
+	}//end validate()
+
+	/**
+	 * Check every entry of the mapping, in the order it was written.
+	 *
+	 * @param array<string, mixed> $mapping    The annotation, as written.
+	 * @param array<string, bool>  $known      The catalogue.
+	 * @param array<string, mixed> $properties The schema's declared properties.
+	 *
+	 * @return array<int, array{code: string, message: string}> The errors of all entries.
+	 */
+	private function entryErrors(array $mapping, array $known, array $properties): array {
 		$errors = [];
 		foreach ($mapping as $element => $entry) {
 			$errors = array_merge(
 				$errors,
-				$this->validateEntry(
-					element: (string)$element,
-					entry: $entry,
-					known: $known,
-					properties: $properties
-				)
+				$this->validateEntry(element: (string)$element, entry: $entry, known: $known, properties: $properties)
 			);
 		}
 
-		foreach ($mandatory as $element) {
-			if (array_key_exists($element, $mapping) === true) {
-				continue;
-			}
+		return $errors;
+	}//end entryErrors()
 
-			$errors[] = [
-				'code' => 'mdto-mapping-missing-mandatory',
-				'message' => sprintf(
-					'MDTO demands "%s" (minOccurs="1" in MDTO-XML1.0.1.xsd) and this mapping does not fill it. '
-					. 'A transfer of objects of this schema would be refused.',
-					$element
-				),
-			];
+	/**
+	 * Name every element MDTO demands that the mapping does not fill.
+	 *
+	 * @param array<string, mixed> $mapping   The annotation, as written.
+	 * @param array<int, string>   $mandatory The elements MDTO demands.
+	 *
+	 * @return array<int, array{code: string, message: string}> One error per unfilled element.
+	 */
+	private function missingMandatory(array $mapping, array $mandatory): array {
+		$errors = [];
+		foreach ($mandatory as $element) {
+			if (array_key_exists($element, $mapping) === false) {
+				$message = sprintf(self::MISSING_MANDATORY, $element);
+				$errors[] = $this->error(code: 'mdto-mapping-missing-mandatory', message: $message);
+			}
 		}
 
 		return $errors;
-	}//end validate()
+	}//end missingMandatory()
 
 	/**
 	 * Check one element's entry.
@@ -149,110 +160,102 @@ class ElementMappingValidator {
 	 * @param array<string, mixed> $properties The schema's declared properties.
 	 *
 	 * @return array<int, array{code: string, message: string}> The errors for this entry.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) See validate().
 	 */
 	private function validateEntry(string $element, mixed $entry, array $known, array $properties): array {
 		if (array_key_exists($element, $known) === false) {
-			return [
-				[
-					'code' => 'mdto-mapping-unknown-element',
-					'message' => sprintf(
-						'"%s" is not an MDTO informatieobject element. MDTO-XML1.0.1.xsd declares: %s.',
-						$element,
-						implode(', ', array_keys($known))
-					),
-				],
-			];
+			$message = sprintf(self::UNKNOWN_ELEMENT, $element, implode(', ', array_keys($known)));
+			return [$this->error(code: 'mdto-mapping-unknown-element', message: $message)];
 		}
 
 		if (is_array($entry) === false) {
-			return [
-				[
-					'code' => 'mdto-mapping-entry-not-an-object',
-					'message' => sprintf(
-						'The mapping for "%s" must be an object naming a "%s" or a "%s".',
-						$element,
-						self::SOURCE_PROPERTY,
-						self::SOURCE_CONST
-					),
-				],
-			];
+			$format = 'The mapping for "%s" must be an object naming a "%s" or a "%s".';
+			return [$this->sourceError(code: 'mdto-mapping-entry-not-an-object', format: $format, element: $element)];
 		}
 
-		$property = $this->text(value: ($entry[self::SOURCE_PROPERTY] ?? null));
-		$constant = $this->text(value: ($entry[self::SOURCE_CONST] ?? null));
+		return $this->sourceErrors(element: $element, entry: $entry, properties: $properties);
+	}//end validateEntry()
 
-		if ($property !== null && $constant !== null) {
-			return [
-				[
-					'code' => 'mdto-mapping-two-sources',
-					'message' => sprintf(
-						'The mapping for "%s" names both a "%s" and a "%s". One of them fills the element; say which.',
-						$element,
-						self::SOURCE_PROPERTY,
-						self::SOURCE_CONST
-					),
-				],
-			];
+	/**
+	 * Check that an entry names exactly one source, and that a property source exists.
+	 *
+	 * @param string               $element    The MDTO element name.
+	 * @param array<mixed>         $entry      The entry written against it.
+	 * @param array<string, mixed> $properties The schema's declared properties.
+	 *
+	 * @return array<int, array{code: string, message: string}> The errors for this entry.
+	 */
+	private function sourceErrors(string $element, array $entry, array $properties): array {
+		$property = ArchivalText::fromStringOrInt(value: ($entry[self::SOURCE_PROPERTY] ?? null));
+		$constant = ArchivalText::fromStringOrInt(value: ($entry[self::SOURCE_CONST] ?? null));
+		$named = count(array_filter([$property, $constant], 'is_string'));
+
+		if ($named === 2) {
+			$format = 'The mapping for "%s" names both a "%s" and a "%s". One of them fills the element; say which.';
+			return [$this->sourceError(code: 'mdto-mapping-two-sources', format: $format, element: $element)];
 		}
 
-		if ($property === null && $constant === null) {
-			return [
-				[
-					'code' => 'mdto-mapping-no-source',
-					'message' => sprintf(
-						'The mapping for "%s" names neither a "%s" nor a "%s", so nothing fills the element.',
-						$element,
-						self::SOURCE_PROPERTY,
-						self::SOURCE_CONST
-					),
-				],
-			];
+		if ($named === 0) {
+			$format = 'The mapping for "%s" names neither a "%s" nor a "%s", so nothing fills the element.';
+			return [$this->sourceError(code: 'mdto-mapping-no-source', format: $format, element: $element)];
 		}
 
+		return $this->propertyErrors(element: $element, property: $property, properties: $properties);
+	}//end sourceErrors()
+
+	/**
+	 * Check that a property source names a property the schema declares.
+	 *
+	 * Only the ROOT segment is checked. A dotted path reaches into an
+	 * object-typed property whose inner shape this schema does not necessarily
+	 * declare, and refusing a path we cannot verify would make every nested
+	 * source unmappable.
+	 *
+	 * @param string               $element    The MDTO element name.
+	 * @param string|null          $property   The property source, or null for a constant.
+	 * @param array<string, mixed> $properties The schema's declared properties.
+	 *
+	 * @return array<int, array{code: string, message: string}> The error, or none.
+	 */
+	private function propertyErrors(string $element, ?string $property, array $properties): array {
 		if ($property === null) {
 			return [];
 		}
 
-		// Only the ROOT segment is checked. A dotted path reaches into an
-		// object-typed property whose inner shape this schema does not
-		// necessarily declare, and refusing a path we cannot verify would make
-		// every nested source unmappable.
 		$root = explode('.', $property)[0];
-		if (array_key_exists($root, $properties) === false) {
-			return [
-				[
-					'code' => 'mdto-mapping-unknown-property',
-					'message' => sprintf(
-						'The mapping for "%s" reads property "%s", which this schema does not declare.',
-						$element,
-						$root
-					),
-				],
-			];
+		if (array_key_exists($root, $properties) === true) {
+			return [];
 		}
 
-		return [];
-	}//end validateEntry()
+		$format = 'The mapping for "%s" reads property "%s", which this schema does not declare.';
+		$message = sprintf($format, $element, $root);
+		return [$this->error(code: 'mdto-mapping-unknown-property', message: $message)];
+	}//end propertyErrors()
 
 	/**
-	 * A non-empty trimmed string, or null.
+	 * An error about an entry's source, naming the element and both source keys.
 	 *
-	 * @param mixed $value The candidate.
+	 * @param string $code    The error code.
+	 * @param string $format  The message, with the element, the property key and the const key in that order.
+	 * @param string $element The MDTO element name.
 	 *
-	 * @return string|null The string, or null when it says nothing.
+	 * @return array{code: string, message: string} The error.
 	 */
-	private function text(mixed $value): ?string {
-		if (is_string($value) === false && is_int($value) === false) {
-			return null;
-		}
+	private function sourceError(string $code, string $format, string $element): array {
+		return $this->error(
+			code: $code,
+			message: sprintf($format, $element, self::SOURCE_PROPERTY, self::SOURCE_CONST)
+		);
+	}//end sourceError()
 
-		$text = trim((string)$value);
-		if ($text === '') {
-			return null;
-		}
-
-		return $text;
-	}//end text()
+	/**
+	 * One validation error.
+	 *
+	 * @param string $code    The error code.
+	 * @param string $message The message.
+	 *
+	 * @return array{code: string, message: string} The error.
+	 */
+	private function error(string $code, string $message): array {
+		return ['code' => $code, 'message' => $message];
+	}//end error()
 }//end class

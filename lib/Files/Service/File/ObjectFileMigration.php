@@ -104,9 +104,9 @@ class ObjectFileMigration {
 	/**
 	 * Resolves the openregister account.
 	 *
-	 * @var FileOwnershipHandler
+	 * @var FileOwnershipHandlerInterface
 	 */
-	private readonly FileOwnershipHandler $ownership;
+	private readonly FileOwnershipHandlerInterface $ownership;
 
 	/**
 	 * Re-owns published link shares.

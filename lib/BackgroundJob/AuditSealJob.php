@@ -33,7 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\AuditHashService;
+use OCA\OpenRegister\Service\AuditSealInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -73,12 +73,12 @@ class AuditSealJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for TimedJob.
-	 * @param AuditHashService $hashes Seals the rows.
+	 * @param AuditSealInterface $hashes Seals the rows.
 	 * @param LoggerInterface $logger Reports progress and a growing backlog.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly AuditHashService $hashes,
+		private readonly AuditSealInterface $hashes,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

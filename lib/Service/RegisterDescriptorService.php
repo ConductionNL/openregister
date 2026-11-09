@@ -71,25 +71,45 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	private const DESCRIPTOR_DIR = '/lib/Settings';
 
 	/**
+	 * Performs the mock import.
+	 *
+	 * @var AppConfigurationImporterInterface
+	 */
+	private readonly AppConfigurationImporterInterface $configurationService;
+
+	/**
+	 * Runs a re-import under the decision and counts what changed.
+	 *
+	 * @var CountedRegisterImport
+	 */
+	private readonly CountedRegisterImport $counted;
+
+	/**
+	 * Runs the app's real, forced import.
+	 *
+	 * @var AppRegisterImportRunner
+	 */
+	private readonly AppRegisterImportRunner $importRunner;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppManager          $appManager           Enumerates installed apps and resolves their paths.
 	 * @param RegisterMapperInterface       $registerMapper       Reads the registers that actually exist.
-	 * @param ConfigurationServiceInterface    $configurationService Performs the mock import.
+	 * @param RegisterImporters $importers Performs the mock import, runs a counted re-import and the app's real, forced import.
 	 * @param LoggerInterface         $logger               Records unreadable descriptors.
-	 * @param CountedRegisterImport   $counted              Runs a re-import under the decision and counts what changed.
-	 * @param AppRegisterImportRunner $importRunner         Runs the app's real, forced import.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IAppManager $appManager,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly ConfigurationServiceInterface $configurationService,
+		RegisterImporters $importers,
 		private readonly LoggerInterface $logger,
-		private readonly CountedRegisterImport $counted,
-		private readonly AppRegisterImportRunner $importRunner,
 	) {
+		$this->configurationService = $importers->configurationService;
+		$this->counted = $importers->counted;
+		$this->importRunner = $importers->importRunner;
 	}//end __construct()
 
 	/**
@@ -108,60 +128,7 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 
 		foreach ($this->appManager->getInstalledApps() as $appId) {
 			foreach ($this->descriptorsFor(appId: $appId) as $descriptor) {
-				// 🔴 A MOCK IS NOT A MISSING REGISTER. `x-openregister.type: mock`
-				// marks a descriptor that exists to be imported ON DEMAND — sample
-				// data for a demo or a test — not one an instance is expected to
-				// carry. Measured across OpenRegister's own 14 descriptors, the
-				// correlation is exact: all five mocks ship without a Repair step
-				// and every non-mock but one has one. Reporting them as ABSENT put
-				// five permanent red rows in front of every administrator, and the
-				// obvious response — write the missing importers — would have
-				// seeded five mock registers onto every instance in the fleet.
-				//
-				// A panel whose loudest signal is noise is one people stop reading,
-				// which is the same silence it was built to break.
-				if (($descriptor['data']['x-openregister']['type'] ?? '') === 'mock') {
-					continue;
-				}
-
-				// ATTRIBUTED TO THE APP THAT DECLARES IT, not to the directory it
-				// was found in. A descriptor shipped inside OpenRegister's own
-				// lib/Settings may declare a different `app`, and filing it under
-				// `openregister` names the wrong owner. An inventory exists to tell
-				// somebody whose problem a row is.
-				$owner = (string)($descriptor['data']['x-openregister']['app'] ?? $appId);
-				if ($owner === '') {
-					$owner = $appId;
-				}
-
-				foreach ($descriptor['registers'] as $slug => $register) {
-					$shipped = (string)($register['version'] ?? '0.0.1');
-					$key     = strtolower($slug);
-
-					// 🔴 A MISSING KEY IS THE ROW THAT MATTERS. `absent` is not an
-					// error state to be filtered out later — it is the finding this
-					// whole service exists to surface, so it is built here as a
-					// first-class value rather than inferred from a null further up.
-					$state   = self::STATE_ABSENT;
-					$current = null;
-					if (array_key_exists($key, $installed) === true) {
-						$current = $installed[$key];
-						$state   = self::STATE_CURRENT;
-						if (version_compare($shipped, $current, '>') === true) {
-							$state = self::STATE_BEHIND;
-						}
-					}
-
-					$rows[] = [
-						'appId'            => $owner,
-						'slug'             => (string)$slug,
-						'title'            => (string)($register['title'] ?? $slug),
-						'state'            => $state,
-						'installedVersion' => $current,
-						'shippedVersion'   => $shipped,
-						'descriptor'       => $descriptor['file'],
-					];
-				}
+				$rows = array_merge($rows, $this->descriptorRows(appId: $appId, descriptor: $descriptor, installed: $installed));
 			}
 		}
 
@@ -169,6 +136,116 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 
 		return $rows;
 	}//end inventory()
+
+	/**
+	 * The inventory rows of one descriptor: one per register it declares.
+	 *
+	 * 🔴 A MOCK IS NOT A MISSING REGISTER. `x-openregister.type: mock`
+	 * marks a descriptor that exists to be imported ON DEMAND — sample
+	 * data for a demo or a test — not one an instance is expected to
+	 * carry. Measured across OpenRegister's own 14 descriptors, the
+	 * correlation is exact: all five mocks ship without a Repair step
+	 * and every non-mock but one has one. Reporting them as ABSENT put
+	 * five permanent red rows in front of every administrator, and the
+	 * obvious response — write the missing importers — would have
+	 * seeded five mock registers onto every instance in the fleet.
+	 *
+	 * A panel whose loudest signal is noise is one people stop reading,
+	 * which is the same silence it was built to break.
+	 *
+	 * @param string                                                                          $appId      The app the descriptor was found in.
+	 * @param array{file: string, data: array<string, mixed>, registers: array<string, mixed>} $descriptor The descriptor.
+	 * @param array<string, string>                                                           $installed  Lowercased slug to installed version.
+	 *
+	 * @return array<int, array<string, string|null>> The rows; none for a mock.
+	 */
+	private function descriptorRows(string $appId, array $descriptor, array $installed): array {
+		if (($descriptor['data']['x-openregister']['type'] ?? '') === 'mock') {
+			return [];
+		}
+
+		$owner = $this->ownerOf(appId: $appId, descriptor: $descriptor);
+		$rows  = [];
+		foreach ($descriptor['registers'] as $slug => $register) {
+			$rows[] = ['appId' => $owner]
+				+ $this->registerState(slug: $slug, register: $register, installed: $installed)
+				+ ['descriptor' => $descriptor['file']];
+		}
+
+		return $rows;
+	}//end descriptorRows()
+
+	/**
+	 * The app a descriptor's rows are attributed to.
+	 *
+	 * ATTRIBUTED TO THE APP THAT DECLARES IT, not to the directory it
+	 * was found in. A descriptor shipped inside OpenRegister's own
+	 * lib/Settings may declare a different `app`, and filing it under
+	 * `openregister` names the wrong owner. An inventory exists to tell
+	 * somebody whose problem a row is.
+	 *
+	 * @param string                                                                          $appId      The app the descriptor was found in.
+	 * @param array{file: string, data: array<string, mixed>, registers: array<string, mixed>} $descriptor The descriptor.
+	 *
+	 * @return string The owning app id.
+	 */
+	private function ownerOf(string $appId, array $descriptor): string {
+		$owner = (string)($descriptor['data']['x-openregister']['app'] ?? $appId);
+		if ($owner === '') {
+			$owner = $appId;
+		}
+
+		return $owner;
+	}//end ownerOf()
+
+	/**
+	 * The middle of an inventory row: a declared register and whether, and how current, it landed.
+	 *
+	 * The caller puts the owning app before it and the descriptor file after it.
+	 *
+	 * @param int|string            $slug      The register key in the descriptor.
+	 * @param mixed                 $register  The declared register.
+	 * @param array<string, string> $installed Lowercased slug to installed version.
+	 *
+	 * @return array<string, string|null> slug, title, state, installedVersion, shippedVersion.
+	 */
+	private function registerState(int|string $slug, mixed $register, array $installed): array {
+		$shipped = (string)($register['version'] ?? '0.0.1');
+		$current = ($installed[strtolower($slug)] ?? null);
+
+		return [
+			'slug'             => (string)$slug,
+			'title'            => (string)($register['title'] ?? $slug),
+			'state'            => $this->stateOf(shipped: $shipped, current: $current),
+			'installedVersion' => $current,
+			'shippedVersion'   => $shipped,
+		];
+	}//end registerState()
+
+	/**
+	 * The state of a declared register against what the instance holds.
+	 *
+	 * 🔴 A MISSING KEY IS THE ROW THAT MATTERS. `absent` is not an
+	 * error state to be filtered out later — it is the finding this
+	 * whole service exists to surface, so it is built here as a
+	 * first-class value rather than inferred from a null further up.
+	 *
+	 * @param string      $shipped The version the descriptor ships.
+	 * @param string|null $current The installed version, or null when the register is not on the instance.
+	 *
+	 * @return string One of the STATE_* constants.
+	 */
+	private function stateOf(string $shipped, ?string $current): string {
+		if ($current === null) {
+			return self::STATE_ABSENT;
+		}
+
+		if (version_compare($shipped, $current, '>') === true) {
+			return self::STATE_BEHIND;
+		}
+
+		return self::STATE_CURRENT;
+	}//end stateOf()
 
 	/**
 	 * Re-import an app's REAL register configuration, forced.
@@ -209,6 +286,7 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 		}
 
 		if (in_array(strtolower($slug), $declared, true) === true) {
+			// The app's base document with its fragments, through the app's own forced import.
 			return $this->counted->run(
 				slug: $slug,
 				slugs: $declared,
@@ -219,21 +297,28 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 			);
 		}
 
-		// AN APP WITHOUT ONE BASE DOCUMENT. OpenRegister itself ships twenty
-		// descriptors and no `openregister_register.json`, and the example-set
-		// loader re-imports its registers through this method. For such a slug
-		// the real configuration is the one non-mock descriptor declaring it.
+		return $this->reimportDescriptor(appId: $appId, slug: $slug, declared: $declared, via: $via);
+	}//end reimport()
+
+	/**
+	 * Re-import the one non-mock descriptor declaring a slug.
+	 *
+	 * AN APP WITHOUT ONE BASE DOCUMENT. OpenRegister itself ships twenty
+	 * descriptors and no `openregister_register.json`, and the example-set
+	 * loader re-imports its registers through this method. For such a slug
+	 * the real configuration is the one non-mock descriptor declaring it.
+	 *
+	 * @param string             $appId    The app that ships the configuration.
+	 * @param string             $slug     The register slug.
+	 * @param array<int, string> $declared The slugs the app's base document declares.
+	 * @param string             $via      Who asked.
+	 *
+	 * @return array<string, mixed> The counted outcome, or a failure naming what is declared.
+	 */
+	private function reimportDescriptor(string $appId, string $slug, array $declared, string $via): array {
 		$descriptor = $this->descriptorFor(appId: $appId, slug: $slug, mock: false);
 		if ($descriptor === null) {
-			return [
-				'outcome' => 'failed',
-				'reason'  => sprintf(
-					'The register configuration of %s declares no register "%s" (it declares: %s). For sample data use --mock.',
-					$appId,
-					$slug,
-					implode(', ', $declared)
-				),
-			];
+			return $this->undeclaredFailure(appId: $appId, slug: $slug, declared: $declared);
 		}
 
 		$version = (string)($descriptor['data']['info']['version'] ?? '0.0.1');
@@ -246,7 +331,28 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 			via: $via,
 			import: fn (): array => $this->importDescriptorFile(appId: $appId, descriptor: $descriptor, version: $version)
 		);
-	}//end reimport()
+	}//end reimportDescriptor()
+
+	/**
+	 * The failure for a slug that neither the base document nor a real descriptor declares.
+	 *
+	 * @param string             $appId    The app.
+	 * @param string             $slug     The register slug asked for.
+	 * @param array<int, string> $declared The slugs the base document declares.
+	 *
+	 * @return array{outcome: string, reason: string} The failure.
+	 */
+	private function undeclaredFailure(string $appId, string $slug, array $declared): array {
+		return [
+			'outcome' => 'failed',
+			'reason'  => sprintf(
+				'The register configuration of %s declares no register "%s" (it declares: %s). For sample data use --mock.',
+				$appId,
+				$slug,
+				implode(', ', $declared)
+			),
+		];
+	}//end undeclaredFailure()
 
 	/**
 	 * Import one non-mock descriptor file, forced, under the configuration id its install-time import uses.
@@ -273,38 +379,71 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 		$via      = sprintf('OpenRegister (lib/Settings/%s)', $descriptor['file']);
 		$configId = DescriptorConfigIds::forFile(appId: $appId, file: $descriptor['file']);
 		try {
-			$imported = $this->configurationService->importFromApp(
-				appId: $configId,
-				data: $descriptor['data'],
-				version: $version,
-				force: true
-			);
+			$imported = $this->forcedImport(configId: $configId, data: $descriptor['data'], version: $version);
 		} catch (Throwable $e) {
 			$this->logger->warning('[RegisterDescriptorService] re-import failed: ' . $e->getMessage());
-			return [
-				'success'     => false,
-				'path'        => self::PATH_DESCRIPTOR,
-				'via'         => $via,
-				'message'     => $e->getMessage(),
-				'importJobId' => null,
-				'importAppId' => $configId,
-			];
+			return $this->fileImportResult(via: $via, configId: $configId, jobId: null, failure: $e->getMessage());
 		}
 
+		$jobId = $this->jobIdOf(imported: $imported);
+
+		return $this->fileImportResult(via: $via, configId: $configId, jobId: $jobId, failure: null);
+	}//end importDescriptorFile()
+
+	/**
+	 * Run the configuration import, forced past the version gate.
+	 *
+	 * @param string               $configId The configuration id to import under.
+	 * @param array<string, mixed> $data     The descriptor document.
+	 * @param string               $version  The version to stamp.
+	 *
+	 * @return array<string, mixed> The import's own result.
+	 */
+	private function forcedImport(string $configId, array $data, string $version): array {
+		return $this->configurationService->importFromApp(
+			appId: $configId,
+			data: $data,
+			version: $version,
+			force: true
+		);
+	}//end forcedImport()
+
+	/**
+	 * The import job id an import recorded, or null when it recorded none.
+	 *
+	 * @param array<string, mixed> $imported The import's result.
+	 *
+	 * @return string|null The job id.
+	 */
+	private function jobIdOf(array $imported): ?string {
 		$jobId = ($imported['importJobId'] ?? null);
 		if (is_string($jobId) === false || $jobId === '') {
-			$jobId = null;
+			return null;
 		}
 
+		return $jobId;
+	}//end jobIdOf()
+
+	/**
+	 * The result shape of a descriptor-file import.
+	 *
+	 * @param string      $via      The import path label.
+	 * @param string      $configId The configuration id it ran under.
+	 * @param string|null $jobId    The recorded import job id.
+	 * @param string|null $failure  Why the import threw, or null when it ran without throwing.
+	 *
+	 * @return array{success: bool, path: string, via: string, message: string, importJobId: string|null, importAppId: string}
+	 */
+	private function fileImportResult(string $via, string $configId, ?string $jobId, ?string $failure): array {
 		return [
-			'success'     => true,
+			'success'     => $failure === null,
 			'path'        => self::PATH_DESCRIPTOR,
 			'via'         => $via,
-			'message'     => '',
+			'message'     => ($failure ?? ''),
 			'importJobId' => $jobId,
 			'importAppId' => $configId,
 		];
-	}//end importDescriptorFile()
+	}//end fileImportResult()
 
 	/**
 	 * The register slugs a configuration document declares, lowercased.
@@ -362,39 +501,29 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	public function reimportMock(string $appId, string $slug): array {
 		$descriptor = $this->descriptorFor(appId: $appId, slug: $slug, mock: true);
 		if ($descriptor === null) {
-			return [
-				'outcome' => 'failed',
-				'reason'  => sprintf('%s ships no mock descriptor declaring register "%s".', $appId, $slug),
-			];
+			return $this->noMockFailure(appId: $appId, slug: $slug);
 		}
 
-		$declaredObjects = count(($descriptor['data']['components']['objects'] ?? []));
-
+		// 🔴 A MOCK IMPORTS UNDER ITS OWN CONFIGURATION IDENTITY.
+		//
+		// `importFromApp` stamps `imported_config_<appId>_version` and a
+		// content hash. A mock descriptor declares the SAME register slug as
+		// the app's real one — larpinq ships `larpinq_register.json` and
+		// `larpinq_mock_register.json`, both declaring `larpinq` — so
+		// importing the mock under the plain app id writes over the real
+		// descriptor's stamp and reads its hash. Measured on a live instance:
+		// the command reported `register "larpinq" imported.` and the
+		// register ended up with the REAL descriptor's 11 schemas and ZERO of
+		// the mock's 30 objects.
+		//
+		// This is the same rule ImportMergeOperationRegister already applies
+		// with its own `openregister.merge-operation` id, and for the same
+		// reason: a version gate shared between two descriptors masks one of
+		// them.
+		$configId = $appId . '.mock';
+		$version  = (string)($descriptor['data']['info']['version'] ?? '0.0.1');
 		try {
-			// 🔴 A MOCK IMPORTS UNDER ITS OWN CONFIGURATION IDENTITY.
-			//
-			// `importFromApp` stamps `imported_config_<appId>_version` and a
-			// content hash. A mock descriptor declares the SAME register slug as
-			// the app's real one — larpinq ships `larpinq_register.json` and
-			// `larpinq_mock_register.json`, both declaring `larpinq` — so
-			// importing the mock under the plain app id writes over the real
-			// descriptor's stamp and reads its hash. Measured on a live instance:
-			// the command reported `register "larpinq" imported.` and the
-			// register ended up with the REAL descriptor's 11 schemas and ZERO of
-			// the mock's 30 objects.
-			//
-			// This is the same rule ImportMergeOperationRegister already applies
-			// with its own `openregister.merge-operation` id, and for the same
-			// reason: a version gate shared between two descriptors masks one of
-			// them.
-			$configId = $appId . '.mock';
-
-			$result = $this->configurationService->importFromApp(
-				appId: $configId,
-				data: $descriptor['data'],
-				version: (string)($descriptor['data']['info']['version'] ?? '0.0.1'),
-				force: true
-			);
+			$result = $this->forcedImport(configId: $configId, data: $descriptor['data'], version: $version);
 		} catch (Throwable $e) {
 			// 🔴 REPORTED, NOT SWALLOWED. The Repair steps this complements are
 			// documented to never throw — defensible at boot, where the
@@ -405,6 +534,35 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 			return ['outcome' => 'failed', 'reason' => $e->getMessage()];
 		}
 
+		return $this->mockOutcome(slug: $slug, descriptor: $descriptor, result: $result, configId: $configId);
+	}//end reimportMock()
+
+	/**
+	 * The failure for an app that ships no mock descriptor declaring the slug.
+	 *
+	 * @param string $appId The app.
+	 * @param string $slug  The register slug asked for.
+	 *
+	 * @return array{outcome: string, reason: string} The failure.
+	 */
+	private function noMockFailure(string $appId, string $slug): array {
+		return [
+			'outcome' => 'failed',
+			'reason'  => sprintf('%s ships no mock descriptor declaring register "%s".', $appId, $slug),
+		];
+	}//end noMockFailure()
+
+	/**
+	 * What a mock import that ran without throwing actually achieved.
+	 *
+	 * @param string                                                                          $slug       The register slug.
+	 * @param array{file: string, data: array<string, mixed>, registers: array<string, mixed>} $descriptor The mock descriptor.
+	 * @param array<string, mixed>                                                            $result     The import's result.
+	 * @param string                                                                          $configId   The configuration id it ran under.
+	 *
+	 * @return array<string, mixed> `outcome`, `reason`, `counts` once the register exists, `importJobId`, `importAppId`.
+	 */
+	private function mockOutcome(string $slug, array $descriptor, array $result, string $configId): array {
 		// The job the import ran under, so a caller that undoes the import (an example set's remove) claims exactly it.
 		$job = ['importJobId' => ($result['importJobId'] ?? null), 'importAppId' => $configId];
 
@@ -416,36 +574,59 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 			] + $job;
 		}
 
-		// 🔴 COUNT WHAT LANDED, and fail when a descriptor that declares objects
-		// seeded none of them.
-		//
-		// The old post-check asked only whether a config version existed for the
-		// slug. For a mock that is already true — the app's own descriptor
-		// stamped it at install — so `outcome: imported` was returned over an
-		// import that created nothing. "Imported" that cannot be told apart from
-		// "did nothing" is the failure this whole command exists to surface.
-		$imported = count(($result['objects'] ?? []));
-		$skipped = (int)(($result['skipped']['objects'] ?? 0) + ($result['skipped']['seedObjects'] ?? 0));
+		return $this->mockCounts(descriptor: $descriptor, result: $result) + $job;
+	}//end mockOutcome()
 
-		if ($declaredObjects > 0 && $imported === 0) {
-			return [
-				'outcome' => 'failed',
-				'reason'  => sprintf(
-					'%s declares %d demo object(s) but none were imported (%d skipped). The register and its schemas may have landed; the data did not.',
-					$descriptor['file'],
-					$declaredObjects,
-					$skipped
-				),
-				'counts'  => ['declared' => $declaredObjects, 'imported' => 0, 'skipped' => $skipped],
-			] + $job;
+	/**
+	 * Count what a mock import seeded, failing when it declares objects and seeded none.
+	 *
+	 * 🔴 COUNT WHAT LANDED, and fail when a descriptor that declares objects
+	 * seeded none of them.
+	 *
+	 * The old post-check asked only whether a config version existed for the
+	 * slug. For a mock that is already true — the app's own descriptor
+	 * stamped it at install — so `outcome: imported` was returned over an
+	 * import that created nothing. "Imported" that cannot be told apart from
+	 * "did nothing" is the failure this whole command exists to surface.
+	 *
+	 * @param array{file: string, data: array<string, mixed>, registers: array<string, mixed>} $descriptor The mock descriptor.
+	 * @param array<string, mixed>                                                            $result     The import's result.
+	 *
+	 * @return array{outcome: string, reason: string|null, counts: array<string, int>}
+	 */
+	private function mockCounts(array $descriptor, array $result): array {
+		$declared = count(($descriptor['data']['components']['objects'] ?? []));
+		$imported = count(($result['objects'] ?? []));
+		$skipped  = (int)(($result['skipped']['objects'] ?? 0) + ($result['skipped']['seedObjects'] ?? 0));
+		$counts   = ['declared' => $declared, 'imported' => $imported, 'skipped' => $skipped];
+
+		$outcome = 'imported';
+		$reason  = null;
+		if ($declared > 0 && $imported === 0) {
+			$outcome = 'failed';
+			$reason  = $this->unseededReason(file: $descriptor['file'], declared: $declared, skipped: $skipped);
 		}
 
-		return [
-			'outcome' => 'imported',
-			'reason'  => null,
-			'counts'  => ['declared' => $declaredObjects, 'imported' => $imported, 'skipped' => $skipped],
-		] + $job;
-	}//end reimportMock()
+		return ['outcome' => $outcome, 'reason' => $reason, 'counts' => $counts];
+	}//end mockCounts()
+
+	/**
+	 * Why a mock that declares objects but seeded none failed.
+	 *
+	 * @param string $file     The descriptor file.
+	 * @param int    $declared The objects it declares.
+	 * @param int    $skipped  The objects the import skipped.
+	 *
+	 * @return string The reason.
+	 */
+	private function unseededReason(string $file, int $declared, int $skipped): string {
+		return sprintf(
+			'%s declares %d demo object(s) but none were imported (%d skipped). The register and its schemas may have landed; the data did not.',
+			$file,
+			$declared,
+			$skipped
+		);
+	}//end unseededReason()
 
 	/**
 	 * Whether the instance holds an older version of a register than the
@@ -517,6 +698,25 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	 * @return array<int, array{file: string, data: array<string, mixed>, registers: array<string, mixed>}> Descriptors found.
 	 */
 	private function descriptorsFor(string $appId): array {
+		$found = [];
+		foreach ($this->descriptorFiles(appId: $appId) as $file) {
+			$descriptor = $this->readDescriptor(file: $file);
+			if ($descriptor !== null) {
+				$found[] = $descriptor;
+			}
+		}
+
+		return $found;
+	}//end descriptorsFor()
+
+	/**
+	 * The JSON files in an app's descriptor directory; none when it has no such directory.
+	 *
+	 * @param string $appId The app to scan.
+	 *
+	 * @return array<int, string> Absolute file paths.
+	 */
+	private function descriptorFiles(string $appId): array {
 		try {
 			$dir = $this->appManager->getAppPath($appId) . self::DESCRIPTOR_DIR;
 		} catch (Throwable $e) {
@@ -532,24 +732,30 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 			return [];
 		}
 
-		$found = [];
-		foreach ($files as $file) {
-			$data = json_decode((string)file_get_contents($file), true);
-			if (is_array($data) === false) {
-				$this->logger->debug('[RegisterDescriptorService] not JSON, skipped: ' . $file);
-				continue;
-			}
+		return $files;
+	}//end descriptorFiles()
 
-			$registers = ($data['components']['registers'] ?? null);
-			if (is_array($registers) === false || $registers === []) {
-				continue;
-			}
-
-			$found[] = ['file' => basename($file), 'data' => $data, 'registers' => $registers];
+	/**
+	 * Read one file as a register descriptor, or null when it is not one.
+	 *
+	 * @param string $file The file path.
+	 *
+	 * @return array{file: string, data: array<string, mixed>, registers: array<string, mixed>}|null The descriptor.
+	 */
+	private function readDescriptor(string $file): ?array {
+		$data = json_decode((string)file_get_contents($file), true);
+		if (is_array($data) === false) {
+			$this->logger->debug('[RegisterDescriptorService] not JSON, skipped: ' . $file);
+			return null;
 		}
 
-		return $found;
-	}//end descriptorsFor()
+		$registers = ($data['components']['registers'] ?? null);
+		if (is_array($registers) === false || $registers === []) {
+			return null;
+		}
+
+		return ['file' => basename($file), 'data' => $data, 'registers' => $registers];
+	}//end readDescriptor()
 
 	/**
 	 * The one descriptor an app ships that declares a given register slug.
@@ -567,17 +773,29 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	private function descriptorFor(string $appId, string $slug, bool $mock): ?array {
 		foreach ($this->descriptorsFor(appId: $appId) as $descriptor) {
 			$isMock = (($descriptor['data']['x-openregister']['type'] ?? '') === 'mock');
-			if ($isMock !== $mock) {
-				continue;
-			}
-
-			foreach (array_keys($descriptor['registers']) as $declared) {
-				if (strtolower((string)$declared) === strtolower($slug)) {
-					return $descriptor;
-				}
+			if ($isMock === $mock && $this->declaresSlug(descriptor: $descriptor, slug: $slug) === true) {
+				return $descriptor;
 			}
 		}
 
 		return null;
 	}//end descriptorFor()
+
+	/**
+	 * Whether a descriptor declares a register slug, case-insensitively.
+	 *
+	 * @param array{file: string, data: array<string, mixed>, registers: array<string, mixed>} $descriptor The descriptor.
+	 * @param string                                                                          $slug       The register slug.
+	 *
+	 * @return bool True when one of its register keys matches.
+	 */
+	private function declaresSlug(array $descriptor, string $slug): bool {
+		foreach (array_keys($descriptor['registers']) as $declared) {
+			if (strtolower((string)$declared) === strtolower($slug)) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end declaresSlug()
 }//end class

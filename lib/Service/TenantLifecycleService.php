@@ -52,45 +52,7 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class TenantLifecycleService {
-	/**
-	 * Valid lifecycle states
-	 */
-	public const STATUS_PROVISIONING = 'provisioning';
-	public const STATUS_ACTIVE = 'active';
-	public const STATUS_SUSPENDED = 'suspended';
-	public const STATUS_DEPROVISIONING = 'deprovisioning';
-	public const STATUS_ARCHIVED = 'archived';
-
-	/**
-	 * Access has ended and the data is kept.
-	 *
-	 * The terminal state for an organisation with a retention duty: a tenant
-	 * whose contract ended, whose records must still be kept for a legal
-	 * period. API access is blocked exactly as for `suspended`, and nothing is
-	 * deleted. No background job selects this state, and TenantPurgeJob can
-	 * only ever delete a row in PURGEABLE_STATUS, so a retained organisation
-	 * keeps its data for as long as it stays here.
-	 *
-	 * It is entered from `active` or `suspended`, the same two states
-	 * `deprovisioning` is entered from: the operator ending a tenancy chooses
-	 * between deleting it and keeping it. There is no way back to `active`.
-	 * The one way out is `deprovisioning`, taken on purpose when the retention
-	 * period is over, so the data leaves through the same deletion path and
-	 * grace period as every other organisation.
-	 */
-	public const STATUS_RETAINED = 'retained';
-
-	/**
-	 * The one lifecycle state TenantPurgeJob may permanently delete.
-	 *
-	 * Declared here, beside the transitions, so which states are deletable is
-	 * a property of the lifecycle and not of the job. The job selects on it and
-	 * re-checks every row against it before deleting anything, so a state that
-	 * is not this one, `retained` above all, is never purged.
-	 */
-	public const PURGEABLE_STATUS = self::STATUS_ARCHIVED;
-
+class TenantLifecycleService implements TenantLifecycleServiceInterface {
 	/**
 	 * Valid state transitions: current-state => [allowed-next-states]
 	 */
@@ -104,39 +66,35 @@ class TenantLifecycleService {
 	];
 
 	/**
-	 * Valid OTAP environments
+	 * Nextcloud group manager
+	 *
+	 * @var IGroupManager
 	 */
-	public const ENV_DEVELOPMENT = 'development';
-	public const ENV_TEST = 'test';
-	public const ENV_ACCEPTANCE = 'acceptance';
-	public const ENV_PRODUCTION = 'production';
+	private readonly IGroupManager $groupManager;
 
 	/**
-	 * OTAP order for promotion validation
+	 * Nextcloud user manager, to look up the org admin
+	 *
+	 * @var IUserManager
 	 */
-	public const OTAP_ORDER = [
-		self::ENV_DEVELOPMENT => 0,
-		self::ENV_TEST => 1,
-		self::ENV_ACCEPTANCE => 2,
-		self::ENV_PRODUCTION => 3,
-	];
+	private readonly IUserManager $userManager;
 
 	/**
 	 * Constructor
 	 *
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param IGroupManager $groupManager Nextcloud group manager
-	 * @param IUserManager $userManager Nextcloud user manager, to look up the org admin
+	 * @param TenantDirectory $directory Group and user managers for the tenant groups and admin user.
 	 * @param LoggerInterface $logger Logger
 	 * @param OrganisationLifecycleAuditor|null $auditor Writes each status change to the audit trail. Null only in legacy fixtures.
 	 */
 	public function __construct(
 		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserManager $userManager,
+		TenantDirectory $directory,
 		private readonly LoggerInterface $logger,
 		private readonly ?OrganisationLifecycleAuditor $auditor = null,
 	) {
+		$this->groupManager = $directory->groupManager;
+		$this->userManager = $directory->userManager;
 	}//end __construct()
 
 	/**
@@ -155,21 +113,15 @@ class TenantLifecycleService {
 	public function validateTransition(string $currentStatus, string $targetStatus): void {
 		// Validate that both statuses are known before checking transition.
 		if ($this->isValidStatus(status: $currentStatus) === false || $this->isValidStatus(status: $targetStatus) === false) {
-			throw new Exception(
-				sprintf("Unknown status '%s' or '%s'.", $currentStatus, $targetStatus),
-				Response::HTTP_UNPROCESSABLE_ENTITY
-			);
+			$message = sprintf("Unknown status '%s' or '%s'.", $currentStatus, $targetStatus);
+			throw new Exception($message, Response::HTTP_UNPROCESSABLE_ENTITY);
 		}
 
 		$allowedTransitions = self::STATE_TRANSITIONS[$currentStatus] ?? [];
 
 		if (in_array($targetStatus, $allowedTransitions, true) === false) {
-			$message = sprintf(
-				"Invalid state transition from '%s' to '%s'. Valid transitions: %s",
-				$currentStatus,
-				$targetStatus,
-				implode(', ', $allowedTransitions)
-			);
+			$valid = implode(', ', $allowedTransitions);
+			$message = sprintf("Invalid state transition from '%s' to '%s'. Valid transitions: %s", $currentStatus, $targetStatus, $valid);
 			throw new Exception($message, Response::HTTP_CONFLICT);
 		}
 	}//end validateTransition()
@@ -203,104 +155,161 @@ class TenantLifecycleService {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function provision(Organisation $organisation, string $adminUserId): Organisation {
-		if (($organisation->getStatus() ?? self::STATUS_PROVISIONING) !== self::STATUS_PROVISIONING) {
-			throw new Exception(
-				'Organisation must be in provisioning state to provision',
-				Response::HTTP_CONFLICT
-			);
-		}
-
+		$this->assertProvisionable(organisation: $organisation);
 		$slug = $organisation->getSlug() ?? 'org';
+
+		try {
+			$groupIds = $this->provisionGroups(slug: $slug, adminUserId: $adminUserId);
+			$this->activateWithDefaultAccess(organisation: $organisation, groupIds: $groupIds, adminUserId: $adminUserId);
+			$result = $this->organisationMapper->update($organisation);
+
+			$this->logger->info('[TenantLifecycleService] Organisation provisioned and activated', ['uuid' => $organisation->getUuid(), 'slug' => $slug]);
+
+			return $result;
+		} catch (Exception $e) {
+			$this->logger->error('[TenantLifecycleService] Provisioning failed', ['uuid' => $organisation->getUuid(), 'error' => $e->getMessage()]);
+			throw $e;
+		}
+	}//end provision()
+
+	/**
+	 * Refuse to provision an organisation that is not provisioning or targets an unknown environment.
+	 *
+	 * @param Organisation $organisation The organisation to provision.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception 409 when not provisioning, 422 on an unknown environment, 409 on a bad promotion order.
+	 */
+	private function assertProvisionable(Organisation $organisation): void {
+		if (($organisation->getStatus() ?? self::STATUS_PROVISIONING) !== self::STATUS_PROVISIONING) {
+			throw new Exception('Organisation must be in provisioning state to provision', Response::HTTP_CONFLICT);
+		}
 
 		// Validate that the organisation's target environment is a known OTAP stage.
 		$env = $organisation->getEnvironment() ?? self::ENV_PRODUCTION;
 		if ($this->isValidEnvironment(environment: $env) === false) {
-			throw new Exception(
-				sprintf("Unknown target environment '%s'.", $env),
-				Response::HTTP_UNPROCESSABLE_ENTITY
-			);
+			throw new Exception(sprintf("Unknown target environment '%s'.", $env), Response::HTTP_UNPROCESSABLE_ENTITY);
 		}
 
+		$this->assertPromotionOrder(sourceEnv: ($organisation->getEnvironment() ?? null), env: $env);
+	}//end assertProvisionable()
+
+	/**
+	 * Refuse a promotion from a set source environment to a target that does not come after it.
+	 *
+	 * @param string|null $sourceEnv The source environment, if any.
+	 * @param string      $env       The target environment.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception 409 on a bad promotion order.
+	 */
+	private function assertPromotionOrder(?string $sourceEnv, string $env): void {
 		// If a source environment is set, validate the promotion order.
-		$sourceEnv = $organisation->getEnvironment() ?? null;
 		if ($sourceEnv !== null && $sourceEnv !== $env && $this->isValidPromotionOrder(sourceEnv: $sourceEnv, targetEnv: $env) === false) {
-			throw new Exception(
-				sprintf("Invalid OTAP promotion order from '%s' to '%s'.", $sourceEnv, $env),
-				Response::HTTP_CONFLICT
-			);
+			throw new Exception(sprintf("Invalid OTAP promotion order from '%s' to '%s'.", $sourceEnv, $env), Response::HTTP_CONFLICT);
+		}
+	}//end assertPromotionOrder()
+
+	/**
+	 * Create the slug-prefixed admin and users groups when absent, and put the admin user in both.
+	 *
+	 * @param string $slug        The organisation slug.
+	 * @param string $adminUserId The admin user id.
+	 *
+	 * @return array{admin: string, users: string} The group ids.
+	 */
+	private function provisionGroups(string $slug, string $adminUserId): array {
+		// Create default groups prefixed with org slug.
+		$groupIds = ['admin' => $slug . '-admin', 'users' => $slug . '-users'];
+		foreach ($groupIds as $groupId) {
+			if ($this->groupManager->groupExists($groupId) === false) {
+				$this->groupManager->createGroup($groupId);
+			}
 		}
 
-		try {
-			// Create default groups prefixed with org slug.
-			$adminGroupId = $slug . '-admin';
-			$usersGroupId = $slug . '-users';
+		$this->addAdminToGroups(groupIds: $groupIds, adminUserId: $adminUserId);
 
-			if ($this->groupManager->groupExists($adminGroupId) === false) {
-				$this->groupManager->createGroup($adminGroupId);
+		return $groupIds;
+	}//end provisionGroups()
+
+	/**
+	 * Add the admin user to the admin group and, when it resolves, the users group.
+	 *
+	 * @param array{admin: string, users: string} $groupIds    The group ids.
+	 * @param string                              $adminUserId The admin user id.
+	 *
+	 * @return void
+	 */
+	private function addAdminToGroups(array $groupIds, string $adminUserId): void {
+		// Add admin user to admin group.
+		$adminGroup = $this->groupManager->get($groupIds['admin']);
+		$usersGroup = $this->groupManager->get($groupIds['users']);
+		if ($adminGroup === null) {
+			return;
+		}
+
+		$user = $this->userManager->get($adminUserId);
+		if ($user === null) {
+			return;
+		}
+
+		$adminGroup->addUser($user);
+		$usersGroup?->addUser($user);
+	}//end addAdminToGroups()
+
+	/**
+	 * Set the groups, the default authorization and the admin member, and mark the organisation active.
+	 *
+	 * @param Organisation                        $organisation The organisation.
+	 * @param array{admin: string, users: string} $groupIds     The group ids.
+	 * @param string                              $adminUserId  The admin user id.
+	 *
+	 * @return void
+	 */
+	private function activateWithDefaultAccess(Organisation $organisation, array $groupIds, string $adminUserId): void {
+		// Set organisation groups.
+		$organisation->setGroups([$groupIds['admin'], $groupIds['users']]);
+
+		// Set default authorization RBAC rules.
+		$organisation->setAuthorization($this->defaultAuthorization(authorization: $organisation->getAuthorization(), groupIds: $groupIds));
+
+		// Add admin user to organisation.
+		$organisation->addUser($adminUserId);
+
+		// Transition to active.
+		$organisation->setStatus(self::STATUS_ACTIVE);
+		$organisation->setProvisionedAt(new DateTime());
+	}//end activateWithDefaultAccess()
+
+	/**
+	 * The authorization with every CRUD rule set to the default groups: admin and users, delete admin only.
+	 *
+	 * Only rules that are arrays and carry a `create` key are rewritten.
+	 *
+	 * @param array                               $authorization The current authorization.
+	 * @param array{admin: string, users: string} $groupIds      The group ids.
+	 *
+	 * @return array The rewritten authorization.
+	 */
+	private function defaultAuthorization(array $authorization, array $groupIds): array {
+		$both = [$groupIds['admin'], $groupIds['users']];
+		foreach ($authorization as &$permissions) {
+			if (is_array($permissions) === false || isset($permissions['create']) === false) {
+				continue;
 			}
 
-			if ($this->groupManager->groupExists($usersGroupId) === false) {
-				$this->groupManager->createGroup($usersGroupId);
-			}
+			$permissions['create'] = $both;
+			$permissions['read']   = $both;
+			$permissions['update'] = $both;
+			$permissions['delete'] = [$groupIds['admin']];
+		}
 
-			// Add admin user to admin group.
-			$adminGroup = $this->groupManager->get($adminGroupId);
-			$usersGroup = $this->groupManager->get($usersGroupId);
+		unset($permissions);
 
-			if ($adminGroup !== null) {
-				$user = $this->userManager->get($adminUserId);
-				if ($user !== null) {
-					$adminGroup->addUser($user);
-					if ($usersGroup !== null) {
-						$usersGroup->addUser($user);
-					}
-				}
-			}
-
-			// Set organisation groups.
-			$organisation->setGroups([$adminGroupId, $usersGroupId]);
-
-			// Set default authorization RBAC rules.
-			$authorization = $organisation->getAuthorization();
-			foreach ($authorization as &$permissions) {
-				if (is_array($permissions) === false) {
-					continue;
-				}
-
-				if (isset($permissions['create']) === true) {
-					$permissions['create'] = [$adminGroupId, $usersGroupId];
-					$permissions['read'] = [$adminGroupId, $usersGroupId];
-					$permissions['update'] = [$adminGroupId, $usersGroupId];
-					$permissions['delete'] = [$adminGroupId];
-				}
-			}
-
-			unset($permissions);
-			$organisation->setAuthorization($authorization);
-
-			// Add admin user to organisation.
-			$organisation->addUser($adminUserId);
-
-			// Transition to active.
-			$organisation->setStatus(self::STATUS_ACTIVE);
-			$organisation->setProvisionedAt(new DateTime());
-
-			$result = $this->organisationMapper->update($organisation);
-
-			$this->logger->info(
-				'[TenantLifecycleService] Organisation provisioned and activated',
-				['uuid' => $organisation->getUuid(), 'slug' => $slug]
-			);
-
-			return $result;
-		} catch (Exception $e) {
-			$this->logger->error(
-				'[TenantLifecycleService] Provisioning failed',
-				['uuid' => $organisation->getUuid(), 'error' => $e->getMessage()]
-			);
-			throw $e;
-		}//end try
-	}//end provision()
+		return $authorization;
+	}//end defaultAuthorization()
 
 	/**
 	 * Suspend an active organisation.

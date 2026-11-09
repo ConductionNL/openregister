@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
+use OCA\OpenRegister\Service\ObjectSource\TablesSchemaReconcilerInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -53,13 +53,13 @@ class TablesTableDeletedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param TablesSchemaSyncService $syncService Schema retirement logic.
+	 * @param TablesSchemaReconcilerInterface $syncService Schema retirement logic.
 	 * @param LoggerInterface $logger Logger for diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly TablesSchemaSyncService $syncService,
+		private readonly TablesSchemaReconcilerInterface $syncService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

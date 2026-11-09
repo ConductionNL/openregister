@@ -113,13 +113,10 @@ class ReplyThreadResolver {
 		$firstMatch = null;
 
 		foreach (self::HEADER_ORDER as $header) {
-			$this->scanHeader(
-				headers: $headers,
-				header: $header,
-				lookup: $lookup,
-				objects: $objects,
-				firstMatch: $firstMatch
-			);
+			foreach ($this->hitsIn(headers: $headers, header: $header, lookup: $lookup) as $hit) {
+				$objects[$hit['objectUuid']] = true;
+				$firstMatch ??= $hit;
+			}
 
 			// `In-Reply-To` is the direct parent, so a single unambiguous hit
 			// there is the answer and `References` is not consulted. Walking
@@ -161,23 +158,21 @@ class ReplyThreadResolver {
 	}//end resolve()
 
 	/**
-	 * Walk one header's references, collecting the objects they point at.
+	 * Walk one header's references, listing the objects they point at.
 	 *
-	 * Both accumulators are passed by reference because the walk is a fold
-	 * across TWO headers: `References` adds to what `In-Reply-To` already
-	 * found, and the earliest match keeps its place.
+	 * The caller folds the hits of BOTH headers: `References` adds to what
+	 * `In-Reply-To` already found, and the earliest hit keeps its place.
 	 *
-	 * @param array<string,mixed>      $headers    The reply's headers.
-	 * @param string                   $header     Which header to read.
-	 * @param callable                 $lookup     `fn(string $messageId): ?array`.
-	 * @param array<string,true>       $objects    Objects seen so far, keyed by uuid.
-	 * @param array<string,string>|null $firstMatch The earliest match, or null.
+	 * @param array<string,mixed> $headers The reply's headers.
+	 * @param string              $header  Which header to read.
+	 * @param callable            $lookup  `fn(string $messageId): ?array`.
 	 *
-	 * @return void
+	 * @return array<int,array{objectUuid:string,matchedOn:string,messageId:string}> The hits, in header order.
 	 *
 	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
 	 */
-	private function scanHeader(array $headers, string $header, callable $lookup, array &$objects, ?array &$firstMatch): void {
+	private function hitsIn(array $headers, string $header, callable $lookup): array {
+		$hits = [];
 		foreach ($this->referencesIn(headers: $headers, header: $header) as $messageId) {
 			$link = $lookup($messageId);
 			if (is_array($link) === false) {
@@ -185,14 +180,12 @@ class ReplyThreadResolver {
 			}
 
 			foreach ($this->objectUuidsOf(link: $link) as $objectUuid) {
-				$objects[$objectUuid] = true;
-
-				if ($firstMatch === null) {
-					$firstMatch = ['objectUuid' => $objectUuid, 'matchedOn' => $header, 'messageId' => $messageId];
-				}
+				$hits[] = ['objectUuid' => $objectUuid, 'matchedOn' => $header, 'messageId' => $messageId];
 			}
 		}
-	}//end scanHeader()
+
+		return $hits;
+	}//end hitsIn()
 
 	/**
 	 * The objects a recorded link names.

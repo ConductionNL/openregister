@@ -100,6 +100,9 @@ function mockIcon(name) {
  */
 function mockStub(name) {
 	const { h: render } = require('vue')
+	if (name === 'CnDataTable') {
+		return mockTable()
+	}
 	return {
 		name,
 		inheritAttrs: false,
@@ -120,6 +123,54 @@ function mockStub(name) {
 					.sort()
 					.map((slot) => render(`slot-${slot}`, this.$slots[slot]({}))),
 			)
+		},
+	}
+}
+
+/**
+ * A cell without a slot as the library's formatValue draws it: text cut at
+ * 100 characters plus an ellipsis, an empty value as a dash.
+ *
+ * @param {*} value The cell value
+ * @return {string} What the library shows
+ */
+function mockCell(value) {
+	if (value === null || value === undefined || value === '') {
+		return '—'
+	}
+	const text = String(value)
+	return text.length > 100 ? `${text.substring(0, 100)}...` : text
+}
+
+/**
+ * A stand-in for CnDataTable that draws its column labels and cell values
+ * (or the `column-<key>` slot), so a golden compares what each cell reads.
+ *
+ * @return {object} The stub
+ */
+function mockTable() {
+	const { h: render } = require('vue')
+	return {
+		name: 'CnDataTable',
+		inheritAttrs: false,
+		props: { columns: Array, rows: Array, rowKey: { type: String, default: 'id' } },
+		render() {
+			const head = this.columns.map((col) => render('x-th', col.label))
+			const body = this.rows.map((row) =>
+				render(
+					'x-tr',
+					{ key: row[this.rowKey] },
+					this.columns.map((col) => {
+						const slot = this.$slots[`column-${col.key}`]
+						return render(
+							'x-td',
+							slot ? slot({ row, value: row[col.key] }) : mockCell(row[col.key]),
+						)
+					}),
+				),
+			)
+			const attrs = { ...this.$attrs, rowKey: this.rowKey }
+			return render('x-CnDataTable', attrs, [render('x-thead', head), render('x-tbody', body)])
 		},
 	}
 }

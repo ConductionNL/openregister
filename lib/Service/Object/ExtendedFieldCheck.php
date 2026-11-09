@@ -19,7 +19,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Exception\CustomValidationException;
-use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
+use OCA\OpenRegister\Formats\FormatFactory;
 
 /**
  * Checks an object's values against the extended field types (color, recurrence).
@@ -102,8 +102,8 @@ final class ExtendedFieldCheck {
 		}
 
 		return match ($declared['type'] ?? null) {
-			'color' => (new ExtendedFieldTypeValidator())->validateColor(value: $value, format: ($declared['format'] ?? null), propertyName: $name),
-			'recurrence' => (new ExtendedFieldTypeValidator())->validateRecurrence(value: $value, propertyName: $name),
+			'color' => FormatFactory::extendedFieldTypes()->validateColor(value: $value, format: ($declared['format'] ?? null), propertyName: $name),
+			'recurrence' => FormatFactory::extendedFieldTypes()->validateRecurrence(value: $value, propertyName: $name),
 			default => null,
 		};
 	}//end errorFor()

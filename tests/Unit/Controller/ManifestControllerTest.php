@@ -17,6 +17,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ManifestController;
 use OCA\OpenRegister\Service\ManifestService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ManifestControllerFactory;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -77,7 +78,7 @@ class ManifestControllerTest extends TestCase {
 		$this->request = $this->createMock(originalClassName: IRequest::class);
 		$this->logger = $this->createMock(originalClassName: LoggerInterface::class);
 
-		$this->controller = new ManifestController(
+		$this->controller = ManifestControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->manifestService,

@@ -10,6 +10,7 @@ use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\RegistrySubscriptionMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Registry\RegistryInboundServices;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionNotifier;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
 use OCA\OpenRegister\Service\Registry\RegistryUpdateTargetGuard;
@@ -43,9 +44,8 @@ class RegistrySubscriptionServiceTest extends TestCase {
 
 		$this->service = new RegistrySubscriptionService(
 			$this->subscriptionMapper,
-			$this->objectService,
 			$this->notifier,
-			$this->updateTargetGuard,
+			new RegistryInboundServices(objectService: $this->objectService, updateTargetGuard: $this->updateTargetGuard),
 			$this->createMock(LoggerInterface::class),
 		);
 	}
@@ -107,9 +107,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->notifier->expects($this->once())
 			->method('requested')
 			->with(
-				$this->anything(),
-				'dossiq',
-				'brpPerson',
+				$this->callback(fn (ObjectEntity $object): bool => $object->getRegister() === 'dossiq' && $object->getSchema() === 'brpPerson'),
 				'brp',
 				'999990019',
 			);

@@ -38,25 +38,21 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Db\TaskAudit;
-use OCA\OpenRegister\Db\TaskAuditMapper;
-use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
+use OCA\OpenRegister\Service\Task\WriteBack\WriteBackAttempt;
+use OCA\OpenRegister\Service\Task\WriteBack\WriteBackRefusal;
+use OCA\OpenRegister\Service\Task\WriteBack\WriteBackTaskResolver;
 use OCP\AppFramework\Db\DoesNotExistException;
-use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * The write-back gate.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The gate is the one
- * place the calendar, the lifecycle, the audit, the projection and the
- * refusal notice meet; splitting it would create a second path back.
+ * The calendar, the lifecycle and the refusal meet here; the refusal's
+ * audit, projection restore and notice live in {@see WriteBackRefusal},
+ * which only this gate calls, so there is still one path back.
+ *
  * @SuppressWarnings(PHPMD.StaticAccess) The identity and status readers are
  * stateless parsers published by the projector and the mapping.
  *
@@ -74,26 +70,16 @@ class TaskVtodoWriteBackGate implements TaskVtodoWriteBackGateInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskServiceInterface $tasks The authorized lifecycle: the ONLY thing that mutates a task.
-	 * @param TaskMapper $mapper Resolves the task the VTODO names.
-	 * @param TaskAuditMapper $audits Records denials the lifecycle did not already record.
-	 * @param TaskCalendarProjector $projector Renders the engine's truth back over a refused edit.
-	 * @param TaskProjectionService $projections Failure-isolated reconciliation.
-	 * @param TaskInboxService $inbox The row the refusal notice is built from.
-	 * @param NotificationRuleDispatcherInterface $dispatcher The one dispatcher, for the refusal notice.
-	 * @param TaskNotificationRulesInterface $rules The task rule registry.
-	 * @param LoggerInterface $logger Failure reporting.
+	 * @param TaskServiceInterface  $tasks     The authorized lifecycle: the ONLY thing that mutates a task.
+	 * @param WriteBackTaskResolver $resolver  Resolves the task the VTODO names, refusing visibly.
+	 * @param TaskCalendarProjector $projector Renders the engine's truth back over a write.
+	 * @param WriteBackRefusal      $refusal   Makes a refusal visible: audit, restore, notice, log.
 	 */
 	public function __construct(
 		private readonly TaskServiceInterface $tasks,
-		private readonly TaskMapper $mapper,
-		private readonly TaskAuditMapper $audits,
+		private readonly WriteBackTaskResolver $resolver,
 		private readonly TaskCalendarProjector $projector,
-		private readonly TaskProjectionService $projections,
-		private readonly TaskInboxService $inbox,
-		private readonly NotificationRuleDispatcherInterface $dispatcher,
-		private readonly TaskNotificationRulesInterface $rules,
-		private readonly LoggerInterface $logger,
+		private readonly WriteBackRefusal $refusal,
 	) {
 
 	}//end __construct()
@@ -120,36 +106,21 @@ class TaskVtodoWriteBackGate implements TaskVtodoWriteBackGateInterface {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-ticking-off-the-vtodo-completes-the-engine-task-through-authorization
 	 */
 	public function handleWrite(string $calendarData, ?string $actor): ?string {
-		$taskUuid = TaskCalendarProjector::taskUuidOf(calendarData: $calendarData);
+		$taskUuid = $this->engineTaskOf(calendarData: $calendarData);
 		if ($taskUuid === null) {
-			// An ordinary calendar task: not the engine's business, at any
-			// point in its life.
-			return null;
-		}
-
-		if ($this->projector->isEcho(taskUuid: $taskUuid, calendarData: $calendarData) === true) {
 			return null;
 		}
 
 		$fields = TaskCalendarProjector::engineFields(calendarData: $calendarData);
-		$task = $this->resolve(taskUuid: $taskUuid, actor: $actor, reason: 'The calendar entry names a task that does not exist.');
-
-		try {
-			$verb = TaskVtodoStatusMapping::requestedVerb(vtodoStatus: (string)($fields['status'] ?? ''), task: $task);
-		} catch (TaskConflictException $illegal) {
-			$this->refuse(task: $task, verb: 'status', actor: $actor, reason: $illegal->getMessage(), audited: false);
-			throw $illegal;
-		}
-
+		$task   = $this->resolver->resolve(taskUuid: $taskUuid, actor: $actor);
+		$verb   = $this->requestedVerb(fields: $fields, edit: new WriteBackAttempt(taskUuid: $taskUuid, task: $task, verb: 'status', actor: $actor));
 		if ($verb === null) {
 			// SUMMARY, DESCRIPTION, DUE, PRIORITY or a status restating the
 			// engine's own: projection-owned, so the render overwrites it.
 			return $this->projector->render(task: $task);
 		}
 
-		$updated = $this->request(taskUuid: $taskUuid, verb: $verb, actor: $actor);
-
-		return $this->projector->render(task: $updated);
+		return $this->projector->render(task: $this->request(taskUuid: $taskUuid, verb: $verb, actor: $actor));
 	}//end handleWrite()
 
 	/**
@@ -172,30 +143,20 @@ class TaskVtodoWriteBackGate implements TaskVtodoWriteBackGateInterface {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-ticking-off-the-vtodo-completes-the-engine-task-through-authorization
 	 */
 	public function request(string $taskUuid, string $verb, ?string $actor): Task {
-		$task = $this->resolve(taskUuid: $taskUuid, actor: $actor, reason: 'The calendar entry names a task that does not exist.');
-
-		if (in_array($verb, self::VERBS, true) === false) {
-			$denied = new TaskAccessDeniedException(
-				message: sprintf("Verb '%s' cannot be requested from a calendar; only completion and cancellation can.", $verb)
-			);
-			$this->refuse(task: $task, verb: $verb, actor: $actor, reason: $denied->getMessage(), audited: false);
-			throw $denied;
-		}
+		$task    = $this->resolver->resolve(taskUuid: $taskUuid, actor: $actor);
+		$attempt = new WriteBackAttempt(taskUuid: $taskUuid, task: $task, verb: $verb, actor: $actor);
+		$this->assertCalendarVerb(attempt: $attempt);
 
 		try {
-			if ($verb === 'cancel') {
-				return $this->tasks->cancel(uuid: $taskUuid, reason: 'Cancelled from the calendar.', actor: $actor);
-			}
-
-			return $this->tasks->complete(uuid: $taskUuid, outcome: 'done', resultText: null, comment: null, actor: $actor);
+			return $this->perform(attempt: $attempt);
 		} catch (TaskAccessDeniedException $denied) {
 			// The lifecycle audited this denial already (authorizeOrRecord).
-			$this->refuse(task: $task, verb: $verb, actor: $actor, reason: $denied->getMessage(), audited: true);
+			$this->refusal->refuseRecorded(attempt: $attempt, reason: $denied->getMessage());
 			throw $denied;
 		} catch (TaskConflictException | TaskValidationException $refused) {
-			$this->refuse(task: $task, verb: $verb, actor: $actor, reason: $refused->getMessage(), audited: false);
+			$this->refusal->refuse(attempt: $attempt, reason: $refused->getMessage());
 			throw $refused;
-		}//end try
+		}
 	}//end request()
 
 	/**
@@ -212,142 +173,82 @@ class TaskVtodoWriteBackGate implements TaskVtodoWriteBackGateInterface {
 	}//end isProjected()
 
 	/**
-	 * Resolve the task a write names, refusing (and telling the actor) when it does not exist.
+	 * The task uuid of a write that is the engine's business: null for an
+	 * ordinary calendar task (no task identity, at any point in its life) and
+	 * for the projector's own echo.
 	 *
-	 * @param string $taskUuid The task uuid.
-	 * @param string|null $actor The acting identity.
-	 * @param string $reason The refusal reason when unresolvable.
+	 * @param string $calendarData The incoming VCALENDAR document.
 	 *
-	 * @return Task The task.
-	 *
-	 * @throws DoesNotExistException When no such task exists.
+	 * @return string|null The task uuid, or null to leave the write alone.
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-ticking-off-the-vtodo-completes-the-engine-task-through-authorization
 	 */
-	private function resolve(string $taskUuid, ?string $actor, string $reason): Task {
-		try {
-			return $this->mapper->findByUuid(uuid: $taskUuid);
-		} catch (DoesNotExistException $missing) {
-			$this->logger->warning(
-				'[TaskVtodoWriteBackGate] Refused: ' . $reason,
-				['task' => $taskUuid, 'actor' => $actor]
-			);
-			throw $missing;
+	private function engineTaskOf(string $calendarData): ?string {
+		$taskUuid = TaskCalendarProjector::taskUuidOf(calendarData: $calendarData);
+		if ($taskUuid === null || $this->projector->isEcho(taskUuid: $taskUuid, calendarData: $calendarData) === true) {
+			return null;
 		}
-	}//end resolve()
+
+		return $taskUuid;
+	}//end engineTaskOf()
 
 	/**
-	 * Make a refusal visible: audit it, restore the projection, tell the actor.
+	 * The verb a VTODO status requests; an illegal status edit is refused
+	 * (audited as `status`) and thrown.
 	 *
-	 * @param Task $task The task the write named.
-	 * @param string $verb The verb attempted (or `status` for an illegal status edit).
-	 * @param string|null $actor The acting identity.
-	 * @param string $reason Why it was refused.
-	 * @param bool $audited Whether the lifecycle already recorded the denial.
+	 * @param array<string, mixed> $fields The engine fields of the write.
+	 * @param WriteBackAttempt     $edit   The status edit, verb `status`.
+	 *
+	 * @return string|null The verb, or null when the status requests none.
+	 *
+	 * @throws TaskConflictException When the status names no legal transition.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-ticking-off-the-vtodo-completes-the-engine-task-through-authorization
+	 */
+	private function requestedVerb(array $fields, WriteBackAttempt $edit): ?string {
+		try {
+			return TaskVtodoStatusMapping::requestedVerb(vtodoStatus: (string)($fields['status'] ?? ''), task: $edit->task);
+		} catch (TaskConflictException $illegal) {
+			$this->refusal->refuse(attempt: $edit, reason: $illegal->getMessage());
+			throw $illegal;
+		}
+	}//end requestedVerb()
+
+	/**
+	 * Refuse any verb outside VERBS before the lifecycle is reached.
+	 *
+	 * @param WriteBackAttempt $attempt The attempt.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the denial is
-	 * already on the audit is a fact about the caller, not a behaviour switch.
+	 * @throws TaskAccessDeniedException When the verb cannot be requested from a calendar.
 	 *
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-unauthorized-write-back-is-undone-and-explained
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-ticking-off-the-vtodo-completes-the-engine-task-through-authorization
 	 */
-	private function refuse(Task $task, string $verb, ?string $actor, string $reason, bool $audited): void {
-		if ($audited === false) {
-			$this->recordDenial(task: $task, verb: $verb, actor: $actor, reason: $reason);
+	private function assertCalendarVerb(WriteBackAttempt $attempt): void {
+		if (in_array($attempt->verb, self::VERBS, true) === false) {
+			$denied = new TaskAccessDeniedException(
+				message: sprintf("Verb '%s' cannot be requested from a calendar; only completion and cancellation can.", $attempt->verb)
+			);
+			$this->refusal->refuse(attempt: $attempt, reason: $denied->getMessage());
+			throw $denied;
 		}
-
-		$this->projections->reconcileTask(task: $task);
-		$this->notifyRefusal(task: $task, actor: $actor, reason: $reason);
-
-		$this->logger->info(
-			'[TaskVtodoWriteBackGate] Refused a calendar write-back: ' . $reason,
-			['task' => $task->getUuid(), 'verb' => $verb, 'actor' => $actor]
-		);
-	}//end refuse()
+	}//end assertCalendarVerb()
 
 	/**
-	 * Append an unauthorized audit entry for a refusal the lifecycle did not see.
+	 * Run the verb through the authorized lifecycle.
 	 *
-	 * @param Task $task The task.
-	 * @param string $verb The verb attempted.
-	 * @param string|null $actor The acting identity.
-	 * @param string $reason The denial reason.
+	 * @param WriteBackAttempt $attempt The attempt, its verb one of VERBS.
 	 *
-	 * @return void
+	 * @return Task The task after the verb.
 	 *
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-unauthorized-write-back-is-undone-and-explained
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-ticking-off-the-vtodo-completes-the-engine-task-through-authorization
 	 */
-	private function recordDenial(Task $task, string $verb, ?string $actor, string $reason): void {
-		if ($task->getId() === null) {
-			return;
+	private function perform(WriteBackAttempt $attempt): Task {
+		if ($attempt->verb === 'cancel') {
+			return $this->tasks->cancel(uuid: $attempt->taskUuid, reason: 'Cancelled from the calendar.', actor: $attempt->actor);
 		}
 
-		try {
-			$entry = new TaskAudit();
-			$entry->setTaskId((int)$task->getId());
-			$entry->setAction($verb);
-			$entry->setStateAfter($task->getState());
-			$entry->setActor($actor);
-			$entry->setPerformerType($task->getPerformerType());
-			$entry->setOnBehalfOf($task->getOnBehalfOf());
-			$entry->setMandate($task->getMandate());
-			$entry->setReason('Calendar write-back refused: ' . $reason);
-			$entry->setAuthorized(false);
-			$this->audits->insert($entry);
-		} catch (Throwable $failure) {
-			$this->logger->warning(
-				'[TaskVtodoWriteBackGate] Could not record a write-back denial: ' . $failure->getMessage(),
-				['task' => $task->getUuid(), 'verb' => $verb]
-			);
-		}
-	}//end recordDenial()
-
-	/**
-	 * Tell the actor which task was affected and why the change did not take,
-	 * through the declarative rule set (no imperative notification call).
-	 *
-	 * An actor who cannot be named cannot be told; that is logged, not
-	 * widened to anyone else.
-	 *
-	 * @param Task $task The task.
-	 * @param string|null $actor The acting identity.
-	 * @param string $reason The refusal reason.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-unauthorized-write-back-is-undone-and-explained
-	 */
-	private function notifyRefusal(Task $task, ?string $actor, string $reason): void {
-		if ($actor === null || trim($actor) === '') {
-			$this->logger->info(
-				'[TaskVtodoWriteBackGate] Refusal has no nameable actor to notify.',
-				['task' => $task->getUuid()]
-			);
-
-			return;
-		}
-
-		try {
-			$adapter = new TaskObjectAdapter(
-				task: $task,
-				row: $this->inbox->enrich(task: $task),
-				extra: [
-					'writeBackActor' => $actor,
-					'writeBackReason' => $reason,
-				]
-			);
-			$this->dispatcher->dispatchWithSchema(
-				object: $adapter,
-				trigger: 'transition',
-				context: ['action' => TaskNotificationRulesInterface::ACTION_WRITE_BACK_REFUSED, 'actor' => $actor],
-				schema: $this->rules->buildSchema()
-			);
-		} catch (Throwable $failure) {
-			$this->logger->warning(
-				'[TaskVtodoWriteBackGate] Could not notify the actor of a refusal: ' . $failure->getMessage(),
-				['task' => $task->getUuid(), 'actor' => $actor]
-			);
-		}//end try
-	}//end notifyRefusal()
+		return $this->tasks->complete(uuid: $attempt->taskUuid, outcome: 'done', resultText: null, comment: null, actor: $attempt->actor);
+	}//end perform()
 }//end class

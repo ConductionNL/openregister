@@ -40,6 +40,7 @@ use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
 use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
@@ -51,6 +52,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Listener\LifecycleValidationListener
@@ -136,18 +139,13 @@ class LifecycleValidationListenerTest extends TestCase {
 		);
 
 		$this->listener = new LifecycleValidationListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $logger),
-			$this->guardRegistry,
-			$this->userSession,
-			$this->permissionHandler,
-			new LifecycleConditionEvaluator(
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $logger), $this->userSession, $this->permissionHandler),
+			new LifecycleTransitionChecks($this->guardRegistry, new LifecycleConditionEvaluator(
 				$this->userSession,
 				$this->groupManager,
-				$this->l10n,
-				$this->logger,
+				new LifecycleConditionReporting($this->l10n, $this->logger),
 				$this->realConditionDialect()
-			),
-			new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+			), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
 				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
 						placeholders: new \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver(
@@ -155,7 +153,7 @@ class LifecycleValidationListenerTest extends TestCase {
 						)
 					)
 				)
-			),
+			)),
 			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 	}//end setUp()
@@ -266,12 +264,8 @@ class LifecycleValidationListenerTest extends TestCase {
 		$this->schemaWithLifecycle(self::VOORSTEL_LIFECYCLE);
 		$actions  = new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext();
 		$listener = new LifecycleValidationListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($actions), $this->logger),
-			$this->guardRegistry,
-			$this->userSession,
-			$this->permissionHandler,
-			$this->createMock(LifecycleConditionEvaluator::class),
-			new \OCA\OpenRegister\Service\Rules\ConditionTracer(dialect: $this->realConditionDialect()),
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($actions), $this->logger), $this->userSession, $this->permissionHandler),
+			new LifecycleTransitionChecks($this->guardRegistry, $this->createMock(LifecycleConditionEvaluator::class), new \OCA\OpenRegister\Service\Rules\ConditionTracer(dialect: $this->realConditionDialect())),
 			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 

@@ -52,10 +52,8 @@ class BpmnExportGraphBuilder {
 		return new BpmnExportGraph(
 			id: $this->ncName(value: (string)$flow->getUuid()),
 			name: (string)($flow->getName() ?? ''),
-			nodes: $nodes,
-			edges: $edges,
-			boxes: $boxes,
-			routes: $this->routesOf(edges: $edges, boxes: $boxes)
+			elements: new BpmnExportElements(nodes: $nodes, edges: $edges),
+			diagram: new BpmnExportDiagram(boxes: $boxes, routes: $this->routesOf(edges: $edges, boxes: $boxes))
 		);
 	}//end graphOf()
 

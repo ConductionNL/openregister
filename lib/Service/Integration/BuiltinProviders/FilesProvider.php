@@ -33,9 +33,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\IL10N;
 use Psr\Container\ContainerInterface;
@@ -48,20 +49,20 @@ class FilesProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileService $fileService File service.
+	 * @param FileFolderServiceInterface $fileService File service.
 	 * @param ContainerInterface $container DI container — used to
 	 *                                      resolve an ObjectEntity-
 	 *                                      producing mapper at call
 	 *                                      time (the canonical mapper
 	 *                                      varies across OR builds
-	 *                                      — MagicMapper /
-	 *                                      AbstractObjectMapper).
+	 *                                      — MagicMapper, through
+	 *                                      MagicMapperInterface).
 	 * @param IL10N $l10n Localisation.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private FileService $fileService,
+		private FileFolderServiceInterface $fileService,
 		private ContainerInterface $container,
 		private IL10N $l10n,
 	) {
@@ -150,7 +151,7 @@ class FilesProvider extends AbstractIntegrationProvider {
 			}
 
 			$nodes = $this->fileService->getFilesForEntity($object);
-			$nodes = $this->container->get(FileRestrictionGuard::class)->readableNodes(nodes: $nodes);
+			$nodes = $this->container->get(FileRestrictionGuardInterface::class)->readableNodes(nodes: $nodes);
 
 			return $this->normalize(nodes: $nodes);
 		} catch (\Throwable $e) {
@@ -169,7 +170,8 @@ class FilesProvider extends AbstractIntegrationProvider {
 	private function resolveObject(string $objectId) {
 		foreach ([
 			'\OCA\OpenRegister\Db\ObjectEntityMapper',
-			'\OCA\OpenRegister\Db\MagicMapper',
+			MagicObjectFinderInterface::class,
+			'\OCA\OpenRegister\Db\MagicMapperInterface',
 			'\OCA\OpenRegister\Db\AbstractObjectMapper',
 		] as $candidate
 		) {
@@ -232,25 +234,36 @@ class FilesProvider extends AbstractIntegrationProvider {
 				continue;
 			}
 
-			$row = [];
-			foreach (['getId', 'getName', 'getPath', 'getMimetype', 'getSize', 'getMTime'] as $accessor) {
-				if (method_exists($node, $accessor) === false) {
-					continue;
-				}
-
-				try {
-					$value = $node->{$accessor}();
-				} catch (\Throwable $e) {
-					continue;
-				}
-
-				$key = lcfirst(substr($accessor, 3));
-				$row[$key] = $value;
-			}
-
-			$rows[] = $row;
-		}//end foreach
+			$rows[] = self::nodeRow(node: $node);
+		}
 
 		return $rows;
 	}//end normalize()
+
+	/**
+	 * A node's row: each accessor it has and that answers, keyed by the accessor's noun.
+	 *
+	 * @param object $node A Files node.
+	 *
+	 * @return array<string,mixed> The row.
+	 */
+	private static function nodeRow(object $node): array {
+		$row = [];
+		foreach (['getId', 'getName', 'getPath', 'getMimetype', 'getSize', 'getMTime'] as $accessor) {
+			if (method_exists($node, $accessor) === false) {
+				continue;
+			}
+
+			try {
+				$value = $node->{$accessor}();
+			} catch (\Throwable $e) {
+				continue;
+			}
+
+			$key = lcfirst(substr($accessor, 3));
+			$row[$key] = $value;
+		}
+
+		return $row;
+	}//end nodeRow()
 }//end class

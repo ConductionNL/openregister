@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
+use OCA\OpenRegister\Service\Sharing\AccessLinkViewReaders;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -71,9 +72,7 @@ class AccessLinkMintGuardTest extends TestCase {
 		$this->guard = new AccessLinkMintGuard(
 			objects: $this->objects,
 			subjects: new AccessLinkSubject(),
-			views: $this->views,
-			registers: $this->registers,
-			schemas: $this->schemas,
+			viewReaders: new AccessLinkViewReaders(views: $this->views, registers: $this->registers, schemas: $this->schemas),
 		);
 	}
 

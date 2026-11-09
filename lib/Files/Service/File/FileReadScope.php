@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileReaderInterface;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IUserSession;
@@ -47,25 +47,67 @@ use Throwable;
 class FileReadScope {
 
 	/**
+	 * The Nextcloud file tree.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * The signed-in caller.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logs a lookup that failed, at debug level.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Finds an object's file in the openregister account's home.
+	 *
+	 * @var FileReaderInterface|null
+	 */
+	private readonly ?FileReaderInterface $fileService;
+
+	/**
+	 * The object read rule for an object's file.
+	 *
+	 * @var ObjectFileAccess|null
+	 */
+	private readonly ?ObjectFileAccess $objectFileAccess;
+
+	/**
+	 * Refuses a restricted file the caller is not admitted to.
+	 *
+	 * @var FileRestrictionGuard|null
+	 */
+	private readonly ?FileRestrictionGuard $restrictions;
+
+	/**
 	 * Wire the file tree and the session.
 	 *
-	 * @param IRootFolder     $rootFolder  The Nextcloud file tree.
-	 * @param IUserSession    $userSession The signed-in caller.
-	 * @param LoggerInterface $logger      Logs a lookup that failed, at debug level.
-	 * @param FileService|null      $fileService      Finds an object's file in the openregister account's home.
-	 * @param ObjectFileAccess|null $objectFileAccess The object read rule for an object's file.
-	 * @param FileRestrictionGuard|null $restrictions Refuses a restricted file the caller is not admitted to.
-	 *
-	 * @return void
+	 * @param FileReadScopeTree        $tree        The Nextcloud file tree and the signed-in caller.
+	 * @param FileReadScopeRules       $rules       The object read rule for an object's file and the restriction guard, each nullable.
+	 * @param LoggerInterface          $logger      Logs a lookup that failed, at debug level.
+	 * @param FileReaderInterface|null $fileService Finds an object's file in the openregister account's home.
 	 */
 	public function __construct(
-		private readonly IRootFolder $rootFolder,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly ?FileService $fileService = null,
-		private readonly ?ObjectFileAccess $objectFileAccess = null,
-		private readonly ?FileRestrictionGuard $restrictions = null,
+		FileReadScopeTree $tree,
+		FileReadScopeRules $rules,
+		LoggerInterface $logger,
+		?FileReaderInterface $fileService = null,
 	) {
+		$this->rootFolder = $tree->rootFolder;
+		$this->userSession = $tree->userSession;
+		$this->objectFileAccess = $rules->objectFileAccess;
+		$this->restrictions = $rules->restrictions;
+		$this->logger = $logger;
+		$this->fileService = $fileService;
 	}//end __construct()
 
 	/**

@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\Sharing;
 
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 
@@ -46,7 +46,7 @@ use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
  */
-class AccessLinkActs {
+class AccessLinkActs implements AccessLinkActsInterface {
 
 	/**
 	 * The comment actor type a link writes under.
@@ -59,11 +59,11 @@ class AccessLinkActs {
 	 * Constructor.
 	 *
 	 * @param NoteServiceInterface $notes Writes the comment.
-	 * @param FileService $files Stores the file.
+	 * @param ObjectFilesInterface $files Stores the file.
 	 */
 	public function __construct(
 		private readonly NoteServiceInterface $notes,
-		private readonly FileService $files,
+		private readonly ObjectFilesInterface $files,
 	) {
 
 	}//end __construct()

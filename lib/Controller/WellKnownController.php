@@ -97,12 +97,7 @@ class WellKnownController extends Controller {
 	public function securityTxt(): DataDisplayResponse|JSONResponse {
 		$body = $this->securityTxt->build();
 		if ($body === null) {
-			return new JSONResponse(
-				data: [
-					'error' => 'No responsible disclosure contact is administered on this instance.',
-				],
-				statusCode: Http::STATUS_NOT_FOUND,
-			);
+			return $this->noDisclosureContact();
 		}
 
 		$response = new DataDisplayResponse(
@@ -115,6 +110,21 @@ class WellKnownController extends Controller {
 		return $response;
 
 	}//end securityTxt()
+
+	/**
+	 * The 404 when no responsible-disclosure contact is administered.
+	 *
+	 * @return JSONResponse The 404.
+	 */
+	private function noDisclosureContact(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'No responsible disclosure contact is administered on this instance.',
+			],
+			statusCode: Http::STATUS_NOT_FOUND,
+		);
+
+	}//end noDisclosureContact()
 
 	/**
 	 * What this instance publishes at its well-known paths.

@@ -45,10 +45,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ObjectSharingControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -61,25 +59,19 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectSharingController extends Controller {
 	/**
-	 * Resolves an object through the RBAC boundary.
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objectService;
-
-	/**
-	 * Performs the owner-checked writes.
-	 *
-	 * @var ObjectSharingService
-	 */
-	private readonly ObjectSharingService $sharing;
-
-	/**
 	 * The controller's injected services.
 	 *
 	 * @var ObjectSharingControllerServices
 	 */
 	private readonly ObjectSharingControllerServices $services;
+
+	/**
+	 * Resolves the target object through the RBAC boundary, runs the
+	 * owner-checked writes and maps their refusals.
+	 *
+	 * @var ObjectSharingEndpoint
+	 */
+	private readonly ObjectSharingEndpoint $endpoint;
 
 	/**
 	 * Constructor.
@@ -93,12 +85,12 @@ class ObjectSharingController extends Controller {
 		string $appName,
 		IRequest $request,
 		ObjectSharingControllerServices $services,
-		private readonly LoggerInterface $logger,
+		LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->services = $services;
-		$this->objectService = $services->objectService;
-		$this->sharing = $services->sharing;
+		$failure = 'Could not complete the sharing request';
+		$this->endpoint = new ObjectSharingEndpoint(objectService: $services->objectService, logger: $logger, file: __FILE__, failure: $failure);
 	}//end __construct()
 
 	/**
@@ -114,7 +106,7 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function scope(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
@@ -141,7 +133,7 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function setScope(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
@@ -151,22 +143,8 @@ class ObjectSharingController extends Controller {
 			return new JSONResponse(['message' => 'A scope is required'], Http::STATUS_BAD_REQUEST);
 		}
 
-		try {
-			$block = $this->sharing->setScope(
-				register: $this->services->registerMapper->find($this->objectService->getRegister()),
-				schema: $this->services->schemaMapper->find($this->objectService->getSchema()),
-				object: $object,
-				scope: $scope
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'setScope');
-		}
-
-		return new JSONResponse(['scope' => ($block['scope'] ?? null)]);
+		$store = fn (): array => ['scope' => ($this->storeScope(object: $object, scope: $scope)['scope'] ?? null)];
+		return $this->endpoint->answer(operation: $store, context: 'setScope', validates: true);
 	}//end setScope()
 
 	/**
@@ -182,18 +160,13 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function shares(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		try {
-			return new JSONResponse(['results' => $this->sharing->listGrants(object: $object)]);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'shares');
-		}
+		$list = fn (): array => ['results' => $this->services->sharing->listGrants(object: $object)];
+		return $this->endpoint->answer(operation: $list, context: 'shares');
 	}//end shares()
 
 	/**
@@ -209,38 +182,17 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function createShare(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
 		$type = (string)($this->request->getParam('type') ?? 'user');
 		$shareWith = (string)($this->request->getParam('shareWith') ?? '');
-		$permission = $this->request->getParam('permissions');
+		$permissions = $this->requestedPermissions();
 
-		// Default to READ. A grant that silently carried write would be the
-		// wrong direction to guess in.
-		$permissions = 1;
-		if (is_numeric($permission) === true) {
-			$permissions = (int)$permission;
-		}
-
-		try {
-			$grant = $this->sharing->grant(
-				object: $object,
-				type: $type,
-				shareWith: $shareWith,
-				permissions: $permissions
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'createShare');
-		}
-
-		return new JSONResponse($grant, Http::STATUS_CREATED);
+		$grant = fn (): array => $this->services->sharing->grant(object: $object, type: $type, shareWith: $shareWith, permissions: $permissions);
+		return $this->endpoint->answer(operation: $grant, context: 'createShare', validates: true, status: Http::STATUS_CREATED);
 	}//end createShare()
 
 	/**
@@ -256,27 +208,13 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function createLink(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		try {
-			$link = $this->sharing->createLink(
-				object: $object,
-				permissions: $this->requestedPermissions(),
-				password: $this->optionalParam(name: 'password'),
-				expiration: $this->optionalParam(name: 'expiration')
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'createLink');
-		}
-
-		return new JSONResponse($link, Http::STATUS_CREATED);
+		$link = fn (): array => $this->linkTo(object: $object);
+		return $this->endpoint->answer(operation: $link, context: 'createLink', validates: true, status: Http::STATUS_CREATED);
 	}//end createLink()
 
 	/**
@@ -292,35 +230,20 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function inviteByEmail(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		try {
-			$invite = $this->sharing->inviteByEmail(
-				object: $object,
-				email: (string)($this->request->getParam('email') ?? ''),
-				permissions: $this->requestedPermissions(),
-				password: $this->optionalParam(name: 'password'),
-				expiration: $this->optionalParam(name: 'expiration')
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'inviteByEmail');
-		}
-
-		return new JSONResponse($invite, Http::STATUS_CREATED);
+		$invite = fn (): array => $this->invitationTo(object: $object);
+		return $this->endpoint->answer(operation: $invite, context: 'inviteByEmail', validates: true, status: Http::STATUS_CREATED);
 	}//end inviteByEmail()
 
 	/**
 	 * The requested permission bitmask, defaulting to READ.
 	 *
-	 * Defaulting to read is the safe direction: a link that silently carried
-	 * write because the caller omitted a field would be the wrong surprise.
+	 * Defaulting to read is the safe direction: a grant or link that silently
+	 * carried write because the caller omitted a field would be the wrong surprise.
 	 *
 	 * @return integer The bitmask.
 	 */
@@ -363,74 +286,65 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function destroyShare(string $register, string $schema, string $id, string $shareId): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		try {
-			$this->sharing->revoke(object: $object, shareId: $shareId);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'destroyShare');
-		}
-
-		return new JSONResponse([], Http::STATUS_NO_CONTENT);
+		$revoke = function () use ($object, $shareId): array {
+			$this->services->sharing->revoke(object: $object, shareId: $shareId);
+			return [];
+		};
+		return $this->endpoint->answer(operation: $revoke, context: 'destroyShare', validates: true, status: Http::STATUS_NO_CONTENT);
 	}//end destroyShare()
 
 	/**
-	 * Resolve the target object through the RBAC boundary.
+	 * Store a new scope on the object, in the register and schema the request resolved.
 	 *
-	 * An object the caller cannot READ is refused with 404 rather than 403, so
-	 * this endpoint cannot be used to probe which object ids exist.
+	 * @param ObjectEntity $object The object.
+	 * @param string       $scope  The requested scope.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object uuid.
-	 *
-	 * @return ObjectEntity|JSONResponse The object, or the response to return.
+	 * @return array The stored authorization block.
 	 */
-	private function resolveObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		try {
-			$object = $this->objectService->getObject();
-		} catch (\Throwable $e) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		if (($object instanceof ObjectEntity) === false) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		return $object;
-	}//end resolveObject()
+	private function storeScope(ObjectEntity $object, string $scope): array {
+		return $this->services->sharing->setScope(
+			register: $this->services->registerMapper->find($this->services->objectService->getRegister()),
+			schema: $this->services->schemaMapper->find($this->services->objectService->getSchema()),
+			object: $object,
+			scope: $scope
+		);
+	}//end storeScope()
 
 	/**
-	 * Log an unexpected failure and return a generic error.
+	 * Create the link the request describes.
 	 *
-	 * The message is never echoed to the client — it can carry storage paths and
-	 * share internals.
+	 * @param ObjectEntity $object The object.
 	 *
-	 * @param \Throwable $exception The failure.
-	 * @param string $context Short label for the log line.
-	 *
-	 * @return JSONResponse A generic 500.
+	 * @return array The created link.
 	 */
-	private function unexpected(\Throwable $exception, string $context): JSONResponse {
-		$this->logger->error(
-			message: '[ObjectSharingController] ' . $context . ': ' . $exception->getMessage(),
-			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
+	private function linkTo(ObjectEntity $object): array {
+		return $this->services->sharing->createLink(
+			object: $object,
+			permissions: $this->requestedPermissions(),
+			password: $this->optionalParam(name: 'password'),
+			expiration: $this->optionalParam(name: 'expiration')
 		);
+	}//end linkTo()
 
-		return new JSONResponse(
-			['message' => 'Could not complete the sharing request'],
-			Http::STATUS_INTERNAL_SERVER_ERROR
+	/**
+	 * Send the invitation the request describes.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array The created invitation.
+	 */
+	private function invitationTo(ObjectEntity $object): array {
+		return $this->services->sharing->inviteByEmail(
+			object: $object,
+			email: (string)($this->request->getParam('email') ?? ''),
+			permissions: $this->requestedPermissions(),
+			password: $this->optionalParam(name: 'password'),
+			expiration: $this->optionalParam(name: 'expiration')
 		);
-	}//end unexpected()
+	}//end invitationTo()
 }//end class

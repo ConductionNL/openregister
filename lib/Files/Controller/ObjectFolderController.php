@@ -31,7 +31,7 @@ use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderResponder;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderUploads;
-use OCA\OpenRegister\Service\Object\FileWriteGuard;
+use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -91,13 +91,13 @@ class ObjectFolderController extends Controller {
 	 * @param string              $appName          The app name.
 	 * @param IRequest            $request          The request.
 	 * @param ObjectFolderControllerServices $services The object folder controller services.
-	 * @param FileWriteGuard        $fileWriteGuard   Refuses a change to the files of a frozen or archived object.
+	 * @param FileWriteGuardInterface        $fileWriteGuard   Refuses a change to the files of a frozen or archived object.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		ObjectFolderControllerServices $services,
-		private readonly FileWriteGuard $fileWriteGuard,
+		private readonly FileWriteGuardInterface $fileWriteGuard,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->services = $services;

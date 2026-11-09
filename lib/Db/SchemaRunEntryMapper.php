@@ -31,7 +31,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<SchemaRunEntry>
  */
-class SchemaRunEntryMapper extends QBMapper {
+class SchemaRunEntryMapper extends QBMapper implements SchemaRunEntryMapperInterface {
 	/**
 	 * Constructor.
 	 *

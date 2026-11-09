@@ -61,6 +61,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
 use RuntimeException;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
 
 require_once __DIR__ . '/../Mcp/Fixtures/AttributeFixtureService.php';
 require_once __DIR__ . '/../Mcp/Fixtures/CollidingFixtureService.php';
@@ -401,9 +402,11 @@ class AttributeMcpDiscoveryTest extends TestCase {
 			appId: 'pipelinq',
 			schemaEntries: [['schema' => $schema, 'register' => null]],
 			suppressedIds: [],
-			objectService: $this->createMock(ObjectService::class),
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			logger: $this->createMock(LoggerInterface::class)
+			services: new SchemaDerivedToolServices(
+				objectService: $this->createMock(ObjectService::class),
+				auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+				logger: $this->createMock(LoggerInterface::class),
+			),
 		);
 
 		// Sanity: the derived provider really does emit 'pipelinq.lead.search'.

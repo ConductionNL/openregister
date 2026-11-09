@@ -49,7 +49,7 @@ namespace OCA\OpenRegister\Service\Rbac;
  *
  * @spec openspec/specs/saved-search-views/spec.md
  */
-class ViewShareResolver {
+class ViewShareResolver implements ViewShareResolverInterface {
 
 	/**
 	 * The access levels, widest first.

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\Support\TextExtractionServiceFactory;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
@@ -41,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\ChunkSizing;
 
 /**
  * Coverage tests for TextExtractionService
@@ -114,7 +116,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 		$this->riskLevelService = $this->createMock(RiskLevelService::class);
 		$this->emlParser = $this->createMock(EmlParser::class);
 
-		$this->service = new TextExtractionService(
+		$this->service = TextExtractionServiceFactory::create(
 			fileMapper: $this->fileMapper,
 			chunkMapper: $this->chunkMapper,
 			rootFolder: $this->rootFolder,
@@ -164,8 +166,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('chunkFixedSize', [
 			$text,
-			200,
-			0,
+			new ChunkSizing(200, 0),
 		]);
 
 		$this->assertGreaterThan(1, count($result));
@@ -188,8 +189,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('chunkFixedSize', [
 			$text,
-			200,
-			0,
+			new ChunkSizing(200, 0),
 		]);
 
 		$this->assertCount(1, $result);
@@ -210,8 +210,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('chunkFixedSize', [
 			$text,
-			200,
-			0,
+			new ChunkSizing(200, 0),
 		]);
 
 		foreach ($result as $chunk) {
@@ -236,8 +235,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('chunkRecursive', [
 			$text,
-			200,
-			20,
+			new ChunkSizing(200, 20),
 		]);
 
 		$this->assertGreaterThan(1, count($result));
@@ -257,8 +255,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('chunkRecursive', [
 			trim($text),
-			200,
-			20,
+			new ChunkSizing(200, 20),
 		]);
 
 		$this->assertGreaterThan(1, count($result));
@@ -284,8 +281,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 		$result = $this->invokePrivate('recursiveSplit', [
 			$text,
 			["\n\n", ' '],
-			200,
-			20,
+			new ChunkSizing(200, 20),
 		]);
 
 		$this->assertGreaterThan(2, count($result));
@@ -302,8 +298,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 		$result = $this->invokePrivate('recursiveSplit', [
 			$text,
 			[],
-			200,
-			0, // Zero overlap to avoid chunkFixedSize infinite loop bug.
+			new ChunkSizing(200, 0), // Zero overlap to avoid chunkFixedSize infinite loop bug.
 		]);
 
 		$this->assertGreaterThan(0, count($result));
@@ -320,8 +315,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 		$result = $this->invokePrivate('recursiveSplit', [
 			trim($text),
 			['. '],
-			200,
-			0,
+			new ChunkSizing(200, 0),
 		]);
 
 		// All chunks should be non-empty.
@@ -341,8 +335,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 		$result = $this->invokePrivate('recursiveSplit', [
 			trim($text),
 			['. '],
-			200,
-			50,
+			new ChunkSizing(200, 50),
 		]);
 
 		$this->assertGreaterThan(1, count($result));

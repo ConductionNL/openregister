@@ -10,6 +10,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IConfig;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -213,7 +214,7 @@ class CalendarEventServiceRefactorGoldenTest extends TestCase {
 		}
 		$urls->method('getWebroot')->willReturn($opt['webroot'] ?? '/nc');
 
-		return new CalendarEventService($backend, $session, $config, $logger, $urls);
+		return new CalendarEventService($backend, new LinkSessionRuntime($session, $logger), $config, $urls);
 	}//end service()
 
 	/**

@@ -20,10 +20,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableLocatorInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -38,12 +38,12 @@ class MagicTableSelection {
 	 *
 	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicMapperInterface $magicMapper Magic table resolver.
+	 * @param MagicTableLocatorInterface $magicMapper Magic table resolver.
 	 */
 	public function __construct(
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $magicMapper,
+		private readonly MagicTableLocatorInterface $magicMapper,
 	) {
 	}//end __construct()
 

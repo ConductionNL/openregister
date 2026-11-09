@@ -26,6 +26,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ManifestController;
 use OCA\OpenRegister\Service\ManifestService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ManifestControllerFactory;
 use OCP\App\AppPathNotFoundException;
 use OCP\App\IAppManager;
 use OCP\IRequest;
@@ -53,7 +54,7 @@ class ManifestControllerGoldenTest extends TestCase {
 		$this->manifestService = $this->createMock(ManifestService::class);
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->controller = new ManifestController(
+		$this->controller = ManifestControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->manifestService,

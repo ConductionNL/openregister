@@ -196,10 +196,24 @@ class LanguageMiddleware extends Middleware {
 			$response->addHeader('X-Content-Language-Fallback', 'true');
 		}
 
-		// I18n-source-of-truth: surface the dominant source language for
-		// the response payload. We can only derive this when the request
-		// targets a single object (the path carries a uuid). Listing /
-		// multi-object endpoints skip the header.
+		$this->addSourceLanguage(response: $response);
+
+		return $response;
+	}//end afterController()
+
+	/**
+	 * Add the X-Source-Language header when the request targets one object.
+	 *
+	 * I18n-source-of-truth: surface the dominant source language for the
+	 * response payload. We can only derive this when the request targets a
+	 * single object (the path carries a uuid). Listing / multi-object
+	 * endpoints skip the header. A failing lookup is logged and skipped.
+	 *
+	 * @param Response $response The response object.
+	 *
+	 * @return void
+	 */
+	private function addSourceLanguage(Response $response): void {
 		try {
 			$sourceLanguage = $this->resolveSourceLanguageForResponse();
 			if ($sourceLanguage !== null) {
@@ -210,9 +224,7 @@ class LanguageMiddleware extends Middleware {
 				'[LanguageMiddleware] X-Source-Language derivation failed: ' . $e->getMessage()
 			);
 		}
-
-		return $response;
-	}//end afterController()
+	}//end addSourceLanguage()
 
 	/**
 	 * Resolve a language from `?_lang=` or `?language=`, in that order.
@@ -226,32 +238,39 @@ class LanguageMiddleware extends Middleware {
 	 */
 	private function resolveFromQueryParams(): ?string {
 		foreach (['_lang', 'language'] as $name) {
-			$value = $this->request->getParam($name);
-			if ($value === null || $value === '') {
-				continue;
+			$tag = $this->validQueryTag(name: $name);
+			if ($tag !== null) {
+				return $tag;
 			}
-
-			if (is_string($value) === false) {
-				continue;
-			}
-
-			$trimmed = trim($value);
-			if (preg_match(self::BCP47_PATTERN, $trimmed) !== 1) {
-				$this->logger->warning(
-					sprintf(
-						"[LanguageMiddleware] Invalid ?%s value '%s' — falling through",
-						$name,
-						$trimmed
-					)
-				);
-				continue;
-			}
-
-			return $trimmed;
-		}//end foreach
+		}
 
 		return null;
 	}//end resolveFromQueryParams()
+
+	/**
+	 * The trimmed value of one language query parameter, when it is a valid tag.
+	 *
+	 * An invalid tag logs a warning and yields null, so the lookup falls
+	 * through to the next priority level.
+	 *
+	 * @param string $name The query parameter.
+	 *
+	 * @return string|null The tag, or null when absent, not a string or malformed.
+	 */
+	private function validQueryTag(string $name): ?string {
+		$value = $this->request->getParam($name);
+		if (is_string($value) === false || $value === '') {
+			return null;
+		}
+
+		$trimmed = trim($value);
+		if (preg_match(self::BCP47_PATTERN, $trimmed) === 1) {
+			return $trimmed;
+		}
+
+		$this->logger->warning(sprintf("[LanguageMiddleware] Invalid ?%s value '%s' — falling through", $name, $trimmed));
+		return null;
+	}//end validQueryTag()
 
 	/**
 	 * Attempt to resolve the canonical source-language for the response.
@@ -268,19 +287,27 @@ class LanguageMiddleware extends Middleware {
 		// `uuid` so the header is derived on the primary object endpoints —
 		// previously only `uuid` was read, so X-Source-Language was never
 		// emitted on the main object route (i18n-source-of-truth).
-		$uuid = $this->request->getParam('id');
-		if (is_string($uuid) === false || $uuid === '') {
-			$uuid = $this->request->getParam('uuid');
-		}
-
-		if (is_string($uuid) === false || $uuid === '') {
-			return null;
-		}
-
-		if (preg_match('/^[a-fA-F0-9\-]{8,}$/', $uuid) !== 1) {
+		$uuid = $this->requestedObjectId();
+		if ($uuid === null || preg_match('/^[a-fA-F0-9\-]{8,}$/', $uuid) !== 1) {
 			return null;
 		}
 
 		return $this->translationMapper->getDominantSourceLanguage($uuid);
 	}//end resolveSourceLanguageForResponse()
+
+	/**
+	 * The object identifier the request path names: `id` first, then `uuid`.
+	 *
+	 * @return string|null The identifier, or null when neither is a non-empty string.
+	 */
+	private function requestedObjectId(): ?string {
+		foreach (['id', 'uuid'] as $name) {
+			$value = $this->request->getParam($name);
+			if (is_string($value) === true && $value !== '') {
+				return $value;
+			}
+		}
+
+		return null;
+	}//end requestedObjectId()
 }//end class

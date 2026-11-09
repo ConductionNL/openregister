@@ -72,21 +72,59 @@ class OfficeSessionService {
 	private const OWNER = 'openregister';
 
 	/**
+	 * Tells whether Office is enabled.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Resolves the richdocuments services lazily.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Builds the server host and the WOPI source.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urlGenerator;
+
+	/**
+	 * Reads the instance id.
+	 *
+	 * @var IConfig
+	 */
+	private readonly IConfig $config;
+
+	/**
+	 * Reads richdocuments' callback address.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IAppManager        $appManager   Tells whether Office is enabled.
-	 * @param ContainerInterface $container    Resolves the richdocuments services lazily.
-	 * @param IURLGenerator      $urlGenerator Builds the server host and the WOPI source.
-	 * @param IConfig            $config       Reads the instance id.
-	 * @param IAppConfig         $appConfig    Reads richdocuments' callback address.
+	 * @param IAppManager           $appManager   Tells whether Office is enabled.
+	 * @param ContainerInterface    $container    Resolves the richdocuments services lazily.
+	 * @param IURLGenerator         $urlGenerator Builds the server host and the WOPI source.
+	 * @param OfficeSessionSettings $settings     The instance config and the app config.
 	 */
 	public function __construct(
-		private readonly IAppManager $appManager,
-		private readonly ContainerInterface $container,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly IConfig $config,
-		private readonly IAppConfig $appConfig,
+		IAppManager $appManager,
+		ContainerInterface $container,
+		IURLGenerator $urlGenerator,
+		OfficeSessionSettings $settings,
 	) {
+		$this->appManager = $appManager;
+		$this->container = $container;
+		$this->urlGenerator = $urlGenerator;
+		$this->config = $settings->config;
+		$this->appConfig = $settings->appConfig;
 	}//end __construct()
 
 	/**
@@ -151,9 +189,11 @@ class OfficeSessionService {
 		return new OfficeSession(
 			urlSrc: $urlSrc,
 			wopiSrc: $this->wopiSrc(fileId: $fileId),
-			token: (string)$wopi->getToken(),
-			tokenTtl: ((int)$wopi->getExpiry() * 1000),
-			readOnly: ($writable === false)
+			access: new OfficeSessionToken(
+				token: (string)$wopi->getToken(),
+				tokenTtl: ((int)$wopi->getExpiry() * 1000),
+				readOnly: ($writable === false)
+			)
 		);
 	}//end open()
 

@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Quality\QualityListingWindow;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -108,10 +109,12 @@ class QualityController extends Controller {
 			register: $register,
 			schema: $schema,
 			qualityStatus: $this->qualityStatusParam(),
-			sort: (string)$this->request->getParam('sort', 'qualityScore'),
-			order: (string)$this->request->getParam('order', 'asc'),
-			limit: $this->limitParam(),
-			offset: max(0, (int)$this->request->getParam('offset', 0))
+			window: new QualityListingWindow(
+				sort: (string)$this->request->getParam('sort', 'qualityScore'),
+				order: (string)$this->request->getParam('order', 'asc'),
+				limit: $this->limitParam(),
+				offset: max(0, (int)$this->request->getParam('offset', 0))
+			)
 		);
 	}//end lowestQuality()
 

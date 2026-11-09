@@ -40,17 +40,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Db\ObjectReadState;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Controller\Support\ObjectReadStateControllerServices;
 
 /**
  * Read an object's read state, mark it read, and mark it back to unread.
@@ -58,25 +60,49 @@ use Psr\Log\LoggerInterface;
 class ObjectReadStateController extends Controller {
 
 	/**
+	 * Resolves the target object through the RBAC boundary, runs the primitive
+	 * and maps its refusals.
+	 *
+	 * An object the caller cannot READ is refused with 404 rather than 403, so
+	 * these endpoints cannot be used to probe which object ids exist.
+	 *
+	 * @var ObjectSharingEndpoint
+	 */
+	private readonly ObjectSharingEndpoint $endpoint;
+
+	/**
+	 * The read-state primitive.
+	 *
+	 * @var ReadStateServiceInterface
+	 */
+	private readonly ReadStateServiceInterface $readState;
+
+	/**
+	 * Empties the bell when the work is opened.
+	 *
+	 * @var NotificationClearingServiceInterface
+	 */
+	private readonly NotificationClearingServiceInterface $clearing;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
-	 * @param ReadStateService $readState The read-state primitive.
-	 * @param NotificationClearingServiceInterface $clearing Empties the bell when the work is opened.
+	 * @param ObjectReadStateControllerServices $services Read-state store and notification clearing.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly ReadStateService $readState,
-		private readonly NotificationClearingServiceInterface $clearing,
-		private readonly LoggerInterface $logger,
+		ObjectOperationsInterface $objectService,
+		ObjectReadStateControllerServices $services,
+		LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
+		$this->readState = $services->readState;
+		$this->clearing = $services->clearing;
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
+		$failure = 'Could not complete the read state request';
+		$this->endpoint = new ObjectSharingEndpoint(objectService: $objectService, logger: $logger, file: __FILE__, failure: $failure);
 	}//end __construct()
 
 	/**
@@ -94,30 +120,18 @@ class ObjectReadStateController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function show(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		try {
-			$state = $this->readState->readStateFor(
-				object: $object,
-				userId: $this->request->getParam('userId')
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'show');
+		$read = fn (): ?ObjectReadState => $this->readState->readStateFor(object: $object, userId: $this->request->getParam('userId'));
+		$state = $this->endpoint->run(operation: $read, context: 'show');
+		if ($state instanceof JSONResponse) {
+			return $state;
 		}
 
-		return new JSONResponse(
-			[
-				'unread' => ($state === null),
-				'lastSeenAt' => $state?->jsonSerialize()['lastSeenAt'],
-				'subSeen' => ($state?->getSubSeen() ?? []),
-				'unreadCounts' => $this->readState->unreadCounts(object: $object),
-			]
-		);
+		return $this->stateResponse(state: $state, object: $object);
 
 	}//end show()
 
@@ -140,37 +154,21 @@ class ObjectReadStateController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function markRead(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		$subResource = $this->request->getParam('subResource');
-		if (is_string($subResource) === false || $subResource === '') {
-			$subResource = null;
+		$subResource = $this->requestedSubResource();
+		$where = ['register' => $register, 'schema' => $schema, 'subResource' => $subResource];
+		$mark = fn (): array => $this->markAndClear(object: $object, where: $where);
+		$marked = $this->endpoint->run(operation: $mark, context: 'markRead');
+		if ($marked instanceof JSONResponse) {
+			return $marked;
 		}
 
-		try {
-			$state = $this->readState->markRead(
-				object: $object,
-				register: $register,
-				schema: $schema,
-				subResource: $subResource
-			);
-
-			$cleared = $this->clearNotices(object: $object, subResource: $subResource);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'markRead');
-		}
-
-		return new JSONResponse(
-			array_merge(
-				$state->jsonSerialize(),
-				['unread' => false, 'notificationsCleared' => $cleared]
-			)
-		);
+		$cleared = ['unread' => false, 'notificationsCleared' => $marked['cleared']];
+		return new JSONResponse(array_merge($marked['state']->jsonSerialize(), $cleared));
 
 	}//end markRead()
 
@@ -192,22 +190,74 @@ class ObjectReadStateController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function markUnread(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		try {
+		$unmark = function () use ($object): array {
 			$this->readState->markUnread(object: $object);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'markUnread');
-		}
-
-		return new JSONResponse(['unread' => true]);
+			return ['unread' => true];
+		};
+		return $this->endpoint->answer(operation: $unmark, context: 'markUnread');
 
 	}//end markUnread()
+
+	/**
+	 * The read-state answer: the marker, the moment and the tab badges.
+	 *
+	 * @param ObjectReadState|null $state  The caller's read state, or null when unread.
+	 * @param ObjectEntity         $object The object.
+	 *
+	 * @return JSONResponse The answer.
+	 */
+	private function stateResponse(?ObjectReadState $state, ObjectEntity $object): JSONResponse {
+		return new JSONResponse(
+			[
+				'unread' => ($state === null),
+				'lastSeenAt' => $state?->jsonSerialize()['lastSeenAt'],
+				'subSeen' => ($state?->getSubSeen() ?? []),
+				'unreadCounts' => $this->readState->unreadCounts(object: $object),
+			]
+		);
+
+	}//end stateResponse()
+
+	/**
+	 * The sub-resource the request names, or null when it names none.
+	 *
+	 * @return string|null The sub-resource.
+	 */
+	private function requestedSubResource(): ?string {
+		$subResource = $this->request->getParam('subResource');
+		if (is_string($subResource) === false || $subResource === '') {
+			return null;
+		}
+
+		return $subResource;
+
+	}//end requestedSubResource()
+
+	/**
+	 * Store the read state, then clear the notices the opened work was about.
+	 *
+	 * @param ObjectEntity                                                     $object The object that was opened.
+	 * @param array{register: string, schema: string, subResource: ?string} $where  Register slug or id, schema slug or id,
+	 *                                                                              and the sub-resource, when one was opened.
+	 *
+	 * @return array{state: ObjectReadState, cleared: int} The stored state and how many notices were cleared.
+	 */
+	private function markAndClear(ObjectEntity $object, array $where): array {
+		$state = $this->readState->markRead(
+			object: $object,
+			register: $where['register'],
+			schema: $where['schema'],
+			subResource: $where['subResource']
+		);
+
+		return ['state' => $state, 'cleared' => $this->clearNotices(object: $object, subResource: $where['subResource'])];
+
+	}//end markAndClear()
 
 	/**
 	 * Clear the notices the opened work was about.
@@ -226,57 +276,4 @@ class ObjectReadStateController extends Controller {
 		return $this->clearing->clearForSubResource(objectUuid: $uuid, subjectId: $subResource);
 
 	}//end clearNotices()
-
-	/**
-	 * Resolve the target object through the RBAC boundary.
-	 *
-	 * An object the caller cannot READ is refused with 404 rather than 403, so
-	 * these endpoints cannot be used to probe which object ids exist, and a user
-	 * without read can never write a read-state row.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object uuid.
-	 *
-	 * @return ObjectEntity|JSONResponse The object, or the response to return.
-	 */
-	private function resolveObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		try {
-			$object = $this->objectService->getObject();
-		} catch (\Throwable $e) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		if (($object instanceof ObjectEntity) === false) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		return $object;
-
-	}//end resolveObject()
-
-	/**
-	 * Log an unexpected failure and return a generic error.
-	 *
-	 * @param \Throwable $exception The failure.
-	 * @param string $context Short label for the log line.
-	 *
-	 * @return JSONResponse A generic 500.
-	 */
-	private function unexpected(\Throwable $exception, string $context): JSONResponse {
-		$this->logger->error(
-			message: '[ObjectReadStateController] '.$context.': '.$exception->getMessage(),
-			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
-		);
-
-		return new JSONResponse(
-			['message' => 'Could not complete the read state request'],
-			Http::STATUS_INTERNAL_SERVER_ERROR
-		);
-
-	}//end unexpected()
 }//end class

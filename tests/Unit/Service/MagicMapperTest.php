@@ -33,6 +33,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -252,17 +255,22 @@ class MagicMapperTest extends TestCase {
 		// Create MagicMapper instance with all required dependencies.
 		$this->magicMapper = new MagicMapper(
 			$this->mockDb,
-			$this->mockSchemaMapper,
-			$this->mockRegisterMapper,
-			$this->mockConfig,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->mockAppConfig,
-			$this->mockLogger,
-			$this->createMock(SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$this->mockSchemaMapper,
+				$this->mockRegisterMapper,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$this->mockConfig,
+				$this->mockAppConfig,
+				$this->createMock(IEventDispatcher::class),
+				$this->mockLogger
+			)
 		);
 
 	}//end setUp()

@@ -142,7 +142,7 @@ class PermissionHandlerExpandRolesGoldenTest extends TestCase {
 			);
 		}
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $this->createStub(IUserSession::class),
 			userManager: $this->createStub(IUserManager::class),
 			groupManager: $this->createStub(IGroupManager::class),

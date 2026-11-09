@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ManifestControllerServices;
 use OCA\OpenRegister\Service\ManifestServiceInterface;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
@@ -56,24 +57,44 @@ use Throwable;
  */
 class ManifestController extends Controller {
 	/**
+	 * Service that enriches manifests.
+	 *
+	 * @var ManifestServiceInterface
+	 */
+	private readonly ManifestServiceInterface $manifestService;
+
+	/**
+	 * Nextcloud app manager (path resolution).
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name ('openregister').
 	 * @param IRequest $request The HTTP request.
-	 * @param ManifestServiceInterface $manifestService Service that enriches manifests.
-	 * @param IAppManager $appManager Nextcloud app manager (path resolution).
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ManifestControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ManifestServiceInterface $manifestService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		ManifestControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->manifestService = $services->manifestService;
+		$this->appManager = $services->appManager;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

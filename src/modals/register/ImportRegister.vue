@@ -362,15 +362,11 @@ import {
 				</table>
 			</div>
 
-			<NcButton
+			<CloseCancelButton
+				label="Close"
 				variant="secondary"
 				style="margin-top: 1rem"
-				@click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Close
-			</NcButton>
+				@click="closeModal" />
 		</div>
 
 		<NcNoteCard v-if="error" type="error">
@@ -560,12 +556,7 @@ import {
 		</div>
 
 		<template v-if="!success && !importResults" #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
+			<CloseCancelButton label="Cancel" @click="closeModal" />
 			<NcButton
 				:disabled="
 					loading
@@ -597,10 +588,10 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import Import from 'vue-material-design-icons/Import.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { freshState } from '../../services/initialState.js'
 import {
 	registerSelect,
@@ -671,7 +662,7 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcSelect,
 		// Icons
-		Cancel,
+		CloseCancelButton,
 		Import,
 		Upload,
 		ChevronDown,

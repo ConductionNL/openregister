@@ -33,7 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryService;
+use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -49,10 +49,10 @@ class DeclaredGroupsCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param DeclaredGroupInventoryService $inventory Declared-group inventory.
+	 * @param DeclaredGroupInventoryInterface $inventory Declared-group inventory.
 	 */
 	public function __construct(
-		private readonly DeclaredGroupInventoryService $inventory,
+		private readonly DeclaredGroupInventoryInterface $inventory,
 	) {
 		parent::__construct();
 	}//end __construct()

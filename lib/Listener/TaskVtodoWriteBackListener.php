@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
+use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskProjectionServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
 use OCP\Calendar\Events\CalendarObjectDeletedEvent;
@@ -104,15 +104,23 @@ class TaskVtodoWriteBackListener implements IEventListener {
 	 */
 	private function onUpdated(CalendarObjectUpdatedEvent $event): void {
 		$body = $this->bodyOf(event: $event);
-		if ($body === null) {
-			return;
+		$taskUuid = $this->projectedTaskOf(body: $body);
+		if ($taskUuid !== null) {
+			$this->writeBack(body: (string)$body, taskUuid: $taskUuid);
 		}
+	}//end onUpdated()
 
-		$taskUuid = TaskCalendarProjector::taskUuidOf(calendarData: $body);
-		if ($taskUuid === null) {
-			return;
-		}
-
+	/**
+	 * Put a committed edit of a projected VTODO through the gate.
+	 *
+	 * @param string $body     The calendar document as written.
+	 * @param string $taskUuid The task it projects.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-unauthorized-write-back-is-undone-and-explained
+	 */
+	private function writeBack(string $body, string $taskUuid): void {
 		try {
 			$replacement = $this->gate->handleWrite(calendarData: $body, actor: $this->actor());
 		} catch (Throwable $refused) {
@@ -131,7 +139,7 @@ class TaskVtodoWriteBackListener implements IEventListener {
 			// the user's; make it the engine's.
 			$this->projections->reconcile(taskUuid: $taskUuid);
 		}
-	}//end onUpdated()
+	}//end writeBack()
 
 	/**
 	 * A projected VTODO was deleted in the backend: rebuild it, task untouched.
@@ -143,12 +151,7 @@ class TaskVtodoWriteBackListener implements IEventListener {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-truth-flows-one-way-and-the-one-path-back-is-a-gate
 	 */
 	private function onDeleted(CalendarObjectDeletedEvent $event): void {
-		$body = $this->bodyOf(event: $event);
-		if ($body === null) {
-			return;
-		}
-
-		$taskUuid = TaskCalendarProjector::taskUuidOf(calendarData: $body);
+		$taskUuid = $this->projectedTaskOf(body: $this->bodyOf(event: $event));
 		if ($taskUuid === null) {
 			return;
 		}
@@ -159,6 +162,21 @@ class TaskVtodoWriteBackListener implements IEventListener {
 		);
 		$this->projections->reconcile(taskUuid: $taskUuid);
 	}//end onDeleted()
+
+	/**
+	 * The task a calendar document projects, or null when it projects none.
+	 *
+	 * @param string|null $body The calendar document, or null when absent.
+	 *
+	 * @return string|null The task uuid.
+	 */
+	private function projectedTaskOf(?string $body): ?string {
+		if ($body === null) {
+			return null;
+		}
+
+		return TaskCalendarDocument::taskUuidOf(calendarData: $body);
+	}//end projectedTaskOf()
 
 	/**
 	 * The calendar document the event carries.

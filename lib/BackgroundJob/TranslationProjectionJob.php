@@ -35,14 +35,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
+use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\TranslationProjectionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\IUserManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
 
 /**
  * Deferred translation-sidecar projection under the forwarded actor.
@@ -54,30 +51,24 @@ class TranslationProjectionJob extends ActorForwardedJob {
 	 * Wire the projection collaborators on top of the actor plumbing.
 	 *
 	 * @param ITimeFactory $time Time factory for the parent job class.
-	 * @param IUserSession $userSession Session to impersonate on / restore.
-	 * @param IUserManager $userManager Resolver for the captured user id.
-	 * @param OrganisationServiceInterface $organisation Active-organisation resolver.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param DeferredEntryObjectResolver $resolver Stale-safe entry re-fetch.
+	 * @param ActorForwardingServices $actor The identity plumbing the parent job runs the work as.
+	 * @param DeferredEntryObjectResolverInterface $resolver Stale-safe entry re-fetch.
 	 * @param TranslationProjectionServiceInterface $projection Projection service doing the real work.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		IUserSession $userSession,
-		IUserManager $userManager,
-		OrganisationServiceInterface $organisation,
-		LoggerInterface $logger,
-		private readonly DeferredEntryObjectResolver $resolver,
+		ActorForwardingServices $actor,
+		private readonly DeferredEntryObjectResolverInterface $resolver,
 		private readonly TranslationProjectionServiceInterface $projection,
 	) {
 		parent::__construct(
 			time: $time,
-			userSession: $userSession,
-			userManager: $userManager,
-			organisation: $organisation,
-			logger: $logger
+			userSession: $actor->userSession,
+			userManager: $actor->userManager,
+			organisation: $actor->organisation,
+			logger: $actor->logger
 		);
 	}//end __construct()
 

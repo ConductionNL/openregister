@@ -45,6 +45,11 @@ use Psr\Log\LoggerInterface;
  * @package OCA\OpenRegister\Service\Configuration
  */
 class GitLabHandler implements GitLabHandlerInterface {
+	/**
+	 * The tag every GitLab log message starts with.
+	 */
+	private const LOG_TAG = '[GitLabHandler] ';
+
 
 	/**
 	 * GitLab API base URL (can be configured for self-hosted instances)
@@ -129,6 +134,48 @@ class GitLabHandler implements GitLabHandlerInterface {
 	}//end getHeaders()
 
 	/**
+	 * The log context every GitLab log line starts with, then the line's own keys.
+	 *
+	 * @param array<string, mixed> $extra The line's own keys.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function logContext(array $extra = []): array {
+		return ['file' => __FILE__, 'line' => __LINE__] + $extra;
+	}//end logContext()
+
+	/**
+	 * GET a path of the configured GitLab API with the API headers and decode the JSON body.
+	 *
+	 * @param string               $path    The path after the API base.
+	 * @param array<string, mixed> $options Request options; the headers are added last.
+	 *
+	 * @return mixed The decoded body.
+	 *
+	 * @throws GuzzleException If the request fails.
+	 */
+	private function getJson(string $path, array $options = []): mixed {
+		$response = $this->client->request('GET', $this->apiBase.$path, $options + ['headers' => $this->getHeaders()]);
+		return json_decode($response->getBody(), true);
+	}//end getJson()
+
+	/**
+	 * Log a failed API call; the caller throws.
+	 *
+	 * @param string               $action    What failed, as in "GitLab API {action} failed".
+	 * @param GuzzleException      $exception The failure.
+	 * @param array<string, mixed> $context   The call's log keys, after the error.
+	 *
+	 * @return void
+	 */
+	private function logFailure(string $action, GuzzleException $exception, array $context): void {
+		$this->logger->error(
+			message: self::LOG_TAG."GitLab API {$action} failed",
+			context: self::logContext(extra: ['error' => $exception->getMessage()] + $context)
+		);
+	}//end logFailure()
+
+	/**
 	 * Search for OpenRegister configurations on GitLab
 	 *
 	 * Uses GitLab Global Search API to find files containing x-openregister property
@@ -152,85 +199,73 @@ class GitLabHandler implements GitLabHandlerInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function searchConfigurations(string $search = '', int $page = 1, int $perPage = 30): array {
+		// Always search for x-openregister, optionally narrowed by the user's terms.
+		$searchQuery = 'x-openregister';
+		if (empty($search) === false) {
+			$searchQuery = 'x-openregister '.$search;
+		}
+
+		$where = ['_search' => $search, 'query' => $searchQuery];
 		try {
-			// Build search query.
-			// Always search for x-openregister, optionally filter by additional terms.
-			$searchQuery = 'x-openregister';
-			if (empty($search) === false) {
-				$searchQuery = 'x-openregister ' . $search;
-			}
-
-			$this->logger->info(
-				message: '[GitLabHandler] Searching GitLab for OpenRegister configurations',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'_search' => $search,
-					'query' => $searchQuery,
-					'page' => $page,
-				]
-			);
-
-			$response = $this->client->request(
-				'GET',
-				$this->apiBase . '/search',
-				[
-					'query' => [
-						'scope' => 'blobs',
-						'search' => $searchQuery,
-						'page' => $page,
-						'per_page' => $perPage,
-					],
-					'headers' => $this->getHeaders(),
-				]
-			);
-
-			$items = json_decode($response->getBody(), true);
-
-			// Return search results without fetching file contents.
-			// File contents will be fetched only when user selects a specific configuration.
-			$results = [];
-			foreach ($items as $item) {
-				// Extract project ID and file path.
-				if (($item['project_id'] ?? null) !== null && (($item['path'] ?? null) !== null) === true) {
-					$results[] = [
-						'project_id' => $item['project_id'],
-						'path' => $item['path'],
-						'ref' => $item['ref'] ?? 'main',
-						'url' => $item['data'] ?? '',
-						'name' => basename($item['path'], '.json'),
-						// Config details will be loaded on-demand when importing.
-						'config' => [
-							'title' => basename($item['path'], '.json'),
-							'description' => '',
-							'version' => 'unknown',
-							'app' => null,
-							'type' => 'unknown',
-						],
-					];
-				}
-			}
-
-			return [
-				'total_count' => count($items),
-				'results' => $results,
-				'page' => $page,
-				'per_page' => $perPage,
-			];
+			$items = $this->searchBlobs(where: $where, page: $page, perPage: $perPage);
 		} catch (GuzzleException $e) {
-			$this->logger->error(
-				message: '[GitLabHandler] GitLab API search failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'_search' => $search,
-					'query' => $searchQuery ?? '',
-				]
-			);
-			throw new Exception('Failed to search GitLab: ' . $e->getMessage());
-		}//end try
+			$this->logFailure(action: 'search', exception: $e, context: $where);
+			throw new Exception('Failed to search GitLab: '.$e->getMessage());
+		}
+
+		// File contents are fetched only when the user selects a configuration.
+		$results = array_values(array_map(self::searchResult(...), array_filter($items, self::isFileHit(...))));
+		return ['total_count' => count($items), 'results' => $results, 'page' => $page, 'per_page' => $perPage];
 	}//end searchConfigurations()
+
+	/**
+	 * Run the blob search.
+	 *
+	 * @param array{_search: string, query: string} $where   The user's terms and the query sent.
+	 * @param int                                   $page    Page number.
+	 * @param int                                   $perPage Results per page.
+	 *
+	 * @return mixed The decoded hits.
+	 *
+	 * @throws GuzzleException If the request fails.
+	 */
+	private function searchBlobs(array $where, int $page, int $perPage): mixed {
+		$context = self::logContext(extra: $where + ['page' => $page]);
+		$this->logger->info(message: self::LOG_TAG.'Searching GitLab for OpenRegister configurations', context: $context);
+
+		$query = ['scope' => 'blobs', 'search' => $where['query'], 'page' => $page, 'per_page' => $perPage];
+		return $this->getJson(path: '/search', options: ['query' => $query]);
+	}//end searchBlobs()
+
+	/**
+	 * Whether a search hit names a project and a file.
+	 *
+	 * @param array<string, mixed> $item The search hit.
+	 *
+	 * @return bool
+	 */
+	private static function isFileHit(array $item): bool {
+		return ($item['project_id'] ?? null) !== null && ($item['path'] ?? null) !== null;
+	}//end isFileHit()
+
+	/**
+	 * One search hit as a result; the configuration details are loaded on demand when importing.
+	 *
+	 * @param array<string, mixed> $item The search hit.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function searchResult(array $item): array {
+		$name = basename($item['path'], '.json');
+		return [
+			'project_id' => $item['project_id'],
+			'path' => $item['path'],
+			'ref' => $item['ref'] ?? 'main',
+			'url' => $item['data'] ?? '',
+			'name' => $name,
+			'config' => ['title' => $name, 'description' => '', 'version' => 'unknown', 'app' => null, 'type' => 'unknown'],
+		];
+	}//end searchResult()
 
 	/**
 	 * Get list of branches for a project
@@ -248,52 +283,34 @@ class GitLabHandler implements GitLabHandlerInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function getBranches(int $projectId): array {
+		$where = ['project_id' => $projectId];
 		try {
-			$this->logger->info(
-				message: '[GitLabHandler] Fetching branches from GitLab',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'project_id' => $projectId,
-				]
-			);
-
-			$response = $this->client->request(
-				'GET',
-				$this->apiBase . "/projects/{$projectId}/repository/branches",
-				[
-					'headers' => $this->getHeaders(),
-				]
-			);
-
-			$branches = json_decode($response->getBody(), true);
-
-			// Format branch data for frontend.
-			return array_map(
-				// Map branch data to standardized format.
-				function (array $branch): array {
-					return [
-						'name' => $branch['name'],
-						'commit' => $branch['commit']['id'] ?? null,
-						'protected' => $branch['protected'] ?? false,
-						'default' => $branch['default'] ?? false,
-					];
-				},
-				$branches
-			);
+			$this->logger->info(message: self::LOG_TAG.'Fetching branches from GitLab', context: self::logContext(extra: $where));
+			$branches = $this->getJson(path: "/projects/{$projectId}/repository/branches");
 		} catch (GuzzleException $e) {
-			$this->logger->error(
-				message: '[GitLabHandler] GitLab API get branches failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'project_id' => $projectId,
-				]
-			);
-			throw new Exception('Failed to fetch branches: ' . $e->getMessage());
-		}//end try
+			$this->logFailure(action: 'get branches', exception: $e, context: $where);
+			throw new Exception('Failed to fetch branches: '.$e->getMessage());
+		}
+
+		// Format branch data for frontend.
+		return array_map(self::branchSummary(...), $branches);
 	}//end getBranches()
+
+	/**
+	 * One branch in the standardized format.
+	 *
+	 * @param array<string, mixed> $branch The branch from the API.
+	 *
+	 * @return array{name: mixed, commit: mixed, protected: mixed, default: mixed}
+	 */
+	private static function branchSummary(array $branch): array {
+		return [
+			'name' => $branch['name'],
+			'commit' => $branch['commit']['id'] ?? null,
+			'protected' => $branch['protected'] ?? false,
+			'default' => $branch['default'] ?? false,
+		];
+	}//end branchSummary()
 
 	/**
 	 * Get file content from a project
@@ -310,52 +327,21 @@ class GitLabHandler implements GitLabHandlerInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function getFileContent(int $projectId, string $path, string $ref = 'main'): array {
+		$where = ['project_id' => $projectId, 'path' => $path, 'ref' => $ref];
 		try {
-			$this->logger->info(
-				message: '[GitLabHandler] Fetching file from GitLab',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'project_id' => $projectId,
-					'path' => $path,
-					'ref' => $ref,
-				]
-			);
-
-			// URL encode the file path.
+			$this->logger->info(message: self::LOG_TAG.'Fetching file from GitLab', context: self::logContext(extra: $where));
 			$encodedPath = urlencode($path);
-
-			$response = $this->client->request(
-				'GET',
-				$this->apiBase . "/projects/{$projectId}/repository/files/{$encodedPath}/raw",
-				[
-					'query' => ['ref' => $ref],
-					'headers' => $this->getHeaders(),
-				]
-			);
-
-			$content = $response->getBody();
-			$json = json_decode($content, true);
-
-			if (json_last_error() !== JSON_ERROR_NONE) {
-				throw new Exception('Invalid JSON in file: ' . json_last_error_msg());
-			}
-
-			return $json;
+			$json = $this->getJson(path: "/projects/{$projectId}/repository/files/{$encodedPath}/raw", options: ['query' => ['ref' => $ref]]);
 		} catch (GuzzleException $e) {
-			$this->logger->error(
-				message: '[GitLabHandler] GitLab API get file content failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'project_id' => $projectId,
-					'path' => $path,
-					'ref' => $ref,
-				]
-			);
-			throw new Exception('Failed to fetch file: ' . $e->getMessage());
-		}//end try
+			$this->logFailure(action: 'get file content', exception: $e, context: $where);
+			throw new Exception('Failed to fetch file: '.$e->getMessage());
+		}
+
+		if (json_last_error() !== JSON_ERROR_NONE) {
+			throw new Exception('Invalid JSON in file: '.json_last_error_msg());
+		}
+
+		return $json;
 	}//end getFileContent()
 
 	/**
@@ -380,76 +366,80 @@ class GitLabHandler implements GitLabHandlerInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function listConfigurationFiles(int $projectId, string $ref = 'main', string $path = ''): array {
+		$where = ['project_id' => $projectId, 'ref' => $ref];
 		try {
-			$this->logger->info(
-				message: '[GitLabHandler] Listing configuration files from GitLab',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'project_id' => $projectId,
-					'ref' => $ref,
-					'path' => $path,
-				]
-			);
-
-			// Get repository tree.
-			$response = $this->client->request(
-				'GET',
-				$this->apiBase . "/projects/{$projectId}/repository/tree",
-				[
-					'query' => [
-						'ref' => $ref,
-						'path' => $path,
-						'recursive' => true,
-					],
-					'headers' => $this->getHeaders(),
-				]
-			);
-
-			$tree = json_decode($response->getBody(), true);
-
-			$files = [];
-			foreach ($tree as $item) {
-				// Check if file matches naming convention.
-				if ($item['type'] === 'blob'
-					&& (str_ends_with($item['path'], 'openregister.json') === true
-					|| str_contains($item['path'], '.openregister.json') === true)
-				) {
-					$configData = $this->parseConfigurationFile(projectId: $projectId, path: $item['path'], ref: $ref);
-
-					if ($configData !== null) {
-						$info = $configData['info'] ?? [];
-						$xOpenReg = $configData['x-openregister'] ?? [];
-						$files[] = [
-							'path' => $item['path'],
-							'id' => $item['id'] ?? null,
-							'config' => [
-								'title' => $info['title'] ?? $xOpenReg['title'] ?? basename($item['path']),
-								'description' => $info['description'] ?? $xOpenReg['description'] ?? '',
-								'version' => $info['version'] ?? $xOpenReg['version'] ?? '1.0.0',
-								'app' => $xOpenReg['app'] ?? null,
-								'type' => $xOpenReg['type'] ?? 'manual',
-							],
-						];
-					}
-				}//end if
-			}//end foreach
-
-			return $files;
+			$context = self::logContext(extra: $where + ['path' => $path]);
+			$this->logger->info(message: self::LOG_TAG.'Listing configuration files from GitLab', context: $context);
+			$query = ['ref' => $ref, 'path' => $path, 'recursive' => true];
+			$tree = $this->getJson(path: "/projects/{$projectId}/repository/tree", options: ['query' => $query]);
 		} catch (GuzzleException $e) {
-			$this->logger->error(
-				message: '[GitLabHandler] GitLab API list files failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'project_id' => $projectId,
-					'ref' => $ref,
-				]
-			);
-			throw new Exception('Failed to list configuration files: ' . $e->getMessage());
-		}//end try
+			$this->logFailure(action: 'list files', exception: $e, context: $where);
+			throw new Exception('Failed to list configuration files: '.$e->getMessage());
+		}
+
+		return $this->configurationFiles(projectId: $projectId, ref: $ref, tree: $tree);
 	}//end listConfigurationFiles()
+
+	/**
+	 * The blobs of a repository tree that are valid configuration files, as file entries.
+	 *
+	 * @param int                              $projectId GitLab project ID.
+	 * @param string                           $ref       Branch or tag name.
+	 * @param array<int, array<string, mixed>> $tree      The repository tree.
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	private function configurationFiles(int $projectId, string $ref, array $tree): array {
+		$files = [];
+		foreach ($tree as $item) {
+			if (self::isConfigurationBlob(item: $item) === false) {
+				continue;
+			}
+
+			$configData = $this->parseConfigurationFile(projectId: $projectId, path: $item['path'], ref: $ref);
+			if ($configData !== null) {
+				$files[] = self::fileEntry(item: $item, configData: $configData);
+			}
+		}
+
+		return $files;
+	}//end configurationFiles()
+
+	/**
+	 * Whether a tree entry is a file named by the configuration naming convention.
+	 *
+	 * @param array<string, mixed> $item The tree entry.
+	 *
+	 * @return bool
+	 */
+	private static function isConfigurationBlob(array $item): bool {
+		return $item['type'] === 'blob'
+			&& (str_ends_with($item['path'], 'openregister.json') === true || str_contains($item['path'], '.openregister.json') === true);
+	}//end isConfigurationBlob()
+
+	/**
+	 * One configuration file entry: where it is and what it says about itself.
+	 *
+	 * @param array<string, mixed> $item       The tree entry.
+	 * @param array<string, mixed> $configData The parsed configuration.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function fileEntry(array $item, array $configData): array {
+		$info = $configData['info'] ?? [];
+		$xOpenReg = $configData['x-openregister'] ?? [];
+		return [
+			'path' => $item['path'],
+			'id' => $item['id'] ?? null,
+			'config' => [
+				'title' => $info['title'] ?? $xOpenReg['title'] ?? basename($item['path']),
+				'description' => $info['description'] ?? $xOpenReg['description'] ?? '',
+				'version' => $info['version'] ?? $xOpenReg['version'] ?? '1.0.0',
+				'app' => $xOpenReg['app'] ?? null,
+				'type' => $xOpenReg['type'] ?? 'manual',
+			],
+		];
+	}//end fileEntry()
 
 	/**
 	 * Get project information by namespace/project path
@@ -467,41 +457,15 @@ class GitLabHandler implements GitLabHandlerInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function getProjectByPath(string $namespace, string $project): array {
+		$where = ['namespace' => $namespace, 'project' => $project];
 		try {
-			$projectPath = urlencode($namespace . '/' . $project);
-
-			$this->logger->info(
-				message: '[GitLabHandler] Fetching GitLab project by path',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'namespace' => $namespace,
-					'project' => $project,
-				]
-			);
-
-			$response = $this->client->request(
-				'GET',
-				$this->apiBase . "/projects/{$projectPath}",
-				[
-					'headers' => $this->getHeaders(),
-				]
-			);
-
-			return json_decode($response->getBody(), true);
+			$projectPath = urlencode($namespace.'/'.$project);
+			$this->logger->info(message: self::LOG_TAG.'Fetching GitLab project by path', context: self::logContext(extra: $where));
+			return $this->getJson(path: "/projects/{$projectPath}");
 		} catch (GuzzleException $e) {
-			$this->logger->error(
-				message: '[GitLabHandler] GitLab API get project failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'namespace' => $namespace,
-					'project' => $project,
-				]
-			);
-			throw new Exception('Failed to fetch project: ' . $e->getMessage());
-		}//end try
+			$this->logFailure(action: 'get project', exception: $e, context: $where);
+			throw new Exception('Failed to fetch project: '.$e->getMessage());
+		}
 	}//end getProjectByPath()
 
 	/**
@@ -522,36 +486,31 @@ class GitLabHandler implements GitLabHandlerInterface {
 	private function parseConfigurationFile(int $projectId, string $path, string $ref = 'main'): ?array {
 		try {
 			$content = $this->getFileContent(projectId: $projectId, path: $path, ref: $ref);
-
-			// Validate that it's a valid OpenRegister configuration.
-			if (isset($content['openapi']) === false
-				|| isset($content['x-openregister']) === false
-			) {
-				$this->logger->debug(
-					message: '[GitLabHandler] File does not contain required OpenRegister structure',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'path' => $path,
-					]
-				);
-				return null;
-			}
-
-			return $content;
 		} catch (Exception $e) {
-			$this->logger->debug(
-				message: '[GitLabHandler] Failed to parse configuration file',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'path' => $path,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logSkippedFile(reason: 'Failed to parse configuration file', context: ['path' => $path, 'error' => $e->getMessage()]);
 			return null;
-		}//end try
+		}
+
+		// A valid OpenRegister configuration has both markers.
+		if (isset($content['openapi']) === true && isset($content['x-openregister']) === true) {
+			return $content;
+		}
+
+		$this->logSkippedFile(reason: 'File does not contain required OpenRegister structure', context: ['path' => $path]);
+		return null;
 	}//end parseConfigurationFile()
+
+	/**
+	 * Log, at debug level, why a file is not listed as a configuration.
+	 *
+	 * @param string               $reason  The reason.
+	 * @param array<string, mixed> $context The file's log keys.
+	 *
+	 * @return void
+	 */
+	private function logSkippedFile(string $reason, array $context): void {
+		$this->logger->debug(message: self::LOG_TAG.$reason, context: self::logContext(extra: $context));
+	}//end logSkippedFile()
 
 	/**
 	 * Get the configured GitLab API base URL

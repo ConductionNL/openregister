@@ -31,6 +31,8 @@ use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\Hardening\HardeningReportService;
 use OCA\OpenRegister\Service\Hardening\HardeningSettingsService;
 use OCA\OpenRegister\Service\Hardening\StatementService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\HardeningControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\HardeningStatementControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
 use OCP\IRequest;
@@ -130,7 +132,7 @@ class HardeningControllerTest extends TestCase {
 			$userSession->method('getUser')->willReturn(null);
 		}
 
-		return new HardeningController(
+		return HardeningControllerFactory::create(
 			'openregister',
 			$request,
 			$this->reportService,
@@ -171,7 +173,7 @@ class HardeningControllerTest extends TestCase {
 			$userSession->method('getUser')->willReturn(null);
 		}
 
-		return new HardeningStatementController(
+		return HardeningStatementControllerFactory::create(
 			'openregister',
 			$request,
 			$this->statements,

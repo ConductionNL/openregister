@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationHistoryControllerServices;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
@@ -86,25 +87,51 @@ class NotificationHistoryController extends Controller {
 	 */
 	private const MAX_LIMIT = 500;
 	/**
+	 * Mapper for the notification history table.
+	 *
+	 * @var NotificationHistoryMapper
+	 */
+	private readonly NotificationHistoryMapper $mapper;
+
+	/**
+	 * Active session, drives the per-caller filter scope (F07).
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group resolver, admins keep full audit visibility (F07).
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The one writer of read, snooze and archive.
+	 *
+	 * @var NotificationClearingService
+	 */
+	private readonly NotificationClearingService $clearing;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
-	 * @param IRequest $request HTTP request.
-	 * @param NotificationHistoryMapper $mapper Mapper for the notification history table.
-	 * @param IUserSession $userSession Active session — drives the per-caller filter scope (F07).
-	 * @param IGroupManager $groupManager Group resolver — admins keep full audit visibility (F07).
-	 * @param NotificationClearingService $clearing The one writer of read, snooze and archive.
+	 * @param string $appName App name.
+	 * @param IRequest $request Request.
+	 * @param NotificationHistoryControllerServices $services The controller's services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly NotificationHistoryMapper $mapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly NotificationClearingService $clearing,
+		NotificationHistoryControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
+		$this->mapper = $services->mapper;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
+		$this->clearing = $services->clearing;
 	}//end __construct()
 
 	/**

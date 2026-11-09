@@ -79,13 +79,26 @@ final class SemanticTypeResolver implements SemanticTypeResolverInterface {
 	private array $resolveCache = [];
 
 	/**
+	 * Cross-register, org/RBAC-scoped schema enumeration.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register enumeration for register/app resolution + tie-break.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Wire the resolver against the canonical OR mappers + JSON-LD helper.
 	 *
 	 * Constructor-injection only; the service is autowired (no explicit DI
 	 * registration needed, matching RegisterResolverService).
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Cross-register, org/RBAC-scoped schema enumeration.
-	 * @param RegisterMapperInterface $registerMapper Register enumeration for register/app resolution + tie-break.
+	 * @param RegisterSchemaMappers $mappers The register and schema mappers.
 	 * @param JsonLdContextService $jsonLdContextService Computes a schema's implemented semantic types.
 	 * @param LoggerInterface $logger Logger for ambiguity WARN.
 	 * @param IAppManager|null $appManager App manager used to treat a provider whose owning
@@ -93,13 +106,13 @@ final class SemanticTypeResolver implements SemanticTypeResolverInterface {
 	 *                                     unavailable the app-enabled filter is skipped).
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		RegisterSchemaMappers $mappers,
 		private readonly JsonLdContextService $jsonLdContextService,
 		private readonly LoggerInterface $logger,
 		private readonly ?IAppManager $appManager = null,
 	) {
-
+		$this->schemaMapper = $mappers->schemaMapper;
+		$this->registerMapper = $mappers->registerMapper;
 	}//end __construct()
 
 	/**

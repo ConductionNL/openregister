@@ -44,62 +44,31 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Exception\CustomValidationException;
-use OCA\OpenRegister\Exception\HookStoppedException;
-use OCA\OpenRegister\Exception\InvalidTransitionInputException;
-use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
-use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
-use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
-use OCA\OpenRegister\Service\Flow\FlowRunContext;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\WriteCause;
-use OCP\IUserSession;
-use RuntimeException;
 
 /**
  * Validates a completion payload through the lifecycle allowlist and writes it before completing.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) This class IS the seam
- * between the task verb and the object write: it has to name the task
- * service, the resolver, the engine, the object service and the five
- * exception shapes it translates between. Splitting it would put the two
- * halves of "complete with a payload" in two files that must agree on order.
+ * The order is fixed here: the task verb's authorization, the form's
+ * resolvability, the checklist, then {@see TaskFormSubjectWriter} writes
+ * the subject, and only then the task completes.
  *
  * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
  */
 class TaskFormCompletion implements TaskFormCompletionInterface {
 
 	/**
-	 * The action name the allowlist reports for an inline field list.
-	 *
-	 * @var string
-	 */
-	private const INLINE_ACTION = 'complete';
-
-	/**
 	 * Constructor.
 	 *
 	 * @param TaskServiceInterface $tasks The authorized task lifecycle.
 	 * @param TaskFormResolver $forms Resolves the task's form.
-	 * @param TransitionEngine $engine The one allowlist, and the transition write.
-	 * @param ObjectOperationsInterface $objects The ordinary object write, for an inline field list.
-	 * @param IUserSession $userSession The acting identity the object write authorizes.
-	 * @param FlowRunContext|null $runContext Names the run this write belongs to,
-	 *                             so the run's own lock does not refuse it.
+	 * @param TaskFormSubjectWriter $writer The allowlist and the two subject write paths.
 	 */
 	public function __construct(
 		private readonly TaskServiceInterface $tasks,
 		private readonly TaskFormResolver $forms,
-		private readonly TransitionEngine $engine,
-		private readonly ObjectOperationsInterface $objects,
-		private readonly IUserSession $userSession,
-		// Appended LAST and nullable: a new argument inserted anywhere else
-		// shifts every positional caller.
-		private readonly ?FlowRunContext $runContext = null,
+		private readonly TaskFormSubjectWriter $writer,
 	) {
 
 	}//end __construct()
@@ -118,7 +87,7 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 	 *
 	 * @throws TaskFormRefusedException When the payload violates the form (400, fields named).
 	 * @throws TaskSubjectWriteRefusedException When the subject's own validation or lifecycle refuses the write (422).
-	 * @throws TaskAccessDeniedException When the task verb or the object write is not authorized.
+	 * @throws \OCA\OpenRegister\Exception\TaskAccessDeniedException When the task verb or the object write is not authorized.
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
@@ -131,7 +100,7 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 			$described = $this->forms->describe(task: $task);
 			$this->refuseUnresolvable(described: $described);
 			$this->refuseUncheckedItems(task: $task, required: $described['requireChecklist']);
-			$this->writeSubject(task: $task, form: $described['form'], data: $data);
+			$this->writer->write(task: $task, form: $described['form'], data: $data);
 		} catch (TaskFormRefusedException | TaskSubjectWriteRefusedException $refused) {
 			// A refused attempt, distinguishable from a completion: the task
 			// keeps its pre-call state and the audit says somebody tried.
@@ -185,6 +154,20 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 			return;
 		}
 
+		$unchecked = self::uncheckedItems(task: $task);
+		if ($unchecked !== []) {
+			throw self::checklistRefusal(unchecked: $unchecked);
+		}
+	}//end refuseUncheckedItems()
+
+	/**
+	 * The ids (or labels) of the task's checklist items that are not checked.
+	 *
+	 * @param Task $task The task.
+	 *
+	 * @return array<int, string> The unchecked items.
+	 */
+	private static function uncheckedItems(Task $task): array {
 		$unchecked = [];
 		foreach (($task->getChecklist() ?? []) as $item) {
 			if (is_array($item) === false) {
@@ -196,224 +179,24 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 			}
 		}
 
-		if ($unchecked !== []) {
-			throw new TaskFormRefusedException(
-				message: sprintf(
-					'Every checklist item must be checked before this task can be completed; still unchecked: %s.',
-					'"' . implode('", "', $unchecked) . '"'
-				),
-				kind: TaskFormRefusedException::KIND_CHECKLIST,
-				fields: $unchecked
-			);
-		}
-	}//end refuseUncheckedItems()
+		return $unchecked;
+	}//end uncheckedItems()
 
 	/**
-	 * Write the payload to the subject through one of the two existing paths, never a third.
+	 * The refusal naming the unchecked items.
 	 *
-	 * @param Task $task The task.
-	 * @param array<string, mixed>|null $form The resolved form description.
-	 * @param array<string, mixed> $data The submitted field values.
+	 * @param array<int, string> $unchecked The unchecked items.
 	 *
-	 * @return void
-	 *
-	 * @throws TaskFormRefusedException When the payload violates the allowlist.
-	 * @throws TaskSubjectWriteRefusedException When the subject refuses the write.
-	 * @throws TaskAccessDeniedException When the object write is not authorized.
-	 *
-	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 * @return TaskFormRefusedException The refusal.
 	 */
-	private function writeSubject(Task $task, ?array $form, array $data): void {
-		if ($form === null || ($form['kind'] ?? null) !== TaskForm::KIND_FIELDS) {
-			// No form, or an external one: no field values are accepted at
-			// all. An empty payload skips the allowlist entirely, so a
-			// form-less completion is exactly what it was before.
-			if ($data !== []) {
-				$this->allowlist(declared: [], data: $data, action: self::INLINE_ACTION);
-			}
-
-			return;
-		}
-
-		$objectUuid = trim((string)$task->getObjectUuid());
-		if ($objectUuid === '') {
-			throw new TaskFormRefusedException(
-				message: 'This task has no subject object, so its form values have nowhere to be written.',
-				kind: TaskFormRefusedException::KIND_NO_SUBJECT
-			);
-		}
-
-		$action = ($form['action'] ?? null);
-		if (is_string($action) === true && $action !== '') {
-			$this->transition(objectUuid: $objectUuid, action: $action, data: $data);
-
-			return;
-		}
-
-		$declared = [];
-		foreach ((array)($form['fields'] ?? []) as $field) {
-			$declared[] = [
-				'field' => (string)$field['field'],
-				'required' => (bool)$field['required'],
-			];
-		}
-
-		$accepted = $this->allowlist(declared: $declared, data: $data, action: self::INLINE_ACTION);
-		if ($accepted === []) {
-			return;
-		}
-
-		$this->save(objectUuid: $objectUuid, accepted: $accepted, runUuid: trim((string)$task->getRunUuid()));
-	}//end writeSubject()
-
-	/**
-	 * The ONE allowlist, with its refusal translated to the task's 400 shape.
-	 *
-	 * The kind is derived from the declaration, not parsed from the message:
-	 * a refused field the form declared was missing, one it did not was
-	 * undeclared.
-	 *
-	 * @param array<int, array{field: string, required: bool}> $declared The declared fields.
-	 * @param array<string, mixed> $data The submitted values.
-	 * @param string $action The action name, for the message.
-	 *
-	 * @return array<string, mixed> The accepted values.
-	 *
-	 * @throws TaskFormRefusedException When the allowlist refuses.
-	 *
-	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
-	 */
-	private function allowlist(array $declared, array $data, string $action): array {
-		try {
-			return $this->engine->resolveTransitionInputs(inputs: $declared, data: $data, action: $action);
-		} catch (InvalidTransitionInputException $refused) {
-			throw $this->refusal(refused: $refused, declared: $declared);
-		}
-	}//end allowlist()
-
-	/**
-	 * The transition path: allowlist, merge and lifecycle flip in one save.
-	 *
-	 * @param string $objectUuid The subject object.
-	 * @param string $action The lifecycle action.
-	 * @param array<string, mixed> $data The submitted values.
-	 *
-	 * @return void
-	 *
-	 * @throws TaskFormRefusedException When the allowlist refuses.
-	 * @throws TaskAccessDeniedException When the caller may not transition the object.
-	 * @throws TaskSubjectWriteRefusedException When the schema or the lifecycle refuses.
-	 *
-	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
-	 */
-	private function transition(string $objectUuid, string $action, array $data): void {
-		try {
-			$this->engine->transition(objectId: $objectUuid, action: $action, data: $data);
-		} catch (InvalidTransitionInputException $refused) {
-			// The engine's kind is not recoverable from its declaration here,
-			// so read it off the message the same method wrote.
-			throw $this->refusal(refused: $refused, declared: null);
-		} catch (NotAuthorizedException $denied) {
-			throw new TaskAccessDeniedException(message: $denied->getMessage());
-		} catch (LifecycleSubjectNotFoundException $missing) {
-			// The engine reports a subject the caller may not READ as "not
-			// found", so the object endpoints do not leak its existence. The
-			// task endpoint has already shown this performer the task, so it
-			// keeps answering a read denial as the access denial it was.
-			$cause = $missing->getPrevious();
-			if ($cause instanceof NotAuthorizedException) {
-				throw new TaskAccessDeniedException(message: $cause->getMessage());
-			}
-
-			throw new TaskSubjectWriteRefusedException(message: $missing->getMessage(), previous: $missing);
-		} catch (HookStoppedException | ValidationException | CustomValidationException | RuntimeException $refused) {
-			throw new TaskSubjectWriteRefusedException(message: $refused->getMessage(), previous: $refused);
-		}
-	}//end transition()
-
-	/**
-	 * The inline path: the accepted values through the ordinary object write.
-	 *
-	 * @param string $objectUuid The subject object.
-	 * @param array<string, mixed> $accepted The values the allowlist accepted.
-	 * @param string $runUuid The run the task belongs to, so the run's own lock
-	 *                        does not refuse its own write. '' when unknown.
-	 *
-	 * @return void
-	 *
-	 * @throws TaskAccessDeniedException When the caller may not write the object.
-	 * @throws TaskSubjectWriteRefusedException When the schema refuses, or the object is gone.
-	 *
-	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
-	 */
-	private function save(string $objectUuid, array $accepted, string $runUuid = ''): void {
-		$object = WriteCause::asLookup(fn () => $this->objects->find(id: $objectUuid));
-		if ($object === null) {
-			throw new TaskSubjectWriteRefusedException(
-				message: sprintf('Subject object "%s" no longer exists, so the form values cannot be written.', $objectUuid)
-			);
-		}
-
-		// 🔴 THIS WRITE BELONGS TO THE RUN, EVEN THOUGH A PERSON MADE THE REQUEST.
-		// The object-lock guard reads the acting run from an ambient context
-		// precisely so a flow that locks its case at one step is not turned away
-		// by its own lock at the next. That context is set while the ENGINE
-		// walks the graph and not while a person answers over HTTP, so a run
-		// that locked its case and then asked a form on it could never be
-		// answered: the completion came back 500 with "Object is locked by flow
-		// run …, running as admin", naming the very run trying to write.
-		//
-		// Measured by the flow-subjects Newman collection, which locks a case
-		// and then asks a person with a form on it — the scene from the brief.
-		$actingRun = null;
-		if ($runUuid !== '') {
-			$actingRun = $runUuid;
-		}
-
-		$this->runContext?->push(runUuid: $actingRun, nodeId: 'task-form', sequence: 0);
-
-		try {
-			$this->objects->saveObject(
-				object: array_merge($object->getObject(), $accepted),
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				uuid: $object->getUuid(),
-				currentUser: $this->userSession->getUser()
-			);
-		} catch (NotAuthorizedException $denied) {
-			throw new TaskAccessDeniedException(message: $denied->getMessage());
-		} catch (HookStoppedException | ValidationException | CustomValidationException $refused) {
-			throw new TaskSubjectWriteRefusedException(message: $refused->getMessage(), previous: $refused);
-		} finally {
-			// In a `finally`, so a refused write does not leave the request
-			// pretending to be a run for everything that follows it.
-			$this->runContext?->pop();
-		}
-	}//end save()
-
-	/**
-	 * The task-side 400 for an allowlist refusal, its kind derived rather than guessed.
-	 *
-	 * @param InvalidTransitionInputException $refused The engine's refusal.
-	 * @param array<int, array{field: string, required: bool}>|null $declared The declaration, when this class holds it.
-	 *
-	 * @return TaskFormRefusedException The translated refusal.
-	 */
-	private function refusal(InvalidTransitionInputException $refused, ?array $declared): TaskFormRefusedException {
-		$fields = $refused->getFields();
-		$kind = TaskFormRefusedException::KIND_UNDECLARED;
-
-		if ($declared !== null) {
-			$names = array_column($declared, 'field');
-			if ($fields !== [] && array_diff($fields, $names) === []) {
-				$kind = TaskFormRefusedException::KIND_MISSING;
-			}
-		} else if (str_contains($refused->getMessage(), 'missing required') === true) {
-			$kind = TaskFormRefusedException::KIND_MISSING;
-		}
-
-		return new TaskFormRefusedException(message: $refused->getMessage(), kind: $kind, fields: $fields);
-	}//end refusal()
+	private static function checklistRefusal(array $unchecked): TaskFormRefusedException {
+		return new TaskFormRefusedException(
+			message: sprintf(
+				'Every checklist item must be checked before this task can be completed; still unchecked: %s.',
+				'"' . implode('", "', $unchecked) . '"'
+			),
+			kind: TaskFormRefusedException::KIND_CHECKLIST,
+			fields: $unchecked
+		);
+	}//end checklistRefusal()
 }//end class

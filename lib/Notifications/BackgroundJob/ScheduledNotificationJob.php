@@ -35,11 +35,12 @@ namespace OCA\OpenRegister\Notifications\BackgroundJob;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -95,9 +96,9 @@ final class ScheduledNotificationJob extends TimedJob {
 	/**
 	 * Magic object mapper.
 	 *
-	 * @var MagicMapperInterface
+	 * @var MagicObjectFinderInterface
 	 */
-	private readonly MagicMapperInterface $objectMapper;
+	private readonly MagicObjectFinderInterface $objectMapper;
 
 	/**
 	 * Operator-aware filter evaluator.
@@ -571,9 +572,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	 */
 	private function upsertState(ScheduledFire $fire, bool $dispatched): void {
 		$this->dedupeMapper->upsert(
-			schemaId: $fire->schemaId,
-			ruleKey: $fire->name,
-			objectUuid: $fire->objectUuid,
+			key: new NotificationDedupeKey(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $fire->objectUuid),
 			fingerprint: $fire->fingerprint,
 			now: $fire->seenAt,
 			dispatched: $dispatched

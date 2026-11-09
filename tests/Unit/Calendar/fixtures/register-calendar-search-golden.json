@@ -1,0 +1,1015 @@
+{
+    "bare users prefix refused": {
+        "events": [],
+        "record": {
+            "queries": [],
+            "warnings": [],
+            "transformed": []
+        }
+    },
+    "empty principal refused": {
+        "events": [],
+        "record": {
+            "queries": [],
+            "warnings": [],
+            "transformed": []
+        }
+    },
+    "group principal refused": {
+        "events": [],
+        "record": {
+            "queries": [],
+            "warnings": [],
+            "transformed": []
+        }
+    },
+    "limit and offset": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": 5,
+                    "offset": 10,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "nested user id": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "no matching register": {
+        "events": [],
+        "record": {
+            "queries": [],
+            "warnings": [],
+            "transformed": []
+        }
+    },
+    "no pattern keeps eventless": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": []
+            },
+            {
+                "id": "1-b",
+                "objects": []
+            },
+            {
+                "id": "1-c",
+                "objects": []
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "no registers at all": {
+        "events": [],
+        "record": {
+            "queries": [],
+            "warnings": [],
+            "transformed": []
+        }
+    },
+    "one register query throws": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "3-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 3-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "3-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "3-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 3-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                },
+                {
+                    "register": 2,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                },
+                {
+                    "register": 3,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [
+                "[RegisterCalendar] Failed to query register 2: table missing"
+            ],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c",
+                "3-a",
+                "3-b",
+                "3-c"
+            ]
+        }
+    },
+    "pattern matches summary": {
+        "events": [
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "pattern misses": {
+        "events": [],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "pattern no summary": {
+        "events": [],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "pattern on eventless": {
+        "events": [],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "register lookup throws": {
+        "events": [],
+        "record": {
+            "queries": [],
+            "warnings": [
+                "[RegisterCalendar] Failed to find registers for schema 42: registers unavailable"
+            ],
+            "transformed": []
+        }
+    },
+    "string schema id matches": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "2-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 2-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "2-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "2-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 2-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                },
+                {
+                    "register": 2,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c",
+                "2-a",
+                "2-b",
+                "2-c"
+            ]
+        }
+    },
+    "timerange datetimes": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": {
+                        "startdatum": {
+                            "gte": "2026-03-01T00:00:00+00:00",
+                            "lte": "2026-03-31T23:59:59+01:00"
+                        }
+                    }
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "timerange empty": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "timerange end only": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": {
+                        "startdatum": {
+                            "lte": "2026-02-02"
+                        }
+                    }
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "timerange null bounds": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "timerange scalar": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "timerange start only": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": {
+                        "startdatum": {
+                            "gte": "2026-03-01T00:00:00+00:00"
+                        }
+                    }
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "timerange strings": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": {
+                        "startdatum": {
+                            "gte": "2026-01-01",
+                            "lte": "20260131"
+                        }
+                    }
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "timerange without dtstart": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "transformer drops objects": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    },
+    "transformer throws midway": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "2-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 2-a"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                },
+                {
+                    "register": 2,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [
+                "[RegisterCalendar] Failed to query register 1: bad object 1-b",
+                "[RegisterCalendar] Failed to query register 2: bad object 2-b"
+            ],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "2-a",
+                "2-b"
+            ]
+        }
+    },
+    "user principal": {
+        "events": [
+            {
+                "id": "1-a",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-a"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-b",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Team meeting"
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "1-c",
+                "objects": [
+                    {
+                        "SUMMARY": [
+                            "Lunch 1-c"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "record": {
+            "queries": [
+                {
+                    "register": 1,
+                    "limit": null,
+                    "offset": null,
+                    "filters": null
+                }
+            ],
+            "warnings": [],
+            "transformed": [
+                "1-a",
+                "1-b",
+                "1-c"
+            ]
+        }
+    }
+}

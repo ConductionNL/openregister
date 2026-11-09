@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Object\ArchiveHandler;
+use OCA\OpenRegister\Service\Object\ArchiveHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -56,7 +56,7 @@ class ObjectStateController extends Controller {
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
-	 * @param ArchiveHandler $archiveHandler The archive and freeze verbs.
+	 * @param ArchiveHandlerInterface $archiveHandler The archive and freeze verbs.
 	 * @param IUserSession $userSession The user session.
 	 *
 	 * @return void
@@ -66,7 +66,7 @@ class ObjectStateController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ArchiveHandler $archiveHandler,
+		private readonly ArchiveHandlerInterface $archiveHandler,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -88,23 +88,9 @@ class ObjectStateController extends Controller {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function archive(string $register, string $schema, string $id): JSONResponse {
-		$refusal = $this->requireUser();
-		if ($refusal !== null) {
-			return $refusal;
-		}
+		$verb = fn (?string $reason): array => $this->archiveHandler->archive(identifier: $id, reason: $reason, register: $register, schema: $schema);
 
-		try {
-			$result = $this->archiveHandler->archive(
-				identifier: $id,
-				reason: $this->reasonFromRequest(),
-				register: $register,
-				schema: $schema
-			);
-
-			return new JSONResponse(data: $result);
-		} catch (\Throwable $e) {
-			return $this->refusalResponse(exception: $e);
-		}
+		return $this->asSignedInUser(verb: $verb);
 	}//end archive()
 
 	/**
@@ -123,23 +109,9 @@ class ObjectStateController extends Controller {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function unarchive(string $register, string $schema, string $id): JSONResponse {
-		$refusal = $this->requireUser();
-		if ($refusal !== null) {
-			return $refusal;
-		}
+		$verb = fn (?string $reason): array => $this->archiveHandler->unarchive(identifier: $id, reason: $reason, register: $register, schema: $schema);
 
-		try {
-			$result = $this->archiveHandler->unarchive(
-				identifier: $id,
-				reason: $this->reasonFromRequest(),
-				register: $register,
-				schema: $schema
-			);
-
-			return new JSONResponse(data: $result);
-		} catch (\Throwable $e) {
-			return $this->refusalResponse(exception: $e);
-		}
+		return $this->asSignedInUser(verb: $verb);
 	}//end unarchive()
 
 	/**
@@ -158,24 +130,15 @@ class ObjectStateController extends Controller {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function freeze(string $register, string $schema, string $id): JSONResponse {
-		$refusal = $this->requireUser();
-		if ($refusal !== null) {
-			return $refusal;
-		}
+		$verb = fn (?string $reason): array => $this->archiveHandler->freeze(
+			identifier: $id,
+			reason: $reason,
+			state: $this->textFromRequest(key: 'state'),
+			register: $register,
+			schema: $schema
+		);
 
-		try {
-			$result = $this->archiveHandler->freeze(
-				identifier: $id,
-				reason: $this->reasonFromRequest(),
-				state: $this->textFromRequest(key: 'state'),
-				register: $register,
-				schema: $schema
-			);
-
-			return new JSONResponse(data: $result);
-		} catch (\Throwable $e) {
-			return $this->refusalResponse(exception: $e);
-		}
+		return $this->asSignedInUser(verb: $verb);
 	}//end freeze()
 
 	/**
@@ -194,24 +157,33 @@ class ObjectStateController extends Controller {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function unfreeze(string $register, string $schema, string $id): JSONResponse {
+		$verb = fn (?string $reason): array => $this->archiveHandler->unfreeze(identifier: $id, reason: $reason, register: $register, schema: $schema);
+
+		return $this->asSignedInUser(verb: $verb);
+	}//end unfreeze()
+
+	/**
+	 * Run one verb for a signed-in caller, answering its marker or its refusal.
+	 *
+	 * The anonymous caller is refused before the verb, or anything it reads
+	 * from the request, is evaluated. The verb is handed the request's reason.
+	 *
+	 * @param callable(?string): array $verb The verb, with the handler's other arguments already bound.
+	 *
+	 * @return JSONResponse The marker, or the refusal.
+	 */
+	private function asSignedInUser(callable $verb): JSONResponse {
 		$refusal = $this->requireUser();
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
 		try {
-			$result = $this->archiveHandler->unfreeze(
-				identifier: $id,
-				reason: $this->reasonFromRequest(),
-				register: $register,
-				schema: $schema
-			);
-
-			return new JSONResponse(data: $result);
+			return new JSONResponse(data: $verb($this->reasonFromRequest()));
 		} catch (\Throwable $e) {
 			return $this->refusalResponse(exception: $e);
 		}
-	}//end unfreeze()
+	}//end asSignedInUser()
 
 	/**
 	 * Refuse an anonymous caller.

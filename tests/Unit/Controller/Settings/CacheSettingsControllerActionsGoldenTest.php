@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CacheSettingsControllerFactory;
 use OC\Files\AppData\Factory;
 use OCA\OpenRegister\Controller\Settings\CacheSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
@@ -96,7 +97,7 @@ class CacheSettingsControllerActionsGoldenTest extends TestCase {
 			return $case['params'] ?? [];
 		});
 
-		$controller = new CacheSettingsController(
+		$controller = CacheSettingsControllerFactory::create(
 			'openregister',
 			$request,
 			$this->settings($case),

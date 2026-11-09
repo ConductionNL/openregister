@@ -127,13 +127,13 @@ final class EscalationRule {
 	 */
 	private function unit(): string {
 		$unit = ($this->rule['offsetUnit'] ?? null);
-		if (is_string($unit) === false || in_array($unit, SlaCalculator::UNITS, true) === false) {
+		if (is_string($unit) === false || in_array($unit, SlaCalculatorInterface::UNITS, true) === false) {
 			throw new FlowTimerValidationException(
 				message: sprintf(
 					"Escalation rule #%d has offsetUnit '%s'; use one of %s (the same units the SLA accepts).",
 					$this->index,
 					var_export($unit, true),
-					implode(', ', SlaCalculator::UNITS)
+					implode(', ', SlaCalculatorInterface::UNITS)
 				)
 			);
 		}

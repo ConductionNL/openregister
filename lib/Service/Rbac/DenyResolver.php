@@ -70,7 +70,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 /**
  * Resolves the denied verbs of an authorization block and emits the matching SQL.
  */
-class DenyResolver {
+class DenyResolver implements DenyResolverInterface {
 
 	/**
 	 * How a raw SQL string literal escapes its body, keyed by whether the platform is PostgreSQL.
@@ -81,34 +81,6 @@ class DenyResolver {
 		1 => ["'" => "''"],
 		0 => ['\\' => '\\\\', "'" => "''"],
 	];
-
-	/**
-	 * The authorization-block key carrying the denials.
-	 *
-	 * @var string
-	 */
-	public const DENY_KEY = 'deny';
-
-	/**
-	 * The pseudo-principal every caller carries, authenticated or not.
-	 *
-	 * @var string
-	 */
-	public const PRINCIPAL_PUBLIC = 'public';
-
-	/**
-	 * The pseudo-principal every signed-in caller carries.
-	 *
-	 * @var string
-	 */
-	public const PRINCIPAL_AUTHENTICATED = 'authenticated';
-
-	/**
-	 * The prefix that makes a deny entry name one user rather than a group.
-	 *
-	 * @var string
-	 */
-	public const USER_PREFIX = 'user:';
 
 	/**
 	 * The characters an action verb may use before it reaches a JSON path.

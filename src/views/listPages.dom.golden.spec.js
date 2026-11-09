@@ -28,6 +28,10 @@ jest.mock('@nextcloud/l10n', () => ({
 	translate: (app, text) => `t:${text}`,
 }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
+jest.mock('@conduction/nextcloud-vue', () => ({
+	__esModule: true,
+	CnDataTable: mockTable(),
+}))
 jest.mock('@nextcloud/vue', () => mockLibrary())
 jest.mock('vue-material-design-icons/AccountOutline.vue', () =>
 	mockModule('AccountOutline'),
@@ -142,6 +146,46 @@ function mockStub(name) {
 						render(`slot-${slot}`, this.$slots[slot]({ option: {} })),
 					),
 			)
+		},
+	}
+}
+
+/**
+ * A stand-in for CnDataTable that draws its column labels, each cell (or its
+ * `column-<key>` slot) and the row actions, so a golden compares what each
+ * cell reads.
+ *
+ * @return {object} The stub
+ */
+function mockTable() {
+	const { h: render } = require('vue')
+	return {
+		name: 'CnDataTable',
+		inheritAttrs: false,
+		props: { columns: Array, rows: Array, rowKey: { type: String, default: 'id' } },
+		render() {
+			const actions = this.$slots['row-actions']
+			const head = this.columns.map((col) => render('x-th', col.label))
+			if (actions) {
+				head.push(render('x-th', this.$slots['actions-header']?.()))
+			}
+			const body = this.rows.map((row) => {
+				const cells = this.columns.map((col) => {
+					const slot = this.$slots[`column-${col.key}`]
+					return render(
+						'x-td',
+						slot ? slot({ row, value: row[col.key] }) : String(row[col.key] ?? '—'),
+					)
+				})
+				if (actions) {
+					cells.push(render('x-td', actions({ row })))
+				}
+				return render('x-tr', { key: row[this.rowKey] }, cells)
+			})
+			return render('x-CnDataTable', this.$attrs, [
+				render('x-thead', head),
+				render('x-tbody', body),
+			])
 		},
 	}
 }
@@ -411,5 +455,15 @@ describe.each(Object.keys(PAGES))('list page %s', (name) => {
 		vm[entry.total] = vm.limit
 		await flushPromises()
 		expect(wrapper.find('.pagination').exists()).toBe(false)
+	})
+})
+
+describe('webhook tables', () => {
+	it('lets the webhook name and log text wrap', () => {
+		const wrapping = (columns) => columns
+			.filter((column) => column.cellClass === 'cn-cell--wrap')
+			.map((column) => column.key)
+		expect(wrapping(WebhooksIndex.computed.webhookColumns.call({}))).toEqual(['name'])
+		expect(wrapping(WebhookLogsIndex.computed.logColumns.call({}))).toEqual(['webhookId', 'errorMessage'])
 	})
 })

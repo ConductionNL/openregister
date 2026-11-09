@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationHistoryControllerServices;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Notifications\Controller\NotificationHistoryController;
 use OCA\OpenRegister\Notifications\Db\NotificationHistory;
@@ -160,7 +161,13 @@ class NotificationHistoryControllerGoldenTest extends TestCase {
 		);
 
 		$clearing = $this->clearing(caller: $caller, calls: $calls);
-		$controller = new NotificationHistoryController('openregister', $httpRequest, $mapper, $session, $groups, $clearing);
+		$services   = new NotificationHistoryControllerServices(
+			mapper: $mapper,
+			userSession: $session,
+			groupManager: $groups,
+			clearing: $clearing
+		);
+		$controller = new NotificationHistoryController('openregister', $httpRequest, $services);
 
 		$response = match ($endpoint) {
 			'index'          => $controller->index(),

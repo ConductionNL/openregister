@@ -120,10 +120,7 @@ import {
 													'non-editable-row':
 														!isPropertyEditable(
 															key,
-															formData[key]
-																!== undefined
-																? formData[key]
-																: value,
+															propertyValue(key, value),
 														),
 													...getPropertyValidationClass(
 														key,
@@ -184,23 +181,13 @@ import {
 															v-else-if="
 																!isPropertyEditable(
 																	key,
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																)
 															"
 															:title="
 																getEditabilityWarning(
 																	key,
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																)
 															"
 															class="validation-icon lock-icon"
@@ -226,10 +213,7 @@ import {
 															selectedProperty === key
 															&& isPropertyEditable(
 																key,
-																formData[key]
-																	!== undefined
-																	? formData[key]
-																	: value,
+																propertyValue(key, value),
 															)
 														"
 														class="value-input-container"
@@ -243,10 +227,7 @@ import {
 																=== 'NcCheckboxRadioSwitch'
 															"
 															:modelValue="
-																formData[key]
-																!== undefined
-																	? formData[key]
-																	: value
+																propertyValue(key, value)
 															"
 															type="switch"
 															@update:modelValue="
@@ -272,12 +253,7 @@ import {
 															"
 															:modelValue="
 																stringToDate(
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																	currentSchema
 																		.properties[
 																		key
@@ -311,12 +287,7 @@ import {
 															:modelValue="
 																enumOptionFor(
 																	key,
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																)
 															"
 															:options="
@@ -368,12 +339,7 @@ import {
 															"
 															:value="
 																translationValueFor(
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																)
 															"
 															:languages="
@@ -397,13 +363,9 @@ import {
 															ref="propertyValueInput"
 															:modelValue="
 																String(
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value
-																				|| '',
+																	formData[key] !== undefined
+																		? formData[key]
+																		: value || '',
 																)
 															"
 															:type="
@@ -442,108 +404,31 @@ import {
 															" />
 													</div>
 													<div v-else>
-														<template
+														<pre
 															v-if="
-																formData[key]
-																!== undefined
-															">
-															<!-- Show edited value -->
-															<pre
-																v-if="
-																	typeof formData[
-																		key
-																	] === 'object'
-																	&& formData[key]
-																		!== null
-																"
-																title="JSON object (edited)"
-																class="json-value"
-																>{{
-																	formatValue(
-																		formData[
-																			key
-																		],
-																	)
-																}}</pre>
-															<span
-																v-else-if="
-																	isValidDate(
-																		formData[
-																			key
-																		],
-																	)
-																"
-																:title="`Date: ${new Date(formData[key]).toISOString()} (edited)`"
-																>{{
-																	new Date(
-																		formData[
-																			key
-																		],
-																	).toLocaleString()
-																}}</span
-															>
-															<span
-																v-else
-																:title="
-																	currentSchema
-																		?.properties?.[
-																		key
-																	]?.description
-																	|| `Property: ${key} (edited)`
-																"
-																>{{
-																	getDisplayValue(
-																		key,
-																		value,
-																	)
-																}}</span
-															>
-														</template>
-														<template v-else>
-															<!-- Show original value -->
-															<pre
-																v-if="
-																	typeof value
-																		=== 'object'
-																	&& value !== null
-																"
-																title="JSON object"
-																class="json-value"
-																>{{
-																	formatValue(
-																		value,
-																	)
-																}}</pre>
-															<span
-																v-else-if="
-																	isValidDate(
-																		value,
-																	)
-																"
-																:title="`Date: ${new Date(value).toISOString()}`"
-																>{{
-																	new Date(
-																		value,
-																	).toLocaleString()
-																}}</span
-															>
-															<span
-																v-else
-																:title="
-																	currentSchema
-																		?.properties?.[
-																		key
-																	]?.description
-																	|| `Property: ${key}`
-																"
-																>{{
-																	getDisplayValue(
-																		key,
-																		value,
-																	)
-																}}</span
-															>
-														</template>
+																typeof propertyValue(key, value) === 'object'
+																&& propertyValue(key, value) !== null
+															"
+															:title="`JSON object${editedSuffix(key)}`"
+															class="json-value"
+															>{{ formatValue(propertyValue(key, value)) }}</pre>
+														<span
+															v-else-if="isValidDate(propertyValue(key, value))"
+															:title="`Date: ${new Date(propertyValue(key, value)).toISOString()}${editedSuffix(key)}`"
+															>{{
+																new Date(
+																	propertyValue(key, value),
+																).toLocaleString()
+															}}</span
+														>
+														<span
+															v-else
+															:title="
+																currentSchema?.properties?.[key]?.description
+																|| `Property: ${key}${editedSuffix(key)}`
+															"
+															>{{ getDisplayValue(key, value) }}</span
+														>
 													</div>
 												</td>
 											</tr>
@@ -1039,46 +924,18 @@ import {
 									@pageChanged="onFilesPageChanged"
 									@pageSizeChanged="onFilesPageSizeChanged" />
 							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Emails">
-								<EmailsTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Events">
-								<EventsTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Contacts">
-								<ContactsTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Deck">
-								<DeckTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Relations">
-								<RelationsTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
+							<template v-if="!isNewObject && relationContext">
+								<AppTab
+									v-for="tab in relationTabs"
+									:key="tab.title"
+									:title="tab.title">
+									<component
+										:is="tab.component"
+										:register="relationContext.register"
+										:schema="relationContext.schema"
+										:objectId="relationContext.id" />
+								</AppTab>
+							</template>
 						</AppTabs>
 					</div>
 				</div>
@@ -1446,6 +1303,18 @@ function isInlineControl(target) {
 
 const INLINE_TYPES = ['string', 'number', 'integer', 'boolean']
 
+/**
+ * The object-relation tabs, in order: each shows its component for the open
+ * object's register, schema and id.
+ */
+const RELATION_TABS = [
+	{ title: 'Emails', component: 'EmailsTab' },
+	{ title: 'Events', component: 'EventsTab' },
+	{ title: 'Contacts', component: 'ContactsTab' },
+	{ title: 'Deck', component: 'DeckTab' },
+	{ title: 'Relations', component: 'RelationsTab' },
+]
+
 export default {
 	name: 'ViewObject',
 	components: {
@@ -1543,6 +1412,14 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @return {Array<{title: string, component: string}>} The relation tabs
+		 * @spec exclude static tab list
+		 */
+		relationTabs() {
+			return RELATION_TABS
+		},
+
 		// Check if we need to show register/schema selection
 		/**
 		 * @spec exclude computed gate for register/schema selection step
@@ -1926,12 +1803,37 @@ export default {
 		},
 
 		/**
-		 * Returns { type, objectId } needed for all file store operations.
-		 * Handles both string IDs and embedded register/schema objects.
+		 * The value a property row shows: the edited one when the form holds
+		 * one, else the stored one.
 		 *
-		 * @spec openspec/specs/entity-management-modals/spec.md
+		 * @param {string} key The property
+		 * @param {unknown} value Its stored value
+		 * @return {unknown} The value to show
+		 * @spec exclude property-table display helper
 		 */
-		_getFileParams() {
+		propertyValue(key, value) {
+			return this.formData[key] !== undefined ? this.formData[key] : value
+		},
+
+		/**
+		 * The tooltip suffix that marks a property row as edited.
+		 *
+		 * @param {string} key The property
+		 * @return {string} ' (edited)' for an edited property, else ''
+		 * @spec exclude property-table display helper
+		 */
+		editedSuffix(key) {
+			return this.formData[key] !== undefined ? ' (edited)' : ''
+		},
+
+		/**
+		 * The register and schema ids of the open object, whether its `@self`
+		 * holds them as ids or as embedded objects.
+		 *
+		 * @return {{registerId: (string|number), schemaId: (string|number)}} The ids
+		 * @spec exclude id extraction shared by the file operations
+		 */
+		_getRegisterSchemaIds() {
 			const rawRegister = objectStore.objectItem['@self']?.register
 			const rawSchema = objectStore.objectItem['@self']?.schema
 			const registerId =
@@ -1942,6 +1844,17 @@ export default {
 				typeof rawSchema === 'object' && rawSchema !== null
 					? rawSchema.id
 					: rawSchema
+			return { registerId, schemaId }
+		},
+
+		/**
+		 * Returns { type, objectId } needed for all file store operations.
+		 * Handles both string IDs and embedded register/schema objects.
+		 *
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
+		_getFileParams() {
+			const { registerId, schemaId } = this._getRegisterSchemaIds()
 			const objectId =
 				objectStore.objectItem['@self']?.id || objectStore.objectItem?.id
 			const type = `${registerId}-${schemaId}`
@@ -2590,16 +2503,7 @@ export default {
 		 */
 		async saveFileLabels(file) {
 			const { type, objectId } = this._getFileParams()
-			const rawRegister = objectStore.objectItem['@self']?.register
-			const rawSchema = objectStore.objectItem['@self']?.schema
-			const registerId =
-				typeof rawRegister === 'object' && rawRegister !== null
-					? rawRegister.id
-					: rawRegister
-			const schemaId =
-				typeof rawSchema === 'object' && rawSchema !== null
-					? rawSchema.id
-					: rawSchema
+			const { registerId, schemaId } = this._getRegisterSchemaIds()
 
 			// Snapshot the current value so we can revert on failure.
 			const previousLabels = Array.isArray(file.labels) ? [...file.labels] : []

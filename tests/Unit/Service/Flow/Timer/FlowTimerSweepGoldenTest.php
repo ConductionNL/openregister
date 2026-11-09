@@ -35,6 +35,8 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTasks;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTimers;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use PHPUnit\Framework\TestCase;
@@ -171,7 +173,7 @@ class FlowTimerSweepGoldenTest extends TestCase {
 			);
 		}
 
-		return new FlowTimerSweep($timers, $service, $calendars, $logger, $tasks, $taskService);
+		return new FlowTimerSweep(new FlowTimerSweepTimers($timers, $service, $calendars), $logger, new FlowTimerSweepTasks($tasks, $taskService));
 	}//end sweep()
 
 	private static function scenarios(): array {

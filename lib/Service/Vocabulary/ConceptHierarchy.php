@@ -37,7 +37,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use DateTimeInterface;
 
 /**
  * Walks a concept scheme's broader/narrower relations.
@@ -129,19 +128,17 @@ class ConceptHierarchy {
 	 *
 	 * @param string $rootUri The branch root's uri.
 	 * @param array<string,array<string,mixed>> $conceptsByUri Every concept of the scheme, keyed by uri.
-	 * @param string $language The BCP-47 tag to read labels in.
-	 * @param DateTimeInterface $at The instant to judge each window at.
+	 * @param ConceptReading $reading The language to read labels in and the instant to judge each window at.
 	 * @param integer|null $maxDepth How many levels below the root to walk.
 	 *
 	 * @return array<string,mixed> The tree node for the root.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function tree(string $rootUri, array $conceptsByUri, string $language, DateTimeInterface $at, ?int $maxDepth = null): array {
+	public function tree(string $rootUri, array $conceptsByUri, ConceptReading $reading, ?int $maxDepth = null): array {
 		$walk = new ConceptTreeWalk(
 			relations: new ConceptRelations(conceptsByUri: $conceptsByUri),
-			language: $language,
-			instant: $at,
+			reading: $reading,
 			remaining: ($maxDepth ?? self::DEFAULT_MAX_DEPTH)
 		);
 
@@ -243,9 +240,9 @@ class ConceptHierarchy {
 
 		return [
 			'value' => $uri,
-			'label' => $this->labelOf(concept: $concept, language: $walk->language),
+			'label' => $this->labelOf(concept: $concept, language: $walk->reading->language),
 			'notation' => ($concept['notation'] ?? null),
-			'offerable' => $this->lifecycle->isOfferable(concept: $concept, at: $walk->instant),
+			'offerable' => $this->lifecycle->isOfferable(concept: $concept, at: $walk->reading->instant),
 			'leaf' => ($walk->relations->narrowerOf(uri: $uri) === []),
 			'children' => $children,
 		];

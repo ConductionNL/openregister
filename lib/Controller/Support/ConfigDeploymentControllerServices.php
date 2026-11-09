@@ -24,8 +24,8 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewServiceInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentServiceInterface;
 
 /**
  * The services of the configuration deployment API.
@@ -37,16 +37,16 @@ final class ConfigDeploymentControllerServices {
 	 * Bundle the services.
 	 *
 	 * @param ConfigurationDraftService $drafts      The pending values.
-	 * @param DeploymentPreviewService  $previews    The diff.
-	 * @param DeploymentService         $deployments The apply and the rollback.
+	 * @param DeploymentPreviewServiceInterface $previews    The diff.
+	 * @param DeploymentServiceInterface $deployments The apply and the rollback.
 	 * @param ConfigurationExplainer    $explainer   The effective-configuration read.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function __construct(
 		public readonly ConfigurationDraftService $drafts,
-		public readonly DeploymentPreviewService $previews,
-		public readonly DeploymentService $deployments,
+		public readonly DeploymentPreviewServiceInterface $previews,
+		public readonly DeploymentServiceInterface $deployments,
 		public readonly ConfigurationExplainer $explainer,
 	) {
 	}//end __construct()

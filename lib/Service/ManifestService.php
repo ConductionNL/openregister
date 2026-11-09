@@ -51,6 +51,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes ObjectService, SchemaMapper,
  *   CalculationEvaluator, IUserSession, and LoggerInterface; each serves a distinct
  *   concern in the profile-lookup, calculation-evaluation, and manifest-enrichment pipeline.
+ *
+ * @spec openspec/specs/openregister-app-manifest/spec.md#req-or-man-013
  */
 class ManifestService implements ManifestServiceInterface {
 	/**
@@ -93,10 +95,23 @@ class ManifestService implements ManifestServiceInterface {
 	private const DEFAULT_SAFE_FIELDS = ['id', 'roles'];
 
 	/**
+	 * OR object retrieval service.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Schema lookup by slug.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objectService OR object retrieval service.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup by slug.
+	 * @param ManifestSources $sources OR object retrieval service and schema lookup by slug.
 	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator.
 	 * @param IUserSession $userSession Nextcloud user session.
 	 * @param LoggerInterface $logger PSR logger.
@@ -104,12 +119,13 @@ class ManifestService implements ManifestServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly SchemaMapperInterface $schemaMapper,
+		ManifestSources $sources,
 		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->objectService = $sources->objectService;
+		$this->schemaMapper = $sources->schemaMapper;
 	}//end __construct()
 
 	/**
@@ -118,11 +134,6 @@ class ManifestService implements ManifestServiceInterface {
 	 * @param array<string, mixed> $manifest Parsed manifest.json from the calling app.
 	 *
 	 * @return array<string, mixed> Enriched manifest (original if no `currentUserSchema`).
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Security-critical slug validation
-	 *   (type + length + charset checks) combined with anonymous/profile-absent early
-	 *   returns requires several guard branches; removing any guard would introduce
-	 *   an injection or data-leak risk.
 	 *
 	 * @spec openspec/specs/openregister-app-manifest/spec.md#req-or-man-013
 	 */
@@ -133,53 +144,64 @@ class ManifestService implements ManifestServiceInterface {
 			return $manifest;
 		}
 
-		// Validate the schema slug before doing ANY lookup with it: a
-		// compromised or malformed manifest must not be able to point
-		// profile/calculation resolution at an attacker-controlled string
-		// (length, charset, non-printable injection). Fail closed when
-		// validation fails.
-		if (is_string($schemaSlug) === false
-			|| strlen($schemaSlug) > self::MAX_SLUG_LENGTH
-			|| preg_match(self::SLUG_PATTERN, $schemaSlug) !== 1
-		) {
-			$this->logger->warning(
-				message: sprintf('[ManifestService] Rejected invalid currentUserSchema slug %s', var_export($schemaSlug, true)),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			$manifest['runtime']['user'] = null;
-			return $manifest;
-		}
-
-		// 2. Anonymous request → runtime.user = null.
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			$manifest['runtime']['user'] = null;
-			return $manifest;
-		}
-
-		$userId = $user->getUID();
-
-		// 3. Try to find the user's profile object in OR.
-		$profileObject = $this->resolveUserProfile(schemaSlug: (string)$schemaSlug, userId: $userId);
-
-		if ($profileObject === null) {
-			// 4a. No profile → minimal fallback.
-			$manifest['runtime']['user'] = [
-				'id' => $userId,
-				'roles' => ['learner'],
-			];
-			return $manifest;
-		}
-
-		// 4b. Profile found → evaluate calculations and inject.
-		$manifest['runtime']['user'] = $this->buildUserContext(
-			userId: $userId,
-			profile: $profileObject,
-			schemaSlug: (string)$schemaSlug
-		);
-
+		$manifest['runtime']['user'] = $this->runtimeUser(schemaSlug: $schemaSlug);
 		return $manifest;
 	}//end getEnrichedManifest()
+
+	/**
+	 * The `runtime.user` block for a declared schema slug.
+	 *
+	 * The slug is validated, and the user resolved, before ANY lookup runs.
+	 *
+	 * @param mixed $schemaSlug The manifest's currentUserSchema value (not empty).
+	 *
+	 * @return array<string, mixed>|null Null for an invalid slug or an anonymous request.
+	 *
+	 * @spec openspec/specs/openregister-app-manifest/spec.md#req-or-man-013
+	 */
+	private function runtimeUser(mixed $schemaSlug): ?array {
+		// 2. Invalid slug (logged) or anonymous request → runtime.user = null.
+		$user = $this->userSession->getUser();
+		if ($this->isValidSlug(schemaSlug: $schemaSlug) === false || $user === null) {
+			return null;
+		}
+
+		$userId  = $user->getUID();
+		$profile = $this->resolveUserProfile(schemaSlug: (string) $schemaSlug, userId: $userId);
+		if ($profile === null) {
+			// 3. No profile → minimal fallback.
+			return ['id' => $userId, 'roles' => ['learner']];
+		}
+
+		// 4. Profile found → evaluate calculations and inject.
+		return $this->buildUserContext(userId: $userId, profile: $profile, schemaSlug: (string) $schemaSlug);
+	}//end runtimeUser()
+
+	/**
+	 * Whether a manifest-supplied slug may be used for a lookup; logs a rejection.
+	 *
+	 * A compromised or malformed manifest must not be able to point
+	 * profile/calculation resolution at an attacker-controlled string
+	 * (length, charset, non-printable injection). Fails closed.
+	 *
+	 * @param mixed $schemaSlug The slug to check.
+	 *
+	 * @return bool True when the slug is a bounded string of the accepted charset.
+	 */
+	private function isValidSlug(mixed $schemaSlug): bool {
+		if (is_string($schemaSlug) === true
+			&& strlen($schemaSlug) <= self::MAX_SLUG_LENGTH
+			&& preg_match(self::SLUG_PATTERN, $schemaSlug) === 1
+		) {
+			return true;
+		}
+
+		$this->logger->warning(
+			message: sprintf('[ManifestService] Rejected invalid currentUserSchema slug %s', var_export($schemaSlug, true)),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		return false;
+	}//end isValidSlug()
 
 	/**
 	 * Locate the user's profile object for the given schema slug.
@@ -187,20 +209,52 @@ class ManifestService implements ManifestServiceInterface {
 	 * Filters by `ncUserId === $userId` inside the magic table for that schema.
 	 *
 	 * @param string $schemaSlug Schema slug declared in the manifest.
-	 * @param string $userId Nextcloud user ID.
+	 * @param string $userId     Nextcloud user ID.
 	 *
 	 * @return ObjectEntity|null The profile object, or null if not found.
 	 */
 	private function resolveUserProfile(string $schemaSlug, string $userId): ?ObjectEntity {
+		if ($this->profileSchemaExists(schemaSlug: $schemaSlug) === false) {
+			return null;
+		}
+
+		return $this->findProfile(schemaSlug: $schemaSlug, userId: $userId);
+	}//end resolveUserProfile()
+
+	/**
+	 * Whether the schema named by the slug exists; logs why when it does not.
+	 *
+	 * @param string $schemaSlug Validated schema slug.
+	 *
+	 * @return bool True when the schema was found.
+	 */
+	private function profileSchemaExists(string $schemaSlug): bool {
+		$schemas = $this->profileSchemas(schemaSlug: $schemaSlug);
+		if ($schemas === null) {
+			return false;
+		}
+
+		if (count($schemas) === 0) {
+			$this->logger->debug(
+				message: sprintf('[ManifestService] Schema "%s" not found', $schemaSlug),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return false;
+		}
+
+		return true;
+	}//end profileSchemaExists()
+
+	/**
+	 * The schemas matching the slug; logs a failed lookup.
+	 *
+	 * @param string $schemaSlug Validated schema slug.
+	 *
+	 * @return array|null The schemas (at most one), or null when the lookup failed.
+	 */
+	private function profileSchemas(string $schemaSlug): ?array {
 		try {
-			$schemas = $this->schemaMapper->findBySlug(slug: $schemaSlug, limit: 1);
-			if (count($schemas) === 0) {
-				$this->logger->debug(
-					message: sprintf('[ManifestService] Schema "%s" not found', $schemaSlug),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				return null;
-			}
+			return $this->schemaMapper->findBySlug(slug: $schemaSlug, limit: 1);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: sprintf('[ManifestService] Schema lookup failed for "%s": %s', $schemaSlug, $e->getMessage()),
@@ -208,7 +262,17 @@ class ManifestService implements ManifestServiceInterface {
 			);
 			return null;
 		}
+	}//end profileSchemas()
 
+	/**
+	 * Find the profile object of the user in the schema.
+	 *
+	 * @param string $schemaSlug Validated schema slug.
+	 * @param string $userId     Nextcloud user ID.
+	 *
+	 * @return ObjectEntity|null The first match, or null when none or the lookup failed.
+	 */
+	private function findProfile(string $schemaSlug, string $userId): ?ObjectEntity {
 		try {
 			// RBAC + multitenancy MUST remain on. The profile lookup is per
 			// current user — disabling RBAC/multitenancy here would silently
@@ -216,89 +280,75 @@ class ManifestService implements ManifestServiceInterface {
 			// exists in more than one tenant. The (schema, ncUserId) filter
 			// is a *narrowing* filter on top of the tenant scope, not a
 			// substitute for it.
-			$results = $this->objectService->findAll(
-				config: [
-					'limit' => 1,
-					'filters' => [
-						'schema' => $schemaSlug,
-						'ncUserId' => $userId,
-					],
-				]
-			);
-
-			if (count($results) > 0) {
-				return $results[0];
-			}
-
-			return null;
+			$results = $this->objectService->findAll(config: ['limit' => 1, 'filters' => ['schema' => $schemaSlug, 'ncUserId' => $userId]]);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: sprintf('[ManifestService] Profile lookup failed for user "%s": %s', $userId, $e->getMessage()),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return null;
-		}//end try
-	}//end resolveUserProfile()
+		}
+
+		if (count($results) > 0) {
+			return $results[0];
+		}
+
+		return null;
+	}//end findProfile()
 
 	/**
 	 * Build the `runtime.user` block from the profile object.
 	 *
-	 * Seeds the block with the raw profile payload and then overlays every
+	 * Copies only the allowlisted profile fields and then overlays every
 	 * `x-openregister-calculations.*` result that is NOT materialised
 	 * (materialised fields are already in the stored data). Non-materialised
 	 * calculations are evaluated at read-time here so that the manifest always
 	 * reflects the freshest derived state.
 	 *
-	 * @param string $userId Nextcloud user ID (always included as `id`).
-	 * @param ObjectEntity $profile The user's profile object entity.
-	 * @param string $schemaSlug Schema slug (used for schema re-lookup to read calcs).
+	 * @param string       $userId     Nextcloud user ID (always included as `id`).
+	 * @param ObjectEntity $profile    The user's profile object entity.
+	 * @param string       $schemaSlug Schema slug (used for schema re-lookup to read calcs).
 	 *
 	 * @return array<string, mixed> The `runtime.user` data block.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field-allowlist filtering loop
-	 *   plus conditional calculation injection each contribute branches; PHPMD 2.x
-	 *   also accumulates CC from the extracted applyCalculations helper.
 	 */
 	private function buildUserContext(string $userId, ObjectEntity $profile, string $schemaSlug): array {
 		$data = $profile->getObject() ?? [];
 
-		// Resolve the field allowlist BEFORE merging anything from the
+		// Resolve the field allowlist BEFORE copying anything from the
 		// profile object. Without an allowlist every stored field — including
 		// schema-internal or PII fields — would leak verbatim to anything
-		// consuming the manifest. The allowlist lives on the schema
-		// configuration under x-openregister-manifest-user-fields; calculated
-		// (non-materialised) fields named in the calc map are always added,
-		// since by definition they are derived/safe-to-surface values.
-		$calcs = $this->getCalculations(schemaSlug: $schemaSlug);
-		$allowedNames = $this->resolveAllowedFieldNames(
-			schemaSlug: $schemaSlug,
-			calcs: $calcs
-		);
-
-		$filteredData = [];
-		foreach ($allowedNames as $field) {
-			if (array_key_exists($field, $data) === true) {
-				$filteredData[$field] = $data[$field];
-			}
-		}
+		// consuming the manifest.
+		$calcs   = $this->getCalculations(schemaSlug: $schemaSlug);
+		$allowed = $this->resolveAllowedFieldNames(schemaSlug: $schemaSlug, calcs: $calcs);
 
 		// Always surface the Nextcloud user ID as `id`.
-		$context = array_merge($filteredData, ['id' => $userId]);
-
-		// Evaluate non-materialised calculations to enrich the context.
+		$context = array_merge($this->pickFields(data: $data, names: $allowed), ['id' => $userId]);
 		if ($calcs === null) {
 			return $context;
 		}
 
 		$data['@self'] = $this->buildSelfMeta(profile: $profile);
-
-		return $this->applyCalculations(
-			context: $context,
-			data: $data,
-			calcs: $calcs,
-			userId: $userId
-		);
+		return $this->applyCalculations(context: $context, data: $data, calcs: $calcs, userId: $userId);
 	}//end buildUserContext()
+
+	/**
+	 * The named fields present in the data, in the order of the names.
+	 *
+	 * @param array<string, mixed> $data  The profile data.
+	 * @param list<string>         $names The allowed field names.
+	 *
+	 * @return array<string, mixed> The picked fields.
+	 */
+	private function pickFields(array $data, array $names): array {
+		$picked = [];
+		foreach ($names as $field) {
+			if (array_key_exists($field, $data) === true) {
+				$picked[$field] = $data[$field];
+			}
+		}
+
+		return $picked;
+	}//end pickFields()
 
 	/**
 	 * Build the `@self` metadata block injected into the evaluation data map
@@ -309,77 +359,81 @@ class ManifestService implements ManifestServiceInterface {
 	 * @return array<string, mixed>
 	 */
 	private function buildSelfMeta(ObjectEntity $profile): array {
-		$created = $profile->getCreated();
-		$updated = $profile->getUpdated();
-
-		$createdStr = null;
-		if ($created !== null) {
-			$createdStr = $created->format(DateTimeInterface::ATOM);
-		}
-
-		$updatedStr = null;
-		if ($updated !== null) {
-			$updatedStr = $updated->format(DateTimeInterface::ATOM);
-		}
-
 		return [
 			'id' => $profile->getUuid(),
 			'uuid' => $profile->getUuid(),
 			'register' => $profile->getRegister(),
 			'schema' => $profile->getSchema(),
 			'owner' => $profile->getOwner(),
-			'created' => $createdStr,
-			'updated' => $updatedStr,
+			'created' => $this->atom(moment: $profile->getCreated()),
+			'updated' => $this->atom(moment: $profile->getUpdated()),
 		];
 	}//end buildSelfMeta()
 
 	/**
-	 * Evaluate the non-materialised calculations from the schema and merge
-	 * the results into $context.
+	 * Format a moment as ATOM, or null when absent.
+	 *
+	 * @param DateTimeInterface|null $moment The moment.
+	 *
+	 * @return string|null The ATOM string, or null.
+	 */
+	private function atom(?DateTimeInterface $moment): ?string {
+		if ($moment === null) {
+			return null;
+		}
+
+		return $moment->format(DateTimeInterface::ATOM);
+	}//end atom()
+
+	/**
+	 * Evaluate the calculations from the schema and merge the non-materialised
+	 * results into $context.
 	 *
 	 * @param array<string, mixed> $context Base context (already contains filtered profile fields).
-	 * @param array<string, mixed> $data Evaluation data including `@self`.
-	 * @param array<string, mixed> $calcs Calculation spec map from the schema.
-	 * @param string $userId Nextcloud user id (used in warning messages only).
+	 * @param array<string, mixed> $data    Evaluation data including `@self`.
+	 * @param array<string, mixed> $calcs   Calculation spec map from the schema.
+	 * @param string               $userId  Nextcloud user id (used in warning messages only).
 	 *
 	 * @return array<string, mixed> Enriched context.
 	 */
-	private function applyCalculations(
-		array $context,
-		array $data,
-		array $calcs,
-		string $userId,
-	): array {
+	private function applyCalculations(array $context, array $data, array $calcs, string $userId): array {
 		foreach ($calcs as $name => $spec) {
 			if (is_array($spec) === false) {
 				continue;
 			}
 
-			try {
-				$value = $this->evaluator->evaluate($data, ($spec['expression'] ?? null));
-			} catch (EvaluationException $e) {
-				$this->logger->warning(
-					message: sprintf(
-						'[ManifestService] Calculation "%s" failed for user "%s": %s',
-						(string)$name,
-						$userId,
-						$e->getMessage()
-					),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				continue;
-			}
-
+			$outcome = $this->evaluateCalculation(name: (string) $name, spec: $spec, data: $data, userId: $userId);
 			// Only inject non-materialised computations here; materialised ones
 			// are already stored in the profile payload and surfaced via $context.
-			$materialise = ($spec['materialise'] ?? false);
-			if ($materialise !== true) {
-				$context[(string)$name] = $this->serialise(value: $value);
+			if ($outcome['ok'] === true && ($spec['materialise'] ?? false) !== true) {
+				$context[(string) $name] = $this->serialise(value: $outcome['value']);
 			}
-		}//end foreach
+		}
 
 		return $context;
 	}//end applyCalculations()
+
+	/**
+	 * Evaluate one calculation; a failing expression is logged and reported as not ok.
+	 *
+	 * @param string               $name   The calculation name.
+	 * @param array<string, mixed> $spec   The calculation spec.
+	 * @param array<string, mixed> $data   Evaluation data including `@self`.
+	 * @param string               $userId Nextcloud user id (used in warning messages only).
+	 *
+	 * @return array{ok: bool, value: mixed} Whether it evaluated, and its raw value.
+	 */
+	private function evaluateCalculation(string $name, array $spec, array $data, string $userId): array {
+		try {
+			return ['ok' => true, 'value' => $this->evaluator->evaluate($data, ($spec['expression'] ?? null))];
+		} catch (EvaluationException $e) {
+			$this->logger->warning(
+				message: sprintf('[ManifestService] Calculation "%s" failed for user "%s": %s', $name, $userId, $e->getMessage()),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return ['ok' => false, 'value' => null];
+		}
+	}//end evaluateCalculation()
 
 	/**
 	 * Read `x-openregister-calculations` from the schema identified by slug.
@@ -389,18 +443,7 @@ class ManifestService implements ManifestServiceInterface {
 	 * @return array<string, mixed>|null The calculations map, or null when absent.
 	 */
 	private function getCalculations(string $schemaSlug): ?array {
-		try {
-			$schemas = $this->schemaMapper->findBySlug(slug: $schemaSlug, limit: 1);
-		} catch (Throwable) {
-			return null;
-		}
-
-		if (count($schemas) === 0) {
-			return null;
-		}
-
-		$config = ($schemas[0]->getConfiguration() ?? []);
-		$calcs = ($config['x-openregister-calculations'] ?? null);
+		$calcs = ($this->schemaConfiguration(schemaSlug: $schemaSlug)['x-openregister-calculations'] ?? null);
 		if (is_array($calcs) === true) {
 			return $calcs;
 		}
@@ -412,43 +455,48 @@ class ManifestService implements ManifestServiceInterface {
 	 * Resolve the list of profile fields safe to copy into runtime.user.
 	 *
 	 * Source of truth, in order:
-	 * 1. `x-openregister-manifest-user-fields` on the schema configuration
+	 * 1. The default safe fields (id, roles).
+	 * 2. `x-openregister-manifest-user-fields` on the schema configuration
 	 *    — an explicit author-provided allowlist (list<string>).
-	 * 2. The keys of `x-openregister-calculations` whose entries are
+	 * 3. The keys of `x-openregister-calculations` whose entries are
 	 *    materialised — these are derived values the schema author has
 	 *    already declared safe to surface.
-	 * 3. The default safe fields (id, roles).
 	 *
 	 * NEVER returns the full key list of the profile object: that was the
 	 * leak path flagged by review (raw `$profile->getObject()` merge).
 	 *
-	 * @param string $schemaSlug Validated schema slug.
-	 * @param array<string, mixed>|null $calcs Calculation map for the schema.
+	 * @param string                    $schemaSlug Validated schema slug.
+	 * @param array<string, mixed>|null $calcs      Calculation map for the schema.
 	 *
 	 * @return list<string> Distinct field names allowed in runtime.user.
 	 */
 	private function resolveAllowedFieldNames(string $schemaSlug, ?array $calcs): array {
-		$explicit = $this->loadFieldAllowlist(schemaSlug: $schemaSlug);
-		$allowed = self::DEFAULT_SAFE_FIELDS;
-
-		if ($explicit !== null) {
-			$allowed = array_merge($allowed, $explicit);
-		}
-
-		if ($calcs !== null) {
-			foreach ($calcs as $name => $spec) {
-				if (is_string($name) === false) {
-					continue;
-				}
-
-				if (is_array($spec) === true && ($spec['materialise'] ?? false) === true) {
-					$allowed[] = $name;
-				}
-			}
-		}
+		$allowed = array_merge(
+			self::DEFAULT_SAFE_FIELDS,
+			($this->loadFieldAllowlist(schemaSlug: $schemaSlug) ?? []),
+			$this->materialisedNames(calcs: ($calcs ?? []))
+		);
 
 		return array_values(array_unique($allowed));
 	}//end resolveAllowedFieldNames()
+
+	/**
+	 * The string names of the materialised calculations.
+	 *
+	 * @param array<int|string, mixed> $calcs Calculation map for the schema.
+	 *
+	 * @return list<string> The names.
+	 */
+	private function materialisedNames(array $calcs): array {
+		$names = [];
+		foreach ($calcs as $name => $spec) {
+			if (is_string($name) === true && is_array($spec) === true && ($spec['materialise'] ?? false) === true) {
+				$names[] = $name;
+			}
+		}
+
+		return $names;
+	}//end materialisedNames()
 
 	/**
 	 * Load the explicit user-field allowlist from the schema configuration.
@@ -459,6 +507,27 @@ class ManifestService implements ManifestServiceInterface {
 	 *                           the schema declares no allowlist.
 	 */
 	private function loadFieldAllowlist(string $schemaSlug): ?array {
+		$allowlist = ($this->schemaConfiguration(schemaSlug: $schemaSlug)[self::FIELD_ALLOWLIST_KEY] ?? null);
+		if (is_array($allowlist) === false) {
+			return null;
+		}
+
+		return array_values(
+			array_filter(
+				$allowlist,
+				static fn (mixed $entry): bool => is_string($entry) === true && $entry !== ''
+			)
+		);
+	}//end loadFieldAllowlist()
+
+	/**
+	 * The configuration of the schema identified by slug.
+	 *
+	 * @param string $schemaSlug Validated schema slug.
+	 *
+	 * @return array<string, mixed>|null The configuration, or null when the schema is absent or unreadable.
+	 */
+	private function schemaConfiguration(string $schemaSlug): ?array {
 		try {
 			$schemas = $this->schemaMapper->findBySlug(slug: $schemaSlug, limit: 1);
 		} catch (Throwable) {
@@ -469,22 +538,8 @@ class ManifestService implements ManifestServiceInterface {
 			return null;
 		}
 
-		$config = ($schemas[0]->getConfiguration() ?? []);
-		$allowlist = ($config[self::FIELD_ALLOWLIST_KEY] ?? null);
-
-		if (is_array($allowlist) === false) {
-			return null;
-		}
-
-		$normalised = [];
-		foreach ($allowlist as $entry) {
-			if (is_string($entry) === true && $entry !== '') {
-				$normalised[] = $entry;
-			}
-		}
-
-		return $normalised;
-	}//end loadFieldAllowlist()
+		return ($schemas[0]->getConfiguration() ?? []);
+	}//end schemaConfiguration()
 
 	/**
 	 * Serialise a calculation result into a JSON-friendly value.
@@ -495,7 +550,7 @@ class ManifestService implements ManifestServiceInterface {
 	 */
 	private function serialise(mixed $value): mixed {
 		if ($value instanceof DateTimeInterface) {
-			return $value->format(DATE_ATOM);
+			return $this->atom(moment: $value);
 		}
 
 		return $value;

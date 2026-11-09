@@ -50,7 +50,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use UnexpectedValueException;
 
@@ -62,7 +61,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
  */
-class LinkObjectNode implements IFlowNode, LinkObjectNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class LinkObjectNode extends ObjectNodeBase implements IFlowNode, LinkObjectNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * The step type.
@@ -137,19 +136,6 @@ class LinkObjectNode implements IFlowNode, LinkObjectNodeInterface, IFlowNodeCon
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/public.svg');
 	}//end getIcon()
-
-	/**
-	 * Available in both scopes: every write is checked against the run's identity.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return bool Whether it is available.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary.
@@ -330,26 +316,4 @@ class LinkObjectNode implements IFlowNode, LinkObjectNodeInterface, IFlowNodeCon
 			'schema' => (string)($self['schema'] ?? ''),
 		];
 	}//end subjectOf()
-
-	/**
-	 * The BPMN kind.
-	 *
-	 * @return string The kind.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
-	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_SERVICE_TASK;
-	}//end getKind()
-
-	/**
-	 * The palette category.
-	 *
-	 * @return string The category.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_OBJECTS;
-	}//end getCategory()
 }//end class

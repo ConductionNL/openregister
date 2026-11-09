@@ -64,23 +64,37 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'calendar';
 
 	/**
+	 * Legacy X-OR-* CalDAV service.
+	 *
+	 * @var CalendarEventService
+	 */
+	private CalendarEventService $calendarEventService;
+
+	/**
+	 * Tier-2 link-table service (UNION read path).
+	 *
+	 * @var CalendarLinkService
+	 */
+	private CalendarLinkService $calendarLinkService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param CalendarEventService $calendarEventService Legacy X-OR-* CalDAV service.
-	 * @param CalendarLinkService $calendarLinkService Tier-2 link-table service (UNION read path).
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 * @param LoggerInterface $logger PSR-3 logger for surfacing CalDAV failures.
+	 * @param CalendarProviderServices $calendar   The calendar event and link services.
+	 * @param IAppManager              $appManager NC app manager.
+	 * @param IL10N                    $l10n       Localisation.
+	 * @param LoggerInterface          $logger     PSR-3 logger for surfacing CalDAV failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private CalendarEventService $calendarEventService,
-		private CalendarLinkService $calendarLinkService,
+		CalendarProviderServices $calendar,
 		private IAppManager $appManager,
 		private IL10N $l10n,
 		private LoggerInterface $logger,
 	) {
+		$this->calendarEventService = $calendar->calendarEventService;
+		$this->calendarLinkService = $calendar->calendarLinkService;
 	}//end __construct()
 
 	/**

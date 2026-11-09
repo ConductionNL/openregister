@@ -21,6 +21,7 @@ namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -186,8 +187,7 @@ final class NotificationPreferenceResolveGoldenTest extends TestCase {
 			config: $config,
 			schemaMapper: $this->createMock(SchemaMapper::class),
 			logger: $this->createMock(LoggerInterface::class),
-			groupManager: $groupManager,
-			userManager: $userManager
+			userGroups: new UserGroupServices(groupManager: $groupManager, userManager: $userManager)
 		);
 
 		$out = $service->resolveEffective($schemaDefault, 'alice', 'meldingen', 'created', $scopes, $groupIds);

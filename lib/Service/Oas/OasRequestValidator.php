@@ -39,7 +39,7 @@ use Opis\JsonSchema\Validator;
 /**
  * Validates a request body against a JSON-Schema.
  */
-class OasRequestValidator {
+class OasRequestValidator implements OasRequestValidatorInterface {
 	/**
 	 * Validate `$body` against `$schema`. Returns the list of errors —
 	 * empty array on success. Each error is `{ path, message }`.

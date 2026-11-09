@@ -39,6 +39,8 @@ use OCP\EventDispatcher\Event;
  * Telemetry event fired after a custom-scope evaluation completes.
  */
 class CustomScopeEvaluatedEvent extends Event {
+	use CustomScopeAccessors;
+
 	/**
 	 * Constructor.
 	 *
@@ -61,39 +63,6 @@ class CustomScopeEvaluatedEvent extends Event {
 		parent::__construct();
 
 	}//end __construct()
-
-	/**
-	 * Schema that was evaluated.
-	 *
-	 * @return Schema The schema involved in the evaluation.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
-	 */
-	public function getSchema(): Schema {
-		return $this->schema;
-	}//end getSchema()
-
-	/**
-	 * Custom action verb that was evaluated.
-	 *
-	 * @return string The custom action verb.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
-	 */
-	public function getAction(): string {
-		return $this->action;
-	}//end getAction()
-
-	/**
-	 * User ID under evaluation (null for anonymous requests).
-	 *
-	 * @return string|null The user ID, or null when anonymous.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
-	 */
-	public function getUserId(): ?string {
-		return $this->userId;
-	}//end getUserId()
 
 	/**
 	 * Final verdict the caller received.

@@ -108,17 +108,14 @@ final class VtodoReader {
 	 * @return array<string, mixed> The fields.
 	 */
 	private function dataFields(mixed $vtodo): array {
+		// Invalid base64 decodes to false, which json_decode() reads as no JSON at all.
 		$raw = base64_decode(($this->text(vtodo: $vtodo, property: 'X-OPENREGISTER-DATA') ?? ''), true);
-		if ($raw === false) {
-			return [];
+		$decoded = json_decode((string)$raw, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
 		}
 
-		$decoded = json_decode($raw, true);
-		if (is_array($decoded) === false) {
-			return [];
-		}
-
-		return $decoded;
+		return [];
 	}//end dataFields()
 
 	/**

@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Files\Db\NoteVersion;
 use OCA\OpenRegister\Files\Db\NoteVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCP\Comments\IComment;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -82,11 +83,9 @@ class NoteVersionService {
 	 * that silently failed to write would leave an edit with no history and
 	 * a note claiming, through its own `versionCount`, that there is none.
 	 *
-	 * @param integer $noteId          The note being rewritten.
-	 * @param string  $previousMessage The text being replaced.
-	 * @param string  $author          The actor the replaced text was attributed to.
-	 * @param string  $authorType      That actor's type, e.g. `users`.
-	 * @param string  $editedBy        The user replacing the text.
+	 * @param integer  $noteId   The note being rewritten.
+	 * @param IComment $previous The note as it stands, before its text is replaced: its text, actor and actor type.
+	 * @param string   $editedBy The user replacing the text.
 	 *
 	 * @return void
 	 *
@@ -94,18 +93,12 @@ class NoteVersionService {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function record(
-		int $noteId,
-		string $previousMessage,
-		string $author,
-		string $authorType,
-		string $editedBy,
-	): void {
+	public function record(int $noteId, IComment $previous, string $editedBy): void {
 		$version = new NoteVersion();
 		$version->setCommentId($noteId);
-		$version->setMessage($previousMessage);
-		$version->setAuthor($author);
-		$version->setAuthorType($authorType);
+		$version->setMessage($previous->getMessage());
+		$version->setAuthor($previous->getActorId());
+		$version->setAuthorType($previous->getActorType());
 		$version->setEditedBy($editedBy);
 		$version->setEditedAt(new DateTime());
 		// Stamped here rather than in a mapper `insert()` override: narrowing
@@ -244,10 +237,7 @@ class NoteVersionService {
 			$this->auditTrail->createAuditTrailEntry(
 				object: $object,
 				action: self::AUDIT_ACTION,
-				context: [
-					'noteId' => $noteId,
-					'versionCount' => $versions,
-				]
+				context: ['noteId' => $noteId, 'versionCount' => $versions]
 			);
 		} catch (Throwable $e) {
 			// The text has already been replaced and the version already

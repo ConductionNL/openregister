@@ -45,7 +45,7 @@ use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\FacetableAnalyzer;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -204,7 +204,7 @@ use OCA\OpenRegister\Service\Object\SavedScopeIds;
  * @spec openspec/specs/objects-crud/spec.md#requirement-partial-object-updates-are-protected-against-lost-updates
  * @spec openspec/specs/object-lifecycle/spec.md#requirement-declared-initial-lifecycle-state-applied-on-create
  */
-class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface, ObjectStreamingSaveInterface
+class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface, ObjectStreamingSaveInterface, ObjectHandlerAccessInterface
 {
 
     /**
@@ -341,7 +341,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @param MagicMapperInterface                    $objectMapper         Unified mapper for object
      *                                                             operations (routes to
      *                                                             magic tables).
-     * @param FileService                    $fileService          Service for file operations.
+     * @param FileFolderServiceInterface                    $fileService          Service for file operations.
      * @param IUserSession                   $userSession          User session for getting current user.
      * @param SearchTrailService             $searchTrailService   Service for search trail operations.
      * @param IGroupManager                  $groupManager         Group manager for checking user groups.
@@ -396,7 +396,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         private readonly SchemaMapperInterface $schemaMapper,
         private readonly ViewMapperInterface $viewMapper,
         private readonly MagicMapperInterface $objectMapper,
-        private readonly FileService $fileService,
+        private readonly FileFolderServiceInterface $fileService,
         private readonly IUserSession $userSession,
         private readonly SearchTrailService $searchTrailService,
         private readonly IGroupManager $groupManager,
@@ -6282,10 +6282,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         );
 
         $report = $this->migrationHandler->migrateObjects(
-            sourceRegister: $sourceRegister,
-            sourceSchema: $sourceSchema,
-            targetRegister: $targetRegister,
-            targetSchema: $targetSchema,
+            source: [$sourceRegister, $sourceSchema],
+            target: [$targetRegister, $targetSchema],
             objectIds: $permitted,
             mapping: $mapping
         );

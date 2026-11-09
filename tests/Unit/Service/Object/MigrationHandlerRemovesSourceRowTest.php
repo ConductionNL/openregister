@@ -240,7 +240,7 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 	 * @return array<string, mixed> The report.
 	 */
 	private function migrate(): array {
-		return $this->handler()->migrateObjects(1, 10, 2, 20, [self::UUID], ['headline' => 'title']);
+		return $this->handler()->migrateObjects([1, 10], [2, 20], [self::UUID], ['headline' => 'title']);
 	}//end migrate()
 
 	/**

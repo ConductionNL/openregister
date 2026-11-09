@@ -33,14 +33,14 @@ final class MigrationMapping {
 	 *
 	 * @param UtilityHandler          $utilityHandler   Handler for utility operations.
 	 * @param DataManipulationHandler $dataManipHandler Handler for data manipulation.
-	 * @param SaveObjectInterface     $relationScanner  Finds the relations in the mapped data.
+	 * @param SaveObjectRelationScannerInterface     $relationScanner  Finds the relations in the mapped data.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		public readonly UtilityHandler $utilityHandler,
 		public readonly DataManipulationHandler $dataManipHandler,
-		public readonly SaveObjectInterface $relationScanner,
+		public readonly SaveObjectRelationScannerInterface $relationScanner,
 	) {
 	}//end __construct()
 }//end class

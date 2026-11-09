@@ -58,6 +58,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
@@ -66,11 +67,11 @@ use OCA\OpenRegister\Service\File\FileContentHandlers;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
 use OCA\OpenRegister\Service\File\FileLifecycleHandlers;
 use OCA\OpenRegister\Service\File\FileLockHandler;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\File\FileServicePlatform;
-use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandlerInterface;
 use OCA\OpenRegister\Service\File\FileStorageHandlers;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
@@ -110,7 +111,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.LongVariable)             Handler properties use descriptive names for clarity
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
-class FileService implements FileServiceInterface {
+class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 
 
 
@@ -170,16 +171,16 @@ class FileService implements FileServiceInterface {
 	/**
 	 * File ownership handler
 	 *
-	 * @var FileOwnershipHandler
+	 * @var FileOwnershipHandlerInterface
 	 */
-	private FileOwnershipHandler $fileOwnershipHandler;
+	private FileOwnershipHandlerInterface $fileOwnershipHandler;
 
 	/**
 	 * File sharing handler
 	 *
-	 * @var FileSharingHandler
+	 * @var FileSharingHandlerInterface
 	 */
-	private FileSharingHandler $fileSharingHandler;
+	private FileSharingHandlerInterface $fileSharingHandler;
 
 	/**
 	 * Create file handler (Single Responsibility: File creation)
@@ -1397,6 +1398,7 @@ class FileService implements FileServiceInterface {
 	 * @psalm-param   array<int, string> $tags
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_schema and $_register stay in this fixed public signature; moved here from CreateFileHandler.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
 	 */
@@ -1412,12 +1414,7 @@ class FileService implements FileServiceInterface {
 	): File {
 		return $this->createFileHandler->addFile(
 			objectEntity: $objectEntity,
-			fileName: $fileName,
-			content: $content,
-			share: $share,
-			tags: $tags,
-			_schema: $_schema,
-			_register: $_register,
+			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags),
 			registerId: $registerId
 		);
 	}//end addFile()
@@ -1455,10 +1452,7 @@ class FileService implements FileServiceInterface {
 	): File {
 		return $this->createFileHandler->saveFile(
 			objectEntity: $objectEntity,
-			fileName: $fileName,
-			content: $content,
-			share: $share,
-			tags: $tags
+			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags)
 		);
 	}//end saveFile()
 
@@ -2061,8 +2055,7 @@ class FileService implements FileServiceInterface {
 		// Use CreateFileHandler to create the file in target object folder.
 		$newFile = $this->createFileHandler->addFile(
 			objectEntity: $targetObject,
-			fileName: $resolvedName,
-			content: $content
+			upload: new FileUpload(fileName: $resolvedName, content: $content, share: false)
 		);
 
 		$sourceUuid = $sourceObject->getUuid();

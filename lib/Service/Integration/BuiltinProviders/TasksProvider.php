@@ -35,7 +35,7 @@ use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IL10N;
 use RuntimeException;
@@ -50,23 +50,49 @@ use RuntimeException;
  */
 class TasksProvider extends AbstractIntegrationProvider {
 	/**
+	 * Tasks service.
+	 *
+	 * @var ObjectCalendarTasksInterface
+	 */
+	private ObjectCalendarTasksInterface $taskService;
+
+	/**
+	 * Register lookup (slug/uuid/id → entity).
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup (slug/uuid/id → entity).
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Object lookup (for the LINK label title).
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param TaskService $taskService Tasks service.
-	 * @param RegisterMapperInterface $registerMapper Register lookup (slug/uuid/id → entity).
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup (slug/uuid/id → entity).
-	 * @param ObjectOperationsInterface $objectService Object lookup (for the LINK label title).
-	 * @param IL10N $l10n Localisation.
+	 * @param TasksProviderServices $services The task, register, schema and object services.
+	 * @param IL10N                 $l10n     Localisation.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private TaskService $taskService,
-		private RegisterMapperInterface $registerMapper,
-		private SchemaMapperInterface $schemaMapper,
-		private ObjectOperationsInterface $objectService,
+		TasksProviderServices $services,
 		private IL10N $l10n,
 	) {
+		$this->taskService = $services->taskService;
+		$this->registerMapper = $services->registerMapper;
+		$this->schemaMapper = $services->schemaMapper;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**

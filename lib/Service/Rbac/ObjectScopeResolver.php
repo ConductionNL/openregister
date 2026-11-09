@@ -63,46 +63,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 /**
  * Resolves the effective object scope and emits the matching SQL predicate.
  */
-class ObjectScopeResolver {
-
-	/**
-	 * The authorization-block key carrying the scope.
-	 *
-	 * @var string
-	 */
-	public const SCOPE_KEY = 'scope';
-
-	/**
-	 * The default scope: the object answers to the schema's rules.
-	 *
-	 * @var string
-	 */
-	public const SCOPE_ORGANISATION = 'organisation';
-
-	/**
-	 * The private scope: owner, administrators and invited principals only.
-	 *
-	 * @var string
-	 */
-	public const SCOPE_PRIVATE = 'private';
-
-	/**
-	 * The authorization-block key carrying the OWNING GROUP.
-	 *
-	 * A second owner, which is a group rather than a person. It is stored beside
-	 * `scope` in the same block, for the reason `scope` is stored there: the
-	 * object's `_authorization` column already is the per-object access record,
-	 * and a new column would need a migration on every magic table to say
-	 * something the block can already carry.
-	 *
-	 * It admits on exactly the terms the named owner does, which is what makes a
-	 * colleague able to edit the record without being handed it first. It is NOT
-	 * a grant: a grant re-opens a private object within the schema's ceiling,
-	 * while the owning group IS an owner and so is admitted unconditionally.
-	 *
-	 * @var string
-	 */
-	public const OWNER_GROUP_KEY = 'ownerGroup';
+class ObjectScopeResolver implements ObjectScopeResolverInterface {
 
 	/**
 	 * The administrator group that bypasses every RBAC decision.
@@ -389,33 +350,22 @@ class ObjectScopeResolver {
 	 * the rules would have allowed; it cannot admit somebody the schema refuses,
 	 * which is what the spec means by "`private` cannot widen access".
 	 *
-	 * @param string $authColumn The `_authorization` column, qualified by the caller.
-	 * @param bool $defaultPrivate Whether the schema makes its objects private by default.
-	 * @param bool $isPostgres Whether the connected platform is PostgreSQL.
+	 * The not-private term comes from {@see notPrivateSql()}; this adds the
+	 * granted disjunct beside it, and is the only place that does.
+	 *
+	 * @param string $notPrivateSql The not-private term for the row, from notPrivateSql().
 	 * @param string $uuidColumn The `_uuid` column, qualified by the caller.
 	 * @param string[] $quotedUuids Granted object UUIDs, ALREADY quoted as SQL literals.
 	 *
 	 * @return string A SQL predicate true for rows this caller may reach.
 	 */
-	public function notPrivateOrGrantedSql(
-		string $authColumn,
-		bool $defaultPrivate,
-		bool $isPostgres,
-		string $uuidColumn,
-		array $quotedUuids,
-	): string {
-		$notPrivate = $this->notPrivateSql(
-			columnName: $authColumn,
-			defaultPrivate: $defaultPrivate,
-			isPostgres: $isPostgres
-		);
-
+	public function notPrivateOrGrantedSql(string $notPrivateSql, string $uuidColumn, array $quotedUuids): string {
 		if (empty($quotedUuids) === true) {
-			return $notPrivate;
+			return $notPrivateSql;
 		}
 
 		$inList = implode(', ', $quotedUuids);
 
-		return "({$notPrivate} OR {$uuidColumn} IN ({$inList}))";
+		return "({$notPrivateSql} OR {$uuidColumn} IN ({$inList}))";
 	}//end notPrivateOrGrantedSql()
 }//end class

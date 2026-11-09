@@ -76,7 +76,7 @@ use Throwable;
  *   cause vocabulary; each is required for the degrade-don't-throw lookup
  *   surface (AD-23).
  */
-class BrpPersonProvider extends AbstractIntegrationProvider {
+class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPersonProviderInterface {
 
 	use ConnectorRoutedProviderTrait;
 

@@ -22,8 +22,6 @@ namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskSequence;
-use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
-use OCA\OpenRegister\Event\TaskSequenceUndecidedEvent;
 
 /**
  * Provisions and progresses an approval task sequence, as the listeners outside lib/Service drive it.
@@ -74,13 +72,13 @@ interface TaskSequenceServiceInterface {
 	 * task's own transaction committed. Three paths:
 	 *
 	 * - an approving completion enables the next position, or completes the
-	 *   sequence and dispatches {@see TaskSequenceCompletedEvent}
+	 *   sequence and dispatches {@see \OCA\OpenRegister\Event\TaskSequenceCompletedEvent}
 	 * - a rejecting completion closes the sequence as rejected (KEPT, never
 	 *   deleted; design D-5) and terminates every remaining task with a
 	 *   reason naming the rejecting position
 	 * - a completion that neither approves nor rejects closes the sequence as
 	 *   undecided, terminates the remainder and dispatches
-	 *   {@see TaskSequenceUndecidedEvent}
+	 *   {@see \OCA\OpenRegister\Event\TaskSequenceUndecidedEvent}
 	 * - any other terminal end (cancelled, terminated, disabled) closes the
 	 *   sequence as terminated and terminates the remainder
 	 *

@@ -41,7 +41,7 @@ use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\BackgroundJob\Support\AggregationThresholdServices;
 use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
-use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
+use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
@@ -55,9 +55,9 @@ class AggregationThresholdJob extends ActorForwardedJob {
 	/**
 	 * Stale-safe entry re-fetch.
 	 *
-	 * @var DeferredEntryObjectResolver
+	 * @var DeferredEntryObjectResolverInterface
 	 */
-	private readonly DeferredEntryObjectResolver $resolver;
+	private readonly DeferredEntryObjectResolverInterface $resolver;
 
 	/**
 	 * Schema lookup mapper.

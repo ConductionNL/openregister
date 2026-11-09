@@ -93,33 +93,20 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 	public function setEnabled(Schema $schema, string $ruleId, bool $enabled): array {
 		$rule = $this->inventory->find(schema: $schema, ruleId: $ruleId);
 		if ($rule === null) {
-			return [
-				'ok' => false,
-				'error' => [
-					'code' => self::CODE_UNKNOWN_RULE,
-					'message' => sprintf('Schema "%s" declares no rule "%s".', (string)($schema->getSlug() ?? ''), $ruleId),
-				],
-			];
+			$message = sprintf('Schema "%s" declares no rule "%s".', (string)($schema->getSlug() ?? ''), $ruleId);
+			return ['ok' => false, 'error' => ['code' => self::CODE_UNKNOWN_RULE, 'message' => $message]];
 		}
 
 		$audit = $this->audit->switched(rule: $rule, enabled: $enabled);
-
 		try {
 			$updated = $this->write(schema: $schema, rule: $rule, enabled: $enabled);
 		} catch (Throwable $e) {
-			return [
-				'ok' => false,
-				'error' => ['code' => self::CODE_NOT_WRITTEN, 'message' => $e->getMessage()],
-			];
+			return ['ok' => false, 'error' => ['code' => self::CODE_NOT_WRITTEN, 'message' => $e->getMessage()]];
 		}
 
 		$after = $this->inventory->find(schema: $updated, ruleId: $ruleId);
 
-		return [
-			'ok' => true,
-			'rule' => ($after?->jsonSerialize() ?? $rule->jsonSerialize()),
-			'audit' => $audit,
-		];
+		return ['ok' => true, 'rule' => ($after?->jsonSerialize() ?? $rule->jsonSerialize()), 'audit' => $audit];
 	}//end setEnabled()
 
 	/**
@@ -143,36 +130,73 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 			return $schema;
 		}
 
-		$configuration = ($schema->getConfiguration() ?? []);
-		$properties = ($schema->getProperties() ?? []);
-		$key = $rule->getKey();
-
-		switch ($rule->getKind()) {
-			case RuleVocabulary::KIND_CALCULATION:
-				// A calculation is declared in one of two places and the switch
-				// has to land in the one the author used, or the merge that
-				// builds the one calculations map will read the old value back.
-				if (isset($properties[$key][PropertyCalculations::PROPERTY_KEY]) === true) {
-					$properties[$key][PropertyCalculations::PROPERTY_KEY]['enabled'] = $enabled;
-					break;
-				}
-
-				$configuration['x-openregister-calculations'][$key]['enabled'] = $enabled;
-				break;
-
-			case RuleVocabulary::KIND_STATE_FIELD_RULE:
-				$configuration['x-openregister-lifecycle']['states'][$key]['enabled'] = $enabled;
-				break;
-
-			case RuleVocabulary::KIND_LIFECYCLE_CONDITION:
-			default:
-				$configuration['x-openregister-lifecycle']['transitions'][$key]['enabled'] = $enabled;
-				break;
-		}
-
 		return $this->schemaMapper->updateFromArray(
 			id: (int)$schema->getId(),
-			object: ['configuration' => $configuration, 'properties' => $properties]
+			object: $this->switched(schema: $schema, rule: $rule, enabled: $enabled)
 		);
 	}//end write()
+
+	/**
+	 * The schema's configuration and properties with the switch written into the rule's declaration.
+	 *
+	 * @param Schema $schema The schema the rule is declared on.
+	 * @param RuleDescriptor $rule The rule as declared; not a flow.
+	 * @param bool $enabled What to switch it to.
+	 *
+	 * @return array{configuration: array<string, mixed>, properties: array<string, mixed>} The declarations to save.
+	 */
+	private function switched(Schema $schema, RuleDescriptor $rule, bool $enabled): array {
+		$declarations = ['configuration' => ($schema->getConfiguration() ?? []), 'properties' => ($schema->getProperties() ?? [])];
+
+		return $this->withFlag(tree: $declarations, path: $this->switchPath(declarations: $declarations, rule: $rule), enabled: $enabled);
+	}//end switched()
+
+	/**
+	 * A tree with one flag written at the end of a path, creating the maps on the way.
+	 *
+	 * @param array<string, mixed> $tree The tree.
+	 * @param array<int, string> $path The path, never empty.
+	 * @param bool $enabled The flag.
+	 *
+	 * @return array<string, mixed> The tree with the flag written.
+	 */
+	private function withFlag(array $tree, array $path, bool $enabled): array {
+		$key = (string)array_shift($path);
+		if ($path === []) {
+			$tree[$key] = $enabled;
+			return $tree;
+		}
+
+		$tree[$key] = $this->withFlag(tree: ($tree[$key] ?? []), path: $path, enabled: $enabled);
+
+		return $tree;
+	}//end withFlag()
+
+	/**
+	 * Where a rule's `enabled` flag is declared, as a path into the declarations.
+	 *
+	 * @param array{configuration: array<string, mixed>, properties: array<string, mixed>} $declarations The schema's declarations.
+	 * @param RuleDescriptor $rule The rule as declared; not a flow.
+	 *
+	 * @return array<int, string> The path, ending in `enabled`.
+	 */
+	private function switchPath(array $declarations, RuleDescriptor $rule): array {
+		$key = $rule->getKey();
+		if ($rule->getKind() === RuleVocabulary::KIND_STATE_FIELD_RULE) {
+			return ['configuration', 'x-openregister-lifecycle', 'states', $key, 'enabled'];
+		}
+
+		if ($rule->getKind() !== RuleVocabulary::KIND_CALCULATION) {
+			return ['configuration', 'x-openregister-lifecycle', 'transitions', $key, 'enabled'];
+		}
+
+		// A calculation is declared in one of two places and the switch has to
+		// land in the one the author used, or the merge that builds the one
+		// calculations map will read the old value back.
+		if (isset($declarations['properties'][$key][PropertyCalculations::PROPERTY_KEY]) === true) {
+			return ['properties', $key, PropertyCalculations::PROPERTY_KEY, 'enabled'];
+		}
+
+		return ['configuration', 'x-openregister-calculations', $key, 'enabled'];
+	}//end switchPath()
 }//end class

@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Rules\AdministeredValidationEnforcer;
+use OCA\OpenRegister\Service\Rules\AdministeredValidationEnforcerInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -33,7 +33,7 @@ use OCP\EventDispatcher\IEventListener;
  *
  * An ADAPTER and nothing else: it unpacks the two save events into "the
  * object as it would be saved" and "the object as stored", asks
- * {@see AdministeredValidationEnforcer} whether that write is refused, and
+ * {@see AdministeredValidationEnforcerInterface} whether that write is refused, and
  * stops the event when it is. The decision itself is testable without
  * dispatching anything.
  *
@@ -46,10 +46,10 @@ class AdministeredValidationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param AdministeredValidationEnforcer $enforcer Decides whether a write is refused.
+	 * @param AdministeredValidationEnforcerInterface $enforcer Decides whether a write is refused.
 	 */
 	public function __construct(
-		private readonly AdministeredValidationEnforcer $enforcer,
+		private readonly AdministeredValidationEnforcerInterface $enforcer,
 	) {
 	}//end __construct()
 

@@ -36,7 +36,7 @@ final class ObjectFileMigrationFiles {
 	 *
 	 * @param IRootFolder            $rootFolder   The file tree.
 	 * @param IUserManager           $userManager  Walks the people whose homes may hold managed folders.
-	 * @param FileOwnershipHandler   $ownership    Resolves the openregister account.
+	 * @param FileOwnershipHandlerInterface   $ownership    Resolves the openregister account.
 	 * @param ObjectFileShareReowner $shareReowner Re-owns published link shares.
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
@@ -44,7 +44,7 @@ final class ObjectFileMigrationFiles {
 	public function __construct(
 		public readonly IRootFolder $rootFolder,
 		public readonly IUserManager $userManager,
-		public readonly FileOwnershipHandler $ownership,
+		public readonly FileOwnershipHandlerInterface $ownership,
 		public readonly ObjectFileShareReowner $shareReowner,
 	) {
 	}//end __construct()

@@ -85,12 +85,7 @@ class AnonymisationService {
 				continue;
 			}
 
-			$result[$property] = $this->treat(
-				treatment: (string)$treatment,
-				value: $result[$property],
-				rule: $rule,
-				salt: $salt
-			);
+			$result[$property] = $this->treat(treatment: (string)$treatment, value: $result[$property], rule: $rule, salt: $salt);
 		}
 
 		return $result;
@@ -113,24 +108,9 @@ class AnonymisationService {
 	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function report(array $before, array $after, string $profileName = ''): array {
-		$changed = [];
-		$kept = [];
-
-		foreach ($before as $property => $value) {
-			$name = (string)$property;
-			if (array_key_exists($name, $after) === false) {
-				$changed[$name] = self::REMOVED;
-				continue;
-			}
-
-			if ($after[$name] !== $value) {
-				$changed[$name] = $after[$name];
-				continue;
-			}
-
-			$kept[] = $name;
-		}
-
+		$split = $this->split(before: $before, after: $after);
+		$changed = $split['changed'];
+		$kept = $split['kept'];
 		ksort($changed);
 		sort($kept);
 
@@ -142,6 +122,47 @@ class AnonymisationService {
 			'keptCount' => count($kept),
 		];
 	}//end report()
+
+	/**
+	 * Split the properties a payload had into those that changed and those that were kept.
+	 *
+	 * @param array<string, mixed> $before The payload as it was.
+	 * @param array<string, mixed> $after  The payload as it is now.
+	 *
+	 * @return array{changed: array<string, mixed>, kept: string[]} Both, unsorted.
+	 */
+	private function split(array $before, array $after): array {
+		$split = ['changed' => [], 'kept' => []];
+		foreach ($before as $property => $value) {
+			$name = (string)$property;
+			$outcome = $this->outcomeOf(after: $after, name: $name, value: $value);
+			if ($outcome['changed'] === true) {
+				$split['changed'][$name] = $outcome['value'];
+				continue;
+			}
+
+			$split['kept'][] = $name;
+		}
+
+		return $split;
+	}//end split()
+
+	/**
+	 * Whether one property changed, and what the report says it became.
+	 *
+	 * @param array<string, mixed> $after The payload as it is now.
+	 * @param string               $name  The property.
+	 * @param mixed                $value Its value before.
+	 *
+	 * @return array{changed: bool, value: mixed} The outcome; a removed property reads as REMOVED.
+	 */
+	private function outcomeOf(array $after, string $name, mixed $value): array {
+		if (array_key_exists($name, $after) === false) {
+			return ['changed' => true, 'value' => self::REMOVED];
+		}
+
+		return ['changed' => ($after[$name] !== $value), 'value' => $after[$name]];
+	}//end outcomeOf()
 
 	/**
 	 * A stable pseudonym for one value.
@@ -181,12 +202,7 @@ class AnonymisationService {
 		}
 
 		if ($treatment === AnonymisationProfile::PSEUDONYM) {
-			$text = '';
-			if (is_scalar($value) === true) {
-				$text = (string)$value;
-			}
-
-			return $this->pseudonymFor(value: $text, salt: $salt);
+			return $this->pseudonymFor(value: $this->scalarText(value: $value), salt: $salt);
 		}
 
 		if ($treatment === AnonymisationProfile::GENERALISE) {
@@ -195,6 +211,21 @@ class AnonymisationService {
 
 		return $value;
 	}//end treat()
+
+	/**
+	 * A scalar value as text, and anything else as the empty string.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string The text.
+	 */
+	private function scalarText(mixed $value): string {
+		if (is_scalar($value) === true) {
+			return (string)$value;
+		}
+
+		return '';
+	}//end scalarText()
 
 	/**
 	 * Coarsen one value to the declared grain.
@@ -210,11 +241,7 @@ class AnonymisationService {
 	 * @return string|null The coarser value, or null.
 	 */
 	private function generalise(mixed $value, string $grain): ?string {
-		if (is_scalar($value) === false) {
-			return null;
-		}
-
-		$text = trim((string)$value);
+		$text = trim($this->scalarText(value: $value));
 		if ($text === '') {
 			return null;
 		}
@@ -224,6 +251,18 @@ class AnonymisationService {
 			return ($matches[0] ?? null);
 		}
 
+		return $this->coarseDate(text: $text, grain: $grain);
+	}//end generalise()
+
+	/**
+	 * A date coarsened to its year, or to its month for the month grain.
+	 *
+	 * @param string $text  The trimmed value.
+	 * @param string $grain The declared grain.
+	 *
+	 * @return string|null The coarser date, or null when the value is not a date.
+	 */
+	private function coarseDate(string $text, string $grain): string|null {
 		$timestamp = strtotime($text);
 		if ($timestamp === false) {
 			return null;
@@ -235,5 +274,5 @@ class AnonymisationService {
 		}
 
 		return date($format, $timestamp);
-	}//end generalise()
+	}//end coarseDate()
 }//end class

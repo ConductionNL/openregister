@@ -40,7 +40,10 @@ use OCA\OpenRegister\Db\AccessLinkMapper;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCP\IURLGenerator;
 use OCP\Security\IHasher;
 use OCP\Security\ISecureRandom;
@@ -89,11 +92,9 @@ class AccessLinkServiceTest extends TestCase {
 
 		$this->service = new AccessLinkService(
 			mapper: $this->mapper,
-			auditTrail: $this->auditTrail,
-			secureRandom: $this->secureRandom,
-			hasher: $this->hasher,
-			urlGenerator: $this->urlGenerator,
-			logger: $this->logger
+			useLog: new AccessLinkUseLog(auditTrail: $this->auditTrail, logger: $this->logger),
+			secrets: new AccessLinkSecrets(secureRandom: $this->secureRandom, hasher: $this->hasher),
+			urlGenerator: $this->urlGenerator
 		);
 	}
 
@@ -365,9 +366,7 @@ class AccessLinkServiceTest extends TestCase {
 		] as $act) {
 			$this->service->recordUse(
 				link: $link,
-				act: $act,
-				object: $object,
-				ipAddress: '198.51.100.7'
+				use: new AccessLinkUse(act: $act, object: $object, ipAddress: '198.51.100.7')
 			);
 		}
 
@@ -394,7 +393,7 @@ class AccessLinkServiceTest extends TestCase {
 		$link = $this->liveLink();
 		$this->auditTrail->expects($this->never())->method('createAuditTrailEntry');
 
-		$this->service->recordUse(link: $link, act: AccessLinkService::ACT_READ, object: null);
+		$this->service->recordUse(link: $link, use: new AccessLinkUse(act: AccessLinkService::ACT_READ, object: null));
 
 		$this->assertSame(1, $link->getUseCount());
 	}

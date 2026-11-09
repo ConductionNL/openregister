@@ -60,7 +60,7 @@ use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionCacheInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -74,14 +74,14 @@ class AuthorizationCacheInvalidationListener implements IEventListener {
 	/**
 	 * Wire the RBAC evaluator whose memos are evicted.
 	 *
-	 * @param PermissionHandlerInterface $permissionHandler The evaluator holding the per-request memos.
+	 * @param PermissionCacheInterface $permissionHandler The evaluator holding the per-request memos.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
 	 */
 	public function __construct(
-		private readonly PermissionHandlerInterface $permissionHandler,
+		private readonly PermissionCacheInterface $permissionHandler,
 	) {
 
 	}//end __construct()

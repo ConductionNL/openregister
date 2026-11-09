@@ -41,7 +41,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
-use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
+use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationInterface;
+use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationReader;
 use OCA\OpenRegister\Service\SequenceServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -50,6 +51,8 @@ use Throwable;
 
 /**
  * Fills a declared identifier on create, and freezes it afterwards.
+ *
+ * @spec openspec/specs/computed-fields/spec.md
  *
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
  */
@@ -134,69 +137,96 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
 	 */
 	private function fill(ObjectEntity $object, ObjectCreatingEvent|ObjectUpdatingEvent $event): void {
-		$schema = $this->loadSchema(object: $object);
-		if ($schema === null) {
-			return;
-		}
-
-		$declarations = $this->declarationsOf(schema: $schema, schemaId: (int)$object->getSchema());
+		$declarations = $this->declarationsFor(object: $object);
 		if ($declarations === []) {
 			return;
 		}
 
 		$data = ($object->getObject() ?? []);
-		$now = new DateTimeImmutable('now');
-		$changed = false;
-
-		foreach ($declarations as $field => $declaration) {
-			$supplied = (string)($data[$field] ?? '');
-
-			try {
-				if ($supplied !== '') {
-					// A create or import that brought its own value keeps it,
-					// and pushes the counter past it so the next create cannot
-					// collide with what was just imported.
-					$this->advancePast(declaration: $declaration, value: $supplied);
-					continue;
-				}
-
-				$data[$field] = $declaration->render(
-					sequenceValue: $this->sequences->reserveNext(
-						registerId: 0,
-						schemaId: 0,
-						scopeKey: $this->scopeKey(declaration: $declaration, period: $declaration->periodAt(moment: $now))
-					),
-					moment: $now
-				);
-				$changed = true;
-			} catch (Throwable $failure) {
-				$this->logger->error(
-					message: '[GeneratedIdentifierListener] could not issue '.$field.': '.$failure->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $failure]
-				);
-
-				$event->setErrors(
-					[
-						'code' => 'generated-identifier-unavailable',
-						'message' => sprintf(
-							'The identifier for "%s" could not be issued, so the object was not created.',
-							$field
-						),
-						'property' => $field,
-						'sequence' => $declaration->sequence(),
-					]
-				);
-				$event->stopPropagation();
-
-				return;
-			}//end try
-		}//end foreach
-
-		if ($changed === true) {
-			$object->setObject($data);
+		$issued = $this->issueAll(declarations: $declarations, data: $data, event: $event, now: new DateTimeImmutable('now'));
+		if ($issued !== null && $issued !== []) {
+			$object->setObject(array_replace($data, $issued));
 		}
 
 	}//end fill()
+
+	/**
+	 * Issue a number for every declared property the data leaves empty.
+	 *
+	 * @param array<string, GeneratedIdentifierDeclarationInterface> $declarations Property name to its declaration.
+	 * @param array<string, mixed>                          $data         The object's data.
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent       $event        The write; it carries a refusal.
+	 * @param DateTimeImmutable                             $now          The moment every number is issued at.
+	 *
+	 * @return array<string, string>|null The issued values by property, or null when the write was refused.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
+	 */
+	private function issueAll(array $declarations, array $data, ObjectCreatingEvent|ObjectUpdatingEvent $event, DateTimeImmutable $now): ?array {
+		$issued = [];
+		foreach ($declarations as $field => $declaration) {
+			try {
+				$issued[$field] = $this->numberFor(declaration: $declaration, supplied: (string)($data[$field] ?? ''), now: $now);
+			} catch (Throwable $failure) {
+				$message = '[GeneratedIdentifierListener] could not issue '.$field.': '.$failure->getMessage();
+				$this->logger->error(message: $message, context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $failure]);
+				$this->refuseUnavailable(event: $event, field: (string)$field, sequence: $declaration->sequence());
+				return null;
+			}
+		}
+
+		return array_filter($issued, 'is_string');
+
+	}//end issueAll()
+
+	/**
+	 * The number one empty property gets, or null when a value was supplied.
+	 *
+	 * A create or import that brought its own value keeps it, and pushes the
+	 * counter past it so the next create cannot collide with what was just
+	 * imported.
+	 *
+	 * @param GeneratedIdentifierDeclarationInterface $declaration The property's declaration.
+	 * @param string                         $supplied    The value the write carries, '' when none.
+	 * @param DateTimeImmutable              $now         The moment the number is issued at.
+	 *
+	 * @return string|null The rendered identifier, or null when the supplied value is kept.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
+	 */
+	private function numberFor(GeneratedIdentifierDeclarationInterface $declaration, string $supplied, DateTimeImmutable $now): ?string {
+		if ($supplied !== '') {
+			$this->advancePast(declaration: $declaration, value: $supplied);
+			return null;
+		}
+
+		$scopeKey = $this->scopeKey(declaration: $declaration, period: $declaration->periodAt(moment: $now));
+		return $declaration->render(
+			sequenceValue: $this->sequences->reserveNext(registerId: 0, schemaId: 0, scopeKey: $scopeKey),
+			moment: $now
+		);
+
+	}//end numberFor()
+
+	/**
+	 * Refuse the write because a number could not be issued.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event    The write.
+	 * @param string                                  $field    The property that got no number.
+	 * @param string                                  $sequence The counter it draws from.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
+	 */
+	private function refuseUnavailable(ObjectCreatingEvent|ObjectUpdatingEvent $event, string $field, string $sequence): void {
+		$message = sprintf('The identifier for "%s" could not be issued, so the object was not created.', $field);
+		$event->setErrors(
+			['code' => 'generated-identifier-unavailable', 'message' => $message, 'property' => $field, 'sequence' => $sequence]
+		);
+		$event->stopPropagation();
+
+	}//end refuseUnavailable()
 
 	/**
 	 * Refuse an update that changes a generated identifier.
@@ -212,55 +242,87 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
 	private function freeze(ObjectUpdatingEvent $event): void {
-		$new = $event->getNewObject();
 		$old = $event->getOldObject();
 		if ($old === null) {
 			return;
 		}
 
-		$schema = $this->loadSchema(object: $new);
-		if ($schema === null) {
-			return;
-		}
-
-		$declarations = $this->declarationsOf(schema: $schema, schemaId: (int)$new->getSchema());
-		if ($declarations === []) {
-			return;
-		}
-
-		$after = ($new->getObject() ?? []);
+		$new = $event->getNewObject();
 		$before = ($old->getObject() ?? []);
-
-		// Only the property NAMES matter here: the freeze compares the value before
-		// with the value after, and never renders anything.
-		foreach (array_keys($declarations) as $field) {
-			$was = (string)($before[$field] ?? '');
-			if ($was === '' || array_key_exists($field, $after) === false) {
-				continue;
-			}
-
-			if ((string)$after[$field] === $was) {
-				continue;
-			}
-
-			$event->setErrors(
-				[
-					'code' => self::ERROR_CODE,
-					'message' => sprintf(
-						'"%s" is a generated identifier and cannot be changed. It was issued as "%s".',
-						$field,
-						$was
-					),
-					'property' => $field,
-					'issued' => $was,
-				]
-			);
-			$event->stopPropagation();
-
-			return;
-		}//end foreach
+		$fields = array_keys($this->declarationsFor(object: $new));
+		$field = $this->changedIdentifier(fields: $fields, before: $before, after: ($new->getObject() ?? []));
+		if ($field !== null) {
+			$this->refuseChange(event: $event, field: $field, was: (string)$before[$field]);
+		}
 
 	}//end freeze()
+
+	/**
+	 * The first declared property whose issued value the update changes, or null.
+	 *
+	 * Only the property NAMES matter here: the freeze compares the value before
+	 * with the value after, and never renders anything.
+	 *
+	 * @param array<int, string>     $fields The declared property names.
+	 * @param array<string, mixed>   $before The data before the update.
+	 * @param array<string, mixed>   $after  The data the update writes.
+	 *
+	 * @return string|null The property, or null when none changed.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
+	 */
+	private function changedIdentifier(array $fields, array $before, array $after): ?string {
+		foreach ($fields as $field) {
+			if ($this->isRenumbered(was: (string)($before[$field] ?? ''), field: $field, after: $after) === true) {
+				return $field;
+			}
+		}
+
+		return null;
+
+	}//end changedIdentifier()
+
+	/**
+	 * Whether the update writes a different value over an issued identifier.
+	 *
+	 * An update that OMITS the property is not a change.
+	 *
+	 * @param string               $was   The issued value, '' when none was.
+	 * @param string               $field The property.
+	 * @param array<string, mixed> $after The data the update writes.
+	 *
+	 * @return bool True when the identifier changes.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
+	 */
+	private function isRenumbered(string $was, string $field, array $after): bool {
+		return $was !== '' && array_key_exists($field, $after) === true && (string)$after[$field] !== $was;
+
+	}//end isRenumbered()
+
+	/**
+	 * Refuse the update: it changes a generated identifier.
+	 *
+	 * @param ObjectUpdatingEvent $event The update.
+	 * @param string              $field The property it changes.
+	 * @param string              $was   The value issued.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
+	 */
+	private function refuseChange(ObjectUpdatingEvent $event, string $field, string $was): void {
+		$event->setErrors(
+			[
+				'code' => self::ERROR_CODE,
+				'message' => sprintf('"%s" is a generated identifier and cannot be changed. It was issued as "%s".', $field, $was),
+				'property' => $field,
+				'issued' => $was,
+			]
+		);
+		$event->stopPropagation();
+
+	}//end refuseChange()
 
 	/**
 	 * Push a counter past a value somebody else supplied.
@@ -270,14 +332,14 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * annotation existed still has to be importable, and its old numbers are
 	 * not this counter's to reason about.
 	 *
-	 * @param GeneratedIdentifierDeclaration $declaration The property's declaration.
+	 * @param GeneratedIdentifierDeclarationInterface $declaration The property's declaration.
 	 * @param string $value The value that was supplied.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
-	private function advancePast(GeneratedIdentifierDeclaration $declaration, string $value): void {
+	private function advancePast(GeneratedIdentifierDeclarationInterface $declaration, string $value): void {
 		$parsed = $declaration->parse(value: $value);
 		if ($parsed === null) {
 			return;
@@ -301,25 +363,37 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * sentinel is also what lets two schemas share a counter by naming it,
 	 * which a per-schema scope cannot express.
 	 *
-	 * @param GeneratedIdentifierDeclaration $declaration The property's declaration.
+	 * @param GeneratedIdentifierDeclarationInterface $declaration The property's declaration.
 	 * @param string $period The period keying the counter.
 	 *
 	 * @return string The scope key.
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-two-schemas-may-share-one-sequence
 	 */
-	private function scopeKey(GeneratedIdentifierDeclaration $declaration, string $period): string {
+	private function scopeKey(GeneratedIdentifierDeclarationInterface $declaration, string $period): string {
 		return 'gen:'.$declaration->sequence().'|'.$period;
 
 	}//end scopeKey()
 
 	/**
-	 * Every property of a schema that declares a generated identifier.
+	 * Every property of the object's schema that declares a generated identifier.
 	 *
-	 * A malformed declaration is skipped here rather than thrown: the schema
-	 * save already refused it, so one that reaches this path came from a
-	 * schema written before the validation existed, and refusing every create
-	 * on that schema would be a worse answer than issuing no number.
+	 * @param ObjectEntity $object The object being written.
+	 *
+	 * @return array<string, GeneratedIdentifierDeclarationInterface> Property name to its declaration; empty without a schema.
+	 */
+	private function declarationsFor(ObjectEntity $object): array {
+		$schema = $this->loadSchema(object: $object);
+		if ($schema === null) {
+			return [];
+		}
+
+		return $this->declarationsOf(schema: $schema, schemaId: (int)$object->getSchema());
+
+	}//end declarationsFor()
+
+	/**
+	 * Every property of a schema that declares a generated identifier.
 	 *
 	 * The schema id is passed IN rather than read off the entity: `getId()` on a
 	 * Nextcloud Entity is answered by `__call`, so a test double cannot be told
@@ -328,7 +402,39 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * @param Schema $schema The object's schema.
 	 * @param int $schemaId The schema's id, as the object carries it.
 	 *
-	 * @return array<string, GeneratedIdentifierDeclaration> Property name to its declaration.
+	 * @return array<string, GeneratedIdentifierDeclarationInterface> Property name to its declaration.
+	 */
+	private function declarationsOf(Schema $schema, int $schemaId): array {
+		$properties = ($schema->getProperties() ?? []);
+		if (is_array($properties) === false) {
+			return [];
+		}
+
+		$declarations = [];
+		foreach (array_filter($properties, 'is_array') as $name => $property) {
+			$declaration = $this->declarationOf(property: $property, name: (string)$name, schemaId: $schemaId);
+			if ($declaration !== null) {
+				$declarations[(string)$name] = $declaration;
+			}
+		}
+
+		return $declarations;
+
+	}//end declarationsOf()
+
+	/**
+	 * One property's declaration, or null when it declares none or an unusable one.
+	 *
+	 * A malformed declaration is skipped here rather than thrown: the schema
+	 * save already refused it, so one that reaches this path came from a
+	 * schema written before the validation existed, and refusing every create
+	 * on that schema would be a worse answer than issuing no number.
+	 *
+	 * @param array<string, mixed> $property The property definition.
+	 * @param string $name     The property name.
+	 * @param int    $schemaId The schema's id, for the log.
+	 *
+	 * @return GeneratedIdentifierDeclarationInterface|null The declaration.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) `fromProperty()` is a named constructor.
 	 *                                       Injecting a factory to build a value object
@@ -336,40 +442,19 @@ class GeneratedIdentifierListener implements IEventListener {
 	 *                                       collaborator that answers one question and
 	 *                                       holds no state.
 	 */
-	private function declarationsOf(Schema $schema, int $schemaId): array {
-		$declarations = [];
-		$properties = ($schema->getProperties() ?? []);
-		if (is_array($properties) === false) {
-			return [];
+	private function declarationOf(array $property, string $name, int $schemaId): ?GeneratedIdentifierDeclarationInterface {
+		try {
+			return GeneratedIdentifierDeclarationReader::fromProperty(property: $property, path: $name);
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				message: '[GeneratedIdentifierListener] schema '.(string)$schemaId
+					.' property '.$name.' has an unusable declaration: '.$failure->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
 		}
 
-		foreach ($properties as $name => $property) {
-			if (is_array($property) === false) {
-				continue;
-			}
-
-			try {
-				$declaration = GeneratedIdentifierDeclaration::fromProperty(
-					property: $property,
-					path: (string)$name
-				);
-			} catch (Throwable $failure) {
-				$this->logger->warning(
-					message: '[GeneratedIdentifierListener] schema '.(string)$schemaId
-						.' property '.(string)$name.' has an unusable declaration: '.$failure->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				continue;
-			}
-
-			if ($declaration !== null) {
-				$declarations[(string)$name] = $declaration;
-			}
-		}//end foreach
-
-		return $declarations;
-
-	}//end declarationsOf()
+	}//end declarationOf()
 
 	/**
 	 * Resolve the object's schema, or null when it cannot be read.
