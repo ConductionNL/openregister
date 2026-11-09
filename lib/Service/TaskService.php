@@ -136,15 +136,28 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 		int $limit = 50,
 		int $offset = 0,
 	): array {
+		$allTasks = $this->userTasksByDue(status: $status);
+
+		return ['results' => array_slice($allTasks, $offset, $limit), 'total' => count($allTasks)];
+	}//end getAllUserTasks()
+
+	/**
+	 * Every task of the session user's VTODO calendars, optionally only those with a status, soonest due first.
+	 *
+	 * @param string|null $status Status filter, compared case-insensitively.
+	 *
+	 * @return list<array> The tasks.
+	 *
+	 * @throws Exception If no user is logged in
+	 */
+	private function userTasksByDue(?string $status): array {
 		$allTasks = [];
 		foreach ($this->calDavBackend->getCalendarsForUser('principals/users/' . $this->sessionUid()) as $calendar) {
 			$allTasks = array_merge($allTasks, $this->vtodoCalendarTasks(calendar: $calendar, status: $status));
 		}
 
-		$allTasks = $this->sortedByDue(tasks: $allTasks);
-
-		return ['results' => array_slice($allTasks, $offset, $limit), 'total' => count($allTasks)];
-	}//end getAllUserTasks()
+		return $this->sortedByDue(tasks: $allTasks);
+	}//end userTasksByDue()
 
 	/**
 	 * The tasks of a calendar row, or none when the calendar does not support VTODO.
