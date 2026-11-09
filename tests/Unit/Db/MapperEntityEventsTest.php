@@ -45,7 +45,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
-use OCA\OpenRegister\Service\Object\EntityEventPublisher;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -193,8 +193,7 @@ final class MapperEntityEventsTest extends TestCase {
 			$session,
 			$groups,
 			$this->createMock(IAppConfig::class),
-			new NullLogger(),
-			$this->entityEvents()
+			new NullLogger()
 		);
 
 		$mapper->insert($this->given(new Register(), ['uuid' => 'r-1', 'organisation' => 'org-1']));

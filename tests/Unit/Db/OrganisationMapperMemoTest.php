@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Support\ConfigServices;
-use OCA\OpenRegister\Service\Object\EntityEventPublisher;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;

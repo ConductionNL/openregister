@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\EntityEventPublisher;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -123,8 +122,7 @@ class SlugIdLookupGoldenTest extends TestCase {
 			$this->createMock(IUserSession::class),
 			$this->createMock(IGroupManager::class),
 			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class))
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end registerMapper()
 

@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
-use OCA\OpenRegister\Service\Object\EntityEventPublisher;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -337,8 +337,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 			$session,
 			$groups,
 			$this->createMock(IAppConfig::class),
-			new NullLogger(),
-			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class))
+			new NullLogger()
 		);
 	}//end registerMapper()
 

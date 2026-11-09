@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Service\Object\EntityEventPublisher;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OC\DB\Exceptions\DbalException;
 use OCA\OpenRegister\Controller\OrganisationController;

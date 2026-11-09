@@ -58,7 +58,7 @@ use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalkLimits;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalkParts;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
-use OCA\OpenRegister\Service\Object\EntityEventPublisher;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCA\OpenRegister\Tests\Unit\Db\FluentQueryBuilderTrait;
 use OCP\EventDispatcher\Event;

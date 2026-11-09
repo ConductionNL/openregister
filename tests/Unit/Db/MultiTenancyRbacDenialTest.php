@@ -36,7 +36,6 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\EntityEventPublisher;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -98,8 +97,7 @@ class MultiTenancyRbacDenialTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class))
+			$this->createMock(LoggerInterface::class)
 		);
 	}
 
@@ -199,8 +197,7 @@ class MultiTenancyRbacDenialTest extends TestCase {
 			$userSession,
 			$groupManager,
 			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class))
+			$this->createMock(LoggerInterface::class)
 		);
 
 		$this->assertTrue(
@@ -311,8 +308,7 @@ class MultiTenancyRbacDenialTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class))
+			$this->createMock(LoggerInterface::class)
 		);
 
 		$this->assertTrue($this->decide($mapper));

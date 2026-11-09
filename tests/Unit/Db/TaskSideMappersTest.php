@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskRelation;
 use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
-use OCA\OpenRegister\Service\Object\EntityEventPublisher;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 

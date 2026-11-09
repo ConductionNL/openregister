@@ -26,7 +26,6 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -137,8 +136,7 @@ class RegisterMapperFindGoldenTest extends TestCase {
 			$this->createMock(IUserSession::class),
 			$this->createMock(IGroupManager::class),
 			$this->createMock(IAppConfig::class),
-			$logger,
-			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class))
+			$logger
 		);
 	}//end makeMapper()
 }//end class

@@ -25,9 +25,9 @@ use OCA\OpenRegister\Service\Object\CorrectionTargets;
 use OCA\OpenRegister\Service\Object\CorrectionTargetsInterface;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrameInterface;
-use OCA\OpenRegister\Service\Object\EntityEventPublisher;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 
 /**
  * Contract => service map for the objects core.

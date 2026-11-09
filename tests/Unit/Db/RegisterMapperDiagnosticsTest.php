@@ -34,7 +34,6 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\EntityEventPublisher;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -96,8 +95,7 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 			$this->createMock(IUserSession::class),
 			$this->createMock(IGroupManager::class),
 			$this->createMock(IAppConfig::class),
-			$this->logger,
-			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class))
+			$this->logger
 		);
 	}
 

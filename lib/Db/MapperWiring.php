@@ -100,8 +100,7 @@ final class MapperWiring {
 			// argument omitted here is never supplied at all. That is how
 			// RegisterMapper ran with four dead logging branches
 			// (openregister#2820).
-			logger: $container->get('Psr\Log\LoggerInterface'),
-			entityEvents: $container->get(EntityEventsInterface::class)
+			logger: $container->get('Psr\Log\LoggerInterface')
 		);
 	}//end registerMapper()
 

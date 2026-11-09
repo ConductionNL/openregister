@@ -34,7 +34,7 @@ use OCA\OpenRegister\Event\OrganisationCreatedEvent;
 use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
-use OCA\OpenRegister\Service\Object\EntityEventPublisher;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;

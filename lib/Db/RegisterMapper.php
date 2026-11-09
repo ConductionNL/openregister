@@ -23,8 +23,10 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Event\RegisterCreatedEvent;
+use OCA\OpenRegister\Event\RegisterDeletedEvent;
+use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
@@ -119,7 +121,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	/**
 	 * Event dispatcher instance
 	 *
-	 * Handed to the permission catalogue when a register's access declaration is validated.
+	 * Dispatches events when registers are created, updated, or deleted.
 	 *
 	 * @var IEventDispatcher Event dispatcher instance
 	 */
@@ -168,14 +170,13 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 *
 	 * @param IDBConnection $db Database connection for queries
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher for the permission catalogue
+	 * @param IEventDispatcher $eventDispatcher Event dispatcher for register events
 	 * @param \Psr\Container\ContainerInterface $container Container for lazy MagicMapper resolution
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
 	 * @param IUserSession $userSession User session for current user context
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
 	 * @param LoggerInterface $logger Structured logger for the resolution diagnostics.
-	 * @param EntityEventsInterface $entityEvents Announces register events.
 	 *
 	 * This class carried four `if (isset($this->logger))` logging sites, plus the
 	 * ones it inherits from {@see MultiTenancyTrait}, and never declared or
@@ -203,7 +204,6 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		IGroupManager $groupManager,
 		IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
-		private readonly EntityEventsInterface $entityEvents,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_registers', entityClass: Register::class);
@@ -640,7 +640,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		$entity = parent::insert(entity: $entity);
 
 		// Dispatch creation event.
-		$this->entityEvents->registerCreated(register: $entity);
+		$this->eventDispatcher->dispatchTyped(new RegisterCreatedEvent(register: $entity));
 
 		return $entity;
 	}//end insert()
@@ -850,7 +850,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		// app re-importing its unchanged register (setup wizard, example data)
 		// otherwise told every admin "Register was updated" while they edited an object.
 		if ((new EntityChangeDetector())->changed(old: $oldSchema, new: $entity) === true) {
-			$this->entityEvents->registerUpdated(newRegister: $entity, oldRegister: $oldSchema);
+			$this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent(newRegister: $entity, oldRegister: $oldSchema));
 		}
 
 		return $entity;
@@ -917,7 +917,9 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		$result = parent::delete(entity: $entity);
 
 		// Dispatch deletion event.
-		$this->entityEvents->registerDeleted(register: $entity);
+		$this->eventDispatcher->dispatchTyped(
+			new RegisterDeletedEvent(register: $entity)
+		);
 
 		return $result;
 	}//end delete()
