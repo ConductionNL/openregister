@@ -23,7 +23,7 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Kernel\Contracts\AgentInterface;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -36,24 +36,24 @@ class AgentUpdatedEvent extends Event {
 	 *
 	 * @var Agent The agent after update.
 	 */
-	private Agent $newAgent;
+	private AgentInterface $newAgent;
 
 	/**
 	 * The previous agent state.
 	 *
 	 * @var Agent The agent before update.
 	 */
-	private Agent $oldAgent;
+	private AgentInterface $oldAgent;
 
 	/**
 	 * Constructor for AgentUpdatedEvent.
 	 *
-	 * @param Agent $newAgent The agent after update.
-	 * @param Agent $oldAgent The agent before update.
+	 * @param AgentInterface $newAgent The agent after update.
+	 * @param AgentInterface $oldAgent The agent before update.
 	 *
 	 * @return void
 	 */
-	public function __construct(Agent $newAgent, Agent $oldAgent) {
+	public function __construct(AgentInterface $newAgent, AgentInterface $oldAgent) {
 		parent::__construct();
 		$this->newAgent = $newAgent;
 		$this->oldAgent = $oldAgent;
@@ -62,33 +62,33 @@ class AgentUpdatedEvent extends Event {
 	/**
 	 * Get the updated agent.
 	 *
-	 * @return Agent The agent after update.
+	 * @return AgentInterface The agent after update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getAgent(): Agent {
+	public function getAgent(): AgentInterface {
 		return $this->newAgent;
 	}//end getAgent()
 
 	/**
 	 * Get the new agent state.
 	 *
-	 * @return Agent The agent after update.
+	 * @return AgentInterface The agent after update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getNewAgent(): Agent {
+	public function getNewAgent(): AgentInterface {
 		return $this->newAgent;
 	}//end getNewAgent()
 
 	/**
 	 * Get the old agent state.
 	 *
-	 * @return Agent The agent before update.
+	 * @return AgentInterface The agent before update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getOldAgent(): Agent {
+	public function getOldAgent(): AgentInterface {
 		return $this->oldAgent;
 	}//end getOldAgent()
 }//end class

@@ -22,7 +22,7 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Kernel\Contracts\AgentInterface;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -32,22 +32,22 @@ abstract class AbstractAgentEvent extends Event {
 	/**
 	 * Constructor for AbstractAgentEvent.
 	 *
-	 * @param Agent $agent The entity the event is about.
+	 * @param AgentInterface $agent The entity the event is about.
 	 *
 	 * @return void
 	 */
-	public function __construct(private readonly Agent $agent) {
+	public function __construct(private readonly AgentInterface $agent) {
 		parent::__construct();
 	}//end __construct()
 
 	/**
 	 * Get the entity the event is about.
 	 *
-	 * @return Agent The entity.
+	 * @return AgentInterface The entity.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getAgent(): Agent {
+	public function getAgent(): AgentInterface {
 		return $this->agent;
 	}//end getAgent()
 }//end class

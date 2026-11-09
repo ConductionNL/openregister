@@ -23,7 +23,7 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Kernel\Contracts\ViewInterface;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -36,26 +36,26 @@ class ViewUpdatedEvent extends Event {
 	 *
 	 * @var View The view after update.
 	 */
-	private View $newView;
+	private ViewInterface $newView;
 
 	/**
 	 * The previous view state.
 	 *
 	 * @var View The view before update.
 	 */
-	private View $oldView;
+	private ViewInterface $oldView;
 
 	/**
 	 * Constructor for ViewUpdatedEvent.
 	 *
-	 * @param View $newView The view after update.
-	 * @param View $oldView The view before update.
+	 * @param ViewInterface $newView The view after update.
+	 * @param ViewInterface $oldView The view before update.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
-	public function __construct(View $newView, View $oldView) {
+	public function __construct(ViewInterface $newView, ViewInterface $oldView) {
 		parent::__construct();
 		$this->newView = $newView;
 		$this->oldView = $oldView;
@@ -70,33 +70,33 @@ class ViewUpdatedEvent extends Event {
 	 * event with addMethods(['getView']), which invents the method on the
 	 * mock and never consults the real class.
 	 *
-	 * @return View The view after update
+	 * @return ViewInterface The view after update
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
-	public function getView(): View {
+	public function getView(): ViewInterface {
 		return $this->newView;
 	}//end getView()
 
 	/**
 	 * Get the updated view
 	 *
-	 * @return View The view after update
+	 * @return ViewInterface The view after update
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
-	public function getNewView(): View {
+	public function getNewView(): ViewInterface {
 		return $this->newView;
 	}//end getNewView()
 
 	/**
 	 * Get the original view
 	 *
-	 * @return View The view before update
+	 * @return ViewInterface The view before update
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
-	public function getOldView(): View {
+	public function getOldView(): ViewInterface {
 		return $this->oldView;
 	}//end getOldView()
 }//end class
