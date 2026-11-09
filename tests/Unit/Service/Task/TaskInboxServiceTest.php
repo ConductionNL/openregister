@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -130,7 +131,7 @@ class TaskInboxServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->inbox->inbox(criteria: $criteria, limit: 25, offset: 0);
+		$result = $this->inbox->inbox(criteria: $criteria, page: new TaskInboxPage(limit: 25, offset: 0));
 
 		$this->assertCount(25, $result['results']);
 		$this->assertSame(120, $result['total']);
@@ -169,7 +170,7 @@ class TaskInboxServiceTest extends TestCase {
 		);
 		$this->tasks->method('countInbox')->willReturn(0);
 
-		$this->inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'), limit: 99999);
+		$this->inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'), page: new TaskInboxPage(limit: 99999));
 	}//end testTheLimitIsClamped()
 
 	/**
@@ -446,7 +447,7 @@ class TaskInboxServiceTest extends TestCase {
 		);
 		$this->tasks->method('countInbox')->willReturn(1);
 
-		$result = $this->inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'), limit: 0, offset: -5);
+		$result = $this->inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'), page: new TaskInboxPage(limit: 0, offset: -5));
 
 		$this->assertSame(1, $result['limit']);
 		$this->assertNull($result['results'][0]['subject']);

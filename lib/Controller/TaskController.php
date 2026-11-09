@@ -56,6 +56,7 @@ use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
 use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
 use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCP\AppFramework\Controller;
@@ -344,7 +345,7 @@ class TaskController extends Controller {
 			openFirst: ($openFirst !== null && filter_var($openFirst, FILTER_VALIDATE_BOOLEAN) === true),
 		);
 
-		return new JSONResponse($this->inbox->inbox(criteria: $criteria, limit: $limit, offset: $offset));
+		return new JSONResponse($this->inbox->inbox(criteria: $criteria, page: new TaskInboxPage(limit: $limit, offset: $offset)));
 	}//end index()
 
 	/**
@@ -430,10 +431,15 @@ class TaskController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function create(): JSONResponse {
-		return $this->respondWith(
-			verb: fn (): TaskInterface => $this->tasks->create(data: $this->body(), actor: $this->uid()),
-			successStatus: Http::STATUS_CREATED
+		$response = $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->create(data: $this->body(), actor: $this->uid())
 		);
+		if ($response->getStatus() === Http::STATUS_OK) {
+			// Only the happy path answers 200; a created task is a 201.
+			$response->setStatus(Http::STATUS_CREATED);
+		}
+
+		return $response;
 	}//end create()
 
 	/**
@@ -691,7 +697,6 @@ class TaskController extends Controller {
 	 * bound parameters.
 	 *
 	 * @param callable(): TaskInterface $verb The service call.
-	 * @param int $successStatus The status of the happy path.
 	 * @param string|null $uuid The task acted on, for the denial mapping.
 	 *
 	 * @return JSONResponse The task, or the refusal.
@@ -699,14 +704,11 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
 	 */
-	private function respondWith(callable $verb, int $successStatus = Http::STATUS_OK, ?string $uuid = null): JSONResponse {
+	private function respondWith(callable $verb, ?string $uuid = null): JSONResponse {
 		try {
 			$task = $verb();
 
-			return new JSONResponse(
-				$this->inbox->enrich(task: $task),
-				$successStatus
-			);
+			return new JSONResponse($this->inbox->enrich(task: $task));
 		} catch (TaskFormRefusedException $refused) {
 			// The form contract's refusal: the fields machine-readable next
 			// to the message, and the kind, so a client can flag each field
