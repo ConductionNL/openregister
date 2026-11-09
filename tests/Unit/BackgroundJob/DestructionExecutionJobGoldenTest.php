@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
+use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
@@ -137,6 +138,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
             MagicMapperInterface::class      => $this->mapper($case),
             AuditTrailMapperInterface::class => $this->audit(),
             DeleteObject::class              => $this->deleter(),
+            RetentionDestructionInterface::class => new RetentionDestruction(),
             SaveObjectWriterInterface::class => $this->saver($case),
             INotificationManager::class      => $this->notifications(),
             IGroupManager::class             => $this->groupManager($case),
