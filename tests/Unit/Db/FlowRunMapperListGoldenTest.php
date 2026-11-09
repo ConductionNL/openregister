@@ -177,7 +177,7 @@ final class FlowRunMapperListGoldenTest extends TestCase {
 
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->recordingBuilder());
-		$mapper = new FlowRunMapper($db, new EntityEventPublisher($this->createMock(IEventDispatcher::class)));
+		$mapper = new FlowRunMapper($db, new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)));
 
 		$outcome = [];
 		try {

@@ -42,7 +42,7 @@ class EntityRelationMapperAnonymizedMarkTest extends TestCase {
 			$db,
 			$this->createMock(AuditTrailMapperInterface::class),
 			$this->createMock(IUserSession::class),
-			new EntityEventPublisher($this->createMock(IEventDispatcher::class)),
+			new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
 			$this->createMock(LoggerInterface::class)
 		);
 	}

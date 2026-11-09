@@ -153,7 +153,7 @@ class TaskSideMappersTest extends TestCase {
 				$announced[] = $event->getRunUuid() . ':' . $event->getStatus();
 			}
 		);
-		$mapper = new FlowRunMapper(db: $this->connectionWith(), entityEvents: new EntityEventPublisher($dispatcher));
+		$mapper = new FlowRunMapper(db: $this->connectionWith(), entityEvents: new EntityEventPublisher(dispatcher: $dispatcher));
 
 		$done = new FlowRun();
 		$done->setId(1);

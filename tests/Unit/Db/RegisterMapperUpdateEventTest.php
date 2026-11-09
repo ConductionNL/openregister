@@ -118,7 +118,7 @@ class RegisterMapperUpdateEventTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(IAppConfig::class),
 			$this->createMock(LoggerInterface::class),
-			new EntityEventPublisher($dispatcher)
+			entityEvents: new EntityEventPublisher(dispatcher: $dispatcher)
 		) extends RegisterMapper {
 			/**
 			 * Return the stored row mapped through the real entity.

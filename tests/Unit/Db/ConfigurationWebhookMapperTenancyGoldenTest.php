@@ -127,7 +127,7 @@ final class ConfigurationWebhookMapperTenancyGoldenTest extends TestCase {
 		if ($mapper === 'webhook') {
 			$instance = new WebhookMapper($db, new TenancyServices($organisations, $userSession, $groupManager), $appConfig);
 		} else {
-			$instance = new ConfigurationMapper($db, new TenancyServices($organisations, $userSession, $groupManager), new EntityEventPublisher($this->createMock(IEventDispatcher::class)));
+			$instance = new ConfigurationMapper($db, new TenancyServices($organisations, $userSession, $groupManager), new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)));
 		}
 
 		$outcome = [];

@@ -38,7 +38,7 @@ class ConfigurationMapperTest extends TestCase {
 		$this->mapper = new ConfigurationMapper(
 			$this->db,
 			new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
-			new EntityEventPublisher($this->eventDispatcher)
+			new EntityEventPublisher(dispatcher: $this->eventDispatcher)
 		);
 	}
 

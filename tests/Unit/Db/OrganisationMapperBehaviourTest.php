@@ -92,7 +92,7 @@ class OrganisationMapperBehaviourTest extends TestCase {
 		$config->method('getSystemValue')->willReturnMap([['dbtableprefix', 'oc_', 'nc_']]);
 		$this->logger ??= $this->createMock(LoggerInterface::class);
 
-		return new OrganisationMapper($db, $this->logger, new EntityEventPublisher($dispatcher), new ConfigServices($appConfig, $config));
+		return new OrganisationMapper($db, $this->logger, new EntityEventPublisher(dispatcher: $dispatcher), new ConfigServices($appConfig, $config));
 	}
 
 	private function prepared(string $sql): IPreparedStatement {

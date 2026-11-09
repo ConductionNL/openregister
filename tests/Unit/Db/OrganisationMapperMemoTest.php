@@ -122,7 +122,7 @@ class OrganisationMapperMemoTest extends TestCase {
 		return new OrganisationMapper(
 			$this->db,
 			$this->createMock(LoggerInterface::class),
-			new EntityEventPublisher($this->createMock(IEventDispatcher::class)),
+			new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
 			new ConfigServices($this->createMock(IAppConfig::class), $this->createMock(IConfig::class))
 		);
 	}//end makeMapper()

@@ -97,7 +97,7 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(IAppConfig::class),
 			$this->logger,
-			new EntityEventPublisher($this->createMock(IEventDispatcher::class))
+			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class))
 		);
 	}
 

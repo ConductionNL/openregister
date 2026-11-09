@@ -87,7 +87,7 @@ class InMemoryFlowRunMapper extends FlowRunMapper {
 		IEventDispatcher $dispatcher,
 		private readonly FlowRun $row,
 	) {
-		parent::__construct(db: $db, entityEvents: new EntityEventPublisher($dispatcher));
+		parent::__construct(db: $db, entityEvents: new EntityEventPublisher(dispatcher: $dispatcher));
 	}
 
 	/**

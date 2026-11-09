@@ -57,7 +57,7 @@ class RegisterMapperTest extends TestCase {
 			$this->groupManager,
 			$this->appConfig,
 			$this->logger,
-			new EntityEventPublisher($this->eventDispatcher)
+			entityEvents: new EntityEventPublisher(dispatcher: $this->eventDispatcher)
 		);
 	}
 

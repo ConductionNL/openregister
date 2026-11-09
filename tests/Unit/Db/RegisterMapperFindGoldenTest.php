@@ -138,7 +138,7 @@ class RegisterMapperFindGoldenTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(IAppConfig::class),
 			$logger,
-			new EntityEventPublisher($this->createMock(IEventDispatcher::class))
+			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class))
 		);
 	}//end makeMapper()
 }//end class

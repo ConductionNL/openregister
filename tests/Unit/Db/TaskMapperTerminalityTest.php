@@ -56,7 +56,7 @@ class TaskMapperTerminalityTest extends TestCase {
 				&& $event->getState() === Task::STATE_COMPLETED
 				&& $event->getOutcome() === 'approved'
 		));
-		$mapper = new TaskMapper(db: $this->connectionWith(affectedRows: 1), entityEvents: new EntityEventPublisher($dispatcher));
+		$mapper = new TaskMapper(db: $this->connectionWith(affectedRows: 1), entityEvents: new EntityEventPublisher(dispatcher: $dispatcher));
 		self::assertTrue($mapper->updateIfOpen(task: $this->task(Task::STATE_COMPLETED)));
 	}//end testAWinningConditionalUpdateOfATerminalTaskDispatches()
 
@@ -64,10 +64,10 @@ class TaskMapperTerminalityTest extends TestCase {
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->expects(self::never())->method('dispatchTyped');
 
-		$lost = new TaskMapper(db: $this->connectionWith(affectedRows: 0), entityEvents: new EntityEventPublisher($dispatcher));
+		$lost = new TaskMapper(db: $this->connectionWith(affectedRows: 0), entityEvents: new EntityEventPublisher(dispatcher: $dispatcher));
 		self::assertFalse($lost->updateIfOpen(task: $this->task(Task::STATE_COMPLETED)), 'the row was closed by someone else');
 
-		$open = new TaskMapper(db: $this->connectionWith(affectedRows: 1), entityEvents: new EntityEventPublisher($dispatcher));
+		$open = new TaskMapper(db: $this->connectionWith(affectedRows: 1), entityEvents: new EntityEventPublisher(dispatcher: $dispatcher));
 		self::assertTrue($open->updateIfOpen(task: $this->task(Task::STATE_ACTIVE)));
 	}//end testALostRaceAndAnOpenTaskDispatchNothing()
 

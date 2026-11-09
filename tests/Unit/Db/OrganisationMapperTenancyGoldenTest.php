@@ -501,7 +501,7 @@ final class OrganisationMapperTenancyGoldenTest extends TestCase {
 		$mapper = new OrganisationMapper(
 			$db,
 			$this->recordingLogger(),
-			new EntityEventPublisher($this->createMock(IEventDispatcher::class)),
+			new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
 			new ConfigServices($this->createMock(IAppConfig::class), $this->createMock(IConfig::class))
 		);
 		$this->queuedRows = [[['configvalue' => self::B]]];
@@ -610,7 +610,7 @@ final class OrganisationMapperTenancyGoldenTest extends TestCase {
 		return new OrganisationMapper(
 			$db,
 			$this->recordingLogger(),
-			new EntityEventPublisher($this->createMock(IEventDispatcher::class)),
+			new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
 			new ConfigServices($this->createMock(IAppConfig::class), $this->createMock(IConfig::class))
 		);
 	}//end recordingMapper()
@@ -666,7 +666,7 @@ final class OrganisationMapperTenancyGoldenTest extends TestCase {
 			 * @param IConfig $config Config.
 			 */
 			public function __construct(IDBConnection $db, AbstractLogger $logger, IEventDispatcher $dispatcher, IAppConfig $appConfig, IConfig $config) {
-				parent::__construct($db, $logger, new EntityEventPublisher($dispatcher), new ConfigServices($appConfig, $config));
+				parent::__construct($db, $logger, new EntityEventPublisher(dispatcher: $dispatcher), new ConfigServices($appConfig, $config));
 				$this->recordingLogger = $logger;
 			}
 

@@ -124,7 +124,7 @@ class SlugIdLookupGoldenTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(IAppConfig::class),
 			$this->createMock(LoggerInterface::class),
-			new EntityEventPublisher($this->createMock(IEventDispatcher::class))
+			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class))
 		);
 	}//end registerMapper()
 

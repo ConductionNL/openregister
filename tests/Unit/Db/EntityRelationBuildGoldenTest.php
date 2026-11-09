@@ -64,7 +64,7 @@ class EntityRelationBuildGoldenTest extends TestCase {
 			db: $this->createMock(IDBConnection::class),
 			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
 			userSession: $this->createMock(IUserSession::class),
-			entityEvents: new EntityEventPublisher($this->createMock(IEventDispatcher::class)),
+			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 		$before = new DateTime();

@@ -95,7 +95,7 @@ class RegisterSchemaRbacTest extends TestCase {
 					$this->groupManager,
 					$this->appConfig,
 					$this->logger,
-					new EntityEventPublisher($this->eventDispatcher),
+					new EntityEventPublisher(dispatcher: $this->eventDispatcher),
 				]
 			)
 			->getMock();

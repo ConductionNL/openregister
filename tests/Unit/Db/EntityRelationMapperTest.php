@@ -164,7 +164,7 @@ class EntityRelationMapperTest extends TestCase {
 			db: $this->db,
 			auditTrailMapper: $this->auditTrailMapper,
 			userSession: $this->userSession,
-			entityEvents: new EntityEventPublisher($this->eventDispatcher),
+			entityEvents: new EntityEventPublisher(dispatcher: $this->eventDispatcher),
 			logger: $this->logger
 		);
 
@@ -180,7 +180,7 @@ class EntityRelationMapperTest extends TestCase {
 			db: $this->db,
 			auditTrailMapper: $this->auditTrailMapper,
 			userSession: $this->userSession,
-			entityEvents: new EntityEventPublisher($this->eventDispatcher),
+			entityEvents: new EntityEventPublisher(dispatcher: $this->eventDispatcher),
 			logger: $this->logger
 		);
 

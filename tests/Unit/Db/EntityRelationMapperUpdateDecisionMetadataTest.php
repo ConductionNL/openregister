@@ -87,7 +87,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 					$this->db,
 					$this->auditTrailMapper,
 					$this->userSession,
-					new EntityEventPublisher($this->eventDispatcher),
+					new EntityEventPublisher(dispatcher: $this->eventDispatcher),
 					$this->logger,
 				]
 			)

@@ -33,6 +33,8 @@ use OCP\IUser;
  *
  * Non-core entities are typed as the OCP Entity; the implementation refuses an entity of the
  * wrong class, which only a programming error can pass.
+ *
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
  */
 interface EntityEventsInterface {
 
@@ -42,6 +44,8 @@ interface EntityEventsInterface {
 	 * @param Entity $application The stored application.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function applicationCreated(Entity $application): void;
 
@@ -52,6 +56,8 @@ interface EntityEventsInterface {
 	 * @param Entity $oldApplication The application as it was before the write.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function applicationUpdated(Entity $newApplication, Entity $oldApplication): void;
 
@@ -61,6 +67,8 @@ interface EntityEventsInterface {
 	 * @param Entity $application The deleted application.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function applicationDeleted(Entity $application): void;
 
@@ -70,6 +78,8 @@ interface EntityEventsInterface {
 	 * @param Entity $configuration The stored configuration.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function configurationCreated(Entity $configuration): void;
 
@@ -80,6 +90,8 @@ interface EntityEventsInterface {
 	 * @param Entity $oldConfiguration The configuration as it was before the write.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function configurationUpdated(Entity $newConfiguration, Entity $oldConfiguration): void;
 
@@ -89,6 +101,8 @@ interface EntityEventsInterface {
 	 * @param Entity $configuration The deleted configuration.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function configurationDeleted(Entity $configuration): void;
 
@@ -98,6 +112,8 @@ interface EntityEventsInterface {
 	 * @param Entity $organisation The stored organisation.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function organisationCreated(Entity $organisation): void;
 
@@ -108,6 +124,8 @@ interface EntityEventsInterface {
 	 * @param Entity $oldOrganisation The organisation as it was before the write.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function organisationUpdated(Entity $newOrganisation, Entity $oldOrganisation): void;
 
@@ -117,6 +135,8 @@ interface EntityEventsInterface {
 	 * @param Entity $organisation The deleted organisation.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function organisationDeleted(Entity $organisation): void;
 
@@ -126,6 +146,8 @@ interface EntityEventsInterface {
 	 * @param RegisterInterface $register The stored register.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function registerCreated(RegisterInterface $register): void;
 
@@ -136,6 +158,8 @@ interface EntityEventsInterface {
 	 * @param RegisterInterface $oldRegister The register as it was before the write.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function registerUpdated(RegisterInterface $newRegister, RegisterInterface $oldRegister): void;
 
@@ -145,6 +169,8 @@ interface EntityEventsInterface {
 	 * @param RegisterInterface $register The deleted register.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function registerDeleted(RegisterInterface $register): void;
 
@@ -154,6 +180,8 @@ interface EntityEventsInterface {
 	 * @param SchemaInterface $schema The stored schema.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function schemaCreated(SchemaInterface $schema): void;
 
@@ -164,6 +192,8 @@ interface EntityEventsInterface {
 	 * @param SchemaInterface $oldSchema The schema as it was before the write.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function schemaUpdated(SchemaInterface $newSchema, SchemaInterface $oldSchema): void;
 
@@ -173,6 +203,8 @@ interface EntityEventsInterface {
 	 * @param SchemaInterface $schema The deleted schema.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function schemaDeleted(SchemaInterface $schema): void;
 
@@ -182,6 +214,8 @@ interface EntityEventsInterface {
 	 * @param Entity $source The stored source.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function sourceCreated(Entity $source): void;
 
@@ -192,6 +226,8 @@ interface EntityEventsInterface {
 	 * @param Entity $oldSource The source as it was before the write.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function sourceUpdated(Entity $newSource, Entity $oldSource): void;
 
@@ -201,6 +237,8 @@ interface EntityEventsInterface {
 	 * @param Entity $source The deleted source.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function sourceDeleted(Entity $source): void;
 
@@ -212,6 +250,8 @@ interface EntityEventsInterface {
 	 * @param IUser|null $actingUser The user who decided; null for a system write.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function entityRelationDecisionUpdated(Entity $relation, array $changedFields, ?IUser $actingUser): void;
 
@@ -222,6 +262,8 @@ interface EntityEventsInterface {
 	 * @param string $status The terminal status.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function flowRunTerminal(string $runUuid, string $status): void;
 
@@ -232,6 +274,8 @@ interface EntityEventsInterface {
 	 * @param bool $committed Whether the write that made it terminal is already committed.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function taskTerminal(Entity $task, bool $committed): void;
 }//end interface

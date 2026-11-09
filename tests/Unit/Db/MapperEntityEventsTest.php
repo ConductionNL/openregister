@@ -285,7 +285,7 @@ final class MapperEntityEventsTest extends TestCase {
 	 * @return EntityEventsInterface
 	 */
 	private function entityEvents(): EntityEventsInterface {
-		return new EntityEventPublisher($this->dispatcher());
+		return new EntityEventPublisher(dispatcher: $this->dispatcher());
 	}//end entityEvents()
 
 	/**

@@ -62,6 +62,8 @@ use OCP\IUser;
  *
  * One event per call, built with the same arguments the mapper passed, so listeners see the
  * same class, order and payload (ADR-013 Rule 4).
+ *
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
  */
 final class EntityEventPublisher implements EntityEventsInterface {
 
@@ -69,6 +71,8 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	 * Constructor.
 	 *
 	 * @param IEventDispatcher $dispatcher The dispatcher the events go to.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function __construct(
 		private readonly IEventDispatcher $dispatcher,
@@ -76,14 +80,27 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	}//end __construct()
 
 	/**
-	 * @inheritDoc
+	 * An application was created.
+	 *
+	 * @param Entity $application The stored application.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function applicationCreated(Entity $application): void {
 		$this->dispatcher->dispatchTyped(new ApplicationCreatedEvent(application: self::narrow(entity: $application, class: Application::class)));
 	}//end applicationCreated()
 
 	/**
-	 * @inheritDoc
+	 * An application was updated.
+	 *
+	 * @param Entity $newApplication The application as stored now.
+	 * @param Entity $oldApplication The application as it was before the write.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function applicationUpdated(Entity $newApplication, Entity $oldApplication): void {
 		$this->dispatcher->dispatchTyped(
@@ -95,14 +112,26 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	}//end applicationUpdated()
 
 	/**
-	 * @inheritDoc
+	 * An application was deleted.
+	 *
+	 * @param Entity $application The deleted application.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function applicationDeleted(Entity $application): void {
 		$this->dispatcher->dispatchTyped(new ApplicationDeletedEvent(application: self::narrow(entity: $application, class: Application::class)));
 	}//end applicationDeleted()
 
 	/**
-	 * @inheritDoc
+	 * A configuration was created.
+	 *
+	 * @param Entity $configuration The stored configuration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function configurationCreated(Entity $configuration): void {
 		$this->dispatcher->dispatchTyped(
@@ -111,7 +140,14 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	}//end configurationCreated()
 
 	/**
-	 * @inheritDoc
+	 * A configuration was updated.
+	 *
+	 * @param Entity $newConfiguration The configuration as stored now.
+	 * @param Entity $oldConfiguration The configuration as it was before the write.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function configurationUpdated(Entity $newConfiguration, Entity $oldConfiguration): void {
 		$this->dispatcher->dispatchTyped(
@@ -123,7 +159,13 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	}//end configurationUpdated()
 
 	/**
-	 * @inheritDoc
+	 * A configuration was deleted.
+	 *
+	 * @param Entity $configuration The deleted configuration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function configurationDeleted(Entity $configuration): void {
 		$this->dispatcher->dispatchTyped(
@@ -132,7 +174,13 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	}//end configurationDeleted()
 
 	/**
-	 * @inheritDoc
+	 * An organisation was created.
+	 *
+	 * @param Entity $organisation The stored organisation.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function organisationCreated(Entity $organisation): void {
 		$this->dispatcher->dispatchTyped(
@@ -141,7 +189,14 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	}//end organisationCreated()
 
 	/**
-	 * @inheritDoc
+	 * An organisation was updated.
+	 *
+	 * @param Entity $newOrganisation The organisation as stored now.
+	 * @param Entity $oldOrganisation The organisation as it was before the write.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function organisationUpdated(Entity $newOrganisation, Entity $oldOrganisation): void {
 		$this->dispatcher->dispatchTyped(
@@ -153,7 +208,13 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	}//end organisationUpdated()
 
 	/**
-	 * @inheritDoc
+	 * An organisation was deleted.
+	 *
+	 * @param Entity $organisation The deleted organisation.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function organisationDeleted(Entity $organisation): void {
 		$this->dispatcher->dispatchTyped(
@@ -162,14 +223,27 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	}//end organisationDeleted()
 
 	/**
-	 * @inheritDoc
+	 * A register was created.
+	 *
+	 * @param RegisterInterface $register The stored register.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function registerCreated(RegisterInterface $register): void {
 		$this->dispatcher->dispatchTyped(new RegisterCreatedEvent(register: self::narrow(entity: $register, class: Register::class)));
 	}//end registerCreated()
 
 	/**
-	 * @inheritDoc
+	 * A register was updated.
+	 *
+	 * @param RegisterInterface $newRegister The register as stored now.
+	 * @param RegisterInterface $oldRegister The register as it was before the write.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function registerUpdated(RegisterInterface $newRegister, RegisterInterface $oldRegister): void {
 		$this->dispatcher->dispatchTyped(
@@ -181,21 +255,40 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	}//end registerUpdated()
 
 	/**
-	 * @inheritDoc
+	 * A register was deleted.
+	 *
+	 * @param RegisterInterface $register The deleted register.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function registerDeleted(RegisterInterface $register): void {
 		$this->dispatcher->dispatchTyped(new RegisterDeletedEvent(register: self::narrow(entity: $register, class: Register::class)));
 	}//end registerDeleted()
 
 	/**
-	 * @inheritDoc
+	 * A schema was created.
+	 *
+	 * @param SchemaInterface $schema The stored schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function schemaCreated(SchemaInterface $schema): void {
 		$this->dispatcher->dispatchTyped(new SchemaCreatedEvent(schema: self::narrow(entity: $schema, class: Schema::class)));
 	}//end schemaCreated()
 
 	/**
-	 * @inheritDoc
+	 * A schema was updated.
+	 *
+	 * @param SchemaInterface $newSchema The schema as stored now.
+	 * @param SchemaInterface $oldSchema The schema as it was before the write.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function schemaUpdated(SchemaInterface $newSchema, SchemaInterface $oldSchema): void {
 		$this->dispatcher->dispatchTyped(
@@ -207,21 +300,40 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	}//end schemaUpdated()
 
 	/**
-	 * @inheritDoc
+	 * A schema was deleted.
+	 *
+	 * @param SchemaInterface $schema The deleted schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function schemaDeleted(SchemaInterface $schema): void {
 		$this->dispatcher->dispatchTyped(new SchemaDeletedEvent(schema: self::narrow(entity: $schema, class: Schema::class)));
 	}//end schemaDeleted()
 
 	/**
-	 * @inheritDoc
+	 * A source was created.
+	 *
+	 * @param Entity $source The stored source.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function sourceCreated(Entity $source): void {
 		$this->dispatcher->dispatchTyped(new SourceCreatedEvent(source: self::narrow(entity: $source, class: Source::class)));
 	}//end sourceCreated()
 
 	/**
-	 * @inheritDoc
+	 * A source was updated.
+	 *
+	 * @param Entity $newSource The source as stored now.
+	 * @param Entity $oldSource The source as it was before the write.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function sourceUpdated(Entity $newSource, Entity $oldSource): void {
 		$this->dispatcher->dispatchTyped(
@@ -233,14 +345,28 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	}//end sourceUpdated()
 
 	/**
-	 * @inheritDoc
+	 * A source was deleted.
+	 *
+	 * @param Entity $source The deleted source.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function sourceDeleted(Entity $source): void {
 		$this->dispatcher->dispatchTyped(new SourceDeletedEvent(source: self::narrow(entity: $source, class: Source::class)));
 	}//end sourceDeleted()
 
 	/**
-	 * @inheritDoc
+	 * The decision metadata of an entity relation was updated.
+	 *
+	 * @param Entity $relation The relation as stored now.
+	 * @param array<string, array{previous: mixed, new: mixed}> $changedFields Only the fields that changed.
+	 * @param IUser|null $actingUser The user who decided; null for a system write.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function entityRelationDecisionUpdated(Entity $relation, array $changedFields, ?IUser $actingUser): void {
 		$this->dispatcher->dispatchTyped(
@@ -253,14 +379,28 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	}//end entityRelationDecisionUpdated()
 
 	/**
-	 * @inheritDoc
+	 * A flow run reached a terminal status.
+	 *
+	 * @param string $runUuid The run's uuid.
+	 * @param string $status The terminal status.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function flowRunTerminal(string $runUuid, string $status): void {
 		$this->dispatcher->dispatchTyped(new FlowRunTerminalEvent(runUuid: $runUuid, status: $status));
 	}//end flowRunTerminal()
 
 	/**
-	 * @inheritDoc
+	 * A task reached a terminal state.
+	 *
+	 * @param Entity $task The task as persisted.
+	 * @param bool $committed Whether the write that made it terminal is already committed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function taskTerminal(Entity $task, bool $committed): void {
 		$this->dispatcher->dispatchTyped(new TaskTerminalEvent(task: self::narrow(entity: $task, class: Task::class), committed: $committed));
@@ -269,14 +409,14 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	/**
 	 * The entity as the class its event carries, refused when a caller passed another class.
 	 *
-	 * @template T of object
-	 *
 	 * @param object $entity The entity a mapper announced.
 	 * @param class-string<T> $class The class the event carries.
 	 *
 	 * @return T
 	 *
 	 * @throws InvalidArgumentException When the entity is not of that class.
+	 *
+	 * @template T of object
 	 */
 	private static function narrow(object $entity, string $class): object {
 		if ($entity instanceof $class === false) {

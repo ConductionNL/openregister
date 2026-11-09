@@ -99,7 +99,7 @@ class MultiTenancyRbacDenialTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(IAppConfig::class),
 			$this->createMock(LoggerInterface::class),
-			new EntityEventPublisher($this->createMock(IEventDispatcher::class))
+			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class))
 		);
 	}
 
@@ -200,7 +200,7 @@ class MultiTenancyRbacDenialTest extends TestCase {
 			$groupManager,
 			$this->createMock(IAppConfig::class),
 			$this->createMock(LoggerInterface::class),
-			new EntityEventPublisher($this->createMock(IEventDispatcher::class))
+			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class))
 		);
 
 		$this->assertTrue(
@@ -312,7 +312,7 @@ class MultiTenancyRbacDenialTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(IAppConfig::class),
 			$this->createMock(LoggerInterface::class),
-			new EntityEventPublisher($this->createMock(IEventDispatcher::class))
+			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class))
 		);
 
 		$this->assertTrue($this->decide($mapper));

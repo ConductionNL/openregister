@@ -447,7 +447,7 @@ class OrganisationSlugConflictTest extends TestCase {
 		return new OrganisationMapper(
 			db: $database->idbConnection(),
 			logger: new NullLogger(),
-			entityEvents: new EntityEventPublisher($this->createMock(IEventDispatcher::class)),
+			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
 			configs: new ConfigServices($this->createMock(IAppConfig::class), $this->createMock(IConfig::class))
 		);
 	}//end mapperOn()
@@ -462,7 +462,12 @@ class OrganisationSlugConflictTest extends TestCase {
 			private int $lookups = 0;
 
 			public function __construct($db, $dispatcher, $appConfig, $config) {
-				parent::__construct(db: $db, logger: new NullLogger(), entityEvents: new EntityEventPublisher($dispatcher), configs: new ConfigServices($appConfig, $config));
+				parent::__construct(
+					db: $db,
+					logger: new NullLogger(),
+					entityEvents: new EntityEventPublisher(dispatcher: $dispatcher),
+					configs: new ConfigServices($appConfig, $config)
+				);
 			}
 
 			public function findBySlug(string $slug): Organisation {
