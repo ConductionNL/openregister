@@ -81,9 +81,9 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 			return null;
 		}
 
-		$document = $this->documentOf(newObject: $newObject, oldObject: $oldObject);
-		$outcome = $this->evaluate(schema: $schema, declared: $declared, document: $document);
-		$this->recordOutcome(outcome: $outcome, object: $newObject, schema: $schema);
+		$write = new ValidatedWrite(object: $newObject, schema: $schema);
+		$outcome = $this->evaluate(write: $write, document: $this->documentOf(newObject: $newObject, oldObject: $oldObject));
+		$this->recordOutcome(write: $write, outcome: $outcome);
 		if ($outcome['refusals'] === []) {
 			return null;
 		}
@@ -131,35 +131,27 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	/**
 	 * Evaluate the declared validations over the document, in the caller's language.
 	 *
-	 * @param Schema               $schema   The schema, whose condition library the validations may use.
-	 * @param array<string, mixed> $declared The declared validations.
+	 * @param ValidatedWrite       $write    The write, whose schema declares the validations and the condition library they may use.
 	 * @param array<string, mixed> $document The document to evaluate.
 	 *
 	 * @return array{refusals: array<int, array<string, mixed>>, warnings: array<int, array<string, mixed>>} The outcome.
 	 */
-	private function evaluate(Schema $schema, array $declared, array $document): array {
-		$library = $this->checks->conditions->libraryFrom(
-			annotation: (($schema->getConfiguration() ?? [])[NamedConditionLibrary::ANNOTATION] ?? null)
-		);
+	private function evaluate(ValidatedWrite $write, array $document): array {
+		$library = $this->checks->conditions->libraryFrom(annotation: ($write->configuration()[NamedConditionLibrary::ANNOTATION] ?? null));
+		$input   = new ValidationInput(document: $document, library: $library, language: $this->checks->l10n->getLanguageCode());
 
-		return $this->checks->validations->evaluate(
-			annotation: $declared,
-			document: $document,
-			library: $library,
-			language: $this->checks->l10n->getLanguageCode()
-		);
+		return $this->checks->validations->evaluate(annotation: $this->declaredOn(schema: $write->schema), input: $input);
 	}//end evaluate()
 
 	/**
 	 * Put every warning and the first refusal on the run log.
 	 *
+	 * @param ValidatedWrite $write The object being saved and its schema.
 	 * @param array{refusals: array<int, array<string, mixed>>, warnings: array<int, array<string, mixed>>} $outcome The outcome.
-	 * @param ObjectEntity $object The object being saved.
-	 * @param Schema       $schema Its schema.
 	 *
 	 * @return void
 	 */
-	private function recordOutcome(array $outcome, ObjectEntity $object, Schema $schema): void {
+	private function recordOutcome(ValidatedWrite $write, array $outcome): void {
 		foreach ($outcome['warnings'] as $warning) {
 			// 🔑 RECORDED, NOT RETURNED — and that is a gap, not a decision.
 			// The spec says a warning saves AND returns its message, and the
@@ -168,11 +160,11 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 			// the run log keeps the evaluation honest and visible while the
 			// channel is missing, and `tasks.md` names the missing half rather
 			// than letting a silent drop look like a feature.
-			$this->runLog->recordWarning(object: $object, schema: $schema, entry: $warning);
+			$this->runLog->recordWarning(write: $write, entry: $warning);
 		}
 
 		if ($outcome['refusals'] !== []) {
-			$this->runLog->recordRefusal(object: $object, schema: $schema, entry: $outcome['refusals'][0]);
+			$this->runLog->recordRefusal(write: $write, entry: $outcome['refusals'][0]);
 		}
 	}//end recordOutcome()
 
