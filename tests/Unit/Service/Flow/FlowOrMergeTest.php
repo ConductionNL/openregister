@@ -125,17 +125,13 @@ class FlowOrMergeTest extends TestCase {
 		$first = FlowItems::item(json: ['shard' => 1]);
 		$second = FlowItems::item(json: ['shard' => 2]);
 
-		$placeItems = $placement->advanceItems(
-			transition: new Transition('s1', ['s1'], ['hits']),
-			placeItems: ['s1' => [$first], 's2' => [$second]],
-			items: [$first],
-			taken: ['hits']
+		$placeItems = $placement->advance(
+			firing: new \OCA\OpenRegister\Service\Flow\ItemFiring(transition: new Transition('s1', ['s1'], ['hits']), items: [$first], taken: ['hits']),
+			placeItems: ['s1' => [$first], 's2' => [$second]]
 		);
-		$placeItems = $placement->advanceItems(
-			transition: new Transition('s2', ['s2'], ['hits']),
-			placeItems: $placeItems,
-			items: [$second],
-			taken: ['hits']
+		$placeItems = $placement->advance(
+			firing: new \OCA\OpenRegister\Service\Flow\ItemFiring(transition: new Transition('s2', ['s2'], ['hits']), items: [$second], taken: ['hits']),
+			placeItems: $placeItems
 		);
 
 		$this->assertSame([1, 2], array_column(array_column($placeItems['hits'], 'json'), 'shard'));
