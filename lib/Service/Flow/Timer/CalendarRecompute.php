@@ -44,7 +44,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
-use Closure;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -114,24 +113,6 @@ class CalendarRecompute implements CalendarRecomputeInterface {
 
 	/**
 	 * Re-project every timer in this batch that the changed calendar governs.
-	 *
-	 * @param string                 $slug       The calendar that changed.
-	 * @param string                 $version    Its object version.
-	 * @param iterable<FlowTimer>    $timers     The candidate timers.
-	 * @param callable(FlowTimer):void $supersede What to do with a timer whose moment moved.
-	 *
-	 * @return array{examined: int, moved: int, unchanged: int, unresolvable: int, deferred: int, skipped: bool} The counts.
-	 *
-	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
-	 */
-	public function recomputeBatch(string $slug, string $version, iterable $timers, callable $supersede): array {
-		$batch = new CalendarBatch(slug: $slug, version: $version, timers: $timers, supersede: Closure::fromCallable($supersede));
-
-		return $this->recompute(batch: $batch);
-	}//end recomputeBatch()
-
-	/**
-	 * Re-project one batch; see {@see self::recomputeBatch()}.
 	 *
 	 * @param CalendarBatch $batch The calendar, its version, the timers and the supersede action.
 	 *

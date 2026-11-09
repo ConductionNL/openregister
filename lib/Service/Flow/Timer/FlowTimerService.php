@@ -1057,7 +1057,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @return FlowTimerFactory The factory.
 	 */
 	private function factory(): FlowTimerFactory {
-		return new FlowTimerFactory(calendars: $this->arithmetic->calendars, calculator: $this->arithmetic->calculator, ladder: $this->arithmetic->ladder);
+		return new FlowTimerFactory(arithmetic: $this->arithmetic);
 	}//end factory()
 
 	/**
