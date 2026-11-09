@@ -85,6 +85,7 @@ use OCA\OpenRegister\Service\Object\SaveObjects\BulkRowPropertyAuthorization;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkEventCandidate;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
+use OCA\OpenRegister\Service\Object\SaveObjects\PersistedChunk;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -2749,7 +2750,7 @@ class SaveObjects {
 	private function guardedChunkRows(BulkChunkRun $chunk, array $objects): array {
 		$run = $chunk->run;
 		$phaseStart = microtime(true);
-		$rows = $this->transformChunk(objects: $objects, schemaCache: $run->schemaCache, result: $chunk->result);
+		$rows = $this->transformChunk(chunk: $chunk, objects: $objects);
 		$chunk->finishPhase(phase: 'transform', start: $phaseStart);
 		if (empty($rows) === true) {
 			return [];
@@ -2782,7 +2783,7 @@ class SaveObjects {
 		// Build and classify results from bulk operation output. Returns the
 		// hydrated entities (with pre-update state for updates) for side effects.
 		$phaseStart  = microtime(true);
-		$sideEffects = $this->buildChunkResults(bulkResult: $bulkResult, transformedObjects: $rows, result: $chunk->result);
+		$sideEffects = $this->buildChunkResults(persisted: new PersistedChunk(rows: $rows, returned: $bulkResult), result: $chunk->result);
 		$chunk->finishPhase(phase: 'buildResults', start: $phaseStart);
 
 		$this->timedSideEffects(chunk: $chunk, sideEffects: $sideEffects);
@@ -3480,27 +3481,27 @@ class SaveObjects {
 	/**
 	 * Transform a chunk of objects to database format and collect invalid objects
 	 *
-	 * Performs in-place transformation and moves any invalid objects into the result
-	 * arrays. Returns only the valid transformed objects ready for persistence.
+	 * Performs in-place transformation against the run's schema cache and moves
+	 * any invalid objects into the chunk's result. Returns only the valid
+	 * transformed objects ready for persistence.
 	 *
-	 * @param array $objects The objects to transform
-	 * @param array $schemaCache Pre-built schema cache for performance optimization
-	 * @param array $result The result array to populate with invalid objects
+	 * @param BulkChunkRun $chunk   The chunk being processed (its run carries the schema cache)
+	 * @param array        $objects The objects to transform
 	 *
 	 * @return array Valid transformed objects ready for database operations
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function transformChunk(array $objects, array $schemaCache, array &$result): array {
-		$transformationResult = $this->transformObjectsToDatabaseFormatInPlace(objects: $objects, schemaCache: $schemaCache);
+	private function transformChunk(BulkChunkRun $chunk, array $objects): array {
+		$transformationResult = $this->transformObjectsToDatabaseFormatInPlace(objects: $objects, schemaCache: $chunk->run->schemaCache);
 		$transformedObjects = $transformationResult['valid'];
 
 		// PERFORMANCE OPTIMIZATION: Batch error processing.
 		if (empty($transformationResult['invalid']) === false) {
 			$invalidCount = count($transformationResult['invalid']);
-			$result['invalid'] = array_merge($result['invalid'], $transformationResult['invalid']);
-			$result['statistics']['invalid'] += $invalidCount;
-			$result['statistics']['errors'] += $invalidCount;
+			$chunk->result['invalid'] = array_merge($chunk->result['invalid'], $transformationResult['invalid']);
+			$chunk->result['statistics']['invalid'] += $invalidCount;
+			$chunk->result['statistics']['errors'] += $invalidCount;
 		}
 
 		return $transformedObjects;
@@ -3615,18 +3616,18 @@ class SaveObjects {
 	 * database-computed status (created, updated, unchanged) and populating the
 	 * result arrays accordingly.
 	 *
-	 * @param mixed $bulkResult The raw result from ultraFastBulkSave
-	 * @param array $transformedObjects The original transformed objects (for fallback)
-	 * @param array $result The result array to populate
+	 * @param PersistedChunk $persisted The rows written and what ultraFastBulkSave returned
+	 * @param array          $result    The result array to populate
 	 *
 	 * @return array Side-effect payload: 'created' => list<ObjectEntity>,
 	 *               'updated' => list<array{old: ObjectEntity|null, new: ObjectEntity}>
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function buildChunkResults(mixed $bulkResult, array $transformedObjects, array &$result): array {
+	private function buildChunkResults(PersistedChunk $persisted, array &$result): array {
+		$bulkResult = $persisted->returned;
 		if (is_array($bulkResult) === false) {
-			return $this->unexpectedChunkResults(transformedObjects: $transformedObjects, result: $result);
+			return $this->unexpectedChunkResults(transformedObjects: $persisted->rows, result: $result);
 		}
 
 		// Check if we got complete objects (new approach) or just UUIDs (fallback).
@@ -3641,7 +3642,7 @@ class SaveObjects {
 			return $this->classifyDatabaseComputedResults(bulkResult: $bulkResult, result: $result);
 		}
 
-		return $this->legacyChunkResults(bulkResult: $bulkResult, transformedObjects: $transformedObjects, result: $result);
+		return $this->legacyChunkResults(persisted: $persisted, result: $result);
 	}//end buildChunkResults()
 
 	/**
@@ -3668,18 +3669,17 @@ class SaveObjects {
 	 * This path cannot reconstruct entities, so it yields NO side effects: no audit
 	 * rows are written and no lifecycle events are dispatched for these objects.
 	 *
-	 * @param array $bulkResult         The UUID array from bulk save.
-	 * @param array $transformedObjects The chunk's rows.
-	 * @param array $result             The result array to populate.
+	 * @param PersistedChunk $persisted The chunk's rows and the UUID array from bulk save.
+	 * @param array          $result    The result array to populate.
 	 *
 	 * @return array The (empty) side effects.
 	 */
-	private function legacyChunkResults(array $bulkResult, array $transformedObjects, array &$result): array {
+	private function legacyChunkResults(PersistedChunk $persisted, array &$result): array {
 		$this->logger->warning(
 			message: '[SaveObjects] Legacy uuid-array bulk result — audit trail and lifecycle events are skipped for this chunk',
-			context: ['objects' => count($bulkResult)]
+			context: ['objects' => count($persisted->returned)]
 		);
-		$this->classifyLegacyResults(bulkResult: $bulkResult, transformedObjects: $transformedObjects, result: $result);
+		$this->classifyLegacyResults(persisted: $persisted, result: $result);
 
 		return ['created' => [], 'updated' => []];
 	}//end legacyChunkResults()
@@ -3850,24 +3850,18 @@ class SaveObjects {
 	 * Falls back to matching UUIDs against input objects when the database
 	 * does not return complete objects with status classification.
 	 *
-	 * @param array $bulkResult The UUID array from bulk save
-	 * @param array $transformedObjects The original transformed objects
-	 * @param array $result The result array to populate
+	 * @param PersistedChunk $persisted The chunk's rows and the UUID array from bulk save
+	 * @param array          $result    The result array to populate
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function classifyLegacyResults(array $bulkResult, array $transformedObjects, array &$result): void {
+	private function classifyLegacyResults(PersistedChunk $persisted, array &$result): void {
 		$this->logger->debug('[SaveObjects] Processing UUID array (legacy mode)');
 
 		// Fallback: Use traditional object reconstruction.
-		$savedObjects = $this->reconstructSavedObjects(
-			insertObjects: $transformedObjects,
-			updateObjects: [],
-			savedObjectIds: $bulkResult,
-			existingObjects: []
-		);
+		$savedObjects = $this->reconstructSavedObjects(insertObjects: $persisted->rows, savedObjectIds: $persisted->returned);
 
 		foreach ($savedObjects as $obj) {
 			$result['saved'][] = $obj->jsonSerialize();
@@ -4317,27 +4311,23 @@ class SaveObjects {
 	 * Reconstruct saved objects without additional database fetch
 	 *
 	 * PERFORMANCE OPTIMIZATION: Avoids redundant database query by reconstructing
-	 * ObjectEntity objects from the already available arrays.
+	 * ObjectEntity objects from the already available arrays. The legacy bulk
+	 * path writes every row as an insert, so only inserted rows are rebuilt.
 	 *
-	 * @param array $insertObjects New objects that were inserted
-	 * @param array $updateObjects Existing objects that were updated
+	 * @param array $insertObjects  New objects that were inserted
 	 * @param array $savedObjectIds Array of UUIDs that were saved
-	 * @param array $existingObjects Original existing objects cache
 	 *
 	 * @return array Array of ObjectEntity objects representing saved objects
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function reconstructSavedObjects(array $insertObjects, array $updateObjects, array $savedObjectIds, array $existingObjects): array {
+	private function reconstructSavedObjects(array $insertObjects, array $savedObjectIds): array {
 		// Build a lookup set of saved IDs for filtering — only reconstruct objects that were actually saved.
 		// Restrict to scalar ids first: array_flip warns and skips any non-scalar
 		// (e.g. a null id from a failed save), so filtering yields the same set cleanly.
 		$savedIdSet = array_flip(array_filter($savedObjectIds, 'is_scalar'));
 
-		return [
-			...$this->reconstructInserted(insertObjects: $insertObjects, savedIdSet: $savedIdSet),
-			...$this->reconstructUpdated(updateObjects: $updateObjects, savedIdSet: $savedIdSet, existingObjects: $existingObjects),
-		];
+		return $this->reconstructInserted(insertObjects: $insertObjects, savedIdSet: $savedIdSet);
 	}//end reconstructSavedObjects()
 
 	/**
@@ -4405,44 +4395,6 @@ class SaveObjects {
 			]
 		);
 	}//end logMissingUuid()
-
-	/**
-	 * The updated entities that were saved, preferring stored data for fields the update omits.
-	 *
-	 * @param array $updateObjects   The updated entities.
-	 * @param array $savedIdSet      The saved uuids, as keys.
-	 * @param array $existingObjects The stored entities by uuid.
-	 *
-	 * @return list<ObjectEntity>
-	 */
-	private function reconstructUpdated(array $updateObjects, array $savedIdSet, array $existingObjects): array {
-		$savedObjects = [];
-		foreach ($updateObjects as $obj) {
-			if (isset($savedIdSet[$obj->getUuid()]) === true) {
-				self::mergeStoredData(obj: $obj, existingObjects: $existingObjects);
-				$savedObjects[] = $obj;
-			}
-		}
-
-		return $savedObjects;
-	}//end reconstructUpdated()
-
-	/**
-	 * Merge the stored object data under the update's, to preserve fields the update payload omits.
-	 *
-	 * @param ObjectEntity $obj             The updated entity.
-	 * @param array        $existingObjects The stored entities by uuid.
-	 *
-	 * @return void
-	 */
-	private static function mergeStoredData(ObjectEntity $obj, array $existingObjects): void {
-		$uuid = $obj->getUuid();
-		if ($uuid === null || isset($existingObjects[$uuid]) === false) {
-			return;
-		}
-
-		$obj->setObject(array_merge(($existingObjects[$uuid]->getObject() ?? []), ($obj->getObject() ?? [])));
-	}//end mergeStoredData()
 
 	/**
 	 * Drop the decision-table rows the single save would have refused.
