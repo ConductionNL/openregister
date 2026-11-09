@@ -30,9 +30,7 @@ namespace OCA\OpenRegister\Service\Decision;
 
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
-use OCP\Files\IRootFolder;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -53,15 +51,13 @@ class ReviewPolicyResolver {
 	 *
 	 * @param SchemaMapperInterface            $schemaMapper Reads the schema's declaration.
 	 * @param FileSettingsHandler     $fileSettings Holds the instance default.
-	 * @param IRootFolder             $rootFolder   Finds a relation's file.
-	 * @param ManagedFileOwnerLookup $owners        Finds the object a file belongs to.
+	 * @param ReviewPolicyFileOwners  $fileOwners   Finds a relation's file and the object it belongs to.
 	 * @param LoggerInterface         $logger       Records a policy that could not be read.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly FileSettingsHandler $fileSettings,
-		private readonly IRootFolder $rootFolder,
-		private readonly ManagedFileOwnerLookup $owners,
+		private readonly ReviewPolicyFileOwners $fileOwners,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -142,7 +138,7 @@ class ReviewPolicyResolver {
 		}
 
 		try {
-			$node = $this->rootFolder->getFirstNodeById($fileId);
+			$node = $this->fileOwners->rootFolder->getFirstNodeById($fileId);
 			if ($node === null) {
 				// The file cannot be found, so nothing says which object (and schema) it belongs to: that is an
 				// unknown owner, not a file without one, and an unknown policy fails closed.
@@ -151,7 +147,7 @@ class ReviewPolicyResolver {
 				return $subject;
 			}
 
-			$object = $this->owners->find(file: $node);
+			$object = $this->fileOwners->owners->find(file: $node);
 		} catch (Throwable $error) {
 			$this->logger->info(
 				message: '[ReviewPolicyResolver] The file\'s object could not be found; the decision stays with its decider.',
