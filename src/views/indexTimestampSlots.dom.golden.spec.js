@@ -117,3 +117,36 @@ describe('index timestamp and action cells', () => {
 		expect(wrapper.findAll('.slots > p').map((cell) => cell.html()).join('\n')).toMatchSnapshot()
 	})
 })
+
+describe('index header sort and filter', () => {
+	it.each([
+		['RegistersIndex', RegistersIndex],
+		['SchemasIndex', SchemasIndex],
+	])('%s', async (name, View) => {
+		const calls = []
+		const base = inert()
+		globalThis.inertStore = new Proxy(base, {
+			get: (target, key) => {
+				if (key === 'setPagination') return (...args) => calls.push(args)
+				if (key === 'pagination') return { limit: 30 }
+				return base[key]
+			},
+		})
+		const wrapper = mount(View, { global: { config: { warnHandler: () => {} } } })
+		await flushPromises()
+		const { vm } = wrapper
+		const states = [[vm.sortKey, vm.sortOrder, vm.activeFilters]]
+		vm.onSort({ key: 'title', order: 'desc' })
+		states.push([vm.sortKey, vm.sortOrder])
+		vm.onSort({ key: 'updated', order: 'up' })
+		states.push([vm.sortKey, vm.sortOrder])
+		vm.onSort(null)
+		states.push([vm.sortKey, vm.sortOrder])
+		vm.onFilterChange({ key: 'title', values: ['a'] })
+		states.push(vm.activeFilters)
+		vm.onFilterChange({ key: 'title', values: [] })
+		states.push(vm.activeFilters, vm.builtinActionsOff, vm.isRefreshing)
+		expect({ states, calls }).toMatchSnapshot()
+		globalThis.inertStore = base
+	})
+})
