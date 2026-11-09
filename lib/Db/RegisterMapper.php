@@ -573,26 +573,53 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			// $this->verifyRbacPermission('read', 'register');
 		}
 
+		$qb = $this->listedQuery(query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: ($offset ?? 0), filters: ($filters ?? [])));
+		$this->applySearchConditions(qb: $qb, searchConditions: $searchConditions, searchParams: $searchParams);
+
+		return $this->findInTenancy(qb: $qb, multitenancy: $_multitenancy);
+	}//end findAll()
+
+	/**
+	 * The register list query for one page of column-filtered rows.
+	 *
+	 * @param ListQuery $query The limit (unbounded for every row), the offset and the column filters.
+	 *
+	 * @return IQueryBuilder The query, before search conditions and the organisation filter.
+	 */
+	private function listedQuery(ListQuery $query): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_registers')
-			->setMaxResults($limit)
-			->setFirstResult($offset ?? 0);
+			->setMaxResults($query->limitOrNull())
+			->setFirstResult($query->offset ?? 0);
 
-		$this->applyColumnFilters(qb: $qb, filters: $filters);
-		$this->applySearchConditions(qb: $qb, searchConditions: $searchConditions, searchParams: $searchParams);
+		$this->applyColumnFilters(qb: $qb, filters: $query->filters);
 
-		// Apply organisation filter.
+		return $qb;
+	}//end listedQuery()
+
+	/**
+	 * The registers a query finds, limited to the caller's organisations when multitenancy applies.
+	 *
+	 * Registers without an organisation stay visible.
+	 *
+	 * @param IQueryBuilder $qb           The query.
+	 * @param bool          $multitenancy Whether to apply the organisation filter.
+	 *
+	 * @return Register[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Register>
+	 */
+	private function findInTenancy(IQueryBuilder $qb, bool $multitenancy): array {
 		$this->applyOrganisationFilter(
 			qb: $qb,
 			columnName: 'organisation',
 			allowNullOrg: true,
-			multiTenancyEnabled: $_multitenancy
+			multiTenancyEnabled: $multitenancy
 		);
 
-		// Just return the entities; do not attach stats here.
 		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end findInTenancy()
 
 	/**
 	 * OR the raw search conditions into the query and bind their parameters.
