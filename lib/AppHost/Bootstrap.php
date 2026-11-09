@@ -228,6 +228,8 @@ class Bootstrap {
 	 * that reason. It stays a no-op when the leaf ships its own
 	 * `Controller\StoreController`, so calling it is always safe.
 	 *
+	 * @param IRegistrationContext $context      Leaf registration context.
+	 * @param string               $appId        Leaf app id.
 	 * @param string               $controllerNs Leaf controller namespace (e.g. `OCA\Decidiq\Controller`).
 	 *
 	 * @return void
