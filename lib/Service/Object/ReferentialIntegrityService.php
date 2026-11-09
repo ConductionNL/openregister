@@ -1870,7 +1870,12 @@ class ReferentialIntegrityService {
 	 */
 	private function findIntegrityAuditObject(string $objectUuid): ?ObjectEntity {
 		try {
-			$found = $this->storage->objectEntityMapper->findAcrossAllSources(identifier: $objectUuid, includeDeleted: true, _rbac: false, _multitenancy: false);
+			$found = $this->storage->objectEntityMapper->findAcrossAllSources(
+				identifier: $objectUuid,
+				includeDeleted: true,
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (\Throwable $e) {
 			return null;
 		}
