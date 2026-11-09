@@ -50,6 +50,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Uid\UuidV4;
 use Throwable;
 
 /**
@@ -2655,7 +2656,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
 	public function createAuditTrailEntry(
 		ObjectEntity $object,
@@ -2665,21 +2665,13 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?string $actorName = null,
 		?string $ipAddress = null,
 	): AuditTrail {
-		$actor = $this->entryActor(actorId: $actorId, actorName: $actorName);
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+		$auditTrail = self::actorEntry(action: $action, actor: $this->entryActor(actorId: $actorId, actorName: $actorName));
 		$auditTrail->setObject($object->getId());
 		$auditTrail->setObjectUuid($object->getUuid());
 		$auditTrail->setRegister($object->getRegister());
 		$auditTrail->setSchema($object->getSchema());
-		$auditTrail->setAction($action);
 		$auditTrail->setChanged($context);
-		$auditTrail->setUser($actor['userId']);
-		$auditTrail->setUserName($actor['userName']);
 		self::stampIpAddress(auditTrail: $auditTrail, ipAddress: $ipAddress);
-
-		$auditTrail->setCreated(new DateTime());
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createAuditTrailEntry()
@@ -2726,6 +2718,27 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end sessionActor()
 
 	/**
+	 * A new row that names its actor: a fresh uuid, the action, the actor and the current time.
+	 *
+	 * Every direct entry writer starts from this row and adds what its entry is about.
+	 *
+	 * @param string                                  $action The action.
+	 * @param array{userId: string, userName: string} $actor  Who the row names.
+	 *
+	 * @return AuditTrail The row, not yet inserted.
+	 */
+	private static function actorEntry(string $action, array $actor): AuditTrail {
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)new UuidV4());
+		$auditTrail->setAction($action);
+		$auditTrail->setUser($actor['userId']);
+		$auditTrail->setUserName($actor['userName']);
+		$auditTrail->setCreated(new DateTime());
+
+		return $auditTrail;
+	}//end actorEntry()
+
+	/**
 	 * Record the calling address on a row, trimmed, when one was given.
 	 *
 	 * @param AuditTrail  $auditTrail The row.
@@ -2764,7 +2777,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 */
 	public function createToolInvocationEntry(
 		string $toolId,
@@ -2772,11 +2784,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		array $resultSummary,
 		AuditedObject $about = new AuditedObject(),
 	): AuditTrail {
-		$actor = $this->sessionActor();
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction('mcp.' . self::toolVerb(toolId: $toolId));
+		$auditTrail = self::actorEntry(action: 'mcp.' . self::toolVerb(toolId: $toolId), actor: $this->sessionActor());
 		// `changed` is NOT NULL and QBMapper writes only the fields a setter
 		// touched: a tool call changes no object, so it records an empty set (#4279).
 		$auditTrail->setChanged([]);
@@ -2784,9 +2792,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setParamsDigest($paramsDigest);
 		$auditTrail->setResultSummary($resultSummary);
 		$about->stampOnto(auditTrail: $auditTrail);
-		$auditTrail->setUser($actor['userId']);
-		$auditTrail->setUserName($actor['userName']);
-		$auditTrail->setCreated(new DateTime());
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createToolInvocationEntry()
@@ -3050,7 +3055,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createPartyQueryRefusalEntry.
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every parameter is one column of the refusal record.
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
@@ -3068,28 +3072,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		string|null $actorReference = null,
 	): AuditTrail {
 		$actor = self::refusalActor(actorId: $actorId, actorReference: $actorReference);
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction('shared_master_data_write_denied');
-		$auditTrail->setRegister($register);
-		$auditTrail->setSchema($schema);
-		$auditTrail->setObjectUuid($objectUuid);
+		$auditTrail = self::actorEntry(action: 'shared_master_data_write_denied', actor: $actor);
+		(new AuditedObject(register: $register, schema: $schema, objectUuid: $objectUuid))->stampOnto(auditTrail: $auditTrail);
 		$auditTrail->setOrganisationId($sourceOrganisation);
-		$auditTrail->setResultSummary(
-			array_merge(
-				$context,
-				[
-					'holderOrganisation' => $holderOrganisation,
-					'sourceOrganisation' => $sourceOrganisation,
-					'resourceType' => $resourceType,
-					'outcome' => 'refused',
-				]
-			)
-		);
-		$auditTrail->setUser($actor['userId']);
-		$auditTrail->setUserName($actor['userName']);
-		$auditTrail->setCreated(new DateTime());
+		$refusal = ['holderOrganisation' => $holderOrganisation, 'sourceOrganisation' => $sourceOrganisation, 'resourceType' => $resourceType];
+		$auditTrail->setResultSummary(array_merge($context, $refusal, ['outcome' => 'refused']));
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 
@@ -3138,34 +3125,12 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
-	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function createPartyQueryRefusalEntry(string $query, int $cap, int $would, ?int $schema = null): AuditTrail {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		$userName = 'System';
-		if ($user !== null) {
-			$userId = $user->getUID();
-			$userName = $user->getDisplayName();
-		}
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction('party.query-refused');
+		$auditTrail = self::actorEntry(action: 'party.query-refused', actor: $this->sessionActor());
 		$auditTrail->setSchema($schema);
-		$auditTrail->setResultSummary(
-			[
-				'query' => $query,
-				'cap' => $cap,
-				'wouldHaveMatched' => $would,
-				'returned' => 0,
-			]
-		);
-		$auditTrail->setUser($userId);
-		$auditTrail->setUserName($userName);
-		$auditTrail->setCreated(new DateTime());
+		$auditTrail->setResultSummary(['query' => $query, 'cap' => $cap, 'wouldHaveMatched' => $would, 'returned' => 0]);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createPartyQueryRefusalEntry()
@@ -3189,8 +3154,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createPartyQueryRefusalEntry.
-	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function createPurposeRefusalEntry(
@@ -3199,29 +3162,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?int $register = null,
 		?int $schema = null,
 	): AuditTrail {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		$userName = 'System';
-		if ($user !== null) {
-			$userId = $user->getUID();
-			$userName = $user->getDisplayName();
-		}
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction(PurposeGuardInterface::ACTION_REFUSED);
-		$auditTrail->setRegister($register);
-		$auditTrail->setSchema($schema);
-		$auditTrail->setResultSummary(
-			[
-				'rule' => $rule,
-				'declaredPurpose' => $purpose,
-				'refused' => true,
-			]
-		);
-		$auditTrail->setUser($userId);
-		$auditTrail->setUserName($userName);
-		$auditTrail->setCreated(new DateTime());
+		$auditTrail = self::actorEntry(action: PurposeGuardInterface::ACTION_REFUSED, actor: $this->sessionActor());
+		(new AuditedObject(register: $register, schema: $schema))->stampOnto(auditTrail: $auditTrail);
+		$auditTrail->setResultSummary(['rule' => $rule, 'declaredPurpose' => $purpose, 'refused' => true]);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createPurposeRefusalEntry()
@@ -3428,7 +3371,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
 	 */
 	public function createHardeningChangeEntry(
 		string $control,
@@ -3437,39 +3379,31 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		bool $accepted,
 		string $refusal = '',
 	): AuditTrail {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		$userName = 'System';
-		if ($user !== null) {
-			$userId = $user->getUID();
-			$userName = $user->getDisplayName();
-		}
-
-		$action = 'hardening.refused';
-		if ($accepted === true) {
-			$action = 'hardening.changed';
-		}
-
-		$summary = [
-			'control' => $control,
-			'before' => $before,
-			'after' => $after,
-			'accepted' => $accepted,
-		];
+		$summary = ['control' => $control, 'before' => $before, 'after' => $after, 'accepted' => $accepted];
 		if ($refusal !== '') {
 			$summary['refusal'] = $refusal;
 		}
 
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction($action);
+		$auditTrail = self::actorEntry(action: self::hardeningAction(accepted: $accepted), actor: $this->sessionActor());
 		$auditTrail->setResultSummary($summary);
-		$auditTrail->setUser($userId);
-		$auditTrail->setUserName($userName);
-		$auditTrail->setCreated(new DateTime());
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createHardeningChangeEntry()
+
+	/**
+	 * The action of a hardening row: a change that was made, or one that was refused.
+	 *
+	 * @param bool $accepted Whether the change was made.
+	 *
+	 * @return string The action.
+	 */
+	private static function hardeningAction(bool $accepted): string {
+		if ($accepted === true) {
+			return 'hardening.changed';
+		}
+
+		return 'hardening.refused';
+	}//end hardeningAction()
 	/**
 	 * Create one immutable, hash-chained audit record for an export.
 	 *
@@ -3494,8 +3428,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
-	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function createExportEntry(
@@ -3505,17 +3437,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?int $schema = null,
 		?string $actorId = null,
 	): AuditTrail {
-		$actor = $this->exportActor(actorId: $actorId);
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction('export.' . $outcome);
-		$auditTrail->setRegister($register);
-		$auditTrail->setSchema($schema);
+		$auditTrail = self::actorEntry(action: 'export.' . $outcome, actor: $this->exportActor(actorId: $actorId));
+		(new AuditedObject(register: $register, schema: $schema))->stampOnto(auditTrail: $auditTrail);
 		$auditTrail->setResultSummary($summary);
-		$auditTrail->setUser($actor['userId']);
-		$auditTrail->setUserName($actor['userName']);
-		$auditTrail->setCreated(new DateTime());
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createExportEntry()
@@ -3555,7 +3479,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createExportEntry.
 	 */
 	public function createSlugBackfillEntry(
 		array $changes,
@@ -3563,25 +3486,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?int $register = null,
 		?int $schema = null,
 	): AuditTrail {
-		$userId = 'system';
-		$userName = 'System';
-		$user = $this->userSession->getUser();
-		if ($user !== null) {
-			$userId = $user->getUID();
-			$userName = $user->getDisplayName();
-		}
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction('slug.backfill.' . self::SLUG_BACKFILL_MODE);
+		$auditTrail = self::actorEntry(action: 'slug.backfill.' . self::SLUG_BACKFILL_MODE, actor: $this->sessionActor());
 		// `changed` is NOT NULL and QBMapper writes only the fields a setter touched.
 		$auditTrail->setChanged([]);
-		$auditTrail->setRegister($register);
-		$auditTrail->setSchema($schema);
+		(new AuditedObject(register: $register, schema: $schema))->stampOnto(auditTrail: $auditTrail);
 		$auditTrail->setResultSummary($this->slugBackfillResultSummary(mode: self::SLUG_BACKFILL_MODE, changes: $changes, summary: $summary));
-		$auditTrail->setUser($userId);
-		$auditTrail->setUserName($userName);
-		$auditTrail->setCreated(new DateTime());
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createSlugBackfillEntry()
