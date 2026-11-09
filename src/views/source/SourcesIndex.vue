@@ -109,14 +109,11 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 				{{ getSourceRegisterCount(row.id) }}
 			</template>
 
-			<!-- Custom column: created date -->
-			<template #column-created="{ row }">
-				{{ listDateTime(row.created) }}
-			</template>
-
-			<!-- Custom column: updated date -->
-			<template #column-updated="{ row }">
-				{{ listDateTime(row.updated) }}
+			<!-- Custom columns: created and updated dates -->
+			<template
+				v-for="key in ['created', 'updated']"
+				#[`column-${key}`]="{ row }">
+				{{ listDateTime(row[key]) }}
 			</template>
 
 			<!-- Custom row actions for table view -->

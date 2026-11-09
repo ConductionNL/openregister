@@ -122,14 +122,11 @@ import {
 				}}
 			</template>
 
-			<!-- Custom column: created date -->
-			<template #column-created="{ row }">
-				{{ listDateTime(row.created) }}
-			</template>
-
-			<!-- Custom column: updated date -->
-			<template #column-updated="{ row }">
-				{{ listDateTime(row.updated) }}
+			<!-- Custom columns: created and updated dates -->
+			<template
+				v-for="key in ['created', 'updated']"
+				#[`column-${key}`]="{ row }">
+				{{ listDateTime(row[key]) }}
 			</template>
 
 			<!-- Custom row actions for table view -->
@@ -715,22 +712,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-/* Table row accents. Drawn with an inset box-shadow, never border-left: a
-   border adds layout width and shifts the row's cell content sideways, while
-   box-shadow paints inside the box. Matches .cn-table-row--selected.
+@use '../managedRowAccents.scss' as *;
 
-   Skipped on a selected row so the library's .cn-table-row--selected accent
-   wins. Scoping adds a [data-v-*] attribute, which would otherwise outweigh
-   the library's single-class rule and leave a selected row showing its
-   managed/local colour instead of the selection colour. */
-
-/* Managed registers (external - green) */
-:deep(.viewTableRow--managed:not(.cn-table-row--selected)) {
-	box-shadow: inset 3px 0 0 0 var(--color-success);
-}
-
-/* Local configurations (orange) */
-:deep(.viewTableRow--local:not(.cn-table-row--selected)) {
-	box-shadow: inset 3px 0 0 0 var(--color-warning);
-}
+@include managed-row-accents;
 </style>
