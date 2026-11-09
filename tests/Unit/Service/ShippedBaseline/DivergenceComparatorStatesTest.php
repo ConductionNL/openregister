@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ShippedBaseline;
 
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
+use OCA\OpenRegister\Service\ShippedBaseline\DescriptorRevisions;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use PHPUnit\Framework\TestCase;
 
@@ -77,6 +78,6 @@ class DivergenceComparatorStatesTest extends TestCase {
 	private function states(array $baseline, array $live, array $incoming): array {
 		$comparator = new DivergenceComparator(parts: new DescriptorParts());
 
-		return $comparator->states(baseline: $baseline, live: $live, incoming: $incoming);
+		return $comparator->states(descriptors: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 	}
 }//end class
