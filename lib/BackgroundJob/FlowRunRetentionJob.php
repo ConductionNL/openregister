@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\BackgroundJob\Support\FlowRunRetentionStores;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
@@ -71,24 +72,44 @@ class FlowRunRetentionJob extends TimedJob {
 	public const DEFAULT_RETENTION_DAYS = 31;
 
 	/**
+	 * Deletes expired runs.
+	 *
+	 * @var FlowRunMapperInterface
+	 */
+	private readonly FlowRunMapperInterface $runs;
+
+	/**
+	 * Deletes those runs' step rows.
+	 *
+	 * @var FlowRunStepMapperInterface
+	 */
+	private readonly FlowRunStepMapperInterface $steps;
+
+	/**
+	 * Finds the flows declaring an override.
+	 *
+	 * @var FlowMapperInterface
+	 */
+	private readonly FlowMapperInterface $flows;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time The clock.
-	 * @param FlowRunMapperInterface $runs Deletes expired runs.
-	 * @param FlowRunStepMapperInterface $steps Deletes those runs' step rows.
-	 * @param FlowMapperInterface $flows Finds the flows declaring an override.
-	 * @param IAppConfig $config Reads the retention period.
-	 * @param LoggerInterface $logger Records what was swept.
+	 * @param ITimeFactory           $time   The clock.
+	 * @param FlowRunRetentionStores $stores Runs, their steps, and the flows declaring an override.
+	 * @param IAppConfig             $config Reads the retention period.
+	 * @param LoggerInterface        $logger Records what was swept.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly FlowRunMapperInterface $runs,
-		private readonly FlowRunStepMapperInterface $steps,
-		private readonly FlowMapperInterface $flows,
+		FlowRunRetentionStores $stores,
 		private readonly IAppConfig $config,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
+		$this->runs = $stores->runs;
+		$this->steps = $stores->steps;
+		$this->flows = $stores->flows;
 
 		$this->setInterval(seconds: 86400);
 
