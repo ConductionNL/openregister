@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Rbac\TokenGrantTerms;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantTarget;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
+use OCA\OpenRegister\Service\Rbac\TokenGrantIssue;
 use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
 use PHPUnit\Framework\TestCase;
 
@@ -87,11 +88,11 @@ class TokenGrantTest extends TestCase {
 	 */
 	public function testAGrantNarrowerThanItsIssuerIsAccepted(): void {
 		$this->assertNull(
-			$this->validator()->refusalFor(
+			$this->validator()->refusalFor(issue: new TokenGrantIssue(
 				grant: $this->acceptable(),
 				issuerVerbs: ['read', 'list', 'create', 'update'],
 				now: $this->now()
-			),
+			)),
 			'the control: a well-formed, narrower grant is issued'
 		);
 	}//end testAGrantNarrowerThanItsIssuerIsAccepted()
@@ -105,7 +106,7 @@ class TokenGrantTest extends TestCase {
 		$grant = $this->acceptable();
 		$grant['verbs'] = [];
 
-		$refusal = $this->validator()->refusalFor(grant: $grant, issuerVerbs: ['read'], now: $this->now());
+		$refusal = $this->validator()->refusalFor(issue: new TokenGrantIssue(grant: $grant, issuerVerbs: ['read'], now: $this->now()));
 
 		$this->assertNotNull($refusal, 'an empty list is a filter that filters nothing, and must not be issued');
 		$this->assertStringContainsString('at least one verb', (string)$refusal);
@@ -120,11 +121,11 @@ class TokenGrantTest extends TestCase {
 		$grant = $this->acceptable();
 		$grant['verbs'] = ['read', 'manage'];
 
-		$refusal = $this->validator()->refusalFor(
+		$refusal = $this->validator()->refusalFor(issue: new TokenGrantIssue(
 			grant: $grant,
 			issuerVerbs: ['read', 'list', 'create', 'update', 'delete', 'manage'],
 			now: $this->now()
-		);
+		));
 
 		$this->assertNotNull($refusal, 'a machine principal that can widen its own audience is the failure scoping prevents');
 		$this->assertStringContainsString('manage', (string)$refusal);
@@ -139,7 +140,7 @@ class TokenGrantTest extends TestCase {
 		$grant = $this->acceptable();
 		$grant['verbs'] = ['read', 'delete'];
 
-		$refusal = $this->validator()->refusalFor(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now());
+		$refusal = $this->validator()->refusalFor(issue: new TokenGrantIssue(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now()));
 
 		$this->assertNotNull($refusal, 'a grant is a filter over the issuer\'s rights, never an addition to them');
 		$this->assertStringContainsString('wider than the issuer', (string)$refusal);
@@ -155,7 +156,7 @@ class TokenGrantTest extends TestCase {
 		$grant['verbs'] = ['reed'];
 
 		$this->assertNotNull(
-			$this->validator()->refusalFor(grant: $grant, issuerVerbs: ['reed', 'read'], now: $this->now()),
+			$this->validator()->refusalFor(issue: new TokenGrantIssue(grant: $grant, issuerVerbs: ['reed', 'read'], now: $this->now())),
 			'a typo must not become a permission'
 		);
 	}//end testAnUnknownVerbIsRefused()
@@ -169,7 +170,7 @@ class TokenGrantTest extends TestCase {
 		$grant = $this->acceptable();
 		unset($grant['expiresAt']);
 
-		$refusal = $this->validator()->refusalFor(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now());
+		$refusal = $this->validator()->refusalFor(issue: new TokenGrantIssue(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now()));
 
 		$this->assertNotNull($refusal, 'an optional expiry is an expiry nobody sets');
 		$this->assertStringContainsString('end date', (string)$refusal);
@@ -185,7 +186,7 @@ class TokenGrantTest extends TestCase {
 		$grant['expiresAt'] = '2020-01-01T00:00:00+00:00';
 
 		$this->assertNotNull(
-			$this->validator()->refusalFor(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now()),
+			$this->validator()->refusalFor(issue: new TokenGrantIssue(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now())),
 			'issuing a token that is already lapsed is a confusing way to issue nothing'
 		);
 	}//end testAnEndDateInThePastIsRefused()
@@ -199,7 +200,7 @@ class TokenGrantTest extends TestCase {
 		$grant = $this->acceptable();
 		$grant['registers'] = [];
 
-		$refusal = $this->validator()->refusalFor(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now());
+		$refusal = $this->validator()->refusalFor(issue: new TokenGrantIssue(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now()));
 
 		$this->assertNotNull($refusal, 'an empty list reads as "none" and as "all", and a form produces it by accident');
 		$this->assertStringContainsString('registers', (string)$refusal);

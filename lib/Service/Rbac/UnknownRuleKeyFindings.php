@@ -99,9 +99,8 @@ class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 		}
 
 		$this->blocks->assertNone(
-			findings: $this->registerFindings(
-				authorization: $register->getAuthorization(),
-				context: $subject,
+			findings: $this->findingsIn(
+				block: self::registerBlock(authorization: $register->getAuthorization(), context: $subject),
 				stored: $this->stored->registerAuthorization(id: $register->getId())
 			)
 		);
@@ -137,18 +136,26 @@ class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 	 *
 	 * @param array|null $authorization The block.
 	 * @param string     $context       What the block belongs to, for the message.
-	 * @param array|null $stored        The block as stored, when saving over one.
 	 *
 	 * @return array<int, string> The findings.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
-	public function registerFindings(?array $authorization, string $context, ?array $stored = null): array {
-		return $this->findingsIn(
-			block: ['authorization' => $authorization, 'context' => $context, 'columns' => new RuleColumns()],
-			stored: $stored
-		);
+	public function registerFindings(?array $authorization, string $context): array {
+		return $this->findingsIn(block: self::registerBlock(authorization: $authorization, context: $context), stored: null);
 	}//end registerFindings()
+
+	/**
+	 * A register's block, judged by the columns every register shares.
+	 *
+	 * @param array|null $authorization The block.
+	 * @param string     $context       What the block belongs to, for the message.
+	 *
+	 * @return array{authorization: ?array, context: string, columns: RuleColumns} The block and how to judge it.
+	 */
+	private static function registerBlock(?array $authorization, string $context): array {
+		return ['authorization' => $authorization, 'context' => $context, 'columns' => new RuleColumns()];
+	}//end registerBlock()
 
 	/**
 	 * One sentence per condition of a block that its columns refuse and the stored block does not hold.
