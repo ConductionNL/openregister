@@ -58,6 +58,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
+use OCA\OpenRegister\Service\File\FileListOptions;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
@@ -1268,14 +1270,21 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 		?string $category = null,
 		?array $labels = null,
 	): \OCA\OpenRegister\Files\Db\File {
-		return $this->updateFileHandler->updateFileMetadata(
-			fileId: $fileId,
-			description: $description,
-			category: $category,
-			labels: $labels
-		);
-
+		return $this->changeFileMetadata(change: new FileMetadataChange(fileId: $fileId, description: $description, category: $category, labels: $labels));
 	}//end updateFileMetadata()
+
+	/**
+	 * Update a file's OpenRegister-side metadata, as one metadata change.
+	 *
+	 * @param FileMetadataChange $change The file id and the description, category and labels to write.
+	 *
+	 * @return \OCA\OpenRegister\Files\Db\File The persisted metadata row.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function changeFileMetadata(FileMetadataChange $change): \OCA\OpenRegister\Files\Db\File {
+		return $this->updateFileHandler->updateFileMetadata(change: $change);
+	}//end changeFileMetadata()
 
 
 	/**
@@ -1504,10 +1513,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *   (lists an object's files via its stored folder, with optional shared-only filter)
 	 */
 	public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly = false): array {
-		return $this->readFileHandler->getFiles(
-			object: $object,
-			sharedFilesOnly: $sharedFilesOnly
-		);
+		return $this->readFileHandler->getFiles(object: $object, options: new FileListOptions(sharedFilesOnly: $sharedFilesOnly));
 	}//end getFiles()
 
 	/**
