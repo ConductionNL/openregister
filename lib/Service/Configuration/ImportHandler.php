@@ -1575,17 +1575,17 @@ class ImportHandler {
 	 * if/else, the same shape {@see \OCA\OpenRegister\Service\Flow\FlowService::persistFlow()}
 	 * uses and for the same reason: the `ElseExpression` rule is on in phpmd.xml.
 	 *
-	 * @param Flow|null $existingFlow The flow already stored under this uuid, or null to create.
-	 * @param string $uuid The uuid a new flow is stamped with; ignored for an existing flow.
-	 * @param string|null $owner The owner stamped on a newly created flow.
-	 * @param Configuration|null $configuration Supplies the organisation stamped on a newly created flow.
-	 *
 	 * A new flow takes the caller's owner, falling back to the signed-in user
 	 * (the same fallback the configuration created alongside it gets). It is
 	 * REFUSED, not stamped with nulls, when either owner or organisation is
 	 * still missing, as {@see \OCA\OpenRegister\Service\Flow\FlowService}
 	 * `flowToSave()` does: `Flow::belongsTo()` is fail-closed, so such a flow
 	 * could never be listed, edited or run again.
+	 *
+	 * @param Flow|null $existingFlow The flow already stored under this uuid, or null to create.
+	 * @param string $uuid The uuid a new flow is stamped with; ignored for an existing flow.
+	 * @param string|null $owner The owner stamped on a newly created flow.
+	 * @param Configuration|null $configuration Supplies the organisation stamped on a newly created flow.
 	 *
 	 * @return Flow The flow to apply imported fields to.
 	 *
