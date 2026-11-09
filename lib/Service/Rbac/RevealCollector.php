@@ -118,13 +118,12 @@ class RevealCollector {
 	 * Record that one property of one object was shown to one user.
 	 *
 	 * Kept in this shape for the property read path; it names the reveal and
-	 * hands it to recordReveal().
+	 * hands it to recordReveal(), which also takes the register.
 	 *
 	 * @param string   $userId     Who saw it.
 	 * @param string   $objectUuid Which object.
 	 * @param string   $property   Which property.
 	 * @param int|null $schemaId   The schema, for the entry.
-	 * @param int|null $registerId The register, for the entry.
 	 *
 	 * @return void
 	 *
@@ -135,9 +134,8 @@ class RevealCollector {
 		string $objectUuid,
 		string $property,
 		?int $schemaId = null,
-		?int $registerId = null,
 	): void {
-		$this->recordReveal(reveal: new PropertyReveal(userId: $userId, objectUuid: $objectUuid, property: $property, schemaId: $schemaId), registerId: $registerId);
+		$this->recordReveal(reveal: new PropertyReveal(userId: $userId, objectUuid: $objectUuid, property: $property, schemaId: $schemaId));
 	}//end record()
 
 	/**

@@ -92,7 +92,7 @@ class RevealCollectorTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testOneLookIsOneEntry(): void {
-		$this->collector->record('alice', 'object-1', 'bsn', 24, 14);
+		$this->collector->record('alice', 'object-1', 'bsn', 24);
 
 		$entries = $this->collector->take();
 
