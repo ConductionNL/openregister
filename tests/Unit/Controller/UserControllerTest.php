@@ -309,8 +309,9 @@ class UserControllerTest extends TestCase {
 
 		$result = $this->controller->login();
 
-		$this->assertEquals(403, $result->getStatus());
-		$this->assertArrayNotHasKey('user', $result->getData());
+		// pp-f4: the same status and body as a wrong password, throttled.
+		$this->assertEquals(401, $result->getStatus());
+		$this->assertSame(['error' => 'Invalid username or password'], $result->getData());
 		$this->assertTrue($result->isThrottled());
 	}
 

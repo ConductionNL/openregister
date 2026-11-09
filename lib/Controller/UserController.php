@@ -351,9 +351,16 @@ class UserController extends Controller {
 					reason: 'second_factor_required'
 				);
 
+				// Answered exactly like a wrong password: this branch is reached only
+				// after the password check succeeded, so a distinct answer would
+				// confirm the password of a two-factor account. The reason is logged.
+				$this->logger->info(
+					message: '[UserController] Login refused: the account needs a second factor; it signs in through the Nextcloud login page',
+					context: ['username' => $username]
+				);
 				$response = new JSONResponse(
-					data: ['error' => 'This account signs in through the Nextcloud login page'],
-					statusCode: 403
+					data: ['error' => 'Invalid username or password'],
+					statusCode: 401
 				);
 				$response->throttle(['action' => 'openregister_login']);
 				return $this->securityService->addSecurityHeaders(response: $response);
