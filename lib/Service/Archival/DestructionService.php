@@ -119,22 +119,18 @@ class DestructionService implements DestructionServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface $objectMapper Object entity data mapper.
-	 * @param IAppConfig $appConfig App configuration.
-	 * @param IJobList $jobList Background job list.
-	 * @param IUserSession $userSession User session service.
-	 * @param LoggerInterface $logger Logger instance.
+	 * @param DestructionInfrastructure $infrastructure The object store, app configuration and job list.
+	 * @param IUserSession              $userSession    User session service.
+	 * @param LoggerInterface           $logger         Logger instance.
 	 */
 	public function __construct(
-		MagicMapperInterface $objectMapper,
-		IAppConfig $appConfig,
-		IJobList $jobList,
+		DestructionInfrastructure $infrastructure,
 		IUserSession $userSession,
 		LoggerInterface $logger,
 	) {
-		$this->objectMapper = $objectMapper;
-		$this->appConfig = $appConfig;
-		$this->jobList = $jobList;
+		$this->objectMapper = $infrastructure->objectMapper;
+		$this->appConfig = $infrastructure->appConfig;
+		$this->jobList = $infrastructure->jobList;
 		$this->userSession = $userSession;
 		$this->logger = $logger;
 	}//end __construct()

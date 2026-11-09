@@ -114,7 +114,7 @@ class ArchivalNominationListener implements IEventListener {
 	 */
 	private function nominateAndPersist(ObjectEntity $object, Schema $schema): void {
 		try {
-			$nomination = $this->nominations->nominate(object: $object, schema: $schema, trigger: 'closure');
+			$nomination = $this->nominations->nominate(object: $object, schema: $schema);
 			if (($nomination['status'] ?? null) === ArchivalNominationServiceInterface::STATUS_NOT_APPLICABLE) {
 				return;
 			}

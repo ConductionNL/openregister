@@ -129,8 +129,7 @@ class ArchivalNominationServiceTest extends TestCase {
 		$object = $this->object();
 		$nomination = $this->service->nominate(
 			object: $object,
-			schema: $this->schema(['enabled' => true, 'classification' => '11.1.2']),
-			trigger: 'closure'
+			schema: $this->schema(['enabled' => true, 'classification' => '11.1.2'])
 		);
 
 		$this->assertSame(ArchivalNominationService::STATUS_NOMINATED, $nomination['status']);
@@ -160,8 +159,7 @@ class ArchivalNominationServiceTest extends TestCase {
 					'defaultNominatie' => 'vernietigen',
 					'defaultBewaartermijn' => 'P5Y',
 				]
-			),
-			trigger: 'closure'
+			)
 		);
 
 		$this->assertSame(ArchivalNominationService::RULE_SCHEMA_DEFAULT, $nomination['rule']);
@@ -186,8 +184,7 @@ class ArchivalNominationServiceTest extends TestCase {
 			object: $this->object(),
 			schema: $this->schema(
 				['enabled' => true, 'classification' => '11.1.2', 'bewaartermijnOverride' => 'P10Y']
-			),
-			trigger: 'closure'
+			)
 		);
 
 		$this->assertSame(ArchivalNominationService::RULE_LOCAL_OVERRIDE, $nomination['rule']);
@@ -204,8 +201,7 @@ class ArchivalNominationServiceTest extends TestCase {
 		$object = $this->object();
 		$nomination = $this->service->nominate(
 			object: $object,
-			schema: $this->schema(['enabled' => true, 'classification' => '11.1.2']),
-			trigger: 'closure'
+			schema: $this->schema(['enabled' => true, 'classification' => '11.1.2'])
 		);
 
 		$this->assertSame(ArchivalNominationService::STATUS_UNNOMINATABLE, $nomination['status']);
@@ -224,8 +220,7 @@ class ArchivalNominationServiceTest extends TestCase {
 	public function testASchemaThatNamesNoCategoryAtAllSaysThat(): void {
 		$nomination = $this->service->nominate(
 			object: $this->object(),
-			schema: $this->schema(['enabled' => true]),
-			trigger: 'closure'
+			schema: $this->schema(['enabled' => true])
 		);
 
 		$this->assertStringContainsString(
@@ -242,8 +237,7 @@ class ArchivalNominationServiceTest extends TestCase {
 
 		$nomination = $this->service->nominate(
 			object: $this->object(),
-			schema: $this->schema(['enabled' => true, 'classification' => '11.1.2']),
-			trigger: 'closure'
+			schema: $this->schema(['enabled' => true, 'classification' => '11.1.2'])
 		);
 
 		$this->assertSame(ArchivalNominationService::STATUS_UNNOMINATABLE, $nomination['status']);
@@ -263,8 +257,7 @@ class ArchivalNominationServiceTest extends TestCase {
 		$object = $this->object();
 		$nomination = $this->service->nominate(
 			object: $object,
-			schema: $this->schema(['enabled' => true, 'classification' => '1.1']),
-			trigger: 'closure'
+			schema: $this->schema(['enabled' => true, 'classification' => '1.1'])
 		);
 
 		$this->assertSame(ArchivalNominationService::STATUS_NOMINATED, $nomination['status']);
@@ -278,8 +271,7 @@ class ArchivalNominationServiceTest extends TestCase {
 			ArchivalNominationService::STATUS_NOT_APPLICABLE,
 			$this->service->nominate(
 				object: $object,
-				schema: $this->schema(['enabled' => false]),
-				trigger: 'closure'
+				schema: $this->schema(['enabled' => false])
 			)['status']
 		);
 
@@ -296,11 +288,10 @@ class ArchivalNominationServiceTest extends TestCase {
 		$schema = $this->schema(['enabled' => true, 'classification' => '11.1.2']);
 		$object = $this->object();
 
-		$this->service->nominate(object: $object, schema: $schema, trigger: 'closure');
-		$this->service->nominate(
+		$this->service->nominate(object: $object, schema: $schema);
+		$this->service->recompute(
 			object: $object,
 			schema: $schema,
-			trigger: 'recompute',
 			actor: 'els',
 			reason: 'Selectielijst 2026 replaced the 2020 list'
 		);
@@ -435,8 +426,7 @@ class ArchivalNominationServiceTest extends TestCase {
 						],
 					],
 				]
-			),
-			trigger: 'closure'
+			)
 		);
 
 		$this->assertSame(ArchivalNominationService::STATUS_NOMINATED, $nomination['status']);
@@ -480,8 +470,7 @@ class ArchivalNominationServiceTest extends TestCase {
 						],
 					],
 				]
-			),
-			trigger: 'closure'
+			)
 		);
 
 		$this->assertSame('P20Y', $captured);
@@ -502,8 +491,7 @@ class ArchivalNominationServiceTest extends TestCase {
 			schema: $this->schema(
 				['enabled' => true, 'defaultNominatie' => 'blijvend_bewaren', 'defaultBewaartermijn' => 'P5Y'],
 				['x-openregister-archival' => ['retention' => ['default' => 'P10Y']]]
-			),
-			trigger: 'closure'
+			)
 		);
 
 		$this->assertSame(ArchivalNominationService::RULE_SCHEMA_DEFAULT, $nomination['rule']);
@@ -532,8 +520,7 @@ class ArchivalNominationServiceTest extends TestCase {
 						'action' => 'blijvend_bewaren',
 					],
 				]
-			),
-			trigger: 'closure'
+			)
 		);
 
 		$this->assertSame(Appraisal::RETAIN_PERMANENTLY, $object->getRetention()['archiefnominatie']);
@@ -548,8 +535,7 @@ class ArchivalNominationServiceTest extends TestCase {
 	public function testNotApplicableNamesBothPlacesItLooked(): void {
 		$nomination = $this->service->nominate(
 			object: $this->object(),
-			schema: $this->schema([], []),
-			trigger: 'closure'
+			schema: $this->schema([], [])
 		);
 
 		$this->assertSame(ArchivalNominationService::STATUS_NOT_APPLICABLE, $nomination['status']);
@@ -568,8 +554,7 @@ class ArchivalNominationServiceTest extends TestCase {
 
 		$nomination = $this->service->nominate(
 			object: $this->object(),
-			schema: $this->schema(['enabled' => true, 'classification' => '11.1.2']),
-			trigger: 'closure'
+			schema: $this->schema(['enabled' => true, 'classification' => '11.1.2'])
 		);
 
 		$this->assertStringContainsString('`archive` block', $nomination['unnominatableReason']);
@@ -652,8 +637,7 @@ class ArchivalNominationServiceTest extends TestCase {
 		$object->setObject(['selectielijstCategorie' => '2.3']);
 		$nomination = $this->service->nominate(
 			object: $object,
-			schema: $this->schema(['enabled' => true, 'classification' => '1.1', 'classificationProperty' => 'selectielijstCategorie']),
-			trigger: 'closure'
+			schema: $this->schema(['enabled' => true, 'classification' => '1.1', 'classificationProperty' => 'selectielijstCategorie'])
 		);
 
 		$this->assertSame(['2.3'], $asked);

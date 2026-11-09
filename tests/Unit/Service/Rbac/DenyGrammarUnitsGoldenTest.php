@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
+use OCA\OpenRegister\Service\Rbac\TokenGrantTerms;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use PHPUnit\Framework\TestCase;
 
@@ -92,7 +93,7 @@ final class DenyGrammarUnitsGoldenTest extends TestCase {
 				TokenGrantNarrower::MARKER => ['verbs' => ['update']],
 				7 => ['x'],
 			],
-			grant: new TokenGrant(verbs: ['read'], expiresAt: new DateTimeImmutable('2026-06-01T00:00:00+00:00'), tokenId: 't1'),
+			grant: new TokenGrant(verbs: ['read'], terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-06-01T00:00:00+00:00')), tokenId: 't1'),
 			schemaSlug: 'zaak',
 			registerSlug: 'r',
 			now: new DateTimeImmutable('2026-01-01T00:00:00+00:00')

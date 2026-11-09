@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
+use OCA\OpenRegister\Service\Archival\SelectielijstStores;
 use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
 use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -94,9 +95,11 @@ class SelectionListSeederTest extends TestCase {
 		);
 
 		$this->resolver = new SelectielijstResolver(
-			$objectMapper,
-			$schemaMapper,
-			$registerMapper,
+			new SelectielijstStores(
+				$objectMapper,
+				$schemaMapper,
+				$registerMapper
+			),
 			$settings,
 			$this->createMock(LoggerInterface::class)
 		);

@@ -223,7 +223,7 @@ class PdfTextReplacerTest extends TestCase {
 		$output = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
 			substitutions: ['Jan Jansen' => '[PERSON: 1]']
-		);
+		)->bytes;
 
 		// Output MUST be a valid PDF (starts with %PDF-, ends with %%EOF).
 		$this->assertStringStartsWith(prefix: '%PDF-', string: $output);
@@ -244,7 +244,7 @@ class PdfTextReplacerTest extends TestCase {
 	 */
 	public function testReplaceInPdfEmptySubstitutionsIsNoOp(): void {
 		$pdf = self::buildFixture(bodyText: 'Aanvraag van Jan Jansen voor het loket.');
-		$output = $this->replacer->replaceInPdf(pdfBytes: $pdf, substitutions: []);
+		$output = $this->replacer->replaceInPdf(pdfBytes: $pdf, substitutions: [])->bytes;
 
 		$this->assertSame(expected: $pdf, actual: $output);
 	}//end testReplaceInPdfEmptySubstitutionsIsNoOp()
@@ -435,13 +435,11 @@ class PdfTextReplacerTest extends TestCase {
 	public function testTaggedPreservationAttested(): void {
 		$pdf = self::buildTaggedFixture(bodyText: 'Aanvraag met tags.', structElemCount: 4);
 
-		$structureResult = null;
-		$this->replacer->replaceInPdf(
+		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
 			substitutions: ['NietAanwezigeNaam' => '[PERSON: 1]'],
-			preserveStructure: true,
-			structureResult: $structureResult
-		);
+			preserveStructure: true
+		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
 		self::assertTrue($structureResult->requested);
@@ -461,13 +459,11 @@ class PdfTextReplacerTest extends TestCase {
 	public function testTaggedLossIsReportedNotSilent(): void {
 		$pdf = self::buildTaggedFixture(bodyText: 'Aanvraag van Jan Jansen.', structElemCount: 2);
 
-		$structureResult = null;
-		$this->replacer->replaceInPdf(
+		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
 			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-			preserveStructure: true,
-			structureResult: $structureResult
-		);
+			preserveStructure: true
+		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
 		self::assertTrue($structureResult->requested);
@@ -507,13 +503,11 @@ class PdfTextReplacerTest extends TestCase {
 
 		$pdf = self::buildTaggedFixture(bodyText: 'Aanvraag met tags.', structElemCount: 3);
 
-		$structureResult = null;
-		$replacer->replaceInPdf(
+		$structureResult = $replacer->replaceInPdf(
 			pdfBytes: $pdf,
 			substitutions: ['Onbekend' => '[PERSON: 1]'],
-			preserveStructure: true,
-			structureResult: $structureResult
-		);
+			preserveStructure: true
+		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
 		self::assertFalse($structureResult->preserved);
@@ -529,12 +523,10 @@ class PdfTextReplacerTest extends TestCase {
 	public function testAutoPreservesTaggedByDefault(): void {
 		$pdf = self::buildTaggedFixture(bodyText: 'Aanvraag met tags.', structElemCount: 1);
 
-		$structureResult = null;
-		$this->replacer->replaceInPdf(
+		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Onbekend' => '[PERSON: 1]'],
-			structureResult: $structureResult
-		);
+			substitutions: ['Onbekend' => '[PERSON: 1]']
+		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
 		self::assertTrue($structureResult->requested);
@@ -549,13 +541,11 @@ class PdfTextReplacerTest extends TestCase {
 	public function testExplicitFalseSkipsButMeasures(): void {
 		$pdf = self::buildTaggedFixture(bodyText: 'Aanvraag van Jan Jansen.', structElemCount: 3);
 
-		$structureResult = null;
-		$this->replacer->replaceInPdf(
+		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
 			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-			preserveStructure: false,
-			structureResult: $structureResult
-		);
+			preserveStructure: false
+		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
 		self::assertFalse($structureResult->requested);
@@ -574,12 +564,10 @@ class PdfTextReplacerTest extends TestCase {
 	public function testUntaggedReportsNotApplicable(): void {
 		$pdf = self::buildFixture(bodyText: 'Aanvraag van Jan Jansen voor het loket.');
 
-		$structureResult = null;
-		$this->replacer->replaceInPdf(
+		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-			structureResult: $structureResult
-		);
+			substitutions: ['Jan Jansen' => '[PERSON: 1]']
+		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
 		self::assertSame(0, $structureResult->tagCountBefore);
@@ -601,19 +589,19 @@ class PdfTextReplacerTest extends TestCase {
 		$outputWithoutOption = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
 			substitutions: ['Jan Jansen' => '[PERSON: 1]']
-		);
+		)->bytes;
 
 		$outputExplicitFalse = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
 			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
 			preserveStructure: false
-		);
+		)->bytes;
 
 		$outputExplicitTrue = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
 			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
 			preserveStructure: true
-		);
+		)->bytes;
 
 		self::assertSame($outputWithoutOption, $outputExplicitFalse);
 		self::assertSame($outputWithoutOption, $outputExplicitTrue);

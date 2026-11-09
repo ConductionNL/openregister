@@ -209,7 +209,7 @@ class PdfOdtFallbackOrchestrator {
 				pdfBytes: $pdf,
 				substitutions: $substitutions,
 				strict: true
-			);
+			)->bytes;
 		} catch (PdfAnonymisationException $e) {
 			throw $this->wrapAfterFallback(cause: $cause, stage: 'rerun_replace', previous: $e);
 		}

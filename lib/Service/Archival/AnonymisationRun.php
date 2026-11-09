@@ -185,11 +185,8 @@ class AnonymisationRun {
 	/**
 	 * Build the plan for one record, or refuse it.
 	 *
-	 * @param string               $objectUuid      The record.
-	 * @param array<string, mixed> $payload         Its properties.
-	 * @param array<string, mixed> $annotation      Its schema's archival annotation.
-	 * @param string               $salt            The instance salt.
-	 * @param string               $profileName     What to call the profile in the report.
+	 * @param AnonymisationSubject $subject The record: its uuid, payload, archival annotation and profile name.
+	 * @param string               $salt    The instance salt.
 	 *
 	 * @return AnonymisationPlan The plan.
 	 *
@@ -197,15 +194,18 @@ class AnonymisationRun {
 	 *
 	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
-	public function plan(string $objectUuid, array $payload, array $annotation, string $salt, string $profileName = ''): AnonymisationPlan {
+	public function plan(AnonymisationSubject $subject, string $salt): AnonymisationPlan {
+		[$objectUuid, $payload, $annotation, $profileName] = [$subject->objectUuid, $subject->payload, $subject->annotation, $subject->profileName];
 		$this->planner->assertSound(annotation: $annotation, declaredProperties: array_keys($payload));
 
 		$after = $this->service->apply(payload: $payload, profile: $this->planner->profileOf(annotation: $annotation), salt: $salt);
 		$report = $this->service->report(before: $payload, after: $after, profileName: $profileName);
 
+		$change = new AnonymisedPayload(
+			before: $payload, after: $after, changedProperties: array_keys($report['changed']), keptProperties: $report['kept']
+		);
 		$plan = new AnonymisationPlan(
-			objectUuid: $objectUuid, profileName: $profileName, before: $payload, after: $after,
-			changedProperties: array_keys($report['changed']), keptProperties: $report['kept'], saltFingerprint: $this->fingerprint(salt: $salt)
+			objectUuid: $objectUuid, profileName: $profileName, payload: $change, saltFingerprint: $this->fingerprint(salt: $salt)
 		);
 
 		if ($plan->touchesAnything() === false) {

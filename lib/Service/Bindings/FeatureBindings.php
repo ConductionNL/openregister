@@ -20,6 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Bindings;
 
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactory;
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactoryInterface;
+
 /**
  * Contract => service map for features.
  *
@@ -37,5 +40,7 @@ final class FeatureBindings {
 	 *
 	 * @var array<class-string, class-string>
 	 */
-	public const BINDINGS = [];
+	public const BINDINGS = [
+		CompanySearchFactoryInterface::class => CompanySearchFactory::class,
+	];
 }//end class
