@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
@@ -97,7 +98,7 @@ class ArchivalRetentionTaskEdgeBehaviourTest extends TestCase {
 
 		$task = new ArchivalRetentionTask(
 			$this->createMock(ITimeFactory::class),
-			new ArchivalRetentionSources($this->db, $this->registers, $this->schemas, $this->magic),
+			new ArchivalRetentionSources($this->db, new SchemaCatalog($this->registers, $this->schemas, $this->magic)),
 			new ArchivalRetentionPlatform($this->objects, $this->holds, $this->container, $logger)
 		);
 		$run = new ReflectionMethod($task, 'run');

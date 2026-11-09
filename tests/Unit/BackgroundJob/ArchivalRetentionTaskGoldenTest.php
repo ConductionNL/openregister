@@ -13,6 +13,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
@@ -106,7 +107,7 @@ class ArchivalRetentionTaskGoldenTest extends TestCase
     {
         $task = new ArchivalRetentionTask(
             $this->createMock(ITimeFactory::class),
-            new ArchivalRetentionSources($this->db($case), $this->registers($case), $this->schemas($case), $this->magic($case)),
+            new ArchivalRetentionSources($this->db($case), new SchemaCatalog($this->registers($case), $this->schemas($case), $this->magic($case))),
             new ArchivalRetentionPlatform($this->objects(), $this->holds(), $this->container($case), $this->logger())
         );
         $run = new ReflectionMethod($task, 'run');
