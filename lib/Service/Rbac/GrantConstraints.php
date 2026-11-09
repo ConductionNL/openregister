@@ -128,51 +128,53 @@ class GrantConstraints {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function apply(?array $authorization, array $area = [], ?DateTimeInterface $now = null): ?array {
+		return $this->applyIn(authorization: $authorization, run: new ConstraintRun(area: $area, now: ($now ?? new DateTimeImmutable())));
+	}//end apply()
+
+	/**
+	 * The block with the entries that do not reach the run's area and moment removed.
+	 *
+	 * @param array|null    $authorization The cascaded block.
+	 * @param ConstraintRun $run           Where and when the question is asked.
+	 *
+	 * @return array|null The block, with the entries that do not reach here removed.
+	 */
+	private function applyIn(?array $authorization, ConstraintRun $run): ?array {
 		if ($this->declaresAnyConstraint(authorization: $authorization) === false) {
 			return $authorization;
 		}
 
-		$now = ($now ?? new DateTimeImmutable());
-
 		$filtered = [];
 		foreach ($authorization as $key => $value) {
-			$filtered[$key] = $this->applyToKey(key: $key, value: $value, area: $area, now: $now);
+			// A key that is a setting rather than a list of entries comes back
+			// untouched, and so does a value that is not a list at all: this
+			// reader narrows rules, and anything it does not recognise is not a rule.
+			$filtered[$key] = $value;
+			if ($this->isRuleKey(key: $key, value: $value) === false) {
+				continue;
+			}
+
+			$filtered[$key] = match ($key) {
+				DenyResolverInterface::DENY_KEY => $this->applyIn(authorization: $value, run: $run),
+				self::ROLES_KEY => $this->applyToRoleAssignments(assignments: $value, run: $run),
+				default => $this->reachingEntries(entries: $value, run: $run),
+			};
 		}
 
 		return $filtered;
-	}//end apply()
+	}//end applyIn()
 
 	/**
-	 * One key of a block, with the entries that cannot answer here removed.
+	 * The entries of one rule list that still reach the run's area and moment.
 	 *
-	 * A key that is a setting rather than a list of entries comes back
-	 * untouched, and so does a value that is not a list at all: this reader
-	 * narrows rules, and anything it does not recognise is not a rule.
+	 * @param array<int|string, mixed> $entries The entries as written.
+	 * @param ConstraintRun            $run     Where and when the question is asked.
 	 *
-	 * @param mixed                 $key   The block key.
-	 * @param mixed                 $value What is written under it.
-	 * @param array<string, mixed>  $area  Where the question is asked.
-	 * @param DateTimeInterface     $now   The moment.
-	 *
-	 * @return mixed The value, filtered where it is a rule list.
+	 * @return array<int, mixed> The entries that reach, reindexed.
 	 */
-	private function applyToKey(mixed $key, mixed $value, array $area, DateTimeInterface $now): mixed {
-		if ($this->isRuleKey(key: $key, value: $value) === false) {
-			return $value;
-		}
-
-		if ($key === DenyResolverInterface::DENY_KEY) {
-			return $this->apply(authorization: $value, area: $area, now: $now);
-		}
-
-		if ($key === self::ROLES_KEY) {
-			return $this->applyToRoleAssignments(assignments: $value, area: $area, now: $now);
-		}
-
-		$reaches = fn (mixed $entry): bool => $this->reaches(entry: $entry, area: $area, now: $now);
-
-		return array_values(array_filter($value, $reaches));
-	}//end applyToKey()
+	private function reachingEntries(array $entries, ConstraintRun $run): array {
+		return array_values(array_filter($entries, fn (mixed $entry): bool => $this->reachesIn(entry: $entry, run: $run)));
+	}//end reachingEntries()
 
 	/**
 	 * Whether one block key holds rules the constraints apply to.
@@ -202,16 +204,28 @@ class GrantConstraints {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function reaches(mixed $entry, array $area, DateTimeInterface $now): bool {
+		return $this->reachesIn(entry: $entry, run: new ConstraintRun(area: $area, now: $now));
+	}//end reaches()
+
+	/**
+	 * Whether one entry still reaches the run's area at the run's moment.
+	 *
+	 * @param mixed         $entry The entry as written.
+	 * @param ConstraintRun $run   Where and when the question is asked.
+	 *
+	 * @return bool True when the entry answers here and now.
+	 */
+	private function reachesIn(mixed $entry, ConstraintRun $run): bool {
 		if (is_array($entry) === false) {
 			return true;
 		}
 
-		if ($this->stillRunning(entry: $entry, now: $now) === false) {
+		if ($this->stillRunning(entry: $entry, now: $run->now) === false) {
 			return false;
 		}
 
-		return $this->covers(entry: $entry, area: $area);
-	}//end reaches()
+		return $this->covers(entry: $entry, area: $run->area);
+	}//end reachesIn()
 
 	/**
 	 * Whether an entry's end is still in the future.
@@ -346,13 +360,12 @@ class GrantConstraints {
 	 * on the holder rather than on the verb. A role granted to a group until
 	 * Friday is the same promise as a verb granted until Friday.
 	 *
-	 * @param array                $assignments The block's `roles` map.
-	 * @param array<string, mixed> $area        Where the question is asked.
-	 * @param DateTimeInterface    $now         The moment.
+	 * @param array         $assignments The block's `roles` map.
+	 * @param ConstraintRun $run         Where and when the question is asked.
 	 *
 	 * @return array The assignments.
 	 */
-	private function applyToRoleAssignments(array $assignments, array $area, DateTimeInterface $now): array {
+	private function applyToRoleAssignments(array $assignments, ConstraintRun $run): array {
 		$filtered = [];
 		foreach ($assignments as $roleName => $holders) {
 			if (is_array($holders) === false) {
@@ -360,12 +373,7 @@ class GrantConstraints {
 				continue;
 			}
 
-			$kept = array_values(
-				array_filter(
-					$holders,
-					fn (mixed $holder): bool => $this->reaches(entry: $holder, area: $area, now: $now)
-				)
-			);
+			$kept = $this->reachingEntries(entries: $holders, run: $run);
 
 			// A role nobody holds any more is dropped rather than kept empty:
 			// an empty holder list reads as "granted to nobody" further down,
