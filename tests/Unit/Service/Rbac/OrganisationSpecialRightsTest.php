@@ -215,6 +215,37 @@ class OrganisationSpecialRightsTest extends TestCase {
 		$this->assertTrue($this->rights->holdsOn(self::RIGHT, ['svc'], $this->record()));
 	}//end testGiveStoresOneEntryPerGroupAndKeepsTheOthers()
 
+	public function testGiveWithoutNarrowingStoresTheGroupItself(): void {
+		$organisation = $this->organisationWith([['group' => 'svc', 'register' => 'dossiq'], 'other']);
+		$this->organisations->expects($this->once())->method('update')->with($organisation)->willReturnArgument(0);
+
+		$this->assertTrue($this->rights->give('org-1', self::RIGHT, 'svc'));
+		$this->assertSame(['other', 'svc'], $organisation->getAuthorization()[self::RIGHT]);
+	}//end testGiveWithoutNarrowingStoresTheGroupItself()
+
+	public function testGiveNarrowedToARegisterOnlyStoresNoSchemas(): void {
+		$organisation = $this->organisationWith([]);
+		$this->organisations->expects($this->once())->method('update')->with($organisation)->willReturnArgument(0);
+
+		$this->assertTrue($this->rights->give('org-1', self::RIGHT, 'svc', 'dossiq'));
+		$this->assertSame([['group' => 'svc', 'register' => 'dossiq']], $organisation->getAuthorization()[self::RIGHT]);
+	}//end testGiveNarrowedToARegisterOnlyStoresNoSchemas()
+
+	public function testGiveNarrowedToSchemasOnlyStoresTheListWithoutItsKeys(): void {
+		$organisation = $this->organisationWith(['svc']);
+		$this->organisations->expects($this->once())->method('update')->with($organisation)->willReturnArgument(0);
+
+		$this->assertTrue($this->rights->give('org-1', self::RIGHT, 'svc', null, ['a' => 'reviewBatch']));
+		$this->assertSame([['group' => 'svc', 'schemas' => ['reviewBatch']]], $organisation->getAuthorization()[self::RIGHT]);
+	}//end testGiveNarrowedToSchemasOnlyStoresTheListWithoutItsKeys()
+
+	public function testGivingAPlainGroupAgainWritesNothing(): void {
+		$this->organisationWith(['svc']);
+		$this->organisations->expects($this->never())->method('update');
+
+		$this->assertFalse($this->rights->give('org-1', self::RIGHT, 'svc'));
+	}//end testGivingAPlainGroupAgainWritesNothing()
+
 	public function testGivingWhatIsAlreadyHeldWritesNothing(): void {
 		$this->organisationWith([['group' => 'svc', 'register' => 'dossiq', 'schemas' => ['reviewBatch']]]);
 		$this->organisations->expects($this->never())->method('update');
