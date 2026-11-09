@@ -655,7 +655,7 @@ class SearchQueryHandler {
 		// STEP 2: Remove system parameters that shouldn't be used as filters.
 		$params = $fixedParams;
 		unset($params['_route']);
-		foreach (FilterParams::OBJECT_SYSTEM_PARAMS as $systemParam) {
+		foreach (array_merge(FilterParams::OBJECT_SYSTEM_PARAMS, FilterParams::ACCESS_POSTURE_PARAMS) as $systemParam) {
 			unset($params[$systemParam]);
 		}
 

@@ -644,6 +644,8 @@ return array (
           0 => 
           array (
             'name' => 'x',
+            '_rbac' => true,
+            '_multitenancy' => false,
           ),
           1 => 100,
         ),
@@ -2933,6 +2935,8 @@ return array (
                 'type' => 'terms',
               ),
             ),
+            '_rbac' => true,
+            '_multitenancy' => false,
           ),
         ),
       ),
@@ -3033,6 +3037,8 @@ return array (
           0 => 
           array (
             '_facets' => 'x',
+            '_rbac' => true,
+            '_multitenancy' => false,
           ),
         ),
       ),
@@ -3129,6 +3135,8 @@ return array (
         array (
           0 => 
           array (
+            '_rbac' => true,
+            '_multitenancy' => false,
           ),
           1 => 100,
         ),
@@ -3228,6 +3236,8 @@ return array (
         array (
           0 => 
           array (
+            '_rbac' => true,
+            '_multitenancy' => false,
           ),
           1 => 100,
         ),

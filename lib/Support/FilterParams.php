@@ -88,6 +88,16 @@ final class FilterParams {
 	public const OBJECT_SYSTEM_PARAMS = ['id', 'rbac', 'multi', 'deleted'];
 
 	/**
+	 * The access posture of a search. Only PHP callers set it, as arguments;
+	 * `SearchQueryHandler::buildSearchQuery()` drops it from request parameters
+	 * (a query string or a JSON body, which Nextcloud also decodes on a GET), so
+	 * a caller can never switch row RBAC or the organisation filter off.
+	 *
+	 * @var string[]
+	 */
+	public const ACCESS_POSTURE_PARAMS = ['_rbac', '_multitenancy', '_multitenancy_explicit'];
+
+	/**
 	 * Route placeholders every aggregation route carries. `IRequest::getParams()`
 	 * merges URL parameters in with the query string, so without this a schema
 	 * slug would be read as a filter on a property called `schema`.
