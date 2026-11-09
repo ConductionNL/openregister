@@ -36,7 +36,7 @@ use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
-use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Kernel\Contracts\NcOfficeConverterInterface;
 use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
 use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisionerInterface;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;

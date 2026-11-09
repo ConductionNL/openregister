@@ -35,7 +35,7 @@ final class LlmSettingsControllerFactory {
 		\OCP\IDBConnection $db,
 		\Psr\Container\ContainerInterface $container,
 		\OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface $settingsService,
-		\OCA\OpenRegister\Search\Service\VectorizationServiceInterface $vectorizationService,
+		\OCA\OpenRegister\Kernel\Contracts\VectorizationServiceInterface $vectorizationService,
 		\Psr\Log\LoggerInterface $logger,
 		\OCA\OpenRegister\Service\Connection\ConnectionReporter $connectionReporter,
 	): array {

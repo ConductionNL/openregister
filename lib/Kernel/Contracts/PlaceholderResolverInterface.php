@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Search\Service\Search;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Resolves placeholder strings (`$now`, `$startOfMonth-1`, `$currentUser`, ...) to concrete values.

@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Quality;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Validates `x-openregister-unique-hint` and reads the properties a schema nominates through it.

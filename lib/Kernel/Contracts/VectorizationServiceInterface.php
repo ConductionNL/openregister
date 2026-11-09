@@ -20,9 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Search\Service;
-
-use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Every public method of VectorizationService. Callers depend on this interface, not on the class.

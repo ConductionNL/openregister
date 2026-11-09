@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Search\Service\Vectorization\Handlers;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * A chunk's source, place and text, as ChunkVectorFactoryInterface::forChunk() reads them.

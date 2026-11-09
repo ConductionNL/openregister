@@ -57,11 +57,11 @@ use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
-use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidatorInterface;
+use OCA\OpenRegister\Kernel\Contracts\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\PlaceholderResolverInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
-use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\VectorizationServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

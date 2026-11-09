@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Files\BackgroundJob\ChunkAsVectorSource;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ChunkVectorSourceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

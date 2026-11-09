@@ -31,7 +31,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Files\Service\File\Pdf\Fallback;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Bidirectional PDF ↔ ODT conversion contract for the Path B fallback.

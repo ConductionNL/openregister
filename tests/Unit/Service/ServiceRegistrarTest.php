@@ -133,7 +133,7 @@ class ServiceRegistrarTest extends TestCase {
 
 		$this->assertContains(
 			needle: [
-				'alias'  => 'OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface',
+				'alias'  => 'OCA\OpenRegister\Kernel\Contracts\NcOfficeConverterInterface',
 				'target' => 'OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter',
 			],
 			haystack: $context->aliases

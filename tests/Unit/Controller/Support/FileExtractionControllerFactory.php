@@ -36,7 +36,7 @@ final class FileExtractionControllerFactory {
 		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Files\Service\TextExtractionService $textExtractor,
-		\OCA\OpenRegister\Search\Service\VectorizationServiceInterface $vectorizationService,
+		\OCA\OpenRegister\Kernel\Contracts\VectorizationServiceInterface $vectorizationService,
 		\OCA\OpenRegister\Files\Db\ChunkMapper $chunkMapper,
 		\OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper,
 		\OCA\OpenRegister\Files\Service\RiskLevelService $riskLevelService,

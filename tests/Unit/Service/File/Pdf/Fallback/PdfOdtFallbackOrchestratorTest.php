@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace Unit\Service\File\Pdf\Fallback;
 
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
-use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Kernel\Contracts\NcOfficeConverterInterface;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\PdfOdtFallbackOrchestrator;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfRedaction;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;

@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Vectorization\Handlers;
 
+use OCA\OpenRegister\Kernel\Contracts\ChunkVectorSourceInterface;
+
 /**
  * Builds the vector row of one embedded text chunk, for VectorStorageHandlerInterface::storeVector().
  *

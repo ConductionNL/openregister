@@ -1815,6 +1815,36 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Vectorization\\Strategies\\VectorizationStrategyInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\VectorizationStrategyInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Search\\Service\\VectorizationServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\VectorizationServiceInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Search\\Service\\Search\\PlaceholderResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PlaceholderResolverInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Files\\Service\\File\\Pdf\\Fallback\\NcOfficeConverterInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\NcOfficeConverterInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Quality\\UniqueHintAnnotationValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\UniqueHintAnnotationValidatorInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Search\\Service\\Vectorization\\Handlers\\ChunkVectorSourceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkVectorSourceInterface",
+			"eager": false,
+			"service": true
 		}
 	}
 }

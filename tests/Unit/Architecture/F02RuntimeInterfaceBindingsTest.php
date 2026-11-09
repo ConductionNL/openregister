@@ -30,7 +30,7 @@ use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\PlaceholderResolverInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
