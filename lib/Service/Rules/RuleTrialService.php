@@ -27,9 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Rules\Support\RuleTrialEngine;
@@ -77,18 +75,14 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RuleInventoryService $inventory Finds the rule as declared.
-	 * @param RuleTrialEngine $engine The evaluator, the tracer and the dialect a rule is tried through.
-	 * @param RegisterMapperInterface $registerMapper Register lookup for a named object.
-	 * @param MagicTableRowReaderInterface $objectMapper Object lookup in the register and schema table.
+	 * @param RuleTargets     $targets The declared rules and the register and table a named object is read from.
+	 * @param RuleTrialEngine $engine  The evaluator, the tracer and the dialect a rule is tried through.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RuleInventoryService $inventory,
+		private readonly RuleTargets $targets,
 		private readonly RuleTrialEngine $engine,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly MagicTableRowReaderInterface $objectMapper,
 	) {
 	}//end __construct()
 
@@ -159,9 +153,9 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	 */
 	private function storedObject(Schema $schema, string $register, string $objectId): ?ObjectEntity {
 		try {
-			return $this->objectMapper->findInRegisterSchemaTable(
+			return $this->targets->catalog->tables()->findInRegisterSchemaTable(
 				identifier: $objectId,
-				register: $this->registerMapper->find($register),
+				register: $this->targets->catalog->registers()->find($register),
 				schema: $schema
 			);
 		} catch (Throwable $e) {
@@ -181,7 +175,7 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function resolve(Schema $schema, string $ruleId, ?array $override): RuleDescriptor|array {
-		$declared = $this->inventory->find(schema: $schema, ruleId: $ruleId);
+		$declared = $this->targets->rules->find(schema: $schema, ruleId: $ruleId);
 		if ($override !== null && isset($override['expression']) === true) {
 			return $this->draft(schema: $schema, declared: $declared, expression: $override['expression']);
 		}

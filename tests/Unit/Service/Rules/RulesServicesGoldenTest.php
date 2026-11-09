@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummary;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
@@ -57,13 +58,13 @@ use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\NamedConditionEvaluator;
 use OCA\OpenRegister\Service\Rules\NamedConditionLibrary;
 use OCA\OpenRegister\Service\Rules\RuleAuditService;
-use OCA\OpenRegister\Service\Rules\RuleCeilingService;
 use OCA\OpenRegister\Service\Rules\RuleEnablementService;
 use OCA\OpenRegister\Service\Rules\FlowRuleDescriptors;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleReplayService;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Rules\RuleRunStores;
+use OCA\OpenRegister\Service\Rules\RuleTargets;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
@@ -179,6 +180,35 @@ class RulesServicesGoldenTest extends TestCase {
 		);
 	}//end inventory()
 
+	/**
+	 * The declared rules over the given mappers and object service; the rest are inert mocks.
+	 *
+	 * @param RegisterMapperInterface|null   $registers The register mapper.
+	 * @param SchemaMapperInterface|null     $schemas   The schema mapper.
+	 * @param MagicMapperInterface|null      $tables    The magic table mapper.
+	 * @param ObjectOperationsInterface|null $objects   The object service.
+	 *
+	 * @return RuleTargets
+	 */
+	private function targets(
+		?RegisterMapperInterface $registers = null,
+		?SchemaMapperInterface $schemas = null,
+		?MagicMapperInterface $tables = null,
+		?ObjectOperationsInterface $objects = null
+	): RuleTargets {
+		$catalog = new SchemaCatalog(
+			registers: ($registers ?? $this->createMock(RegisterMapperInterface::class)),
+			schemas: ($schemas ?? $this->createMock(SchemaMapperInterface::class)),
+			tables: ($tables ?? $this->createMock(MagicMapperInterface::class))
+		);
+
+		return new RuleTargets(
+			rules: $this->inventory(),
+			catalog: $catalog,
+			objects: ($objects ?? $this->createMock(ObjectOperationsInterface::class))
+		);
+	}//end targets()
+
 	public function testInventory(): void {
 		$inventory = $this->inventory();
 		$schema = $this->schema();
@@ -234,10 +264,8 @@ class RulesServicesGoldenTest extends TestCase {
 			ast: new CalculationEvaluator(placeholders: new PlaceholderResolver(userSession: $this->createMock(IUserSession::class)))
 		);
 		return new RuleTrialService(
-			inventory: $this->inventory(),
-			engine: new RuleTrialEngine(evaluator: $evaluator, tracer: new ConditionTracer(dialect: $dialect), dialect: $dialect),
-			registerMapper: $registers,
-			objectMapper: $objects
+			targets: $this->targets(registers: $registers, tables: $objects),
+			engine: new RuleTrialEngine(evaluator: $evaluator, tracer: new ConditionTracer(dialect: $dialect), dialect: $dialect)
 		);
 	}//end trialService()
 
@@ -297,8 +325,7 @@ class RulesServicesGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		return new RuleEnablementService(
-			inventory: $this->inventory(),
-			schemaMapper: $schemas,
+			targets: $this->targets(schemas: $schemas),
 			flows: $flows,
 			audit: new RuleAuditService(userSession: $session, logger: $this->createMock(LoggerInterface::class))
 		);
@@ -350,7 +377,7 @@ class RulesServicesGoldenTest extends TestCase {
 				return $count;
 			}
 		);
-		return new RuleReplayService(inventory: $this->inventory(), ceiling: new RuleCeilingService(), jobs: $jobs, objects: $objects);
+		return new RuleReplayService(targets: $this->targets(objects: $objects), jobs: $jobs);
 	}//end replay()
 
 	public function testReplay(): void {

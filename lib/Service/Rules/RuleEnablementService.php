@@ -27,7 +27,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rules;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use Throwable;
@@ -64,16 +63,14 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RuleInventoryService $inventory Finds the rule as declared.
-	 * @param SchemaMapperInterface $schemaMapper Saves the schema carrying the switch.
-	 * @param FlowService $flows Saves a flow's own enabled flag and reindexes it.
-	 * @param RuleAuditService $audit Records who switched what.
+	 * @param RuleTargets      $targets Finds the rule as declared and saves the schema carrying the switch.
+	 * @param FlowService      $flows   Saves a flow's own enabled flag and reindexes it.
+	 * @param RuleAuditService $audit   Records who switched what.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RuleInventoryService $inventory,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RuleTargets $targets,
 		private readonly FlowService $flows,
 		private readonly RuleAuditService $audit,
 	) {
@@ -91,7 +88,7 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function setEnabled(Schema $schema, string $ruleId, bool $enabled): array {
-		$rule = $this->inventory->find(schema: $schema, ruleId: $ruleId);
+		$rule = $this->targets->rules->find(schema: $schema, ruleId: $ruleId);
 		if ($rule === null) {
 			$message = sprintf('Schema "%s" declares no rule "%s".', (string)($schema->getSlug() ?? ''), $ruleId);
 			return ['ok' => false, 'error' => ['code' => self::CODE_UNKNOWN_RULE, 'message' => $message]];
@@ -104,7 +101,7 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 			return ['ok' => false, 'error' => ['code' => self::CODE_NOT_WRITTEN, 'message' => $e->getMessage()]];
 		}
 
-		$after = $this->inventory->find(schema: $updated, ruleId: $ruleId);
+		$after = $this->targets->rules->find(schema: $updated, ruleId: $ruleId);
 
 		return ['ok' => true, 'rule' => ($after?->jsonSerialize() ?? $rule->jsonSerialize()), 'audit' => $audit];
 	}//end setEnabled()
@@ -130,7 +127,7 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 			return $schema;
 		}
 
-		return $this->schemaMapper->updateFromArray(
+		return $this->targets->catalog->schemas()->updateFromArray(
 			id: (int)$schema->getId(),
 			object: $this->switched(schema: $schema, rule: $rule, enabled: $enabled)
 		);
