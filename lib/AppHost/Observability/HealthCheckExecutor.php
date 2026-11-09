@@ -27,14 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Observability;
 
-use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IHealthCheckProvider;
-use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
-use OCP\IAppConfig;
-use OCP\IDBConnection;
-use OCP\ITempManager;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -53,21 +47,13 @@ class HealthCheckExecutor {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db Database connection (database check).
-	 * @param ITempManager $tempManager Temp-file manager (filesystem check).
-	 * @param IAppManager $appManager App manager (appEnabled check).
-	 * @param IAppConfig $appConfig App config (appConfig check).
-	 * @param ContainerInterface $container DI container (lazy orAvailable + fallback provider lookup).
-	 * @param AppContainerLocator $locator Reaches the calling app's own container.
-	 * @param LoggerInterface $logger PSR logger (exception messages logged, never returned).
+	 * @param LocalHealthChecks   $localChecks Database, filesystem, appEnabled and appConfig checks.
+	 * @param AppProviderResolver $providers   Resolves the app's IHealthCheckProvider (and orAvailable).
+	 * @param LoggerInterface     $logger      PSR logger (exception messages logged, never returned).
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly ITempManager $tempManager,
-		private readonly IAppManager $appManager,
-		private readonly IAppConfig $appConfig,
-		private readonly ContainerInterface $container,
-		private readonly AppContainerLocator $locator,
+		private readonly LocalHealthChecks $localChecks,
+		private readonly AppProviderResolver $providers,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -126,20 +112,11 @@ class HealthCheckExecutor {
 	 */
 	private function runCheck(string $appId, HealthCheckDescriptor $descriptor): array {
 		try {
-			switch ($descriptor->type) {
-				case 'database':
-					return $this->checkDatabase();
-				case 'filesystem':
-					return $this->checkFilesystem();
-				case 'appEnabled':
-					return $this->checkAppEnabled(app: (string)$descriptor->app);
-				case 'appConfig':
-					return $this->checkAppConfig(appId: $appId, key: (string)$descriptor->key, assert: (string)$descriptor->assert);
-				case 'orAvailable':
-					return $this->checkOrAvailable();
-				default:
-					return [false, 'unknown check'];
+			if ($descriptor->type === 'orAvailable') {
+				return $this->checkOrAvailable();
 			}
+
+			return ($this->localChecks->run(appId: $appId, descriptor: $descriptor) ?? [false, 'unknown check']);
 		} catch (Throwable $e) {
 			// Log internals; return a generic message so health never leaks.
 			$logMessage = sprintf(
@@ -178,87 +155,12 @@ class HealthCheckExecutor {
 	}//end formatCheckResult()
 
 	/**
-	 * `SELECT 1` round-trip.
-	 *
-	 * @return array{0: bool, 1: string}
-	 */
-	private function checkDatabase(): array {
-		$result = $this->db->executeQuery('SELECT 1');
-		$result->fetch();
-		$result->closeCursor();
-		return [true, ''];
-	}//end checkDatabase()
-
-	/**
-	 * Write + unlink a temp file.
-	 *
-	 * @return array{0: bool, 1: string}
-	 */
-	private function checkFilesystem(): array {
-		$path = $this->tempManager->getTemporaryFile('-apphost-health');
-		if ($path === false || $path === '') {
-			return [false, 'temp file unavailable'];
-		}
-
-		$bytes = file_put_contents($path, 'ok');
-		$ok = ($bytes !== false);
-		// The ITempManager cleans its files on shutdown; unlink eagerly anyway.
-		@unlink($path);
-		if ($ok === true) {
-			return [true, ''];
-		}
-
-		return [false, 'temp write failed'];
-	}//end checkFilesystem()
-
-	/**
-	 * App-enabled check.
-	 *
-	 * @param string $app Target app id.
-	 *
-	 * @return array{0: bool, 1: string}
-	 */
-	private function checkAppEnabled(string $app): array {
-		$enabled = $this->appManager->isInstalled($app);
-		if ($enabled === true) {
-			return [true, ''];
-		}
-
-		return [false, 'app not enabled'];
-	}//end checkAppEnabled()
-
-	/**
-	 * App-config key assertion (present | nonEmpty).
-	 *
-	 * @param string $appId Calling app id.
-	 * @param string $key Config key.
-	 * @param string $assert present|nonEmpty.
-	 *
-	 * @return array{0: bool, 1: string}
-	 */
-	private function checkAppConfig(string $appId, string $key, string $assert): array {
-		$has = $this->appConfig->hasKey($appId, $key);
-		if ($has === false) {
-			return [false, 'config key missing'];
-		}
-
-		if ($assert === 'nonEmpty') {
-			$value = $this->appConfig->getValueString($appId, $key, '');
-			if ($value === '') {
-				return [false, 'config key empty'];
-			}
-		}
-
-		return [true, ''];
-	}//end checkAppConfig()
-
-	/**
 	 * OpenRegister availability — resolve ObjectService, non-null.
 	 *
 	 * @return array{0: bool, 1: string}
 	 */
 	private function checkOrAvailable(): array {
-		$service = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class);
+		$service = $this->providers->own()->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class);
 		if ($service !== null) {
 			return [true, ''];
 		}
@@ -274,20 +176,9 @@ class HealthCheckExecutor {
 	 * @return array<string, array<string, mixed>>
 	 */
 	private function resolveProviderResults(string $appId): array {
-		$alias = IHealthCheckProvider::class . '::' . $appId;
 		try {
-			// Resolve from the CALLING APP's own container — where the app
-			// registered its `IHealthCheckProvider::<appId>` alias — not from
-			// OpenRegister's container, which cannot see another app's DI
-			// registrations (same root cause as the MCP-provider fix, #390).
-			$container = $this->locator->findOr(appId: $appId, fallback: $this->container);
-
-			if ($container->has($alias) === false) {
-				return [];
-			}
-
-			$provider = $container->get($alias);
-			if (($provider instanceof IHealthCheckProvider) === false) {
+			$provider = $this->providers->resolve(appId: $appId, interface: IHealthCheckProvider::class);
+			if ($provider === null) {
 				return [];
 			}
 
