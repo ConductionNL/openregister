@@ -22,6 +22,7 @@ namespace Unit\Service\Notification;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\NotificationDispatchLog;
 use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
+use OCA\OpenRegister\Notifications\Db\HistoryEntry;
 use OCA\OpenRegister\Notifications\Db\NotificationHistory;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper;
@@ -496,8 +497,22 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 
 		$history = $this->createMock(NotificationHistoryMapper::class);
 		$history->method('record')->willReturnCallback(
-			function (...$args): NotificationHistory {
-				$this->record(what: 'history.record', args: $args);
+			function (HistoryEntry $entry): NotificationHistory {
+				$this->record(what: 'history.record', args: [
+					$entry->delivery->ruleId,
+					$entry->delivery->channel,
+					$entry->delivery->recipient,
+					$entry->delivery->status,
+					$entry->target->schemaId,
+					$entry->target->registerId,
+					$entry->target->objectUuid,
+					$entry->notice->subject,
+					$entry->notice->errorMessage,
+					$entry->notice->locale,
+					null,
+					null,
+					$entry->target->eventId,
+				]);
 				return new NotificationHistory();
 			}
 		);

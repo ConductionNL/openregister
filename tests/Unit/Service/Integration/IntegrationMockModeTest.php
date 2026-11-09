@@ -254,7 +254,7 @@ class IntegrationMockModeTest extends TestCase {
 		// @var MessageDispatchProvider $dispatch
 		$dispatch = $this->provider(MessageDispatchProvider::class, $fixture);
 		$request = $this->createMock(IRequest::class);
-		$controller = new MessageDispatchController('openregister', $request, $dispatch);
+		$controller = new MessageDispatchController($request, $dispatch);
 
 		// The send endpoint signature is exercised in MessageDispatchControllerTest;
 		// here we assert the leaf surfaces the canned body through dispatch().
