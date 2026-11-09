@@ -534,7 +534,11 @@ class ViewsController extends Controller {
 		$refusal      = $this->refuseForbiddenViewFields(write: $update, userId: $userId);
 		if ($refusal === null) {
 			// PUT writes `isPublic` false when omitted, so the recipients are judged on that body.
-			$this->viewers->assertMayNameRecipients(view: $update->view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId), data: ($update->data + ['isPublic' => false]));
+			$this->viewers->assertMayNameRecipients(
+				view: $update->view->jsonSerialize(),
+				reach: $this->viewers->reachOf(userId: $userId),
+				data: ($update->data + ['isPublic' => false])
+			);
 		}
 
 		return $refusal ?? $this->refuseInvalidWrite(write: $update) ?? $this->saveUpdate(update: $update);
