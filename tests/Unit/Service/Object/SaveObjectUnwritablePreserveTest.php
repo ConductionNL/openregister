@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
@@ -81,7 +82,7 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 
 		$this->organisations = $this->createMock(OrganisationService::class);
 		$this->rbac = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules(new ConditionMatcher(
-				$session,
+				new ConditionUserResolvers($session),
 				$this->createMock(ContainerInterface::class),
 				new OperatorEvaluator($this->createMock(LoggerInterface::class)),
 				$this->createMock(LoggerInterface::class)

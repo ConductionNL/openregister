@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Support\PermissionBit;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\Share\IShare;

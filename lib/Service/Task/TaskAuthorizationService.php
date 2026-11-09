@@ -590,6 +590,11 @@ class TaskAuthorizationService {
 		}
 
 		foreach (($attempt->task->getCandidateGroups() ?? []) as $groupId) {
+			// A typed `{type, id}` entry is the typed branch's to resolve, never a bare group name.
+			if (is_array($groupId) === true) {
+				continue;
+			}
+
 			if ($this->groups->isInGroup(uid: $attempt->uid, groupId: (string)$groupId) === true) {
 				return true;
 			}

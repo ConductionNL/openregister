@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -115,12 +116,10 @@ class ConditionMatcherResolutionGoldenTest extends TestCase {
 		}
 
 		return new ConditionMatcher(
-			userSession: $session,
+			users: new ConditionUserResolvers(userSession: $session, groupManager: $groups, memberOfResolver: $resolver),
 			container: $container,
 			operatorEvaluator: new OperatorEvaluator(logger: $logger),
-			logger: $logger,
-			groupManager: $groups,
-			memberOfResolver: $resolver,
+			logger: $logger
 		);
 	}//end matcher()
 

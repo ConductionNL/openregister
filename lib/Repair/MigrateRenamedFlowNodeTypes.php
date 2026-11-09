@@ -45,7 +45,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -111,7 +111,7 @@ class MigrateRenamedFlowNodeTypes implements IRepairStep {
 		}
 
 		try {
-			$mapper = $this->container->get(FlowMapper::class);
+			$mapper = $this->container->get(FlowMapperInterface::class);
 		} catch (Throwable $e) {
 			$this->logger->info(
 				'[MigrateRenamedFlowNodeTypes] flow storage unavailable, skipping: ' . $e->getMessage()
@@ -186,7 +186,7 @@ class MigrateRenamedFlowNodeTypes implements IRepairStep {
 	/**
 	 * Rewrite one flow's renamed node types, saving only if something changed.
 	 *
-	 * @param FlowMapper $mapper Persists the flow.
+	 * @param FlowMapperInterface $mapper Persists the flow.
 	 * @param mixed $flow The flow entity.
 	 * @param array $renamed Old type id => current type id.
 	 * @param IOutput $output Migration output.
@@ -196,7 +196,7 @@ class MigrateRenamedFlowNodeTypes implements IRepairStep {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function rewriteFlow(FlowMapper $mapper, mixed $flow, array $renamed, IOutput $output): int {
+	private function rewriteFlow(FlowMapperInterface $mapper, mixed $flow, array $renamed, IOutput $output): int {
 		$nodes = ($flow->getNodes() ?? []);
 		$changed = 0;
 

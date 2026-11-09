@@ -166,7 +166,7 @@ class FlowRunServiceOutcomesGoldenTest extends TestCase {
 		$seen = [];
 		$this->engine->method('run')->willReturnCallback(
 			static function (...$args) use (&$seen): array {
-				$seen = ['items' => $args[5], 'startAt' => $args[6], 'streams' => $args[7]];
+				$seen = ['items' => $args[1], 'startAt' => $args[2], 'streams' => $args[0]->streams];
 				return ['status' => FlowRun::STATUS_COMPLETED, 'log' => [], 'context' => [], 'items' => [], 'marking' => []];
 			}
 		);

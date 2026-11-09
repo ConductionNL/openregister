@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\FlowStop;
@@ -365,14 +366,9 @@ class FlowEngineWalkGoldenTest extends TestCase {
 		}
 
 		$result = $engine->run(
-			flow: $flow,
-			store: new FlowRunMarkingStore(run: $this->run),
-			subject: new stdClass(),
-			dispatcher: new GoldenWalkDispatcher(behaviour: ($case['behaviour'] ?? []), trace: $trace),
-			context: $context,
+			start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->run), subject: new stdClass(), dispatcher: new GoldenWalkDispatcher(behaviour: ($case['behaviour'] ?? []), trace: $trace)))->withContext(context: $context)->withStreams(streams: $streams),
 			items: [FlowItems::item(json: ['n' => ($case['seed'] ?? 1)])],
-			startAt: ($case['startAt'] ?? null),
-			streams: $streams
+			startAt: ($case['startAt'] ?? null)
 		);
 
 		$result['log'] = self::clip(lines: $result['log']);

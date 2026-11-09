@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItemPlacement;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -97,11 +98,7 @@ class FlowOrMergeTest extends TestCase {
 		$dispatcher = new AccumulatingDispatcher();
 		$engine = new FlowEngine(new FlowDefinitionBuilder(), $this->createMock(LoggerInterface::class));
 		$engine->run(
-			flow: $flow,
-			store: new MethodMarkingStore(false, 'marking'),
-			subject: new OrMergeSubject(),
-			dispatcher: $dispatcher,
-			context: [],
+			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new OrMergeSubject(), dispatcher: $dispatcher)),
 			items: [FlowItems::item(json: ['page' => 1])]
 		);
 
