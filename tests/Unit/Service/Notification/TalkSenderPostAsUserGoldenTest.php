@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use DateTime;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
 use OCP\Http\Client\IClientService;
@@ -143,7 +144,7 @@ class TalkSenderPostAsUserGoldenTest extends TestCase {
 	 */
 	private function assertRefused(TalkSender $sender, string $token, string $message): void {
 		try {
-			$sender->postAsUser($token, 'hi', 'alice');
+			$sender->postAsUser(new TalkMessage($token, 'hi'), 'alice');
 			$this->fail('expected TalkSendException');
 		} catch (TalkSendException $e) {
 			$this->assertSame($message, $e->getMessage());
@@ -156,7 +157,7 @@ class TalkSenderPostAsUserGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testParticipantPostIsDispatchedAsTheUser(): void {
-		$this->assertSame('dispatched', $this->sender(null, true, true)->postAsUser('tok', 'hi', 'alice'));
+		$this->assertSame('dispatched', $this->sender(null, true, true)->postAsUser(new TalkMessage('tok', 'hi'), 'alice'));
 		$this->assertSame(
 			[
 				['room', 'tok', 'alice'],
@@ -183,7 +184,7 @@ class TalkSenderPostAsUserGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testKillSwitchSkipsTalk(): void {
-		$this->assertSame('kill-switch', $this->sender(null, true, false)->postAsUser('tok', 'hi', 'alice'));
+		$this->assertSame('kill-switch', $this->sender(null, true, false)->postAsUser(new TalkMessage('tok', 'hi'), 'alice'));
 		$this->assertSame([], $this->calls);
 	}//end testKillSwitchSkipsTalk()
 
