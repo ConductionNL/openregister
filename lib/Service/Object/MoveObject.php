@@ -44,6 +44,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -80,6 +81,13 @@ class MoveObject implements MoveObjectInterface {
 	public const GENERATED = 'x-openregister-generated';
 
 	/**
+	 * The object store, from the recording aggregate.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objects;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectChangeRecording    $recording The object store, the audit trail and the log a move
@@ -91,6 +99,7 @@ class MoveObject implements MoveObjectInterface {
 		private readonly ObjectChangeRecording $recording,
 		private readonly ObjectValidatorInterface $validator,
 	) {
+		$this->objects = $recording->objects;
 	}//end __construct()
 
 	/**
@@ -346,7 +355,7 @@ class MoveObject implements MoveObjectInterface {
 			$object->setRegister((string)$move->target->register->getId());
 			$object->setSchema((string)$move->target->schema->getId());
 			// The old entity is given: the target table has no row to read it from.
-			$this->recording->objects->update(
+			$this->objects->update(
 				entity: $object,
 				register: $move->target->register,
 				schema: $move->target->schema,
@@ -380,7 +389,7 @@ class MoveObject implements MoveObjectInterface {
 	 */
 	private function removeFromSource(ObjectMove $move): bool {
 		try {
-			$this->recording->objects->deleteObjectEntity(
+			$this->objects->deleteObjectEntity(
 				entity: $move->object,
 				register: $move->source->register,
 				schema: $move->source->schema,
@@ -416,7 +425,7 @@ class MoveObject implements MoveObjectInterface {
 	 */
 	private function assignTargetSlug(ObjectEntity $object, Register $targetRegister, Schema $targetSchema): ?string {
 		$sourceSlug = $object->getSlug();
-		$object->setSlug($this->recording->objects->slugForMove(entity: $object, register: $targetRegister, schema: $targetSchema));
+		$object->setSlug($this->objects->slugForMove(entity: $object, register: $targetRegister, schema: $targetSchema));
 
 		return $sourceSlug;
 	}//end assignTargetSlug()
