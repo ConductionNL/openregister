@@ -1980,7 +1980,7 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
-@use './pillBadge' as *;
+@use './pillBadge.scss' as *;
 
 @include view-container-rules;
 
