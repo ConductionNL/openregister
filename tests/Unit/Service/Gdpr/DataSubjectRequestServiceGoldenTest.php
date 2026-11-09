@@ -46,6 +46,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
 
 /**
  * Golden test for DataSubjectRequestService.
@@ -606,12 +607,12 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$b = $this->object('broken');
 		$this->failingSaves = ['broken'];
 
-		$result = $service->pseudonymiseObject(object: $a, subjectId: 'jane@example.org', matched: [['value' => '0612'], ['value' => '']]);
+		$result = $service->pseudonymiseObject(match: new SubjectMatch(object: $a, matched: [['value' => '0612'], ['value' => '']]), subjectId: 'jane@example.org');
 		$this->assertSame($a->jsonSerialize(), $result);
 		$this->assertSame(['email' => '[erased]', 'tel' => '[erased]'], $this->payload(object: $a));
 		$this->assertSame('activity-uuid', $a->getProcessingActivityId());
 
-		$this->assertNull($service->pseudonymiseObject(object: $b, subjectId: 'jane@example.org', matched: []));
+		$this->assertNull($service->pseudonymiseObject(match: new SubjectMatch(object: $b, matched: []), subjectId: 'jane@example.org'));
 		$this->assertSame([['a', true, true], ['broken', true, true]], $this->saves);
 
 	}//end testPseudonymiseObject()

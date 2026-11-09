@@ -377,6 +377,17 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
 	public function preview(array $items, array $config, array $context): array {
+		return $this->previewOf(config: $config);
+	}//end preview()
+
+	/**
+	 * The preview of a write: one summary sentence and the configured field changes.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return array{summary: string, changes: array<int, array{field: string, value: mixed}>} The preview.
+	 */
+	private function previewOf(array $config): array {
 		$operation = trim((string)($config['operation'] ?? 'create'));
 		$where = trim((string)($config['register'] ?? '') . ' / ' . (string)($config['schema'] ?? ''), ' /');
 
@@ -389,7 +400,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 			'summary' => sprintf('%s an object in %s', $operation, $where),
 			'changes' => $changes,
 		];
-	}//end preview()
+	}//end previewOf()
 
 	/**
 	 * The config vocabulary of an object-write step, across all four operations.
@@ -467,13 +478,23 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 			return [];
 		}
 
-		$plan = $this->writePlan(config: $config, context: $context);
+		return $this->writeAs(items: $items, plan: $this->writePlan(config: $config, context: $context));
+	}//end execute()
+
+	/**
+	 * Write every item as the plan's owner, then record what was written as the run's subject.
+	 *
+	 * @param array          $items The input items, at least one.
+	 * @param ObjectWritePlan $plan  The resolved write plan.
+	 *
+	 * @return array The written items.
+	 */
+	private function writeAs(array $items, ObjectWritePlan $plan): array {
 		$written = $this->objects->runAs($plan->owner, fn (): array => $this->writeAll(items: $items, plan: $plan));
 		$this->recordSubject(written: $written, plan: $plan);
 
 		return $written;
-
-	}//end execute()
+	}//end writeAs()
 
 	/**
 	 * Write the items down the path the step configures.
