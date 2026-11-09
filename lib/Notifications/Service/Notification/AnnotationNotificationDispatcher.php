@@ -32,6 +32,10 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Notifications\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
+use OCA\OpenRegister\Notifications\Db\HistoryDelivery;
+use OCA\OpenRegister\Notifications\Db\HistoryEntry;
+use OCA\OpenRegister\Notifications\Db\HistoryNotice;
+use OCA\OpenRegister\Notifications\Db\HistoryTarget;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
@@ -1509,17 +1513,25 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$object = $origin->object;
 		try {
 			$this->historyMapper->record(
-				ruleId: $origin->ruleId,
-				channel: $record->channel,
-				recipient: $record->recipient,
-				status: $record->status,
-				schemaId: self::storedId(value: $object->getSchema()),
-				registerId: self::storedId(value: $object->getRegister()),
-				objectUuid: self::storedId(value: $object->getUuid()),
-				subject: $record->detail->subject,
-				errorMessage: $record->detail->errorMessage,
-				locale: $record->detail->locale,
-				eventId: $origin->eventId
+				entry: new HistoryEntry(
+					delivery: new HistoryDelivery(
+						ruleId: $origin->ruleId,
+						channel: $record->channel,
+						recipient: $record->recipient,
+						status: $record->status
+					),
+					target: new HistoryTarget(
+						schemaId: self::storedId(value: $object->getSchema()),
+						registerId: self::storedId(value: $object->getRegister()),
+						objectUuid: self::storedId(value: $object->getUuid()),
+						eventId: $origin->eventId
+					),
+					notice: new HistoryNotice(
+						subject: $record->detail->subject,
+						errorMessage: $record->detail->errorMessage,
+						locale: $record->detail->locale
+					)
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
