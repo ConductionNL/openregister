@@ -764,6 +764,22 @@ class ImportHandler {
 		bool $force = false,
 	): Register {
 		$options = new SchemaImportOptions(owner: $owner, appId: $appId, version: $version, force: $force);
+		return $this->importRegisterDefinition(data: $data, options: $options);
+	}//end importRegister()
+
+	/**
+	 * Import a register from configuration data, with the caller's owner, app id, version and force flag.
+	 *
+	 * @param array               $data    The register data.
+	 * @param SchemaImportOptions $options The owner, app id, version and force flag of the import.
+	 *
+	 * @return Register The imported register.
+	 *
+	 * @throws Exception If import fails.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importRegisterDefinition(array $data, SchemaImportOptions $options): Register {
 		try {
 			// Ensure data is consistently an array by converting any stdClass objects.
 			$data = (new ArrayStructure())->toArrays(data: $data);
@@ -811,7 +827,7 @@ class ImportHandler {
 			// below unions (#2935): a link this run can prove gets added,
 			// a link it merely cannot see is left alone.
 			// Compare versions using version_compare for proper semver comparison.
-			if ($force === false && $this->registerVersionIsCurrent(register: $existingRegister, data: $data) === true) {
+			if ($options->force === false && $this->registerVersionIsCurrent(register: $existingRegister, data: $data) === true) {
 				$this->logger->debug(
 					message: '[ImportHandler] Skipping register import as existing version is newer or equal.',
 					context: ['file' => __FILE__, 'line' => __LINE__]
@@ -839,7 +855,7 @@ class ImportHandler {
 			);
 			throw new Exception('Failed to import register: ' . $e->getMessage());
 		}//end try
-	}//end importRegister()
+	}//end importRegisterDefinition()
 
 	/**
 	 * Find the stored register an import updates, by slug.
