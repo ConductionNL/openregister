@@ -230,8 +230,20 @@ class RenderObjectRowsAndExtendGoldenTest extends TestCase {
 
 		return $this->handlerWith(
 			[
-				'languageService'    => $language,
-				'translationHandler' => $translation,
+				'enrichers'          => new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+					translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+						translationHandler: $translation,
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+						translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapperInterface::class),
+						languageService: $language
+					),
+					derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+						computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+						calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface::class),
+						linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+						urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+					)
+				),
 				'schemasCache'       => [7 => $schema, 'seven' => $schema],
 				'registersCache'     => [8 => $register, 'eight' => $register],
 			]

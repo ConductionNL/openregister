@@ -106,7 +106,7 @@ class RenderObjectReadMarkersGoldenTest extends TestCase {
 		$rules = $this->createMock(PropertyRbacHandler::class);
 		$rules->expects($this->exactly($calls))->method('filterReadableProperties')->willReturnArgument(1);
 
-		return $this->handlerWith(['propertyRbacHandler' => $rules, 'logger' => new NullLogger()]);
+		return $this->handlerWith(['propertyRbacHandler' => $rules, 'runtime' => new \OCA\OpenRegister\Service\Object\RenderRuntime(logger: new NullLogger(), extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions())]);
 	}
 
 	/**
@@ -156,7 +156,7 @@ class RenderObjectReadMarkersGoldenTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($watchers);
 
-		return $this->handlerWith(['container' => $container, 'logger' => new NullLogger()]);
+		return $this->handlerWith(['runtime' => new \OCA\OpenRegister\Service\Object\RenderRuntime(logger: new NullLogger(), extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(), container: $container)]);
 	}
 
 	/**

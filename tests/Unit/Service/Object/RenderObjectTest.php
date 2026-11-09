@@ -7108,9 +7108,21 @@ class RenderObjectTest extends TestCase {
 		$registry = $this->createMock(\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry::class);
 		$registry->method('get')->willReturnCallback(static fn (string $name) => ($name === 'org-source') ? $provider : null);
 		$handler = (new ReflectionClass(RenderObject::class))->newInstanceWithoutConstructor();
-		$values = ['objectSourceRegistry' => $registry];
+		$runtime = (new \ReflectionProperty(RenderObject::class, 'runtime'))->getValue($this->handler);
+		$values = [
+			'runtime' => new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $runtime->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(
+					objectSourceRegistry: $registry,
+					fieldEncryptionHandler: $runtime->extensions->fieldEncryptionHandler,
+					lensResolver: $runtime->extensions->lensResolver
+				),
+				request: $runtime->request,
+				container: $runtime->container
+			),
+		];
 		foreach ((new ReflectionClass(RenderObject::class))->getProperties() as $prop) {
-			if ($prop->isStatic() === false && $prop->isInitialized($this->handler) === true && $prop->getName() !== 'objectSourceRegistry') {
+			if ($prop->isStatic() === false && $prop->isInitialized($this->handler) === true && $prop->getName() !== 'runtime') {
 				$values[$prop->getName()] = $prop->getValue($this->handler);
 			}
 		}
