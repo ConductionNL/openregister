@@ -66,7 +66,7 @@ class ReportsControllerTest extends TestCase {
 	public function testRenderLoadsNumericIdAsIntAndLowercasesTheFormat(): void {
 		$dashboard = new ObjectEntity();
 		$this->request->method('getParam')->with('format', 'xlsx')->willReturn('PDF');
-		$this->objectMapper->expects($this->once())->method('find')->with(42)->willReturn($dashboard);
+		$this->objectMapper->expects($this->once())->method('find')->with($this->identicalTo(42))->willReturn($dashboard);
 		$this->renderService->expects($this->once())->method('render')->with($dashboard, 'pdf')->willReturn($this->rendered());
 
 		$response = $this->controller->render(' 42 ');
@@ -80,7 +80,7 @@ class ReportsControllerTest extends TestCase {
 
 	public function testRenderLoadsAUuidAsAString(): void {
 		$this->request->method('getParam')->willReturn('xlsx');
-		$this->objectMapper->expects($this->once())->method('find')->with('5f0c-uuid')->willReturn(new ObjectEntity());
+		$this->objectMapper->expects($this->once())->method('find')->with($this->identicalTo('5f0c-uuid'))->willReturn(new ObjectEntity());
 		$this->renderService->method('render')->willReturn($this->rendered());
 
 		$this->assertInstanceOf(DataDownloadResponse::class, $this->controller->render('5f0c-uuid'));
@@ -148,7 +148,7 @@ class ReportsControllerTest extends TestCase {
 
 	public function testPreviewRendersHtmlInline(): void {
 		$dashboard = new ObjectEntity();
-		$this->objectMapper->expects($this->once())->method('find')->with(3)->willReturn($dashboard);
+		$this->objectMapper->expects($this->once())->method('find')->with($this->identicalTo(3))->willReturn($dashboard);
 		$this->renderService->expects($this->once())->method('render')->with($dashboard, 'html')
 			->willReturn(['bytes' => '<p>hi</p>', 'filename' => 'woo.html', 'mime' => 'text/html']);
 
