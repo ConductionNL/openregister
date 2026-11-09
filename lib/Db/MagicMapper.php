@@ -4050,7 +4050,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		bool $includeDeleted = false,
 	): ObjectEntity {
 		$find = new MagicIdentifierFind(identifier: $identifier, includeDeleted: $includeDeleted);
-		return $this->findInTable(table: new RegisterSchema(register: $register, schema: $schema), find: $find, _rbac: $_rbac, _multitenancy: $_multitenancy);
+		$table = new RegisterSchema(register: $register, schema: $schema);
+		return $this->findInTable(table: $table, find: $find, _rbac: $_rbac, _multitenancy: $_multitenancy);
 	}//end findInRegisterSchemaTable()
 
 	/**
@@ -8332,9 +8333,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): ObjectEntity {
-		$scope = $register?->getId();
-		$find  = new MagicIdentifierFind(identifier: $identifier, includeDeleted: $includeDeleted, registerIdScope: ($scope === null ? null : (int)$scope));
-		$table = ($register === null || $schema === null) ? null : new RegisterSchema(register: $register, schema: $schema);
+		$find  = new MagicIdentifierFind(identifier: $identifier, includeDeleted: $includeDeleted, registerIdScope: $register?->getId());
+		$table = $this->registerSchemaOrNull(register: $register, schema: $schema);
 		return $this->findObject(find: $find, table: $table, _rbac: $_rbac, _multitenancy: $_multitenancy);
 	}//end find()
 
