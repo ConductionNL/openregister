@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Kernel\Contracts\DecisionTableValidationListenerInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**

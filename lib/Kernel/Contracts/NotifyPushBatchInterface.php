@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Listener;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * What the import path asks of the notify_push batch: switch it on and off,

@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Repair;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Where the flow-timer register descriptor lives, for callers outside Repair.

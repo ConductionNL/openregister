@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Listener;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The error code a write refused by a unique constraint carries, so a caller can branch on it.

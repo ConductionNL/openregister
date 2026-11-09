@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
-use OCA\OpenRegister\Repair\FlowTimerRegisterPathInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerRegisterPathInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;

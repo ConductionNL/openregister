@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Import;
 
-use OCA\OpenRegister\Listener\NotifyPushBatchInterface;
+use OCA\OpenRegister\Kernel\Contracts\NotifyPushBatchInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 

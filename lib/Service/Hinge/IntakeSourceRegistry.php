@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Hinge;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Repair\IntakeSourceRegisterSlugsInterface;
+use OCA\OpenRegister\Kernel\Contracts\IntakeSourceRegisterSlugsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;

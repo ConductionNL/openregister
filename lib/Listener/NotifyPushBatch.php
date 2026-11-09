@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Kernel\Contracts\NotifyPushBatchInterface;
+
 /**
  * The batch mode of NotifyPushListener, as the import path drives it.
  *

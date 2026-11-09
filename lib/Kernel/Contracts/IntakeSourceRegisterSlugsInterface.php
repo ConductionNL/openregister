@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Repair;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The register and schema slugs the intake-source register is seeded under, for

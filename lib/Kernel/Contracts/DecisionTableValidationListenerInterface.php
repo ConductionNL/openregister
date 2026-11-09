@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Listener;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The single-save decision-table rule, for the bulk save that dispatches no save event.

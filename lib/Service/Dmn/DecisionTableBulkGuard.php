@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Dmn;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Listener\DecisionTableValidationListenerInterface;
+use OCA\OpenRegister\Kernel\Contracts\DecisionTableValidationListenerInterface;
 use Psr\Container\ContainerInterface;
 
 /**

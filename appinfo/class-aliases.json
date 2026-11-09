@@ -1815,6 +1815,31 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\DecisionTableValidationListenerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DecisionTableValidationListenerInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\NotifyPushBatchInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\NotifyPushBatchInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\UniqueConstraintListenerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\UniqueConstraintListenerInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Repair\\FlowTimerRegisterPathInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowTimerRegisterPathInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Repair\\IntakeSourceRegisterSlugsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\IntakeSourceRegisterSlugsInterface",
+			"eager": false,
+			"service": true
 		}
 	}
 }

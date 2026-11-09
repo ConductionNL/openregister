@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerRegisterPathInterface;
 use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
