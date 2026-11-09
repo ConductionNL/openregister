@@ -32,6 +32,8 @@ use OCA\OpenRegister\Db\FlowStream;
  * that locked run and that moment, and dropped when the transaction ends.
  *
  * @SuppressWarnings(PHPMD.StaticAccess) FlowStream's path helpers are pure functions on a value object.
+ *
+ * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
  */
 final class FlowCommitWrite {
 
@@ -86,6 +88,8 @@ final class FlowCommitWrite {
 	 * @param FlowStreamRef $ref The stream's id, ordinal path, parent stream id and token place.
 	 *
 	 * @return FlowStream The inserted stream.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
 	 */
 	public function mintStream(FlowStreamRef $ref): FlowStream {
 		$stream = new FlowStream();
@@ -167,6 +171,8 @@ final class FlowCommitWrite {
 	 * @param array      $entry   The engine's log entry.
 	 *
 	 * @return FlowRunStep The row as written.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
 	 */
 	public function appendStep(FlowStream $carrier, array $entry): FlowRunStep {
 		$sequence = $this->rows->streams->allocateNextSequence(runUuid: $this->runUuid, streamId: (string)$carrier->getStreamId());
@@ -219,7 +225,12 @@ final class FlowCommitWrite {
 		$index = 1;
 		foreach (array_values($firing->taken) as $to) {
 			$path = FlowStream::childPath(parentPath: (string)$carrier->getOrdinalPath(), index: $index);
-			$child = new FlowStreamRef(streamId: FlowRunCommit::streamIdFor(runUuid: $this->runUuid, path: $path), path: $path, parent: (string)$carrier->getStreamId(), place: $to);
+			$child = new FlowStreamRef(
+				streamId: FlowRunCommit::streamIdFor(runUuid: $this->runUuid, path: $path),
+				path: $path,
+				parent: (string)$carrier->getStreamId(),
+				place: $to
+			);
 			$firing->childStreamIds[$to] = $child->streamId;
 			$this->beginChild(child: $child);
 			$index++;
