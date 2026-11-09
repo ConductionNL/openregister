@@ -12,6 +12,10 @@ model: "2026"
 
 # Every directory under lib/ is a component, and so is every other top-level
 # directory. A new directory under lib/ becomes a component without a change here.
+# These directories are Nextcloud's layers, not the functional components. The
+# functional components block is in sigrid.components.yaml, generated from
+# scripts/component-map.csv. It replaces component_base_dirs here when the
+# contract stage has landed (ADR-012 Rule 1); Sigrid reads one or the other.
 component_base_dirs: ["lib", ""]
 
 # Test-code patterns can only be set per language, and listing languages switches
