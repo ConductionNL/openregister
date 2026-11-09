@@ -68,12 +68,7 @@ class AuthorizationAuditService {
 	 * @spec exclude Facade plumbing: emits one structured audit log line; sibling of logRegisterAuthorizationChange
 	 *              (rbac-scopes REQ-002), no distinct behavioral contract.
 	 */
-	public function logSchemaAuthorizationChange(
-		int $schemaId,
-		string $schemaTitle,
-		?array $oldAuthorization,
-		?array $newAuthorization,
-	): void {
+	public function logSchemaAuthorizationChange(int $schemaId, string $schemaTitle, ?array $oldAuthorization, ?array $newAuthorization): void {
 		$change = new AuthorizationChange(entityId: $schemaId, entityTitle: $schemaTitle, before: $oldAuthorization, after: $newAuthorization);
 		$this->recordSchemaChange(change: $change);
 	}//end logSchemaAuthorizationChange()
@@ -92,12 +87,7 @@ class AuthorizationAuditService {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
 	 */
-	public function logRegisterAuthorizationChange(
-		int $registerId,
-		string $registerTitle,
-		?array $oldAuthorization,
-		?array $newAuthorization,
-	): void {
+	public function logRegisterAuthorizationChange(int $registerId, string $registerTitle, ?array $oldAuthorization, ?array $newAuthorization): void {
 		$change = new AuthorizationChange(entityId: $registerId, entityTitle: $registerTitle, before: $oldAuthorization, after: $newAuthorization);
 		$this->recordRegisterChange(change: $change);
 	}//end logRegisterAuthorizationChange()
@@ -115,12 +105,7 @@ class AuthorizationAuditService {
 	 * @spec exclude Facade plumbing: emits one structured audit log line for a role-definition change; sibling of
 	 *              logRegisterAuthorizationChange, no distinct behavioral contract.
 	 */
-	public function logRoleDefinitionChange(
-		int $registerId,
-		string $registerTitle,
-		?array $oldRoles,
-		?array $newRoles,
-	): void {
+	public function logRoleDefinitionChange(int $registerId, string $registerTitle, ?array $oldRoles, ?array $newRoles): void {
 		$change = new AuthorizationChange(entityId: $registerId, entityTitle: $registerTitle, before: $oldRoles, after: $newRoles);
 		$this->recordRoleChange(change: $change);
 	}//end logRoleDefinitionChange()
