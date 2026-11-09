@@ -52,8 +52,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
-use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
-use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
+use OCA\OpenRegister\Service\Rbac\RbacFallbacks;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\RuleColumns;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -137,7 +138,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @param RbacResolvers|null $resolvers The shared object-scope, per-object grant and deny-grammar resolvers,
 	 *                                      bundled together; nullable so adding them is not a fatal at existing
 	 *                                      construction sites.
-	 * @param DenyEnforcementMode|null $denyEnforcementMode The staging switch; nullable for the same reason.
+	 * @param DenyEnforcementModeInterface|null $denyEnforcementMode The staging switch; nullable for the same reason.
 	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not be healed still lacks.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection; the optional
@@ -152,7 +153,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 		private readonly ?RbacResolvers $resolvers = null,
-		private readonly ?DenyEnforcementMode $denyEnforcementMode = null,
+		private readonly ?DenyEnforcementModeInterface $denyEnforcementMode = null,
 		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
 	) {
 	}//end __construct()
@@ -182,12 +183,12 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * equivalent when freshly built, like the resolvers above: it reads the same
 	 * app-config key either way.
 	 *
-	 * @return DenyEnforcementMode The one reader of `openregister.deny_enforcement`.
+	 * @return DenyEnforcementModeInterface The one reader of `openregister.deny_enforcement`.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function denyEnforcementMode(): DenyEnforcementMode {
-		return ($this->denyEnforcementMode ?? new DenyEnforcementMode(
+	private function denyEnforcementMode(): DenyEnforcementModeInterface {
+		return ($this->denyEnforcementMode ?? RbacFallbacks::denyEnforcement(
 			appConfig: $this->appConfig,
 			logger: $this->logger
 		));
@@ -200,10 +201,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * construction site. The resolver is a stateless value object, so a fresh
 	 * instance is equivalent to the injected one.
 	 *
-	 * @return ObjectScopeResolver The one definition of the scope vocabulary.
+	 * @return ObjectScopeResolverInterface The one definition of the scope vocabulary.
 	 */
-	private function objectScope(): ObjectScopeResolver {
-		return ($this->resolvers->objectScopeResolver ?? new ObjectScopeResolver());
+	private function objectScope(): ObjectScopeResolverInterface {
+		return ($this->resolvers->objectScopeResolver ?? RbacFallbacks::objectScope());
 	}//end objectScope()
 
 	/**
@@ -432,7 +433,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * THE OWNING GROUP IS AN OWNER, so it sits with the other owner admits
 	 * rather than inside the not-private predicate: here the term is ORed over
 	 * the whole query, there it would have been ANDed with the schema's rules.
-	 * Only this placement matches what ObjectScopeResolver::admitsUnconditionally()
+	 * Only this placement matches what ObjectScopeResolverInterface::admitsUnconditionally()
 	 * answers on a single read.
 	 *
 	 * @param RbacAccessCall $call The call.
@@ -451,7 +452,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * The "this caller may reach this row at all" predicate, as raw SQL.
 	 *
 	 * Both list emitters call this ONE method, and it in turn calls the ONE
-	 * builder on {@see ObjectScopeResolver}. The QueryBuilder emitter wraps the
+	 * builder on {@see ObjectScopeResolverInterface}. The QueryBuilder emitter wraps the
 	 * result in `createFunction()` because QueryBuilder cannot express JSON
 	 * member extraction portably — writing a second, QueryBuilder-native
 	 * implementation would be a second definition of the vocabulary, which is
@@ -2176,7 +2177,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * The caller's group ids, quoted as SQL literals.
 	 *
 	 * Quoted here, beside the quoter, so the predicate builder on
-	 * {@see \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver} never handles an
+	 * {@see \OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface} never handles an
 	 * unquoted value — the same contract `quotedGrantedUuids()` already honours.
 	 *
 	 * @return string[] Quoted group ids, empty when the caller is anonymous.

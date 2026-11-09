@@ -39,7 +39,7 @@ use Throwable;
  *
  * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
  */
-class PartySearchService {
+class PartySearchService implements PartySearchInterface {
 
 	/**
 	 * The app config key holding the cap.

@@ -44,7 +44,7 @@ use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -123,7 +123,7 @@ class ObjectOwnershipController extends Controller {
 		return new JSONResponse(
 			[
 				'owner' => $object->getOwner(),
-				'ownerGroup' => ($block[ObjectScopeResolver::OWNER_GROUP_KEY] ?? null),
+				'ownerGroup' => ($block[ObjectScopeResolverInterface::OWNER_GROUP_KEY] ?? null),
 			]
 		);
 	}//end show()
@@ -214,7 +214,8 @@ class ObjectOwnershipController extends Controller {
 			return $this->badRequest(message: 'An owner group must be a group id');
 		}
 
-		$store = fn (): array => ['ownerGroup' => ($this->storeOwnerGroup(object: $object, group: $group)[ObjectScopeResolver::OWNER_GROUP_KEY] ?? null)];
+		$key   = ObjectScopeResolverInterface::OWNER_GROUP_KEY;
+		$store = fn (): array => ['ownerGroup' => ($this->storeOwnerGroup(object: $object, group: $group)[$key] ?? null)];
 		return $this->endpoint->answer(operation: $store, context: 'setOwnerGroup', validates: true);
 	}//end setOwnerGroup()
 
