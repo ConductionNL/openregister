@@ -65,12 +65,8 @@ final class ConsentEnvelopeEvaluator implements ConsentEnvelopeEvaluatorInterfac
 			return ['refused' => true, 'value' => $write->incomingEntries(), 'message' => $violation];
 		}
 
-		$filled = $this->fillNewEntries(
-			incoming: $write->incomingEntries(),
-			persistedCount: count($write->persistedEntries()),
-			purpose: (string)($write->annotation['purpose'] ?? ''),
-			source: $source
-		);
+		$stamp = new ConsentEvidenceStamp(purpose: (string)($write->annotation['purpose'] ?? ''), source: $source);
+		$filled = $this->fillNewEntries(write: $write, stamp: $stamp);
 
 		return ['refused' => false, 'value' => $filled, 'message' => null];
 	}//end evaluate()
@@ -113,31 +109,24 @@ final class ConsentEnvelopeEvaluator implements ConsentEnvelopeEvaluatorInterfac
 	/**
 	 * Fill evidence on every entry appended beyond the previously persisted length.
 	 *
-	 * @param array<int, mixed> $incoming The normalised, append-only-verified array.
-	 * @param int $persistedCount The number of previously persisted entries (the append boundary).
-	 * @param string $purpose The property's declared purpose.
-	 * @param ConsentEvidenceSource $source Who wrote the entries and from where.
+	 * The write has already passed the append-only check, so its persisted
+	 * length is the append boundary.
+	 *
+	 * @param ConsentPropertyWrite $write The append-only-verified write.
+	 * @param ConsentEvidenceStamp $stamp The purpose and source every new entry is stamped with.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	private function fillNewEntries(
-		array $incoming,
-		int $persistedCount,
-		string $purpose,
-		ConsentEvidenceSource $source
-	): array {
+	private function fillNewEntries(ConsentPropertyWrite $write, ConsentEvidenceStamp $stamp): array {
+		$incoming = $write->incomingEntries();
 		$incomingCount = count($incoming);
-		for ($index = $persistedCount; $index < $incomingCount; $index++) {
+		for ($index = count($write->persistedEntries()); $index < $incomingCount; $index++) {
 			$entry = $incoming[$index];
 			if (is_array($entry) === false) {
 				continue;
 			}
 
-			$incoming[$index] = $this->fillEvidence(
-				entry: $entry,
-				purpose: $purpose,
-				source: $source
-			);
+			$incoming[$index] = $this->fillEvidence(entry: $entry, stamp: $stamp);
 		}
 
 		return $incoming;
@@ -147,12 +136,11 @@ final class ConsentEnvelopeEvaluator implements ConsentEnvelopeEvaluatorInterfac
 	 * Fill the read-only evidentiary fields on one newly appended entry.
 	 *
 	 * @param array<string, mixed> $entry The caller-submitted entry.
-	 * @param string $purpose The property's declared purpose.
-	 * @param ConsentEvidenceSource $source Who wrote the entry and from where.
+	 * @param ConsentEvidenceStamp $stamp The purpose and source to stamp.
 	 *
 	 * @return array<string, mixed> The entry with evidence fields filled.
 	 */
-	private function fillEvidence(array $entry, string $purpose, ConsentEvidenceSource $source): array {
+	private function fillEvidence(array $entry, ConsentEvidenceStamp $stamp): array {
 		foreach (self::EVIDENCE_FIELDS as $field) {
 			unset($entry[$field]);
 		}
@@ -161,11 +149,11 @@ final class ConsentEnvelopeEvaluator implements ConsentEnvelopeEvaluatorInterfac
 		$evidenceOf = (string)($entry['evidenceOf'] ?? '');
 		$timestamp = (new DateTimeImmutable())->format(DATE_ATOM);
 
-		$entry['by'] = $source->actingIdentity;
+		$entry['by'] = $stamp->source->actingIdentity;
 		$entry['timestamp'] = $timestamp;
-		$entry['ip'] = $source->ipAddress;
-		$entry['userAgent'] = $source->userAgent;
-		$entry['contentHash'] = hash('sha256', $purpose . $decision . $evidenceOf);
+		$entry['ip'] = $stamp->source->ipAddress;
+		$entry['userAgent'] = $stamp->source->userAgent;
+		$entry['contentHash'] = hash('sha256', $stamp->purpose . $decision . $evidenceOf);
 
 		$entry['withdrawnAt'] = null;
 		if ($decision === 'withdrawn') {
