@@ -31,6 +31,7 @@ use OCA\OpenRegister\Listener\FlowOversightRegistrationListener;
 use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
 use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
 use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltCheck;
+use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltRecords;
 use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltService;
 use OCA\OpenRegister\Service\Flow\RegisterFlowOversightEvent;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -105,8 +106,7 @@ class OrganisationHaltTest extends TestCase {
 		);
 
 		return new OrganisationHaltService(
-			appConfig: $this->appConfig,
-			audit: $audit,
+			records: new OrganisationHaltRecords(appConfig: $this->appConfig, audit: $audit),
 			session: $session,
 			organisations: $organisations,
 			logger: $this->createMock(LoggerInterface::class)

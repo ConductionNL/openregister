@@ -30,17 +30,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\RetentionPlatform;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationDomain;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationMappers;
-use OCA\OpenRegister\Controller\Support\RetentionPlatform;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\QueryPage;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
 use OCA\OpenRegister\Service\Schema\PropertyConversionServiceInterface;
-use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
+use OCA\OpenRegister\Service\Schema\SchemaMigrationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -373,7 +373,7 @@ class SchemaMigrationController extends Controller {
 	 * @return int The sample size.
 	 */
 	private function sampleSize(): int {
-		return (int)($this->request->getParam('sample') ?? SchemaMigrationService::DEFAULT_PREVIEW_SAMPLE);
+		return (int)($this->request->getParam('sample') ?? SchemaMigrationServiceInterface::DEFAULT_PREVIEW_SAMPLE);
 	}//end sampleSize()
 
 	/**

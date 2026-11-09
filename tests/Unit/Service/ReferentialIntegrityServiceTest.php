@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
 use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
 use OCA\OpenRegister\Service\Object\IntegrityStorage;
@@ -1062,9 +1063,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [$cascadeTarget],
-			nullifyTargets: [$nullifyTarget],
-			defaultTargets: [$defaultTarget]
+			effects: new DeletionEffects(cascadeTargets: [$cascadeTarget], nullifyTargets: [$nullifyTarget], defaultTargets: [$defaultTarget])
 		);
 
 		// Create real entities for findAcrossAllSources results.
@@ -1278,9 +1277,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [$cascadeTarget],
-			nullifyTargets: [],
-			defaultTargets: []
+			effects: new DeletionEffects(cascadeTargets: [$cascadeTarget], nullifyTargets: [], defaultTargets: [])
 		);
 
 		$mockRegister = new Register();
@@ -1324,9 +1321,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [],
-			nullifyTargets: [],
-			defaultTargets: [$defaultTarget]
+			effects: new DeletionEffects(cascadeTargets: [], nullifyTargets: [], defaultTargets: [$defaultTarget])
 		);
 
 		$obj = $this->createTestObject('default-uuid', '2', ['assignee' => 'root-uuid']);

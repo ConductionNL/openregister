@@ -38,6 +38,24 @@ use OCA\OpenRegister\Db\FlowRun;
  */
 class FlowRunRow {
 	/**
+	 * Name whose rights the run uses and which graph it is pinned to.
+	 *
+	 * Built per dispatch by queue(), once the attribution is resolved and the
+	 * version is known; both are settled before the row is written.
+	 *
+	 * @param array        $attribution The resolved user/organisation/declaredBy.
+	 * @param integer|null $version     The published version this run is pinned to,
+	 *                                  or null for an interactive test run of a draft.
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
+	 */
+	public function __construct(
+		private readonly array $attribution,
+		private readonly ?int $version,
+	) {
+	}//end __construct()
+
+	/**
 	 * Build the queued row for a dispatch that has already cleared every guard.
 	 *
 	 * Split out of queue() only because that method reached the length limit;
@@ -45,13 +63,10 @@ class FlowRunRow {
 	 * dead-end, attribution, delegation — runs BEFORE this, so this method
 	 * deliberately performs no checks and assumes an attributed dispatch.
 	 *
-	 * @param string  $flowId      The flow being dispatched.
-	 * @param array   $subject     The subject object, when the trigger names one.
-	 * @param string  $trigger     What caused the dispatch.
-	 * @param array   $context     The starting context.
-	 * @param array   $attribution The resolved user/organisation/declaredBy.
-	 * @param integer|null $version The published version this run is pinned to,
-	 *                              or null for an interactive test run of a draft.
+	 * @param string $flowId  The flow being dispatched.
+	 * @param array  $subject The subject object, when the trigger names one.
+	 * @param string $trigger What caused the dispatch.
+	 * @param array  $context The starting context.
 	 *
 	 * @return FlowRun The unsaved run.
 	 *
@@ -62,8 +77,6 @@ class FlowRunRow {
 		array $subject,
 		string $trigger,
 		array $context,
-		array $attribution,
-		?int $version,
 	): FlowRun {
 		$run = new FlowRun();
 		$run->setUuid($this->newUuid());
@@ -80,9 +93,9 @@ class FlowRunRow {
 		// decision reads from here on. They are equal at this point for a
 		// caller-driven dispatch and differ for a scheduled one, where the cause
 		// is a schedule and the acting identity is the user its trigger names.
-		$run->setTriggeredBy($attribution['user']);
-		$run->setRunAs($attribution['user']);
-		$run->setOrganisation($attribution['organisation']);
+		$run->setTriggeredBy($this->attribution['user']);
+		$run->setRunAs($this->attribution['user']);
+		$run->setOrganisation($this->attribution['organisation']);
 		$run->setCreated(new DateTime());
 		$run->setUpdated(new DateTime());
 
@@ -92,7 +105,7 @@ class FlowRunRow {
 		// author drafts and publishes new versions. Authorization is NOT
 		// pinned — see FlowDefinitionPin — because a revoked grant must stop
 		// mattering immediately, while the graph must not move at all.
-		$run->setFlowVersion($version);
+		$run->setFlowVersion($this->version);
 
 		return $run;
 

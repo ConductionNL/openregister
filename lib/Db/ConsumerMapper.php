@@ -70,8 +70,6 @@ class ConsumerMapper extends QBMapper implements ConsumerMapperInterface {
 	 * @param int|null $limit Maximum number of results to return
 	 * @param int|null $offset Number of results to skip
 	 * @param array|null $filters Associative array of filters
-	 * @param array|null $searchConditions Array of search conditions
-	 * @param array|null $searchParams Array of search parameters
 	 *
 	 * @return array An array of Consumer entities
 	 */
@@ -79,8 +77,6 @@ class ConsumerMapper extends QBMapper implements ConsumerMapperInterface {
 		int|null $limit = null,
 		int|null $offset = null,
 		array|null $filters = [],
-		array|null $searchConditions = [],
-		array|null $searchParams = [],
 	): array {
 		$qb = $this->db->getQueryBuilder();
 
@@ -90,32 +86,9 @@ class ConsumerMapper extends QBMapper implements ConsumerMapperInterface {
 			->setFirstResult($offset);
 
 		$this->applyColumnFilters(qb: $qb, filters: $filters);
-		$this->applySearchConditions(qb: $qb, searchConditions: $searchConditions, searchParams: $searchParams);
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()
-
-	/**
-	 * OR the raw search conditions into the query and bind their parameters.
-	 *
-	 * Nothing is added, and no parameter is bound, when there are no conditions.
-	 *
-	 * @param IQueryBuilder $qb               The query to add the conditions to.
-	 * @param array|null    $searchConditions SQL fragments, joined with OR.
-	 * @param array|null    $searchParams     Parameter name to value for those fragments.
-	 *
-	 * @return void
-	 */
-	private function applySearchConditions(IQueryBuilder $qb, array|null $searchConditions, array|null $searchParams): void {
-		if (empty($searchConditions) === true) {
-			return;
-		}
-
-		$qb->andWhere('(' . implode(separator: ' OR ', array: $searchConditions) . ')');
-		foreach ($searchParams as $param => $value) {
-			$qb->setParameter($param, $value);
-		}
-	}//end applySearchConditions()
 
 	/**
 	 * Create a new Consumer from an array of data.

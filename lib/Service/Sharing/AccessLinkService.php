@@ -95,19 +95,32 @@ class AccessLinkService implements AccessLinkServiceInterface {
 	}//end __construct()
 
 	/**
+	 * The terms a link is minted on, as asked; mint() refuses unusable ones.
+	 *
+	 * @param array<int, string> $capabilities The declared capabilities; empty means read only.
+	 * @param string|null        $expiresAt    The end date, in any format DateTime parses.
+	 * @param string|null        $password     Optional password, checked at use.
+	 * @param string|null        $label        Optional human label.
+	 *
+	 * @return AccessLinkTerms The terms.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
+	 */
+	public function terms(array $capabilities, ?string $expiresAt, ?string $password, ?string $label): AccessLinkTerms {
+		return new AccessLinkTerms(capabilities: $capabilities, expiresAt: $expiresAt, password: $password, label: $label);
+	}//end terms()
+
+	/**
 	 * Mint a link over one subject.
 	 *
 	 * The minting principal is an argument rather than something this service
 	 * reaches for, so the identity behind a published link is decided at the
 	 * HTTP boundary and is visible there.
 	 *
-	 * @param string $userId The principal minting the link.
-	 * @param string $subjectType `object`, `view` or `file`.
-	 * @param string $subjectId The object uuid, view uuid, or file id.
-	 * @param array<int, string> $capabilities The declared capabilities; empty means read only.
-	 * @param string|null $expiresAt The end date, in any format DateTime parses. Required.
-	 * @param string|null $password Optional password, checked at use.
-	 * @param string|null $label Optional human label.
+	 * @param string          $userId      The principal minting the link.
+	 * @param string          $subjectType `object`, `view` or `file`.
+	 * @param string          $subjectId   The object uuid, view uuid, or file id.
+	 * @param AccessLinkTerms $terms       The capabilities, the expiry (required), the password and the label.
 	 *
 	 * @return array<string, mixed> The link row plus the URL a holder opens.
 	 *
@@ -115,26 +128,18 @@ class AccessLinkService implements AccessLinkServiceInterface {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
-	public function mint(
-		string $userId,
-		string $subjectType,
-		string $subjectId,
-		array $capabilities = [],
-		?string $expiresAt = null,
-		?string $password = null,
-		?string $label = null,
-	): array {
+	public function mint(string $userId, string $subjectType, string $subjectId, AccessLinkTerms $terms): array {
 		// Every refusal is answered before anything is drawn, hashed or written.
 		$minter = $this->requireMinter(userId: $userId);
 		$kind = $this->requireSubjectType(subjectType: $subjectType);
 		$subject = $this->requireSubjectId(subjectId: $subjectId);
-		$declared = $this->normaliseCapabilities(capabilities: $capabilities);
-		$expiry = $this->requireExpiry(expiresAt: $expiresAt);
+		$declared = $this->normaliseCapabilities(capabilities: $terms->capabilities);
+		$expiry = $this->requireExpiry(expiresAt: $terms->expiresAt);
 
 		$link = $this->newLink(subjectType: $kind, subjectId: $subject);
 		$link->setCapabilities(implode(',', $declared));
-		$link->setLabel($this->trimmedOrNull(value: $label));
-		$link->setPasswordHash($this->hashedPassword(password: $password));
+		$link->setLabel($this->trimmedOrNull(value: $terms->label));
+		$link->setPasswordHash($this->hashedPassword(password: $terms->password));
 		$link->setCreatedBy($minter);
 		$link->setCreated(new DateTime());
 		$link->setExpiresAt($expiry);

@@ -61,7 +61,8 @@ class DraftCallerRule {
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
 	 */
 	public function keptFromCaller(ObjectEntity $object, Schema $schema, ?string $userId, bool $isAdmin, ?bool $commandLine = null): bool {
-		if (self::openToCaller(object: $object, schema: $schema, userId: $userId, isAdmin: $isAdmin) === true) {
+		// Open to the caller: not a draft kept from them, or the caller is an admin.
+		if ((new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $userId) === false || $isAdmin === true) {
 			return false;
 		}
 
@@ -71,22 +72,6 @@ class DraftCallerRule {
 
 		return true;
 	}//end keptFromCaller()
-
-	/**
-	 * Whether the object is open to the caller: not a draft kept from them, or the caller is an admin.
-	 *
-	 * @param ObjectEntity $object  The object.
-	 * @param Schema       $schema  Its schema.
-	 * @param string|null  $userId  The caller.
-	 * @param bool         $isAdmin Whether the caller is an admin.
-	 *
-	 * @return bool True when nothing is kept from the caller
-	 *
-	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
-	 */
-	private static function openToCaller(ObjectEntity $object, Schema $schema, ?string $userId, bool $isAdmin): bool {
-		return (new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $userId) === false || $isAdmin === true;
-	}//end openToCaller()
 
 	/**
 	 * Whether a draft is kept from a caller without a user.

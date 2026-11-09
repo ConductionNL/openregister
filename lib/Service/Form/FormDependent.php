@@ -35,25 +35,50 @@ use Closure;
 final class FormDependent {
 
 	/**
+	 * The form's id in its owning app.
+	 *
+	 * @var string
+	 */
+	public readonly string $id;
+
+	/**
+	 * The owning app's id; its `formDestinationBreak` setting decides.
+	 *
+	 * @var string
+	 */
+	public readonly string $app;
+
+	/**
+	 * The form's title, for the response and the notification.
+	 *
+	 * @var string
+	 */
+	public readonly string $title;
+
+	/**
+	 * `public` or `authenticated`, when the form is not internal.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $audience;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string               $id        The form's id in its owning app.
-	 * @param string               $app       The owning app's id; its `formDestinationBreak` setting decides.
-	 * @param string               $title     The form's title, for the response and the notification.
+	 * @param PublishedForm        $form      Which form, in which app, its title and its audience.
 	 * @param string|null          $author    The user id to notify, when known.
 	 * @param array<string, mixed> $mapping   The form's mapping into the schema.
 	 * @param Closure|null         $unpublish Unpublishes the form in its owning app.
-	 * @param string|null          $audience  `public` or `authenticated`, when the form is not internal.
 	 */
 	public function __construct(
-		public readonly string $id,
-		public readonly string $app,
-		public readonly string $title,
+		PublishedForm $form,
 		public readonly ?string $author,
 		public readonly array $mapping,
 		public readonly ?Closure $unpublish = null,
-		public readonly ?string $audience = null,
 	) {
-
+		$this->id       = $form->id;
+		$this->app      = $form->app;
+		$this->title    = $form->title;
+		$this->audience = $form->audience;
 	}//end __construct()
 }//end class

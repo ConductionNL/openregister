@@ -31,7 +31,7 @@ use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\BulkAction\Support\ApplyRuleServices;
+use OCA\OpenRegister\Service\Rules\ApplyRuleServices;
 
 /**
  * Pins what the apply-rule bulk action validates, skips, previews and writes.

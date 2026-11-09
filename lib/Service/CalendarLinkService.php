@@ -466,7 +466,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function getLinkedEvents(string $objectUuid): array {
-		$merged = [];
+		$merged = new LinkedEventMerge();
 
 		// 1. Link-table rows
 		foreach ($this->linkMapper->findByObjectUuid(objectUuid: $objectUuid) as $link) {
@@ -474,7 +474,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 			$payload = $link->jsonSerialize();
 			$payload['source'] = 'link-table';
 			$payload['attendees'] = $this->attendeesOf(link: $link);
-			$merged[$key] = $payload;
+			$merged->addLinkRow(key: $key, payload: $payload);
 		}
 
 		// 2. Legacy X-OR-* scan (best-effort; degrade to empty list)
@@ -487,17 +487,10 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 		}
 
 		foreach ($xorEvents as $event) {
-			$eventUid = (string)($event['uid'] ?? '');
-			if ($eventUid === '') {
-				continue;
-			}
+			$merged->addXorEvent(event: $event, calendarUri: $calendarMap[(int)($event['calendarId'] ?? 0)] ?? '');
+		}
 
-			$calendarId = (int)($event['calendarId'] ?? 0);
-			$calendarUri = $calendarMap[$calendarId] ?? '';
-			$this->mergeXorEvent(merged: $merged, event: $event, eventUid: $eventUid, calendarUri: $calendarUri);
-		}//end foreach
-
-		return array_values($merged);
+		return $merged->rows();
 	}//end getLinkedEvents()
 
 	/**
@@ -567,80 +560,6 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 
 		return $attendees;
 	}//end attendeeRows()
-
-	/**
-	 * Merge a single X-OR-* scan event into the dedupe map.
-	 *
-	 * Mutates $merged in place:
-	 *   - If the (calendarUri, eventUid) key is already present: mark as 'both'
-	 *     and refresh free-text fields from the live scan.
-	 *   - If only the UID matches (calendar URI missing from the live event):
-	 *     mark the existing entry as 'both' via fallback dedupe.
-	 *   - Otherwise: insert a new 'xor-only' entry.
-	 *
-	 * @param array<string,array<string,mixed>> $merged Dedupe map, modified in place by reference.
-	 * @param array<string,mixed> $event X-OR-* scan event row.
-	 * @param string $eventUid Pre-extracted UID.
-	 * @param string $calendarUri Resolved calendar URI (may be '').
-	 *
-	 * @return void
-	 */
-	private function mergeXorEvent(array &$merged, array $event, string $eventUid, string $calendarUri): void {
-		$key = $calendarUri . '|' . $eventUid;
-		if (isset($merged[$key]) === true) {
-			// Already present from link-table; mark as both and refresh free-text fields.
-			$merged[$key] = $this->refreshedFromXor(row: $merged[$key], event: $event);
-			return;
-		}
-
-		// Try fallback dedupe by uid alone (calendar URI missing from live event).
-		if ($this->markUidAsBoth(merged: $merged, eventUid: $eventUid) === true) {
-			return;
-		}
-
-		$payload = $event;
-		$payload['source'] = 'xor-only';
-		$payload['calendarUri'] = $calendarUri;
-		$merged[$key] = $payload;
-	}//end mergeXorEvent()
-
-	/**
-	 * A link-table row also found by the X-OR-* scan: source both, free-text fields from the live event.
-	 *
-	 * @param array<string,mixed> $row   The merged link-table payload.
-	 * @param array<string,mixed> $event The live X-OR event.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function refreshedFromXor(array $row, array $event): array {
-		$row['source'] = 'both';
-		foreach (['summary', 'dtstart', 'dtend', 'location', 'description', 'attendees', 'status'] as $field) {
-			if (isset($event[$field]) === true && $event[$field] !== '') {
-				$row[$field] = $event[$field];
-			}
-		}
-
-		return $row;
-	}//end refreshedFromXor()
-
-	/**
-	 * Mark the first merged entry with the event UID as found by both sources.
-	 *
-	 * @param array<string,array<string,mixed>> $merged   Accumulator keyed by `${calendarUri}|${eventUid}`.
-	 * @param string                            $eventUid The event UID.
-	 *
-	 * @return bool Whether an entry was marked.
-	 */
-	private function markUidAsBoth(array &$merged, string $eventUid): bool {
-		foreach (array_keys($merged) as $existingKey) {
-			if (str_ends_with($existingKey, '|' . $eventUid) === true) {
-				$merged[$existingKey]['source'] = 'both';
-				return true;
-			}
-		}
-
-		return false;
-	}//end markUidAsBoth()
 
 	/**
 	 * List the current user's VEVENT-supporting calendars.
@@ -719,7 +638,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 		$calendarId = $this->resolveCalendarIdForUri(calendars: $calendars, calendarUri: $calendarUri);
 
 		if ($calendarId === null) {
-			throw new Exception('Calendar ' . $calendarUri . ' not found for user');
+			throw new Exception('Calendar ' . $calendarUri . ' not found for user', 404);
 		}
 
 		$scan = new CalendarPickerScan(calendarId: $calendarId, calendarUri: $calendarUri);
@@ -860,7 +779,10 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 		}
 
 		foreach ($this->calDavBackend->getCalendarObjects($calendarId) as $object) {
-			$located = $this->locateInObject(calendarId: $calendarId, object: $object, eventUid: $key->eventUid);
+			$located = $this->locateInObject(
+				ref: new CalendarObjectRef(calendarId: $calendarId, uri: (string)$object['uri']),
+				eventUid: $key->eventUid
+			);
 			if ($located !== null) {
 				return $located;
 			}
@@ -872,14 +794,13 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	/**
 	 * The located fields of one calendar object when it holds the VEVENT with the UID.
 	 *
-	 * @param int                 $calendarId The calendar id.
-	 * @param array<string,mixed> $object     The calendar object listing row.
-	 * @param string              $eventUid   VEVENT UID to find.
+	 * @param CalendarObjectRef $ref      The calendar id and object uri.
+	 * @param string            $eventUid VEVENT UID to find.
 	 *
 	 * @return array<string,mixed>|null
 	 */
-	private function locateInObject(int $calendarId, array $object, string $eventUid): ?array {
-		$calendarData = $this->objectCalendarData(calendarId: $calendarId, objectUri: $object['uri']);
+	private function locateInObject(CalendarObjectRef $ref, string $eventUid): ?array {
+		$calendarData = $this->objectCalendarData(calendarId: $ref->calendarId, objectUri: $ref->uri);
 		if ($calendarData === null || strpos($calendarData, $eventUid) === false) {
 			return null;
 		}
@@ -889,7 +810,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 			return null;
 		}
 
-		return ['calendarId' => $calendarId, 'eventUri' => (string)$object['uri']] + $fields;
+		return ['calendarId' => $ref->calendarId, 'eventUri' => $ref->uri] + $fields;
 	}//end locateInObject()
 	/**
 	 * The id of the user's calendar with the given URI, of any component type.

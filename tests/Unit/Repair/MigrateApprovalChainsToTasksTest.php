@@ -311,6 +311,45 @@ class MigrateApprovalChainsToTasksTest extends TestCase {
 		self::assertSame('2026-08-02 10:00:00', $entry->getCreated()->format('Y-m-d H:i:s'), 'the original decision time');
 	}//end testADepartedDeciderKeepsItsRecordedIdentity()
 
+	/**
+	 * Every migrated task gets a `create` audit at its creation time; a decided
+	 * one also gets a `complete` audit at its decision time, by its decider.
+	 * Both record the task's state after migration, as an authorized group
+	 * performer.
+	 *
+	 * @return void
+	 */
+	public function testEachMigratedTaskIsAuditedAtItsOriginalMoments(): void {
+		$this->step()->run($this->createMock(IOutput::class));
+
+		$rows = array_map(
+			static fn (TaskAudit $entry): array => [
+				$entry->getAction(),
+				$entry->getStateAfter(),
+				$entry->getPerformerType(),
+				$entry->getAuthorized(),
+				$entry->getCreated()?->format('Y-m-d H:i:s'),
+			],
+			$this->audits
+		);
+
+		$approved = $this->taskForStep(1);
+		$creates = array_values(array_filter($rows, static fn (array $row): bool => $row[0] === 'create'));
+		$completes = array_values(array_filter($rows, static fn (array $row): bool => $row[0] === 'complete'));
+		self::assertCount(4, $creates, 'one create audit per migrated step');
+		self::assertCount(2, $completes, 'one complete audit per decided step');
+		self::assertContains(['create', Task::STATE_ENABLED, Task::PERFORMER_GROUP, true, '2026-07-30 08:00:00'], $creates);
+		self::assertContains(
+			['complete', Task::STATE_COMPLETED, Task::PERFORMER_GROUP, true, $approved->getCompletedAt()?->format('Y-m-d H:i:s')],
+			$completes
+		);
+
+		$byAlice = array_values(array_filter($this->audits, static fn (TaskAudit $entry): bool => $entry->getActor() === 'alice'));
+		self::assertCount(1, $byAlice);
+		self::assertSame('complete', $byAlice[0]->getAction());
+		self::assertSame((int)$approved->getId(), (int)$byAlice[0]->getTaskId());
+	}//end testEachMigratedTaskIsAuditedAtItsOriginalMoments()
+
 	public function testRunningTheMigrationTwiceChangesNothing(): void {
 		$this->step()->run($this->createMock(IOutput::class));
 		$tasksAfterFirst = count($this->tasks);

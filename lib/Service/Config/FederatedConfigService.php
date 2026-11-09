@@ -234,11 +234,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 *
 	 * @param string $typeId The shareable type id.
 	 * @param array $selection What to share.
-	 * @param string $repo The `owner/repo` to publish into.
-	 * @param string $path The path within the repo for the bundle file.
+	 * @param ConfigPublishTarget $target Where to publish: repo, path, branch and visibility of a created repo.
 	 * @param string $credentialId The broker credential id custodying the GitHub token.
-	 * @param string $branch The branch to publish onto.
-	 * @param bool $private Whether a repo created on demand is private.
 	 *
 	 * @return array `{published: true, path, status}`.
 	 *
@@ -246,23 +243,16 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function publish(
-		string $typeId,
-		array $selection,
-		string $repo,
-		string $path,
-		string $credentialId,
-		string $branch = 'main',
-		bool $private = false,
-	): array {
+	public function publish(string $typeId, array $selection, ConfigPublishTarget $target, string $credentialId): array {
 		$type = $this->typeOrFail(typeId: $typeId);
 
 		// Make the target repo exist and carry the type's discovery topic, so a
 		// freshly published config is findable via discover() (both single-config
 		// and config-set repos rely on this). Best-effort: a failure here still
 		// lets the contents write surface a clear error.
-		$this->ensureRepo(repo: $repo, credentialId: $credentialId, private: $private);
-		$this->setTopics(repo: $repo, topics: [$type->getTopic()], credentialId: $credentialId);
+		$destination = new BrokeredPublishTarget(target: $target, credentialId: $credentialId);
+		$this->ensureRepo(destination: $destination);
+		$this->setTopics(destination: $destination, topics: [$type->getTopic()]);
 
 		$bundle = $this->signer->sign(bundle: $type->serialise(selection: $selection));
 		$content = base64_encode((string)json_encode($bundle, JSON_PRETTY_PRINT));
@@ -273,13 +263,13 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 			credentialId: $credentialId,
 			appId: self::APP_ID,
 			method: 'PUT',
-			path: sprintf('/repos/%s/contents/%s', $repo, ltrim($path, '/')),
+			path: sprintf('/repos/%s/contents/%s', $target->repo, ltrim($target->path, '/')),
 			headers: ['Accept' => 'application/vnd.github+json'],
 			body: (string)json_encode(
 				[
 					'message' => sprintf('Publish %s configuration', $typeId),
 					'content' => $content,
-					'branch' => $branch,
+					'branch' => $target->branch,
 				]
 			)
 		);
@@ -291,8 +281,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 
 		return [
 			'published' => true,
-			'repo' => $repo,
-			'path' => $path,
+			'repo' => $target->repo,
+			'path' => $target->path,
 			'topic' => $type->getTopic(),
 			'status' => $status,
 		];
@@ -307,20 +297,20 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * used, otherwise the authenticated user's; a failure is logged, not fatal
 	 * (the subsequent contents write reports a missing repo clearly).
 	 *
-	 * @param string $repo The `owner/repo`.
-	 * @param string $credentialId The broker credential.
-	 * @param boolean $private Whether a freshly created repo should be private.
+	 * @param BrokeredPublishTarget $destination The target (its `owner/repo`, and whether a freshly created repo
+	 *                                           should be private) and the broker credential.
 	 *
 	 * @return void
 	 */
-	private function ensureRepo(string $repo, string $credentialId, bool $private = false): void {
-		[$owner, $name] = array_pad(explode('/', $repo, 2), 2, '');
+	private function ensureRepo(BrokeredPublishTarget $destination): void {
+		$repo = $destination->target->repo;
+		[$owner, $name] = $destination->ownerAndName();
 		if ($owner === '' || $name === '') {
 			return;
 		}
 
-		if ($this->repoExists(owner: $owner, name: $name, credentialId: $credentialId) === true
-			|| $this->createRepo(owner: $owner, name: $name, credentialId: $credentialId, private: $private) === true
+		if ($this->repoExists(destination: $destination) === true
+			|| $this->createRepo(destination: $destination) === true
 		) {
 			return;
 		}
@@ -335,16 +325,15 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	/**
 	 * Whether the repo answers 200; a failed lookup counts as absent.
 	 *
-	 * @param string $owner        The repo owner.
-	 * @param string $name         The repo name.
-	 * @param string $credentialId The broker credential.
+	 * @param BrokeredPublishTarget $destination The target (`owner/repo`) and the broker credential.
 	 *
 	 * @return bool
 	 */
-	private function repoExists(string $owner, string $name, string $credentialId): bool {
+	private function repoExists(BrokeredPublishTarget $destination): bool {
+		[$owner, $name] = $destination->ownerAndName();
 		try {
 			$existing = $this->broker->request(
-				credentialId: $credentialId,
+				credentialId: $destination->credentialId,
 				appId: self::APP_ID,
 				method: 'GET',
 				path: sprintf('/repos/%s/%s', $owner, $name),
@@ -360,17 +349,14 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	/**
 	 * Create the repo: as an org repo first, then in the authenticated user's namespace.
 	 *
-	 * @param string $owner        The repo owner.
-	 * @param string $name         The repo name.
-	 * @param string $credentialId The broker credential.
-	 * @param bool   $private      Whether the repo is private.
+	 * @param BrokeredPublishTarget $destination The target (`owner/repo`, privacy) and the broker credential.
 	 *
 	 * @return bool Whether one of the create calls answered 2xx.
 	 */
-	private function createRepo(string $owner, string $name, string $credentialId, bool $private): bool {
-		$body = (string)json_encode(['name' => $name, 'private' => $private, 'auto_init' => true]);
+	private function createRepo(BrokeredPublishTarget $destination): bool {
+		$owner = $destination->ownerAndName()[0];
 		foreach ([sprintf('/orgs/%s/repos', $owner), '/user/repos'] as $createPath) {
-			if ($this->tryCreateRepo(createPath: $createPath, body: $body, credentialId: $credentialId) === true) {
+			if ($this->tryCreateRepo(createPath: $createPath, destination: $destination) === true) {
 				return true;
 			}
 		}
@@ -381,21 +367,20 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	/**
 	 * Try one repo-create endpoint; true on a 2xx, false on any other answer or failure.
 	 *
-	 * @param string $createPath   The create endpoint path.
-	 * @param string $body         The JSON create body.
-	 * @param string $credentialId The broker credential.
+	 * @param string                $createPath  The create endpoint path.
+	 * @param BrokeredPublishTarget $destination The target (name, privacy) and the broker credential.
 	 *
 	 * @return bool
 	 */
-	private function tryCreateRepo(string $createPath, string $body, string $credentialId): bool {
+	private function tryCreateRepo(string $createPath, BrokeredPublishTarget $destination): bool {
 		try {
 			$created = $this->broker->request(
-				credentialId: $credentialId,
+				credentialId: $destination->credentialId,
 				appId: self::APP_ID,
 				method: 'POST',
 				path: $createPath,
 				headers: ['Accept' => 'application/vnd.github+json'],
-				body: $body
+				body: $destination->createBody()
 			);
 			$status = (int)($created['status'] ?? 0);
 			return $status >= 200 && $status < 300;
@@ -407,13 +392,14 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	/**
 	 * Set a repository's discovery topics (best-effort).
 	 *
-	 * @param string $repo The `owner/repo`.
-	 * @param array<int, string> $topics The topics to set.
-	 * @param string $credentialId The broker credential.
+	 * @param BrokeredPublishTarget $destination The target (`owner/repo`) and the broker credential.
+	 * @param array<int, string>    $topics      The topics to set.
 	 *
 	 * @return void
 	 */
-	private function setTopics(string $repo, array $topics, string $credentialId): void {
+	private function setTopics(BrokeredPublishTarget $destination, array $topics): void {
+		$repo = $destination->target->repo;
+		$credentialId = $destination->credentialId;
 		$names = array_values(array_filter(array_map('trim', $topics)));
 		if ($names === []) {
 			return;
@@ -589,34 +575,33 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 			throw new RuntimeException(sprintf('Could not fetch %s from %s: %s', $path, $repo, $e->getMessage()));
 		}
 
-		return $this->decodeBundle(body: $body, repo: $repo, path: $path);
+		return $this->decodeBundle(body: $body, where: sprintf('%s in %s', $path, $repo));
 	}//end fetchBundle()
 
 	/**
 	 * Decode a contents-API response body into the bundle it carries.
 	 *
-	 * @param string $body The response body.
-	 * @param string $repo The repo (for messages).
-	 * @param string $path The file path (for messages).
+	 * @param string $body  The response body.
+	 * @param string $where The file path and repo, as `<path> in <repo>` (for messages).
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @throws RuntimeException When there is no content, or it is not base64 JSON.
 	 */
-	private function decodeBundle(string $body, string $repo, string $path): array {
+	private function decodeBundle(string $body, string $where): array {
 		$meta = json_decode($body, true);
 		if (is_array($meta) === false || isset($meta['content']) === false) {
-			throw new RuntimeException(sprintf('No bundle at %s in %s.', $path, $repo));
+			throw new RuntimeException(sprintf('No bundle at %s.', $where));
 		}
 
 		$decoded = base64_decode((string)$meta['content'], true);
 		if ($decoded === false) {
-			throw new RuntimeException(sprintf('Bundle at %s in %s is not valid base64.', $path, $repo));
+			throw new RuntimeException(sprintf('Bundle at %s is not valid base64.', $where));
 		}
 
 		$bundle = json_decode($decoded, true);
 		if (is_array($bundle) === false) {
-			throw new RuntimeException(sprintf('Bundle at %s in %s is not valid JSON.', $path, $repo));
+			throw new RuntimeException(sprintf('Bundle at %s is not valid JSON.', $where));
 		}
 
 		return $bundle;

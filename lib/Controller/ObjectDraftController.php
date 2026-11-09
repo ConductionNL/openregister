@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
+use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -261,9 +262,7 @@ class ObjectDraftController extends Controller {
 	 */
 	private function activateDraft(array $draft, IUser $user): ObjectEntity {
 		return $this->activation->activateAsUser(
-			register: $draft['register'],
-			schema: $draft['schema'],
-			draftId: $draft['id'],
+			address: new DraftAddress(register: $draft['register'], schema: $draft['schema'], draftId: $draft['id']),
 			user: $user,
 			changes: $this->changesFromRequest()
 		);

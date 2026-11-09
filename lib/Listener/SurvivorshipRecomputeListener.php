@@ -46,6 +46,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolverInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -300,12 +301,14 @@ class SurvivorshipRecomputeListener implements IEventListener {
 		$overridesField = self::fieldName(config: $config, key: 'overridesField', default: self::DEFAULT_OVERRIDES_FIELD);
 
 		return $this->resolver->resolveGoldenRecord(
-			entityType: $entityType,
 			sourceRecords: $sourceRecords,
 			config: $config,
-			trustRows: $trustRows,
-			trustResolver: $this->trustResolver,
-			asOf: new DateTimeImmutable(),
+			trust: new SurvivorshipTrustLookup(
+				entityType: $entityType,
+				trustRows: $trustRows,
+				trustResolver: $this->trustResolver,
+				asOf: new DateTimeImmutable()
+			),
 			overrides: ($data[$overridesField] ?? null)
 		);
 	}//end resolve()

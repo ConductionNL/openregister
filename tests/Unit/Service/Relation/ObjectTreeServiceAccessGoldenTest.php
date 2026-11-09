@@ -38,7 +38,9 @@ use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Relation\ObjectTreeMappers;
+use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
 use OCA\OpenRegister\Service\Relation\ObjectTreeService;
+use OCA\OpenRegister\Service\Relation\ObjectTreeSources;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
 use OCA\OpenRegister\Service\Relation\RelationGraphSources;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
@@ -209,14 +211,16 @@ class ObjectTreeServiceAccessGoldenTest extends TestCase {
 	 */
 	private function build(array $collaborators): ObjectTreeService {
 		return new ObjectTreeService(
-			descender: $collaborators['descender'],
-			hierarchies: $collaborators['hierarchies'],
+			sources: new ObjectTreeSources(
+				descender: $collaborators['descender'],
+				hierarchies: $collaborators['hierarchies'],
+				graphs: $collaborators['graphs']
+			),
 			mappers: new ObjectTreeMappers(
 				objectMapper: $collaborators['objectMapper'],
 				registerMapper: $collaborators['registerMapper'],
 				schemaMapper: $collaborators['schemaMapper']
 			),
-			graphs: $collaborators['graphs'],
 			renderer: $collaborators['renderer'],
 			logger: $collaborators['logger']
 		);
@@ -340,9 +344,7 @@ class ObjectTreeServiceAccessGoldenTest extends TestCase {
 	): void {
 		$tree = $this->service(readable: $readable, accessFails: $accessFails, cap: $cap, levelFails: $levelFails)->tree(
 			root: self::entity(uuid: $root),
-			direction: $direction,
-			depth: $depth,
-			fields: $fields,
+			query: new ObjectTreeQuery(direction: $direction, depth: $depth, fields: $fields),
 			_rbac: $rbac
 		);
 

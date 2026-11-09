@@ -33,8 +33,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\BackgroundJob\Support\FlowRunRetentionServices;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStepMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -71,24 +72,53 @@ class FlowRunRetentionJob extends TimedJob {
 	public const DEFAULT_RETENTION_DAYS = 31;
 
 	/**
+	 * Deletes expired runs.
+	 *
+	 * @var FlowRunMapperInterface
+	 */
+	private readonly FlowRunMapperInterface $runs;
+
+	/**
+	 * Deletes those runs' step rows.
+	 *
+	 * @var FlowRunStepMapperInterface
+	 */
+	private readonly FlowRunStepMapperInterface $steps;
+
+	/**
+	 * Finds the flows declaring an override.
+	 *
+	 * @var FlowMapperInterface
+	 */
+	private readonly FlowMapperInterface $flows;
+
+	/**
+	 * Reads the retention period.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $config;
+
+	/**
+	 * Records what was swept.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time The clock.
-	 * @param FlowRunMapperInterface $runs Deletes expired runs.
-	 * @param FlowRunStepMapperInterface $steps Deletes those runs' step rows.
-	 * @param FlowMapper $flows Finds the flows declaring an override.
-	 * @param IAppConfig $config Reads the retention period.
-	 * @param LoggerInterface $logger Records what was swept.
+	 * @param ITimeFactory             $time     The clock.
+	 * @param FlowRunRetentionServices $services The run history, the retention setting and the log.
 	 */
-	public function __construct(
-		ITimeFactory $time,
-		private readonly FlowRunMapperInterface $runs,
-		private readonly FlowRunStepMapperInterface $steps,
-		private readonly FlowMapper $flows,
-		private readonly IAppConfig $config,
-		private readonly LoggerInterface $logger,
-	) {
+	public function __construct(ITimeFactory $time, FlowRunRetentionServices $services) {
 		parent::__construct(time: $time);
+		$this->runs = $services->stores->runs;
+		$this->steps = $services->stores->steps;
+		$this->flows = $services->stores->flows;
+		$this->config = $services->config;
+		$this->logger = $services->logger;
 
 		$this->setInterval(seconds: 86400);
 

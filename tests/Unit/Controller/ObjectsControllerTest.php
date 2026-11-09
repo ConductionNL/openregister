@@ -12,6 +12,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ExportService;
@@ -172,9 +173,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			false,
-			[],
-			[],
-			[],
+			new DeletionEffects([], [], []),
 			[['uuid' => 'blocker-1', 'reason' => 'RESTRICT']],
 			[]
 		);
@@ -294,7 +293,77 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame(403, $result->getStatus());
 	}
 
+	/**
+	 * Let a merge past its access check: both objects are found and the caller
+	 * may update the target and delete the source (or not, when told so).
+	 *
+	 * @param bool $mayUpdate Whether the caller may update the target.
+	 * @param bool $mayDelete Whether the caller may delete the source.
+	 *
+	 * @return void
+	 */
+	private function allowMerge(bool $mayUpdate = true, bool $mayDelete = true): void {
+		$this->objectService->method('find')->willReturnCallback(
+			static function ($id) {
+				$object = new \OCA\OpenRegister\Db\ObjectEntity();
+				$object->setUuid((string)$id);
+				$object->setOwner('owner-1');
+				return $object;
+			}
+		);
+		$this->schemaMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		$permissions->method('hasPermission')->willReturnCallback(
+			static fn ($schema, string $action) => ($action === 'update' && $mayUpdate) || ($action === 'delete' && $mayDelete)
+		);
+		$this->container->method('get')->willReturnCallback(
+			static fn (string $id) => $id === \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class ? $permissions : null
+		);
+	}
+
+	public function testMergeReturns404WhenTheCallerCannotReadTheObjects(): void {
+		$this->request->method('getParams')->willReturn([
+			'target' => 'uuid-456',
+			'object' => ['title' => 'Merged'],
+		]);
+		$this->objectService->method('find')->willReturn(null);
+		$this->objectService->expects($this->never())->method('mergeObjects');
+
+		$result = $this->controller->merge('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+		$this->assertSame(404, $result->getStatus());
+		$this->assertSame(['error' => 'Object not found'], $result->getData());
+	}
+
+	public function testMergeReturns403WhenTheCallerMayNotUpdateTheTarget(): void {
+		$this->request->method('getParams')->willReturn([
+			'target' => 'uuid-456',
+			'object' => ['title' => 'Merged'],
+		]);
+		$this->allowMerge(mayUpdate: false);
+		$this->objectService->expects($this->never())->method('mergeObjects');
+
+		$result = $this->controller->merge('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame(['error' => 'You may not merge these objects.'], $result->getData());
+	}
+
+	public function testMergeReturns403WhenTheCallerMayNotDeleteTheSource(): void {
+		$this->request->method('getParams')->willReturn([
+			'target' => 'uuid-456',
+			'object' => ['title' => 'Merged'],
+		]);
+		$this->allowMerge(mayDelete: false);
+		$this->objectService->expects($this->never())->method('mergeObjects');
+
+		$result = $this->controller->merge('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+		$this->assertSame(403, $result->getStatus());
+	}
+
 	public function testMergeReturnsMergedObject(): void {
+		$this->allowMerge();
 		$this->request->method('getParams')->willReturn([
 			'target' => 'uuid-456',
 			'object' => ['title' => 'Merged'],
@@ -357,6 +426,7 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	public function testMergeReturns400OnInvalidArgument(): void {
+		$this->allowMerge();
 		$this->request->method('getParams')->willReturn([
 			'target' => 'uuid-456',
 			'object' => ['title' => 'Merged'],
@@ -373,6 +443,7 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	public function testMergeReturns500OnGenericException(): void {
+		$this->allowMerge();
 		$this->request->method('getParams')->willReturn([
 			'target' => 'uuid-456',
 			'object' => ['title' => 'Merged'],
@@ -698,7 +769,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('find')->willReturn($objectEntity);
 
-		$analysis = new DeletionAnalysis(true, [], [], [], [], []);
+		$analysis = new DeletionAnalysis(true, new DeletionEffects([], [], []), [], []);
 		$deleteHandler = $this->createMock(\OCA\OpenRegister\Service\Object\DeleteObject::class);
 		$deleteHandler->method('canDelete')->willReturn($analysis);
 		$this->objectService->method('getDeleteHandler')->willReturn($deleteHandler);
@@ -2368,9 +2439,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$analysis = new \OCA\OpenRegister\Dto\DeletionAnalysis(
 			false,
-			[],
-			[],
-			[],
+			new \OCA\OpenRegister\Dto\DeletionEffects([], [], []),
 			[['uuid' => 'blocker', 'reason' => 'RESTRICT']],
 			[]
 		);
@@ -3411,6 +3480,7 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testMergeReturnsFullMergeResult(): void {
+		$this->allowMerge();
 		$this->request->method('getParams')->willReturn([
 			'target' => 'uuid-456',
 			'object' => ['title' => 'Merged', 'description' => 'Combined'],
@@ -3798,9 +3868,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			false,
-			[],
-			[],
-			[],
+			new DeletionEffects([], [], []),
 			[['uuid' => 'blocker-1', 'reason' => 'RESTRICT']],
 			[]
 		);

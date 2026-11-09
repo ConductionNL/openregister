@@ -43,18 +43,18 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\VocabularyLanguage;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
-use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
-use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
+use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilderInterface;
+use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
+use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolverInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
-use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
 use Throwable;
 
@@ -110,8 +110,8 @@ class VocabularyController extends Controller {
 	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
 	 * @param ObjectOperationsInterface $objectService OR object read path (findAll, real API only).
-	 * @param CodedOptionsBuilder $options Builds a coded property's option list or option tree.
-	 * @param VocabularyDeclarationResolver $declarationResolver Resolves the coded declaration a read is about.
+	 * @param CodedOptionsBuilderInterface $options Builds a coded property's option list or option tree.
+	 * @param VocabularyDeclarationResolverInterface $declarationResolver Resolves the coded declaration a read is about.
 	 *
 	 * @return void
 	 */
@@ -119,8 +119,8 @@ class VocabularyController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly CodedOptionsBuilder $options,
-		private readonly VocabularyDeclarationResolver $declarationResolver,
+		private readonly CodedOptionsBuilderInterface $options,
+		private readonly VocabularyDeclarationResolverInterface $declarationResolver,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->language = new VocabularyLanguage(request: $request);

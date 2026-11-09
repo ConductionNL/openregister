@@ -89,11 +89,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 			<template #column-name="{ row }">
 				<div class="titleContent">
 					<strong>{{ row.name }}</strong>
-					<span
-						v-if="row.description"
-						class="textDescription textEllipsis"
-						>{{ row.description }}</span
-					>
+					<IndexRowDescription :text="row.description" />
 				</div>
 			</template>
 
@@ -140,6 +136,7 @@ import { CnIndexPage } from '@conduction/nextcloud-vue'
 import { NcAppContent } from '@nextcloud/vue'
 import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
+import IndexRowDescription from '../IndexRowDescription.vue'
 import ActiveStatus from './ActiveStatus.vue'
 import { deleteAction, editAction } from '../../services/menuActions.js'
 import {
@@ -151,6 +148,7 @@ export default {
 	name: 'ApplicationsIndex',
 	components: {
 		ActiveStatus,
+		IndexRowDescription,
 		ActionMenu,
 		NcAppContent,
 		CnIndexPage,

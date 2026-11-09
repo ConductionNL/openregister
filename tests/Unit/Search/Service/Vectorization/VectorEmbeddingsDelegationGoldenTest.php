@@ -32,6 +32,8 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion;
 
 /**
  * Pins that storage, search and statistics are passed through unchanged.
@@ -195,7 +197,7 @@ final class VectorEmbeddingsDelegationGoldenTest extends TestCase {
 		$weights = ['keyword' => 0.25, 'vector' => 0.75];
 		$this->search->expects($this->once())
 			->method('hybridSearch')
-			->with([0.5, 0.25], $keyword, 7, $weights)
+			->with(new VectorQuery(embedding: [0.5, 0.25], limit: 7), new KeywordFusion(results: $keyword, weights: $weights))
 			->willReturn(['results' => [['id' => 'k1']]]);
 
 		$this->assertSame(

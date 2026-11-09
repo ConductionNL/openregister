@@ -39,7 +39,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<FlowClaim>
  */
-class FlowClaimMapper extends QBMapper {
+class FlowClaimMapper extends QBMapper implements FlowClaimMapperInterface {
 
 	use RunScopedRowsTrait;
 	use SelectByColumnTrait;

@@ -653,11 +653,11 @@ class TimelineEntriesController extends Controller {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
 		}
 
-		$this->objects->setRegister($path['register']);
-		$this->objects->setSchema($path['schema']);
-		$this->objects->setObject($path['id']);
-
 		try {
+			// setObject() throws for an unknown object, or one the caller may not read.
+			$this->objects->setRegister($path['register']);
+			$this->objects->setSchema($path['schema']);
+			$this->objects->setObject($path['id']);
 			$object = $this->objects->getObject();
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);

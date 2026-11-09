@@ -33,7 +33,7 @@ final class ChunkVectorFactory implements ChunkVectorFactoryInterface {
 	/**
 	 * The vector row of a chunk: its source, its embedding and its place among its source's chunks.
 	 *
-	 * @param ChunkVectorSource    $source        The chunk's source, place and text.
+	 * @param ChunkVectorSourceInterface $source        The chunk's source, place and text.
 	 * @param array<string, mixed> $embeddingData Its embedding, model and dimensions.
 	 * @param int                  $totalChunks   How many chunks its source has.
 	 *
@@ -41,23 +41,23 @@ final class ChunkVectorFactory implements ChunkVectorFactoryInterface {
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function forChunk(ChunkVectorSource $source, array $embeddingData, int $totalChunks): StoredVector {
+	public function forChunk(ChunkVectorSourceInterface $source, array $embeddingData, int $totalChunks): StoredVector {
 		return new StoredVector(
-			subject: new VectorSubject(entityType: (string)$source->sourceType, entityId: (string)$source->sourceId),
+			subject: new VectorSubject(entityType: (string)$source->sourceType(), entityId: (string)$source->sourceId()),
 			payload: new VectorPayload(
 				embedding: $embeddingData['embedding'],
 				model: (string)$embeddingData['model'],
 				dimensions: (int)$embeddingData['dimensions']
 			),
 			position: new VectorChunkPosition(
-				chunkIndex: $source->chunkIndex,
+				chunkIndex: $source->chunkIndex(),
 				totalChunks: max(1, $totalChunks),
-				chunkText: substr((string)$source->text, 0, 500)
+				chunkText: substr($source->text(), 0, 500)
 			),
 			metadata: [
-				'source_id' => $source->sourceId,
-				'start_offset' => $source->startOffset,
-				'end_offset' => $source->endOffset,
+				'source_id' => $source->sourceId(),
+				'start_offset' => $source->startOffset(),
+				'end_offset' => $source->endOffset(),
 			]
 		);
 	}//end forChunk()

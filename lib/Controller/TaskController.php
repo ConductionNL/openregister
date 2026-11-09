@@ -44,6 +44,12 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\TaskControllerServices;
+use OCA\OpenRegister\Db\TaskInboxAudience;
+use OCA\OpenRegister\Db\TaskInboxAnchor;
+use OCA\OpenRegister\Db\TaskInboxDueWindow;
+use OCA\OpenRegister\Db\TaskInboxFilter;
+use OCA\OpenRegister\Db\TaskInboxOrder;
+use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
@@ -53,9 +59,11 @@ use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
 use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
 use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCP\AppFramework\Controller;
@@ -325,26 +333,24 @@ class TaskController extends Controller {
 		$sortKey = ltrim($sort, '-');
 
 		$criteria = new TaskInboxCriteria(
-			uid: $uid,
-			groupIds: $this->groupIds(uid: $uid),
-			isAdmin: $this->isAdmin(uid: $uid),
-			scope: $scope,
-			states: $states,
-			isTerminal: $terminalFilter,
-			priority: $priority,
-			kind: $this->trimmedOrNull(value: $kind),
-			objectUuid: $objectUuid,
-			runUuid: $this->trimmedOrNull(value: $runUuid),
-			overdueAt: $overdueAt,
-			dueAfter: $dueAfterAt,
-			dueBefore: $dueBeforeAt,
-			sort: $sortKey,
-			sortDescending: $descending,
-			includeBlocked: ($includeBlocked !== null && filter_var($includeBlocked, FILTER_VALIDATE_BOOLEAN) === true),
-			openFirst: ($openFirst !== null && filter_var($openFirst, FILTER_VALIDATE_BOOLEAN) === true),
+			audience: new TaskInboxAudience(uid: $uid, groupIds: $this->groupIds(uid: $uid), isAdmin: $this->isAdmin(uid: $uid), scope: $scope),
+			selection: new TaskInboxSelection(
+				filter: new TaskInboxFilter(states: $states, isTerminal: $terminalFilter, priority: $priority, kind: $this->trimmedOrNull(value: $kind)),
+				window: new TaskInboxDueWindow(overdueAt: $overdueAt, dueAfter: $dueAfterAt, dueBefore: $dueBeforeAt),
+				anchor: new TaskInboxAnchor(
+					objectUuid: $objectUuid,
+					runUuid: $this->trimmedOrNull(value: $runUuid),
+					includeBlocked: ($includeBlocked !== null && filter_var($includeBlocked, FILTER_VALIDATE_BOOLEAN) === true)
+				),
+				order: new TaskInboxOrder(
+					sort: $sortKey,
+					sortDescending: $descending,
+					openFirst: ($openFirst !== null && filter_var($openFirst, FILTER_VALIDATE_BOOLEAN) === true)
+				)
+			),
 		);
 
-		return new JSONResponse($this->inbox->inbox(criteria: $criteria, limit: $limit, offset: $offset));
+		return new JSONResponse($this->inbox->inbox(criteria: $criteria, page: new TaskInboxPage(limit: $limit, offset: $offset)));
 	}//end index()
 
 	/**
@@ -430,10 +436,15 @@ class TaskController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function create(): JSONResponse {
-		return $this->respondWith(
-			verb: fn (): TaskInterface => $this->tasks->create(data: $this->body(), actor: $this->uid()),
-			successStatus: Http::STATUS_CREATED
+		$response = $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->create(data: $this->body(), actor: $this->uid())
 		);
+		if ($response->getStatus() === Http::STATUS_OK) {
+			// Only the happy path answers 200; a created task is a 201.
+			$response->setStatus(Http::STATUS_CREATED);
+		}
+
+		return $response;
 	}//end create()
 
 	/**
@@ -603,9 +614,7 @@ class TaskController extends Controller {
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->completion->complete(
 				uuid: $uuid,
-				outcome: $outcome,
-				resultText: $resultText,
-				comment: $comment,
+				answer: new TaskAnswer(outcome: $outcome, resultText: $resultText, comment: $comment),
 				data: ($data ?? []),
 				actor: $this->uid()
 			),
@@ -691,7 +700,6 @@ class TaskController extends Controller {
 	 * bound parameters.
 	 *
 	 * @param callable(): TaskInterface $verb The service call.
-	 * @param int $successStatus The status of the happy path.
 	 * @param string|null $uuid The task acted on, for the denial mapping.
 	 *
 	 * @return JSONResponse The task, or the refusal.
@@ -699,14 +707,11 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
 	 */
-	private function respondWith(callable $verb, int $successStatus = Http::STATUS_OK, ?string $uuid = null): JSONResponse {
+	private function respondWith(callable $verb, ?string $uuid = null): JSONResponse {
 		try {
 			$task = $verb();
 
-			return new JSONResponse(
-				$this->inbox->enrich(task: $task),
-				$successStatus
-			);
+			return new JSONResponse($this->inbox->enrich(task: $task));
 		} catch (TaskFormRefusedException $refused) {
 			// The form contract's refusal: the fields machine-readable next
 			// to the message, and the kind, so a client can flag each field

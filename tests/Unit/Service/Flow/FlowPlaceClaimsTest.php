@@ -166,4 +166,33 @@ class FlowPlaceClaimsTest extends TestCase {
 		$this->assertNotSame(FlowPlaceClaims::newOwner(), FlowPlaceClaims::newOwner());
 		$this->assertLessThanOrEqual(128, strlen(FlowPlaceClaims::newOwner()));
 	}//end testOwnerTokensAreUniquePerPass()
+
+	public function testEachClaimRowNamesTheRunPlaceOwnerStreamTransitionAndOneClaimTime(): void {
+		$this->claims->acquire(runUuid: 'r', streamId: 's7', transition: 'T7', places: ['b', 'a'], owner: 'A');
+
+		$this->assertSame(['r|a', 'r|b'], array_keys($this->index));
+		$first = $this->index['r|a'];
+		$second = $this->index['r|b'];
+		$this->assertNotSame($first, $second, 'Every place gets its own row.');
+		foreach ([$first, $second] as $claim) {
+			$this->assertSame('r', $claim->getRunUuid());
+			$this->assertSame('A', $claim->getOwner());
+			$this->assertSame('s7', $claim->getStreamId());
+			$this->assertSame('T7', $claim->getTransition());
+			$this->assertNotNull($claim->getClaimedAt());
+		}
+
+		$this->assertSame('a', $first->getPlace());
+		$this->assertSame('b', $second->getPlace());
+		$this->assertEquals($first->getClaimedAt(), $second->getClaimedAt(), 'One firing is claimed at one moment.');
+	}//end testEachClaimRowNamesTheRunPlaceOwnerStreamTransitionAndOneClaimTime()
+
+	public function testDuplicatePlacesAreClaimedOnceAndNoPlacesClaimNothing(): void {
+		$this->assertSame(['1', 'a'], $this->claims->acquire(runUuid: 'r', streamId: 's', transition: 'T', places: ['a', 1, 'a', '1'], owner: 'A'));
+		$this->assertSame(['1', 'a'], $this->attempts);
+
+		$this->attempts = [];
+		$this->assertSame([], $this->claims->acquire(runUuid: 'r2', streamId: 's', transition: 'T', places: [], owner: 'A'));
+		$this->assertSame([], $this->attempts);
+	}//end testDuplicatePlacesAreClaimedOnceAndNoPlacesClaimNothing()
 }//end class

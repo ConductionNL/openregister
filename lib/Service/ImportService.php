@@ -39,10 +39,13 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
-use OCA\OpenRegister\Listener\NotifyPushBatch;
+use OCA\OpenRegister\Listener\NotifyPushBatchInterface;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Import\ImportErrorsCsv;
+use OCA\OpenRegister\Service\Import\ImportServiceCodecs;
+use OCA\OpenRegister\Service\Import\ImportServiceRuntime;
+use OCA\OpenRegister\Service\Import\ImportServiceStores;
 use OCA\OpenRegister\Service\Import\ImportValueCaster;
 use OCA\OpenRegister\Service\Import\JsonImportRows;
 use OCA\OpenRegister\Service\Import\MappingErrorRow;
@@ -168,35 +171,64 @@ class ImportService implements ObjectImporterInterface {
 	private readonly ImportValueCaster $valueCaster;
 
 	/**
+	 * Audit trail mapper: tags and finds the rows of one import job.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Migration-pack mapping engine.
+	 *
+	 * @var MappingEngine
+	 */
+	private readonly MappingEngine $mappingEngine;
+
+	/**
+	 * Schema validator, used for genuinely side-effect-free dry-run imports.
+	 *
+	 * @var ValidateObjectInterface
+	 */
+	private readonly ValidateObjectInterface $validateObjectHandler;
+
+	/**
+	 * DI container for lazy IQueue and import-handler resolution.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * The notify_push batch mode a bulk save runs in.
+	 *
+	 * @var NotifyPushBatchInterface
+	 */
+	private readonly NotifyPushBatchInterface $pushBatch;
+
+	/**
 	 * Constructor for the ImportService
 	 *
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper
-	 * @param ObjectOperationsInterface $objectService The object service
-	 * @param LoggerInterface $logger The logger interface
-	 * @param IGroupManager $groupManager The group manager
-	 * @param \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec Translation CSV codec
-	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
-	 * @param MappingEngine $mappingEngine Migration-pack mapping engine
-	 * @param ValidateObjectInterface $validateObjectHandler Schema validator, used for genuinely
-	 *                                              side-effect-free dry-run imports
-	 * @param ContainerInterface $container DI container for lazy IQueue resolution
+	 * @param ImportServiceStores  $stores       The schema lookup, object writer, audit trail and validator.
+	 * @param ImportServiceCodecs  $codecs       The translation codec and the mapping engine.
+	 * @param ImportServiceRuntime $runtime      The container, the push batch and the logger.
+	 * @param IGroupManager        $groupManager The group manager (the admin check).
 	 */
 	public function __construct(
-		SchemaMapperInterface $schemaMapper,
-		ObjectOperationsInterface $objectService,
-		LoggerInterface $logger,
+		ImportServiceStores $stores,
+		ImportServiceCodecs $codecs,
+		ImportServiceRuntime $runtime,
 		IGroupManager $groupManager,
-		\OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly MappingEngine $mappingEngine,
-		private readonly ValidateObjectInterface $validateObjectHandler,
-		private readonly ContainerInterface $container,
 	) {
-		$this->schemaMapper = $schemaMapper;
-		$this->objectService = $objectService;
-		$this->logger = $logger;
-		$this->groupManager = $groupManager;
-		$this->translationCsvCodec = $translationCsvCodec;
+		$this->schemaMapper          = $stores->schemaMapper;
+		$this->objectService         = $stores->objectService;
+		$this->auditTrailMapper      = $stores->auditTrailMapper;
+		$this->validateObjectHandler = $stores->validator;
+		$this->translationCsvCodec   = $codecs->translationCsvCodec;
+		$this->mappingEngine         = $codecs->mappingEngine;
+		$this->container             = $runtime->container;
+		$this->pushBatch             = $runtime->pushBatch;
+		$this->logger                = $runtime->logger;
+		$this->groupManager          = $groupManager;
 
 		$this->valueCaster = new ImportValueCaster();
 
@@ -1100,12 +1132,10 @@ class ImportService implements ObjectImporterInterface {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushBatch API is static by design (accessible without DI from import context)
-	 *
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 */
 	private function flushNotifyPushBatch(): void {
-		if (NotifyPushBatch::hasBatchedCollections() === false) {
+		if ($this->pushBatch->hasBatchedCollections() === false) {
 			return;
 		}
 
@@ -1124,7 +1154,7 @@ class ImportService implements ObjectImporterInterface {
 			return;
 		}
 
-		NotifyPushBatch::flushBatch(queue: $queue);
+		$this->pushBatch->flushBatch(queue: $queue);
 
 	}//end flushNotifyPushBatch()
 
@@ -1144,15 +1174,13 @@ class ImportService implements ObjectImporterInterface {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushBatch API is static by design (accessible without DI from import context)
-	 *
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 */
 	private function queueNotifyPushCollectionHint(Register $register, Schema $schema): void {
 		try {
 			$registerSlug = (string)($register->getSlug() ?? '');
 			$schemaSlug = (string)($schema->getSlug() ?? '');
-			NotifyPushBatch::addBatchedCollection(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+			$this->pushBatch->addBatchedCollection(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
 		} catch (\Throwable $e) {
 			// Slug not resolvable — skip the hint, never break the import.
 			$this->logger->debug(
@@ -1487,12 +1515,10 @@ class ImportService implements ObjectImporterInterface {
 	 *
 	 * @return array The saveObjects() result: saved, updated, unchanged and invalid
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushBatch::setBatchMode is an NC idiom static call
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function bulkSaveWithNotifyPush(array $objects, array $import): array {
-		NotifyPushBatch::setBatchMode(true);
+		$this->pushBatch->setBatchMode(true);
 		$saveResult = null;
 		try {
 			$saveResult = $this->objectService->saveObjects(
@@ -1516,7 +1542,7 @@ class ImportService implements ObjectImporterInterface {
 
 			// Flush BEFORE disabling batch mode — setBatchMode(false) clears the accumulator.
 			$this->flushNotifyPushBatch();
-			NotifyPushBatch::setBatchMode(false);
+			$this->pushBatch->setBatchMode(false);
 		}//end try
 
 		return $saveResult;

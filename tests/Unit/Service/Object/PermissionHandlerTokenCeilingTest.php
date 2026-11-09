@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Rbac\TokenGrant;
 use OCA\OpenRegister\Service\Rbac\TokenGrantReach;
 use OCA\OpenRegister\Service\Rbac\TokenGrantTerms;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
+use OCA\OpenRegister\Service\Rbac\TokenGrantTarget;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCP\IAppConfig;
@@ -94,8 +95,7 @@ class PermissionHandlerTokenCeilingTest extends TestCase {
 				terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('+10 years')),
 				tokenId: 'leverancier'
 			),
-			schemaSlug: 'zaak',
-			registerSlug: 'zaken'
+			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken')
 		);
 	}//end narrowedToReadOnly()
 
@@ -211,8 +211,7 @@ class PermissionHandlerTokenCeilingTest extends TestCase {
 				terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2020-01-01T00:00:00+00:00')),
 				tokenId: 'leverancier'
 			),
-			schemaSlug: 'zaak',
-			registerSlug: 'zaken'
+			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken')
 		);
 
 		$this->assertFalse(

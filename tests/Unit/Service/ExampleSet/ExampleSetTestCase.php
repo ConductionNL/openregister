@@ -74,6 +74,7 @@ use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppAndHistoryRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetHistoryRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds;
@@ -133,6 +134,10 @@ use OCP\IConfig;
 use OCP\Security\ISecureRandom;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerObjects;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerSetup;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerWriters;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverRows;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites;
@@ -396,82 +401,89 @@ abstract class ExampleSetTestCase extends TestCase {
 		$this->catalogue = new ExampleSetCatalogue(appManager: $appManager, order: new ExampleSetOrder());
 		$people          = new ExampleSetPeople(accounts: $this->accounts, record: $this->record);
 		$this->installer = new ExampleSetInstaller(
-			store: $this->store,
-			people: $people,
-			values: new ExampleSetValues(),
-			record: $this->record,
-			proof: new ExampleSetProof(),
-			prerequisites: new ExampleSetPrerequisites(registers: $this->registers, instance: $instance, record: $this->record, people: $people),
-			changes: $changes,
-			files: $files,
-			appConfig: $setConfig,
-			userPreferences: $preferences,
-			engineRows: new ExampleSetEngineKinds(
-				work: new ExampleSetWorkRowKinds(
-					tasks: new ExampleSetTasks(container: $container),
-					notes: new ExampleSetNotes(container: $container),
-					readStates: new ExampleSetReadStates(container: $container),
-					watchers: new ExampleSetWatchers(container: $container)
+			objects: new ExampleSetInstallerObjects(store: $this->store, values: new ExampleSetValues(), record: $this->record, proof: new ExampleSetProof()),
+			setup: new ExampleSetInstallerSetup(
+				people: $people,
+				prerequisites: new ExampleSetPrerequisites(registers: $this->registers, instance: $instance, record: $this->record, people: $people),
+				appConfig: $setConfig,
+				userPreferences: $preferences
+			),
+			writers: new ExampleSetInstallerWriters(
+				changes: $changes,
+				files: $files,
+				engineRows: new ExampleSetEngineKinds(
+					work: new ExampleSetWorkRowKinds(
+						tasks: new ExampleSetTasks(container: $container),
+						notes: new ExampleSetNotes(container: $container),
+						readStates: new ExampleSetReadStates(container: $container),
+						watchers: new ExampleSetWatchers(container: $container)
+					),
+					own: new ExampleSetOwnRowKinds(
+						views: new ExampleSetViews(container: $container),
+						flows: new ExampleSetFlows(container: $container),
+						casePlans: new ExampleSetCasePlans(container: $container)
+					),
+					links: new ExampleSetLinkRowKinds(
+						parties: new ExampleSetParties(container: $container),
+						emailLinks: new ExampleSetEmailLinks(container: $container),
+						accessLinks: new ExampleSetAccessLinks(container: $container),
+						grants: new ExampleSetGrants(container: $container)
+					),
+					elsewhere: new ExampleSetAppAndHistoryRowKinds(
+						apps: new ExampleSetAppRowKinds(
+							deckCards: new ExampleSetDeckCards(container: $container),
+							appointments: new ExampleSetAppointments(container: $container),
+							collectivesPages: new ExampleSetCollectivesPages(container: $container),
+							talkConversations: new ExampleSetTalkConversations(container: $container)
+						),
+						history: new ExampleSetHistoryRowKinds(
+							exportRuns: new ExampleSetExportRuns(container: $container),
+							archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
+							auditEntries: new ExampleSetAuditEntries(container: $container),
+							timelineEntries: new ExampleSetTimelineEntries(container: $container)
+						)
+					)
 				),
-				own: new ExampleSetOwnRowKinds(
-					views: new ExampleSetViews(container: $container),
-					flows: new ExampleSetFlows(container: $container),
-					casePlans: new ExampleSetCasePlans(container: $container)
-				),
-				links: new ExampleSetLinkRowKinds(
-					parties: new ExampleSetParties(container: $container),
-					emailLinks: new ExampleSetEmailLinks(container: $container),
-					accessLinks: new ExampleSetAccessLinks(container: $container),
-					grants: new ExampleSetGrants(container: $container)
-				),
-				apps: new ExampleSetAppRowKinds(
-					deckCards: new ExampleSetDeckCards(container: $container),
-					appointments: new ExampleSetAppointments(container: $container),
-					collectivesPages: new ExampleSetCollectivesPages(container: $container),
-					talkConversations: new ExampleSetTalkConversations(container: $container)
-				),
-				history: new ExampleSetHistoryRowKinds(
-					exportRuns: new ExampleSetExportRuns(container: $container),
-					archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
-					auditEntries: new ExampleSetAuditEntries(container: $container),
-					timelineEntries: new ExampleSetTimelineEntries(container: $container)
-				)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
 		$this->remover   = new ExampleSetRemover(
 			objects: new ExampleSetRemoverObjects(store: $this->store, record: $this->record, files: $files, changes: $changes),
 			settings: new ExampleSetRemoverSettings(appConfig: $setConfig, userPreferences: $preferences, registers: $this->registers, instance: $instance),
-			accounts: $this->accounts,
-			engineRows: new ExampleSetEngineKinds(
-				work: new ExampleSetWorkRowKinds(
-					tasks: new ExampleSetTasks(container: $container),
-					notes: new ExampleSetNotes(container: $container),
-					readStates: new ExampleSetReadStates(container: $container),
-					watchers: new ExampleSetWatchers(container: $container)
-				),
-				own: new ExampleSetOwnRowKinds(
-					views: new ExampleSetViews(container: $container),
-					flows: new ExampleSetFlows(container: $container),
-					casePlans: new ExampleSetCasePlans(container: $container)
-				),
-				links: new ExampleSetLinkRowKinds(
-					parties: new ExampleSetParties(container: $container),
-					emailLinks: new ExampleSetEmailLinks(container: $container),
-					accessLinks: new ExampleSetAccessLinks(container: $container),
-					grants: new ExampleSetGrants(container: $container)
-				),
-				apps: new ExampleSetAppRowKinds(
-					deckCards: new ExampleSetDeckCards(container: $container),
-					appointments: new ExampleSetAppointments(container: $container),
-					collectivesPages: new ExampleSetCollectivesPages(container: $container),
-					talkConversations: new ExampleSetTalkConversations(container: $container)
-				),
-				history: new ExampleSetHistoryRowKinds(
-					exportRuns: new ExampleSetExportRuns(container: $container),
-					archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
-					auditEntries: new ExampleSetAuditEntries(container: $container),
-					timelineEntries: new ExampleSetTimelineEntries(container: $container)
+			rows: new ExampleSetRemoverRows(
+				accounts: $this->accounts,
+				engineRows: new ExampleSetEngineKinds(
+					work: new ExampleSetWorkRowKinds(
+						tasks: new ExampleSetTasks(container: $container),
+						notes: new ExampleSetNotes(container: $container),
+						readStates: new ExampleSetReadStates(container: $container),
+						watchers: new ExampleSetWatchers(container: $container)
+					),
+					own: new ExampleSetOwnRowKinds(
+						views: new ExampleSetViews(container: $container),
+						flows: new ExampleSetFlows(container: $container),
+						casePlans: new ExampleSetCasePlans(container: $container)
+					),
+					links: new ExampleSetLinkRowKinds(
+						parties: new ExampleSetParties(container: $container),
+						emailLinks: new ExampleSetEmailLinks(container: $container),
+						accessLinks: new ExampleSetAccessLinks(container: $container),
+						grants: new ExampleSetGrants(container: $container)
+					),
+					elsewhere: new ExampleSetAppAndHistoryRowKinds(
+						apps: new ExampleSetAppRowKinds(
+							deckCards: new ExampleSetDeckCards(container: $container),
+							appointments: new ExampleSetAppointments(container: $container),
+							collectivesPages: new ExampleSetCollectivesPages(container: $container),
+							talkConversations: new ExampleSetTalkConversations(container: $container)
+						),
+						history: new ExampleSetHistoryRowKinds(
+							exportRuns: new ExampleSetExportRuns(container: $container),
+							archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
+							auditEntries: new ExampleSetAuditEntries(container: $container),
+							timelineEntries: new ExampleSetTimelineEntries(container: $container)
+						)
+					)
 				)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
@@ -849,7 +861,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			$this->talk['rooms'][$token] = ['id' => (count($this->talk['rooms']) + 1), 'name' => $name, 'owner' => $owner, 'participants' => $participants];
 			return ['token' => $token, 'id' => $this->talk['rooms'][$token]['id'], 'created' => true];
 		});
-		$store->method('heldCall')->willReturnCallback(function (string $token, string $owner, \DateTime $start, \DateTime $end, array $joined): void {
+		$store->method('heldCall')->willReturnCallback(function (string $token, string $owner, array $call, array $joined): void {
+			$start = new \DateTime((string) $call['start']);
+			$end   = new \DateTime((string) $call['end']);
 			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_started', 'at' => $start->format('c')];
 			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_ended', 'at' => $end->format('c'), 'users' => $joined, 'duration' => ($end->getTimestamp() - $start->getTimestamp())];
 		});

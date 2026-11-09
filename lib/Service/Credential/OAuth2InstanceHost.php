@@ -49,7 +49,7 @@ use InvalidArgumentException;
  * would let a caller substitute a version that says yes, which is the one thing it
  * must never be possible to do to a host-lock.
  */
-final class OAuth2InstanceHost {
+final class OAuth2InstanceHost implements OAuth2InstanceHostInterface {
 	/**
 	 * Host names that always name the instance itself.
 	 *
@@ -86,6 +86,21 @@ final class OAuth2InstanceHost {
 
 		return 'https://' . $host;
 	}//end normalise()
+
+	/**
+	 * The normalised origin of a candidate instance base URL, for callers holding the interface.
+	 *
+	 * @param string $candidate The URL supplied at connect time.
+	 *
+	 * @return string The normalised origin (`https://host` with no trailing slash).
+	 *
+	 * @throws InvalidArgumentException When the candidate is not a safe, absolute https origin.
+	 *
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 */
+	public function origin(string $candidate): string {
+		return self::normalise(candidate: $candidate);
+	}//end origin()
 
 	/**
 	 * Reject anything that is not a bare, absolute https origin.
