@@ -1,13 +1,13 @@
 <?php
 
 /**
- * ContextChatSubmissionListenerInterface: what callers outside the Mcp component use of ContextChatSubmissionListener.
+ * ContextChatSubmissionListenerInterface: the submission port the ContextChat content provider uses.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Mcp
- * @package  OCA\OpenRegister\Mcp\Listener
+ * @category ContextChat
+ * @package  OCA\OpenRegister\ContextChat\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Mcp\Listener;
+namespace OCA\OpenRegister\ContextChat\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
