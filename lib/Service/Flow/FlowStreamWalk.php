@@ -39,7 +39,6 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
-use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 
 /**
  * One run's streams, for one worker pass.
@@ -89,55 +88,6 @@ class FlowStreamWalk {
 	private readonly FlowStreamEntries $entries;
 
 	/**
-	 * The run being walked (refreshed by every commit).
-	 *
-	 * @var FlowRun
-	 */
-	private readonly FlowRun $run;
-
-	/**
-	 * The claim protocol.
-	 *
-	 * @var FlowPlaceClaims
-	 */
-	private readonly FlowPlaceClaims $claims;
-
-	/**
-	 * The commit path.
-	 *
-	 * @var FlowRunCommit
-	 */
-	private readonly FlowRunCommit $commit;
-
-	/**
-	 * The stream rows.
-	 *
-	 * @var FlowStreamMapperInterface
-	 */
-	private readonly FlowStreamMapperInterface $streamMapper;
-
-	/**
-	 * This pass's claim token.
-	 *
-	 * @var string
-	 */
-	private readonly string $owner;
-
-	/**
-	 * The per-run stream cap; null for FlowConcurrency's default.
-	 *
-	 * @var integer|null
-	 */
-	private readonly ?int $runCap;
-
-	/**
-	 * Firings this walk may commit; null for unbounded (the ceiling still applies).
-	 *
-	 * @var integer|null
-	 */
-	private readonly ?int $budget;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param FlowRun              $run    The run being walked (refreshed by every commit).
@@ -145,19 +95,12 @@ class FlowStreamWalk {
 	 * @param FlowStreamWalkLimits $limits The pass's claim token, stream cap, scope and budget.
 	 */
 	public function __construct(
-		FlowRun $run,
-		FlowStreamWalkParts $parts,
-		FlowStreamWalkLimits $limits,
+		private readonly FlowRun $run,
+		private readonly FlowStreamWalkParts $parts,
+		private readonly FlowStreamWalkLimits $limits,
 	) {
-		$this->run          = $run;
-		$this->claims       = $parts->claims;
-		$this->commit       = $parts->commit;
-		$this->streamMapper = $parts->streamMapper;
-		$this->owner        = $limits->owner;
-		$this->runCap       = $limits->runCap;
-		$this->budget       = $limits->budget;
 		$this->entries = new FlowStreamEntries(runUuid: (string)$run->getUuid());
-		$this->visits = new FlowStreamVisits(onlyStream: $limits->onlyStream);
+		$this->visits  = new FlowStreamVisits(onlyStream: $limits->onlyStream);
 	}//end __construct()
 
 	/**
@@ -177,7 +120,7 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function begin(array $marking): void {
-		$live = $this->entries->live(rows: $this->streamMapper->findByRun(runUuid: $this->entries->runUuid));
+		$live = $this->entries->live(rows: $this->parts->streamMapper->findByRun(runUuid: $this->entries->runUuid));
 		$places = $this->entries->unassigned(marking: $marking, covered: $this->entries->covered(entries: $live));
 		$this->streams = $this->entries->seed(entries: $live, places: $places);
 		$this->sortStreams();
@@ -376,15 +319,8 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
 	 */
 	public function claim(string $id, string $transition, array $places): ?array {
-		$claimed = $this->claims->acquire(
-			runUuid: (string)$this->run->getUuid(),
-			streamId: $id,
-			transition: $transition,
-			places: $places,
-			owner: $this->owner,
-			runCap: $this->runCap
-		);
-
+		$firing  = new FiringClaim(runUuid: (string)$this->run->getUuid(), streamId: $id, transition: $transition, places: $places);
+		$claimed = $this->parts->claims->claim(firing: $firing, pass: new ClaimPass(owner: $this->limits->owner, runCap: $this->limits->runCap));
 		if ($claimed === null) {
 			$this->visits->refuse(id: $id);
 		}
@@ -402,7 +338,7 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
 	 */
 	public function release(array $places): void {
-		$this->claims->release(runUuid: (string)$this->run->getUuid(), places: $places);
+		$this->parts->claims->release(runUuid: (string)$this->run->getUuid(), places: $places);
 	}//end release()
 
 	/**
@@ -424,7 +360,7 @@ class FlowStreamWalk {
 		$placed = $firing->withConsumedStreamIds(consumedStreamIds: $this->streamsOn(places: $firing->froms, except: $id))
 			->withStreamPath(path: $stream->path, parent: $stream->parent);
 
-		$result = $this->commit->commitFiring(run: $this->run, firing: $placed, owner: $this->owner);
+		$result = $this->parts->commit->commitFiring(run: $this->run, firing: $placed, owner: $this->limits->owner);
 		$this->fired++;
 
 		// The commit is the authority on lineage, and a sibling pass may have
@@ -451,7 +387,7 @@ class FlowStreamWalk {
 	 */
 	public function park(FlowStreamHalt $halt, ?DateTime $resumeAt): void {
 		$closure = $this->closure(halt: $halt, status: FlowRun::STATUS_SUSPENDED);
-		$this->commit->closeStream(run: $this->run, closure: $closure->wakingAt(resumeAt: $resumeAt));
+		$this->parts->commit->closeStream(run: $this->run, closure: $closure->wakingAt(resumeAt: $resumeAt));
 		$id = $halt->streamId;
 		$this->visits->park(id: $id);
 		if (isset($this->streams[$id]) === true) {
@@ -470,7 +406,7 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
 	 */
 	public function endStream(FlowStreamHalt $halt, string $status): void {
-		$this->commit->closeStream(run: $this->run, closure: $this->closure(halt: $halt, status: $status));
+		$this->parts->commit->closeStream(run: $this->run, closure: $this->closure(halt: $halt, status: $status));
 		unset($this->streams[$halt->streamId]);
 	}//end endStream()
 
@@ -486,7 +422,7 @@ class FlowStreamWalk {
 	 */
 	private function closure(FlowStreamHalt $halt, string $status): FlowStreamClosure {
 		$stream = $this->entries->ref(entries: $this->streams, id: $halt->streamId);
-		$closure = new FlowStreamClosure(stream: $stream, status: $status, release: $halt->releaseFor(owner: $this->owner));
+		$closure = new FlowStreamClosure(stream: $stream, status: $status, release: $halt->releaseFor(owner: $this->limits->owner));
 
 		return $closure->because(error: $halt->reason());
 	}//end closure()
@@ -503,7 +439,7 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
 	 */
 	public function finalize(bool $enabled, ?string $forcedTerminal = null): string {
-		return $this->commit->finalize(run: $this->run, owner: $this->owner, enabled: $enabled, forcedTerminal: $forcedTerminal);
+		return $this->parts->commit->finalize(run: $this->run, owner: $this->limits->owner, enabled: $enabled, forcedTerminal: $forcedTerminal);
 	}//end finalize()
 
 	/**
@@ -525,7 +461,7 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-completions-advance-budget-must-apply-to-the-completing-branch
 	 */
 	public function budgetSpent(): bool {
-		return $this->budget !== null && $this->fired >= $this->budget;
+		return $this->limits->budget !== null && $this->fired >= $this->limits->budget;
 	}//end budgetSpent()
 
 	/**
