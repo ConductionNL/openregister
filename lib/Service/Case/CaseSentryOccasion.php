@@ -54,6 +54,8 @@ final class CaseSentryOccasion {
 	 * @param CasePassState $state The pass.
 	 *
 	 * @return self The occasion.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public static function fromPass(CasePassState $state): self {
 		return new self(tree: $state->tree, object: $state->object, event: $state->event, payload: $state->payload);
