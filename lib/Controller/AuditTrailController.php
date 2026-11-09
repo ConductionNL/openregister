@@ -413,8 +413,7 @@ class AuditTrailController extends Controller {
 
 		try {
 			$page = $this->auditPage->page(
-				filters: $this->pageFilters(),
-				search: ($params['search'] ?? $params['_search'] ?? null),
+				query: $this->auditPage->query(filters: $this->pageFilters(), search: ($params['search'] ?? $params['_search'] ?? null)),
 				limit: $limit,
 				cursor: $cursor
 			);
@@ -932,8 +931,7 @@ class AuditTrailController extends Controller {
 
 		try {
 			$outcome = $this->auditPage->export(
-				filters: $filters,
-				search: $search,
+				query: $this->auditPage->query(filters: $filters, search: $search),
 				format: $format,
 				includeChanges: $includeChanges,
 				actor: $this->userSession->getUser()?->getUID()
