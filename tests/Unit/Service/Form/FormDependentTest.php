@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 
 use OCA\OpenRegister\Service\Form\FormDependent;
+use OCA\OpenRegister\Service\Form\PublishedForm;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -30,13 +31,10 @@ final class FormDependentTest extends TestCase {
 		$unpublish = static function (): void {
 		};
 		$form = new FormDependent(
-			id: 'form-a',
-			app: 'pipelinq',
-			title: 'Contact opnemen',
+			form: new PublishedForm(id: 'form-a', app: 'pipelinq', title: 'Contact opnemen', audience: 'public'),
 			author: 'alice',
 			mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title']]],
-			unpublish: $unpublish,
-			audience: 'public'
+			unpublish: $unpublish
 		);
 
 		$this->assertSame('form-a', $form->id);
@@ -54,7 +52,7 @@ final class FormDependentTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnInternalFormWithoutACloserHasNoUnpublishOrAudience(): void {
-		$form = new FormDependent(id: 'form-c', app: 'portaliq', title: 'Melding', author: null, mapping: []);
+		$form = new FormDependent(form: new PublishedForm(id: 'form-c', app: 'portaliq', title: 'Melding'), author: null, mapping: []);
 
 		$this->assertNull($form->author);
 		$this->assertNull($form->unpublish);
