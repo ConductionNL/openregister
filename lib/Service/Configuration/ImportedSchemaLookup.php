@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The lookup of the stored schema an imported schema definition updates.
+ * An imported schema definition and the scope its stored schema is looked up in.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Configuration;
 
 /**
- * What ImportHandler::importSchema() resolves an existing schema by: the
- * definition's slug, the target registers' schema ids and the importing app.
+ * A schema definition to import and where its existing schema is looked up:
+ * the target registers' schema ids and the importing app's options.
  *
  * @spec openspec/specs/data-import-export/spec.md
  */

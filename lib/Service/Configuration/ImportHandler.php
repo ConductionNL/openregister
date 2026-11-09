@@ -1402,9 +1402,29 @@ class ImportHandler {
 		bool $force = false,
 		?array $registerSchemaIds = null,
 	): Schema {
+		$options = new SchemaImportOptions(owner: $owner, appId: $appId, version: $version, force: $force);
+		$definition = new ImportedSchemaLookup(data: $data, registerSchemaIds: $registerSchemaIds, options: $options);
+		return $this->importSchemaDefinition(definition: $definition, slugsAndIdsMap: $slugsAndIdsMap);
+	}//end importSchema()
+
+	/**
+	 * Import a schema definition, resolved within the target registers when they are known.
+	 *
+	 * @param ImportedSchemaLookup $definition     The schema data, the target registers' schema ids and the
+	 *                                             owner, app id, version and force flag of the import.
+	 * @param array                $slugsAndIdsMap Slugs with their IDs for quick lookup.
+	 *
+	 * @return Schema The imported schema.
+	 *
+	 * @throws Exception If import fails.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importSchemaDefinition(ImportedSchemaLookup $definition, array $slugsAndIdsMap): Schema {
+		$data = $definition->data;
+		$options = $definition->options;
 		$this->schemaShape->assertShape(data: $data);
 		$this->schemaShape->assertSlug(data: $data);
-		$options = new SchemaImportOptions(owner: $owner, appId: $appId, version: $version, force: $force);
 
 		try {
 			unset($data['id'], $data['uuid'], $data['organisation']);
@@ -1414,7 +1434,7 @@ class ImportHandler {
 			// A slug is resolved within the target register(s) when the caller
 			// knows them (per-register-schema-slug-uniqueness), so an app never
 			// reuses another register's schema that merely shares the slug.
-			$lookup = new ImportedSchemaLookup(data: $data, registerSchemaIds: $registerSchemaIds, options: $options);
+			$lookup = new ImportedSchemaLookup(data: $data, registerSchemaIds: $definition->registerSchemaIds, options: $options);
 			$existingSchema = $this->resolveExistingSchemaForImport(lookup: $lookup);
 
 			if ($existingSchema !== null) {
@@ -1430,7 +1450,7 @@ class ImportHandler {
 			);
 			throw new Exception('Failed to import schema: ' . $e->getMessage(), $e->getCode(), $e);
 		}//end try
-	}//end importSchema()
+	}//end importSchemaDefinition()
 
 	/**
 	 * Run a schema write of the import with an unlinkable notification url action as a warning.
