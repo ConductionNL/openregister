@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
@@ -129,8 +130,7 @@ class ViewBackedTypeTest extends TestCase {
 		$schemas->method('find')->willReturn($sourceSchema);
 
 		return new ViewObjectSourceProvider(
-			new ViewSourceMappers(viewMapper: $views, registerMapper: $registers, schemaMapper: $schemas),
-			$magic,
+			new ViewSourceMappers(viewMapper: $views, catalog: new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $magic)),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end provider()
