@@ -181,26 +181,28 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 			return;
 		}
 
-		$this->route(action: $action, object: $object, queue: $queue);
+		$run = new NotifyPushRun();
+		$run->queue = $queue;
+		$run->action = $action;
+		$run->object = $object;
+		$this->route(run: $run);
 
 	}//end handle()
 
 	/**
 	 * Accumulate the object's collection in batch mode, else push it now.
 	 *
-	 * @param string       $action Action verb.
-	 * @param ObjectEntity $object The affected object entity.
-	 * @param object       $queue  Resolved IQueue instance.
+	 * @param NotifyPushRun $run The queue, action and object.
 	 *
 	 * @return void
 	 */
-	private function route(string $action, ObjectEntity $object, object $queue): void {
+	private function route(NotifyPushRun $run): void {
 		if (self::$batchMode === true) {
-			$this->accumulateBatchEntry(object: $object);
+			$this->accumulateBatchEntry(object: $run->object);
 			return;
 		}
 
-		$this->dispatchPushes(action: $action, object: $object, queue: $queue);
+		$this->dispatchPushes(run: $run);
 	}//end route()
 
 	/**
@@ -280,23 +282,20 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 	 *   - `or-object-{uuid}` per authorised user (all actions)
 	 *   - `or-collection-{register-slug}-{schema-slug}` per authorised user (create/delete only)
 	 *
-	 * @param string $action Action verb (`create`, `update`, `delete`).
-	 * @param ObjectEntity $object The affected object entity.
-	 * @param object $queue Resolved IQueue instance.
+	 * @param NotifyPushRun $run The queue, action (`create`, `update`, `delete`) and object.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-4
 	 */
-	private function dispatchPushes(string $action, ObjectEntity $object, object $queue): void {
-		$payload = $this->lifecyclePayload(action: $action, object: $object);
-		$userIds = $this->permissionHandler->getReadableByUsers(object: $object);
-		$objectChannel = PushChannels::OR_OBJECT . '-' . $payload['uuid'];
-		$pushed = $this->pushToUsers(queue: $queue, userIds: $userIds, channel: $objectChannel, payload: $payload);
+	private function dispatchPushes(NotifyPushRun $run): void {
+		$run->payload = $this->lifecyclePayload(action: $run->action, object: $run->object);
+		$run->readers = $this->permissionHandler->getReadableByUsers(object: $run->object);
+		$pushed = $this->pushToUsers(run: $run, channel: PushChannels::OR_OBJECT . '-' . $run->payload['uuid']);
 
-		$collectionChannel = $this->collectionChannel(payload: $payload);
+		$collectionChannel = $this->collectionChannel(payload: $run->payload);
 		if ($collectionChannel !== null) {
-			$pushed = ($this->pushToUsers(queue: $queue, userIds: $userIds, channel: $collectionChannel, payload: $payload) || $pushed);
+			$pushed = ($this->pushToUsers(run: $run, channel: $collectionChannel) || $pushed);
 		}
 
 		$this->markPushAvailable(pushed: $pushed);
@@ -343,24 +342,22 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 	}//end collectionChannel()
 
 	/**
-	 * Push one message to each user on one channel.
+	 * Push one message to each of the run's readers on one channel.
 	 *
-	 * @param object               $queue   Resolved IQueue instance.
-	 * @param array<int, string>   $userIds Recipients: the object's readers.
-	 * @param string               $channel The channel.
-	 * @param array<string, mixed> $payload The body.
+	 * @param NotifyPushRun $run     The queue, the readers and the body.
+	 * @param string        $channel The channel.
 	 *
 	 * @return boolean True when at least one push was queued.
 	 */
-	private function pushToUsers(object $queue, array $userIds, string $channel, array $payload): bool {
+	private function pushToUsers(NotifyPushRun $run, string $channel): bool {
 		$pushed = false;
-		foreach ($userIds as $userId) {
-			$queue->push(
+		foreach ($run->readers as $userId) {
+			$run->queue->push(
 				'notify_custom',
 				[
 					'user' => $userId,
 					'message' => $channel,
-					'body' => $payload,
+					'body' => $run->payload,
 				]
 			);
 			$pushed = true;
@@ -605,9 +602,13 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 			return false;
 		}
 
-		$payload = ['action' => 'presence', 'uuid' => $uuid, 'present' => array_values($present)];
-		$readers = $this->permissionHandler->getReadableByUsers(object: $object);
+		$run = new NotifyPushRun();
+		$run->queue = $queue;
+		$run->action = 'presence';
+		$run->object = $object;
+		$run->payload = ['action' => 'presence', 'uuid' => $uuid, 'present' => array_values($present)];
+		$run->readers = $this->permissionHandler->getReadableByUsers(object: $object);
 
-		return $this->pushToUsers(queue: $queue, userIds: $readers, channel: PushChannels::OR_OBJECT . '-' . $uuid, payload: $payload);
+		return $this->pushToUsers(run: $run, channel: PushChannels::OR_OBJECT . '-' . $uuid);
 	}//end pushPresence()
 }//end class
