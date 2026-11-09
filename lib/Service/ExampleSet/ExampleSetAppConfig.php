@@ -183,7 +183,7 @@ class ExampleSetAppConfig {
 			return ['entry' => null, 'written' => false];
 		}
 
-		$target  = new ExampleSetConfigValue(at: new ExampleSetConfigKey(app: (string) $entry['app'], key: (string) $entry['key']), value: $value, type: 'int');
+		$target  = new ExampleSetConfigValue(at: self::keyOf(entry: $entry), value: $value, type: 'int');
 		$current = $this->store->read(target: $target);
 		$written = ($current === '' || (int) $current < (int) $value);
 		if ($written === true && $this->store->tryWrite(target: $target) === false) {
@@ -270,7 +270,7 @@ class ExampleSetAppConfig {
 	 * @return ExampleSetConfigValue
 	 */
 	private function targetOf(array $entry, string $type): ExampleSetConfigValue {
-		return new ExampleSetConfigValue(at: new ExampleSetConfigKey(app: (string) $entry['app'], key: (string) $entry['key']), type: $type);
+		return new ExampleSetConfigValue(at: self::keyOf(entry: $entry), type: $type);
 	}//end targetOf()
 
 	/**
@@ -317,7 +317,8 @@ class ExampleSetAppConfig {
 		$key = (string) $entry['key'];
 		$generated = (($entry['generated'] ?? false) === true);
 		if ($entry['had'] === true && ($generated === false || isset($entry['fingerprint']) === true)) {
-			$this->store->write(target: new ExampleSetConfigValue(at: new ExampleSetConfigKey(app: $app, key: $key), value: (string) $entry['old'], type: $this->typeOf(entry: $entry)));
+			$old = new ExampleSetConfigValue(at: self::keyOf(entry: $entry), value: (string) $entry['old'], type: $this->typeOf(entry: $entry));
+			$this->store->write(target: $old);
 			return;
 		}
 
@@ -392,4 +393,15 @@ class ExampleSetAppConfig {
 	private function typeOf(array $entry): string {
 		return (string) ($entry['type'] ?? 'string');
 	}//end typeOf()
+
+	/**
+	 * The app config address a recorded entry names.
+	 *
+	 * @param array<string, mixed> $entry The record entry.
+	 *
+	 * @return ExampleSetConfigKey
+	 */
+	private static function keyOf(array $entry): ExampleSetConfigKey {
+		return new ExampleSetConfigKey(app: (string) $entry['app'], key: (string) $entry['key']);
+	}//end keyOf()
 }//end class
