@@ -109,7 +109,7 @@ class CasePlanStateMachine {
 		$outermost = $this->store->db->inTransaction() === false;
 		$persisted = $this->inTransaction(
 			outermost: $outermost,
-			mutation: fn (): CaseItem => $this->apply(item: $item, to: $to, why: $why, tree: $tree)
+			mutation: fn (): CaseItem => $this->apply(move: new CasePlanMove(item: $item, to: $to, why: $why, tree: $tree))
 		);
 		if ($outermost === true) {
 			$this->flushEvents();
@@ -137,7 +137,8 @@ class CasePlanStateMachine {
 		}
 
 		try {
-			$this->store->audits->insert($this->denialOf(item: $item, to: $to, actor: $actor, reason: $reason));
+			$denial = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $actor, reason: $reason);
+			$this->store->audits->insert(self::denialOf(attempt: new CasePlanMove(item: $item, to: $to, why: $denial, tree: null)));
 		} catch (Throwable $failure) {
 			$this->store->logger->warning(
 				'[CasePlanStateMachine] Could not record an authorization denial: ' . $failure->getMessage(),
@@ -149,18 +150,16 @@ class CasePlanStateMachine {
 	/**
 	 * The audit row of a refused attempt.
 	 *
-	 * @param CaseItem $item The item acted on.
-	 * @param string $to The requested state (or the verb, for enable/attach).
-	 * @param string|null $actor The acting identity.
-	 * @param string $reason The denial message.
+	 * @param CasePlanMove $attempt The item acted on, the requested state (or the verb, for enable/attach)
+	 *                              and the user cause carrying the acting identity and the denial message.
 	 *
 	 * @return CaseItemAudit The unsaved row, `authorized: false`.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	private function denialOf(CaseItem $item, string $to, ?string $actor, string $reason): CaseItemAudit {
-		$denial = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $actor, reason: $reason);
-		$entry = $denial->auditFor(item: $item, fromState: (string)$item->getState(), toState: $to);
+	private static function denialOf(CasePlanMove $attempt): CaseItemAudit {
+		$item = $attempt->item;
+		$entry = $attempt->why->auditFor(item: $item, fromState: (string)$item->getState(), toState: $attempt->to);
 		$entry->setAuthorized(false);
 
 		return $entry;
@@ -268,10 +267,7 @@ class CasePlanStateMachine {
 	/**
 	 * The body of a transition, inside the transaction.
 	 *
-	 * @param CaseItem $item The item, as read.
-	 * @param string $to The target state.
-	 * @param CaseTransitionCause $why The cause, its reference, the acting identity and the reason.
-	 * @param CasePlanTree|null $tree The plan, when known.
+	 * @param CasePlanMove $move The item as read, the target state, the cause and the plan when known.
 	 *
 	 * @return CaseItem The persisted item.
 	 *
@@ -279,9 +275,11 @@ class CasePlanStateMachine {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
-	private function apply(CaseItem $item, string $to, CaseTransitionCause $why, ?CasePlanTree $tree): CaseItem {
+	private function apply(CasePlanMove $move): CaseItem {
+		$item = $move->item;
+		$to = $move->to;
 		$from = (string)$item->getState();
-		$this->stamp(item: $item, to: $to, why: $why);
+		$this->stamp(move: $move);
 
 		// THE one place `state` and `is_terminal` change, in the same statement.
 		$item->setState($to);
@@ -293,7 +291,7 @@ class CasePlanStateMachine {
 			);
 		}
 
-		$this->afterUpdate(item: $item, from: $from, why: $why, tree: $tree);
+		$this->afterUpdate(move: $move, from: $from);
 
 		return $item;
 	}//end apply()
@@ -302,23 +300,23 @@ class CasePlanStateMachine {
 	 * What follows a won update inside the transaction: the audit row, the
 	 * effects outside the row, the queued event and a stage's cascade.
 	 *
-	 * @param CaseItem $item The item, already in its new state.
+	 * @param CasePlanMove $move The move; its item already in its new state.
 	 * @param string $from The state before.
-	 * @param CaseTransitionCause $why The cause.
-	 * @param CasePlanTree|null $tree The plan, when known.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
-	private function afterUpdate(CaseItem $item, string $from, CaseTransitionCause $why, ?CasePlanTree $tree): void {
+	private function afterUpdate(CasePlanMove $move, string $from): void {
+		$item = $move->item;
+		$why = $move->why;
 		$this->store->audits->insert($why->auditFor(item: $item, fromState: $from, toState: (string)$item->getState()));
 		$this->closeRealisation(item: $item, why: $why);
 		$this->mirrorMilestone(item: $item);
 		$this->pending[] = new CaseItemTransitionedEvent(item: $item, fromState: $from);
 
 		if ($item->getPlanItemType() === CaseItem::TYPE_STAGE && $item->isInTerminalState() === true) {
-			$this->cascade(stage: $item, tree: $tree);
+			$this->cascade(stage: $item, tree: $move->tree);
 		}
 	}//end afterUpdate()
 
@@ -327,15 +325,16 @@ class CasePlanStateMachine {
 	 * activation, stamp `entered_at` on a milestone's completion, record the
 	 * reason on a termination.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param string $to The target state.
-	 * @param CaseTransitionCause $why Its reason, and the acting identity the realisation is created by.
+	 * @param CasePlanMove $move The item, the target state, and the cause carrying its reason and the acting identity the realisation is created by.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
-	private function stamp(CaseItem $item, string $to, CaseTransitionCause $why): void {
+	private function stamp(CasePlanMove $move): void {
+		$item = $move->item;
+		$to = $move->to;
+		$why = $move->why;
 		if ($to === CaseItem::STATE_ACTIVE) {
 			$this->effects->realiser->realise(item: $item, actor: (string)$why->actor);
 			$item->setEnteredAt(new DateTime());
@@ -407,7 +406,7 @@ class CasePlanStateMachine {
 		$why = self::cascadeCause(stage: $stage);
 		foreach ($tree->children(parentId: (int)$stage->getId()) as $child) {
 			if ($child->isInTerminalState() === false) {
-				$this->apply(item: $child, to: self::cascadeTarget(child: $child), why: $why, tree: $tree);
+				$this->apply(move: new CasePlanMove(item: $child, to: self::cascadeTarget(child: $child), why: $why, tree: $tree));
 			}
 		}
 	}//end cascade()
