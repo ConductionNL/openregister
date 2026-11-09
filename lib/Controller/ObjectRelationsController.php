@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\ObjectDerivation;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
@@ -144,16 +145,14 @@ class ObjectRelationsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param ObjectRelationsControllerServices $services The object relations controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectRelationsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->relations = $services->graph->relations;
 		$this->graphs = $services->graph->graphs;
 		$this->objectService = $services->graph->objectService;

@@ -122,7 +122,6 @@ class RulesControllerA24GoldenTest extends TestCase {
 		$this->replays = $this->createMock(RuleReplayServiceInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->controller = new RulesController(
-			'openregister',
 			$request,
 			new RulesControllerServices(
 				mappers: new RulesMappers(schemaMapper: $this->schemas, runs: $this->runs),

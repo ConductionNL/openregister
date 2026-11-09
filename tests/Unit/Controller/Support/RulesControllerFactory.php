@@ -44,7 +44,6 @@ final class RulesControllerFactory {
 		\OCP\IUserSession $userSession,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\RulesControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\RulesMappers(
