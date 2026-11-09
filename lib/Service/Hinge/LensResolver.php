@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hinge;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
@@ -188,7 +189,8 @@ class LensResolver {
 			// see it", and rendering those two the same way is the defect D-3
 			// exists to prevent. Nothing but the one declared property leaves this
 			// method, and only after mayRead() says so.
-			$referenced = $this->lookups->magicMapper->find(
+			$finder     = $this->objectFinder();
+			$referenced = $finder->find(
 				identifier: $reference,
 				_rbac: false,
 				_multitenancy: false
@@ -251,6 +253,15 @@ class LensResolver {
 			object: $referenced
 		);
 	}//end mayRead()
+
+	/**
+	 * The object storage the referenced record is read from.
+	 *
+	 * @return MagicObjectFinderInterface The finder role of the object storage.
+	 */
+	private function objectFinder(): MagicObjectFinderInterface {
+		return $this->lookups->magicMapper;
+	}//end objectFinder()
 
 	/**
 	 * The uuid or id a reference property holds.
