@@ -284,6 +284,7 @@ import TestTube from 'vue-material-design-icons/TestTube.vue'
 import Web from 'vue-material-design-icons/Web.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { saveMessageMethods } from './saveMessage.js'
 
 /**
  * API Token Configuration Component
@@ -372,6 +373,8 @@ export default {
 	},
 
 	methods: {
+		...saveMessageMethods,
+
 		/**
 		 * The current and stored token, test state and handlers of a provider.
 		 *
@@ -556,22 +559,6 @@ export default {
 		async clearGitLabToken() {
 			this.gitlabToken = ''
 			await this.saveGitLabToken()
-		},
-
-		/**
-		 * Show save message
-		 *
-		 * @spec exclude UI plumbing — transient inline message with auto-clear timeout.
-		 * @param {string} message - The message to show
-		 * @param {string} type - The type of message ('success' or 'error')
-		 * @return {void}
-		 */
-		showSaveMessage(message, type = 'success') {
-			this.saveMessage = message
-			this.saveMessageType = type
-			setTimeout(() => {
-				this.saveMessage = ''
-			}, 3000)
 		},
 
 		/**
