@@ -137,7 +137,7 @@ final class FormLinkServiceCreateGoldenTest extends TestCase {
 			}
 		);
 
-		return [new FormLinkService($mapper, $container, $db, new LinkServiceRuntime($appManager, $session, $logger)), $mapper];
+		return [new FormLinkService($mapper, new \OCA\OpenRegister\Service\LinkedAppAccess(runtime: new LinkServiceRuntime($appManager, $session, $logger), container: $container, db: $db, users: $this->createMock(\OCP\IUserManager::class))), $mapper];
 	}//end service()
 
 	/**

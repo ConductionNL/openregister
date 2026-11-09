@@ -157,6 +157,6 @@ class EmailLinkServicePickerGoldenTest extends TestCase {
 				$this->logs[] = $message;
 			}
 		);
-		return new EmailLinkService($this->createMock(EmailLinkMapper::class), $db, new LinkServiceRuntime($appManager, $session, $logger));
+		return new EmailLinkService($this->createMock(EmailLinkMapper::class), new \OCA\OpenRegister\Service\LinkedAppAccess(runtime: new LinkServiceRuntime($appManager, $session, $logger), container: $this->createMock(\Psr\Container\ContainerInterface::class), db: $db, users: $this->createMock(\OCP\IUserManager::class)));
 	}//end makeService()
 }//end class

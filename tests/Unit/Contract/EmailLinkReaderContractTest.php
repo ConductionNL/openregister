@@ -85,12 +85,11 @@ class EmailLinkReaderContractTest extends TestCase {
 
 		$reader = new EmailLinkService(
 			$mapper,
-			$this->createMock(originalClassName: IDBConnection::class),
-			new LinkServiceRuntime(
+			new \OCA\OpenRegister\Service\LinkedAppAccess(runtime: new LinkServiceRuntime(
 				$this->createMock(originalClassName: IAppManager::class),
 				$this->createMock(originalClassName: IUserSession::class),
 				$this->createMock(originalClassName: LoggerInterface::class)
-			)
+			), container: $this->createMock(\Psr\Container\ContainerInterface::class), db: $this->createMock(originalClassName: IDBConnection::class), users: $this->createMock(\OCP\IUserManager::class))
 		);
 
 		$result = $this->readThrough(reader: $reader);

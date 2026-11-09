@@ -87,22 +87,36 @@ class DeckLinkService implements DeckLinkServiceInterface {
 	private readonly LoggerInterface $logger;
 
 	/**
+	 * User lookup for assignee displayName.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * App container Deck's services are resolved from.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param DeckLinkMapperInterface $deckLinkMapper Persistence for link rows.
-	 * @param LinkServiceRuntime      $runtime        App manager, active session and logger.
-	 * @param IUserManager            $userManager    User lookup for assignee displayName.
-	 * @param ContainerInterface      $container      App container Deck's services are resolved from.
+	 * @param LinkedAppAccess         $access         App manager, active session, logger, user lookup for
+	 *                                                assignee displayName and the container Deck's services
+	 *                                                are resolved from.
 	 */
 	public function __construct(
 		private readonly DeckLinkMapperInterface $deckLinkMapper,
-		LinkServiceRuntime $runtime,
-		private readonly IUserManager $userManager,
-		private readonly ContainerInterface $container,
+		LinkedAppAccess $access,
 	) {
-		$this->appManager = $runtime->appManager();
-		$this->userSession = $runtime->userSession();
-		$this->logger = $runtime->logger();
+		$this->appManager = $access->runtime->appManager();
+		$this->userSession = $access->runtime->userSession();
+		$this->logger = $access->runtime->logger();
+		$this->userManager = $access->users;
+		$this->container = $access->container;
 	}//end __construct()
 
 	/**

@@ -28,7 +28,6 @@ use Exception;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCA\OpenRegister\Service\DeckCardService;
-use OCA\OpenRegister\Service\DeckPlatform;
 use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
@@ -91,9 +90,8 @@ class DeckCardServiceAppPresentTest extends TestCase {
 
 		$this->service = new DeckCardService(
 			$this->linkMapper,
-			new LinkServiceRuntime($this->createMock(IAppManager::class), $this->userSession, $this->logger),
-			$this->urlGenerator,
-			new DeckPlatform($this->userManager, $container)
+			new \OCA\OpenRegister\Service\LinkedAppAccess(runtime: new LinkServiceRuntime($this->createMock(IAppManager::class), $this->userSession, $this->logger), container: $container, db: $this->createMock(\OCP\IDBConnection::class), users: $this->userManager),
+			$this->urlGenerator
 		);
 	}
 

@@ -67,7 +67,6 @@ use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCP\App\IAppManager;
-use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -141,19 +140,17 @@ class EmailLinkService implements EmailLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param EmailLinkMapperInterface $mapper  Persistence for link rows.
-	 * @param IDBConnection            $db      Database connection (Mail tables).
-	 * @param LinkServiceRuntime       $runtime App manager, active session and logger.
+	 * @param EmailLinkMapperInterface $mapper Persistence for link rows.
+	 * @param LinkedAppAccess          $access App manager, active session, logger and the Mail tables.
 	 */
 	public function __construct(
 		private readonly EmailLinkMapperInterface $mapper,
-		IDBConnection $db,
-		LinkServiceRuntime $runtime,
+		LinkedAppAccess $access,
 	) {
-		$this->mailQueries = new MailTableQueries(db: $db);
-		$this->appManager = $runtime->appManager();
-		$this->userSession = $runtime->userSession();
-		$this->logger = $runtime->logger();
+		$this->mailQueries = new MailTableQueries(db: $access->db);
+		$this->appManager = $access->runtime->appManager();
+		$this->userSession = $access->runtime->userSession();
+		$this->logger = $access->runtime->logger();
 	}//end __construct()
 
 	/**

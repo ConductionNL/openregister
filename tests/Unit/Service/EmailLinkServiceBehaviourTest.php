@@ -85,7 +85,7 @@ class EmailLinkServiceBehaviourTest extends TestCase {
 		);
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->builder());
-		return new EmailLinkService($this->mapper, $db, new LinkServiceRuntime($apps, $session, $logger));
+		return new EmailLinkService($this->mapper, new \OCA\OpenRegister\Service\LinkedAppAccess(runtime: new LinkServiceRuntime($apps, $session, $logger), container: $this->createMock(\Psr\Container\ContainerInterface::class), db: $db, users: $this->createMock(\OCP\IUserManager::class)));
 	}//end service()
 
 	private function builder(): IQueryBuilder {

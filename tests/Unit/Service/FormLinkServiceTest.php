@@ -99,9 +99,7 @@ class FormLinkServiceTest extends TestCase {
 
 		$this->service = new FormLinkService(
 			$this->formLinkMapper,
-			$this->container,
-			$this->db,
-			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger)
+			new \OCA\OpenRegister\Service\LinkedAppAccess(runtime: new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger), container: $this->container, db: $this->db, users: $this->createMock(\OCP\IUserManager::class))
 		);
 
 	}//end setUp()

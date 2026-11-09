@@ -75,8 +75,7 @@ class EmailLinkServiceTest extends TestCase {
 
 		$this->service = new EmailLinkService(
 			$this->mapper,
-			$this->db,
-			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger)
+			new \OCA\OpenRegister\Service\LinkedAppAccess(runtime: new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger), container: $this->createMock(\Psr\Container\ContainerInterface::class), db: $this->db, users: $this->createMock(\OCP\IUserManager::class))
 		);
 	}
 

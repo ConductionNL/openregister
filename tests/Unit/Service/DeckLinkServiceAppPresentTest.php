@@ -94,9 +94,7 @@ class DeckLinkServiceAppPresentTest extends TestCase {
 
 		$this->service = new DeckLinkService(
 			$this->linkMapper,
-			new LinkServiceRuntime($this->createMock(IAppManager::class), $this->userSession, $this->logger),
-			$this->userManager,
-			$container
+			new \OCA\OpenRegister\Service\LinkedAppAccess(runtime: new LinkServiceRuntime($this->createMock(IAppManager::class), $this->userSession, $this->logger), container: $container, db: $this->createMock(\OCP\IDBConnection::class), users: $this->userManager)
 		);
 	}
 

@@ -150,9 +150,7 @@ class LinkRowStampGoldenTest extends TestCase {
 		};
 		$service = new DeckLinkService(
 			$mapper,
-			new LinkServiceRuntime($this->apps(), $this->session('alice'), $this->createMock(LoggerInterface::class)),
-			$this->createMock(IUserManager::class),
-			$this->container(['OCA\\Deck\\Service\\CardService' => $cards, 'OCA\\Deck\\Db\\CardMapper' => $cardMapper])
+			new \OCA\OpenRegister\Service\LinkedAppAccess(runtime: new LinkServiceRuntime($this->apps(), $this->session('alice'), $this->createMock(LoggerInterface::class)), container: $this->container(['OCA\\Deck\\Service\\CardService' => $cards, 'OCA\\Deck\\Db\\CardMapper' => $cardMapper]), db: $this->createMock(\OCP\IDBConnection::class), users: $this->createMock(IUserManager::class))
 		);
 
 		$this->assertGolden(fn () => $this->entityFields($service->linkCard((new LinkTarget('obj-1', 3))->inSchema($schemaId), 21)));
