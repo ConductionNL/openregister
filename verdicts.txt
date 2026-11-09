@@ -520,3 +520,4 @@
 7608 ea887c228380100c93cd37d07b710d9a929803b5 APPROVE tests only, no production change: 3 new test classes (token context, example-set lock, flow tenant membership), no clock pinning or name clashes; Audit/ExampleSet/Flow suites + guard suites green merged with main 869b97c27d
 7620 53a80abcf6cccf25a6393d1b5d72dac163f0d200 APPROVE tests only, no lib change: 39 middleware behaviour tests green, no clock-pinned values (Retry-After case floors at 1); guard suites green merged with main 869b97c27d
 7612 af75413ea47ee8ab103e93fad14ee403bb8f692f APPROVE tests only: 22 repair-step tests green on current lib in UTC/+14/-10, temp dirs cleaned; Repair suite 219 green; guard suites green merged with main 869b97c2
+7730 fcd368ef849e3243c1bda84e3ab64fe3682904c6 APPROVE test-only Newman collection; live run on fresh NC 32 + PostgreSQL 16: 247 requests, 493 assertions, 0 failed; self-seeding with teardown; guard suites green merged with main 869b97c2
