@@ -18,7 +18,7 @@ final class CacheSettingsControllerFactory {
 	/**
 	 * The constructor arguments of CacheSettingsController.
 	 *
-	 * @param mixed $appName Constructor argument.
+	 * @param mixed $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param AppSettingsInterface $settingsService Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
@@ -36,7 +36,6 @@ final class CacheSettingsControllerFactory {
 		\OCP\IAppConfig $appConfig,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\CacheSettingsControllerServices(
 				settingsService: $settingsService,
