@@ -1,11 +1,7 @@
 # pr	head	last_approved	reason
 6973	e37838719e0c24186d8f9279aca58947cbccca7a	-	access title, path or words
 7765	5fcd855de11c78c18c797d576f33459849004ee0		code moved into a strict_types file
-7767	4229dd51fa1485498f1f1717273d2e29ecb3614c	-	access title, path or words
-7769	989771a2244f51923894859809eb1185d87fd136	-	access title, path or words
 7770	ff71375350bc9a7a78b003731edb92a8fbcec1c8	-	access title, path or words
-7771	d2996de423b817b6035ca361f113766241049359	-	access title, path or words
-7772	0b643fb62ea7653c22a457758b035bc7a7107d90	-	access title, path or words
 7773	d6fc06d36269723da19467af61644b1d6244ce0e	-	access title, path or words
 7774	f643ba2bfd1ecd90642d6b0022a864d0bfd43009	-	access title, path or words
 7775	0e5b5c9d446e102bceff98ee50c6b6cda7fb429e	-	access title, path or words
@@ -80,3 +76,5 @@
 7893	355588d3b1a4ac855307541e1854e10b0c5c5fda	-	access title, path or words
 7897	b9c33b8f120e947fd003c9dce1a8e345c8b8d98d	-	access title, path or words
 7900	75a669902f0bdd56993c05bbd3ec3be5affca568	-	access title, path or words
+7901	a8e27d51c972d3673a2f9378cf5d63533a438f09	-	access title, path or words
+7902	538563701b75251393885071d281ef1a9d820480	-	access title, path or words
