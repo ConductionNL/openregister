@@ -768,13 +768,11 @@ class FlowRunService implements FlowRunServiceInterface {
 			runAs: $attribution['user']
 		);
 
-		$run = (new FlowRunRow())->build(
+		$run = (new FlowRunRow(attribution: $attribution, version: $version?->getVersion()))->build(
 			flowId: $flowId,
 			subject: $subject,
 			trigger: $trigger,
-			context: $context,
-			attribution: $attribution,
-			version: $version?->getVersion()
+			context: $context
 		);
 
 		return $this->parkIfAwaiting(run: $this->mapper->insert($run), park: $park);

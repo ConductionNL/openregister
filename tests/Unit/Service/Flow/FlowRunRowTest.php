@@ -28,13 +28,11 @@ final class FlowRunRowTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheRowCarriesTheDispatchTheAttributionAndThePin(): void {
-		$run = (new FlowRunRow())->build(
+		$run = (new FlowRunRow(attribution: ['user' => 'alice', 'organisation' => 'org-1', 'declaredBy' => 'bob'], version: 3))->build(
 			flowId: 'flow-1',
 			subject: ['uuid' => 'obj-1', 'register' => 'reg', 'schema' => 'sch'],
 			trigger: 'object.created',
-			context: ['nodeId' => 'n1'],
-			attribution: ['user' => 'alice', 'organisation' => 'org-1', 'declaredBy' => 'bob'],
-			version: 3
+			context: ['nodeId' => 'n1']
 		);
 
 		$this->assertSame(1, preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/', (string) $run->getUuid()));
@@ -60,13 +58,11 @@ final class FlowRunRowTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAbsentSubjectOrganisationAndPinStayNull(): void {
-		$run = (new FlowRunRow())->build(
+		$run = (new FlowRunRow(attribution: ['user' => 'carol', 'organisation' => null], version: null))->build(
 			flowId: 'flow-2',
 			subject: [],
 			trigger: 'manual',
-			context: [],
-			attribution: ['user' => 'carol', 'organisation' => null],
-			version: null
+			context: []
 		);
 
 		$this->assertNull($run->getSubjectUuid());
@@ -84,9 +80,9 @@ final class FlowRunRowTest extends TestCase {
 	 * @return void
 	 */
 	public function testEachRowGetsItsOwnUuid(): void {
-		$row = new FlowRunRow();
-		$a = $row->build(flowId: 'f', subject: [], trigger: 'manual', context: [], attribution: ['user' => 'u', 'organisation' => null], version: null);
-		$b = $row->build(flowId: 'f', subject: [], trigger: 'manual', context: [], attribution: ['user' => 'u', 'organisation' => null], version: null);
+		$row = new FlowRunRow(attribution: ['user' => 'u', 'organisation' => null], version: null);
+		$a = $row->build(flowId: 'f', subject: [], trigger: 'manual', context: []);
+		$b = $row->build(flowId: 'f', subject: [], trigger: 'manual', context: []);
 
 		$this->assertNotSame($a->getUuid(), $b->getUuid());
 	}//end testEachRowGetsItsOwnUuid()
