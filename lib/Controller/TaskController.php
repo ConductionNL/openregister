@@ -43,6 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TaskControllerServices;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\TaskInboxAnchor;
@@ -172,16 +173,14 @@ class TaskController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param TaskControllerServices $services The task controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		TaskControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->tasks = $services->work->tasks;
 		$this->inbox = $services->work->inbox;
 		$this->authorization = $services->work->authorization;

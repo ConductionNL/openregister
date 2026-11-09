@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
-use OCA\OpenRegister\Service\Configuration\PreviewMappers;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 
@@ -62,7 +62,7 @@ final class PreviewHandlerDiffShapeTest extends TestCase {
 		$this->fetchHandler = $this->createMock(FetchHandler::class);
 
 		$this->handler = new PreviewHandler(
-			new PreviewMappers($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapper::class)),
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapper::class)),
 			$this->fetchHandler
 		);
 	}//end setUp()

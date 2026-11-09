@@ -227,7 +227,7 @@ class FormDependentsCheck implements FormDependentsCheckInterface {
 		foreach ($assessment['affected'] as $entry) {
 			$outcome = 'refused';
 			if ($assessment['refused'] === false) {
-				$outcome = $this->unpublish(form: $entry['form'], schema: $assessment['schema'], findings: $entry['findings']);
+				$outcome = $this->unpublish(run: new FormUnpublishRun(form: $entry['form'], schema: $assessment['schema'], findings: $entry['findings']));
 			}
 
 			$listed[] = ['id' => $entry['id'], 'app' => $entry['app'], 'title' => $entry['title'], 'outcome' => $outcome, 'findings' => $entry['findings']];
@@ -239,25 +239,23 @@ class FormDependentsCheck implements FormDependentsCheckInterface {
 	/**
 	 * Unpublish one form through its owning app, and notify its author.
 	 *
-	 * @param FormDependent                    $form     The form.
-	 * @param string                           $schema   The schema slug.
-	 * @param array<int, array<string, mixed>> $findings Why.
+	 * @param FormUnpublishRun $run The form, the schema slug and why.
 	 *
 	 * @return string `unpublished`, `unpublish-failed` when the owning app could not, or
 	 *                `unpublish-unavailable` when it registered the form without a way to unpublish it.
 	 */
-	private function unpublish(FormDependent $form, string $schema, array $findings): string {
-		if ($form->unpublish === null) {
-			return $this->unavailable(form: $form, schema: $schema);
+	private function unpublish(FormUnpublishRun $run): string {
+		if ($run->form->unpublish === null) {
+			return $this->unavailable(run: $run);
 		}
 
 		try {
-			($form->unpublish)();
+			($run->form->unpublish)();
 		} catch (Throwable $exception) {
-			return $this->failed(form: $form, schema: $schema, exception: $exception);
+			return $this->failed(run: $run, exception: $exception);
 		}
 
-		$this->notifyAuthor(form: $form, schema: $schema, findings: $findings);
+		$this->notifyAuthor(run: $run);
 
 		return 'unpublished';
 	}//end unpublish()
@@ -267,15 +265,14 @@ class FormDependentsCheck implements FormDependentsCheckInterface {
 	 *
 	 * Nothing was unpublished: say so, and do not tell the author it was.
 	 *
-	 * @param FormDependent $form   The form.
-	 * @param string        $schema The schema slug.
+	 * @param FormUnpublishRun $run The form and the schema slug.
 	 *
 	 * @return string `unpublish-unavailable`.
 	 */
-	private function unavailable(FormDependent $form, string $schema): string {
+	private function unavailable(FormUnpublishRun $run): string {
 		$this->logger->warning(
 			message: '[FormDependentsCheck] A form broken by a schema change has no way to be unpublished; it stays published',
-			context: ['form' => $form->id, 'app' => $form->app, 'schema' => $schema]
+			context: ['form' => $run->form->id, 'app' => $run->form->app, 'schema' => $run->schema]
 		);
 
 		return 'unpublish-unavailable';
@@ -284,16 +281,15 @@ class FormDependentsCheck implements FormDependentsCheckInterface {
 	/**
 	 * Record that the owning app could not unpublish a broken form.
 	 *
-	 * @param FormDependent $form      The form.
-	 * @param string        $schema    The schema slug.
-	 * @param Throwable     $exception What the owning app threw.
+	 * @param FormUnpublishRun $run       The form and the schema slug.
+	 * @param Throwable        $exception What the owning app threw.
 	 *
 	 * @return string `unpublish-failed`.
 	 */
-	private function failed(FormDependent $form, string $schema, Throwable $exception): string {
+	private function failed(FormUnpublishRun $run, Throwable $exception): string {
 		$this->logger->error(
 			message: '[FormDependentsCheck] An owning app could not unpublish a form broken by a schema change',
-			context: ['form' => $form->id, 'app' => $form->app, 'schema' => $schema, 'exception' => $exception->getMessage()]
+			context: ['form' => $run->form->id, 'app' => $run->form->app, 'schema' => $run->schema, 'exception' => $exception->getMessage()]
 		);
 
 		return 'unpublish-failed';
@@ -302,13 +298,12 @@ class FormDependentsCheck implements FormDependentsCheckInterface {
 	/**
 	 * Tell the form's author, when known, that a schema change unpublished it.
 	 *
-	 * @param FormDependent                    $form     The form.
-	 * @param string                           $schema   The schema slug.
-	 * @param array<int, array<string, mixed>> $findings Why.
+	 * @param FormUnpublishRun $run The form, the schema slug and why.
 	 *
 	 * @return void
 	 */
-	private function notifyAuthor(FormDependent $form, string $schema, array $findings): void {
+	private function notifyAuthor(FormUnpublishRun $run): void {
+		$form = $run->form;
 		if ($form->author === null || $form->author === '') {
 			return;
 		}
@@ -318,7 +313,7 @@ class FormDependentsCheck implements FormDependentsCheckInterface {
 			->setUser($form->author)
 			->setDateTime(new DateTime())
 			->setObject('form', $form->id)
-			->setSubject(self::SUBJECT, ['formTitle' => $form->title, 'schema' => $schema, 'count' => count($findings)]);
+			->setSubject(self::SUBJECT, ['formTitle' => $form->title, 'schema' => $run->schema, 'count' => count($run->findings)]);
 		$this->notifications->notify($notification);
 	}//end notifyAuthor()
 }//end class
