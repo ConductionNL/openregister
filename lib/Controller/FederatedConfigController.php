@@ -284,12 +284,12 @@ class FederatedConfigController extends Controller {
 	 *       trusted-keys list, which decides whose published configuration this instance will
 	 *       accept. The body rejects non-admins, and #2342 removed the #[NoAdminRequired] that used
 	 *       to contradict it; this states the posture rather than leaving it to a default.
-	 *
-	 * @NoCSRFRequired
+	 *       CSRF is required: a trusted key or `allowUnverifiedBundles` outlives any credential
+	 *       rotation, so a forged browser request must not set one. No frontend calls this route;
+	 *       API clients on Basic auth or an app password pass Nextcloud's CSRF check as before.
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	#[NoCSRFRequired]
 	public function setTrust(): JSONResponse {
 		if ($this->isAdmin() === false) {
 			return new JSONResponse(['error' => 'Only an administrator may change the trust configuration.'], Http::STATUS_FORBIDDEN);

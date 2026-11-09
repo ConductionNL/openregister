@@ -278,4 +278,14 @@ class FederatedConfigControllerTrustGateTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 
 	}//end testAnAdminCanSetATrustField()
+
+	/**
+	 * aud-f2: the trust write requires CSRF (no attribute, no annotation exempting it).
+	 */
+	public function testTheTrustWriteRequiresCsrf(): void {
+		$method = new \ReflectionMethod(FederatedConfigController::class, 'setTrust');
+
+		$this->assertSame([], $method->getAttributes(\OCP\AppFramework\Http\Attribute\NoCSRFRequired::class));
+		$this->assertStringNotContainsString('@NoCSRFRequired', (string)$method->getDocComment());
+	}
 }//end class
