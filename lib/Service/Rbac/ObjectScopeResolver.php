@@ -357,6 +357,8 @@ class ObjectScopeResolver implements ObjectScopeResolverInterface {
 	 * @param GrantedRows $granted       The `_uuid` column and the granted uuids, quoted.
 	 *
 	 * @return string A SQL predicate true for rows this caller may reach.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function notPrivateOrGrantedSql(string $notPrivateSql, GrantedRows $granted): string {
 		if (empty($granted->quotedUuids) === true) {
