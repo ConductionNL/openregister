@@ -377,32 +377,32 @@ class ScopesController extends Controller {
 			return self::ACTIONS;
 		}
 
-		$userId = $caller->userId;
-		return array_values(
-			array_filter(
-				self::ACTIONS,
-				fn (string $action): bool => $this->grants(schema: $schema, action: $action, userId: $userId)
-			)
-		);
+		return $this->grantedActions(schema: $schema, userId: $caller->userId);
 	}//end collectActionsForUser()
 
 	/**
-	 * Whether the RBAC chain grants one action on a schema; a failing probe grants nothing.
+	 * The actions the RBAC chain grants on a schema, in vocabulary order; a failing probe grants nothing.
 	 *
-	 * @param Schema $schema Schema being evaluated.
-	 * @param string $action The canonical action.
+	 * @param Schema      $schema Schema being evaluated.
 	 * @param string|null $userId Active user (null = unauthenticated probe).
 	 *
-	 * @return bool True when granted.
+	 * @return array<int, string> The granted actions.
 	 */
-	private function grants(Schema $schema, string $action, ?string $userId): bool {
-		try {
-			// The owner and object stay at their null defaults: this is a schema-level probe.
-			$granted = $this->permissionHandler->hasPermission(schema: $schema, action: $action, userId: $userId, _rbac: true);
-		} catch (\Throwable $e) {
-			return false;
+	private function grantedActions(Schema $schema, ?string $userId): array {
+		$granted = [];
+		foreach (self::ACTIONS as $action) {
+			try {
+				// The owner and object stay at their null defaults: this is a schema-level probe.
+				$allowed = $this->permissionHandler->hasPermission(schema: $schema, action: $action, userId: $userId, _rbac: true);
+			} catch (\Throwable $e) {
+				$allowed = false;
+			}
+
+			if ($allowed === true) {
+				$granted[] = $action;
+			}
 		}
 
-		return $granted === true;
-	}//end grants()
+		return $granted;
+	}//end grantedActions()
 }//end class
