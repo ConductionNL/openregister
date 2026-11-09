@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Listener\FlowTriggerListener;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorStores;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowTriggerService;
 use OCA\OpenRegister\Service\Flow\FlowTriggerSlugs;
@@ -128,11 +129,9 @@ class FlowTriggerIdSlugMatchTest extends TestCase {
 		$versionMapper->method('findPublished')->willReturn($publishedVersion);
 
 		$locator = new FlowLocator(
-			$flowMapper,
-			$triggerMapper,
+			new FlowLocatorStores($flowMapper, $triggerMapper, $versionMapper),
 			$this->createMock(ObjectService::class),
-			new NullLogger(),
-			$versionMapper
+			new NullLogger()
 		);
 
 		$runner = $this->createMock(FlowRunService::class);

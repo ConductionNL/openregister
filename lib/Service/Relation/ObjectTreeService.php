@@ -171,7 +171,8 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	public function tree(ObjectEntity $root, ?ObjectTreeQuery $query = null, bool $_rbac = true): array {
 		$query ??= new ObjectTreeQuery();
 		$asked   = ['fields' => $query->fields, 'rbac' => $_rbac];
-		$answer  = $this->rootAnswer(root: $root, query: $query, walk: $asked);
+		$answer  = self::rootAnswer(root: $root, query: $query);
+		$answer['nodes'] = [$this->rootNode(root: $root, walk: $asked)];
 		$walk    = $this->treeWalk(root: $root, depth: $query->depth);
 		if ($walk === null) {
 			return $answer;
@@ -181,17 +182,16 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	}//end tree()
 
 	/**
-	 * The tree answer with only the root, at level 0, and no declaration applied yet.
+	 * The tree answer with no nodes yet and no declaration applied yet.
 	 *
 	 * @param ObjectEntity    $root  The object to walk from.
 	 * @param ObjectTreeQuery $query The direction and depth the caller asked for.
-	 * @param array           $walk  `fields` and `rbac` as the caller asked.
 	 *
 	 * @return array<string, mixed> The answer.
 	 *
 	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
 	 */
-	private function rootAnswer(ObjectEntity $root, ObjectTreeQuery $query, array $walk): array {
+	private static function rootAnswer(ObjectEntity $root, ObjectTreeQuery $query): array {
 		return [
 			'root' => (string)$root->getUuid(),
 			'register' => (int)$root->getRegister(),
@@ -201,7 +201,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 			'depth' => 0,
 			'requestedDepth' => $query->depth,
 			'maxDepth' => 0,
-			'nodes' => [$this->rootNode(root: $root, walk: $walk)],
+			'nodes' => [],
 			'truncated' => false,
 			'truncatedBy' => null,
 		];
@@ -217,9 +217,9 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 */
 	private function rootNode(ObjectEntity $root, array $walk): array {
 		$rootUuid = (string)$root->getUuid();
-		$redacted = $this->redacted(objects: [$rootUuid => $root], fields: $walk['fields'], rbac: $walk['rbac']);
+		$redacted = $this->redacted(objects: [$rootUuid => $root], walk: $walk);
 
-		return $this->node(object: ($redacted[$rootUuid] ?? $rootUuid), level: 0, parent: null, fields: $walk['fields']);
+		return self::node(object: ($redacted[$rootUuid] ?? $rootUuid), fields: $walk['fields']);
 	}//end rootNode()
 
 	/**
@@ -278,7 +278,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 */
 	private function withBranches(array $answer, array $walk): array {
 		$ancestors   = $this->ancestorBranch(direction: $answer['direction'], walk: $walk);
-		$descendants = $this->descendantBranch(direction: $answer['direction'], rootUuid: $answer['root'], walk: $walk);
+		$descendants = $this->descendantBranch(direction: $answer['direction'], walk: $walk);
 
 		$answer['nodes'] = array_merge(
 			array_reverse($ancestors['nodes']),
@@ -311,14 +311,13 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * The descendants when the direction asks for them; an empty branch otherwise.
 	 *
 	 * @param string               $direction One of the DIRECTION_ constants.
-	 * @param string               $rootUuid  The root.
-	 * @param array<string, mixed> $walk      The walk.
+	 * @param array<string, mixed> $walk      The walk, with the `root` entity.
 	 *
 	 * @return array{nodes: array<int, array<string, mixed>>, truncatedBy: string|null} The branch.
 	 */
-	private function descendantBranch(string $direction, string $rootUuid, array $walk): array {
+	private function descendantBranch(string $direction, array $walk): array {
 		if ($direction === self::DIRECTION_DESCENDANTS || $direction === self::DIRECTION_BOTH) {
-			return $this->descendants(rootUuid: $rootUuid, walk: $walk);
+			return $this->descendants(rootUuid: (string)$walk['root']->getUuid(), walk: $walk);
 		}
 
 		return ['nodes' => [], 'truncatedBy' => null];
@@ -403,8 +402,6 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 */
 	private function readableBelow(array $walk, array $state): array|null {
 		return $this->readableChildren(
-			table: $walk['table'],
-			column: $walk['column'],
 			read: [
 				'parents' => $state['frontier'],
 				'budget' => ($walk['cap'] - count($state['nodes']) - 1),
@@ -425,12 +422,15 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * @return array<string, mixed> The new state.
 	 */
 	private function withLevel(array $walk, array $state, array $children, int $level): array {
-		$objects = $this->redacted(objects: $this->load(walk: $walk, uuids: array_keys($children)), fields: $walk['fields'], rbac: $walk['rbac']);
+		$objects = $this->redacted(objects: $this->load(walk: $walk, uuids: array_keys($children)), walk: $walk);
 		$state['frontier'] = [];
 		foreach ($children as $child => $parent) {
+			$node           = self::node(object: ($objects[$child] ?? $child), fields: $walk['fields']);
+			$node['level']  = $level;
+			$node['parent'] = $parent;
 			$state['seen'][$child] = true;
 			$state['frontier'][]   = $child;
-			$state['nodes'][]      = $this->node(object: ($objects[$child] ?? $child), level: $level, parent: $parent, fields: $walk['fields']);
+			$state['nodes'][]      = $node;
 		}
 
 		return $state;
@@ -477,16 +477,15 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * read and one whose read access could not be established: neither may be
 	 * answered as "nothing below".
 	 *
-	 * @param string               $table  The magic table.
-	 * @param string               $column The parent column.
-	 * @param array<string, mixed> $read   `parents` (the level to read below), `budget` (the children the cap still
-	 *                                     admits), `seen` (the uuids already in the answer) and `walk`.
+	 * @param array<string, mixed> $read `parents` (the level to read below), `budget` (the children the cap still
+	 *                                   admits), `seen` (the uuids already in the answer) and `walk` (with the
+	 *                                   magic `table` and the parent `column`).
 	 *
 	 * @return array{children: array<string, string>, overflow: bool}|null Child uuid => parent uuid, and whether the level is wider than the budget.
 	 */
-	private function readableChildren(string $table, string $column, array $read): ?array {
+	private function readableChildren(array $read): ?array {
 		$budget = max(0, $read['budget']);
-		$rows   = $this->childRows(table: $table, column: $column, parents: $read['parents'], limit: ($budget + 1));
+		$rows   = $this->childRows(read: $read, limit: ($budget + 1));
 		if ($rows === null) {
 			return null;
 		}
@@ -503,14 +502,15 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	/**
 	 * One bounded read of the children of a level; empty without parents, null when it fails.
 	 *
-	 * @param string             $table   The magic table.
-	 * @param string             $column  The parent column.
-	 * @param array<int, string> $parents The level to read below.
-	 * @param int                $limit   The most rows to read.
+	 * @param array<string, mixed> $read  `parents` (the level to read below) and `walk` (with `table` and `column`).
+	 * @param int                  $limit The most rows to read.
 	 *
 	 * @return array<string, string>|null Child uuid => parent uuid.
 	 */
-	private function childRows(string $table, string $column, array $parents, int $limit): array|null {
+	private function childRows(array $read, int $limit): array|null {
+		$parents = $read['parents'];
+		$table   = $read['walk']['table'];
+		$column  = $read['walk']['column'];
 		if ($parents === []) {
 			return [];
 		}
@@ -542,12 +542,14 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 */
 	private function ancestors(ObjectEntity $root, array $walk): array {
 		$chain = $this->ancestorChain(root: $root, walk: $walk);
-		$shown = $this->redacted(objects: $chain['chain'], fields: $walk['fields'], rbac: $walk['rbac']);
+		$shown = $this->redacted(objects: $chain['chain'], walk: $walk);
 		$uuids = array_keys($chain['chain']);
 		$nodes = [];
 		foreach ($uuids as $index => $uuid) {
-			$parent  = ($uuids[($index + 1)] ?? $chain['topParent']);
-			$nodes[] = $this->node(object: ($shown[$uuid] ?? $uuid), level: -($index + 1), parent: $parent, fields: $walk['fields']);
+			$node           = self::node(object: ($shown[$uuid] ?? $uuid), fields: $walk['fields']);
+			$node['level']  = -($index + 1);
+			$node['parent'] = ($uuids[($index + 1)] ?? $chain['topParent']);
+			$nodes[]        = $node;
 		}
 
 		return ['nodes' => $nodes, 'truncatedBy' => $chain['truncatedBy']];
@@ -664,33 +666,35 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * the walk reads the parent property from, and are never written back.
 	 *
 	 * @param array<string, ObjectEntity> $objects Uuid => object, as the mapper loaded them.
-	 * @param string[]                    $fields  The properties the request names.
-	 * @param bool                        $rbac    Whether the read is the caller's own (property read access applies).
+	 * @param array<string, mixed>        $walk    The walk: `fields` (the properties the request names) and
+	 *                                             `rbac` (whether the read is the caller's own, so property
+	 *                                             read access applies).
 	 *
 	 * @return array<string, ObjectEntity> Uuid => the redacted copy.
 	 */
-	private function redacted(array $objects, array $fields, bool $rbac): array {
-		if ($fields === [] || $objects === []) {
+	private function redacted(array $objects, array $walk): array {
+		if ($walk['fields'] === [] || $objects === []) {
 			return $objects;
 		}
 
 		$copies = array_map(static fn (ObjectEntity $object): ObjectEntity => clone $object, $objects);
-		$this->renderer->redactWriteOnlyFromRows(rows: $copies, _rbac: $rbac);
+		$this->renderer->redactWriteOnlyFromRows(rows: $copies, _rbac: $walk['rbac']);
 
 		return $copies;
 	}//end redacted()
 
 	/**
-	 * One node of the answer.
+	 * One node of the answer, placed as the root (level 0, no parent).
+	 *
+	 * A node below or above the root has its `level` (negative above, positive
+	 * below) and `parent` uuid set by the walk that reached it.
 	 *
 	 * @param ObjectEntity|string $object The object as the caller may read it, or only its uuid when it did not load.
-	 * @param int                 $level  0 for the root, negative above, positive below.
-	 * @param string|null         $parent The parent uuid.
 	 * @param string[]            $fields Properties to copy.
 	 *
 	 * @return array<string, mixed> The node.
 	 */
-	private function node(ObjectEntity|string $object, int $level, ?string $parent, array $fields): array {
+	private static function node(ObjectEntity|string $object, array $fields): array {
 		$loaded = null;
 		$uuid   = $object;
 		if ($object instanceof ObjectEntity) {
@@ -701,8 +705,8 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 		return [
 			'uuid' => $uuid,
 			'name' => ($loaded?->getName() ?? $uuid),
-			'level' => $level,
-			'parent' => $parent,
+			'level' => 0,
+			'parent' => null,
 			'properties' => self::propertiesOf(data: ($loaded?->getObject() ?? []), fields: $fields),
 		];
 	}//end node()

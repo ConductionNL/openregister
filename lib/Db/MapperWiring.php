@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -112,9 +113,11 @@ final class MapperWiring {
 	private static function webhookMapper(ContainerInterface $container): WebhookMapper {
 		return new WebhookMapper(
 			db: $container->get('OCP\IDBConnection'),
-			organisationMapper: $container->get(OrganisationMapperInterface::class),
-			userSession: $container->get('OCP\IUserSession'),
-			groupManager: $container->get('OCP\IGroupManager'),
+			tenancy: new TenancyServices(
+				organisationMapper: $container->get(OrganisationMapperInterface::class),
+				userSession: $container->get('OCP\IUserSession'),
+				groupManager: $container->get('OCP\IGroupManager')
+			),
 			appConfig: $container->get('OCP\IAppConfig')
 		);
 	}//end webhookMapper()

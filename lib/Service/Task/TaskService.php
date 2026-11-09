@@ -679,7 +679,12 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 */
 	public function resolve(string $uuid, ?string $resultText, ?string $comment, ?string $actor): Task {
 		return $this->completeInternal(
-			completion: new TaskCompletion(verb: 'resolve', uuid: $uuid, outcome: 'resolved', resultText: $resultText, comment: $comment, actor: $actor)
+			completion: new TaskCompletion(
+				verb: 'resolve',
+				uuid: $uuid,
+				answer: new TaskAnswer(outcome: 'resolved', resultText: $resultText, comment: $comment),
+				actor: $actor
+			)
 		);
 	}//end resolve()
 
@@ -719,12 +724,13 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 			completion: new TaskCompletion(
 				verb: 'complete',
 				uuid: $uuid,
-				outcome: $outcome,
-				resultText: $resultText,
-				comment: $comment,
-				actor: $actor,
-				responses: $responses,
-				evidence: $evidence
+				answer: new TaskAnswer(
+					outcome: $outcome,
+					resultText: $resultText,
+					comment: $comment,
+					payload: new TaskAnswerPayload(responses: $responses, evidence: $evidence)
+				),
+				actor: $actor
 			)
 		);
 	}//end complete()

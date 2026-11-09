@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Service\Flow\FlowAdoptionRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorStores;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowService;
@@ -217,11 +218,9 @@ class FlowAdoptionTest extends TestCase {
 			$versionMapper->method('findPublished')->willReturn($publishedVersion);
 
 			$locator = new FlowLocator(
-				$flowMapper,
-				$triggerMapper,
+				new FlowLocatorStores($flowMapper, $triggerMapper, $versionMapper),
 				$this->createMock(ObjectService::class),
-				new NullLogger(),
-				$versionMapper
+				new NullLogger()
 			);
 
 			$this->assertSame(

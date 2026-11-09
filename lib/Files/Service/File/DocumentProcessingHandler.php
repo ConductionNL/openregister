@@ -28,6 +28,7 @@ use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
@@ -391,12 +392,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 
 		// Resolve the source file id once — the substitution placeholder
 		// format and the post-redaction audit flag both key off it.
-		$fileId = 0;
-		// OCP\Files\Node declares getId(): int, so no method_exists() probe.
-		$candidate = $node->getId();
-		if ($candidate > 0) {
-			$fileId = $candidate;
-		}
+		$fileId = $this->sourceFileId(node: $node);
 
 		// Skipped relations are never redacted, whatever the caller passes
 		// (entity-relation-grondslagen). The file's entity rows give stable
@@ -466,11 +462,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// plain-text runs intentionally leave `sanitization = null` per
 		// spec `office-document-sanitization`. The log write is best-effort
 		// — a persistence failure MUST NOT mask a successful redaction.
-		$this->persistAnonymisationLog(
-			node: $node,
-			fileId: $fileId,
-			replacements: $replacements
-		);
+		$this->persistAnonymisationLog(node: $node, replacements: $replacements);
 
 		return $anonymizedFile;
 	}//end anonymizeDocument()
@@ -750,31 +742,23 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * sanitisation report when an Office document was sanitised; non-Office
 	 * runs leave `sanitization = null` (spec invariant).
 	 *
-	 * @param Node $node The source file node.
-	 * @param int $fileId The NC file id (0 when absent).
+	 * @param Node $node The source file node; its id (0 when absent) keys the row.
 	 * @param array<string, string> $replacements The substitution map applied.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function persistAnonymisationLog(Node $node, int $fileId, array $replacements): void {
+	private function persistAnonymisationLog(Node $node, array $replacements): void {
 		if ($this->anonymisationLogMapper === null) {
 			return;
 		}
 
+		$fileId = $this->sourceFileId(node: $node);
 		$entity = new AnonymisationLog();
 		$entity->setFileId($fileId);
 
-		$mimeType = '';
-		if ($node instanceof File) {
-			try {
-				$mimeType = (string)$node->getMimeType();
-			} catch (Throwable $ignored) {
-				$mimeType = '';
-			}
-		}
-
+		$mimeType = $this->logMimeType(node: $node);
 		$entity->setMimeType($mimeType);
 		$entity->setEngine($this->resolveEngineName(mimeType: $mimeType));
 		$entity->setStatus(AnonymisationLog::STATUS_SUCCESS);
@@ -798,6 +782,45 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			);
 		}
 	}//end persistAnonymisationLog()
+
+	/**
+	 * The source file id of a run, 0 when the node has none.
+	 *
+	 * The substitution placeholder format, the post-redaction audit flag and
+	 * the anonymisation log row all key off it.
+	 *
+	 * @param Node $node The source file node.
+	 *
+	 * @return int The NC file id, or 0.
+	 */
+	private function sourceFileId(Node $node): int {
+		// OCP\Files\Node declares getId(): int, so no method_exists() probe.
+		$candidate = $node->getId();
+		if ($candidate > 0) {
+			return $candidate;
+		}
+
+		return 0;
+	}//end sourceFileId()
+
+	/**
+	 * The MIME type recorded on the anonymisation log row, '' when unknown.
+	 *
+	 * @param Node $node The source file node.
+	 *
+	 * @return string The MIME type, or '' for a non-file node or a lookup failure.
+	 */
+	private function logMimeType(Node $node): string {
+		if (($node instanceof File) === false) {
+			return '';
+		}
+
+		try {
+			return (string)$node->getMimeType();
+		} catch (Throwable $ignored) {
+			return '';
+		}
+	}//end logMimeType()
 
 	/**
 	 * Resolve a stable engine label for the anonymisation log row.
@@ -1120,9 +1143,11 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// written when a strict run's output cannot be re-read.
 		$redaction = $replacer->replaceInPdf(
 			pdfBytes: $content,
-			substitutions: $job->replacements,
-			strict: $job->isStrict(),
-			preserveStructure: $job->preserveStructure()
+			plan: new RedactionPlan(
+				substitutions: $job->replacements,
+				strict: $job->isStrict(),
+				preserveStructure: $job->preserveStructure()
+			)
 		);
 
 		// Expose the `structurePreservation` result block (REQ-ORTPR-003).

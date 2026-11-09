@@ -153,14 +153,13 @@ class RelationCascadeScanGoldenTest extends TestCase {
 			'plain' => 'keep',
 		];
 
-		$parent = new ObjectEntity();
 
 		$arraySchema = $this->schema(properties: ['l' => ['type' => 'array', 'inversedBy' => 'p']]);
 
 		return [
-			'cascade' => $this->attempt(fn () => $handler->cascadeObjects($parent, $schema, $data)),
-			'arrayString' => $this->attempt(fn () => $handler->cascadeObjects($parent, $arraySchema, ['l' => 'text'])),
-			'multiple' => $handler->cascadeMultipleObjects($parent, ['inversedBy' => 'p'], [self::UUID, ['a' => 1], ['a', 'b'], 'x', null, self::UUID2]),
+			'cascade' => $this->attempt(fn () => $handler->cascadeObjects($schema, $data)),
+			'arrayString' => $this->attempt(fn () => $handler->cascadeObjects($arraySchema, ['l' => 'text'])),
+			'multiple' => $handler->cascadeMultipleObjects([self::UUID, ['a' => 1], ['a', 'b'], 'x', null, self::UUID2]),
 		];
 	}//end cascades()
 

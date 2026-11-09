@@ -8,6 +8,7 @@ import { flushPromises, mount } from '@vue/test-utils'
  * @license EUPL-1.2
  * @copyright 2026 Conduction B.V.
  */
+import BusyButton from '../../components/shared/BusyButton.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import EditSource from './EditSource.vue'
 
@@ -156,6 +157,7 @@ function editSourceModal() {
 	const bindings = {
 		...library,
 		...Object.fromEntries(icons.map((name) => [name, mockStub(name)])),
+		BusyButton,
 		CloseCancelButton,
 		navigationStore,
 		sourceStore,

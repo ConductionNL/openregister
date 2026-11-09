@@ -48,7 +48,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Delegation;
 
-use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -101,12 +100,7 @@ class DelegationService {
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public function runAsDelegated(DelegationRequest $request, callable $operation) {
-		$verdict = $this->verdictFor(
-			principal: $request->principal,
-			actingAs: $request->actingAs,
-			scope: $request->scope,
-			now: $request->now
-		);
+		$verdict = $this->verdictFor(request: $request);
 
 		if ($verdict->permitted === false) {
 			$this->refuse(request: $request, verdict: $verdict);
@@ -221,26 +215,20 @@ class DelegationService {
 	 * first firing, which is exactly why the fire path re-resolves rather than
 	 * trusting that the definition was once valid.
 	 *
-	 * @param string        $principal The uid the work would be done by.
-	 * @param string        $actingAs  The uid whose rights it would use.
-	 * @param array         $scope     What the work needs.
-	 * @param DateTime|null $now       The moment to judge at; defaults to now.
+	 * @param DelegationRequest $request Who would do the work, whose rights it
+	 *                                   would use, what it needs and the moment
+	 *                                   to judge at.
 	 *
 	 * @return DelegationVerdict The verdict, carrying its reason.
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function verdictFor(
-		string $principal,
-		string $actingAs,
-		array $scope = [],
-		?DateTime $now = null,
-	): DelegationVerdict {
+	public function verdictFor(DelegationRequest $request): DelegationVerdict {
 		return $this->resolver->resolve(
-			principal: $principal,
-			actingAs: $actingAs,
-			now: ($now ?? new DateTime()),
-			scope: $scope
+			principal: $request->principal,
+			actingAs: $request->actingAs,
+			now: $request->now,
+			scope: $request->scope
 		);
 	}//end verdictFor()
 }//end class

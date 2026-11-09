@@ -50,6 +50,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Uid\UuidV4;
 use Throwable;
 
 /**
@@ -584,7 +585,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$this->applyFindFilters(qb: $qb, filters: $filters ?? []);
 		$this->applyChangedSearch(qb: $qb, search: $search);
 		$this->applyFindSort(qb: $qb, sort: $sort ?? []);
-		self::applyPage(qb: $qb, limit: $limit, offset: $offset);
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()
@@ -606,27 +607,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			);
 		}
 	}//end applyChangedSearch()
-
-	/**
-	 * Apply the limit and offset, each only when given.
-	 *
-	 * @param IQueryBuilder $qb     The query being built.
-	 * @param int|null      $limit  The limit, if any.
-	 * @param int|null      $offset The offset, if any.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/enhanced-audit-trail/spec.md
-	 */
-	private static function applyPage(IQueryBuilder $qb, int|null $limit, int|null $offset): void {
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
-	}//end applyPage()
 
 	/**
 	 * Apply the filters of findAll(): system variables (starting with _) and
@@ -658,7 +638,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			}
 
 			if (is_array($value) === true) {
-				$this->applyListFilter(qb: $qb, field: $field, value: $value);
+				$this->applyListFilter(qb: $qb, term: new AuditTrailFilterTerm(field: $field, value: $value));
 				continue;
 			}
 
@@ -695,21 +675,21 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			return $qb->expr()->like('action', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix).'%'));
 		}
 
-		return self::listOrEqualExpression(qb: $qb, term: $term, valueStr: $valueStr);
+		return self::listOrEqualExpression(qb: $qb, term: $term);
 	}//end scalarFilterExpression()
 
 	/**
 	 * The predicate for a comma-separated list (`action=create,update`), or equality.
 	 *
-	 * @param IQueryBuilder        $qb       The query being built.
-	 * @param AuditTrailFilterTerm $term     The column and its value.
-	 * @param string               $valueStr The value cast to string.
+	 * @param IQueryBuilder        $qb   The query being built.
+	 * @param AuditTrailFilterTerm $term The column and its value.
 	 *
 	 * @return string The predicate.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private static function listOrEqualExpression(IQueryBuilder $qb, AuditTrailFilterTerm $term, string $valueStr): string {
+	private static function listOrEqualExpression(IQueryBuilder $qb, AuditTrailFilterTerm $term): string {
+		$valueStr = (string)$term->value;
 		if (strpos($valueStr, ',') !== false) {
 			$values = array_map('trim', explode(',', $valueStr));
 			return $qb->expr()->in($term->field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY));
@@ -761,9 +741,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * list (`field[]=a&field[]=b`) keeps only the rows whose column is one of
 	 * them. The exclusion runs in the query, so a page holds what is left.
 	 *
-	 * @param IQueryBuilder        $qb    The query being built.
-	 * @param string               $field The allowlisted column.
-	 * @param array<string, mixed> $value The operator map or the plain list.
+	 * @param IQueryBuilder        $qb   The query being built.
+	 * @param AuditTrailFilterTerm $term The allowlisted column, and its operator map or plain list.
 	 *
 	 * @return void
 	 *
@@ -771,7 +750,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/changes/audit-trail-not-in-filter/specs/audit-trail-immutable/spec.md#requirement-a-history-read-can-leave-out-actions-and-actors-in-the-query
 	 */
-	private function applyListFilter(IQueryBuilder $qb, string $field, array $value): void {
+	private function applyListFilter(IQueryBuilder $qb, AuditTrailFilterTerm $term): void {
+		$field = $term->field;
+		$value = $term->value;
 		if (array_is_list($value) === true) {
 			$qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($this->listValues(value: $value), IQueryBuilder::PARAM_STR_ARRAY)));
 			return;
@@ -2412,17 +2393,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->isNull('purged_at'));
 
-		if ($onlyActions !== null && $onlyActions !== []) {
-			$qb->andWhere(
-				$qb->expr()->in('action', $qb->createNamedParameter($onlyActions, IQueryBuilder::PARAM_STR_ARRAY))
-			);
-		}
-
-		if ($excludeActions !== []) {
-			$qb->andWhere(
-				$qb->expr()->notIn('action', $qb->createNamedParameter($excludeActions, IQueryBuilder::PARAM_STR_ARRAY))
-			);
-		}
+		self::andActionIn(qb: $qb, onlyActions: $onlyActions);
+		self::andActionNotIn(qb: $qb, excludeActions: $excludeActions);
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
@@ -2503,20 +2475,39 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->isNull('purged_at'));
 
-		if ($onlyActions !== null && $onlyActions !== []) {
-			$qb->andWhere(
-				$qb->expr()->in('action', $qb->createNamedParameter($onlyActions, IQueryBuilder::PARAM_STR_ARRAY))
-			);
-		}
-
-		if ($excludeActions !== []) {
-			$qb->andWhere(
-				$qb->expr()->notIn('action', $qb->createNamedParameter($excludeActions, IQueryBuilder::PARAM_STR_ARRAY))
-			);
-		}
+		self::andActionIn(qb: $qb, onlyActions: $onlyActions);
+		self::andActionNotIn(qb: $qb, excludeActions: $excludeActions);
 
 		return (int)$qb->executeStatement();
 	}//end tombstoneForObject()
+
+	/**
+	 * Restrict a per-object query to these actions; null or empty restricts nothing.
+	 *
+	 * @param IQueryBuilder           $qb          The query being built.
+	 * @param array<int, string>|null $onlyActions The actions, or null for every action.
+	 *
+	 * @return void
+	 */
+	private static function andActionIn(IQueryBuilder $qb, ?array $onlyActions): void {
+		if ($onlyActions !== null && $onlyActions !== []) {
+			$qb->andWhere($qb->expr()->in('action', $qb->createNamedParameter($onlyActions, IQueryBuilder::PARAM_STR_ARRAY)));
+		}
+	}//end andActionIn()
+
+	/**
+	 * Leave these actions out of a per-object query, such as the evidence of a destruction.
+	 *
+	 * @param IQueryBuilder      $qb             The query being built.
+	 * @param array<int, string> $excludeActions The actions never touched.
+	 *
+	 * @return void
+	 */
+	private static function andActionNotIn(IQueryBuilder $qb, array $excludeActions): void {
+		if ($excludeActions !== []) {
+			$qb->andWhere($qb->expr()->notIn('action', $qb->createNamedParameter($excludeActions, IQueryBuilder::PARAM_STR_ARRAY)));
+		}
+	}//end andActionNotIn()
 
 	/**
 	 * Clear all audit trail logs (not just expired ones)
@@ -2655,7 +2646,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
 	public function createAuditTrailEntry(
 		ObjectEntity $object,
@@ -2665,21 +2655,13 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?string $actorName = null,
 		?string $ipAddress = null,
 	): AuditTrail {
-		$actor = $this->entryActor(actorId: $actorId, actorName: $actorName);
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+		$auditTrail = self::actorEntry(action: $action, actor: $this->entryActor(actorId: $actorId, actorName: $actorName));
 		$auditTrail->setObject($object->getId());
 		$auditTrail->setObjectUuid($object->getUuid());
 		$auditTrail->setRegister($object->getRegister());
 		$auditTrail->setSchema($object->getSchema());
-		$auditTrail->setAction($action);
 		$auditTrail->setChanged($context);
-		$auditTrail->setUser($actor['userId']);
-		$auditTrail->setUserName($actor['userName']);
 		self::stampIpAddress(auditTrail: $auditTrail, ipAddress: $ipAddress);
-
-		$auditTrail->setCreated(new DateTime());
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createAuditTrailEntry()
@@ -2726,6 +2708,27 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end sessionActor()
 
 	/**
+	 * A new row that names its actor: a fresh uuid, the action, the actor and the current time.
+	 *
+	 * Every direct entry writer starts from this row and adds what its entry is about.
+	 *
+	 * @param string                                  $action The action.
+	 * @param array{userId: string, userName: string} $actor  Who the row names.
+	 *
+	 * @return AuditTrail The row, not yet inserted.
+	 */
+	private static function actorEntry(string $action, array $actor): AuditTrail {
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)new UuidV4());
+		$auditTrail->setAction($action);
+		$auditTrail->setUser($actor['userId']);
+		$auditTrail->setUserName($actor['userName']);
+		$auditTrail->setCreated(new DateTime());
+
+		return $auditTrail;
+	}//end actorEntry()
+
+	/**
 	 * Record the calling address on a row, trimmed, when one was given.
 	 *
 	 * @param AuditTrail  $auditTrail The row.
@@ -2764,7 +2767,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 */
 	public function createToolInvocationEntry(
 		string $toolId,
@@ -2772,11 +2774,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		array $resultSummary,
 		AuditedObject $about = new AuditedObject(),
 	): AuditTrail {
-		$actor = $this->sessionActor();
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction('mcp.' . self::toolVerb(toolId: $toolId));
+		$auditTrail = self::actorEntry(action: 'mcp.' . self::toolVerb(toolId: $toolId), actor: $this->sessionActor());
 		// `changed` is NOT NULL and QBMapper writes only the fields a setter
 		// touched: a tool call changes no object, so it records an empty set (#4279).
 		$auditTrail->setChanged([]);
@@ -2784,9 +2782,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setParamsDigest($paramsDigest);
 		$auditTrail->setResultSummary($resultSummary);
 		$about->stampOnto(auditTrail: $auditTrail);
-		$auditTrail->setUser($actor['userId']);
-		$auditTrail->setUserName($actor['userName']);
-		$auditTrail->setCreated(new DateTime());
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createToolInvocationEntry()
@@ -2959,7 +2954,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-		self::applyActorFilters(qb: $qb, action: $action, from: $from, to: $to);
+		self::andActionIs(qb: $qb, action: $action);
+		self::andCreatedFrom(qb: $qb, from: $from);
+		self::andCreatedUntil(qb: $qb, until: $to);
 
 		$results = $this->findEntities(query: $qb);
 
@@ -2969,7 +2966,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->from($this->getTableName())
 			->where($count->expr()->eq('user', $count->createNamedParameter($userId)));
 
-		self::applyActorFilters(qb: $count, action: $action, from: $from, to: $to);
+		self::andActionIs(qb: $count, action: $action);
+		self::andCreatedFrom(qb: $count, from: $from);
+		self::andCreatedUntil(qb: $count, until: $to);
 
 		$result = $count->executeQuery();
 		$row = $result->fetch();
@@ -2982,39 +2981,18 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end findByActor()
 
 	/**
-	 * The optional action and created-window filters of findByActor(), each only when non-empty.
+	 * The optional action filter of findByActor(), only when non-empty.
 	 *
 	 * @param IQueryBuilder $qb     The query being built.
 	 * @param string|null   $action Action filter.
-	 * @param string|null   $from   Lower bound on `created`.
-	 * @param string|null   $to     Upper bound on `created`.
 	 *
 	 * @return void
 	 */
-	private static function applyActorFilters(IQueryBuilder $qb, string|null $action, string|null $from, string|null $to): void {
-		if (self::isBlank(value: $action) === false) {
+	private static function andActionIs(IQueryBuilder $qb, string|null $action): void {
+		if ($action !== null && $action !== '') {
 			$qb->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($action)));
 		}
-
-		if (self::isBlank(value: $from) === false) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from)));
-		}
-
-		if (self::isBlank(value: $to) === false) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to)));
-		}
-	}//end applyActorFilters()
-
-	/**
-	 * Whether an optional filter value is absent: null or the empty string.
-	 *
-	 * @param string|null $value The value.
-	 *
-	 * @return bool True when the filter does not apply.
-	 */
-	private static function isBlank(string|null $value): bool {
-		return $value === null || $value === '';
-	}//end isBlank()
+	}//end andActionIs()
 
 	/**
 	 * Create one immutable, hash-chained audit record for a write that was
@@ -3050,7 +3028,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createPartyQueryRefusalEntry.
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every parameter is one column of the refusal record.
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
@@ -3068,28 +3045,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		string|null $actorReference = null,
 	): AuditTrail {
 		$actor = self::refusalActor(actorId: $actorId, actorReference: $actorReference);
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction('shared_master_data_write_denied');
-		$auditTrail->setRegister($register);
-		$auditTrail->setSchema($schema);
-		$auditTrail->setObjectUuid($objectUuid);
+		$auditTrail = self::actorEntry(action: 'shared_master_data_write_denied', actor: $actor);
+		(new AuditedObject(register: $register, schema: $schema, objectUuid: $objectUuid))->stampOnto(auditTrail: $auditTrail);
 		$auditTrail->setOrganisationId($sourceOrganisation);
-		$auditTrail->setResultSummary(
-			array_merge(
-				$context,
-				[
-					'holderOrganisation' => $holderOrganisation,
-					'sourceOrganisation' => $sourceOrganisation,
-					'resourceType' => $resourceType,
-					'outcome' => 'refused',
-				]
-			)
-		);
-		$auditTrail->setUser($actor['userId']);
-		$auditTrail->setUserName($actor['userName']);
-		$auditTrail->setCreated(new DateTime());
+		$refusal = ['holderOrganisation' => $holderOrganisation, 'sourceOrganisation' => $sourceOrganisation, 'resourceType' => $resourceType];
+		$auditTrail->setResultSummary(array_merge($context, $refusal, ['outcome' => 'refused']));
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 
@@ -3138,34 +3098,12 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
-	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function createPartyQueryRefusalEntry(string $query, int $cap, int $would, ?int $schema = null): AuditTrail {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		$userName = 'System';
-		if ($user !== null) {
-			$userId = $user->getUID();
-			$userName = $user->getDisplayName();
-		}
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction('party.query-refused');
+		$auditTrail = self::actorEntry(action: 'party.query-refused', actor: $this->sessionActor());
 		$auditTrail->setSchema($schema);
-		$auditTrail->setResultSummary(
-			[
-				'query' => $query,
-				'cap' => $cap,
-				'wouldHaveMatched' => $would,
-				'returned' => 0,
-			]
-		);
-		$auditTrail->setUser($userId);
-		$auditTrail->setUserName($userName);
-		$auditTrail->setCreated(new DateTime());
+		$auditTrail->setResultSummary(['query' => $query, 'cap' => $cap, 'wouldHaveMatched' => $would, 'returned' => 0]);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createPartyQueryRefusalEntry()
@@ -3189,8 +3127,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createPartyQueryRefusalEntry.
-	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function createPurposeRefusalEntry(
@@ -3199,29 +3135,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?int $register = null,
 		?int $schema = null,
 	): AuditTrail {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		$userName = 'System';
-		if ($user !== null) {
-			$userId = $user->getUID();
-			$userName = $user->getDisplayName();
-		}
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction(PurposeGuardInterface::ACTION_REFUSED);
-		$auditTrail->setRegister($register);
-		$auditTrail->setSchema($schema);
-		$auditTrail->setResultSummary(
-			[
-				'rule' => $rule,
-				'declaredPurpose' => $purpose,
-				'refused' => true,
-			]
-		);
-		$auditTrail->setUser($userId);
-		$auditTrail->setUserName($userName);
-		$auditTrail->setCreated(new DateTime());
+		$auditTrail = self::actorEntry(action: PurposeGuardInterface::ACTION_REFUSED, actor: $this->sessionActor());
+		(new AuditedObject(register: $register, schema: $schema))->stampOnto(auditTrail: $auditTrail);
+		$auditTrail->setResultSummary(['rule' => $rule, 'declaredPurpose' => $purpose, 'refused' => true]);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createPurposeRefusalEntry()
@@ -3253,7 +3169,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->from($this->getTableName())
 			->groupBy('purpose');
 
-		self::applyCreatedWindow(qb: $qb, from: $from, to: $to);
+		self::andCreatedFrom(qb: $qb, from: $from);
+		self::andCreatedUntil(qb: $qb, until: $to);
 
 		$result = $qb->executeQuery();
 		$counts = [];
@@ -3267,27 +3184,43 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end countByPurpose()
 
 	/**
-	 * Bound `created` from below and above, each only when given.
+	 * Bound `created` from below, only when a bound is given.
 	 *
-	 * @param IQueryBuilder $qb   The query being built.
-	 * @param DateTime|null $from Inclusive lower bound.
-	 * @param DateTime|null $to   Inclusive upper bound.
+	 * A DateTime is bound as a date; a string (findByActor()'s ISO-8601 filter)
+	 * is bound as it was given, and an empty one is no bound.
+	 *
+	 * @param IQueryBuilder        $qb   The query being built.
+	 * @param DateTime|string|null $from Inclusive lower bound.
 	 *
 	 * @return void
 	 */
-	private static function applyCreatedWindow(IQueryBuilder $qb, DateTime|null $from, DateTime|null $to): void {
-		if ($from !== null) {
-			$qb->andWhere(
-				$qb->expr()->gte('created', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
+	private static function andCreatedFrom(IQueryBuilder $qb, DateTime|string|null $from): void {
+		if ($from instanceof DateTime) {
+			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
 		}
 
-		if ($to !== null) {
-			$qb->andWhere(
-				$qb->expr()->lte('created', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
+		if (is_string($from) === true && $from !== '') {
+			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from)));
 		}
-	}//end applyCreatedWindow()
+	}//end andCreatedFrom()
+
+	/**
+	 * Bound `created` from above, only when a bound is given; bound the way andCreatedFrom() binds.
+	 *
+	 * @param IQueryBuilder        $qb    The query being built.
+	 * @param DateTime|string|null $until Inclusive upper bound.
+	 *
+	 * @return void
+	 */
+	private static function andCreatedUntil(IQueryBuilder $qb, DateTime|string|null $until): void {
+		if ($until instanceof DateTime) {
+			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+		}
+
+		if (is_string($until) === true && $until !== '') {
+			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($until)));
+		}
+	}//end andCreatedUntil()
 
 	/**
 	 * The count key of a purpose: the purpose as a string, or `null` for none.
@@ -3428,7 +3361,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
 	 */
 	public function createHardeningChangeEntry(
 		string $control,
@@ -3437,39 +3369,31 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		bool $accepted,
 		string $refusal = '',
 	): AuditTrail {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		$userName = 'System';
-		if ($user !== null) {
-			$userId = $user->getUID();
-			$userName = $user->getDisplayName();
-		}
-
-		$action = 'hardening.refused';
-		if ($accepted === true) {
-			$action = 'hardening.changed';
-		}
-
-		$summary = [
-			'control' => $control,
-			'before' => $before,
-			'after' => $after,
-			'accepted' => $accepted,
-		];
+		$summary = ['control' => $control, 'before' => $before, 'after' => $after, 'accepted' => $accepted];
 		if ($refusal !== '') {
 			$summary['refusal'] = $refusal;
 		}
 
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction($action);
+		$auditTrail = self::actorEntry(action: self::hardeningAction(accepted: $accepted), actor: $this->sessionActor());
 		$auditTrail->setResultSummary($summary);
-		$auditTrail->setUser($userId);
-		$auditTrail->setUserName($userName);
-		$auditTrail->setCreated(new DateTime());
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createHardeningChangeEntry()
+
+	/**
+	 * The action of a hardening row: a change that was made, or one that was refused.
+	 *
+	 * @param bool $accepted Whether the change was made.
+	 *
+	 * @return string The action.
+	 */
+	private static function hardeningAction(bool $accepted): string {
+		if ($accepted === true) {
+			return 'hardening.changed';
+		}
+
+		return 'hardening.refused';
+	}//end hardeningAction()
 	/**
 	 * Create one immutable, hash-chained audit record for an export.
 	 *
@@ -3494,8 +3418,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
-	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function createExportEntry(
@@ -3505,17 +3427,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?int $schema = null,
 		?string $actorId = null,
 	): AuditTrail {
-		$actor = $this->exportActor(actorId: $actorId);
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction('export.' . $outcome);
-		$auditTrail->setRegister($register);
-		$auditTrail->setSchema($schema);
+		$auditTrail = self::actorEntry(action: 'export.' . $outcome, actor: $this->exportActor(actorId: $actorId));
+		(new AuditedObject(register: $register, schema: $schema))->stampOnto(auditTrail: $auditTrail);
 		$auditTrail->setResultSummary($summary);
-		$auditTrail->setUser($actor['userId']);
-		$auditTrail->setUserName($actor['userName']);
-		$auditTrail->setCreated(new DateTime());
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createExportEntry()
@@ -3555,7 +3469,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createExportEntry.
 	 */
 	public function createSlugBackfillEntry(
 		array $changes,
@@ -3563,25 +3476,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?int $register = null,
 		?int $schema = null,
 	): AuditTrail {
-		$userId = 'system';
-		$userName = 'System';
-		$user = $this->userSession->getUser();
-		if ($user !== null) {
-			$userId = $user->getUID();
-			$userName = $user->getDisplayName();
-		}
-
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction('slug.backfill.' . self::SLUG_BACKFILL_MODE);
+		$auditTrail = self::actorEntry(action: 'slug.backfill.' . self::SLUG_BACKFILL_MODE, actor: $this->sessionActor());
 		// `changed` is NOT NULL and QBMapper writes only the fields a setter touched.
 		$auditTrail->setChanged([]);
-		$auditTrail->setRegister($register);
-		$auditTrail->setSchema($schema);
+		(new AuditedObject(register: $register, schema: $schema))->stampOnto(auditTrail: $auditTrail);
 		$auditTrail->setResultSummary($this->slugBackfillResultSummary(mode: self::SLUG_BACKFILL_MODE, changes: $changes, summary: $summary));
-		$auditTrail->setUser($userId);
-		$auditTrail->setUserName($userName);
-		$auditTrail->setCreated(new DateTime());
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createSlugBackfillEntry()

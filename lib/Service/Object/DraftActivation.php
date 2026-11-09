@@ -41,7 +41,6 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
@@ -125,11 +124,9 @@ class DraftActivation implements DraftActivationInterface {
 	/**
 	 * Make the owner's draft definitive: status `active`, same id, fully valid.
 	 *
-	 * @param Register             $register The draft's register.
-	 * @param Schema               $schema   The draft's schema.
-	 * @param string               $draftId  The draft's uuid.
-	 * @param DraftOwner           $owner    The asserted owner (decision 195).
-	 * @param array<string, mixed> $changes  Last property values, laid over the stored draft before it is judged.
+	 * @param DraftAddress         $address The draft's register, schema and uuid.
+	 * @param DraftOwner           $owner   The asserted owner (decision 195).
+	 * @param array<string, mixed> $changes Last property values, laid over the stored draft before it is judged.
 	 *
 	 * @return ObjectEntity The object, now `active`.
 	 *
@@ -137,8 +134,8 @@ class DraftActivation implements DraftActivationInterface {
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
-	public function activate(Register $register, Schema $schema, string $draftId, DraftOwner $owner, array $changes = []): ObjectEntity {
-		$draft = $this->ownDraft(register: $register, schema: $schema, draftId: $draftId, owner: $owner);
+	public function activate(DraftAddress $address, DraftOwner $owner, array $changes = []): ObjectEntity {
+		$draft = $this->ownDraft(address: $address, owner: $owner);
 		$uuid = (string)$draft->getUuid();
 
 		unset($changes['@self'], $changes['id']);
@@ -148,7 +145,7 @@ class DraftActivation implements DraftActivationInterface {
 		// server fills. What the caller sends now is judged as sent.
 		$stored = array_filter(DraftFinder::dataOf(object: $draft), static fn (mixed $value): bool => $value !== null);
 		$object = array_merge($stored, $changes);
-		$this->validateInFull(schema: $schema, object: $object);
+		$this->validateInFull(schema: $address->schema, object: $object);
 
 		$object['@self'] = ['status' => ObjectEntity::STATUS_ACTIVE];
 		DraftStatusPolicy::allowPromotion(uuid: $uuid);
@@ -158,8 +155,8 @@ class DraftActivation implements DraftActivationInterface {
 			// as DraftFinder::own() is on the form path.
 			$saved = $this->objects->saveObject(
 				object: $object,
-				register: $register,
-				schema: $schema,
+				register: $address->register,
+				schema: $address->schema,
 				uuid: $uuid,
 				_rbac: $owner->isScoped() === false,
 				_multitenancy: true,
@@ -190,11 +187,9 @@ class DraftActivation implements DraftActivationInterface {
 	 * The owner is built here, from the user the caller's session holds, so
 	 * no controller ever writes an owner assertion of its own.
 	 *
-	 * @param Register             $register The draft's register.
-	 * @param Schema               $schema   The draft's schema.
-	 * @param string               $draftId  The draft's uuid.
-	 * @param IUser                $user     The acting user.
-	 * @param array<string, mixed> $changes  Last property values, laid over the stored draft before it is judged.
+	 * @param DraftAddress         $address The draft's register, schema and uuid.
+	 * @param IUser                $user    The acting user.
+	 * @param array<string, mixed> $changes Last property values, laid over the stored draft before it is judged.
 	 *
 	 * @return ObjectEntity The object, now `active`.
 	 *
@@ -202,24 +197,22 @@ class DraftActivation implements DraftActivationInterface {
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
-	public function activateAsUser(Register $register, Schema $schema, string $draftId, IUser $user, array $changes = []): ObjectEntity {
-		return $this->activate(register: $register, schema: $schema, draftId: $draftId, owner: DraftOwner::ofUser(user: $user), changes: $changes);
+	public function activateAsUser(DraftAddress $address, IUser $user, array $changes = []): ObjectEntity {
+		return $this->activate(address: $address, owner: DraftOwner::ofUser(user: $user), changes: $changes);
 	}//end activateAsUser()
 
 	/**
 	 * The stored draft, when it is a draft and the asserted owner's.
 	 *
-	 * @param Register   $register The register.
-	 * @param Schema     $schema   The schema.
-	 * @param string     $draftId  The draft's uuid.
-	 * @param DraftOwner $owner    The asserted owner.
+	 * @param DraftAddress $address The draft's register, schema and uuid.
+	 * @param DraftOwner   $owner   The asserted owner.
 	 *
 	 * @return ObjectEntity The draft.
 	 *
 	 * @throws DraftActivationRefusedException 404, 409 or 403.
 	 */
-	private function ownDraft(Register $register, Schema $schema, string $draftId, DraftOwner $owner): ObjectEntity {
-		$draft = $this->readDraft(register: $register, schema: $schema, draftId: $draftId);
+	private function ownDraft(DraftAddress $address, DraftOwner $owner): ObjectEntity {
+		$draft = $this->readDraft(address: $address);
 
 		if ($draft === null) {
 			throw new DraftActivationRefusedException(
@@ -252,24 +245,22 @@ class DraftActivation implements DraftActivationInterface {
 	 * stricter than any read rule, and a scope-value owner has no session to
 	 * read with.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param string   $draftId  The draft id.
+	 * @param DraftAddress $address The draft's register, schema and uuid.
 	 *
 	 * @return ObjectEntity|null The object read
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
-	private function readDraft(Register $register, Schema $schema, string $draftId): ?ObjectEntity {
-		if ($draftId === '') {
+	private function readDraft(DraftAddress $address): ?ObjectEntity {
+		if ($address->draftId === '') {
 			return null;
 		}
 
 		try {
 			return $this->objects->find(
-				id: $draftId,
-				register: $register,
-				schema: $schema,
+				id: $address->draftId,
+				register: $address->register,
+				schema: $address->schema,
 				_rbac: false,
 				_multitenancy: false,
 				_render: false,

@@ -54,6 +54,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
+use OCA\OpenRegister\Service\Flow\FlowRunCommitRows;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunStores;
 use OCA\OpenRegister\Service\Flow\FlowRunStreamStores;
@@ -282,10 +283,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 
 		$commit = new FlowRunCommit(
 			db: $db,
-			runs: $mapper,
-			streams: $streamMapper,
-			claims: $claimMapper,
-			steps: $stepMapper,
+			rows: new FlowRunCommitRows(runs: $mapper, streams: $streamMapper, claims: $claimMapper, steps: $stepMapper),
 			logger: new NullLogger()
 		);
 

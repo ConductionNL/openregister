@@ -29,6 +29,8 @@ namespace Unit\Service\File\Pdf;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfStructureInspector;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
+use OCA\OpenRegister\Files\Service\File\Pdf\SerialisedPdf;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -222,7 +224,7 @@ class PdfTextReplacerTest extends TestCase {
 
 		$output = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]']
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false)
 		)->bytes;
 
 		// Output MUST be a valid PDF (starts with %PDF-, ends with %%EOF).
@@ -244,7 +246,7 @@ class PdfTextReplacerTest extends TestCase {
 	 */
 	public function testReplaceInPdfEmptySubstitutionsIsNoOp(): void {
 		$pdf = self::buildFixture(bodyText: 'Aanvraag van Jan Jansen voor het loket.');
-		$output = $this->replacer->replaceInPdf(pdfBytes: $pdf, substitutions: [])->bytes;
+		$output = $this->replacer->replaceInPdf(pdfBytes: $pdf, plan: new RedactionPlan(substitutions: [], strict: false))->bytes;
 
 		$this->assertSame(expected: $pdf, actual: $output);
 	}//end testReplaceInPdfEmptySubstitutionsIsNoOp()
@@ -276,8 +278,8 @@ class PdfTextReplacerTest extends TestCase {
 			);
 
 		$this->replacer->validateOutput(
-			outputBytes: $pdfContainingNeedle,
-			substitutions: ['Jansen' => '[PERSON: 1]']
+			output: new SerialisedPdf(bytes: $pdfContainingNeedle),
+			plan: new RedactionPlan(substitutions: ['Jansen' => '[PERSON: 1]'], strict: false)
 		);
 	}//end testValidateOutputLogsWarningOnResidualWithoutThrowing()
 
@@ -294,10 +296,8 @@ class PdfTextReplacerTest extends TestCase {
 		$pdfContainingNeedle = self::buildFixture(bodyText: 'De heer Jansen bezocht het loket.');
 
 		$residuals = $this->replacer->validateOutput(
-			outputBytes: $pdfContainingNeedle,
-			substitutions: ['Jansen' => '[PERSON: 1]'],
-			replaceStats: [],
-			strict: true
+			output: new SerialisedPdf(bytes: $pdfContainingNeedle),
+			plan: new RedactionPlan(substitutions: ['Jansen' => '[PERSON: 1]'], strict: true)
 		);
 
 		// The unredacted needle is reported back (no exception thrown).
@@ -316,10 +316,8 @@ class PdfTextReplacerTest extends TestCase {
 
 		try {
 			$this->replacer->validateOutput(
-				outputBytes: $unreadable,
-				substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-				replaceStats: [],
-				strict: true
+				output: new SerialisedPdf(bytes: $unreadable),
+				plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: true)
 			);
 			self::fail(message: 'A strict run must refuse an output it cannot re-read.');
 		} catch (PdfAnonymisationException $e) {
@@ -350,8 +348,8 @@ class PdfTextReplacerTest extends TestCase {
 			);
 
 		$residuals = $this->replacer->validateOutput(
-			outputBytes: 'Jan Jansen is not a PDF',
-			substitutions: ['Jan Jansen' => '[PERSON: 1]']
+			output: new SerialisedPdf(bytes: 'Jan Jansen is not a PDF'),
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false)
 		);
 
 		self::assertSame(expected: [], actual: $residuals);
@@ -368,8 +366,8 @@ class PdfTextReplacerTest extends TestCase {
 
 		// No exception expected; no residual needles returned.
 		$residuals = $this->replacer->validateOutput(
-			outputBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]']
+			output: new SerialisedPdf(bytes: $pdf),
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false)
 		);
 
 		self::assertSame(expected: [], actual: $residuals);
@@ -437,8 +435,7 @@ class PdfTextReplacerTest extends TestCase {
 
 		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['NietAanwezigeNaam' => '[PERSON: 1]'],
-			preserveStructure: true
+			plan: new RedactionPlan(substitutions: ['NietAanwezigeNaam' => '[PERSON: 1]'], strict: false, preserveStructure: true)
 		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
@@ -461,8 +458,7 @@ class PdfTextReplacerTest extends TestCase {
 
 		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-			preserveStructure: true
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false, preserveStructure: true)
 		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
@@ -505,8 +501,7 @@ class PdfTextReplacerTest extends TestCase {
 
 		$structureResult = $replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Onbekend' => '[PERSON: 1]'],
-			preserveStructure: true
+			plan: new RedactionPlan(substitutions: ['Onbekend' => '[PERSON: 1]'], strict: false, preserveStructure: true)
 		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
@@ -525,7 +520,7 @@ class PdfTextReplacerTest extends TestCase {
 
 		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Onbekend' => '[PERSON: 1]']
+			plan: new RedactionPlan(substitutions: ['Onbekend' => '[PERSON: 1]'], strict: false)
 		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
@@ -543,8 +538,7 @@ class PdfTextReplacerTest extends TestCase {
 
 		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-			preserveStructure: false
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false, preserveStructure: false)
 		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
@@ -566,7 +560,7 @@ class PdfTextReplacerTest extends TestCase {
 
 		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]']
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false)
 		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
@@ -588,19 +582,17 @@ class PdfTextReplacerTest extends TestCase {
 
 		$outputWithoutOption = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]']
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false)
 		)->bytes;
 
 		$outputExplicitFalse = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-			preserveStructure: false
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false, preserveStructure: false)
 		)->bytes;
 
 		$outputExplicitTrue = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-			preserveStructure: true
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false, preserveStructure: true)
 		)->bytes;
 
 		self::assertSame($outputWithoutOption, $outputExplicitFalse);

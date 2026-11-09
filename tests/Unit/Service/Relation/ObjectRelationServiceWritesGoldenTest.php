@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationStores;
 use OCA\OpenRegister\Service\Relation\ProvenanceLink;
+use OCA\OpenRegister\Service\Relation\ProseMention;
 use OCA\OpenRegister\Service\Relation\RelationEndpoint;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCP\IUser;
@@ -159,22 +160,21 @@ class ObjectRelationServiceWritesGoldenTest extends TestCase {
 			}
 		}
 
-		$out[] = count($service->recordProseReference(source: new RelationEndpoint(uuid: ''), target: new RelationEndpoint(uuid: 't'), anchor: 'p0'));
-		$out[] = count($service->recordProseReference(source: new RelationEndpoint(uuid: 's'), target: new RelationEndpoint(uuid: ''), anchor: 'p0'));
-		$out[] = count($service->recordProseReference(source: new RelationEndpoint(uuid: 's'), target: new RelationEndpoint(uuid: 's'), anchor: 'p0'));
-		$out[] = count($service->recordProseReference(source: new RelationEndpoint(uuid: 's'), target: new RelationEndpoint(uuid: 'known'), anchor: 'p1'));
+		$out[] = count($service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: ''), target: new RelationEndpoint(uuid: 't'), anchor: 'p0')));
+		$out[] = count($service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 's'), target: new RelationEndpoint(uuid: ''), anchor: 'p0')));
+		$out[] = count($service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 's'), target: new RelationEndpoint(uuid: 's'), anchor: 'p0')));
+		$out[] = count($service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 's'), target: new RelationEndpoint(uuid: 'known'), anchor: 'p1')));
 		$out[] = array_map(
 			static fn (ObjectRelation $row): array => $row->jsonSerialize(),
-			$service->recordProseReference(
-				source: new RelationEndpoint(uuid: 's', register: 1),
+			$service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 's', register: 1),
 				target: new RelationEndpoint(uuid: 'known', schema: 9),
 				anchor: 'p2',
 				relationType: 'cites'
-			)
+			))
 		);
 		$out[] = array_map(
 			static fn (ObjectRelation $row): array => $row->jsonSerialize(),
-			$service->recordProseReference(source: new RelationEndpoint(uuid: 'q'), target: new RelationEndpoint(uuid: 'r'), anchor: 'p3')
+			$service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 'q'), target: new RelationEndpoint(uuid: 'r'), anchor: 'p3'))
 		);
 
 		$out[] = $this->written;

@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -125,20 +126,16 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	 * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
 	 * Calls parent constructor to set up base mapper functionality.
 	 *
-	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
-	 * @param IUserSession $userSession User session
-	 * @param IGroupManager $groupManager Group manager
-	 * @param IAppConfig $appConfig App configuration for multitenancy settings
+	 * @param IDBConnection                          $db                Database connection
+	 * @param TenancyServices                        $tenancy           Organisation mapper, user session and groups for multi-tenancy and RBAC
+	 * @param IAppConfig                             $appConfig         App configuration for multitenancy settings
 	 * @param WebhookInterceptionCacheInterface|null $interceptionCache Interception-flag cache invalidated on webhook CRUD
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IDBConnection $db,
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		TenancyServices $tenancy,
 		IAppConfig $appConfig,
 		?WebhookInterceptionCacheInterface $interceptionCache = null,
 	) {
@@ -146,9 +143,9 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 		parent::__construct(db: $db, tableName: 'openregister_webhooks', entityClass: Webhook::class);
 
 		// Store dependencies for use in mapper methods.
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
 		$this->appConfig = $appConfig;
 		$this->interceptionCache = $interceptionCache;
 	}//end __construct()

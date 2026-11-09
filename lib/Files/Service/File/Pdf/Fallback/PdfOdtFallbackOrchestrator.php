@@ -58,6 +58,7 @@ namespace OCA\OpenRegister\Files\Service\File\Pdf\Fallback;
 
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -207,8 +208,7 @@ class PdfOdtFallbackOrchestrator {
 		try {
 			$output = $this->pdfTextReplacer->replaceInPdf(
 				pdfBytes: $pdf,
-				substitutions: $substitutions,
-				strict: true
+				plan: new RedactionPlan(substitutions: $substitutions, strict: true)
 			)->bytes;
 		} catch (PdfAnonymisationException $e) {
 			throw $this->wrapAfterFallback(cause: $cause, stage: 'rerun_replace', previous: $e);

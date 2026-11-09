@@ -17,6 +17,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File\Pdf;
 
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
+use OCA\OpenRegister\Files\Service\File\Pdf\SerialisedPdf;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -71,8 +73,17 @@ final class PdfTextReplacerValidateGoldenTest extends TestCase {
 	public function testNeedleProbing(): void {
 		$pdf = self::buildFixture('De heer Jansen woont sinds 2026 in Amsterdam.');
 		$residuals = $this->replacer->validateOutput(
-			$pdf,
-			[
+			new SerialisedPdf(
+				$pdf,
+				[
+					'streams_scanned' => 3,
+					'streams_modified' => 2,
+					'font_encoding_misses' => ['a', 'b'],
+					'rejected_substitutions' => ['x'],
+				]
+			),
+			new RedactionPlan(
+				[
 				'' => '[EMPTY]',
 				'   ' => '[BLANK]',
 				'jansen' => '[LOWER]',
@@ -81,14 +92,9 @@ final class PdfTextReplacerValidateGoldenTest extends TestCase {
 				'2026' => '[NUMBER]',
 				"Jan\xFFsen" => '[BAD]',
 				'Pietersen' => '[ABSENT]',
-			],
-			[
-				'streams_scanned' => 3,
-				'streams_modified' => 2,
-				'font_encoding_misses' => ['a', 'b'],
-				'rejected_substitutions' => ['x'],
-			],
-			true
+				],
+				true
+			)
 		);
 
 		$this->assertSame(['Amsterdam', 'heer   Jansen', '2026'], $residuals);
@@ -123,7 +129,7 @@ final class PdfTextReplacerValidateGoldenTest extends TestCase {
 	 */
 	public function testRawProbeFindsInvalidNeedleBytes(): void {
 		$pdf = self::buildFixture('De heer Jansen.');
-		$residuals = $this->replacer->validateOutput($pdf, ["Jansen\xFF" => '[A]', 'Jansen' => '[B]']);
+		$residuals = $this->replacer->validateOutput(new SerialisedPdf($pdf), new RedactionPlan(["Jansen\xFF" => '[A]', 'Jansen' => '[B]'], false));
 
 		$this->assertSame(['Jansen'], $residuals);
 		$this->assertSame(0, $this->warnings[0][1]['needle_index']);
@@ -137,7 +143,7 @@ final class PdfTextReplacerValidateGoldenTest extends TestCase {
 	public function testCleanOutputLogsNothing(): void {
 		$pdf = self::buildFixture('Aanvraag van [PERSON: 1].');
 
-		$this->assertSame([], $this->replacer->validateOutput($pdf, ['Jansen' => '[PERSON: 1]']));
+		$this->assertSame([], $this->replacer->validateOutput(new SerialisedPdf($pdf), new RedactionPlan(['Jansen' => '[PERSON: 1]'], false)));
 		$this->assertSame([], $this->warnings);
 	}//end testCleanOutputLogsNothing()
 

@@ -168,8 +168,7 @@ class ArchiveMoveGuardsGoldenTest extends TestCase {
 		$move = new MoveObject(
 			$this->createMock(MagicMapper::class),
 			$this->createMock(ObjectValidatorInterface::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(LoggerInterface::class),
+			new \OCA\OpenRegister\Service\Object\MoveReporting($this->createMock(AuditTrailMapper::class), $this->createMock(LoggerInterface::class)),
 			$this->createMock(IEventDispatcher::class)
 		);
 		$sentence = new ReflectionMethod(MoveObject::class, 'sentenceFor');

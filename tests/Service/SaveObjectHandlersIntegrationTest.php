@@ -597,7 +597,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		$data = ['title' => 'No cascade test'];
 
 		$result = $this->relationCascadeHandler->cascadeObjects(
-			$object,
 			$this->testSchema,
 			$data
 		);
@@ -633,7 +632,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		];
 
 		$result = $this->relationCascadeHandler->cascadeObjects(
-			$object,
 			$cascadeSchema,
 			$data
 		);
@@ -675,8 +673,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		];
 
 		$result = $this->relationCascadeHandler->cascadeMultipleObjects(
-			$object,
-			$cascadeSchema->getProperties()['children'],
 			$data['children']
 		);
 		$this->assertIsArray($result);
@@ -710,7 +706,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		];
 
 		$result = $this->relationCascadeHandler->cascadeObjects(
-			$object,
 			$cascadeSchema,
 			$data
 		);
@@ -727,8 +722,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		$data = ['title' => 'WriteBack test', 'foo' => 'bar'];
 
 		$result = $this->relationCascadeHandler->handleInverseRelationsWriteBack(
-			$object,
-			$this->testSchema,
 			$data
 		);
 		$this->assertEquals($data, $result);
@@ -739,11 +732,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testCascadeSingleObjectReturnsNull(): void {
 		$object = $this->createTestObject(['title' => 'Cascade single']);
-		$result = $this->relationCascadeHandler->cascadeSingleObject(
-			$object,
-			['$ref' => '#/components/schemas/Related', 'inversedBy' => 'parent'],
-			['name' => 'Child']
-		);
+		$result = $this->relationCascadeHandler->cascadeSingleObject();
 		$this->assertNull($result);
 	}
 

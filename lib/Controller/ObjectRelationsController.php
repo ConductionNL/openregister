@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
 use OCA\OpenRegister\Service\Relation\ObjectTreeServiceInterface;
+use OCA\OpenRegister\Service\Relation\ProseMention;
 use OCA\OpenRegister\Service\Relation\ProvenanceLink;
 use OCA\OpenRegister\Service\Relation\RelationEndpoint;
 use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
@@ -324,10 +325,12 @@ class ObjectRelationsController extends Controller {
 	 */
 	private function recordProse(ProseReference $reference): array {
 		$rows = $this->relations->recordProseReference(
-			source: $this->endpoint(object: $reference->source),
-			target: $this->endpoint(object: $reference->far),
-			anchor: $reference->anchor,
-			relationType: $this->params->stringParam(name: 'type')
+			mention: new ProseMention(
+				source: $this->endpoint(object: $reference->source),
+				target: $this->endpoint(object: $reference->far),
+				anchor: $reference->anchor,
+				relationType: $this->params->stringParam(name: 'type')
+			)
 		);
 
 		$rendered = [];

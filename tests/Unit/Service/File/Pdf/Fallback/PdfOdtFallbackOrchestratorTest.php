@@ -33,6 +33,7 @@ use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\PdfOdtFallbackOrchestrator;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfRedaction;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -202,7 +203,7 @@ class PdfOdtFallbackOrchestratorTest extends TestCase {
 		$this->pdfTextReplacer
 			->expects($this->once())
 			->method('replaceInPdf')
-			->with('rebuilt-pdf', ['Jan Jansen' => '[PERSON: 1]'], true)
+			->with('rebuilt-pdf', new RedactionPlan(['Jan Jansen' => '[PERSON: 1]'], true))
 			->willReturn(new PdfRedaction('clean-pdf', new StructurePreservation(false, false, 0, 0)));
 
 		$cause = new PdfAnonymisationException(
