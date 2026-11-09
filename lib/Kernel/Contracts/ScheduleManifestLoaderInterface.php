@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\AppHost\Scheduling;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Reads the `schedules[]` manifests installed apps declare.
@@ -30,7 +30,7 @@ interface ScheduleManifestLoaderInterface {
 	/**
 	 * Enumerate all installed on-disk apps that declare a `schedules[]` block.
 	 *
-	 * @return ScheduleManifest[] One entry per installed app with schedules declared.
+	 * @return \OCA\OpenRegister\AppHost\Scheduling\ScheduleManifest[] One entry per installed app with schedules declared.
 	 */
 	public function loadAllOnDisk(): array;
 }//end interface

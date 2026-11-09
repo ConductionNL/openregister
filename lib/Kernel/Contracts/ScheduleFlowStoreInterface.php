@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\AppHost\Scheduling;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Looks up the flows compiled from application schedules.

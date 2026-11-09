@@ -23,10 +23,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusalReportInterface;
+use OCA\OpenRegister\Kernel\Contracts\ScheduleManifestLoaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\ScheduleRefusalReportInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusals;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoaderInterface;

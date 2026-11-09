@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\AppHost\Scheduling;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * What the schedule refusal middleware needs of ScheduleRefusals.

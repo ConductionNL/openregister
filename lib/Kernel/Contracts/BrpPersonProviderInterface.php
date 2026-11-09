@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Integration\Providers;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The methods of BrpPersonProvider that callers outside its component use.

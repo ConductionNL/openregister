@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Middleware;
 
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusalReportInterface;
+use OCA\OpenRegister\Kernel\Contracts\ScheduleRefusalReportInterface;
 use OCA\OpenRegister\Middleware\ScheduleRefusalMiddleware;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;

@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
-use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProviderInterface;
+use OCA\OpenRegister\Kernel\Contracts\BrpPersonProviderInterface;
 use OCA\OpenRegister\Service\Portal\PortalSubjectAssertion;
 use OCA\OpenRegister\Service\Portal\PortalSubjectAssertionInterface;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;

@@ -24,9 +24,9 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\AppHost\AppHostRegistrar;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\ScheduleManifestLoaderInterface;
 use OCA\OpenRegister\BulkAction\ApplyRuleAction;
 use OCA\OpenRegister\BulkAction\ApplyRuleActionInterface;
 use OCA\OpenRegister\BulkAction\AssignAction;

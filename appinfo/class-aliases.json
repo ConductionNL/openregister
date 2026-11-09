@@ -1815,6 +1815,36 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\AppHost\\Scheduling\\ScheduleFlowStoreInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ScheduleFlowStoreInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\AppHost\\Scheduling\\ScheduleManifestLoaderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ScheduleManifestLoaderInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\AppHost\\Scheduling\\ScheduleRefusalReportInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ScheduleRefusalReportInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Integration\\Providers\\BrpPersonProviderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\BrpPersonProviderInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Handoff\\HandoffAnnotationValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\HandoffAnnotationValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Handoff\\HandoffContractBindingValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\HandoffContractBindingValidatorInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }

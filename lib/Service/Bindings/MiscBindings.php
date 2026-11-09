@@ -42,5 +42,8 @@ final class MiscBindings {
 	 */
 	public const BINDINGS = [
 		FlowConsentSweepInterface::class => FlowConsentParking::class,
+		\OCA\OpenRegister\Kernel\Contracts\BrpPersonProviderInterface::class => \OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider::class,
+		\OCA\OpenRegister\Kernel\Contracts\HandoffAnnotationValidatorInterface::class => \OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator::class,
+		\OCA\OpenRegister\Kernel\Contracts\HandoffContractBindingValidatorInterface::class => \OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator::class,
 	];
 }//end class
