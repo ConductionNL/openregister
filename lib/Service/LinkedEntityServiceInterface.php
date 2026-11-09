@@ -32,9 +32,8 @@ interface LinkedEntityServiceInterface {
 	/**
 	 * Add a linked entity ID to an object's metadata column.
 	 *
-	 * @param string $objectUuid The object UUID
-	 * @param string $type The linked entity type (e.g., 'mail', 'contacts')
-	 * @param string $entityId The entity ID to add
+	 * @param string     $objectUuid The object UUID
+	 * @param EntityLink $link       The linked entity type and id to add
 	 *
 	 * @throws Exception If the type is invalid or the object is not found
 	 *
@@ -43,14 +42,13 @@ interface LinkedEntityServiceInterface {
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function addLink(string $objectUuid, string $type, string $entityId): array;
+	public function addLink(string $objectUuid, EntityLink $link): array;
 
 	/**
 	 * Add a linked entity ID to a register's metadata column.
 	 *
-	 * @param string $registerUuid The register UUID
-	 * @param string $type The linked entity type
-	 * @param string $entityId The entity ID to add
+	 * @param string     $registerUuid The register UUID
+	 * @param EntityLink $link         The linked entity type and id to add
 	 *
 	 * @throws Exception If the type is invalid
 	 *
@@ -58,14 +56,13 @@ interface LinkedEntityServiceInterface {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
 	 */
-	public function addLinkToRegister(string $registerUuid, string $type, string $entityId): array;
+	public function addLinkToRegister(string $registerUuid, EntityLink $link): array;
 
 	/**
 	 * Add a linked entity ID to a schema's metadata column.
 	 *
-	 * @param string $schemaUuid The schema UUID
-	 * @param string $type The linked entity type
-	 * @param string $entityId The entity ID to add
+	 * @param string     $schemaUuid The schema UUID
+	 * @param EntityLink $link       The linked entity type and id to add
 	 *
 	 * @throws Exception If the type is invalid
 	 *
@@ -73,7 +70,7 @@ interface LinkedEntityServiceInterface {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
 	 */
-	public function addLinkToSchema(string $schemaUuid, string $type, string $entityId): array;
+	public function addLinkToSchema(string $schemaUuid, EntityLink $link): array;
 
 	/**
 	 * Remove a linked entity ID from an object's metadata column.
@@ -90,6 +87,20 @@ interface LinkedEntityServiceInterface {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function removeLink(string $objectUuid, string $type, string $entityId): array;
+
+	/**
+	 * Remove a linked entity ID from an object's metadata column.
+	 *
+	 * @param string     $objectUuid The object UUID
+	 * @param EntityLink $link       The linked entity type and id to remove
+	 *
+	 * @throws Exception If the type is invalid or the object is not found
+	 *
+	 * @return array The updated linked IDs array
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
+	 */
+	public function removeLinkFrom(string $objectUuid, EntityLink $link): array;
 
 	/**
 	 * Reverse lookup: find all objects and entities linked to a specific entity.
