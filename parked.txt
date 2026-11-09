@@ -87,3 +87,4 @@ openregister#8106 1963869fe6726a065a129b3390e59fb3e1c9dbab coordinator-park: fun
 openregister#8084 47d31a294566b7263ae20d228f80eb364b8bc722 coordinator-park: functional-component premise dropped (ADR-014), do not merge
 openregister#8058 212f67c26844701b84b46252ed71c4cf72c190a0 coordinator-park: functional-component premise dropped (ADR-014), do not merge
 openregister#6973 e37838719e0c24186d8f9279aca58947cbccca7a coordinator-park: superseded, change already on main (close by hand)
+openregister#7653 f5eed6aa20a735c44fbce31a7996577ba2bfaf2a coordinator-park: superseded, change already on main (close by hand)
