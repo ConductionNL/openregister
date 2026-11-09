@@ -330,12 +330,46 @@ phase_verdict() {
 
 merged_now() { gh api "repos/$R/pulls/$1" -q '.merged' 2>/dev/null; }
 
+# Lands the whole tested tree with one fast-forward push of T onto main. T is the chain of
+# "int: merge #n" commits that was tested, so main becomes exactly the tested tree and GitHub
+# marks every PR whose head is now reachable as merged. Returns 1 (caller falls back to
+# per-PR merges) when the push is refused; exits 5 when anything moved since the build.
+push_merge() {
+	local n head ref review t tree out pending=() lines=() i
+	[ "$(lsr refs/heads/main)" = "$D0" ] || { say "DEV-MOVED before push; rebuild"; st_log "DEV-MOVED before push; rebuild"; exit 5; }
+	while IFS=$'\t' read -r n head ref review t tree; do
+		[ "$(lsr "refs/pull/$n/head")" = "$head" ] || { say "HEAD-MOVED #$n; rebuild"; st_log "HEAD-MOVED #$n before push; rebuild"; exit 5; }
+		grep -qE "^openregister#$n $head( |$)" "$ST/parked.txt" && { say "PARKED-MEANWHILE #$n; rebuild"; exit 5; }
+		if [ "$review" = 1 ] && [ "$(verdict_at "$n" "$head")" != APPROVE ]; then say "NO-APPROVAL #$n at ${head:0:8}; stop"; st_log "STOP #$n lost its approval at ${head:0:8}"; exit 6; fi
+	done < "$W/tree.tsv"
+	[ "$(git -C "$C" rev-parse "$T^{tree}")" = "$(tail -1 "$W/tree.tsv" | cut -f6)" ] || { say "ALERT-PRECHECK T is not the last tested tree; stop"; exit 6; }
+	if ! out=$(timeout 120 git -C "$C" push origin "$T:refs/heads/main" 2>&1); then
+		say "PUSH-REFUSED ${out:0:200}; falling back to per-PR merges"; st_log "PUSH-REFUSED ${out:0:160}; per-PR merges"; return 1
+	fi
+	git -C "$C" fetch -q origin main
+	[ "$(git -C "$C" rev-parse origin/main)" = "$T" ] || { say "ALERT-POSTCHECK main is not T after push; stop"; st_log "ALERT-POSTCHECK main != T after push"; exit 6; }
+	mapfile -t pending < <(cut -f1 "$W/tree.tsv")
+	for i in 1 2 3 4 5 6; do
+		local left=()
+		for n in "${pending[@]}"; do [ "$(merged_now "$n")" = true ] || left+=("$n"); done
+		pending=("${left[@]}"); [ ${#pending[@]} -eq 0 ] && break
+		python3 -c "import time;time.sleep(10)"
+	done
+	while IFS=$'\t' read -r n head ref review t tree; do lines+=("$n $head $t $tree $(date -u +%FT%TZ) push"); done < "$W/tree.tsv"
+	st_append merged.txt "${lines[@]}"
+	[ ${#pending[@]} -eq 0 ] || st_log "PUSH-UNMARKED main has the commits but GitHub has not marked merged: ${pending[*]}"
+	st_log "MERGED-TREE ${T:0:10}: ${#lines[@]} PRs in one push, main now ${T:0:10} = tested tree"
+	rm -f "$RUN/verdict"
+	say "MERGED-TREE ${#lines[@]} PRs by push; main ${T:0:10} equals the tested tree"
+}
+
 phase_merge() {
 	need_state
 	[ "$(cat "$RUN/verdict" 2>/dev/null)" = GREEN ] || { say "MERGE-REFUSED tree is not GREEN"; exit 6; }
 	source "$W/tree.env"
 	lease_renew "$LEASE" 120 || { say "LEASE-LOST no merge"; exit 6; }
 	st_sync
+	[ "${PUSH_MERGE:-1}" = 1 ] && push_merge && return 0
 	local expected=$D0 n head ref review t tree dev now got m mc p1 p2 msg count=0
 	while IFS=$'\t' read -r -u 3 n head ref review t tree; do
 		dev=$(lsr refs/heads/main)
