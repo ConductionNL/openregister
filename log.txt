@@ -91,3 +91,4 @@
 2026-11-09T11:21:22Z fixer-F3-20261109T104024-64386ead UNPARK #7678 448d96816e02
 2026-11-09T11:21:22Z fixer-F3-20261109T104024-64386ead FIXED #7678 448d96816e02 merged main; SchemaImportServiceRegistryTest builds ImportedSchema from main's Heading/Definition value objects; TalkGateway no-Talk-classes case runs in its own process (other Talk tests declare OCA\Talk stand-ins, order-dependent fail reproduced and gone); guard suites + 10 touched tests green
 2026-11-09T11:21:31Z integrator-20261109T092732-73c42b8a BISECT tree b5a6cece5f: parked #7694 (ExampleSetConfigStoreBehaviourTest); 19 PRs merged
+2026-11-09T11:21:52Z integrator-20261109T092732-73c42b8a CONFLICT-DEV #7701 aadd9d43
