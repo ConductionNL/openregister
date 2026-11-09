@@ -32,7 +32,7 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolCatalogueInterface;
 
 /**
  * Binds an MCP session to an agent and holds every call on it to the agent's grant.
@@ -71,14 +71,14 @@ class McpAgentScope {
 	 *
 	 * @param AgentMapperInterface $agentMapper Agent lookup
 	 * @param ToolGrantResolver $grantResolver Grant grammar (shared with the chat)
-	 * @param McpToolsService $toolsService The MCP tool catalogue
+	 * @param McpToolCatalogueInterface $toolsService The MCP tool catalogue
 	 * @param ICacheFactory $cacheFactory Cache factory
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
 		private readonly AgentMapperInterface $agentMapper,
 		private readonly ToolGrantResolver $grantResolver,
-		private readonly McpToolsService $toolsService,
+		private readonly McpToolCatalogueInterface $toolsService,
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {
