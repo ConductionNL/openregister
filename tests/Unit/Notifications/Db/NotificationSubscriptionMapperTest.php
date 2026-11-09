@@ -73,8 +73,8 @@ final class NotificationSubscriptionMapperTest extends TestCase {
 		$this->assertSame(2, $result->getRegisterId());
 		$this->assertNull($result->getSchemaId());
 		$log = $this->log();
-		$this->assertStringContainsString("eq(user_id, :p1, NULL)", $log);
-		$this->assertStringContainsString("eq(register_id, :p2, NULL)", $log);
+		$this->assertStringContainsString('eq(user_id, :p1, NULL)', $log);
+		$this->assertStringContainsString('eq(register_id, :p2, NULL)', $log);
 		$this->assertStringContainsString('isNull(schema_id)', $log);
 		$this->assertStringContainsString('setMaxResults(1)', $log);
 		$this->assertStringNotContainsString('insert(', $log);
@@ -97,7 +97,7 @@ final class NotificationSubscriptionMapperTest extends TestCase {
 
 	public function testSubscribeRaceReturnsTheRowThatWonTheInsert(): void {
 		$this->queuedRows = [[], [['id' => 11, 'user_id' => 'bob', 'register_id' => 1, 'schema_id' => 2]]];
-		$mapper = new class ($this->database()) extends NotificationSubscriptionMapper {
+		$mapper = new class($this->database()) extends NotificationSubscriptionMapper {
 			public function insert(Entity $entity): Entity {
 				throw new DbException('duplicate key');
 			}
@@ -111,7 +111,7 @@ final class NotificationSubscriptionMapperTest extends TestCase {
 
 	public function testSubscribeRaceWithoutAWinnerSurfacesDoesNotExist(): void {
 		$this->queuedRows = [[], []];
-		$mapper = new class ($this->database()) extends NotificationSubscriptionMapper {
+		$mapper = new class($this->database()) extends NotificationSubscriptionMapper {
 			public function insert(Entity $entity): Entity {
 				throw new DbException('duplicate key');
 			}

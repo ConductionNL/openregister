@@ -22,7 +22,6 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Db;
 
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
-use OCA\OpenRegister\Notifications\Db\NotificationDedupeState;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\AppFramework\Db\Entity;
@@ -61,7 +60,7 @@ final class NotificationDedupeStateMapperTest extends TestCase {
 	}
 
 	private static function uniqueViolation(): DbException {
-		return new class ('dup') extends DbException {
+		return new class('dup') extends DbException {
 			public function getReason(): ?int {
 				return self::REASON_UNIQUE_CONSTRAINT_VIOLATION;
 			}
@@ -72,7 +71,7 @@ final class NotificationDedupeStateMapperTest extends TestCase {
 	 * Mapper whose insert/update throw the given exceptions; null delegates to the parent.
 	 */
 	private function mapper(?\Throwable $onInsert = null, ?\Throwable $onUpdate = null, bool $failing = false): NotificationDedupeStateMapper {
-		$mapper = new class ($this->database($failing)) extends NotificationDedupeStateMapper {
+		$mapper = new class($this->database($failing)) extends NotificationDedupeStateMapper {
 			public ?\Throwable $onInsert = null;
 			public ?\Throwable $onUpdate = null;
 			public function insert(Entity $entity): Entity {
