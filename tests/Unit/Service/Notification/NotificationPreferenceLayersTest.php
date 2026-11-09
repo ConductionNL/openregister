@@ -395,9 +395,9 @@ class NotificationPreferenceLayersTest extends TestCase {
 	public function testAScopedKeyIsDistinctFromTheGlobalKey(): void {
 		$this->assertNotSame(
 			$this->service->configKey('zaak', 'termijn'),
-			$this->service->scopedConfigKey('schema:zaak', 'zaak', 'termijn')
+			$this->service->scopedConfigKey(new \OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress('zaak', 'termijn', 'schema:zaak'))
 		);
-		$this->assertLessThanOrEqual(64, strlen($this->service->scopedConfigKey('schema:zaak', 'zaak', 'termijn')));
+		$this->assertLessThanOrEqual(64, strlen($this->service->scopedConfigKey(new \OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress('zaak', 'termijn', 'schema:zaak'))));
 	}
 
 	/**
@@ -406,14 +406,10 @@ class NotificationPreferenceLayersTest extends TestCase {
 	 */
 	public function testALongScopedKeyCompressesWithoutColliding(): void {
 		$one = $this->service->scopedConfigKey(
-			'domain:vergunningen-en-handhaving-afdeling-west',
-			'openregister_configuration',
-			'configuration-changed'
+			new \OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress('openregister_configuration', 'configuration-changed', 'domain:vergunningen-en-handhaving-afdeling-west')
 		);
 		$two = $this->service->scopedConfigKey(
-			'domain:vergunningen-en-handhaving-afdeling-oost',
-			'openregister_configuration',
-			'configuration-changed'
+			new \OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress('openregister_configuration', 'configuration-changed', 'domain:vergunningen-en-handhaving-afdeling-oost')
 		);
 
 		$this->assertLessThanOrEqual(64, strlen($one));
