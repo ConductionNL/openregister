@@ -31,7 +31,9 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\WebhookDispatchServices;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Service\WebhookStores;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
 use OCP\ICache;
@@ -109,12 +111,16 @@ class WebhookMappingPreviewTest extends TestCase {
 
 		$logger = new NullLogger();
 		$this->service = new WebhookService(
-			webhookMapper: $this->createMock(WebhookMapper::class),
-			logger: $logger,
-			webhookLogMapper: $this->createMock(WebhookLogMapper::class),
-			mappingService: new MappingService($mappingMapper, $cacheFactory, $logger),
-			mappingMapper: $mappingMapper,
-			jobList: $this->createMock(IJobList::class)
+			stores: new WebhookStores(
+				webhookMapper: $this->createMock(WebhookMapper::class),
+				webhookLogMapper: $this->createMock(WebhookLogMapper::class),
+				mappingMapper: $mappingMapper,
+				mappingService: new MappingService($mappingMapper, $cacheFactory, $logger)
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->createMock(IJobList::class)
+			),
+			logger: $logger
 		);
 	}//end setUp()
 

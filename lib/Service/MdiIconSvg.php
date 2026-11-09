@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service;
  *
  * @spec openspec/specs/unified-search-provider/spec.md
  */
-final class MdiIconSvg {
+final class MdiIconSvg implements MdiIconSvgInterface {
 
 	/**
 	 * Render an MDI icon reference to a standalone 24×24 SVG document.
@@ -45,4 +45,16 @@ final class MdiIconSvg {
 	public static function of(?string $icon): ?string {
 		return MdiIconRenderer::svg(icon: $icon);
 	}//end of()
+
+	/**
+	 * Render an MDI icon reference to a standalone 24×24 SVG document.
+	 *
+	 * @param string|null $icon The schema icon reference (e.g. "Dog", "mdi-dog").
+	 *
+	 * @return string|null The SVG markup, or null when the icon is empty or not
+	 *                     in the curated set.
+	 */
+	public function svg(?string $icon): ?string {
+		return self::of(icon: $icon);
+	}//end svg()
 }//end class

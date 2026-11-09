@@ -51,6 +51,10 @@ use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterfa
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Search\Service\MetricsService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViewRowsInterface;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactory;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactoryInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
@@ -94,6 +98,8 @@ final class SearchWiring {
 		VectorStorageHandlerInterface::class => VectorStorageHandler::class,
 		AggregationCacheInterface::class => AggregationCache::class,
 		ViewMapperInterface::class => ViewMapper::class,
+		ExampleSetViewRowsInterface::class => ExampleSetViews::class,
+		ChunkVectorFactoryInterface::class => ChunkVectorFactory::class,
 	];
 
 	/**
