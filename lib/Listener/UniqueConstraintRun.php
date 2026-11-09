@@ -40,23 +40,23 @@ final class UniqueConstraintRun {
 	/**
 	 * The write event.
 	 *
-	 * @var ObjectCreatingEvent|ObjectUpdatingEvent
+	 * @var ObjectCreatingEvent|ObjectUpdatingEvent|null
 	 */
-	public ObjectCreatingEvent|ObjectUpdatingEvent $event;
+	public ObjectCreatingEvent|ObjectUpdatingEvent|null $event = null;
 
 	/**
 	 * The object the write carries.
 	 *
-	 * @var ObjectEntity
+	 * @var ObjectEntity|null
 	 */
-	public ObjectEntity $object;
+	public ?ObjectEntity $object = null;
 
 	/**
 	 * The schema being written against.
 	 *
-	 * @var Schema
+	 * @var Schema|null
 	 */
-	public Schema $schema;
+	public ?Schema $schema = null;
 
 	/**
 	 * The object's data.
