@@ -24,6 +24,7 @@ import {
 /**
  * Build the live collection methods.
  *
+ * @spec openspec/specs/realtime-updates/spec.md
  * @param {object} options How the view differs
  * @param {string} options.tag Log prefix of the view, e.g. '[ObjectsList]'
  * @param {function(object): string} options.currentType (vm) => the collection type to follow, '' for none
