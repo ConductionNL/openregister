@@ -238,6 +238,8 @@ final class SchemaDeclarationValidators {
 	 * A fresh extending-form declaration validator.
 	 *
 	 * @return ExtendingFormValidatorInterface
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public static function extendingForm(): ExtendingFormValidatorInterface {
 		return new ExtendingFormDeclaration();
