@@ -118,27 +118,6 @@ class EmailLinkService implements EmailLinkServiceInterface {
 	private readonly MailTableQueries $mailQueries;
 
 	/**
-	 * NC app manager.
-	 *
-	 * @var IAppManager
-	 */
-	private readonly IAppManager $appManager;
-
-	/**
-	 * Active session.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param EmailLinkMapperInterface $mapper  Persistence for link rows.
@@ -148,12 +127,9 @@ class EmailLinkService implements EmailLinkServiceInterface {
 	public function __construct(
 		private readonly EmailLinkMapperInterface $mapper,
 		IDBConnection $db,
-		LinkServiceRuntime $runtime,
+		private readonly LinkServiceRuntime $runtime,
 	) {
 		$this->mailQueries = new MailTableQueries(db: $db);
-		$this->appManager = $runtime->appManager();
-		$this->userSession = $runtime->userSession();
-		$this->logger = $runtime->logger();
 	}//end __construct()
 
 	/**
@@ -165,7 +141,7 @@ class EmailLinkService implements EmailLinkServiceInterface {
 	 */
 	public function isMailAvailable(): bool {
 		try {
-			return $this->appManager->isEnabledForUser(self::MAIL_APP_ID);
+			return $this->runtime->appManager()->isEnabledForUser(self::MAIL_APP_ID);
 		} catch (Throwable $e) {
 			return false;
 		}
@@ -236,7 +212,7 @@ class EmailLinkService implements EmailLinkServiceInterface {
 	 *                   message id (400) or an account of somebody else.
 	 */
 	private function requireLinkableMessage(EmailMessageRef $message): IUser {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in', 401);
 		}
@@ -409,7 +385,7 @@ class EmailLinkService implements EmailLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function getAvailableAccounts(): array {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null || $this->isMailAvailable() === false) {
 			return [];
 		}
@@ -417,7 +393,7 @@ class EmailLinkService implements EmailLinkServiceInterface {
 		try {
 			$rows = $this->mailQueries->rowsOf(qb: $this->mailQueries->accountsQuery(userId: $user->getUID()));
 		} catch (Throwable $e) {
-			$this->logger->warning('[EmailLinkService] getAvailableAccounts failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('[EmailLinkService] getAvailableAccounts failed: ' . $e->getMessage());
 			return [];
 		}
 
@@ -446,7 +422,7 @@ class EmailLinkService implements EmailLinkServiceInterface {
 		try {
 			$rows = $this->mailQueries->rowsOf(qb: $this->mailQueries->mailboxesQuery(accountId: $accountId));
 		} catch (Throwable $e) {
-			$this->logger->warning('[EmailLinkService] getMailboxesForAccount failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('[EmailLinkService] getMailboxesForAccount failed: ' . $e->getMessage());
 			return [];
 		}
 
@@ -540,7 +516,7 @@ class EmailLinkService implements EmailLinkServiceInterface {
 
 			return $this->mailQueries->rowsOf(qb: $this->mailQueries->mailboxMessagesQuery(mailboxId: $mailboxId, page: $page));
 		} catch (Throwable $e) {
-			$this->logger->warning('[EmailLinkService] getMessagesForMailbox failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('[EmailLinkService] getMessagesForMailbox failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end fetchMailboxRows()
@@ -577,7 +553,7 @@ class EmailLinkService implements EmailLinkServiceInterface {
 		try {
 			$row = $this->mailQueries->firstRowOf(qb: $this->mailQueries->mailboxIdQuery(accountId: $accountId, mailbox: $mailbox));
 		} catch (Throwable $e) {
-			$this->logger->warning('[EmailLinkService] resolveMailboxId failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('[EmailLinkService] resolveMailboxId failed: ' . $e->getMessage());
 			return 0;
 		}
 
@@ -603,7 +579,7 @@ class EmailLinkService implements EmailLinkServiceInterface {
 	 * @throws Exception When the active user does not own the account.
 	 */
 	public function assertAccountOwnership(int $accountId): void {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in', 401);
 		}
@@ -611,7 +587,7 @@ class EmailLinkService implements EmailLinkServiceInterface {
 		try {
 			$row = $this->mailQueries->firstRowOf(qb: $this->mailQueries->accountOwnerQuery(accountId: $accountId));
 		} catch (Throwable $e) {
-			$this->logger->warning('[EmailLinkService] assertAccountOwnership lookup failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('[EmailLinkService] assertAccountOwnership lookup failed: ' . $e->getMessage());
 			throw new Exception('Mail account not found', 404);
 		}
 
@@ -635,7 +611,7 @@ class EmailLinkService implements EmailLinkServiceInterface {
 		try {
 			$row = $this->mailQueries->firstRowOf(qb: $this->mailQueries->messageQuery(accountId: $mailAccountId, messageId: $mailMessageId));
 		} catch (Throwable $e) {
-			$this->logger->warning('[EmailLinkService] fetchMessageRow failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('[EmailLinkService] fetchMessageRow failed: ' . $e->getMessage());
 			return null;
 		}
 
