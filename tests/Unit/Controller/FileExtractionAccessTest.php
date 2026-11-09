@@ -106,6 +106,10 @@ class FileExtractionAccessTest extends TestCase {
 		$this->assertSame(403, $this->extraction()->stats()->getStatus());
 	}//end testStatisticsAreForAdministrators()
 
+	public function testTheExtractionStatisticsRouteIsForAdministratorsToo(): void {
+		$this->assertSame(403, $this->text()->getStats()->getStatus());
+	}//end testTheExtractionStatisticsRouteIsForAdministratorsToo()
+
 	public function testTheListingHoldsOnlyFilesTheCallerCanOpen(): void {
 		$this->request->method('getParam')->willReturnCallback(static fn (string $key, mixed $default = null): mixed => $default);
 		$this->chunks->method('getFileSourceSummaries')->willReturn([

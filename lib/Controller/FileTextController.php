@@ -334,14 +334,17 @@ class FileTextController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @return JSONResponse JSON response with extraction stats
-	 *
-	 * @no-admin-idor-exempt No per-object resource: returns aggregate extraction
-	 *   counters (TextExtractionService::getStats); takes no caller-supplied file id.
+	 * @return JSONResponse JSON response with extraction stats, or 403 for a non-administrator
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
 	 */
 	public function getStats(): JSONResponse {
+		// The instance-wide extraction counters are for administrators, as on
+		// GET /api/files/stats (FileExtractionController::stats()).
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['success' => false, 'message' => 'Admin privileges required'], 403);
+		}
+
 		try {
 			$stats = $this->textExtractor->getStats();
 
