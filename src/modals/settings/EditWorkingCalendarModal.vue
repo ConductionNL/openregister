@@ -268,17 +268,11 @@
 
 		<template #actions>
 			<CloseCancelButton :label="t('openregister', 'Cancel')" :disabled="saving" @click="$emit('close')" />
-			<NcButton
-				variant="primary"
+			<SaveButton
+				:saving="saving"
 				:disabled="saving"
 				data-testid="working-calendar-save"
-				@click="save">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<ContentSave v-else :size="20" />
-				</template>
-				{{ t('openregister', 'Save') }}
-			</NcButton>
+				@click="save" />
 		</template>
 	</NcDialog>
 </template>
@@ -296,8 +290,8 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 import Calendar from 'vue-material-design-icons/Calendar.vue'
-import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import SaveButton from '../../components/shared/SaveButton.vue'
 import CalendarRowButton from './CalendarRowButton.vue'
 
 /**
@@ -320,7 +314,6 @@ export default {
 		Calendar,
 		CalendarRowButton,
 		CloseCancelButton,
-		ContentSave,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcDialog,
@@ -328,6 +321,7 @@ export default {
 		NcNoteCard,
 		NcSelect,
 		NcTextField,
+		SaveButton,
 	},
 
 	props: {

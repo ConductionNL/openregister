@@ -474,16 +474,10 @@
 					<NcButton :disabled="saving || !dirty" @click="reset">
 						{{ t('openregister', 'Undo changes') }}
 					</NcButton>
-					<NcButton
-						variant="primary"
+					<SaveButton
+						:saving="saving"
 						:disabled="saving || !dirty || packDeleted"
-						@click="save">
-						<template #icon>
-							<NcLoadingIcon v-if="saving" :size="20" />
-							<ContentSave v-else :size="20" />
-						</template>
-						{{ t('openregister', 'Save') }}
-					</NcButton>
+						@click="save" />
 				</div>
 
 				<PackPreviewPanel
@@ -535,11 +529,11 @@ import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import ArrowDown from 'vue-material-design-icons/ArrowDown.vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import ArrowUp from 'vue-material-design-icons/ArrowUp.vue'
-import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import KeyValueRows from '../../components/migrationPack/KeyValueRows.vue'
 import PackPreviewPanel from '../../components/migrationPack/PackPreviewPanel.vue'
+import SaveButton from '../../components/shared/SaveButton.vue'
 import TransformDialog from '../../dialogs/migrationPack/TransformDialog.vue'
 import UnsavedChangesDialog from '../../dialogs/migrationPack/UnsavedChangesDialog.vue'
 import { getTheme } from '../../services/getTheme.js'
@@ -572,7 +566,6 @@ export default {
 		ArrowLeft,
 		ArrowUp,
 		CodeMirror,
-		ContentSave,
 		KeyValueRows,
 		NcAppContent,
 		NcButton,
@@ -582,6 +575,7 @@ export default {
 		NcTextField,
 		PackPreviewPanel,
 		Plus,
+		SaveButton,
 		TransformDialog,
 		TrashCanOutline,
 		UnsavedChangesDialog,
