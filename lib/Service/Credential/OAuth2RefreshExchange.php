@@ -86,13 +86,35 @@ class OAuth2RefreshExchange {
 		#[\SensitiveParameter] string $refreshToken,
 		?string $actingUserId,
 	): array {
-		$oauth2 = $this->oauth2Of(provider: $provider);
-		$client = $this->clients->resolve(credential: $credential, provider: (string)($credential['provider'] ?? ''), actingUserId: $actingUserId);
-		$endpoint = $this->tokenEndpoint(oauth2: $oauth2, credential: $credential, credentialId: $credentialId);
+		$address = new TokenSetAddress(credentialId: $credentialId, scope: (string)($credential['scope'] ?? 'personal'));
+		$target  = new OAuth2RefreshTarget(credential: $credential, provider: $provider, address: $address, actingUserId: $actingUserId);
+
+		return $this->redeemFor(target: $target, refreshToken: $refreshToken);
+	}//end redeem()
+
+	/**
+	 * Spend a refresh token for a refresh target and return the decoded token response.
+	 *
+	 * @param OAuth2RefreshTarget $target       The credential's data, its provider entry, its UUID and the acting user.
+	 * @param string              $refreshToken The refresh token being spent.
+	 *
+	 * @return array<string, mixed> The decoded token response.
+	 *
+	 * @throws CredentialAccessDeniedException When the catalogue or the credential names no usable token endpoint.
+	 * @throws CredentialRelinkRequiredException When the provider answered `invalid_grant`.
+	 * @throws CredentialUpstreamException On any other failure.
+	 *
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 */
+	public function redeemFor(OAuth2RefreshTarget $target, #[\SensitiveParameter] string $refreshToken): array {
+		$credential = $target->credential;
+		$oauth2 = $this->oauth2Of(provider: $target->provider);
+		$client = $this->clients->resolve(credential: $credential, provider: (string)($credential['provider'] ?? ''), actingUserId: $target->actingUserId);
+		$endpoint = $this->tokenEndpoint(oauth2: $oauth2, credential: $credential, credentialId: $target->credentialId);
 		$form = $this->refreshForm(oauth2: $oauth2, refreshToken: $refreshToken, client: $client);
 
 		return $this->accepted(decoded: $this->post(endpoint: $endpoint, form: $form, client: $client));
-	}//end redeem()
+	}//end redeemFor()
 
 	/**
 	 * The provider entry's `oauth2` block, or an empty block when it has none.

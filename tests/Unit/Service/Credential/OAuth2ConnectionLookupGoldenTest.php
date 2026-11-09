@@ -115,8 +115,8 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 			credentialStore: $store,
 			organisationService: $this->createMock(OrganisationServiceInterface::class)
 		);
-		$repository->disable(credentialId: 'cred-1', data: ['scope' => 'organisation', 'status' => 'active', 'name' => 'n'], lastError: 'revoke_failed');
-		$repository->disable(credentialId: 'cred-2', data: [], lastError: '');
+		$repository->disable(connection: new \OCA\OpenRegister\Service\Credential\OAuth2ConnectionRecord(credentialId: 'cred-1', data: ['scope' => 'organisation', 'status' => 'active', 'name' => 'n']), lastError: 'revoke_failed');
+		$repository->disable(connection: new \OCA\OpenRegister\Service\Credential\OAuth2ConnectionRecord(credentialId: 'cred-2', data: []), lastError: '');
 		$repository->discard(credentialId: 'cred-3', scope: 'personal');
 
 		$this->assertSame(

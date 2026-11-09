@@ -167,16 +167,16 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	/**
 	 * The per-request values an authorization URL is built from.
 	 *
-	 * @param string $redirectUri The callback the provider must redirect to.
-	 * @param string $state The signed state.
-	 * @param string $challenge The PKCE code challenge.
+	 * @param string                             $redirectUri The callback the provider must redirect to.
+	 * @param array{state: string, challenge: string} $issued      The signed state and its PKCE challenge, as the
+	 *                                                         flow state service issued them.
 	 *
 	 * @return OAuth2AuthorizationRequest The request, to hand to {@see authorizationUrl()}.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
-	public function authorizationRequest(string $redirectUri, string $state, string $challenge): OAuth2AuthorizationRequest {
-		return new OAuth2AuthorizationRequest(redirectUri: $redirectUri, state: $state, challenge: $challenge);
+	public function authorizationRequest(string $redirectUri, array $issued): OAuth2AuthorizationRequest {
+		return new OAuth2AuthorizationRequest(redirectUri: $redirectUri, state: $issued['state'], challenge: $issued['challenge']);
 	}//end authorizationRequest()
 
 	/**
