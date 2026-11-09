@@ -88,7 +88,7 @@
 <script>
 import { CnChartWidget, CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
-import { NcAppContent } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent } from '@nextcloud/vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import QualityPageFrame from './QualityPageFrame.vue'
 import RangePager from './RangePager.vue'
@@ -102,6 +102,7 @@ export default {
 	components: {
 		RangePager,
 		NcAppContent,
+		NcEmptyContent,
 		CnChartWidget,
 		CnDataTable,
 		ChartBoxOutline,
