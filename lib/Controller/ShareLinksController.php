@@ -33,7 +33,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
+use OCA\OpenRegister\Controller\Support\ShareLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -54,22 +56,34 @@ class ShareLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var ShareLinkServiceInterface
+	 */
+	private readonly ShareLinkServiceInterface $shareLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
-	 * @param IRequest $request HTTP request.
-	 * @param ShareLinkServiceInterface $shareLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param IRequest                     $request  HTTP request.
+	 * @param ShareLinksControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ShareLinkServiceInterface $shareLinkService,
-		private readonly ObjectOperationsInterface $objectService,
+		ShareLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->shareLinkService = $services->shareLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
