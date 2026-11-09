@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * Which row says whether a lifecycle value is an end, and which property on it says so.
  *
  * Built by {@see LifecycleFinalStateResolver} for one lookup and never leaves it.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class FinalStateReference {
 
