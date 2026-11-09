@@ -30,9 +30,9 @@ final class ShareRequest {
 	/**
 	 * Constructor.
 	 *
-	 * @param Node       $node      The file inside the object's folder.
-	 * @param int        $shareType A supported IShare type.
-	 * @param ShareDraft $draft     The recipient, permissions, password and expiry.
+	 * @param Node                                    $node      The file inside the object's folder.
+	 * @param value-of<ShareLinkService::SHARE_TYPES> $shareType A supported share type.
+	 * @param ShareDraft                              $draft     The recipient, permissions, password and expiry.
 	 */
 	public function __construct(
 		public readonly Node $node,
