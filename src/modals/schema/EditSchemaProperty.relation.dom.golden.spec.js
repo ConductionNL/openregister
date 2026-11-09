@@ -55,6 +55,20 @@ jest.mock('vue-material-design-icons/Plus.vue', () => ({ __esModule: true, defau
 jest.mock('../../components/shared/CloseCancelButton.vue', () => ({ __esModule: true, default: mockStub('CloseCancelButton') }))
 
 /**
+ * An attribute as stable text: objects as JSON, and functions as a fixed marker,
+ * since their source changes under coverage instrumentation.
+ *
+ * @param {*} value The attribute value.
+ * @return {*} The value to render.
+ */
+function attributeText(value) {
+	if (typeof value === 'function') {
+		return '[function]'
+	}
+	return typeof value === 'object' && value !== null ? JSON.stringify(value) : value
+}
+
+/**
  * A stand-in that renders its attributes and slots.
  *
  * @param {string} name The component name.
@@ -70,7 +84,7 @@ function mockStub(name) {
 				const plain = Object.fromEntries(
 					Object.entries(attrs)
 						.filter(([key]) => !/^on[A-Z]/.test(key))
-						.map(([key, value]) => [key, typeof value === 'object' && value !== null ? JSON.stringify(value) : value]),
+						.map(([key, value]) => [key, attributeText(value)]),
 				)
 				return render(
 					`x-${name}`,
