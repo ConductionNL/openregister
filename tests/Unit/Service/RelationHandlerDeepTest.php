@@ -360,7 +360,7 @@ class RelationHandlerDeepTest extends TestCase {
 		$obj->setOwner('admin');
 
 		// First call returns true (has permission), second returns false.
-		$this->rbacHandler->method('hasPermission')->willReturn(true);
+		$this->rbacHandler->method('hasRowPermission')->willReturn(true);
 
 		$result = $filter->admitted(objects: [$obj]);
 		$this->assertCount(1, $result);
@@ -386,7 +386,7 @@ class RelationHandlerDeepTest extends TestCase {
 		$obj->setOrganisation('org-1');
 		$obj->setOwner('admin');
 
-		$this->rbacHandler->method('hasPermission')->willReturn(false);
+		$this->rbacHandler->method('hasRowPermission')->willReturn(false);
 
 		$result = $filter->admitted(objects: [$obj]);
 		$this->assertCount(0, $result);
