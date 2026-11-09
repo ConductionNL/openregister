@@ -355,7 +355,7 @@ final class ServiceRegistrar {
 					cacheFactory: $container->get('OCP\ICacheFactory'),
 					container: $container
 				),
-				nameScope: new CacheNameScopeSources(
+				scopeSources: new CacheNameScopeSources(
 					userSession: $container->get('OCP\IUserSession')
 				)
 			);

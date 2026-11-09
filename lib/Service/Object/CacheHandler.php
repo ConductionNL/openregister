@@ -244,84 +244,20 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	private ?MagicMapperInterface $objectMapper = null;
 
 	/**
-	 * The organisation entity mapper
-	 *
-	 * @var OrganisationMapperInterface
-	 */
-	private readonly OrganisationMapperInterface $organisationMapper;
-
-	/**
-	 * Logger for performance monitoring
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * User session for cache key generation
-	 *
-	 * @var IUserSession|null
-	 */
-	private readonly ?IUserSession $userSession;
-
-	/**
-	 * Register mapper for magic table queries
-	 *
-	 * @var RegisterMapperInterface|null
-	 */
-	private readonly ?RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Schema mapper for magic table queries
-	 *
-	 * @var SchemaMapperInterface|null
-	 */
-	private readonly ?SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Database connection for magic table queries
-	 *
-	 * @var IDBConnection|null
-	 */
-	private readonly ?IDBConnection $db;
-
-	/**
-	 * Group manager for the admin-override arm of the name scope
-	 *
-	 * @var IGroupManager|null
-	 */
-	private readonly ?IGroupManager $groupManager;
-
-	/**
-	 * App config for the multitenancy switches read by the name scope
-	 *
-	 * @var IAppConfig|null
-	 */
-	private readonly ?IAppConfig $appConfig;
-
-	/**
 	 * Constructor for CacheHandler
 	 *
-	 * @param CacheHandlerStores    $stores    Organisation mapper plus the magic-table register/schema mappers and connection
-	 * @param CacheHandlerRuntime   $runtime   Logger, distributed cache factory and lazy-loading container
-	 * @param CacheNameScopeSources $nameScope User session, group manager and app config the name scope reads
+	 * @param CacheHandlerStores    $stores       Organisation mapper plus the magic-table register/schema mappers and connection
+	 * @param CacheHandlerRuntime   $runtime      Logger, distributed cache factory and lazy-loading container
+	 * @param CacheNameScopeSources $scopeSources User session, group manager and app config the name scope reads
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		CacheHandlerStores $stores,
-		CacheHandlerRuntime $runtime,
-		CacheNameScopeSources $nameScope,
+		private readonly CacheHandlerStores $stores,
+		private readonly CacheHandlerRuntime $runtime,
+		private readonly CacheNameScopeSources $scopeSources,
 	) {
-		$this->organisationMapper = $stores->organisationMapper;
-		$this->registerMapper     = $stores->registerMapper;
-		$this->schemaMapper       = $stores->schemaMapper;
-		$this->db                 = $stores->db;
-		$this->logger             = $runtime->logger;
-		$this->container          = $runtime->container;
-		$this->userSession        = $nameScope->userSession;
-		$this->groupManager       = $nameScope->groupManager;
-		$this->appConfig          = $nameScope->appConfig;
+		$this->container = $runtime->container;
 
 		// Initialize query cache if available.
 		if ($runtime->cacheFactory !== null) {
@@ -329,7 +265,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 				$this->queryCache = $runtime->cacheFactory->createDistributed('openregister_query_results');
 				$this->nameDistributedCache = $runtime->cacheFactory->createDistributed('openregister_object_names');
 			} catch (\Exception $e) {
-				$this->logger->warning(
+				$this->runtime->logger->warning(
 					message: '[CacheHandler] Failed to initialize distributed caches',
 					context: [
 						'file' => __FILE__,
@@ -432,12 +368,12 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 */
 	private function getActiveOrganisationCacheScope(): string {
 		try {
-			$user = $this->userSession?->getUser();
+			$user = $this->scopeSources->userSession?->getUser();
 			if ($user === null) {
 				return '__no_org__';
 			}
 
-			$organisation = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+			$organisation = $this->stores->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
 			if ($organisation === null || $organisation === '') {
 				return '__no_org__';
 			}
@@ -499,7 +435,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		} catch (\Throwable $e) {
 			// Never let scope resolution grant more than it should: an error means
 			// no organisation could be established, so nothing is visible.
-			$this->logger->warning(
+			$this->runtime->logger->warning(
 				message: '[CacheHandler] Name scope could not be resolved; denying all cached names',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
@@ -546,14 +482,14 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	private function nameScopeHierarchy(string $activeOrganisation): array {
 		$hierarchy = [$activeOrganisation];
 		try {
-			$resolved = $this->organisationMapper->getOrganisationHierarchy($activeOrganisation);
+			$resolved = $this->stores->organisationMapper->getOrganisationHierarchy($activeOrganisation);
 			if (empty($resolved) === false) {
 				$hierarchy = $resolved;
 			}
 		} catch (\Throwable $e) {
 			// Hierarchy unavailable: fall back to the active organisation alone,
 			// which is the narrower (fail-closed) answer.
-			$this->logger->debug(
+			$this->runtime->logger->debug(
 				message: '[CacheHandler] Organisation hierarchy unavailable for name scope',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
@@ -586,11 +522,11 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function multitenancyConfig(): ?array {
-		if ($this->appConfig === null) {
+		if ($this->scopeSources->appConfig === null) {
 			return null;
 		}
 
-		$raw = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+		$raw = $this->scopeSources->appConfig->getValueString('openregister', 'multitenancy', '');
 		if ($raw === '') {
 			return null;
 		}
@@ -613,11 +549,11 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function isAdminOverrideActive(): bool {
-		if ($this->appConfig === null || $this->groupManager === null) {
+		if ($this->scopeSources->appConfig === null || $this->scopeSources->groupManager === null) {
 			return false;
 		}
 
-		$user = $this->userSession?->getUser();
+		$user = $this->scopeSources->userSession?->getUser();
 		if ($user === null) {
 			return false;
 		}
@@ -626,7 +562,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			return false;
 		}
 
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->scopeSources->groupManager->isAdmin($user->getUID());
 	}//end isAdminOverrideActive()
 
 	/**
@@ -654,12 +590,12 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function resolveActiveOrganisationUuid(): ?string {
-		$user = $this->userSession?->getUser();
+		$user = $this->scopeSources->userSession?->getUser();
 		if ($user === null) {
-			return $this->organisationMapper->getDefaultOrganisationFromConfig();
+			return $this->stores->organisationMapper->getDefaultOrganisationFromConfig();
 		}
 
-		return $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+		return $this->stores->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
 	}//end resolveActiveOrganisationUuid()
 
 	/**
@@ -836,7 +772,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		// Ask the read path per table, remembering each answer per caller (user
 		// plus active organisation): a facet resolves one value per call, and the
 		// same question must not cost the same query twice. A failure is "none".
-		$caller = (string)$this->userSession?->getUser()?->getUID() . '|' . $this->getActiveOrganisationCacheScope();
+		$caller = (string)$this->scopeSources->userSession?->getUser()?->getUID() . '|' . $this->getActiveOrganisationCacheScope();
 		$memo = ($this->readabilityMemo[$caller] ?? []);
 		foreach ($uuidsBySource as $source => $uuids) {
 			$memo = $this->memoiseReadability(source: (string)$source, uuids: $uuids, memo: $memo);
@@ -903,7 +839,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		try {
 			$readable = $this->getObjectMapper()->filterReadableUuids(registerId: $registerId, schemaId: $schemaId, uuids: $unknown);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->runtime->logger->warning(
 				message: '[CacheHandler] Read access for names could not be established; disclosing none',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'source' => $source, 'error' => $e->getMessage()]
 			);
@@ -989,7 +925,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			$this->stats['preloads'] += count($objects);
 			return $objects;
 		} catch (\Exception $e) {
-			$this->logger->error(
+			$this->runtime->logger->error(
 				message: '[CacheHandler] Bulk preload failed in CacheHandler',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage(), 'identifiersToLoad' => count($identifiers)]
 			);
@@ -1143,7 +1079,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		// For now, clear all to ensure consistency.
 		$this->clearDistributed(cache: $this->queryCache, failure: ['message' => '[CacheHandler] Failed to clear search cache', 'pattern' => $pattern]);
 
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			message: '[CacheHandler] 🧹 SEARCH CACHE CLEARED',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'pattern' => $pattern ?? 'all']
 		);
@@ -1186,7 +1122,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		} catch (\Exception $e) {
 			$message = $failure['message'];
 			unset($failure['message']);
-			$this->logger->warning(message: $message, context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()] + $failure);
+			$this->runtime->logger->warning(message: $message, context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()] + $failure);
 			return false;
 		}
 
@@ -1233,7 +1169,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			$strategy = 'schema_targeted';
 		}
 
-		$this->logger->info(
+		$this->runtime->logger->info(
 			message: '[CacheHandler] Schema-related caches cleared for CUD operation',
 			context: ['file' => __FILE__, 'line' => __LINE__] + $change->facts() + [
 				'executionTime' => round((microtime(true) - $startTime) * 1000, 2).'ms',
@@ -1257,7 +1193,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 
 		$failure = ['message' => '[CacheHandler] Failed to clear schema-related distributed caches', 'schemaId' => $change->schemaId];
 		if ($this->clearDistributed(cache: $this->queryCache, failure: $failure) === true) {
-			$this->logger->debug(
+			$this->runtime->logger->debug(
 				message: '[CacheHandler] Schema-related distributed caches cleared',
 				context: ['file' => __FILE__, 'line' => __LINE__] + $change->facts() + ['strategy' => 'nuclear_clear']
 			);
@@ -1294,7 +1230,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		$this->refreshChangedObject(change: $change);
 		$this->clearSchemaRelatedCaches(change: $change);
 
-		$this->logger->info(
+		$this->runtime->logger->info(
 			message: '[CacheHandler] Schema-wide cache invalidated for CRUD operation',
 			context: ['file' => __FILE__, 'line' => __LINE__] + $change->facts() + [
 				'objectId' => $object?->getId(),
@@ -1358,7 +1294,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 				$this->nameDistributedCache->remove('name_' . $object->getId());
 			}
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->runtime->logger->warning(
 				message: '[CacheHandler] Failed to remove object name from distributed cache',
 				context: [
 					'file' => __FILE__,
@@ -1412,7 +1348,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			$this->forgetObjectCacheEntries(rawKey: $rawKey);
 		}
 
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			message: '[CacheHandler] Individual object cleared from cache',
 			context: [
 				'file' => __FILE__,
@@ -1512,7 +1448,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		try {
 			$this->nameDistributedCache->remove('name_' . $key);
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->runtime->logger->warning(
 				message: '[CacheHandler] Failed to clear object name from distributed cache',
 				context: [
 					'file' => __FILE__,
@@ -1545,7 +1481,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		$this->clearDistributed(cache: $this->queryCache, failure: ['message' => '[CacheHandler] Failed to clear distributed query cache']);
 		$this->clearDistributed(cache: $this->nameDistributedCache, failure: ['message' => '[CacheHandler] Failed to clear distributed name cache']);
 
-		$this->logger->info(
+		$this->runtime->logger->info(
 			message: '[CacheHandler] All object caches cleared (including name cache)',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'executionTime' => round((microtime(true) - $startTime) * 1000, 2).'ms']
 		);
@@ -1622,7 +1558,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 					$ttl
 				);
 			} catch (\Exception $e) {
-				$this->logger->warning(
+				$this->runtime->logger->warning(
 					message: '[CacheHandler] Failed to cache object name in distributed cache',
 					context: [
 						'file' => __FILE__,
@@ -1634,7 +1570,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			}
 		}
 
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			message: '[CacheHandler] 💾 OBJECT NAME CACHED',
 			context: [
 				'file' => __FILE__,
@@ -1708,7 +1644,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 
 			return $this->objectSingleName(identifier: $identifier);
 		} catch (\Exception $e) {
-			$this->logger->debug(
+			$this->runtime->logger->debug(
 				message: '[CacheHandler] Failed to load entity for name lookup',
 				context: [
 					'file' => __FILE__,
@@ -1768,7 +1704,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			$this->stats['name_hits']++;
 			return ['name' => ($this->visibleNames(candidates: [$key => $envelope['n']])[$key] ?? null)];
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->runtime->logger->warning(
 				message: '[CacheHandler] Failed to get object name from distributed cache',
 				context: [
 					'file' => __FILE__,
@@ -1797,7 +1733,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	private function organisationSingleName(string|int $identifier): ?array {
 		$key = (string)$identifier;
 		try {
-			$organisation = $this->organisationMapper->findByUuid($key);
+			$organisation = $this->stores->organisationMapper->findByUuid($key);
 			$name = $organisation->getName() ?? $organisation->getUuid();
 			if ($name === null) {
 				return ['name' => null];
@@ -1936,7 +1872,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		);
 		$uuidResults = $this->visibleNames(candidates: $uuidCandidates);
 
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			message: '[CacheHandler] 📦 BULK NAME LOOKUP COMPLETED',
 			context: [
 				'file' => __FILE__,
@@ -2053,7 +1989,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 				$this->loadMagicTableNames(run: $run);
 			}
 		} catch (\Exception $e) {
-			$this->logger->error(
+			$this->runtime->logger->error(
 				message: '[CacheHandler] Failed to bulk load names from database',
 				context: [
 					'file' => __FILE__,
@@ -2075,7 +2011,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	private function loadOrganisationNames(NameLookupRun $run): void {
-		$organisations = $this->organisationMapper->findMultipleByUuid($run->missing);
+		$organisations = $this->stores->organisationMapper->findMultipleByUuid($run->missing);
 		foreach ($organisations as $organisation) {
 			$name = $organisation->getName() ?? $organisation->getUuid();
 			$key = $organisation->getUuid();
@@ -2223,7 +2159,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		}
 
 		$uuidNames = $this->visibleUuidNames();
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			message: '[CacheHandler] All object names retrieved',
 			context: [
 				'file' => __FILE__, 'line' => __LINE__, 'total_cached' => count($this->nameCache), 'uuid_names_returned' => count($uuidNames),
@@ -2268,7 +2204,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		try {
 			return $this->warmAllNames(startTime: microtime(true));
 		} catch (\Exception $e) {
-			$this->logger->error(
+			$this->runtime->logger->error(
 				message: '[CacheHandler] Name cache warmup failed',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
@@ -2289,7 +2225,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		$breakdown = $this->warmNameSources();
 		$distributedCount = $this->persistNameCacheToDistributed();
 
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			message: '[CacheHandler] Name cache warmed up',
 			context: [
 				'file' => __FILE__, 'line' => __LINE__, 'organisations_processed' => $breakdown['organisations'],
@@ -2318,7 +2254,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			'magic_tables' => 0,
 		];
 
-		if ($this->registerMapper !== null && $this->schemaMapper !== null && $this->db !== null) {
+		if ($this->stores->registerMapper !== null && $this->stores->schemaMapper !== null && $this->stores->db !== null) {
 			$breakdown['magic_tables'] = $this->loadNamesFromMagicTables();
 		}
 
@@ -2333,7 +2269,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function warmOrganisationNames(): int {
-		$organisations = $this->organisationMapper->findAllWithUserCount();
+		$organisations = $this->stores->organisationMapper->findAllWithUserCount();
 		foreach ($organisations as $organisation) {
 			$name = $organisation->getName() ?? $organisation->getUuid();
 			if ($organisation->getUuid() !== null && $name !== null) {
@@ -2402,7 +2338,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		$loadedCount = 0;
 
 		try {
-			foreach ($this->registerMapper->findAll() as $register) {
+			foreach ($this->stores->registerMapper->findAll() as $register) {
 				foreach ($register->getSchemas() ?? [] as $schemaId) {
 					if ($this->isMagicNameTable(register: $register, schemaId: (int)$schemaId) === true) {
 						$loadedCount += $this->loadNamesFromMagicTable(registerId: $register->getId(), schemaId: $schemaId);
@@ -2410,7 +2346,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 				}
 			}
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->runtime->logger->warning(
 				message: '[CacheHandler] Failed to load names from magic tables',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
@@ -2432,7 +2368,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	private function isMagicNameTable(Register $register, int $schemaId): bool {
 		$schemaSlug = null;
 		try {
-			$schemaSlug = $this->schemaMapper->find($schemaId)->getSlug();
+			$schemaSlug = $this->stores->schemaMapper->find($schemaId)->getSlug();
 		} catch (\Exception $e) {
 			// Schema not found, continue without slug.
 		}
@@ -2460,14 +2396,14 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		try {
 			// SEC-CTRL-2 step 2: `_organisation` is the tenancy oracle for every object-backed
 			// name; the ObjectEntity built from a magic row never carries one.
-			$result = $this->db->executeQuery('SELECT "_uuid", "_name", "_organisation" FROM ' . $tableName . ' WHERE "_deleted" IS NULL');
+			$result = $this->stores->db->executeQuery('SELECT "_uuid", "_name", "_organisation" FROM ' . $tableName . ' WHERE "_deleted" IS NULL');
 			while (($row = $result->fetch()) !== false) {
 				$loadedCount += $this->cacheMagicRow(row: $row, source: $source);
 			}
 
 			$result->closeCursor();
 		} catch (\Exception $e) {
-			$this->logger->debug(
+			$this->runtime->logger->debug(
 				message: '[CacheHandler] Could not query magic table for names',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $tableName, 'error' => $e->getMessage()]
 			);
@@ -2539,7 +2475,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		try {
 			$this->batchLoadNamesFromRegisters(uuidList: $uuidList, results: $results);
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->runtime->logger->warning(
 				message: '[CacheHandler] Failed to batch load names from magic tables',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage(), 'uuid_count' => count($uuids)]
 			);
@@ -2556,7 +2492,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function hasMagicTableDependencies(): bool {
-		return $this->registerMapper !== null && $this->schemaMapper !== null && $this->db !== null;
+		return $this->stores->registerMapper !== null && $this->stores->schemaMapper !== null && $this->stores->db !== null;
 	}//end hasMagicTableDependencies()
 
 	/**
@@ -2573,7 +2509,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function batchLoadNamesFromRegisters(array $uuidList, array &$results): void {
-		$registers = $this->registerMapper->findAll();
+		$registers = $this->stores->registerMapper->findAll();
 		$schemaMap = $this->loadSchemasOfRegisters(registers: $registers);
 
 		foreach ($registers as $register) {
@@ -2661,7 +2597,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			return [];
 		}
 
-		return $this->schemaMapper->findMultipleOptimized(ids: array_keys($allSchemaIds));
+		return $this->stores->schemaMapper->findMultipleOptimized(ids: array_keys($allSchemaIds));
 	}//end loadSchemasOfRegisters()
 
 	/**
@@ -2722,7 +2658,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	private function readNameColumn(NameTableQuery $query, string $column): void {
-		$stmt = $this->db->prepare($query->sqlFor(column: $column));
+		$stmt = $this->stores->db->prepare($query->sqlFor(column: $column));
 		foreach ($query->uuids as $index => $uuid) {
 			$stmt->bindValue((int)$index + 1, $uuid);
 		}
@@ -2777,7 +2713,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 				$storedCount++;
 			} catch (\Exception $e) {
 				if ($storedCount === 0) {
-					$this->logger->warning(
+					$this->runtime->logger->warning(
 						message: '[CacheHandler] Failed to persist name cache entry to distributed cache',
 						context: ['file' => __FILE__, 'line' => __LINE__, 'identifier' => $identifier, 'error' => $e->getMessage()]
 					);
@@ -2852,7 +2788,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		$this->forgetNames();
 		$this->clearDistributed(cache: $this->nameDistributedCache, failure: ['message' => '[CacheHandler] Failed to clear distributed name cache']);
 
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			message: '[CacheHandler] OBJECT NAME CACHE CLEARED',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);

@@ -198,7 +198,7 @@ class CacheHandlerNameReadRightsTest extends TestCase {
 				cacheFactory: $this->cacheFactory,
 				container: $container
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession,
 				groupManager: $this->groupManager
 			)

@@ -207,7 +207,7 @@ class ConfiguredTablePrefixTest extends TestCase {
 			runtime: new CacheHandlerRuntime(
 				logger: $this->createMock(LoggerInterface::class)
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->createMock(IUserSession::class),
 				groupManager: $this->createMock(IGroupManager::class)
 			)

@@ -172,7 +172,7 @@ class CacheHandlerCoverageTest extends TestCase {
 				cacheFactory: $withDistributedCache ? $this->cacheFactory : null,
 				container: $effectiveContainer
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession,
 				groupManager: null,
 				appConfig: $this->appConfig
@@ -258,7 +258,7 @@ class CacheHandlerCoverageTest extends TestCase {
 				logger: $this->logger,
 				cacheFactory: $cacheFactory
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession
 			)
 		);

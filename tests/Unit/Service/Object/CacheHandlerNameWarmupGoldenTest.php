@@ -477,7 +477,7 @@ class CacheHandlerNameWarmupGoldenTest extends TestCase {
 				cacheFactory: ($setup['noCache'] ?? false) ? null : $this->cacheFactory($setup),
 				container: $this->container($setup)
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $session
 			)
 		);

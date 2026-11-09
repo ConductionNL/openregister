@@ -88,7 +88,7 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 				cacheFactory: $this->cacheFactory,
 				container: $container
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession,
 				groupManager: null,
 				appConfig: $appConfig
@@ -339,7 +339,7 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 				logger: $this->logger,
 				cacheFactory: $cacheFactory
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession
 			)
 		);

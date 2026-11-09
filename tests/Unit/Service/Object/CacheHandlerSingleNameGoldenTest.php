@@ -423,7 +423,7 @@ class CacheHandlerSingleNameGoldenTest extends TestCase {
 				cacheFactory: $cacheFactory,
 				container: $container
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $session,
 				groupManager: $groupManager
 			)

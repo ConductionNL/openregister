@@ -105,7 +105,7 @@ class CacheHandlerClearingGoldenTest extends TestCase {
 				logger: $this->logger(),
 				cacheFactory: $factory
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->createStub(IUserSession::class)
 			)
 		);

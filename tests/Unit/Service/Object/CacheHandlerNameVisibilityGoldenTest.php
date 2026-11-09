@@ -121,7 +121,7 @@ class CacheHandlerNameVisibilityGoldenTest extends TestCase {
 				cacheFactory: null,
 				container: $container
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession,
 				groupManager: $groupManager,
 				appConfig: $appConfig

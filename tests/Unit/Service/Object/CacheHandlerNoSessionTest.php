@@ -56,7 +56,7 @@ class CacheHandlerNoSessionTest extends TestCase {
 			runtime: new CacheHandlerRuntime(
 				logger: $this->createMock(LoggerInterface::class)
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				groupManager: $groupManager,
 				appConfig: $appConfig
 			)
@@ -80,7 +80,7 @@ class CacheHandlerNoSessionTest extends TestCase {
 			runtime: new CacheHandlerRuntime(
 				logger: $this->createMock(LoggerInterface::class)
 			),
-			nameScope: new CacheNameScopeSources()
+			scopeSources: new CacheNameScopeSources()
 		);
 
 		$method = (new ReflectionClass($handler))->getMethod('getActiveOrganisationCacheScope');
@@ -109,7 +109,7 @@ class CacheHandlerNoSessionTest extends TestCase {
 				logger: $this->createMock(LoggerInterface::class),
 				container: $container
 			),
-			nameScope: new CacheNameScopeSources()
+			scopeSources: new CacheNameScopeSources()
 		);
 		$handler->setObjectName(identifier: $uuid, name: 'A name', organisation: null, source: '1:5');
 

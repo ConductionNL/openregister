@@ -150,7 +150,7 @@ class CacheHandlerTest extends TestCase {
 				cacheFactory: $this->cacheFactory,
 				container: $container
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession,
 				groupManager: null,
 				appConfig: $this->appConfig
@@ -274,7 +274,7 @@ class CacheHandlerTest extends TestCase {
 				cacheFactory: $this->cacheFactory,
 				container: $container
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession,
 				groupManager: null,
 				appConfig: $this->appConfig
@@ -738,7 +738,7 @@ class CacheHandlerTest extends TestCase {
 				logger: $this->logger,
 				cacheFactory: null
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession
 			)
 		);
@@ -2026,7 +2026,7 @@ class CacheHandlerTest extends TestCase {
 				logger: $this->logger,
 				cacheFactory: null
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession
 			)
 		);
@@ -2057,7 +2057,7 @@ class CacheHandlerTest extends TestCase {
 				logger: $this->logger,
 				cacheFactory: $failingCacheFactory
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession
 			)
 		);
@@ -2080,7 +2080,7 @@ class CacheHandlerTest extends TestCase {
 				logger: $this->logger,
 				cacheFactory: null
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession
 			)
 		);
@@ -2152,7 +2152,7 @@ class CacheHandlerTest extends TestCase {
 				logger: $this->logger,
 				cacheFactory: null
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession
 			)
 		);
@@ -2275,7 +2275,7 @@ class CacheHandlerTest extends TestCase {
 				cacheFactory: null,
 				container: $container
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession
 			)
 		);
@@ -2948,7 +2948,7 @@ class CacheHandlerTest extends TestCase {
 				cacheFactory: $this->cacheFactory,
 				container: null
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession
 			)
 		);
@@ -3000,7 +3000,7 @@ class CacheHandlerTest extends TestCase {
 				cacheFactory: $this->cacheFactory,
 				container: null
 			),
-			nameScope: new CacheNameScopeSources(
+			scopeSources: new CacheNameScopeSources(
 				userSession: $this->userSession
 			)
 		);
