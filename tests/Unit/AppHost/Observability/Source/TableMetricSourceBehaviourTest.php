@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Observability\Source;
 
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
+use OCA\OpenRegister\AppHost\Observability\MetricFamily;
 use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -120,11 +121,8 @@ class TableMetricSourceBehaviourTest extends TestCase {
 	 */
 	private function descriptor(array $source, ?string $help=null): MetricDescriptor {
 		return new MetricDescriptor(
-			name: 'rows',
-			type: 'counter',
-			kind: 'tableCount',
-			source: ['kind' => 'tableCount'] + $source,
-			help: $help
+			family: new MetricFamily(name: 'rows', type: 'counter', help: $help),
+			source: ['kind' => 'tableCount'] + $source
 		);
 	}
 

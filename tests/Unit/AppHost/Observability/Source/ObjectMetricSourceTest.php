@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost\Observability\Source;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
+use OCA\OpenRegister\AppHost\Observability\MetricFamily;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -84,7 +85,7 @@ class ObjectMetricSourceTest extends TestCase {
 			$this->callback(static fn (array $ctx): bool => isset($ctx['file'], $ctx['line']))
 		);
 
-		$result = $this->source->collect('pipelinq', new MetricDescriptor('tickets', 'gauge', 'objectCount', ['schema' => 'ghost']));
+		$result = $this->source->collect('pipelinq', new MetricDescriptor(new MetricFamily('tickets', 'gauge'), ['kind' => 'objectCount', 'schema' => 'ghost']));
 
 		$this->assertCount(1, $result);
 		$this->assertSame('tickets', $result[0]->name);
@@ -109,10 +110,9 @@ class ObjectMetricSourceTest extends TestCase {
 		)->willReturn(12);
 
 		$descriptor = new MetricDescriptor(
-			'tickets',
-			'gauge',
-			'objectCount',
+			new MetricFamily('tickets', 'gauge', 'Open tickets'),
 			[
+				'kind' => 'objectCount',
 				'register' => 'crm',
 				'schema'   => 'ticket',
 				'filter'   => [
@@ -122,8 +122,7 @@ class ObjectMetricSourceTest extends TestCase {
 					'title'    => ['like' => '%urgent%'],
 					'ignored'  => ['between' => 1],
 				],
-			],
-			'Open tickets'
+			]
 		);
 
 		$result = $this->source->collect('pipelinq', $descriptor);
@@ -138,7 +137,7 @@ class ObjectMetricSourceTest extends TestCase {
 		$this->objects->expects($this->once())->method('countSearchObjects')
 			->with(['@self' => ['schema' => 5]], false, false)->willReturn(0);
 
-		$result = $this->source->collect('app', new MetricDescriptor('n', 'gauge', 'objectCount', ['register' => '', 'schema' => 's']));
+		$result = $this->source->collect('app', new MetricDescriptor(new MetricFamily('n', 'gauge'), ['kind' => 'objectCount', 'register' => '', 'schema' => 's']));
 
 		$this->assertSame([['labels' => [], 'value' => 0]], $result[0]->samples);
 	}
@@ -154,7 +153,8 @@ class ObjectMetricSourceTest extends TestCase {
 		);
 
 		$before = new DateTimeImmutable('now');
-		$this->source->collect('app', new MetricDescriptor('n', 'gauge', 'objectCount', [
+		$this->source->collect('app', new MetricDescriptor(new MetricFamily('n', 'gauge'), [
+			'kind' => 'objectCount',
 			'schema' => 's',
 			'filter' => ['dueAt' => ['lt' => 'now'], 'day' => ['eq' => 'today'], 'raw' => ['eq' => 'nowish']],
 		]));
@@ -191,7 +191,7 @@ class ObjectMetricSourceTest extends TestCase {
 				'scalar-row',
 			]);
 
-		$result = $this->source->collect('app', new MetricDescriptor('revenue', 'gauge', 'objectSum', ['schema' => 'invoice', 'field' => 'amount']));
+		$result = $this->source->collect('app', new MetricDescriptor(new MetricFamily('revenue', 'gauge'), ['kind' => 'objectSum', 'schema' => 'invoice', 'field' => 'amount']));
 
 		$this->assertSame('objectSum for invoice', $result[0]->help);
 		$this->assertSame([['labels' => [], 'value' => 12.5]], $result[0]->samples);
@@ -225,7 +225,8 @@ class ObjectMetricSourceTest extends TestCase {
 			static fn (array $query): int => $counts[$query['status'] . '|' . $query['kind']]
 		);
 
-		$result = $this->source->collect('app', new MetricDescriptor('tickets', 'gauge', 'objectCount', [
+		$result = $this->source->collect('app', new MetricDescriptor(new MetricFamily('tickets', 'gauge'), [
+			'kind' => 'objectCount',
 			'schema'  => 's',
 			'groupBy' => ['a' => 'status', 'b' => 'kind'],
 		]));
@@ -252,7 +253,8 @@ class ObjectMetricSourceTest extends TestCase {
 			static fn (array $query): array => $query['currency'] === 'EUR' ? [['amount' => 3]] : [['amount' => 0]]
 		);
 
-		$result = $this->source->collect('app', new MetricDescriptor('revenue', 'gauge', 'objectSum', [
+		$result = $this->source->collect('app', new MetricDescriptor(new MetricFamily('revenue', 'gauge'), [
+			'kind' => 'objectSum',
 			'schema'  => 's',
 			'field'   => 'amount',
 			'groupBy' => ['currency'],
@@ -266,7 +268,7 @@ class ObjectMetricSourceTest extends TestCase {
 		$this->objects->method('getFacetsForObjects')->willReturn([]);
 		$this->objects->expects($this->never())->method('countSearchObjects');
 
-		$result = $this->source->collect('app', new MetricDescriptor('n', 'gauge', 'objectCount', ['schema' => 's', 'groupBy' => ['status']]));
+		$result = $this->source->collect('app', new MetricDescriptor(new MetricFamily('n', 'gauge'), ['kind' => 'objectCount', 'schema' => 's', 'groupBy' => ['status']]));
 
 		$this->assertCount(1, $result);
 		$this->assertSame([], $result[0]->samples);
@@ -277,7 +279,7 @@ class ObjectMetricSourceTest extends TestCase {
 		$this->objects->expects($this->never())->method('getFacetsForObjects');
 		$this->objects->expects($this->once())->method('countSearchObjects')->willReturn(7);
 
-		$result = $this->source->collect('app', new MetricDescriptor('n', 'gauge', 'objectCount', ['schema' => 's', 'groupBy' => 'status']));
+		$result = $this->source->collect('app', new MetricDescriptor(new MetricFamily('n', 'gauge'), ['kind' => 'objectCount', 'schema' => 's', 'groupBy' => 'status']));
 
 		$this->assertSame([['labels' => [], 'value' => 7]], $result[0]->samples);
 	}
