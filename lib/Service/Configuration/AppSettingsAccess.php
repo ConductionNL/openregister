@@ -32,6 +32,8 @@ use Psr\Log\LoggerInterface;
  * Used by the classes whose behaviour depends on stored app settings and on
  * which optional apps are enabled (the credential-store resolver, the Doriath
  * application registrar and the e-Depot transfer preconditions).
+ *
+ * @spec openspec/specs/credential-broker/spec.md
  */
 final class AppSettingsAccess {
 	/**

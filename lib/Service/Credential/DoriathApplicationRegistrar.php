@@ -210,23 +210,10 @@ class DoriathApplicationRegistrar implements DoriathApplicationRegistrarInterfac
 		}
 
 		$applicationService = $this->resolveApplicationService();
+		if ($applicationService === null) {
+			return false;
+		}
 
-		return $applicationService !== null
-			&& $this->rowExists(applicationService: $applicationService, applicationId: $applicationId, appId: $appId);
-	}//end isRegistrationLive()
-
-	/**
-	 * Whether Doriath still holds the persisted application row.
-	 *
-	 * @param object $applicationService Doriath's ApplicationService.
-	 * @param string $applicationId The persisted application UUID.
-	 * @param string $appId The consuming app id, for the diagnostic.
-	 *
-	 * @return bool True when the row is still there.
-	 *
-	 * @spec openspec/specs/credential-broker/spec.md
-	 */
-	private function rowExists(object $applicationService, string $applicationId, string $appId): bool {
 		try {
 			// Admin-scoped in-process read; throws when the row no longer exists.
 			$applicationService->get($applicationId, '', true);
@@ -239,7 +226,7 @@ class DoriathApplicationRegistrar implements DoriathApplicationRegistrarInterfac
 		}
 
 		return true;
-	}//end rowExists()
+	}//end isRegistrationLive()
 
 	/**
 	 * Register the per-app application (identity-only, no CSR, pending) and persist its UUID.
