@@ -48,6 +48,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Listener\BuiltinDataTools;
 use OCA\OpenRegister\Mcp\Listener\BuiltinPlatformTools;
+use OCA\OpenRegister\Mcp\Listener\BuiltinToolRegistration;
+use OCA\OpenRegister\Mcp\Listener\ProviderToolRegistration;
 
 /**
  * Dual-surface + precedence tests for the schema-derived provider.
@@ -236,17 +238,21 @@ class SchemaDerivedDualSurfaceTest extends TestCase {
 		);
 
 		$listener = new ToolRegistrationListener(
-			dataTools: new BuiltinDataTools(
-				registerTool: $this->createMock(RegisterTool::class),
-				schemaTool: $this->createMock(SchemaTool::class),
-				objectsTool: $this->createMock(ObjectsTool::class),
+			builtinTools: new BuiltinToolRegistration(
+				dataTools: new BuiltinDataTools(
+					registerTool: $this->createMock(RegisterTool::class),
+					schemaTool: $this->createMock(SchemaTool::class),
+					objectsTool: $this->createMock(ObjectsTool::class),
+				),
+				platformTools: new BuiltinPlatformTools(
+					applicationTool: $this->createMock(ApplicationTool::class),
+					agentTool: $this->createMock(AgentTool::class),
+				),
 			),
-			platformTools: new BuiltinPlatformTools(
-				applicationTool: $this->createMock(ApplicationTool::class),
-				agentTool: $this->createMock(AgentTool::class),
+			providerTools: new ProviderToolRegistration(
+				mcpToolsService: $mcpToolsService,
+				logger: $this->logger,
 			),
-			mcpToolsService: $mcpToolsService,
-			logger: $this->logger,
 		);
 
 		$dispatcher = $this->createMock(IEventDispatcher::class);

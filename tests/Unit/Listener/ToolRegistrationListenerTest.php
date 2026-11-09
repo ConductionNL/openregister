@@ -18,6 +18,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Listener\BuiltinDataTools;
 use OCA\OpenRegister\Mcp\Listener\BuiltinPlatformTools;
+use OCA\OpenRegister\Mcp\Listener\BuiltinToolRegistration;
+use OCA\OpenRegister\Mcp\Listener\ProviderToolRegistration;
 
 class ToolRegistrationListenerTest extends TestCase {
 	private ToolRegistrationListener $listener;
@@ -40,17 +42,21 @@ class ToolRegistrationListenerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->listener = new ToolRegistrationListener(
-			dataTools: new BuiltinDataTools(
-				registerTool: $this->registerTool,
-				schemaTool: $this->schemaTool,
-				objectsTool: $this->objectsTool,
+			builtinTools: new BuiltinToolRegistration(
+				dataTools: new BuiltinDataTools(
+					registerTool: $this->registerTool,
+					schemaTool: $this->schemaTool,
+					objectsTool: $this->objectsTool,
+				),
+				platformTools: new BuiltinPlatformTools(
+					applicationTool: $this->applicationTool,
+					agentTool: $this->agentTool,
+				),
 			),
-			platformTools: new BuiltinPlatformTools(
-				applicationTool: $this->applicationTool,
-				agentTool: $this->agentTool,
+			providerTools: new ProviderToolRegistration(
+				mcpToolsService: $this->mcpToolsService,
+				logger: $this->logger,
 			),
-			mcpToolsService: $this->mcpToolsService,
-			logger: $this->logger,
 		);
 	}
 

@@ -29,6 +29,8 @@ use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\Listener\BuiltinDataTools;
 use OCA\OpenRegister\Mcp\Listener\BuiltinPlatformTools;
+use OCA\OpenRegister\Mcp\Listener\BuiltinToolRegistration;
+use OCA\OpenRegister\Mcp\Listener\ProviderToolRegistration;
 use OCA\OpenRegister\Mcp\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Mcp\Tool\AgentTool;
@@ -74,17 +76,21 @@ class ToolRegistrationListenerBehaviourTest extends TestCase {
 		$this->mcpToolsService = $this->createMock(McpToolsService::class);
 		$this->logger          = $this->createMock(LoggerInterface::class);
 		$this->listener        = new ToolRegistrationListener(
-			new BuiltinDataTools(
-				$this->createMock(RegisterTool::class),
-				$this->createMock(SchemaTool::class),
-				$this->createMock(ObjectsTool::class),
+			new BuiltinToolRegistration(
+				new BuiltinDataTools(
+					$this->createMock(RegisterTool::class),
+					$this->createMock(SchemaTool::class),
+					$this->createMock(ObjectsTool::class),
+				),
+				new BuiltinPlatformTools(
+					$this->createMock(ApplicationTool::class),
+					$this->createMock(AgentTool::class),
+				),
 			),
-			new BuiltinPlatformTools(
-				$this->createMock(ApplicationTool::class),
-				$this->createMock(AgentTool::class),
+			new ProviderToolRegistration(
+				$this->mcpToolsService,
+				$this->logger,
 			),
-			$this->mcpToolsService,
-			$this->logger,
 		);
 	}//end setUp()
 
