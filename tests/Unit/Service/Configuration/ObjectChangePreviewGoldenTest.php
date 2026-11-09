@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Configuration\ObjectChangePreview;
+use OCA\OpenRegister\Service\Configuration\ObjectPreviewTargets;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -119,9 +120,11 @@ class ObjectChangePreviewGoldenTest extends TestCase {
 		});
 		$row = $preview->preview(
 			$case['object'],
-			$case['registers'] ?? ['zaken' => $register],
-			$case['schemas'] ?? ['zaaktype' => $schema],
-			$case['planned'] ?? ['registers' => [], 'schemas' => []]
+			new ObjectPreviewTargets(
+				$case['registers'] ?? ['zaken' => $register],
+				$case['schemas'] ?? ['zaaktype' => $schema],
+				$case['planned'] ?? ['registers' => [], 'schemas' => []]
+			)
 		);
 		$created = $preview->createdSlugs([$row, ['action' => 'create', 'slug' => 'Mixed-Case'], ['action' => 'skip', 'slug' => 'skipped'], ['action' => 'create'], []]);
 		$actual = json_decode(json_encode(['row' => $row, 'created' => $created, 'calls' => $this->calls]), true);

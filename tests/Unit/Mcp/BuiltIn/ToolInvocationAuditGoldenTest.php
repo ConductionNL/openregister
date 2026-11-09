@@ -16,6 +16,7 @@ use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
+use OCA\OpenRegister\Mcp\ToolScanSubject;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Service\ObjectService;
@@ -44,7 +45,7 @@ class ToolInvocationAuditGoldenTest extends TestCase
     {
         $logger  = $this->createMock(LoggerInterface::class);
         $audit   = $this->createMock(AuditTrailMapper::class);
-        $entries = (new AttributeToolScanner())->scanClass(appId: 'pipelinq', className: AttributeFixtureService::class, logger: $logger);
+        $entries = (new AttributeToolScanner())->scanClass(subject: new ToolScanSubject(appId: 'pipelinq', className: AttributeFixtureService::class, logger: $logger));
         foreach ($entries as &$entry) {
             $entry['instance'] = new AttributeFixtureService();
         }
