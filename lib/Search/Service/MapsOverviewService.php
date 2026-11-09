@@ -2,7 +2,7 @@
 
 /**
  * MapsOverviewService — page-level multi-object MAP render surface, the
- * maps equivalent of {@see AnalyticsSeriesService}.
+ * maps equivalent of {@see AnalyticsSeriesServiceInterface}.
  *
  * Where the per-object {@see \OCA\OpenRegister\Service\Integration\Providers\MapsProvider}
  * lists the locations linked to ONE object (a sidebar tab), this service
@@ -14,7 +14,7 @@
  *      IntegrationRegistry (declarative render contract + optional
  *      base-layer config such as PDOK WMTS), so the nc-vue render layer
  *      can discover and place the map surface. Mirrors
- *      AnalyticsSeriesService::register()'s widget declaration.
+ *      AnalyticsSeriesServiceInterface::register()'s widget declaration.
  *   2. queryPoints() — resolves the marker point set for a register/schema
  *      (+ optional filters) by running the CANONICAL OpenRegister read
  *      path with `_rbac: true`, then extracting `{id,label,lat,lng,...}`
@@ -54,7 +54,7 @@ use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
-use OCA\OpenRegister\Service\AnalyticsSeriesService;
+use OCA\OpenRegister\Service\AnalyticsSeriesServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
@@ -161,7 +161,7 @@ class MapsOverviewService {
 	 * layer. It carries NO per-request marker data — the points are fetched
 	 * separately, RBAC-scoped, via queryPoints().
 	 *
-	 * Mirrors AnalyticsSeriesService::register()'s widget declaration:
+	 * Mirrors AnalyticsSeriesServiceInterface::register()'s widget declaration:
 	 * first-write-wins inside the registry (a re-declare with the same id
 	 * is a harmless no-op logged as a duplicate).
 	 *

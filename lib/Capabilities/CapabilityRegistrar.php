@@ -55,8 +55,10 @@ final class CapabilityRegistrar {
 					registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface::class),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					leafRegistry: $container->get(\OCA\OpenRegister\Service\Integration\LeafRegistryInterface::class)
+					services: new IntegrationsCapabilityServices(
+						appManager: $container->get('OCP\App\IAppManager'),
+						leafRegistry: $container->get(\OCA\OpenRegister\Service\Integration\LeafRegistryInterface::class)
+					)
 				);
 			}
 		);

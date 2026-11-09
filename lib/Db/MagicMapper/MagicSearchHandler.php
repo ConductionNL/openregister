@@ -1903,12 +1903,7 @@ class MagicSearchHandler {
 					column: $quotedCol,
 					build: fn (mixed $criterion): array => $this->objectFieldConditionsSql(
 						value: $criterion,
-						field: new RawObjectFieldFilter(
-							quotedCol: $quotedCol,
-							propertyType: $propertyType,
-							connection: $connection,
-							isPostgres: $isPostgres
-						)
+						field: new RawObjectFieldFilter(quotedCol: $quotedCol, propertyType: $propertyType, connection: $connection, isPostgres: $isPostgres)
 					)
 				)
 			);
