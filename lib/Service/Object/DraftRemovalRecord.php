@@ -126,7 +126,21 @@ class DraftRemovalRecord {
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-removing-a-draft-must-leave-one-audit-trail-entry-without-its-content
 	 */
 	public function write(ObjectEntity $draft, ?Register $register, ?Schema $schema): bool {
-		$facts = $this->facts(draft: $draft, register: $register, schema: $schema);
+		return $this->record(removed: new RemovedDraft(draft: $draft, register: $register, schema: $schema));
+	}//end write()
+
+	/**
+	 * Write the entry for one removed draft; a failure is logged with the same facts, never thrown.
+	 *
+	 * @param RemovedDraft $removed The removed draft, with its register and schema.
+	 *
+	 * @return bool True when the entry was written.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-removing-a-draft-must-leave-one-audit-trail-entry-without-its-content
+	 */
+	private function record(RemovedDraft $removed): bool {
+		$draft = $removed->draft;
+		$facts = $this->facts(removed: $removed);
 
 		$actorId = null;
 		$actorName = null;
@@ -153,7 +167,7 @@ class DraftRemovalRecord {
 
 			return false;
 		}
-	}//end write()
+	}//end record()
 
 	/**
 	 * What the entry says beside its own columns (actor, moment, register, schema, object).
@@ -162,20 +176,18 @@ class DraftRemovalRecord {
 	 * no later change to this class can leak them by accident: there is no
 	 * call to getObject() or jsonSerialize() to widen.
 	 *
-	 * @param ObjectEntity  $draft    The removed draft.
-	 * @param Register|null $register Its register.
-	 * @param Schema|null   $schema   Its schema.
+	 * @param RemovedDraft $removed The removed draft, with its register and schema.
 	 *
 	 * @return array<string, bool|string|null> The context of the entry.
 	 */
-	private function facts(ObjectEntity $draft, ?Register $register, ?Schema $schema): array {
+	private function facts(RemovedDraft $removed): array {
 		return [
 			'status' => ObjectEntity::STATUS_DRAFT,
 			'permanent' => true,
 			'job' => self::$actingJob,
-			'register' => $register?->getSlug(),
-			'schema' => $schema?->getSlug(),
-			'owner' => $draft->getOwner(),
+			'register' => $removed->register?->getSlug(),
+			'schema' => $removed->schema?->getSlug(),
+			'owner' => $removed->draft->getOwner(),
 		];
 	}//end facts()
 }//end class
