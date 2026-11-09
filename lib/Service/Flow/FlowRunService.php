@@ -35,16 +35,11 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStep;
-use OCA\OpenRegister\Db\FlowRunStepMapperInterface;
-use OCA\OpenRegister\Db\FlowStateMapperInterface;
-use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 use OCA\OpenRegister\Exception\FlowRunExpired;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
-use OCP\IAppConfig;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -105,80 +100,6 @@ class FlowRunService implements FlowRunServiceInterface {
 	private bool $runAsScopeResolved = false;
 
 	/**
-	 * Loads and writes back the state that belongs to the FLOW, not the run.
-	 *
-	 * A separate collaborator because it handles a different lifetime: the token
-	 * dies with its run, this outlives every run of the flow. See
-	 * {@see FlowStateBinding}.
-	 *
-	 * @var FlowStateBinding
-	 */
-	private readonly FlowStateBinding $flowState;
-
-	/**
-	 * Persists runs.
-	 *
-	 * @var FlowRunMapperInterface
-	 */
-	private readonly FlowRunMapperInterface $mapper;
-
-	/**
-	 * Walks the graph.
-	 *
-	 * @var FlowEngine
-	 */
-	private readonly FlowEngine $engine;
-
-	/**
-	 * Resolves step types.
-	 *
-	 * @var FlowNodeRegistryInterface
-	 */
-	private readonly FlowNodeRegistryInterface $registry;
-
-	/**
-	 * Records one row per node execution; null records no history, never a faked one.
-	 *
-	 * @var FlowRunStepMapperInterface|null
-	 */
-	private readonly ?FlowRunStepMapperInterface $steps;
-
-	/**
-	 * Reads the instance-wide runtime ceiling; null applies the compiled-in default.
-	 *
-	 * @var IAppConfig|null
-	 */
-	private readonly ?IAppConfig $appConfig;
-
-	/**
-	 * Stream rows; with the claims and the commit, enables the stream walk.
-	 *
-	 * @var FlowStreamMapperInterface|null
-	 */
-	private readonly ?FlowStreamMapperInterface $streamMapper;
-
-	/**
-	 * The claim protocol.
-	 *
-	 * @var FlowPlaceClaims|null
-	 */
-	private readonly ?FlowPlaceClaims $claims;
-
-	/**
-	 * The locked delta commit path.
-	 *
-	 * @var FlowRunCommit|null
-	 */
-	private readonly ?FlowRunCommit $commit;
-
-	/**
-	 * Audits each hop recorded by the step history.
-	 *
-	 * @var FlowHopAudit|null
-	 */
-	private readonly ?FlowHopAudit $hopAudit;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param FlowRunStores       $stores    The run rows, flow state, step history and stream persistence.
@@ -189,24 +110,24 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * @param ContainerInterface  $container Lazily resolves OrganisationService.
 	 */
 	public function __construct(
-		FlowRunStores $stores,
-		FlowRunWalkServices $walk,
+		private readonly FlowRunStores $stores,
+		private readonly FlowRunWalkServices $walk,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
 	) {
-		$this->mapper       = $stores->mapper;
-		$this->steps        = $stores->steps;
-		$this->streamMapper = $stores->streams->streamMapper;
-		$this->claims       = $stores->streams->claims;
-		$this->commit       = $stores->streams->commit;
-		$this->engine       = $walk->engine;
-		$this->registry     = $walk->registry;
-		$this->appConfig    = $walk->appConfig;
-		$this->hopAudit     = $walk->hopAudit;
-		// Built here rather than injected: the binding needs nothing this
-		// service was not already given.
-		$this->flowState = new FlowStateBinding(stateMapper: $stores->stateMapper, logger: $logger);
 	}//end __construct()
+
+	/**
+	 * The flow's own state table, bound to the run context.
+	 *
+	 * Made on demand rather than injected: the binding needs nothing this
+	 * service was not already given, and holds no state of its own.
+	 *
+	 * @return FlowStateBinding The binding.
+	 */
+	private function flowState(): FlowStateBinding {
+		return new FlowStateBinding(stateMapper: $this->stores->stateMapper, logger: $this->logger);
+	}//end flowState()
 
 	/**
 	 * The run's step history — its numbering, and its recording.
@@ -219,7 +140,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
 	 */
 	private function stepHistory(): FlowStepHistory {
-		return new FlowStepHistory(steps: $this->steps, logger: $this->logger, hopAudit: $this->hopAudit);
+		return new FlowStepHistory(steps: $this->stores->steps, logger: $this->logger, hopAudit: $this->walk->hopAudit);
 	}//end stepHistory()
 
 	/**
@@ -237,7 +158,8 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	private function streamWalkFor(FlowRunPass $pass, ?FlowStreamAdvance $advance): ?FlowStreamWalk {
-		if ($this->hasStreamParts() === false) {
+		$streams = $this->stores->streams;
+		if ($this->hasStreamParts(streams: $streams) === false) {
 			return null;
 		}
 
@@ -245,7 +167,7 @@ class FlowRunService implements FlowRunServiceInterface {
 
 		return new FlowStreamWalk(
 			run: $pass->run,
-			parts: new FlowStreamWalkParts(claims: $this->claims, commit: $this->commit, streamMapper: $this->streamMapper),
+			parts: new FlowStreamWalkParts(claims: $streams->claims, commit: $streams->commit, streamMapper: $streams->streamMapper),
 			limits: new FlowStreamWalkLimits(
 				owner: FlowPlaceClaims::newOwner(),
 				runCap: $cap,
@@ -258,16 +180,18 @@ class FlowRunService implements FlowRunServiceInterface {
 	/**
 	 * Whether every collaborator a stream walk needs was wired.
 	 *
+	 * @param FlowRunStreamStores $streams The stream rows, the place claims and the commit.
+	 *
 	 * @return bool True when the stream mapper, the place claims and the commit are present.
 	 *
-	 * @phpstan-assert-if-true !null $this->streamMapper
-	 * @phpstan-assert-if-true !null $this->claims
-	 * @phpstan-assert-if-true !null $this->commit
+	 * @phpstan-assert-if-true !null $streams->streamMapper
+	 * @phpstan-assert-if-true !null $streams->claims
+	 * @phpstan-assert-if-true !null $streams->commit
 	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 */
-	private function hasStreamParts(): bool {
-		return $this->streamMapper !== null && $this->claims !== null && $this->commit !== null;
+	private function hasStreamParts(FlowRunStreamStores $streams): bool {
+		return $streams->streamMapper !== null && $streams->claims !== null && $streams->commit !== null;
 	}//end hasStreamParts()
 
 	/**
@@ -381,14 +305,14 @@ class FlowRunService implements FlowRunServiceInterface {
 
 		$run->setStatus(FlowRun::STATUS_RUNNING);
 		$run->setUpdated(new DateTime());
-		$this->mapper->update($run);
+		$this->stores->mapper->update($run);
 
 		$guard = $this->guardFor(run: $run, flow: $pinned->flow);
 		$context = $this->nodeContextFor(run: $run, guard: $guard);
 		$context['resuming'] = true;
 
 		$start = $this->startFor(pass: $pinned, guard: $guard);
-		$result = $this->engine->run(start: $start->withContext(context: $context)->withStreams(streams: $walk), items: ($run->getItems() ?? []));
+		$result = $this->walk->engine->run(start: $start->withContext(context: $context)->withStreams(streams: $walk), items: ($run->getItems() ?? []));
 
 		return $this->persistResult(run: $run, result: $result);
 	}//end advanceBranch()
@@ -404,7 +328,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		$run->setStatus(FlowRun::STATUS_QUEUED);
 		$run->setUpdated(new DateTime());
 
-		return $this->mapper->update($run);
+		return $this->stores->mapper->update($run);
 	}//end requeue()
 
 	/**
@@ -438,7 +362,7 @@ class FlowRunService implements FlowRunServiceInterface {
 			flow: $pass->flow,
 			store: new FlowRunMarkingStore(run: $pass->run),
 			subject: $pass->subject,
-			dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope())
+			dispatcher: new RegistryStepDispatcher(registry: $this->walk->registry, guard: $guard, scope: $this->identityScope())
 		);
 	}//end startFor()
 
@@ -594,7 +518,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		$context[FlowRunContext::CONTEXT_RUN] = (string)$run->getUuid();
 		$context[FlowRunContext::CONTEXT_BASE] = $this->stepHistory()->baseFor(runUuid: (string)$run->getUuid());
 
-		$this->flowState->attach(run: $run, context: $context);
+		$this->flowState()->attach(run: $run, context: $context);
 
 		return $context;
 	}//end nodeContextFor()
@@ -646,7 +570,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 */
 	private function guardFor(FlowRun $run, array $flow): FlowRunGuard {
 		return new FlowRunGuard(
-			mapper: $this->mapper,
+			mapper: $this->stores->mapper,
 			logger: $this->logger,
 			clock: new FlowRunGuardClock(
 				runUuid: (string)$run->getUuid(),
@@ -681,8 +605,8 @@ class FlowRunService implements FlowRunServiceInterface {
 		}
 
 		$minutes = self::DEFAULT_MAX_RUNTIME_MINUTES;
-		if ($this->appConfig !== null) {
-			$minutes = (int)$this->appConfig->getValueString(
+		if ($this->walk->appConfig !== null) {
+			$minutes = (int)$this->walk->appConfig->getValueString(
 				'openregister',
 				'flow_max_runtime_minutes',
 				(string)self::DEFAULT_MAX_RUNTIME_MINUTES
@@ -822,7 +746,7 @@ class FlowRunService implements FlowRunServiceInterface {
 			context: $context
 		);
 
-		return $this->parkIfAwaiting(run: $this->mapper->insert($run), park: $park);
+		return $this->parkIfAwaiting(run: $this->stores->mapper->insert($run), park: $park);
 	}//end queue()
 
 	/**
@@ -850,7 +774,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		}
 
 		$parking = new FlowConsentParking(
-			runs: $this->mapper,
+			runs: $this->stores->mapper,
 			delegation: $this->container->get(DelegationService::class),
 			logger: $this->logger
 		);
@@ -879,7 +803,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function hasActiveRun(string $flowId): bool {
-		return $this->mapper->hasActiveRun(flowId: $flowId);
+		return $this->stores->mapper->hasActiveRun(flowId: $flowId);
 	}//end hasActiveRun()
 
 
@@ -996,7 +920,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		$run->setResumeAt(new DateTime());
 		$run->setUpdated(new DateTime());
 
-		return $this->mapper->update($run);
+		return $this->stores->mapper->update($run);
 	}//end signal()
 
 	/**
@@ -1132,7 +1056,7 @@ class FlowRunService implements FlowRunServiceInterface {
 
 		try {
 			$begin = $this->startFor(pass: $pass, guard: $guard);
-			$result = $this->engine->run(
+			$result = $this->walk->engine->run(
 				start: $begin->withContext(context: $context)->withStreams(streams: $walk),
 				items: $items,
 				startAt: $start
@@ -1208,7 +1132,7 @@ class FlowRunService implements FlowRunServiceInterface {
 
 		$run->setStatus(FlowRun::STATUS_RUNNING);
 		$run->setUpdated(new DateTime());
-		$this->mapper->update($run);
+		$this->stores->mapper->update($run);
 
 		return $resuming;
 	}//end markRunning()
@@ -1226,7 +1150,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		$run->setError($error->getMessage());
 		$run->setUpdated(new DateTime());
 
-		return $this->mapper->update($run);
+		return $this->stores->mapper->update($run);
 	}//end failRun()
 
 	/**
@@ -1311,12 +1235,12 @@ class FlowRunService implements FlowRunServiceInterface {
 
 		$run->setStatus(FlowRun::STATUS_RUNNING);
 		$run->setUpdated(new DateTime());
-		$this->mapper->update($run);
+		$this->stores->mapper->update($run);
 
 		$items = FlowItems::fromSubject(subject: $pass->subject);
 		$guard = $this->guardFor(run: $run, flow: $pinned->flow);
 		$context = $this->nodeContextFor(run: $run, guard: $guard);
-		$dispatcher = new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope());
+		$dispatcher = new RegistryStepDispatcher(registry: $this->walk->registry, guard: $guard, scope: $this->identityScope());
 		$hop = new FlowNodeHop(nodeId: $nodeId, stepType: (string)($step['type'] ?? ''), startedAt: microtime(true));
 		$call = new FlowNodeCallRun(run: $run, hop: $hop, context: $context, itemsIn: count($items));
 
@@ -1329,7 +1253,7 @@ class FlowRunService implements FlowRunServiceInterface {
 
 		$run->setUpdated(new DateTime());
 
-		return $this->mapper->update($run);
+		return $this->stores->mapper->update($run);
 	}//end runNode()
 
 	/**
@@ -1415,7 +1339,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 */
 	private function callerConfigFor(string $stepType, array $config): array {
 		try {
-			$node = $this->registry->get(type: $stepType);
+			$node = $this->walk->registry->get(type: $stepType);
 		} catch (Throwable) {
 			// The dispatcher refuses an unknown type itself; nothing of the caller's reaches it.
 			return [];
@@ -1467,7 +1391,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		));
 		$run->setUpdated(new DateTime());
 
-		return $this->mapper->update($run);
+		return $this->stores->mapper->update($run);
 	}//end failMissingNode()
 
 	/**
@@ -1647,7 +1571,7 @@ class FlowRunService implements FlowRunServiceInterface {
 			(string)$run->getFlowId()
 		));
 
-		$this->mapper->update($run);
+		$this->stores->mapper->update($run);
 
 		return $run;
 
@@ -1782,7 +1706,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		// merely READS its state should not touch the row on every tick, and a
 		// five-minute schedule makes that difference thousands of writes a week.
 		$this->redactStateWrites(context: $context, secretRef: $secretRef);
-		$this->flowState->persist(run: $run, context: $context);
+		$this->flowState()->persist(run: $run, context: $context);
 		unset($context[FlowStateHandle::CONTEXT_KEY]);
 
 		// Same reason as the state handle one line up: it is a live collaborator,
@@ -1830,7 +1754,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		$correlationKey = $this->correlationKeyFrom(context: $context, suspended: ($status === FlowRun::STATUS_SUSPENDED));
 		$run->setCorrelationKey(ObjectActionSecrets::redactCopies(data: $correlationKey, ref: $secretRef));
 
-		$persisted = $this->mapper->update($run);
+		$persisted = $this->stores->mapper->update($run);
 
 		$this->recordLastRun(run: $persisted, status: $status);
 
