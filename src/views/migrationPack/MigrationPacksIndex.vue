@@ -162,13 +162,7 @@
 <script>
 import { CnDataTable } from '@conduction/nextcloud-vue'
 import { getCanonicalLocale } from '@nextcloud/l10n'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { pageShellComponents } from '../pageShell.js'
 import Download from 'vue-material-design-icons/Download.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -192,11 +186,7 @@ export default {
 		DeleteMigrationPackDialog,
 		Download,
 		Eye,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 		Pencil,
 		TrashCanOutline,
 		Upload,

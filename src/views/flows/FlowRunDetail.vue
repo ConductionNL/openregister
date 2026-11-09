@@ -450,13 +450,7 @@ import { CnStatusBadge } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { pageShellComponents } from '../pageShell.js'
 import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline.vue'
 import {
 	catalogNames,
@@ -482,11 +476,7 @@ export default {
 
 	components: {
 		CnStatusBadge,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 		PlayCircleOutline,
 	},
 
@@ -880,42 +870,14 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
+@use './flowPage.scss' as page;
 
-.runPage {
-	display: flex;
-	flex-direction: column;
-	gap: calc(var(--default-grid-baseline, 4px) * 5);
-	max-width: 1200px;
-	padding: calc(var(--default-grid-baseline, 4px) * 6)
-		calc(var(--default-grid-baseline, 4px) * 8)
-		calc(var(--default-grid-baseline, 4px) * 12);
-	box-sizing: border-box;
-}
+@include page.flow-page('runPage');
+@include page.flow-card('runCard');
 
 .runPage__crumbs,
 .runPage__muted {
 	color: var(--color-text-maxcontrast);
-}
-
-.runPage__header {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 16px;
-}
-
-.runPage__title {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.runPage__title h1 {
-	margin: 0;
-	font-size: 30px;
-	font-weight: 700;
-	line-height: 1.2;
 }
 
 .runPage__badges,
@@ -934,29 +896,6 @@ export default {
 .runPage__alertText {
 	margin: 0;
 	overflow-wrap: anywhere;
-}
-
-.runCard {
-	background: var(--color-main-background);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large);
-	min-width: 0;
-}
-
-.runCard__head {
-	padding: 12px 20px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.runCard__head h2 {
-	margin: 0;
-	font-size: 16px;
-	font-weight: 600;
-}
-
-.runCard__body {
-	margin: 0;
-	padding: 20px;
 }
 
 .runFacts {

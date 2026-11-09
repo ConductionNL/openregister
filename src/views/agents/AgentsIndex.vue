@@ -93,13 +93,7 @@ import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { pageShellComponents } from '../pageShell.js'
 import EditAgentLimits from '../../modals/agent/EditAgentLimits.vue'
 
 export default {
@@ -107,11 +101,7 @@ export default {
 	components: {
 		CnDataTable,
 		EditAgentLimits,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 	},
 
 	data() {

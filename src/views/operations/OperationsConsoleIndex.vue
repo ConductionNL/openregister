@@ -321,13 +321,7 @@ import { CnDataTable } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { n, t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { pageShellComponents } from '../pageShell.js'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 
 /**
@@ -345,11 +339,7 @@ export default {
 	components: {
 		CnDataTable,
 		CogOutline,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 	},
 
 	data() {
