@@ -284,24 +284,47 @@ class McpProviderBridge implements ToolInterface {
 		// Resolve the safe function name back to the original MCP id.
 		$mcpId = $this->resolveMcpId(functionName: $functionName);
 		if ($mcpId === null) {
-			return [
-				'isError' => true,
-				'error' => 'unknown_function',
-				'message' => "No MCP tool registered for function: {$functionName}",
-			];
+			return $this->unknownFunction(functionName: $functionName);
 		}
 
+		return $this->forward(call: new ToolCall(functionName: $functionName, parameters: $parameters), mcpId: $mcpId);
+	}//end executeFunction()
+
+	/**
+	 * The error envelope of a function no MCP tool of the provider answers to.
+	 *
+	 * @param string $functionName LLphant-side function name.
+	 *
+	 * @return array<string,mixed> The error envelope.
+	 */
+	private function unknownFunction(string $functionName): array {
+		return [
+			'isError' => true,
+			'error' => 'unknown_function',
+			'message' => "No MCP tool registered for function: {$functionName}",
+		];
+	}//end unknownFunction()
+
+	/**
+	 * Forward a call to the provider's MCP tool, turning a provider failure into an error envelope.
+	 *
+	 * @param ToolCall $call  The LLphant-side function name and the decoded MCP arguments object.
+	 * @param string   $mcpId The provider's MCP tool id.
+	 *
+	 * @return array<string,mixed> MCP-shaped response or error envelope.
+	 */
+	private function forward(ToolCall $call, string $mcpId): array {
 		$this->logger->debug(
 			'[McpProviderBridge] Forwarding LLM call to MCP provider',
-			['function' => $functionName, 'mcpId' => $mcpId, 'appId' => $this->provider->getAppId()]
+			['function' => $call->functionName, 'mcpId' => $mcpId, 'appId' => $this->provider->getAppId()]
 		);
 
 		try {
-			return $this->provider->invokeTool($mcpId, $parameters);
+			return $this->provider->invokeTool($mcpId, $call->parameters);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'[McpProviderBridge] Provider invocation failed',
-				['function' => $functionName, 'mcpId' => $mcpId, 'error' => $e->getMessage()]
+				['function' => $call->functionName, 'mcpId' => $mcpId, 'error' => $e->getMessage()]
 			);
 			return [
 				'isError' => true,
@@ -309,7 +332,7 @@ class McpProviderBridge implements ToolInterface {
 				'message' => $e->getMessage(),
 			];
 		}
-	}//end executeFunction()
+	}//end forward()
 
 	/**
 	 * Attach the active agent context.

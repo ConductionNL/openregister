@@ -28,7 +28,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use ReflectionMethod;
 use RuntimeException;
 
 /**
@@ -144,7 +143,7 @@ class ObjectsTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
-		return $this->executeWithUser(functionName: $functionName, parameters: $parameters, userId: $userId);
+		return $this->executeWithUser(call: new ToolCall(functionName: $functionName, parameters: $parameters), userId: $userId);
 	}//end executeFunction()
 
 	/**
@@ -183,11 +182,11 @@ class ObjectsTool extends AbstractTool {
 		// volunteering an extra hint should not be a fatal.
 		$methodName = $this->functionMethod(functionName: $functionName);
 		$known      = [];
-		foreach ((new ReflectionMethod($this, $methodName))->getParameters() as $parameter) {
+		foreach ($this->bindingTarget(methodName: $methodName)->getParameters() as $parameter) {
 			$known[$parameter->getName()] = true;
 		}
 
-		return $this->$methodName(...array_intersect_key($parameters, $known));
+		return $this->callMethod(methodName: $methodName, arguments: array_intersect_key($parameters, $known));
 	}//end invokeFunction()
 
 	/**
