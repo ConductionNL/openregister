@@ -744,7 +744,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 		];
 
 		// Should not throw.
-		$this->fileHandler->validateFileAgainstConfig($fileData, ['type' => 'file'], 'testProp');
+		$this->fileHandler->validateFileAgainstConfig($fileData, new \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest(new ObjectEntity(), 'testProp', ['type' => 'file'], null));
 		$this->assertTrue(true); // Passed without exception.
 	}
 
@@ -763,7 +763,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 		$this->expectException(\Exception::class);
 		$this->expectExceptionMessage('invalid type');
-		$this->fileHandler->validateFileAgainstConfig($fileData, $config, 'photo');
+		$this->fileHandler->validateFileAgainstConfig($fileData, new \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest(new ObjectEntity(), 'photo', $config, null));
 	}
 
 	public function testValidateFileAgainstConfigBlocksOversize(): void {
@@ -781,7 +781,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 		$this->expectException(\Exception::class);
 		$this->expectExceptionMessage('exceeds maximum size');
-		$this->fileHandler->validateFileAgainstConfig($fileData, $config, 'doc');
+		$this->fileHandler->validateFileAgainstConfig($fileData, new \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest(new ObjectEntity(), 'doc', $config, null));
 	}
 
 	public function testValidateFileAgainstConfigWithIndex(): void {
@@ -796,7 +796,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 		$this->expectException(\Exception::class);
 		$this->expectExceptionMessage('testProp[2]');
-		$this->fileHandler->validateFileAgainstConfig($fileData, $config, 'testProp', 2);
+		$this->fileHandler->validateFileAgainstConfig($fileData, new \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest(new ObjectEntity(), 'testProp', $config, 2));
 	}
 
 	public function testBlockExecutableFilesByExtension(): void {
@@ -939,7 +939,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			'allowedTypes' => ['image/png', 'image/jpeg'],
 		];
 
-		$this->fileHandler->validateFileAgainstConfig($fileData, $config, 'photo');
+		$this->fileHandler->validateFileAgainstConfig($fileData, new \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest(new ObjectEntity(), 'photo', $config, null));
 		$this->assertTrue(true);
 	}
 
@@ -953,7 +953,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 		$config = ['type' => 'file', 'maxSize' => 500];
 
-		$this->fileHandler->validateFileAgainstConfig($fileData, $config, 'doc');
+		$this->fileHandler->validateFileAgainstConfig($fileData, new \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest(new ObjectEntity(), 'doc', $config, null));
 		$this->assertTrue(true);
 	}
 }

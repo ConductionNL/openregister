@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Lifecycle;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionCandidate;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecision;
@@ -95,14 +96,15 @@ class AutoTransitionPassTest extends TestCase {
 	 */
 	private function wireStateMachine(string $mode = 'sync'): void {
 		$this->runner->method('decide')->willReturnCallback(
-			function (string $uuid, string $register, string $schema, array $previous): ?AutoTransitionDecision {
+			function (ObjectRef $ref, array $previous): ?AutoTransitionDecision {
+				$uuid    = $ref->id;
 				$current = ($this->state[$uuid] ?? '');
 				if (isset($this->moves[$current]) === false) {
 					return null;
 				}
 
 				return new AutoTransitionDecision(
-					subject: new AutoTransitionSubject(uuid: $uuid, register: $register, schema: $schema, schemaSlug: 'bezwaar'),
+					subject: new AutoTransitionSubject(uuid: $uuid, register: (string)$ref->register, schema: (string)$ref->schema, schemaSlug: 'bezwaar'),
 					candidate: new AutoTransitionCandidate(
 						action: 'naar-' . $this->moves[$current],
 						from: $current,
@@ -117,13 +119,21 @@ class AutoTransitionPassTest extends TestCase {
 
 		$this->modeForTest = $mode;
 
-		$this->runner->method('fire')->willReturnCallback(
-			function (AutoTransitionDecision $decision, array $lineage, bool $queueOnly): ?ObjectEntity {
+		$this->runner->method('queueOutsideBoundary')->willReturnCallback(
+			function (AutoTransitionDecision $decision, array $lineage): void {
 				$this->fired[] = $decision->candidate->action;
 				$this->lastLineage = $lineage;
-				$this->lastQueueOnly = $queueOnly;
+				$this->lastQueueOnly = true;
+			}
+		);
 
-				if ($this->modeForTest !== 'sync' || $queueOnly === true) {
+		$this->runner->method('fire')->willReturnCallback(
+			function (AutoTransitionDecision $decision, array $lineage): ?ObjectEntity {
+				$this->fired[] = $decision->candidate->action;
+				$this->lastLineage = $lineage;
+				$this->lastQueueOnly = false;
+
+				if ($this->modeForTest !== 'sync') {
 					return null;
 				}
 
