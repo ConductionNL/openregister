@@ -89,6 +89,22 @@ final class FileInputReaderTest extends TestCase {
 	}//end testInjectsUploads()
 
 	/**
+	 * Array notation on a field the data does not hold yet starts a list.
+	 *
+	 * @return void
+	 */
+	public function testArrayNotationStartsAList(): void {
+		$tmp = tempnam(sys_get_temp_dir(), 'or-reader-');
+		file_put_contents($tmp, 'up');
+		$ok = ['name' => 'a', 'type' => 'text/plain', 'tmp_name' => $tmp, 'error' => UPLOAD_ERR_OK, 'size' => 2];
+
+		$data = $this->reader()->injectUploads(['fresh[0]' => $ok], ['title' => 't']);
+		unlink($tmp);
+
+		$this->assertSame(['title' => 't', 'fresh' => ['data:text/plain;base64,' . base64_encode('up')]], $data);
+	}//end testArrayNotationStartsAList()
+
+	/**
 	 * The file data shape carries the content's size.
 	 *
 	 * @return void
