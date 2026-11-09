@@ -1144,16 +1144,16 @@ exports[`dialog removeConnection shows the busy state 1`] = `
 `;
 
 exports[`dialog removeUser asks 1`] = `
-"<x-ncdialog name="Remove User" noclose="false" class="remove-user-dialog">
+"<x-ncdialog name="Remove User" size="small" noclose="false" class="remove-user-dialog">
   <slot-actions>
-    <x-ncbutton disabled="false">
+    <x-ncbutton>
       <slot-default> Cancel</slot-default>
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
     <x-ncbutton disabled="false" variant="error">
-      <slot-default> Remove User </slot-default>
+      <slot-default> Remove User</slot-default>
       <slot-icon>
         <x-accountminus size="20"></x-accountminus>
       </slot-icon>
@@ -1177,16 +1177,16 @@ exports[`dialog removeUser cancels 1`] = `
 `;
 
 exports[`dialog removeUser confirms 1`] = `
-"<x-ncdialog name="Remove User" noclose="false" class="remove-user-dialog">
+"<x-ncdialog name="Remove User" size="small" noclose="false" class="remove-user-dialog">
   <slot-actions>
-    <x-ncbutton disabled="false">
+    <x-ncbutton>
       <slot-default> Cancel</slot-default>
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
     <x-ncbutton disabled="false" variant="error">
-      <slot-default> Remove User </slot-default>
+      <slot-default> Remove User</slot-default>
       <slot-icon>
         <x-accountminus size="20"></x-accountminus>
       </slot-icon>
@@ -1222,7 +1222,7 @@ exports[`dialog removeUser dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog removeUser shows the busy state 1`] = `
-"<x-ncdialog name="Remove User" noclose="true" class="remove-user-dialog">
+"<x-ncdialog name="Remove User" size="small" noclose="true" class="remove-user-dialog">
   <slot-actions>
     <x-ncbutton disabled="true">
       <slot-default> Cancel</slot-default>
@@ -1231,7 +1231,7 @@ exports[`dialog removeUser shows the busy state 1`] = `
       </slot-icon>
     </x-ncbutton>
     <x-ncbutton disabled="true" variant="error">
-      <slot-default> Remove User </slot-default>
+      <slot-default> Remove User</slot-default>
       <slot-icon>
         <x-ncloadingicon size="20"></x-ncloadingicon>
       </slot-icon>
