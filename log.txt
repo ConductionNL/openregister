@@ -71,3 +71,5 @@
 2026-11-09T10:50:45Z integrator-20261109T092732-73c42b8a RED tree 1d2a66eaea prs 17 front=skip: Tests: 51021, Assertions: 167050, Errors: 6, Failures: 12, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\Service\ExampleSet\ExampleSetCollectivesStoreBehaviourTest::testNotAvailableWhenTh
 2026-11-09T10:53:45Z integrator-20261109T092732-73c42b8a GREEN tree 543fc3b727 on dev ecffe73e2f prs 16 front=skip: Tests: 50876, Assertions: 166752, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-09T10:56:32Z integrator-20261109T092732-73c42b8a MERGED-TREE 543fc3b727: 16 PRs, main now 208945fa71 = tested tree
+2026-11-09T10:56:54Z fixer-F3-20261109T104024-64386ead UNPARK #7488 4ac08c374f9c
+2026-11-09T10:56:54Z fixer-F3-20261109T104024-64386ead FIXED #7488 4ac08c374f9c merged main; initial-data.golden + groupSelect.dom.golden stub the TrashCanOutline icon ConfirmDialogFrame now pulls in; full jest green (refreshButton flaky under load, green alone, same on main); guard suites green
