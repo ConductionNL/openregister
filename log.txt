@@ -130,3 +130,4 @@
 2026-11-09T13:42:31Z integrator-20261109T130654-5892e14f RED tree 4bbb378d18 prs 50 front=red: Tests: 52393, Assertions: 170716, Errors: 15, Failures: 11, Warnings: 3, Deprecations: 4, ; first failures: OCA\OpenRegister\Tests\Unit\Service\LinkedEntityServiceBehaviourTest::testALegacyTypePassesAndAPresentIdIsNotW;OCA\OpenRegister\Tests\Unit\Service\LinkedEntityServiceBehaviourTest::testAnObjectWithoutASchemaIsNotWritten;OCA\OpenRegister\Tests\Unit\Service\LinkedEntityServiceBehaviourTest::testAnUnknownTypeIsRefusedWithEveryValid
 2026-11-09T13:42:47Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7653 f5eed6aa
 2026-11-09T13:42:56Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7660 d5e9c640
+2026-11-09T13:43:09Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7675 0c3847e7
