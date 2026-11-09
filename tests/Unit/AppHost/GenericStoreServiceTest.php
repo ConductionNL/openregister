@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
+use OCA\OpenRegister\AppHost\Service\StoreRegistryAccess;
 use OCA\OpenRegister\AppHost\Service\LocalStoreRegistry;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -90,8 +91,7 @@ class GenericStoreServiceTest extends TestCase {
 	 */
 	private function service(): GenericStoreService {
 		return new GenericStoreService(
-			clientService: $this->clientService,
-			appConfig: $this->appConfig,
+			registry: new StoreRegistryAccess($this->clientService, $this->appConfig),
 			logger: $this->logger
 		);
 
@@ -361,8 +361,7 @@ class GenericStoreServiceTest extends TestCase {
 		$container->method('get')->willReturn($objects);
 
 		return new GenericStoreService(
-			clientService: $this->clientService,
-			appConfig: $this->appConfig,
+			registry: new StoreRegistryAccess($this->clientService, $this->appConfig),
 			logger: $this->logger,
 			localRegistry: new LocalStoreRegistry(container: $container, logger: $this->logger)
 		);
