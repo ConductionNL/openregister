@@ -137,7 +137,7 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
 	public function ensureInstanceClient(array $provider, array $claims, string $redirectUri): array {
-		return $this->instanceClients->ensure(provider: $provider, claims: $claims, redirectUri: $redirectUri);
+		return $this->instanceClients->ensure(registration: new OAuth2ClientRegistration(provider: $provider, claims: $claims, redirectUri: $redirectUri));
 	}//end ensureInstanceClient()
 
 	/**
