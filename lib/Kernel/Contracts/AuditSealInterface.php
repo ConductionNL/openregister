@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Sealing the audit rows left unsealed and counting the backlog, as the seal sweep job does. Only the methods that caller calls.

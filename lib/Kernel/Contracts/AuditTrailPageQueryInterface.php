@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Db;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The audit trail page and export reads, newest first, and the largest page one call answers.

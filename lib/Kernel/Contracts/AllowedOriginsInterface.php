@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Hardening;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The administered origin allowlist of the public surface. Only the method PublicApiCorsMiddleware calls.

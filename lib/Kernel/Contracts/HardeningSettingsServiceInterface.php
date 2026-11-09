@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Hardening;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use InvalidArgumentException;
 
@@ -40,7 +40,7 @@ interface HardeningSettingsServiceInterface {
 	 * @return int The value now in force.
 	 *
 	 * @throws InvalidArgumentException When the control is not one this instance administers.
-	 * @throws HardeningFloorException When the value would weaken the control below its floor.
+	 * @throws \OCA\OpenRegister\Service\Hardening\HardeningFloorException When the value would weaken the control below its floor.
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
@@ -54,7 +54,7 @@ interface HardeningSettingsServiceInterface {
 	 * @return array<int, string> The allowlist now in force.
 	 *
 	 * @throws InvalidArgumentException When an entry is not a bare scheme, host and port.
-	 * @throws HardeningFloorException When emptying the list would cross the declared floor.
+	 * @throws \OCA\OpenRegister\Service\Hardening\HardeningFloorException When emptying the list would cross the declared floor.
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
@@ -69,7 +69,7 @@ interface HardeningSettingsServiceInterface {
 	 * @return int The floor now in force.
 	 *
 	 * @throws InvalidArgumentException When the control is not one this instance reports.
-	 * @throws HardeningFloorException When the floor would be weaker than the shipped baseline.
+	 * @throws \OCA\OpenRegister\Service\Hardening\HardeningFloorException When the floor would be weaker than the shipped baseline.
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */

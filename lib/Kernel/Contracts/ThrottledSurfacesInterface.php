@@ -31,7 +31,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Hardening;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The throttler actions this app registers attempts against, as constants.

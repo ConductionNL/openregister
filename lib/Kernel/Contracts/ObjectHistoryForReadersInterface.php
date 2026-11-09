@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Audit;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The object history page the audit trail endpoints show to readers.
@@ -46,7 +46,7 @@ interface ObjectHistoryForReadersInterface {
 	 * @return array{results: array<int, array>, total: int, page: int|null, pages: float, limit: int, offset: int|null, readEventsVisible: bool}|null
 	 *     The page, with whether read entries are shown to this caller, or null when the object is not readable for this caller.
 	 *
-	 * @throws PurposeRefusedException When the schema asks for a purpose and none usable was named.
+	 * @throws \OCA\OpenRegister\Service\Audit\PurposeRefusedException When the schema asks for a purpose and none usable was named.
 	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When the identifier is a slug two objects of the register and schema hold.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object

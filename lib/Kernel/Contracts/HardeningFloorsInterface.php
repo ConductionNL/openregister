@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Hardening;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The floors in force, the declared floors, and each control's baseline and comparator. Only the methods HardeningController calls.

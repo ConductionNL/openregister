@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Db;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The hop-row action and the per-run audit read the flow-run endpoints and the hop audit use.
@@ -49,7 +49,7 @@ interface AuditFlowAttributionInterface {
 	 * @param string  $runUuid The flow run's uuid.
 	 * @param integer $limit   Maximum rows to return.
 	 *
-	 * @return AuditTrail[] The rows this run caused.
+	 * @return \OCA\OpenRegister\Db\AuditTrail[] The rows this run caused.
 	 *
 	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
 	 */

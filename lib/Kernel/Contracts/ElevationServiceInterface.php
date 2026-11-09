@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Hardening;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The elevated administration session the hardening endpoints check.
@@ -68,7 +68,7 @@ interface ElevationServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @throws ElevationRequiredException When the session is not elevated.
+	 * @throws \OCA\OpenRegister\Service\Hardening\ElevationRequiredException When the session is not elevated.
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-administration-requires-a-fresh-expiring-authentication-req-ihc-002
 	 */

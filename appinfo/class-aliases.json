@@ -1815,6 +1815,86 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\AuditRechainInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AuditRechainInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\AuditHashServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AuditHashServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\AuditSealInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AuditSealInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\AuditQueryServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AuditQueryServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Audit\\AuditSinkInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AuditSinkInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Audit\\AuditSinkStatusInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AuditSinkStatusInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Audit\\ObjectHistoryForReadersInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectHistoryForReadersInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Db\\AuditTrailPageQueryInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AuditTrailPageQueryInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Db\\AuditFlowAttributionInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AuditFlowAttributionInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Hardening\\StatementServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\StatementServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Hardening\\HardeningFloorsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\HardeningFloorsInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Hardening\\HardeningSettingsServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\HardeningSettingsServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Hardening\\ElevationServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ElevationServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Hardening\\AllowedOriginsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AllowedOriginsInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Hardening\\HardeningReportServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\HardeningReportServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Hardening\\ThrottledSurfacesInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ThrottledSurfacesInterface",
+			"eager": false,
+			"service": true
 		}
 	}
 }
