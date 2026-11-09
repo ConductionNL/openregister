@@ -85,7 +85,6 @@ class TimelineEntriesControllerTest extends TestCase {
 		);
 
 		$this->controller = TimelineEntriesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->objects,
 			$this->entries,
