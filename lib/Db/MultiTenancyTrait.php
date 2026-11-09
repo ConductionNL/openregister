@@ -112,8 +112,15 @@ trait MultiTenancyTrait {
 		string $tableAlias = '',
 		bool $multiTenancyEnabled = true,
 	): void {
-		$options = new OrganisationFilterOptions(columnName: $columnName, allowNullOrg: $allowNullOrg, tableAlias: $tableAlias, multiTenancyEnabled: $multiTenancyEnabled);
-		$this->applyOrganisationScope(qb: $qb, options: $options);
+		$this->applyOrganisationScope(
+			qb: $qb,
+			options: new OrganisationFilterOptions(
+				columnName: $columnName,
+				allowNullOrg: $allowNullOrg,
+				tableAlias: $tableAlias,
+				multiTenancyEnabled: $multiTenancyEnabled
+			)
+		);
 	}//end applyOrganisationFilter()
 
 	/**
@@ -147,12 +154,13 @@ trait MultiTenancyTrait {
 	 * @return void
 	 */
 	private function applyScopedFilter(IQueryBuilder $qb, array $scope): void {
+		$user = $scope['user'];
 		if (empty($scope['activeOrgUuids']) === true) {
-			$this->applyNoActiveOrgFilter(qb: $qb, user: $scope['user'], allowNullOrg: $scope['allowNullOrg'], organisationColumn: $scope['organisationColumn']);
+			$this->applyNoActiveOrgFilter(qb: $qb, user: $user, allowNullOrg: $scope['allowNullOrg'], organisationColumn: $scope['organisationColumn']);
 			return;
 		}
 
-		$this->applyActiveOrgFilter(qb: $qb, user: $scope['user'], scope: $scope);
+		$this->applyActiveOrgFilter(qb: $qb, user: $user, scope: $scope);
 	}//end applyScopedFilter()
 
 	/**
