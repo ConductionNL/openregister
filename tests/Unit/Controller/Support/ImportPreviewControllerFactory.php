@@ -18,7 +18,7 @@ final class ImportPreviewControllerFactory {
 	/**
 	 * The constructor arguments of ImportPreviewController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param ImportPreviewService $service Constructor argument.
 	 * @param ImportPreviewMapper $previewMapper Constructor argument.
@@ -44,7 +44,6 @@ final class ImportPreviewControllerFactory {
 		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ImportPreviewControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\ImportPreviewMappers(
