@@ -118,7 +118,6 @@ class ObjectActionsControllerA24GoldenTest extends TestCase {
 		$this->bulk = $this->createMock(ObjectActionBulk::class);
 
 		return ObjectActionsControllerFactory::create(
-			'openregister',
 			$request,
 			$this->objects,
 			$this->macros,

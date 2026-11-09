@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectActionsControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectActionsSelection;
 use OCA\OpenRegister\Db\BulkJob;
@@ -138,16 +139,14 @@ class ObjectActionsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                  $appName     The app name.
-	 * @param IRequest                $request     The request.
+	 * @param IRequest                        $request  The request.
 	 * @param ObjectActionsControllerServices $services The object actions controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectActionsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->objects = $services->catalogue->objects;
 		$this->macros = $services->catalogue->macros;
 		$this->definitions = $services->catalogue->definitions;
