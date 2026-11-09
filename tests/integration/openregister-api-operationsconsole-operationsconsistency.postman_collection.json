@@ -1,0 +1,4908 @@
+{
+	"info": {
+		"_postman_id": "or-t28-operations-audit-notifications-2026-11-09",
+		"name": "OpenRegister operations, import previews, audit, notifications, search trails and deleted objects",
+		"description": "API coverage for the operations console (console, jobs, rule runs, runs, run-now, schedule, alerts), operations consistency (check, repair plan, repair), operations maintenance (maintenance mode, support bundle, facts), import previews (policies, list, create, show, rows, commit), audit trails (v1 and v2 query/export), the notification surfaces (history, subscriptions, preferences, templates, broadcasts, group preferences, delivery window), search trails and deleted objects.\n\nEach route is asserted on its success path, its unknown-id and invalid-input answers where the controller validates, and its access answer: admin-only routes are refused to a non-admin by the framework, and every refused write is followed by a re-read proving nothing changed.\n\nSELF-SEEDING. The 00 setup folder creates its own non-admin user (OCS provisioning API), register, schema and object, keyed on a random run id; 99 teardown deletes them. Settings a request changes (job schedule, alert threshold, maintenance mode, notification preferences) are restored within the same folder. It depends on no other collection.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin"
+		},
+		{
+			"key": "run",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "00 setup",
+			"item": [
+				{
+					"name": "create non-admin user (no rights)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"userid\": \"t28u{{run}}\", \"password\": \"T28-Pw-{{run}}-x9!Qz\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('user created', () => pm.response.to.have.status(200));",
+									"pm.test('OCS answers ok', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.be.oneOf([100, 200]));"
+								]
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.collectionVariables.set('nonadmin_user', 't28u' + pm.collectionVariables.get('run'));",
+									"pm.collectionVariables.set('nonadmin_password', 'T28-Pw-' + pm.collectionVariables.get('run') + '-x9!Qz');"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/registers"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\": \"t28-ops-{{run}}\", \"slug\": \"t28-ops-{{run}}\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+									"const body = pm.response.json();",
+									"pm.test('register carries the slug sent', () => pm.expect(body.slug).to.eql('t28-ops-' + pm.collectionVariables.get('run')));",
+									"pm.collectionVariables.set('register_id', String(body.id));",
+									"pm.collectionVariables.set('register_slug', body.slug);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create schema",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/schemas"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\": \"t28-ops-{{run}}\", \"slug\": \"t28-ops-{{run}}\", \"properties\": {\"title\": {\"type\": \"string\"}}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+									"const body = pm.response.json();",
+									"pm.test('schema carries the slug sent', () => pm.expect(body.slug).to.eql('t28-ops-' + pm.collectionVariables.get('run')));",
+									"pm.collectionVariables.set('schema_id', String(body.id));",
+									"pm.collectionVariables.set('schema_slug', body.slug);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "link schema to register",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\": \"t28-ops-{{run}}\", \"slug\": \"t28-ops-{{run}}\", \"schemas\": [\"{{schema_id}}\"]}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register updated', () => pm.response.to.have.status(200));",
+									"pm.test('register lists the schema', () => pm.expect((pm.response.json().schemas || []).map(s => String((s && s.id) || s))).to.include(pm.collectionVariables.get('schema_id')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create object",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\": \"t28 object {{run}}\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('object created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+									"const body = pm.response.json();",
+									"pm.test('object carries the title sent', () => pm.expect(body.title).to.eql('t28 object ' + pm.collectionVariables.get('run')));",
+									"pm.collectionVariables.set('object_id', (body['@self'] && body['@self'].id) || body.uuid || body.id);"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "10 operations-console",
+			"item": [
+				{
+					"name": "GET console panes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/console?hours=24"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the window echoes the hours asked', () => pm.expect(body.window.hours).to.eql(24));",
+									"pm.test('panes carry the jobs pane', () => pm.expect(JSON.stringify(body.panes)).to.include('\"id\":\"jobs\"'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET console as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/console"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET jobs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/jobs?limit=5"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('results and registered inventory', () => { pm.expect(body.results).to.be.an('array'); pm.expect(body.registered).to.be.an('array').that.is.not.empty; });",
+									"pm.test('limit honoured', () => pm.expect(body.results.length).to.be.at.most(5));",
+									"pm.collectionVariables.set('job_class', String(body.registered[0].class));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET jobs filtered to a state nothing holds",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/jobs?state=t28-no-such-state"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('an unknown state answers an empty list, not everything', () => pm.expect(body.results).to.eql([]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET jobs as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/jobs"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET rule-runs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/rule-runs?hours=24&limit=5"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('results and holdingAnError lists', () => { pm.expect(body.results).to.be.an('array'); pm.expect(body.holdingAnError).to.be.an('array'); });",
+									"pm.test('limit honoured', () => pm.expect(body.results.length).to.be.at.most(5));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET rule-runs as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/rule-runs"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET runs filtered",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/runs?outcome=t28-none&limit=3"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('filters echo what was asked', () => { pm.expect(body.filters.outcome).to.eql('t28-none'); pm.expect(body.filters.windowHours).to.eql(null); });",
+									"pm.test('an outcome nothing has matches nothing', () => { pm.expect(body.results).to.eql([]); pm.expect(body.total).to.eql(0); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET runs as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/runs"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST run-now without a job is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/run-now"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('error no-job', () => pm.expect(body.error).to.eql('no-job'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST run-now with an unknown job is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/run-now"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"job\": \"OCA\\\\OpenRegister\\\\BackgroundJob\\\\T28NoSuchJob\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 422', () => pm.response.to.have.status(422));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('refused as unknown-job', () => { pm.expect(body.error).to.eql('refused'); pm.expect(body.reason).to.eql('unknown-job'); });",
+									"pm.test('the message names the job', () => pm.expect(body.message).to.include('T28NoSuchJob'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST run-now as non-admin is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/run-now"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"job\": \"{{job_class}}\"}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "runs after the refused starts: none recorded for the unknown job",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/runs?job=OCA%5COpenRegister%5CBackgroundJob%5CT28NoSuchJob"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('a refused start records no run', () => pm.expect(body.total).to.eql(0));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET schedule without a job is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('error no-job', () => pm.expect(body.error).to.eql('no-job'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET schedule of a registered job",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule?job={{job_class}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('describes the job asked', () => pm.expect(body.job).to.eql(pm.collectionVariables.get('job_class')));",
+									"pm.test('interval is a number of at least 60', () => pm.expect(body.intervalSeconds).to.be.a('number').and.at.least(60));",
+									"pm.collectionVariables.set('job_interval', String(body.intervalSeconds));",
+									"pm.collectionVariables.set('job_enabled', String(body.enabled));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET schedule as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule?job={{job_class}}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PUT schedule without a job is refused",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"intervalSeconds\": 7200}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('error no-job', () => pm.expect(body.error).to.eql('no-job'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PUT schedule as non-admin is refused",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"job\": \"{{job_class}}\", \"intervalSeconds\": 3601}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "schedule unchanged after the refused PUT",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule?job={{job_class}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('interval still what it was', () => pm.expect(String(body.intervalSeconds)).to.eql(pm.collectionVariables.get('job_interval')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PUT schedule changes the interval",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"job\": \"{{job_class}}\", \"intervalSeconds\": 7260}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the new interval is in force', () => pm.expect(body.intervalSeconds).to.eql(7260));",
+									"pm.test('describes the job asked', () => pm.expect(body.job).to.eql(pm.collectionVariables.get('job_class')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PUT schedule restores the interval",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"job\": \"{{job_class}}\", \"intervalSeconds\": {{job_interval}}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the original interval is back', () => pm.expect(String(body.intervalSeconds)).to.eql(pm.collectionVariables.get('job_interval')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET alerts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('settings and alerts', () => { pm.expect(body.settings.threshold).to.be.a('number'); pm.expect(body.alerts).to.be.an('array'); });",
+									"pm.collectionVariables.set('alert_threshold', String(body.settings.threshold));",
+									"pm.collectionVariables.set('alert_period', String(body.settings.periodMinutes));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET alerts as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PUT alerts as non-admin is refused",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"threshold\": 97}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "alerts unchanged after the refused PUT",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('threshold still what it was', () => pm.expect(String(body.settings.threshold)).to.eql(pm.collectionVariables.get('alert_threshold')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PUT alerts changes the threshold",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"threshold\": 7}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the new threshold is in force', () => pm.expect(body.threshold).to.eql(7));",
+									"pm.test('periodMinutes is reported', () => pm.expect(body.periodMinutes).to.be.a('number'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PUT alerts restores the settings",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"threshold\": {{alert_threshold}}, \"periodMinutes\": {{alert_period}}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the original threshold is back', () => pm.expect(String(body.threshold)).to.eql(pm.collectionVariables.get('alert_threshold')));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "11 operations-consistency",
+			"item": [
+				{
+					"name": "GET consistency",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/consistency"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('checked counts the findings', () => { pm.expect(body.findings).to.be.an('array'); pm.expect(body.checked).to.be.a('number').and.at.least(1); });",
+									"pm.test('inconsistent never exceeds checked', () => pm.expect(body.inconsistent).to.be.at.most(body.checked));",
+									"pm.collectionVariables.set('check_slug', String(body.findings[0].slug));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET consistency as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/consistency"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET repair-plan without a check is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('error no-check', () => pm.expect(body.error).to.eql('no-check'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET repair-plan for an unknown check is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan?check=t28-no-such-check"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 422', () => pm.response.to.have.status(422));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('refused as unknown-check', () => { pm.expect(body.error).to.eql('refused'); pm.expect(body.reason).to.eql('unknown-check'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET repair-plan for a real check",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan?check={{check_slug}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('plan names the check', () => pm.expect(body.slug).to.eql(pm.collectionVariables.get('check_slug')));",
+									"pm.test('count and objects agree in type', () => { pm.expect(body.count).to.be.a('number'); pm.expect(body.objects).to.be.an('array'); });",
+									"pm.collectionVariables.set('check_count', String(body.count));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET repair-plan as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan?check={{check_slug}}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST repair without a check is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('error no-check', () => pm.expect(body.error).to.eql('no-check'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST repair for an unknown check is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"check\": \"t28-no-such-check\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 422', () => pm.response.to.have.status(422));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('refused as unknown-check', () => pm.expect(body.reason).to.eql('unknown-check'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST repair as non-admin is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"check\": \"{{check_slug}}\"}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "repair-plan unchanged after the refused repair",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan?check={{check_slug}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the finding count is what it was', () => pm.expect(String(body.count)).to.eql(pm.collectionVariables.get('check_count')));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "13 import-previews",
+			"item": [
+				{
+					"name": "GET policies",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/policies"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('four policies, upsert among them', () => { pm.expect(body.results).to.have.lengthOf(4); pm.expect(body.results.map(p => p.id)).to.include('upsert'); });",
+									"pm.test('the default is one of the policies', () => pm.expect(body.results.map(p => p.id)).to.include(body.default));",
+									"pm.test('csv is a format', () => pm.expect(body.formats).to.include('csv'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET policies as non-admin (any signed-in user)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/policies"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the same four policies', () => pm.expect(body.results).to.have.lengthOf(4));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET policies anonymously is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/policies"
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('anonymous is refused', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));",
+									"pm.test('refusal body names it', () => pm.expect(pm.response.text()).to.match(/Authentication required|logged in|message/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST import-preview without a file",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data; boundary=----t28boundary"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "------t28boundary\r\nContent-Disposition: form-data; name=\"register\"\r\n\r\n{{register_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"schema\"\r\n\r\n{{schema_id}}\r\n------t28boundary--\r\n"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('error says no file', () => pm.expect(body.error).to.eql('No file uploaded'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST import-preview to an unknown register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data; boundary=----t28boundary"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "------t28boundary\r\nContent-Disposition: form-data; name=\"register\"\r\n\r\n999999999\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"schema\"\r\n\r\n{{schema_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"format\"\r\n\r\ncsv\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"t28.csv\"\r\nContent-Type: text/csv\r\n\r\ntitle\r\nt28 import one\r\nt28 import two\r\n\r\n------t28boundary--\r\n"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('error names the register', () => pm.expect(body.error).to.include('999999999'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST import-preview without a schema",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data; boundary=----t28boundary"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "------t28boundary\r\nContent-Disposition: form-data; name=\"register\"\r\n\r\n{{register_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"format\"\r\n\r\ncsv\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"t28.csv\"\r\nContent-Type: text/csv\r\n\r\ntitle\r\nt28 import one\r\nt28 import two\r\n\r\n------t28boundary--\r\n"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('error says a schema is required', () => pm.expect(body.error).to.include('schema is required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST import-preview as non-admin without manage rights",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data; boundary=----t28boundary"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "------t28boundary\r\nContent-Disposition: form-data; name=\"register\"\r\n\r\n{{register_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"schema\"\r\n\r\n{{schema_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"format\"\r\n\r\ncsv\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"t28.csv\"\r\nContent-Type: text/csv\r\n\r\ntitle\r\nt28 import one\r\nt28 import two\r\n\r\n------t28boundary--\r\n"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('error says no permission', () => pm.expect(body.error).to.include('permission'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "non-admin list holds no preview after the refusal",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the refused user owns no previews', () => pm.expect(body.results).to.eql([]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST import-preview (csv, create-only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data; boundary=----t28boundary"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "------t28boundary\r\nContent-Disposition: form-data; name=\"register\"\r\n\r\n{{register_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"schema\"\r\n\r\n{{schema_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"format\"\r\n\r\ncsv\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"policy\"\r\n\r\ncreate-only\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"t28.csv\"\r\nContent-Type: text/csv\r\n\r\ntitle\r\nt28 import one\r\nt28 import two\r\n\r\n------t28boundary--\r\n"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 201', () => pm.response.to.have.status(201));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('preview is on our register and schema', () => { pm.expect(String(body.registerId)).to.eql(pm.collectionVariables.get('register_id')); pm.expect(String(body.schemaId)).to.eql(pm.collectionVariables.get('schema_id')); });",
+									"pm.test('policy and source as sent', () => { pm.expect(body.policy).to.eql('create-only'); pm.expect(body.sourceName).to.eql('t28.csv'); pm.expect(body.sourceFormat).to.eql('csv'); });",
+									"pm.test('two rows counted', () => pm.expect(body.total).to.eql(2));",
+									"pm.test('created by the admin', () => pm.expect(body.createdBy).to.eql(pm.variables.get('admin_user')));",
+									"pm.collectionVariables.set('preview_id', String(body.id));",
+									"pm.collectionVariables.set('preview_hash', String(body.sourceHash));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET import-previews lists it",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews?limit=50"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('our preview is listed', () => pm.expect(body.results.map(p => String(p.id))).to.include(pm.collectionVariables.get('preview_id')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET import-previews filtered to a state nothing holds",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews?state=t28-none"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('nothing matches', () => pm.expect(body.results).to.eql([]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET import-previews as non-admin does not list it",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('another user\\'s preview is not listed', () => pm.expect(body.results.map(p => String(p.id))).to.not.include(pm.collectionVariables.get('preview_id')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET import-preview",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('answers the preview asked', () => pm.expect(String(body.id)).to.eql(pm.collectionVariables.get('preview_id')));",
+									"pm.test('policy as sent', () => pm.expect(body.policy).to.eql('create-only'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET import-preview unknown id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/999999999"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('not found', () => pm.expect(body.error).to.eql('Import preview not found'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET import-preview as non-owner non-admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('indistinguishable from absent', () => pm.expect(body.error).to.eql('Import preview not found'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET import-preview rows",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/rows?limit=10"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('two rows in total', () => pm.expect(body.total).to.eql(2));",
+									"pm.test('rows listed', () => pm.expect(body.results).to.be.an('array').with.lengthOf(2));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET import-preview rows limited",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/rows?limit=1"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the page honours the limit, the total does not', () => { pm.expect(body.results).to.have.lengthOf(1); pm.expect(body.total).to.eql(2); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET import-preview rows unknown id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/999999999/rows"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('not found', () => pm.expect(body.error).to.eql('Import preview not found'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET import-preview rows as non-owner",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/rows"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('not found for a stranger', () => pm.expect(body.error).to.eql('Import preview not found'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST commit unknown id",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/999999999/commit"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('not found', () => pm.expect(body.error).to.eql('Import preview not found'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST commit as non-owner",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/commit"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('not found for a stranger', () => pm.expect(body.error).to.eql('Import preview not found'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "preview still uncommitted after the refused commit",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('nothing applied', () => pm.expect(body.state).to.not.eql('committed'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST commit with a stale source hash is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/commit"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"sourceHash\": \"t28-not-the-hash\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('a changed source is refused, not applied', () => pm.expect(pm.response.code).to.be.oneOf([400, 409]));",
+									"pm.test('with an error message', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST commit",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/commit"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"sourceHash\": \"{{preview_hash}}\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the preview is committed', () => pm.expect(body.state).to.eql('committed'));",
+									"pm.test('two rows applied', () => pm.expect(body.applied).to.eql(2));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "the two imported objects exist",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_search=t28%20import"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('both rows became objects', () => pm.expect((body.results || []).filter(o => String(o.title).startsWith('t28 import')).length).to.eql(2));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "14 audit-trails",
+			"item": [
+				{
+					"name": "GET audit-trails for our register (find an entry)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails?register={{register_id}}&limit=50"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('our object left at least one entry', () => pm.expect(body.results.length).to.be.at.least(1));",
+									"pm.test('every entry is on our register', () => body.results.forEach(e => pm.expect(String(e.register)).to.eql(pm.collectionVariables.get('register_id'))));",
+									"pm.collectionVariables.set('audit_id', String(body.results[0].id));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET readable as admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/readable?limit=5"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('a page of results', () => pm.expect(body.results).to.be.an('array'));",
+									"pm.test('limit honoured', () => pm.expect(body.results.length).to.be.at.most(5));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET readable as non-admin sees none of our register",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/readable?limit=100"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('a page of results', () => pm.expect(body.results).to.be.an('array'));",
+									"pm.test('no entry about an object the user may not read', () => pm.expect(body.results.map(e => e.objectUuid)).to.not.include(pm.collectionVariables.get('object_id')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET readable anonymously is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/readable"
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('anonymous is refused', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));",
+									"pm.test('refusal body names it', () => pm.expect(pm.response.text()).to.match(/Authentication required|logged in|message/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET statistics for our register",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/statistics?register={{register_id}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('at least one create counted', () => pm.expect(body.create).to.be.at.least(1));",
+									"pm.test('total covers the actions', () => pm.expect(body.total).to.be.at.least(body.create + body.update + body.delete));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET statistics as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/statistics"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET export json for our register",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/export?format=json&register={{register_id}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('success with content', () => { pm.expect(body.success).to.eql(true); pm.expect(body.data.size).to.be.above(0); });",
+									"pm.test('content is json', () => pm.expect(body.data.contentType).to.include('json'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET export with an unknown format",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/export?format=t28nope"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the format is refused', () => pm.expect(body.error).to.be.a('string').and.include('t28nope'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET export as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/export"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET verify",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/verify"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('verification answers a result object', () => pm.expect(body).to.be.an('object').that.is.not.empty);",
+									"pm.test('no error key on success', () => pm.expect(body).to.not.have.property('error'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET verify as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/verify"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET integrity",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/integrity"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('sealed + unsealed = total', () => pm.expect(body.sealed + body.unsealed).to.eql(body.total));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET integrity as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/integrity"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET processing-activities",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/processing-activities"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('answers a list or map, not an error', () => { pm.expect(body).to.not.have.property('error'); pm.expect(typeof body).to.eql('object'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET processing-activities as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/processing-activities"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET subject-lookup without identifier",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/subject-lookup"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('identifier is required', () => pm.expect(body.error).to.eql('identifier parameter is required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET subject-lookup for an identifier nobody holds",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/subject-lookup?identifier=t28-nobody-{{run}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('no trail for an unknown subject', () => pm.expect(Object.keys(body)).to.have.lengthOf(0));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET subject-lookup as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/subject-lookup?identifier=x"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET audit-trail",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('answers the entry asked', () => pm.expect(String(body.id)).to.eql(pm.collectionVariables.get('audit_id')));",
+									"pm.test('on our register', () => pm.expect(String(body.register)).to.eql(pm.collectionVariables.get('register_id')));",
+									"pm.collectionVariables.set('audit_action', String(body.action));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET audit-trail unknown id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/999999999"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('not found', () => pm.expect(body.error).to.eql('Audit trail not found'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET audit-trail as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PUT audit-trail is not allowed",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"action\": \"t28-tamper\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 405', () => pm.response.to.have.status(405));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('entries cannot be modified', () => pm.expect(body.error).to.eql('Audit trail entries cannot be modified'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PUT audit-trail as non-admin is not allowed either",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"action\": \"t28-tamper\"}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 405', () => pm.response.to.have.status(405));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('entries cannot be modified', () => pm.expect(body.error).to.eql('Audit trail entries cannot be modified'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE audit-trail is not allowed",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 405', () => pm.response.to.have.status(405));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('entries cannot be deleted', () => pm.expect(body.error).to.eql('Audit trail entries cannot be deleted'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE audit-trail as non-admin is not allowed",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 405', () => pm.response.to.have.status(405));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('entries cannot be deleted', () => pm.expect(body.error).to.eql('Audit trail entries cannot be deleted'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE audit-trails (multiple) is not allowed",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"ids\": [\"{{audit_id}}\"]}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 405', () => pm.response.to.have.status(405));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('entries cannot be deleted', () => pm.expect(body.error).to.eql('Audit trail entries cannot be deleted'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE audit-trails (multiple) as non-admin is not allowed",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"ids\": [\"{{audit_id}}\"]}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 405', () => pm.response.to.have.status(405));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('entries cannot be deleted', () => pm.expect(body.error).to.eql('Audit trail entries cannot be deleted'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE clear-all as non-admin is refused",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/clear-all"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "the entry survives every refused write",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('same entry, same action', () => { pm.expect(String(body.id)).to.eql(pm.collectionVariables.get('audit_id')); pm.expect(String(body.action)).to.eql(pm.collectionVariables.get('audit_action')); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE clear-all (expired only)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/clear-all"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('success', () => pm.expect(body.success).to.eql(true));",
+									"pm.test('a message says what happened', () => pm.expect(body.message).to.match(/cleared|No expired/));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "a fresh entry is not expired, so clear-all kept it",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('our entry is still there', () => pm.expect(String(body.id)).to.eql(pm.collectionVariables.get('audit_id')));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "15 audit-query",
+			"item": [
+				{
+					"name": "GET v2 audit",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/v2/audit?limit=5&offset=0"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('entries with paging echoed', () => { pm.expect(body.entries).to.be.an('array'); pm.expect(body.limit).to.eql(5); pm.expect(body.offset).to.eql(0); });",
+									"pm.test('total is a count', () => pm.expect(body.total).to.be.a('number').and.at.least(body.entries.length));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET v2 audit as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/v2/audit"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET v2 audit export json",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/v2/audit/export?format=json&limit=3"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('entries with paging echoed', () => { pm.expect(body.entries).to.be.an('array'); pm.expect(body.limit).to.eql(3); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET v2 audit export csv",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/v2/audit/export?format=csv&limit=3"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"pm.test('a csv download', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('csv'));",
+									"pm.test('with a header row', () => pm.expect(pm.response.text().split('\\n')[0]).to.include(','));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET v2 audit export as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/v2/audit/export?format=json"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "12 operations-maintenance",
+			"item": [
+				{
+					"name": "GET maintenance state (open)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the instance is open', () => pm.expect(body.holds).to.eql(false));",
+									"pm.test('no actor while open', () => pm.expect(body.actor).to.eql(null));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET maintenance as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST maintenance as non-admin is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"message\": \"t28 not allowed\"}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "state still open after the refused enter",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the instance is still open', () => pm.expect(body.holds).to.eql(false));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST maintenance enters the mode",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"message\": \"t28 window {{run}}\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the mode holds', () => pm.expect(body.holds).to.eql(true));",
+									"pm.test('the message is the one sent', () => pm.expect(body.message).to.eql('t28 window ' + pm.collectionVariables.get('run')));",
+									"pm.test('the actor is the admin', () => pm.expect(body.actor).to.eql(pm.variables.get('admin_user')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "a register read is held while in maintenance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 503', () => pm.response.to.have.status(503));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the refusal names maintenance mode', () => pm.expect(body.error).to.eql('maintenance-mode'));",
+									"pm.test('and carries the operator message', () => pm.expect(body.message).to.eql('t28 window ' + pm.collectionVariables.get('run')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE maintenance as non-admin is refused",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE maintenance leaves the mode",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the mode no longer holds', () => pm.expect(body.holds).to.eql(false));",
+									"pm.test('since and actor cleared', () => { pm.expect(body.since).to.eql(null); pm.expect(body.actor).to.eql(null); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "the register is readable again",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the register read answers our register', () => pm.expect(String(body.id)).to.eql(pm.collectionVariables.get('register_id')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET support-bundle",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/support-bundle"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the bundle carries the instance facts', () => pm.expect(body.instance.app).to.eql('openregister'));",
+									"pm.test('and a consistency section and recent failures', () => { pm.expect(body).to.have.property('consistency'); pm.expect(body).to.have.property('recentFailures'); });",
+									"pm.test('the configuration never carries the admin password', () => pm.expect(JSON.stringify(body.configuration)).to.not.include(pm.variables.get('admin_password') + '\"'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET support-bundle as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/support-bundle"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET facts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/facts"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('app and licence', () => { pm.expect(body.app).to.eql('openregister'); pm.expect(body.licence).to.eql('EUPL-1.2'); });",
+									"pm.test('php version is reported', () => pm.expect(body.php).to.match(/^\\d+\\.\\d+/));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET facts as non-admin is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/facts"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{nonadmin_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{nonadmin_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"const body = pm.response.json();",
+									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "99 teardown",
+			"item": [
+				{
+					"name": "leave maintenance mode (safety)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the instance is open', () => pm.expect(body.holds).to.eql(false));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "delete register",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register deleted (or refused because it still holds objects)', () => pm.expect(pm.response.code).to.be.oneOf([200, 204, 409]));",
+									"pm.test('answer is not a server error', () => pm.expect(pm.response.code).to.be.below(500));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "delete schema",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema deleted (or refused while in use)', () => pm.expect(pm.response.code).to.be.oneOf([200, 204, 409]));",
+									"pm.test('answer is not a server error', () => pm.expect(pm.response.code).to.be.below(500));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "delete non-admin user",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{nonadmin_user}}?format=json"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('user deleted', () => pm.response.to.have.status(200));",
+									"pm.test('OCS answers ok', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.be.oneOf([100, 200]));"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
