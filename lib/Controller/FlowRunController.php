@@ -32,14 +32,20 @@ use DateTime;
 use DateTimeZone;
 use OCA\OpenRegister\Controller\Support\FlowRunControllerServices;
 use OCA\OpenRegister\Db\AuditFlowAttributionInterface;
+use OCA\OpenRegister\Db\FlowActivityWindow;
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FlowRunFilter;
+use OCA\OpenRegister\Db\FlowRunListing;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\FlowRunSubjectScope;
+use OCA\OpenRegister\Db\FlowRunViewer;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
 use OCA\OpenRegister\Service\Flow\FlowCaller;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
+use OCA\OpenRegister\Service\Flow\FlowRunSignalInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunSignals;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -147,9 +153,9 @@ class FlowRunController extends Controller {
 	/**
 	 * The guarded signal seam the
 	 *
-	 * @var ?FlowRunSignalService
+	 * @var ?FlowRunSignalInterface
 	 */
-	private readonly ?FlowRunSignalService $signalService;
+	private readonly ?FlowRunSignalInterface $signalService;
 
 	/**
 	 * Constructor.
@@ -221,15 +227,15 @@ class FlowRunController extends Controller {
 			return $this->badSince();
 		}
 
-		$runs = $this->mapper->findAllRuns(
+		$filter = new FlowRunFilter(
 			flowId: $this->stringOrNull(value: $flowId),
 			status: $this->stringOrNull(value: $status),
-			limit: $limit,
-			offset: $offset,
-			requesterUid: $scope['requesterUid'],
-			ownedFlowIds: $scope['ownedFlowIds'],
 			since: $since,
 			flowIds: $this->flowIdsParam()
+		);
+		$runs = $this->mapper->findAllRuns(
+			listing: new FlowRunListing(filter: $filter, limit: $limit, offset: $offset),
+			viewer: $scope
 		);
 
 		return new JSONResponse(
@@ -252,11 +258,11 @@ class FlowRunController extends Controller {
 	 * widest possible read, so it answers null instead: a non-admin with no
 	 * identity owns no runs.
 	 *
-	 * @return array|null `{requesterUid, ownedFlowIds}`, or null when the read must come back empty.
+	 * @return FlowRunViewer|null The caller and the flows they own, or null when the read must come back empty.
 	 */
-	private function historyScope(): array|null {
+	private function historyScope(): FlowRunViewer|null {
 		if ($this->isAdmin() === true) {
-			return ['requesterUid' => null, 'ownedFlowIds' => []];
+			return new FlowRunViewer(requesterUid: null, ownedFlowIds: []);
 		}
 
 		$requesterUid = $this->callerUid();
@@ -265,7 +271,7 @@ class FlowRunController extends Controller {
 			return null;
 		}
 
-		return ['requesterUid' => $requesterUid, 'ownedFlowIds' => $ownedFlowIds];
+		return new FlowRunViewer(requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
 	}//end historyScope()
 
 	/**
@@ -321,10 +327,8 @@ class FlowRunController extends Controller {
 		}
 
 		$summary = $this->mapper->summarizeByFlow(
-			flowIds: $flowIds,
-			since: $since,
-			requesterUid: $scope['requesterUid'],
-			ownedFlowIds: $scope['ownedFlowIds']
+			window: new FlowActivityWindow(flowIds: $flowIds, since: $since),
+			viewer: $scope
 		);
 
 		return new JSONResponse(['results' => (object) $summary, 'since' => $sinceText]);
@@ -333,11 +337,11 @@ class FlowRunController extends Controller {
 	/**
 	 * Whom the summary is scoped to: nobody for an administrator, else the caller and the flows they own.
 	 *
-	 * @return array|null `{requesterUid, ownedFlowIds}`, or null when there is no session.
+	 * @return FlowRunViewer|null The caller and the flows they own, or null when there is no session.
 	 */
-	private function summaryScope(): array|null {
+	private function summaryScope(): FlowRunViewer|null {
 		if ($this->isAdmin() === true) {
-			return ['requesterUid' => null, 'ownedFlowIds' => []];
+			return new FlowRunViewer(requesterUid: null, ownedFlowIds: []);
 		}
 
 		$requesterUid = $this->callerUid();
@@ -345,7 +349,7 @@ class FlowRunController extends Controller {
 			return null;
 		}
 
-		return ['requesterUid' => $requesterUid, 'ownedFlowIds' => $this->flowIdsOwnedByCaller()];
+		return new FlowRunViewer(requesterUid: $requesterUid, ownedFlowIds: $this->flowIdsOwnedByCaller());
 	}//end summaryScope()
 
 	/**
@@ -498,7 +502,10 @@ class FlowRunController extends Controller {
 			return new JSONResponse(['results' => [], 'total' => 0, 'limit' => $limit]);
 		}
 
-		$runs = $this->mapper->findActive(organisation: $organisation, limit: $limit, subject: $subject);
+		$runs = $this->mapper->findActive(
+			scope: new FlowRunSubjectScope(organisation: $organisation, subject: $subject),
+			limit: $limit
+		);
 		$total = $this->mapper->countActive(organisation: $organisation, subject: $subject);
 
 		return $this->page(runs: $runs, total: $total, limit: $limit);
@@ -550,7 +557,10 @@ class FlowRunController extends Controller {
 			return new JSONResponse(['results' => [], 'total' => 0, 'limit' => $limit]);
 		}
 
-		$runs = $this->mapper->findCompletedForSubject(organisation: $organisation, subject: $subject, limit: $limit);
+		$runs = $this->mapper->findCompletedForSubject(
+			scope: new FlowRunSubjectScope(organisation: $organisation, subject: $subject),
+			limit: $limit
+		);
 		$total = $this->mapper->countCompletedForSubject(organisation: $organisation, subject: $subject);
 
 		return $this->page(runs: $runs, total: $total, limit: $limit);
@@ -849,7 +859,7 @@ class FlowRunController extends Controller {
 	 */
 	private function visibleRun(string $uuid): ?FlowRun {
 		if ($this->isAdmin() === true) {
-			return $this->mapper->findByUuidVisibleTo(uuid: $uuid, requesterUid: null);
+			return $this->mapper->findByUuidVisibleTo(uuid: $uuid, viewer: new FlowRunViewer(requesterUid: null, ownedFlowIds: []));
 		}
 
 		$uid = $this->callerUid();
@@ -859,8 +869,7 @@ class FlowRunController extends Controller {
 
 		return $this->mapper->findByUuidVisibleTo(
 			uuid: $uuid,
-			requesterUid: $uid,
-			ownedFlowIds: $this->flowIdsOwnedByCaller()
+			viewer: new FlowRunViewer(requesterUid: $uid, ownedFlowIds: $this->flowIdsOwnedByCaller())
 		);
 	}//end visibleRun()
 
@@ -1095,16 +1104,16 @@ class FlowRunController extends Controller {
 	 * cannot log still reaches the caller as the 403 above, so nothing is
 	 * silent; the container-built instance audits too.
 	 *
-	 * @return FlowRunSignalService The seam.
+	 * @return FlowRunSignalInterface The seam.
 	 *
 	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
-	private function signals(): FlowRunSignalService {
-		return ($this->signalService ?? new FlowRunSignalService(
+	private function signals(): FlowRunSignalInterface {
+		return ($this->signalService ?? (new FlowRunSignals(
 			mapper: $this->mapper,
 			runner: $this->runner,
 			groupManager: $this->groupManager
-		));
+		))->seam());
 	}//end signals()
 
 	/**

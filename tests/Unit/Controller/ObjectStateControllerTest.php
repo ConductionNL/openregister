@@ -83,7 +83,7 @@ final class ObjectStateControllerTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		return new ObjectStateController('openregister', $this->request, $this->handler, $session);
+		return new ObjectStateController($this->request, $this->handler, $session);
 	}//end controller()
 
 	/**

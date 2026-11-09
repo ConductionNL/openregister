@@ -459,10 +459,8 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 		$this->appendAudit(
 			task: $persisted,
 			action: 'create',
-			stateAfter: (string)$persisted->getState(),
 			actor: self::ACTOR,
-			reason: sprintf('Migrated from approval step %d.', (int)$step['id']),
-			created: $persisted->getCreated()
+			reason: sprintf('Migrated from approval step %d.', (int)$step['id'])
 		);
 
 		if ($persisted->isInTerminalState() === true) {
@@ -474,10 +472,8 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 			$this->appendAudit(
 				task: $persisted,
 				action: 'complete',
-				stateAfter: (string)$persisted->getState(),
 				actor: $decisionActor,
-				reason: trim(sprintf('[migrated decision] %s', (string)($step['comment'] ?? ''))),
-				created: $this->parseDbDate(value: ($step['decided_at'] ?? null))
+				reason: trim(sprintf('[migrated decision] %s', (string)($step['comment'] ?? '')))
 			);
 		}
 
@@ -701,24 +697,32 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	}//end indexCandidates()
 
 	/**
-	 * Append one audit entry.
+	 * Append one audit entry on a migrated task.
 	 *
-	 * @param Task $task The task audited.
-	 * @param string $action The audited action.
-	 * @param string $stateAfter The state the entry records.
+	 * The entry records the task's state after migration, and the moment
+	 * that action originally happened: the task's creation time for
+	 * `create`, its decision time (the migrated `completedAt`) for
+	 * `complete`.
+	 *
+	 * @param Task $task The task audited, as persisted.
+	 * @param string $action The audited action: `create` or `complete`.
 	 * @param string $actor The acting identity — the ORIGINAL decider for a
 	 *                      migrated decision, kept even when no such user
 	 *                      exists any more.
 	 * @param string $reason The reason or migrated comment.
-	 * @param DateTime|null $created The original time; now when unknown.
 	 *
 	 * @return void
 	 */
-	private function appendAudit(Task $task, string $action, string $stateAfter, string $actor, string $reason, ?DateTime $created): void {
+	private function appendAudit(Task $task, string $action, string $actor, string $reason): void {
+		$created = $task->getCreated();
+		if ($action === 'complete') {
+			$created = $task->getCompletedAt();
+		}
+
 		$entry = new TaskAudit();
 		$entry->setTaskId((int)$task->getId());
 		$entry->setAction($action);
-		$entry->setStateAfter($stateAfter);
+		$entry->setStateAfter((string)$task->getState());
 		$entry->setActor($actor);
 		$entry->setPerformerType(Task::PERFORMER_GROUP);
 		$entry->setReason($reason);

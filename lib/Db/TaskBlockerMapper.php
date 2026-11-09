@@ -38,7 +38,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
  */
-class TaskBlockerMapper extends QBMapper {
+class TaskBlockerMapper extends QBMapper implements TaskBlockerMapperInterface {
 
 	/**
 	 * Constructor.

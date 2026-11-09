@@ -54,7 +54,11 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
+use OCA\OpenRegister\Service\Flow\FlowRunCommitRows;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunStreamStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
@@ -279,25 +283,19 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 
 		$commit = new FlowRunCommit(
 			db: $db,
-			runs: $mapper,
-			streams: $streamMapper,
-			claims: $claimMapper,
-			steps: $stepMapper,
+			rows: new FlowRunCommitRows(runs: $mapper, streams: $streamMapper, claims: $claimMapper, steps: $stepMapper),
 			logger: new NullLogger()
 		);
 
 		$this->service = new FlowRunService(
-			$mapper,
-			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
-			$engine,
-			$registry,
-			$this->createMock(LoggerInterface::class),
-			$container,
-			null,
-			null,
-			$streamMapper,
-			new FlowPlaceClaims(claims: $claimMapper, db: $db, logger: new NullLogger()),
-			$commit
+			stores: new FlowRunStores(
+				mapper: $mapper,
+				stateMapper: $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
+				streams: new FlowRunStreamStores(streamMapper: $streamMapper, claims: new FlowPlaceClaims(claims: $claimMapper, db: $db, logger: new NullLogger()), commit: $commit)
+			),
+			walk: new FlowRunWalkServices(engine: $engine, registry: $registry),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $container
 		);
 	}//end setUp()
 

@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
@@ -712,7 +713,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 	public function testARefusedCompletionIsRecordedAuthorizedAndNeverThrows(): void {
 		$task = $this->task();
 		$task->setOnBehalfOf('olga');
-		$this->service()->recordRefusedCompletion(task: $task, reason: 'field x', actor: 'alice');
+		$this->service()->recordRefusedCompletion(task: $task, attempt: new TaskAct(verb: 'complete', actor: 'alice', reason: 'field x'));
 
 		$this->assertSame(
 			[
@@ -731,13 +732,13 @@ class TaskServiceVerbGoldenTest extends TestCase {
 
 		$unsaved = $this->task();
 		$unsaved->setId(null);
-		$this->service()->recordRefusedCompletion(task: $unsaved, reason: 'r', actor: 'a');
+		$this->service()->recordRefusedCompletion(task: $unsaved, attempt: new TaskAct(verb: 'complete', actor: 'a', reason: 'r'));
 		$this->assertCount(1, $this->written);
 
 		$audits = $this->createMock(TaskAuditMapper::class);
 		$audits->method('insert')->willThrowException(new RuntimeException('db down'));
 		$this->audits = $audits;
-		$this->service()->recordRefusedCompletion(task: $task, reason: 'r', actor: 'a');
+		$this->service()->recordRefusedCompletion(task: $task, attempt: new TaskAct(verb: 'complete', actor: 'a', reason: 'r'));
 		$this->assertTrue(true);
 	}//end testARefusedCompletionIsRecordedAuthorizedAndNeverThrows()
 

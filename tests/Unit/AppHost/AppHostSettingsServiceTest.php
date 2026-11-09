@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
+use OCA\OpenRegister\AppHost\Service\AppHostSettingsServices;
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsService;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\App\IAppManager;
@@ -119,12 +120,14 @@ class AppHostSettingsServiceTest extends TestCase {
 
 		return new AppHostSettingsService(
 			$appId,
-			$appConfig,
-			$appManager,
-			($container ?? $this->createMock(ContainerInterface::class)),
+			new AppHostSettingsServices(
+				$appConfig,
+				$appManager,
+				($container ?? $this->createMock(ContainerInterface::class)),
+				$this->createMock(LoggerInterface::class)
+			),
 			$groupManager,
-			$userSession,
-			$this->createMock(LoggerInterface::class)
+			$userSession
 		);
 	}//end service()
 

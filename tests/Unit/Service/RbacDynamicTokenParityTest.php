@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -71,11 +72,10 @@ class RbacDynamicTokenParityTest extends TestCase {
 
 		$this->evaluator = new OperatorEvaluator($logger);
 		$this->matcher = new ConditionMatcher(
-			$this->userSession,
+			new ConditionUserResolvers($this->userSession, $this->groupManager),
 			$this->createMock(ContainerInterface::class),
 			$this->evaluator,
-			$logger,
-			$this->groupManager
+			$logger
 		);
 	}//end setUp()
 

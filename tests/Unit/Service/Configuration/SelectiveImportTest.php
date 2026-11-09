@@ -26,6 +26,7 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use OCA\OpenRegister\BackgroundJob\ConfigurationCheckJob;
+use OCA\OpenRegister\BackgroundJob\Support\ConfigurationCheckServices;
 use OCA\OpenRegister\Controller\ConfigurationController;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
@@ -374,10 +375,8 @@ class SelectiveImportTest extends TestCase {
 
 		$job = new ConfigurationCheckJob(
 			$this->createMock(ITimeFactory::class),
-			$this->configurationMapper,
 			// One response for the version check, one for the import's fetch.
-			$this->service([self::remote(), self::remote()]),
-			$notifications,
+			new ConfigurationCheckServices($this->configurationMapper, $this->service([self::remote(), self::remote()]), $notifications),
 			$appConfig,
 			$this->createMock(LoggerInterface::class)
 		);

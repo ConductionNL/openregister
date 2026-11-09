@@ -74,25 +74,53 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	private readonly WriteOnlyPathWalker $paths;
 
 	/**
+	 * User session for current user context.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for user group operations.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Condition matcher for match expressions.
+	 *
+	 * @var ConditionMatcher
+	 */
+	private readonly ConditionMatcher $conditionMatcher;
+
+	/**
+	 * Resolver for the lifecycle state's field rules.
+	 *
+	 * @var StateFieldRuleResolver
+	 */
+	private readonly StateFieldRuleResolver $stateFieldRules;
+
+	/**
 	 * Constructor for PropertyRbacHandler
 	 *
-	 * @param IUserSession $userSession User session for current user context
-	 * @param IGroupManager $groupManager Group manager for user group operations
-	 * @param ConditionMatcher $conditionMatcher Condition matcher for match expressions
+	 * @param PropertyRbacCaller $caller The user session and the group manager.
+	 * @param PropertyRbacRules $rules The condition matcher and the lifecycle state's field-rule resolver.
 	 * @param LoggerInterface $logger Logger for debugging
-	 * @param StateFieldRuleResolver $stateFieldRules Resolver for the lifecycle state's field rules
 	 * @param RevealCollector|null $reveals Records which governed properties were revealed to the caller.
-	 *                                      Nullable and last so no construction site shifts; absent, nothing
-	 *                                      is recorded and the verdict is unchanged
+	 *                                      Nullable and last; absent, nothing is recorded and the
+	 *                                      verdict is unchanged
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly ConditionMatcher $conditionMatcher,
+		PropertyRbacCaller $caller,
+		PropertyRbacRules $rules,
 		private readonly LoggerInterface $logger,
-		private readonly StateFieldRuleResolver $stateFieldRules,
 		private readonly ?RevealCollector $reveals = null,
 	) {
+		$this->userSession = $caller->userSession;
+		$this->groupManager = $caller->groupManager;
+		$this->conditionMatcher = $rules->conditionMatcher;
+		$this->stateFieldRules = $rules->stateFieldRules;
 		$this->paths = new WriteOnlyPathWalker(logger: $logger);
 	}//end __construct()
 

@@ -35,23 +35,67 @@ namespace OCA\OpenRegister\Service\SchemaImport;
  */
 final class ImportedSchema implements ImportedSchemaInterface {
 	/**
+	 * The schema title.
+	 *
+	 * @var string
+	 */
+	public readonly string $title;
+
+	/**
+	 * The schema description.
+	 *
+	 * @var string
+	 */
+	public readonly string $description;
+
+	/**
+	 * JSON Schema property definitions keyed by name.
+	 *
+	 * @var array<string, array<string,mixed>>
+	 */
+	public readonly array $properties;
+
+	/**
+	 * The `configuration.jsonld` block (@vocab, type, properties map).
+	 *
+	 * @var array<string, mixed>
+	 */
+	public readonly array $jsonld;
+
+	/**
+	 * The `configuration.importSource` provenance block.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public readonly array $importSource;
+
+	/**
+	 * Requested property names not present on the source type.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $unknownRequested;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $title The schema title.
-	 * @param string $description The schema description.
-	 * @param array<string, array<string,mixed>> $properties JSON Schema property definitions keyed by name.
-	 * @param array<string, mixed> $jsonld The `configuration.jsonld` block (@vocab, type, properties map).
+	 * @param ImportedSchemaHeading $heading The schema title and description.
+	 * @param ImportedSchemaDefinition $definition The property definitions and JSON-LD block.
 	 * @param array<string, mixed> $importSource The `configuration.importSource` provenance block.
 	 * @param array<int, string> $unknownRequested Requested property names not present on the source type.
 	 */
 	public function __construct(
-		public readonly string $title,
-		public readonly string $description,
-		public readonly array $properties,
-		public readonly array $jsonld,
-		public readonly array $importSource,
-		public readonly array $unknownRequested = [],
+		ImportedSchemaHeading $heading,
+		ImportedSchemaDefinition $definition,
+		array $importSource,
+		array $unknownRequested = [],
 	) {
+		$this->title            = $heading->title;
+		$this->description      = $heading->description;
+		$this->properties       = $definition->properties;
+		$this->jsonld           = $definition->jsonld;
+		$this->importSource     = $importSource;
+		$this->unknownRequested = $unknownRequested;
 	}//end __construct()
 
 	/**

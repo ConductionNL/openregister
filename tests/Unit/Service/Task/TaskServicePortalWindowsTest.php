@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
@@ -129,7 +130,7 @@ class TaskServicePortalWindowsTest extends TestCase {
 	public function testOpenForReturnsTheOpenAuthorizedTask(): void {
 		$task = $this->task();
 		$this->tasks->method('findByUuid')->willReturn($task);
-		$this->authorization->expects($this->once())->method('assertMay')->with('complete', $task, 'party:bsn-1');
+		$this->authorization->expects($this->once())->method('assertMay')->with(new TaskAct(verb: 'complete', actor: 'party:bsn-1'), $task);
 
 		$this->assertSame($task, $this->service->openFor(verb: 'complete', uuid: 't-1', actor: 'party:bsn-1'));
 		$this->assertSame(Task::STATE_ACTIVE, $task->getState());

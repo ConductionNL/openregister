@@ -142,7 +142,7 @@ class A26NotesControllerGoldenTest extends TestCase {
 			visibility: $this->visibility(),
 			timeline: $this->timeline(),
 		);
-		$controller = new NotesController('openregister', $request, $services);
+		$controller = new NotesController($request, $services);
 		try {
 			$response = $controller->$action(...$args);
 		} catch (\Throwable $e) {

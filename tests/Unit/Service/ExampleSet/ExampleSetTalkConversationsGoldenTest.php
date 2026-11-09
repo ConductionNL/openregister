@@ -115,7 +115,9 @@ class ExampleSetTalkConversationsGoldenTest extends TestCase {
 
 			return ['token' => 'tok-'.$name, 'id' => 41, 'created' => ($this->world['created'] ?? true)];
 		});
-		$store->method('heldCall')->willReturnCallback(function (string $token, string $owner, DateTime $start, DateTime $end, array $joined): void {
+		$store->method('heldCall')->willReturnCallback(function (string $token, string $owner, array $call, array $joined): void {
+			$start = new DateTime((string) $call['start']);
+			$end   = new DateTime((string) $call['end']);
 			$this->calls[] = ['heldCall', $token, $owner, $start->format('c'), $end->format('c'), $joined];
 		});
 		$store->method('roomExists')->willReturnCallback(function (string $token): bool {

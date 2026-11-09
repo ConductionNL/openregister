@@ -233,7 +233,7 @@ class ContentReportController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded by the reviewer-group check below, and by
-	 *   ContentReportService::readCopy() a second time, which returns null rather than the
+	 *   ContentReportServiceInterface::readCopy() a second time, which returns null rather than the
 	 *   copy for anybody outside the group the report itself pinned when it was filed.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md

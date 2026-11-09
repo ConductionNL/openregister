@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
 use DateTime;
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
@@ -139,7 +140,7 @@ class TaskEditTest extends TestCase {
 	public function testTheAssigneeAPoolMemberAndAnAdministratorMayEdit(): void {
 		$service = new TaskAuthorizationService(groupManager: $this->groupBackend());
 		foreach (['alice', 'greta', 'root'] as $uid) {
-			$service->assertMay(verb: 'edit', task: $this->task(), uid: $uid);
+			$service->assertMay(act: new TaskAct(verb: 'edit', actor: $uid), task: $this->task());
 		}
 
 		$this->assertTrue(true);
@@ -156,7 +157,7 @@ class TaskEditTest extends TestCase {
 		$task->setWatchers(['wanda']);
 		foreach (['rita', 'wanda', 'mallory'] as $uid) {
 			try {
-				$service->assertMay(verb: 'edit', task: $task, uid: $uid);
+				$service->assertMay(act: new TaskAct(verb: 'edit', actor: $uid), task: $task);
 				$this->fail(sprintf("'%s' was allowed to edit.", $uid));
 			} catch (TaskAccessDeniedException $denied) {
 				$this->assertStringContainsString('edit', $denied->getMessage());
@@ -175,7 +176,7 @@ class TaskEditTest extends TestCase {
 		$task->setPerformerType(Task::PERFORMER_EXTERNAL);
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$service->assertMay(verb: 'edit', task: $task, uid: 'root');
+		$service->assertMay(act: new TaskAct(verb: 'edit', actor: 'root'), task: $task);
 	}//end testAnExternalTaskIsNotEdited()
 
 	/**

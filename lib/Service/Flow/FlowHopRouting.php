@@ -64,7 +64,6 @@ final class FlowHopRouting {
 		return $this->placement->seedPlaceItems(
 			workflow: $workflow,
 			subject: $start->subject,
-			definition: $workflow->getDefinition(),
 			items: $start->items,
 			stored: $start->streams?->run()->getPlaceItems()
 		);

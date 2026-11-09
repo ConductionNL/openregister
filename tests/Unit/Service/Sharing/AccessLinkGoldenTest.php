@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
@@ -174,10 +175,12 @@ class AccessLinkGoldenTest extends TestCase {
 			userId: '  owner  ',
 			subjectType: ' OBJECT ',
 			subjectId: '  object-uuid  ',
-			capabilities: ['Upload', ' ', 'comment', 'READ', 'upload'],
-			expiresAt: '+7 days',
-			password: ' geheim ',
-			label: '  Advice request  '
+			terms: new AccessLinkTerms(
+				capabilities: ['Upload', ' ', 'comment', 'READ', 'upload'],
+				expiresAt: '+7 days',
+				password: ' geheim ',
+				label: '  Advice request  '
+			)
 		);
 		$after = new DateTime();
 
@@ -219,9 +222,11 @@ class AccessLinkGoldenTest extends TestCase {
 			userId: 'owner',
 			subjectType: AccessLink::SUBJECT_FILE,
 			subjectId: 'object-uuid/12',
-			expiresAt: '+1 day',
-			password: '',
-			label: '   '
+			terms: new AccessLinkTerms(
+				expiresAt: '+1 day',
+				password: '',
+				label: '   '
+			)
 		);
 
 		$row = $this->inserted[0];
@@ -316,10 +321,12 @@ class AccessLinkGoldenTest extends TestCase {
 				userId: $request['userId'],
 				subjectType: $request['subjectType'],
 				subjectId: $request['subjectId'],
-				capabilities: $request['capabilities'],
-				expiresAt: $request['expiresAt'],
-				password: 'geheim',
-				label: 'label'
+				terms: new AccessLinkTerms(
+					capabilities: $request['capabilities'],
+					expiresAt: $request['expiresAt'],
+					password: 'geheim',
+					label: 'label'
+				)
 			);
 			$this->fail('The mint was not refused.');
 		} catch (InvalidArgumentException $refused) {

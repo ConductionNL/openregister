@@ -45,6 +45,7 @@ use OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeCall;
 use OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeDialect;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkEntityScan;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
+use OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeRequest;
 
 /**
  * Coverage tests for EntityRecognitionHandler
@@ -499,8 +500,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 	 */
 	public function testBuildAnalyzeRequestBodyWithoutEntityTypes(): void {
 		$result = $this->invokePrivate('buildAnalyzeRequestBody', [
-			new EntityDetectionQuery('Hello world', null, 0.0),
-			new AnalyzeDialect('nl', null, 'presidio', 0.0),
+			new AnalyzeRequest(new EntityDetectionQuery('Hello world', null, 0.0), new AnalyzeDialect('nl', null, 'presidio', 0.0)),
 		]);
 
 		$this->assertEquals('Hello world', $result['text']);
@@ -515,8 +515,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 	 */
 	public function testBuildAnalyzeRequestBodyWithMappedEntityTypes(): void {
 		$result = $this->invokePrivate('buildAnalyzeRequestBody', [
-			new EntityDetectionQuery('Test text', ['EMAIL', 'PERSON'], 0.0),
-			new AnalyzeDialect('en', null, 'presidio', 0.0),
+			new AnalyzeRequest(new EntityDetectionQuery('Test text', ['EMAIL', 'PERSON'], 0.0), new AnalyzeDialect('en', null, 'presidio', 0.0)),
 		]);
 
 		$this->assertEquals('Test text', $result['text']);
@@ -533,8 +532,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 	 */
 	public function testBuildAnalyzeRequestBodyWithEmptyEntityTypesArray(): void {
 		$result = $this->invokePrivate('buildAnalyzeRequestBody', [
-			new EntityDetectionQuery('Test text', [], 0.0),
-			new AnalyzeDialect('en', null, 'presidio', 0.0),
+			new AnalyzeRequest(new EntityDetectionQuery('Test text', [], 0.0), new AnalyzeDialect('en', null, 'presidio', 0.0)),
 		]);
 
 		$this->assertArrayNotHasKey('entities', $result);
@@ -562,8 +560,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery('John Doe is here', null, 0.5),
-			new AnalyzeDialect('en', null, 'openanonymiser', 0.85),
+			new AnalyzeRequest(new EntityDetectionQuery('John Doe is here', null, 0.5), new AnalyzeDialect('en', null, 'openanonymiser', 0.85)),
 		]);
 
 		$this->assertCount(1, $result);
@@ -589,8 +586,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery('Alice is here', null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0.3),
+			new AnalyzeRequest(new EntityDetectionQuery('Alice is here', null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0.3)),
 		]);
 
 		$this->assertCount(0, $result);
@@ -615,8 +611,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery($text, null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0.0),
+			new AnalyzeRequest(new EntityDetectionQuery($text, null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0.0)),
 		]);
 
 		$this->assertCount(1, $result);
@@ -648,8 +643,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery('test@test.com call +31612345678', null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0.0),
+			new AnalyzeRequest(new EntityDetectionQuery('test@test.com call +31612345678', null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0.0)),
 		]);
 
 		$this->assertCount(2, $result);
@@ -761,10 +755,8 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 	 */
 	public function testExtractContextNegativeClampedStart(): void {
 		$result = $this->invokePrivate('extractContext', [
-			'Hello World',
-			2,
-			5,
-			100,
+			['position_start' => 2, 'position_end' => 5],
+			new ChunkEntityScan(new Chunk(), 'Hello World', 'regex', 100),
 		]);
 
 		$this->assertEquals('Hello World', $result);
@@ -779,10 +771,8 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 		$text = 'The quick brown fox jumps over the lazy dog';
 
 		$result = $this->invokePrivate('extractContext', [
-			$text,
-			10,
-			15,
-			5,
+			['position_start' => 10, 'position_end' => 15],
+			new ChunkEntityScan(new Chunk(), $text, 'regex', 5),
 		]);
 
 		// start = max(0, 10-5) = 5, end = min(44, 15+5) = 20.
@@ -966,9 +956,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase {
 			->willReturn($existingEntity);
 
 		$result = $this->invokePrivate('findOrCreateEntity', [
-			'EMAIL',
-			'existing@test.nl',
-			'personal_data',
+			['type' => 'EMAIL', 'value' => 'existing@test.nl', 'category' => 'personal_data'],
 		]);
 
 		$this->assertEquals(42, $result->getId());

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Db\Feedback;
 use OCA\OpenRegister\Db\FeedbackMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Mcp\Db\Conversation;
@@ -168,16 +169,15 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 	 * Initializes controller with required dependencies for chat operations.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param ChatControllerServices $services The chat controller services.
 	 * @param string $userId Current user ID for chat context
 	 *
 	 * @return void
 	 */
-	public function __construct(string $appName, IRequest $request, ChatControllerServices $services, string $userId) {
+	public function __construct(IRequest $request, ChatControllerServices $services, string $userId) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		// Store dependencies for use in controller methods.
 		$this->chatService = $services->domain->chatService;

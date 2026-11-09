@@ -42,6 +42,7 @@ use OCA\OpenRegister\Event\FlowEmailSentEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
 use LogicException;
@@ -300,7 +301,10 @@ class FlowMessagingService {
 		}
 
 		try {
-			$outcome = $this->channels->talkSender->postAsUser(token: $token, message: $message, actorUid: $send->actor);
+			$outcome = $this->channels->talkSender->postAsUser(
+				talkMessage: new TalkMessage(token: $token, message: $message),
+				actorUid: $send->actor
+			);
 		} catch (TalkSendException $e) {
 			$send->failures[] = $e->getMessage();
 			$send->add(bucket: 'failed', recipient: $token);

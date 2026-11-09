@@ -240,8 +240,7 @@ class ContactService implements ContactServiceInterface {
 	 */
 	private function reEnrichedRow(ContactLink $link, array $row): array {
 		$vfields = $this->extractVcardFields(
-			addressbookId: $link->getAddressbookId(),
-			contactUri: $link->getContactUri(),
+			card: $this->cardRefOf(link: $link),
 			contactUid: $link->getContactUid()
 		);
 
@@ -354,26 +353,27 @@ class ContactService implements ContactServiceInterface {
 	 * Returns a defaults-shaped array even when the lookup fails so the
 	 * caller never sees missing keys.
 	 *
-	 * @param int|null $addressbookId The CardDAV addressbook id.
-	 * @param string|null $contactUri The vCard uri (e.g. `jan.vcf`).
-	 * @param string|null $contactUid The vCard UID (used to build a
-	 *                                fallback avatar route when PHOTO
-	 *                                is absent).
+	 * @param ContactCardRef|null $card       The vCard (e.g. `jan.vcf` in an
+	 *                                        addressbook); null when the row
+	 *                                        lacks an id or uri.
+	 * @param string|null         $contactUid The vCard UID (used to build a
+	 *                                        fallback avatar route when PHOTO
+	 *                                        is absent).
 	 *
 	 * @return array{phone: ?string, org: ?string, avatarUrl: ?string}
 	 */
-	private function extractVcardFields(?int $addressbookId, ?string $contactUri, ?string $contactUid): array {
+	private function extractVcardFields(?ContactCardRef $card, ?string $contactUid): array {
 		$defaults = ['phone' => null, 'org' => null, 'avatarUrl' => null];
 
 		// No CardDAV coordinates: still emit a fallback avatar URL when
 		// there is a uid, so the chip can render an initials placeholder.
-		if ($this->hasCardCoordinates(addressbookId: $addressbookId, contactUri: $contactUri) === false) {
+		if ($this->hasCardCoordinates(card: $card) === false) {
 			$defaults['avatarUrl'] = $this->contactPhotoRoute(contactUid: $contactUid);
 			return $defaults;
 		}
 
 		return $this->fieldsFromCard(
-			vcard: $this->readCard(addressbookId: $addressbookId, contactUri: $contactUri),
+			vcard: $this->readCard(addressbookId: $card->addressbookId, contactUri: $card->contactUri),
 			contactUid: $contactUid
 		);
 	}//end extractVcardFields()
@@ -404,15 +404,31 @@ class ContactService implements ContactServiceInterface {
 	}//end fieldsFromCard()
 
 	/**
-	 * Whether a link row carries both an addressbook id and a vCard uri.
+	 * The vCard a link row points at; null when it lacks an addressbook id or a vCard uri.
 	 *
-	 * @param int|null    $addressbookId The CardDAV addressbook id.
-	 * @param string|null $contactUri    The vCard uri.
+	 * @param ContactLink $link The link row.
+	 *
+	 * @return ContactCardRef|null
+	 */
+	private function cardRefOf(ContactLink $link): ?ContactCardRef {
+		$addressbookId = $link->getAddressbookId();
+		$contactUri = $link->getContactUri();
+		if ($addressbookId === null || $contactUri === null) {
+			return null;
+		}
+
+		return new ContactCardRef(addressbookId: $addressbookId, contactUri: $contactUri);
+	}//end cardRefOf()
+
+	/**
+	 * Whether there is a vCard reference with a non-empty vCard uri.
+	 *
+	 * @param ContactCardRef|null $card The vCard reference.
 	 *
 	 * @return bool
 	 */
-	private function hasCardCoordinates(?int $addressbookId, ?string $contactUri): bool {
-		return $addressbookId !== null && $contactUri !== null && $contactUri !== '';
+	private function hasCardCoordinates(?ContactCardRef $card): bool {
+		return $card !== null && $card->contactUri !== '';
 	}//end hasCardCoordinates()
 
 	/**
@@ -630,11 +646,7 @@ class ContactService implements ContactServiceInterface {
 
 		// Tier-2: the widened payload (phone / org / avatar) lets the row serve
 		// future list calls without round-tripping CardDAV.
-		$vfields = $this->extractVcardFields(
-			addressbookId: $card->addressbookId,
-			contactUri: $card->contactUri,
-			contactUid: $contactUid
-		);
+		$vfields = $this->extractVcardFields(card: $card, contactUid: $contactUid);
 
 		$this->tagVcard(vcard: $vcard, placement: $placement);
 

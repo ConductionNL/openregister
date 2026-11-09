@@ -186,11 +186,7 @@ class PortalTaskService implements PortalTaskServiceInterface {
 	 *
 	 * @param PortalSubject $subject The acting subject.
 	 * @param string $uuid The task uuid.
-	 * @param array<string, mixed> $answers The submitted answer fields.
-	 * @param string|null $comment The party's comment, when any.
-	 * @param array<int, array<string, mixed>> $files The uploads, each
-	 *                                                {name, type, size, tmp_name|content}.
-	 * @param string $outcome The outcome to record; defaults to `submitted`.
+	 * @param PortalCompletion $completion What the party submitted: answers, comment, uploads and outcome.
 	 * @param string $viaApp The app completing the task in-process, when it
 	 *                       is the app the task's `completeVia` names; empty
 	 *                       for the portal's own direct completion.
@@ -210,10 +206,7 @@ class PortalTaskService implements PortalTaskServiceInterface {
 	public function complete(
 		PortalSubject $subject,
 		string $uuid,
-		array $answers = [],
-		?string $comment = null,
-		array $files = [],
-		string $outcome = self::DEFAULT_OUTCOME,
+		PortalCompletion $completion=new PortalCompletion(),
 		string $viaApp = '',
 	): Task {
 		// 1. Authorize, and audit a denial, BEFORE any other step. A stranger
@@ -238,26 +231,21 @@ class PortalTaskService implements PortalTaskServiceInterface {
 
 		// 2. Validate against the constraints the node froze on the task.
 		//    Refused means nothing was stored and the task is still open.
-		$this->assertUploadConstraints(task: $task, files: $files);
+		$this->assertUploadConstraints(task: $task, files: $completion->files);
 
 		// 3. Store every file on the CASE object. Order matters (design D-5):
 		//    an orphaned file on the right case is recoverable and visible; a
 		//    completed task whose evidence does not exist is neither.
-		$evidence = $this->storeFiles(task: $task, files: $files);
+		$evidence = $this->storeFiles(task: $task, files: $completion->files);
 
 		// 4. Record the completion, referencing the stored files.
-		$outcome = trim($outcome);
-		if ($outcome === '') {
-			$outcome = self::DEFAULT_OUTCOME;
-		}
-
 		return $this->sources->tasks->complete(
 			uuid: $uuid,
-			outcome: $outcome,
+			outcome: $completion->outcome(),
 			resultText: null,
-			comment: $comment,
+			comment: $completion->comment,
 			actor: $subject->actor(),
-			responses: $answers,
+			responses: $completion->answers,
 			evidence: $evidence
 		);
 	}//end complete()

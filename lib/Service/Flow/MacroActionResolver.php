@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -41,12 +41,12 @@ class MacroActionResolver {
 	 *
 	 * @param SchemaMapperInterface $schemas   Loads a schema by id or slug.
 	 * @param FlowService           $flows     Reads a flow, for its nodes and `next` hint.
-	 * @param FlowMapper|null       $flowStore Finds a flow a schema declares by name.
+	 * @param FlowMapperInterface|null       $flowStore Finds a flow a schema declares by name.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemas,
 		private readonly FlowService $flows,
-		private readonly ?FlowMapper $flowStore = null,
+		private readonly ?FlowMapperInterface $flowStore = null,
 	) {
 	}//end __construct()
 
