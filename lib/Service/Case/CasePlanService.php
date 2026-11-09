@@ -67,18 +67,11 @@ class CasePlanService implements CasePlanServiceInterface {
 	public const SYSTEM_ACTOR_PREFIX = 'system:';
 
 	/**
-	 * Convergent bring-over; built from the same collaborators on first use when not injected.
+	 * Convergent bring-over, once built (or injected through the bring-over bundle).
 	 *
 	 * @var CasePlanEnsurer|null
 	 */
-	private ?CasePlanEnsurer $ensurer;
-
-	/**
-	 * Arms the deadlines of items the ensurer creates as active, when it is built here.
-	 *
-	 * @var CasePlanItemTimers|null
-	 */
-	private readonly ?CasePlanItemTimers $timers;
+	private ?CasePlanEnsurer $ensurer = null;
 
 	/**
 	 * Constructor.
@@ -92,10 +85,8 @@ class CasePlanService implements CasePlanServiceInterface {
 		private readonly CasePlanStore $store,
 		private readonly CasePlanMechanics $mechanics,
 		private readonly CasePlanAnchorAccess $anchorAccess,
-		CasePlanBringOver $bringOver,
+		private readonly CasePlanBringOver $bringOver,
 	) {
-		$this->ensurer = $bringOver->ensurer;
-		$this->timers = $bringOver->timers;
 	}//end __construct()
 
 	/**
@@ -516,19 +507,34 @@ class CasePlanService implements CasePlanServiceInterface {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	public function completeCase(string $objectUuid, string $result, ?string $uid): array {
-		$rows = $this->rowsOf(objectUuid: $objectUuid);
+		return $this->finish(completion: new CaseCompletion(objectUuid: $objectUuid, result: $result, actor: $uid));
+	}//end completeCase()
+
+	/**
+	 * Require the finisher to administer the plan, refuse a result outside the
+	 * allowed set and an unfinished plan, then mirror the result onto the object.
+	 *
+	 * @param CaseCompletion $completion The object, the result and the acting identity.
+	 *
+	 * @return array<string, mixed> The plan, plus `result`.
+	 *
+	 * @throws CaseValidationException When the result is outside the set, or the plan is not finished.
+	 * @throws CaseAccessDeniedException When the caller may not administer the plan.
+	 */
+	private function finish(CaseCompletion $completion): array {
+		$rows = $this->rowsOf(objectUuid: $completion->objectUuid);
 		$tree = new CasePlanTree(items: $rows);
 		$settings = $tree->settings();
-		$this->anchorAccess->authorization->assertMayAdminister(verb: 'complete-case', settings: $settings, uid: $uid);
-		$this->assertAllowedResult(result: $result, settings: $settings);
+		$this->anchorAccess->authorization->assertMayAdminister(verb: 'complete-case', settings: $settings, uid: $completion->actor);
+		$this->assertAllowedResult(result: $completion->result, settings: $settings);
 		$this->assertFinished(tree: $tree);
 
-		$this->anchorAccess->writer->mirrorResult(anyRow: $rows[0], result: $result);
-		$plan = $this->getPlan(objectUuid: $objectUuid, uid: $uid);
-		$plan['result'] = $result;
+		$this->anchorAccess->writer->mirrorResult(anyRow: $rows[0], result: $completion->result);
+		$plan = $this->getPlan(objectUuid: $completion->objectUuid, uid: $completion->actor);
+		$plan['result'] = $completion->result;
 
 		return $plan;
-	}//end completeCase()
+	}//end finish()
 
 	/**
 	 * Delete a plan's items. The audit stays; the mirrored business state on
@@ -966,12 +972,12 @@ class CasePlanService implements CasePlanServiceInterface {
 	 */
 	private function ensurer(): CasePlanEnsurer {
 		if ($this->ensurer === null) {
-			$this->ensurer = new CasePlanEnsurer(
+			$this->ensurer = ($this->bringOver->ensurer ?? new CasePlanEnsurer(
 				store: $this->store,
 				definitions: $this->mechanics->definitions,
 				transitions: new CasePlanTransitions(),
-				timers: $this->timers
-			);
+				timers: $this->bringOver->timers
+			));
 		}
 
 		return $this->ensurer;
