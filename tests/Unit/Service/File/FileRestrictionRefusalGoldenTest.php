@@ -52,7 +52,7 @@ class FileRestrictionRefusalGoldenTest extends TestCase {
 	 *
 	 * @return array{refused: string|null, writes: list<string>, saved: FileRestriction|null}
 	 */
-	private function run(int $fileId, array $users, array $groups, string $reason): array {
+	private function restrictWith(int $fileId, array $users, array $groups, string $reason): array {
 		$writes = [];
 		$saved = null;
 		$store = $this->createMock(FileRestrictionStore::class);
@@ -87,7 +87,7 @@ class FileRestrictionRefusalGoldenTest extends TestCase {
 		}
 
 		return ['refused' => $refused, 'writes' => $writes, 'saved' => $saved];
-	}//end run()
+	}//end restrictWith()
 
 	/**
 	 * Every refusal happens before anything is written.
@@ -102,7 +102,7 @@ class FileRestrictionRefusalGoldenTest extends TestCase {
 			[5, ['a'], [], " \t", 'A restriction needs a reason'],
 		];
 		foreach ($cases as [$fileId, $users, $groups, $reason, $message]) {
-			$outcome = $this->run($fileId, $users, $groups, $reason);
+			$outcome = $this->restrictWith($fileId, $users, $groups, $reason);
 			self::assertSame($message, $outcome['refused']);
 			self::assertSame([], $outcome['writes']);
 		}
@@ -114,7 +114,7 @@ class FileRestrictionRefusalGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testAllowedRestrictionOrder(): void {
-		$outcome = $this->run(5, [7, ' b '], ['g', 'g'], ' why ');
+		$outcome = $this->restrictWith(5, [7, ' b '], ['g', 'g'], ' why ');
 
 		self::assertNull($outcome['refused']);
 		self::assertSame(['save:5', 'forget', 'depublish:5'], $outcome['writes']);
