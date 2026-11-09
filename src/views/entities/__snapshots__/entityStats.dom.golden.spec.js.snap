@@ -1,0 +1,100 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`entity statistics tables draws a card table per entity on the index cards view 1`] = `
+[
+  "<table class="statisticsTable entityStats">
+  <tbody>
+    <tr>
+      <th scope="row"><strong>t:Category</strong></th>
+      <td><span class="badge badge-category">pii</span></td>
+    </tr>
+    <tr>
+      <th scope="row"><strong>t:Detected At</strong></th>
+      <td>date:2026-01-02</td>
+    </tr>
+    <tr>
+      <th scope="row"><strong>t:Relations</strong></th>
+      <td>3</td>
+    </tr>
+  </tbody>
+</table>",
+  "<table class="statisticsTable entityStats">
+  <tbody>
+    <tr>
+      <th scope="row"><strong>t:Category</strong></th>
+      <td><span class="badge badge-category">business</span></td>
+    </tr>
+    <tr>
+      <th scope="row"><strong>t:Detected At</strong></th>
+      <td>date:null</td>
+    </tr>
+    <tr>
+      <th scope="row"><strong>t:Relations</strong></th>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>",
+]
+`;
+
+exports[`entity statistics tables draws the detail information table with a source 1`] = `
+[
+  "<table class="statisticsTable entityInfoTable">
+  <tbody>
+    <tr>
+      <th scope="row"><strong>t:Value</strong></th>
+      <td>Jan</td>
+    </tr>
+    <tr>
+      <th scope="row"><strong>t:Type</strong></th>
+      <td><span class="badge badge-type">person</span></td>
+    </tr>
+    <tr>
+      <th scope="row"><strong>t:Category</strong></th>
+      <td><span class="badge badge-category">pii</span></td>
+    </tr>
+    <tr>
+      <th scope="row"><strong>t:Detected At</strong></th>
+      <td>date:2026-01-02</td>
+    </tr>
+    <tr>
+      <th scope="row"><strong>t:Confidence Score</strong></th>
+      <td>87.50%</td>
+    </tr>
+    <tr>
+      <th scope="row"><strong>t:Source</strong></th>
+      <td>ocr</td>
+    </tr>
+  </tbody>
+</table>",
+]
+`;
+
+exports[`entity statistics tables draws the detail information table without a source or confidence 1`] = `
+[
+  "<table class="statisticsTable entityInfoTable">
+  <tbody>
+    <tr>
+      <th scope="row"><strong>t:Value</strong></th>
+      <td>Acme</td>
+    </tr>
+    <tr>
+      <th scope="row"><strong>t:Type</strong></th>
+      <td><span class="badge badge-type">org</span></td>
+    </tr>
+    <tr>
+      <th scope="row"><strong>t:Category</strong></th>
+      <td><span class="badge badge-category">business</span></td>
+    </tr>
+    <tr>
+      <th scope="row"><strong>t:Detected At</strong></th>
+      <td>date:null</td>
+    </tr>
+    <tr>
+      <th scope="row"><strong>t:Confidence Score</strong></th>
+      <td>-</td>
+    </tr>
+  </tbody>
+</table>",
+]
+`;
