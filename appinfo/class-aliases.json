@@ -101,6 +101,11 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Service\\FieldEncryptionHandlerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FieldEncryptionHandlerInterface",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Service\\Geo\\GeoFeatureCollectionBuilder": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\Geo\\GeoFeatureCollectionBuilder",
 			"eager": false,

@@ -212,7 +212,7 @@ use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolverInterface;
 use OCA\OpenRegister\Service\Federation\ShareGrantor;
 use OCA\OpenRegister\Service\Federation\ShareGrantorInterface;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
-use OCA\OpenRegister\Service\FieldEncryptionHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\FieldEncryptionHandlerInterface;
 use OCA\OpenRegister\Service\Flow\FlowDryRunService;
 use OCA\OpenRegister\Service\Flow\FlowDryRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocator;

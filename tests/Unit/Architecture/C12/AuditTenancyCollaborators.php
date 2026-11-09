@@ -29,7 +29,7 @@ return [
 		Lifecycle\LifecycleActionContext::class => Lifecycle\LifecycleActionContextInterface::class,
 		ObjectAction\ObjectActionElevationScope::class => null,
 		Service\AuditRetentionResolver::class => Service\AuditRetentionResolverInterface::class,
-		Service\FieldEncryptionHandler::class => Service\FieldEncryptionHandlerInterface::class,
+		Service\FieldEncryptionHandler::class => \OCA\OpenRegister\Kernel\Contracts\FieldEncryptionHandlerInterface::class,
 		Service\SharedMasterDataService::class => \OCA\OpenRegister\Kernel\Contracts\SharedMasterDataServiceInterface::class,
 		Service\TenantLogRedactor::class => \OCA\OpenRegister\Kernel\Contracts\TenantLogRedactorInterface::class,
 	],
