@@ -92,9 +92,8 @@ import {
 } from '@nextcloud/vue'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import GoldenRecordDetail from './GoldenRecordDetail.vue'
-import QualityPageFrame from './QualityPageFrame.vue'
 import { qualityStore } from '../../store/store.js'
-import { qualitySelection } from './qualitySelection.js'
+import { qualityListPage, QualityPageFrame } from './qualityListPage.js'
 
 export default {
 	name: 'MasterEntitiesIndex',
@@ -108,7 +107,7 @@ export default {
 		GoldenRecordDetail,
 	},
 
-	mixins: [qualitySelection],
+	mixins: [qualityListPage()],
 
 	data() {
 		return {
