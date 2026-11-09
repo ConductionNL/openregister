@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Kernel\Contracts\Dto\FormDependent;
+use OCA\OpenRegister\Service\Form\FormDependent;
 
 /**
  * Dispatched before a schema save; a listener adds each published form of its app that writes into it.

@@ -1825,11 +1825,6 @@
 			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\Dto\\LeafDescriptor",
 			"eager": true,
 			"service": true
-		},
-		"OCA\\OpenRegister\\Service\\Form\\FormDependent": {
-			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\Dto\\FormDependent",
-			"eager": false,
-			"service": true
 		}
 	}
 }

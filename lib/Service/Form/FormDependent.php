@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Kernel\Contracts\Dto;
+namespace OCA\OpenRegister\Service\Form;
 
 use Closure;
 
