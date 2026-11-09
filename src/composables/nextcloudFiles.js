@@ -23,9 +23,7 @@ export function openFolder(url) {
 	const decodedUrl = url.replace(/\\\//g, '/')
 
 	// Ensure URL starts with forward slash
-	const normalizedUrl = decodedUrl.startsWith('/')
-		? decodedUrl
-		: '/' + decodedUrl
+	const normalizedUrl = decodedUrl.startsWith('/') ? decodedUrl : '/' + decodedUrl
 
 	// Construct the proper Nextcloud Files app URL with the normalized path
 	// Use window.location.origin to get the current domain instead of hardcoding

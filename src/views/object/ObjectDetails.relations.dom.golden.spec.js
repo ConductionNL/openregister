@@ -25,7 +25,9 @@ jest.mock('../../components/access-links/ObjectAccessLinks.vue', () =>
 jest.mock('../../components/object-relations/ContactsTab.vue', () =>
 	mockModule('ContactsTab'),
 )
-jest.mock('../../components/object-relations/DeckTab.vue', () => mockModule('DeckTab'))
+jest.mock('../../components/object-relations/DeckTab.vue', () =>
+	mockModule('DeckTab'),
+)
 jest.mock('../../components/object-relations/EmailsTab.vue', () =>
 	mockModule('EmailsTab'),
 )
@@ -47,9 +49,7 @@ jest.mock('vue-material-design-icons/DotsHorizontal.vue', () =>
 jest.mock('vue-material-design-icons/ExclamationThick.vue', () =>
 	mockModule('ExclamationThick'),
 )
-jest.mock('vue-material-design-icons/Eye.vue', () =>
-	mockModule('Eye'),
-)
+jest.mock('vue-material-design-icons/Eye.vue', () => mockModule('Eye'))
 jest.mock('vue-material-design-icons/FileOutline.vue', () =>
 	mockModule('FileOutline'),
 )
@@ -62,12 +62,8 @@ jest.mock('vue-material-design-icons/LockOpenOutline.vue', () =>
 jest.mock('vue-material-design-icons/LockOutline.vue', () =>
 	mockModule('LockOutline'),
 )
-jest.mock('vue-material-design-icons/OpenInNew.vue', () =>
-	mockModule('OpenInNew'),
-)
-jest.mock('vue-material-design-icons/Pencil.vue', () =>
-	mockModule('Pencil'),
-)
+jest.mock('vue-material-design-icons/OpenInNew.vue', () => mockModule('OpenInNew'))
+jest.mock('vue-material-design-icons/Pencil.vue', () => mockModule('Pencil'))
 jest.mock('vue-material-design-icons/TimelineQuestionOutline.vue', () =>
 	mockModule('TimelineQuestionOutline'),
 )
@@ -170,9 +166,7 @@ function renderTabs(relations) {
 	const wrapper = mount(View)
 	const tabs = wrapper
 		.findAll('x-AppTab')
-		.filter((tab) =>
-			['t:Uses', 't:Used by'].includes(tab.attributes('title')),
-		)
+		.filter((tab) => ['t:Uses', 't:Used by'].includes(tab.attributes('title')))
 	const html = tabs.map((tab) => tab.html()).join('\n')
 	wrapper.unmount()
 	return html
