@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
@@ -137,7 +138,7 @@ class DbalIntrospectionJob extends TimedJob {
 	 */
 	private function loadDatabaseSources(): array {
 		try {
-			return $this->sourceMapper->findAll(filters: ['type' => self::DATABASE_SOURCE_TYPE]);
+			return $this->sourceMapper->findList(query: ListQuery::unbounded(filters: ['type' => self::DATABASE_SOURCE_TYPE]));
 		} catch (Throwable $e) {
 			$this->logger->warning('[DbalIntrospectionJob] could not list database sources: ' . $e->getMessage());
 			return [];
