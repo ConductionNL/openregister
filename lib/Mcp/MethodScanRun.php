@@ -29,6 +29,8 @@ use ReflectionMethod;
  *
  * Built by {@see AttributeToolScanner::scanClass()} for each method and never
  * handed outside that class (ADR-011 Rule 3).
+ *
+ * @spec openspec/specs/ai-mcp/spec.md#requirement-reflection-scanner-registers-attributed-tools-in-the-same-catalog
  */
 final class MethodScanRun {
 	/**
