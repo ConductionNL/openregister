@@ -43,21 +43,35 @@ use Throwable;
 final class AutoTransitionDecider {
 
 	/**
+	 * Reads the schema's lifecycle annotation.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Logs an object that could not be re-read.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface    $container    Resolves the deferred-entry object resolver lazily.
-	 * @param SchemaMapperInterface $schemaMapper Reads the schema's lifecycle annotation.
-	 * @param AutoTransitionSelector $selector    Picks the one eligible move, or none.
-	 * @param LoggerInterface       $logger       Logs an object that could not be re-read.
+	 * @param ContainerInterface     $container Resolves the deferred-entry object resolver lazily.
+	 * @param SchemaReading          $schemas   Reads the schema's lifecycle annotation; logs an object that could not be re-read.
+	 * @param AutoTransitionSelector $selector  Picks the one eligible move, or none.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
-		private readonly SchemaMapperInterface $schemaMapper,
+		SchemaReading $schemas,
 		private readonly AutoTransitionSelector $selector,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->schemaMapper = $schemas->schemaMapper;
+		$this->logger = $schemas->logger;
 	}//end __construct()
 
 	/**

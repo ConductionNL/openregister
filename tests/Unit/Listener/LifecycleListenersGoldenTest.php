@@ -147,7 +147,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 	private function actionListener(): LifecycleActionListener {
 		return new LifecycleActionListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger),
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), $this->resolver()),
 			$this->executor,
 			$this->logger
 		);
@@ -155,7 +155,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 	private function gateListener(): ApprovalChainGateListener {
 		return new ApprovalChainGateListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger),
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), $this->resolver()),
 			new ApprovalChainSequences($this->sequenceMapper, $this->sequenceService, new ApprovalChainAnnotationInstaller(logger: $this->logger)),
 			$this->userSession,
 			$this->logger
@@ -164,7 +164,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 	private function initialListener(): LifecycleInitialStateListener {
 		return new LifecycleInitialStateListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $this->logger),
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())),
 			$this->references,
 			$this->logger
 		);
@@ -183,7 +183,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 		);
 
 		return new LifecycleValidationListener(
-			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger), $this->userSession, $this->permission),
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), $this->resolver()), $this->userSession, $this->permission),
 			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guards, $server, $this->logger), new LifecycleConditionEvaluator($this->userSession, $groups, new LifecycleConditionReporting($l10n, $this->logger), $dialect), new ConditionTracer(dialect: $dialect)),
 			$this->ruleRuns
 		);
