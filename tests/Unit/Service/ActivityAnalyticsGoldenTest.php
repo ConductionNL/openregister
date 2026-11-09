@@ -18,6 +18,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AnalyticsSeries;
 use OCA\OpenRegister\Db\AnalyticsSeriesMapper;
 use OCA\OpenRegister\Service\ActivityFilterService;
+use OCA\OpenRegister\Service\AnalyticsSeriesDraft;
 use OCA\OpenRegister\Service\AnalyticsSeriesService;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCP\App\IAppManager;
@@ -103,7 +104,7 @@ class ActivityAnalyticsGoldenTest extends TestCase {
 				userSession: $this->session($w['uid']),
 				groupManager: $this->createMock(IGroupManager::class),
 			);
-			$outcome = $this->outcome(fn () => $service->register(...$args));
+			$outcome = $this->outcome(fn () => $service->registerSeries(draft: self::seriesDraft(...$args)));
 			$outcome['widgets'] = $this->normalise($registry->listPageWidgets());
 			$actual['series ' . $name] = $outcome;
 		}
@@ -121,6 +122,22 @@ class ActivityAnalyticsGoldenTest extends TestCase {
 
 		$this->assertSame(array_keys($expected), array_keys($actual));
 	}//end testActivityAndAnalyticsMatchGolden()
+
+	private static function seriesDraft(
+		string $seriesKey,
+		array $labels,
+		array $datasets,
+		?string $title = null,
+		string $chartType = 'line',
+		string $visibility = 'private',
+		?int $registerId = null,
+		?int $schemaId = null
+	): AnalyticsSeriesDraft {
+		return (new AnalyticsSeriesDraft(seriesKey: $seriesKey, title: $title))
+			->withData(labels: $labels, datasets: $datasets)
+			->shownAs(chartType: $chartType, visibility: $visibility)
+			->inScope(registerId: $registerId, schemaId: $schemaId);
+	}
 
 	private function record(string $call): void {
 		$this->calls[] = $call;
