@@ -71,7 +71,7 @@ final class AggregationControllerAdhocOutcomesGoldenTest extends TestCase {
 			static fn (string $name, $default = null) => array_key_exists($name, $params) ? $params[$name] : $default
 		);
 		$this->request->method('getParams')->willReturn($params);
-		return new AggregationController($this->request, $this->runner, $this->createMock(TimeseriesRequestValidator::class));
+		return new AggregationController($this->request, new \OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices($this->runner, $this->createMock(TimeseriesRequestValidator::class)));
 	}//end controller()
 
 	/**

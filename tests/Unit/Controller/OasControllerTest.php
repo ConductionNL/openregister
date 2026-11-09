@@ -6,6 +6,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\OasController;
+use OCA\OpenRegister\Controller\Support\OasControllerServices;
 use OCA\OpenRegister\Service\OasService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -29,9 +30,10 @@ class OasControllerTest extends TestCase {
 		$this->oasService = $this->createMock(OasService::class);
 
 		$this->controller = new OasController(
-			'openregister',
 			$this->request,
-			$this->oasService
+			new OasControllerServices(
+				$this->oasService
+			)
 		);
 	}
 

@@ -108,17 +108,9 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkEvent(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $calendarUri,
-		string $eventUid,
-	): CalendarLink {
-		return $this->linkLocatedEvent(
-			target: (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId),
-			key: new CalendarEventKey(calendarUri: $calendarUri, eventUid: $eventUid)
-		);
+	public function linkEvent(string $objectUuid, int $registerId, int $schemaId, string $calendarUri, string $eventUid): CalendarLink {
+		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
+		return $this->linkLocatedEvent(target: $target, key: new CalendarEventKey(calendarUri: $calendarUri, eventUid: $eventUid));
 	}//end linkEvent()
 
 	/**
@@ -130,8 +122,10 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 * @return CalendarLink The persisted link row.
 	 *
 	 * @throws Exception When no user, or the event is not on that calendar.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	private function linkLocatedEvent(LinkTarget $target, CalendarEventKey $key): CalendarLink {
+	public function linkLocatedEvent(LinkTarget $target, CalendarEventKey $key): CalendarLink {
 		$user = $this->requireUser();
 
 		// Locate the VEVENT on the named calendar so we can cache summary/dtstart/etc.
@@ -218,16 +212,9 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function createAndLinkEvent(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		array $eventData,
-	): CalendarLink {
-		return $this->createLinkedEvent(
-			target: (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId),
-			eventData: $eventData
-		);
+	public function createAndLinkEvent(string $objectUuid, int $registerId, int $schemaId, array $eventData): CalendarLink {
+		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
+		return $this->createLinkedEvent(target: $target, eventData: $eventData);
 	}//end createAndLinkEvent()
 
 	/**
@@ -239,8 +226,10 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 * @return CalendarLink The persisted link row.
 	 *
 	 * @throws Exception When no user, or the event could not be created.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	private function createLinkedEvent(LinkTarget $target, array $eventData): CalendarLink {
+	public function createLinkedEvent(LinkTarget $target, array $eventData): CalendarLink {
 		$user = $this->requireUser();
 
 		$event = $this->calendarEventService->createEvent(
