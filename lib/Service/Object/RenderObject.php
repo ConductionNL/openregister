@@ -639,8 +639,9 @@ class RenderObject implements RenderObjectInterface {
 			$register = $this->getRegister(id: $row->getRegister());
 		}
 
+		$translations = $this->enrichers->translations->translationHandler;
 		$row->setObject(
-			$this->enrichers->translations->translationHandler->resolveTranslationsForRender(objectData: $row->getObject(), schema: $schema, register: $register)
+			$translations->resolveTranslationsForRender(objectData: $row->getObject(), schema: $schema, register: $register)
 		);
 	}//end translateEntityRow()
 
