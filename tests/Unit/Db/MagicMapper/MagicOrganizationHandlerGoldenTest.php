@@ -98,7 +98,7 @@ class MagicOrganizationHandlerGoldenTest extends TestCase {
 		$container = $this->container(caller: $caller);
 
 		$handler = $this->getMockBuilder(MagicOrganizationHandler::class)
-			->setConstructorArgs([$session, $groups, $appConfig, $container, $this->createMock(LoggerInterface::class)])
+			->setConstructorArgs([new MagicMapperIdentity($session, $groups, $this->createMock(IUserManager::class)), $appConfig, $container, $this->createMock(LoggerInterface::class)])
 			->onlyMethods(['isCommandLine'])
 			->getMock();
 		$handler->method('isCommandLine')->willReturn($caller['cli']);

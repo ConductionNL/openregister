@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\Schema;
@@ -144,8 +145,7 @@ class SystemOperationReadScopeTest extends TestCase {
 		$container->method('get')->willReturn($organisationService);
 
 		return new class(
-			$this->session(false),
-			$this->createMock(IGroupManager::class),
+			new MagicMapperIdentity($this->session(false), $this->createMock(IGroupManager::class), $this->createMock(IUserManager::class)),
 			$appConfig,
 			$container,
 			$this->createMock(LoggerInterface::class)

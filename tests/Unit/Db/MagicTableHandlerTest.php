@@ -132,9 +132,8 @@ class MagicTableHandlerTest extends TestCase {
 		// Partial mock: intercept syncTableForRegisterSchema on the handler itself.
 		$handler = $this->getMockBuilder(MagicTableHandler::class)
 			->setConstructorArgs([
-				'db' => $this->db,
+				'sql' => new MagicTableSql(db: $this->db, config: $this->createMock(IConfig::class), logger: $this->logger),
 				'appConfig' => $this->appConfig,
-				'logger' => $this->logger,
 				'magicMapper' => $this->magicMapper,
 			])
 			->onlyMethods(['syncTableForRegisterSchema'])

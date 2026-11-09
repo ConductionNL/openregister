@@ -466,7 +466,8 @@ class MagicBulkHandler {
 			return [];
 		}
 
-		$numberColumnSizes = (new MagicNumberColumnSizes(db: $this->sql->db, tablePrefix: $this->getFullTableName(tableName: '')))->sizes(tableName: $tableName);
+		$sizes = new MagicNumberColumnSizes(db: $this->sql->db, tablePrefix: $this->getFullTableName(tableName: ''));
+		$numberColumnSizes = $sizes->sizes(tableName: $tableName);
 		foreach ($preparedObjects as $preparedObject) {
 			(new MagicNumberColumn())->assertRowFits(row: $preparedObject, columnSizes: $numberColumnSizes);
 		}

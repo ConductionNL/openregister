@@ -478,7 +478,10 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 		$target->tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 		$target->cacheKey = $this->magicMapper->getCacheKey(registerId: $register->getId(), schemaId: $schema->getId());
 
-		$this->sql->logger->info(message: '[MagicTableHandler] Syncing register+schema table', context: $target->logContext(file: __FILE__, line: __LINE__));
+		$this->sql->logger->info(
+			message: '[MagicTableHandler] Syncing register+schema table',
+			context: $target->logContext(file: __FILE__, line: __LINE__)
+		);
 
 		try {
 			return $this->syncTable(target: $target);
@@ -523,7 +526,10 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 			return $this->createMissingTable(target: $target);
 		}
 
-		$this->sql->logger->info(message: '[MagicTableHandler] Table exists, updating structure', context: $target->logContext(file: __FILE__, line: __LINE__));
+		$this->sql->logger->info(
+			message: '[MagicTableHandler] Table exists, updating structure',
+			context: $target->logContext(file: __FILE__, line: __LINE__)
+		);
 
 		$result = $this->alterTable(tableName: $target->tableName, schema: $target->schema);
 		$this->magicMapper->updateTableIndexes(tableName: $target->tableName, register: $target->register, schema: $target->schema);
@@ -562,7 +568,10 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 	 * @return array Statistics: every column was added.
 	 */
 	private function createMissingTable(MagicTableTarget $target): array {
-		$this->sql->logger->info(message: '[MagicTableHandler] Table does not exist, creating it', context: $target->logContext(file: __FILE__, line: __LINE__));
+		$this->sql->logger->info(
+			message: '[MagicTableHandler] Table does not exist, creating it',
+			context: $target->logContext(file: __FILE__, line: __LINE__)
+		);
 
 		$this->magicMapper->createTableForRegisterSchema(register: $target->register, schema: $target->schema);
 		$columns = new TableSyncColumns(required: $this->magicMapper->buildTableColumnsFromSchema(schema: $target->schema));
