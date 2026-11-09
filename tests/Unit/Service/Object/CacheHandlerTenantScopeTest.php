@@ -33,6 +33,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\IResult;
 use OCP\ICacheFactory;
@@ -163,14 +166,20 @@ class CacheHandlerTenantScopeTest extends TestCase {
 			});
 
 		return new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$this->cacheFactory,
-			$this->userSession,
-			$container,
-			$registerMapper,
-			$schemaMapper,
-			$db
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				db: $db
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $this->cacheFactory,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 	}
 

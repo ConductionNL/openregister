@@ -211,7 +211,7 @@ final class SaveObjectCreateObjectTest extends TestCase {
 		});
 		$unified->method('getLastWriteAction')->willReturn($case['action'] ?? 'insert');
 		$cache = $this->createMock(CacheHandler::class);
-		$cache->method('setObjectName')->willReturnCallback(function (string $identifier, string $name, int $ttl = 0, ?string $organisation = null): void {
+		$cache->method('setObjectName')->willReturnCallback(function (string $identifier, string $name, ?string $organisation = null): void {
 			$this->trace[] = ['cacheName', $identifier, $name, $organisation];
 		});
 		$settings = $this->createMock(SettingsService::class);
