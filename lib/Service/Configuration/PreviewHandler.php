@@ -28,6 +28,7 @@ use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\AppFramework\Http\JSONResponse;
 
 /**
@@ -69,11 +70,11 @@ class PreviewHandler {
 	/**
 	 * Constructor for PreviewHandler.
 	 *
-	 * @param PreviewMappers $mappers      The register, schema and object mappers.
-	 * @param FetchHandler   $fetchHandler The fetch handler for remote data fetching.
+	 * @param SchemaCatalogInterface $catalog      The register, schema and object mappers.
+	 * @param FetchHandler           $fetchHandler The fetch handler for remote data fetching.
 	 */
 	public function __construct(
-		private readonly PreviewMappers $mappers,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly FetchHandler $fetchHandler,
 	) {
 	}//end __construct()
@@ -203,11 +204,11 @@ class PreviewHandler {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
 	 */
 	private function previewObjects(array $remoteObjects, array $preview): array {
-		$registersBySlug = self::bySlug(entities: $this->mappers->registerMapper->findAll());
-		$schemasBySlug = self::bySlug(entities: $this->mappers->schemaMapper->findAll());
+		$registersBySlug = self::bySlug(entities: $this->catalog->registers()->findAll());
+		$schemasBySlug = self::bySlug(entities: $this->catalog->schemas()->findAll());
 
 		$compare = fn (array $current, array $proposed): array => $this->compareArrays(current: $current, proposed: $proposed);
-		$objectPreview = new ObjectChangePreview(objectMapper: $this->mappers->objectMapper, compare: $compare);
+		$objectPreview = new ObjectChangePreview(objectMapper: $this->catalog->tables(), compare: $compare);
 		$planned = ['registers' => $objectPreview->createdSlugs(rows: $preview['registers'])];
 		$planned['schemas'] = $objectPreview->createdSlugs(rows: $preview['schemas']);
 		$targets = new ObjectPreviewTargets(registersBySlug: $registersBySlug, schemasBySlug: $schemasBySlug, planned: $planned);
@@ -264,7 +265,7 @@ class PreviewHandler {
 
 		$existingRegister = null;
 		try {
-			$existingRegister = $this->mappers->registerMapper->find($slug);
+			$existingRegister = $this->catalog->registers()->find($slug);
 		} catch (Exception $e) {
 			// Register doesn't exist.
 		}
@@ -301,7 +302,7 @@ class PreviewHandler {
 
 		$existingSchema = null;
 		try {
-			$existingSchema = $this->mappers->schemaMapper->find($slug);
+			$existingSchema = $this->catalog->schemas()->find($slug);
 		} catch (Exception $e) {
 			// Schema doesn't exist.
 		}
