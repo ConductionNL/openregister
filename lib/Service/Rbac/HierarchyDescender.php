@@ -140,7 +140,7 @@ class HierarchyDescender {
 		foreach ($schemas as $schema) {
 			$resolved = array_merge(
 				$resolved,
-				$this->tablesFor(reader: $reader, schema: $schema, registers: $registers)
+				$this->tablesFor(declaration: $this->declarationOf(reader: $reader, schema: $schema), registers: $registers)
 			);
 		}
 
@@ -150,31 +150,41 @@ class HierarchyDescender {
 	}//end hierarchicalTables()
 
 	/**
+	 * One schema's hierarchy declaration, with its schema id and parent column, or null.
+	 *
+	 * @param HierarchyGrantExpander $reader Reads the schema's declaration.
+	 * @param object                 $schema The schema.
+	 *
+	 * @return array<string, mixed>|null The declaration, or null when the schema declares no hierarchy.
+	 */
+	private function declarationOf(HierarchyGrantExpander $reader, object $schema): ?array {
+		$declaration = $reader->declarationFor(schema: $schema);
+		if ($declaration === null) {
+			return null;
+		}
+
+		$declaration['schemaId'] = (int)$schema->getId();
+		$declaration['parentColumn'] = $this->columnFor(property: $declaration['parent']);
+
+		return $declaration;
+	}//end declarationOf()
+
+	/**
 	 * The tables one schema's declared hierarchy is descended in, register by register.
 	 *
-	 * @param HierarchyGrantExpander $reader    Reads the schema's declaration.
-	 * @param object                 $schema    The schema.
-	 * @param array                  $registers Every register.
+	 * @param array<string, mixed>|null $declaration The schema's declaration with its schema id and parent column.
+	 * @param array                     $registers   Every register.
 	 *
 	 * @return array<int, array> Entries in register order; none when the schema declares no hierarchy.
 	 */
-	private function tablesFor(HierarchyGrantExpander $reader, object $schema, array $registers): array {
-		$declaration = $reader->declarationFor(schema: $schema);
+	private function tablesFor(?array $declaration, array $registers): array {
 		if ($declaration === null) {
 			return [];
 		}
 
-		$schemaId = (int)$schema->getId();
-		$parentColumn = $this->columnFor(property: $declaration['parent']);
-
 		$resolved = [];
 		foreach ($registers as $register) {
-			$entry = $this->tableIn(
-				register: $register,
-				schemaId: $schemaId,
-				declaration: $declaration,
-				parentColumn: $parentColumn
-			);
+			$entry = $this->tableIn(register: $register, declaration: $declaration);
 			if ($entry !== null) {
 				$resolved[] = $entry;
 			}
@@ -186,14 +196,14 @@ class HierarchyDescender {
 	/**
 	 * The hierarchy entry for one register's table, or null when the table lacks the parent column.
 	 *
-	 * @param object               $register     The register.
-	 * @param integer              $schemaId     The schema's id.
-	 * @param array<string, mixed> $declaration  The schema's hierarchy declaration.
-	 * @param string               $parentColumn The parent property's column.
+	 * @param object               $register    The register.
+	 * @param array<string, mixed> $declaration The schema's hierarchy declaration, with its schema id and parent column.
 	 *
 	 * @return array<string, mixed>|null The entry, or null.
 	 */
-	private function tableIn(object $register, int $schemaId, array $declaration, string $parentColumn): array|null {
+	private function tableIn(object $register, array $declaration): array|null {
+		$schemaId = $declaration['schemaId'];
+		$parentColumn = $declaration['parentColumn'];
 			// 🔴 THE TABLE IS THE AUTHORITY, NOT THE REGISTER'S `schemas`
 			// LIST. That list is only filled by the paths that attach a
 			// schema to a register explicitly; a register created over the
@@ -443,11 +453,7 @@ class HierarchyDescender {
 		$current = $objectUuid;
 
 		for ($depth = 0; $depth < $hierarchy['maxDepth']; $depth++) {
-			$parent = $this->parentOf(
-				table: $hierarchy['table'],
-				parentColumn: $hierarchy['parentColumn'],
-				uuid: $current
-			);
+			$parent = $this->parentOf(hierarchy: $hierarchy, uuid: $current);
 
 			if ($parent === null || $parent === '' || isset($seen[$parent]) === true) {
 				break;
@@ -490,13 +496,14 @@ class HierarchyDescender {
 	/**
 	 * The uuid one row names as its parent, or null.
 	 *
-	 * @param string $table The magic table.
-	 * @param string $parentColumn The parent column.
-	 * @param string $uuid The row.
+	 * @param array<string, mixed> $hierarchy The row's hierarchy entry: its table and parent column.
+	 * @param string               $uuid      The row.
 	 *
 	 * @return string|null The parent UUID, or null.
 	 */
-	private function parentOf(string $table, string $parentColumn, string $uuid): ?string {
+	private function parentOf(array $hierarchy, string $uuid): ?string {
+		$table = $hierarchy['table'];
+		$parentColumn = $hierarchy['parentColumn'];
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->select($parentColumn)
