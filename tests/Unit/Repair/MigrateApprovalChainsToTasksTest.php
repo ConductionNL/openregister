@@ -32,7 +32,6 @@ use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Repair\MigrateApprovalChainsToTasks;
-use OCA\OpenRegister\Service\Task\TaskBuilder;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -174,7 +173,6 @@ class MigrateApprovalChainsToTasksTest extends TestCase {
 
 		return new MigrateApprovalChainsToTasks(
 			platform: new RepairPlatform(db: $db, config: $this->createMock(IAppConfig::class), logger: new NullLogger()),
-			builder: new TaskBuilder(),
 			stores: new ApprovalTaskStores(tasks: $tasks, candidates: $this->createMock(TaskCandidateMapper::class), audits: $audits, sequences: $sequences)
 		);
 	}//end step()
@@ -387,7 +385,6 @@ class MigrateApprovalChainsToTasksTest extends TestCase {
 
 		$step = new MigrateApprovalChainsToTasks(
 			platform: new RepairPlatform(db: $db, config: $this->createMock(IAppConfig::class), logger: new NullLogger()),
-			builder: new TaskBuilder(),
 			stores: new ApprovalTaskStores(tasks: $this->createMock(TaskMapper::class), candidates: $this->createMock(TaskCandidateMapper::class), audits: $this->createMock(TaskAuditMapper::class), sequences: $this->createMock(TaskSequenceMapper::class))
 		);
 		$step->run($output);
