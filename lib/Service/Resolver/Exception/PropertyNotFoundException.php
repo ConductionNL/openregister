@@ -37,13 +37,6 @@ use Exception;
 class PropertyNotFoundException extends UnresolvedValueException {
 
 	/**
-	 * Slug/UUID of the schema the property lookup targeted.
-	 *
-	 * @var string
-	 */
-	private string $schemaIdentifier;
-
-	/**
 	 * Construct the not-found exception with diagnostic context.
 	 *
 	 * @param ResolverConfigKey $config           The app and config key that resolved.
@@ -54,11 +47,9 @@ class PropertyNotFoundException extends UnresolvedValueException {
 	public function __construct(
 		ResolverConfigKey $config,
 		string $resolvedValue,
-		string $schemaIdentifier,
+		private readonly string $schemaIdentifier,
 		?Exception $previous = null,
 	) {
-		$this->schemaIdentifier = $schemaIdentifier;
-
 		parent::__construct(
 			config: $config,
 			resolvedValue: $resolvedValue,
