@@ -1815,6 +1815,11 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Notifications\\Service\\Webhook\\WebhookInterceptionCacheInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\WebhookInterceptionCacheInterface",
+			"eager": false,
+			"service": true
 		}
 	}
 }

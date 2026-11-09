@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Notifications\Service\Webhook;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Caches, per event type, whether any enabled interception webhook exists.

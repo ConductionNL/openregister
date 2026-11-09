@@ -76,7 +76,7 @@ use OCA\OpenRegister\Notifications\Service\WebPush\HexIconService;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
-use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
+use OCA\OpenRegister\Kernel\Contracts\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\App\IAppManager;
 use OCP\Files\AppData\IAppDataFactory;
