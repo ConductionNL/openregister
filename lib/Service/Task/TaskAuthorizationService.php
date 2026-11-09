@@ -141,9 +141,8 @@ class TaskAuthorizationService {
 	 * answer. Denial is an exception, and the message carries the reason the
 	 * audit records.
 	 *
-	 * @param string $verb One of the lifecycle verbs.
+	 * @param TaskAct $act One of the lifecycle verbs, and the acting identity (null when there is none).
 	 * @param Task $task The task acted on.
-	 * @param string|null $uid The acting identity, or null when there is none.
 	 *
 	 * @return void
 	 *
@@ -151,8 +150,9 @@ class TaskAuthorizationService {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function assertMay(string $verb, Task $task, ?string $uid): void {
-		$attempt = new TaskVerbAttempt(verb: $verb, task: $task, uid: $this->identityOf(verb: $verb, uid: $uid));
+	public function assertMay(TaskAct $act, Task $task): void {
+		$verb = $act->verb;
+		$attempt = new TaskVerbAttempt(verb: $verb, task: $task, uid: $this->identityOf(verb: $verb, uid: $act->actor));
 		$this->assertKnownPerformer(attempt: $attempt);
 
 		// An EXTERNAL task is decided by its own rule set, BEFORE the

@@ -1568,7 +1568,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 */
 	private function authorizeOrRecord(Task $task, TaskAct $act): void {
 		try {
-			$this->authorization->assertMay(verb: $act->verb, task: $task, uid: $act->actor);
+			$this->authorization->assertMay(act: $act, task: $task);
 		} catch (TaskAccessDeniedException $denial) {
 			$this->recordDenial(task: $task, act: new TaskAct(verb: $act->verb, actor: $act->actor, reason: $denial->getMessage()));
 
