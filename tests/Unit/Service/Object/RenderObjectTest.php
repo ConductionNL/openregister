@@ -185,6 +185,22 @@ class RenderObjectTest extends TestCase {
 		return $run;
 	}
 
+	/**
+	 * A wildcard pass over the data at the given depth, as handleWildcardExtends() receives it.
+	 *
+	 * @param array $data  The data to extend.
+	 * @param int   $depth The depth of the pass.
+	 *
+	 * @return \OCA\OpenRegister\Service\Object\ExtendDotRun
+	 */
+	private function wildcardRun(array $data, int $depth): \OCA\OpenRegister\Service\Object\ExtendDotRun {
+		$run = new \OCA\OpenRegister\Service\Object\ExtendDotRun();
+		$run->data  = new \Adbar\Dot($data);
+		$run->depth = $depth;
+
+		return $run;
+	}
+
 	private function invokePrivate(string $method, array $args = []) {
 		$owner = $this->methodOwner($this->handler, $method);
 		$m = new \ReflectionMethod($owner, $method);
@@ -3221,7 +3237,7 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['name' => 'Test', 'items' => ['a', 'b']];
 		$extend = ['name'];
 
-		$result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 0]);
+		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 0), &$extend]);
 
 		$this->assertSame('Test', $result['name']);
 		$this->assertSame(['a', 'b'], $result['items']);
@@ -3231,7 +3247,7 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['items' => [['ref' => 'val']]];
 		$extend = ['items.$.ref'];
 
-		$result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 10]);
+		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 10), &$extend]);
 
 		// At depth 10 it should return data unchanged.
 		$this->assertSame('val', $result['items'][0]['ref']);
@@ -3253,7 +3269,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 0]);
+		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 0), &$extend]);
 
 		// Items should still have the data.
 		$this->assertIsArray($result['items']);
@@ -3264,7 +3280,7 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['items' => 'not-iterable'];
 		$extend = ['items.$.ref'];
 
-		$result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 0]);
+		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 0), &$extend]);
 
 		// Non-iterable root should be skipped gracefully.
 		$this->assertSame('not-iterable', $result['items']);
@@ -3280,7 +3296,7 @@ class RenderObjectTest extends TestCase {
 		// Use a string key override via items.$.name => overridden value.
 		$extend = ['items.$.name' => 'items.$.name'];
 
-		$result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 0]);
+		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 0), &$extend]);
 
 		$this->assertIsArray($result['items']);
 	}
@@ -3293,7 +3309,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['name' => 'Test'];
 		$extend = ['nonexistent'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertSame('Test', $result['name']);
 	}
@@ -3302,7 +3318,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['@self' => ['schema' => 1], 'name' => 'Test'];
 		$extend = ['@self'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// @self should be skipped.
 		$this->assertSame(['schema' => 1], $result['@self']);
@@ -3312,7 +3328,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['ref' => null, 'name' => 'Test'];
 		$extend = ['ref'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertNull($result['ref']);
 	}
@@ -3326,7 +3342,7 @@ class RenderObjectTest extends TestCase {
 		];
 		$extend = ['items'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// Already extended objects (with 'id' or '@self') should be returned as-is.
 		$this->assertSame('uuid-1', $result['items'][0]['id']);
@@ -3342,7 +3358,7 @@ class RenderObjectTest extends TestCase {
 		];
 		$extend = ['items'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// Should filter out null results (non-id arrays return null).
 		$this->assertIsArray($result['items']);
@@ -3358,7 +3374,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// Object not found, should keep original UUID.
 		$this->assertSame($uuid, $result['ref']);
@@ -3384,7 +3400,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// Should be extended to full object.
 		$this->assertIsArray($result['ref']);
@@ -3395,7 +3411,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['ref' => '_internal_value'];
 		$extend = ['ref'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// Values starting with _ should be skipped.
 		$this->assertSame('_internal_value', $result['ref']);
@@ -3405,7 +3421,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['ref' => '@some_value'];
 		$extend = ['ref'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertSame('@some_value', $result['ref']);
 	}
@@ -3419,7 +3435,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// URL value - last path segment used as lookup, not found, skipped.
 		$this->assertSame('http://example.com/api/objects/some-slug', $result['ref']);
@@ -3448,7 +3464,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// uuid1 should be extended, uuid2 preserved as original string.
 		$this->assertIsArray($result['items']);
@@ -3464,7 +3480,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// null and @-prefixed values should be filtered.
 		$this->assertIsArray($result['items']);
@@ -3490,7 +3506,7 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		// Pass uuid as visitedId to trigger circular detection.
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [$uuid])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [$uuid])]);
 
 		$this->assertIsArray($result['items']);
 		$this->assertCount(1, $result['items']);
@@ -3517,7 +3533,7 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		// allFlag = true should add 'all' to sub-extends.
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(true, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(true, [])]);
 
 		$this->assertIsArray($result['ref']);
 		$this->assertArrayHasKey('id', $result['ref']);
@@ -3543,7 +3559,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// With string override, the result should be set at custom.path.
 		$this->assertIsArray($result);
@@ -3569,7 +3585,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertIsArray($result);
 	}
@@ -4208,7 +4224,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertIsArray($result['ref']);
 		$this->assertArrayHasKey('id', $result['ref']);
@@ -4459,7 +4475,7 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		// Pass uuid as visited to trigger circular detection on single value.
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [$uuid])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [$uuid])]);
 
 		// Should detect circular and set @circular flag.
 		$this->assertIsArray($result['ref']);
@@ -4491,7 +4507,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// Should resolve the UUID from the URL and extend.
 		$this->assertIsArray($result['ref']);
@@ -4662,7 +4678,7 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		// allFlag = true should merge 'all' into sub-extend for array items.
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(true, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(true, [])]);
 
 		$this->assertIsArray($result['items']);
 		$this->assertCount(1, $result['items']);
@@ -4890,7 +4906,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertIsArray($result);
 		$this->assertIsArray($result['parent']['child']);
@@ -4921,7 +4937,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertIsArray($result);
 		$this->assertIsArray($result['level1']['level2']['ref']);
@@ -6926,7 +6942,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['list', 'single', 'under', 'at', 'circ', 'gone', 'named' => 'plain', 'dotted', 'list.friend'];
 		$exposures = ['list' => ['exposes' => ['name']], 'single' => ['exposes' => ['name']]];
 
-		return $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun($allFlag, ['u3']), $exposures]);
+		return $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend, $exposures), $this->extendDotRun($allFlag, ['u3'])]);
 	}
 
 	/**
