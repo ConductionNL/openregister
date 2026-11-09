@@ -485,7 +485,8 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 		?array $dateBucket,
 		array $config = [],
 	): ?array {
-		$request = new DbalMetricRequest(metric: $metric, field: $field, filter: $filter, shape: new DbalAggregationShape(groupBy: $groupBy, dateBucket: $dateBucket));
+		$shape   = new DbalAggregationShape(groupBy: $groupBy, dateBucket: $dateBucket);
+		$request = new DbalMetricRequest(metric: $metric, field: $field, filter: $filter, shape: $shape);
 
 		return $this->aggregateMetric(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config), request: $request);
 	}//end aggregate()
@@ -518,7 +519,9 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 
 		$table = $this->fromExpression(connection: $connection, config: $ref->config);
 
-		return $this->aggregator->run(query: $this->aggregator->query(connection: $connection, table: $table, aggregation: $aggregation), shape: $request->shape);
+		$query = $this->aggregator->query(connection: $connection, table: $table, aggregation: $aggregation);
+
+		return $this->aggregator->run(query: $query, shape: $request->shape);
 	}//end aggregateMetric()
 
 	/**
