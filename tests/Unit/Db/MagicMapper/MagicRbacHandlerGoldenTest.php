@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -182,7 +183,7 @@ class MagicRbacHandlerGoldenTest extends TestCase {
 	public function testUnsafeAliasIsRefused(): void {
 		$handler = $this->handler(null, [], 'mysql', 'web');
 		$this->expectException(\InvalidArgumentException::class);
-		$handler->buildRbacPredicateForAlias(new Schema(), 'r; DROP');
+		$handler->buildRbacPredicateForAlias(new Schema(), new AliasedRows('r; DROP'));
 	}//end testUnsafeAliasIsRefused()
 
 	private function outcome(array $caller, string $authName, string $platform, string $mode): array {
@@ -207,7 +208,7 @@ class MagicRbacHandlerGoldenTest extends TestCase {
 			$out = [];
 			$out['sql read'] = $this->capture(fn () => $handler->buildRbacConditionsSql($schema, 'read', '', 'openregister_table_1_2'));
 			$out['sql update prefixed'] = $this->capture(fn () => $handler->buildRbacConditionsSql($schema, 'update', 'r.'));
-			$out['alias predicate'] = $this->capture(fn () => $handler->buildRbacPredicateForAlias($schema, 'rel', 'read'));
+			$out['alias predicate'] = $this->capture(fn () => $handler->buildRbacPredicateForAlias($schema, new AliasedRows('rel', 'read')));
 			$out['row predicate'] = $this->capture(fn () => $handler->buildRbacRowPredicateSql($schema, 'read'));
 			$out['qualifies read'] = $this->capture(fn () => $handler->callerQualifiesForAction($schema, 'read'));
 			$out['qualifies update'] = $this->capture(fn () => $handler->callerQualifiesForAction($schema, 'update'));

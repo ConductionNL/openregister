@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -154,7 +155,7 @@ class ReferencedRowFilterTest extends TestCase {
 
 		$rbac = $this->createMock(MagicRbacHandler::class);
 		$rbac->expects($this->once())->method('buildRbacPredicateForAlias')
-			->with($schema, 'rel0', 'read')
+			->with($schema, new AliasedRows(alias: 'rel0', action: 'read', tableName: 'openregister_table_1_7'))
 			->willReturn('rel0._owner = \'alice\'');
 
 		$sql = [];
