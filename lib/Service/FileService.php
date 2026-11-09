@@ -1655,8 +1655,16 @@ class FileService {
 				return $managed;
 			}
 
-			// Use root folder to search for file by ID.
-			$nodes = $this->rootFolder->getById($fileId);
+			// Any other file is looked up in the caller's own tree only. The root
+			// folder resolves an id across every user's mounts, which would hand
+			// out other users' private files; without a signed-in user there is
+			// no tree to look in.
+			$user = $this->userSession->getUser();
+			if ($user === null) {
+				return null;
+			}
+
+			$nodes = $this->rootFolder->getUserFolder($user->getUID())->getById($fileId);
 
 			if (empty($nodes) === true) {
 				return null;
