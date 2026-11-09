@@ -44,6 +44,7 @@ import axios from '@nextcloud/axios'
  */
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
+import { mailMessageTab } from '../composables/mailMessageTab.js'
 
 // Grounded extraction patterns — kept conservative to avoid false positives.
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g
@@ -54,10 +55,7 @@ const PHONE_RE = /(?:(?:\+|00)\d{1,3}[\s-]?)?(?:\(0\)|0)?(?:[\s-]?\d){8,12}\d/g
 
 export default {
 	name: 'EntitiesTab',
-	props: {
-		accountId: { type: Number, default: null },
-		messageId: { type: Number, default: null },
-	},
+	mixins: [mailMessageTab('loadEntities')],
 
 	data() {
 		return {
@@ -81,19 +79,6 @@ export default {
 			}
 			return groups
 		},
-	},
-
-	watch: {
-		/**
-		 * @spec openspec/specs/mail-sidebar/spec.md
-		 */
-		messageId() {
-			this.loadEntities()
-		},
-	},
-
-	created() {
-		this.loadEntities()
 	},
 
 	methods: {
