@@ -87,7 +87,7 @@ class TransferResultProcessorTest extends TestCase {
 			$logger
 		);
 
-		return new TransferResultProcessor(new TransferOutcomeRecorder($mapper, $records, $auditLog, $logger), $auditLog);
+		return new TransferResultProcessor(new TransferOutcomeRecorder(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $mapper, records: $records, settings: $this->createMock(\OCP\IAppConfig::class), logger: $logger), $auditLog), $auditLog);
 	}//end processor()
 
 	/**

@@ -87,10 +87,10 @@ class EdepotTransferServiceBehaviourTest extends TestCase {
 		);
 		$settings = new TransferSettings($appConfig, $this->logger);
 		$auditLog = new TransferAuditLog($this->createMock(AuditTrailMapperInterface::class), $settings, $this->notifications, $this->logger);
-		$recorder = new TransferOutcomeRecorder($mapper, $this->createMock(TransferRecordService::class), $auditLog, $this->logger);
+		$recorder = new TransferOutcomeRecorder(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $mapper, records: $this->createMock(TransferRecordService::class), settings: $this->createMock(\OCP\IAppConfig::class), logger: $this->logger), $auditLog);
 
 		$this->pipeline   = new TransferPipeline(
-			new TransferObjectGatherer($mapper, new PackagedFileChecksum(), $this->logger),
+			new TransferObjectGatherer(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $mapper, records: $this->createMock(TransferRecordService::class), settings: $this->createMock(\OCP\IAppConfig::class), logger: $this->logger), new PackagedFileChecksum()),
 			new TransferResultProcessor($recorder, $auditLog),
 			$auditLog,
 			$settings

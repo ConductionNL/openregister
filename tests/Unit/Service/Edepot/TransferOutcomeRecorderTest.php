@@ -82,7 +82,7 @@ class TransferOutcomeRecorderTest extends TestCase {
 			new NullLogger()
 		);
 
-		return new TransferOutcomeRecorder($mapper, $records, $auditLog, $logger);
+		return new TransferOutcomeRecorder(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $mapper, records: $records, settings: $this->createMock(\OCP\IAppConfig::class), logger: $logger), $auditLog);
 	}//end recorder()
 
 	public function testAFailingWriteIsLoggedAndNeverThrown(): void {
