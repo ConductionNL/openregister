@@ -69,27 +69,33 @@ class DescriptorParts {
 	 * A descriptor as a map of dotted path to leaf value.
 	 *
 	 * @param array<string, mixed> $descriptor The descriptor.
-	 * @param string               $prefix     The path so far.
-	 * @param int                  $depth      The depth so far.
 	 *
 	 * @return array<string, mixed> Path to value.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
-	public function flatten(array $descriptor, string $prefix = '', int $depth = 0): array {
+	public function flatten(array $descriptor): array {
+		return $this->flattenAt(descriptor: $descriptor, at: new DescriptorPath(prefix: '', depth: 0));
+	}//end flatten()
+
+	/**
+	 * The parts of a (nested) descriptor found at one path.
+	 *
+	 * @param array<string, mixed> $descriptor The descriptor, or the map at this path.
+	 * @param DescriptorPath       $at         The path so far and its depth.
+	 *
+	 * @return array<string, mixed> Path to value.
+	 */
+	private function flattenAt(array $descriptor, DescriptorPath $at): array {
 		$parts = [];
 		foreach ($descriptor as $key => $value) {
-			$path = ($prefix . self::SEPARATOR . (string)$key);
-			if ($prefix === '') {
+			$path = ($at->prefix . self::SEPARATOR . (string)$key);
+			if ($at->prefix === '') {
 				$path = (string)$key;
 			}
 
-			if (is_array($value) === true
-				&& $this->isList(value: $value) === false
-				&& $value !== []
-				&& $depth < self::MAX_DEPTH
-			) {
-				$parts += $this->flatten(descriptor: $value, prefix: $path, depth: ($depth + 1));
+			if ($this->descends(value: $value, depth: $at->depth) === true) {
+				$parts += $this->flattenAt(descriptor: $value, at: new DescriptorPath(prefix: $path, depth: ($at->depth + 1)));
 				continue;
 			}
 
@@ -97,7 +103,22 @@ class DescriptorParts {
 		}
 
 		return $parts;
-	}//end flatten()
+	}//end flattenAt()
+
+	/**
+	 * Whether the walk goes into a value: a non-empty map above the depth bound.
+	 *
+	 * @param mixed $value The value.
+	 * @param int   $depth The depth of the value's path.
+	 *
+	 * @return bool True when the value is walked rather than kept as a leaf.
+	 */
+	private function descends(mixed $value, int $depth): bool {
+		return is_array($value) === true
+			&& $this->isList(value: $value) === false
+			&& $value !== []
+			&& $depth < self::MAX_DEPTH;
+	}//end descends()
 
 	/**
 	 * Parts back into a descriptor.
