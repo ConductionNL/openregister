@@ -132,4 +132,48 @@ class ImportHandlerSchemaVersioningWiringTest extends TestCase {
 
 		$this->assertSame($seeder, (new ReflectionProperty(ImportHandler::class, 'selectionListSeeder'))->getValue($handler));
 	}//end testTheImportHandlerIsGivenTheSelectionListSeeder()
+
+	/**
+	 * The factory hands the import its flow trigger validator, or every imported flow is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function testTheImportHandlerIsGivenTheFlowTriggerValidator(): void {
+		$handler = new ImportHandler(
+			schemaMapper: $this->createMock(SchemaMapper::class),
+			registerMapper: $this->createMock(RegisterMapper::class),
+			objectEntityMapper: $this->createMock(MagicMapper::class),
+			configurationMapper: $this->createMock(ConfigurationMapper::class),
+			mappingMapper: $this->createMock(MappingMapper::class),
+			client: $this->createMock(Client::class),
+			appConfig: $this->createMock(IAppConfig::class),
+			logger: $this->createMock(LoggerInterface::class),
+			appDataPath: '/tmp',
+			uploadHandler: $this->createMock(UploadHandler::class),
+			objectService: $this->createMock(ObjectService::class)
+		);
+
+		$validator = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTriggerValidator::class);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			static function (string $id) use ($validator): object {
+				if ($id === \OCA\OpenRegister\Service\Flow\FlowTriggerValidator::class) {
+					return $validator;
+				}
+
+				throw new RuntimeException('not in this test: ' . $id);
+			}
+		);
+
+		(new ReflectionMethod(ConfigurationServiceRegistrar::class, 'attachOptionalImportServices'))->invoke(
+			null,
+			$handler,
+			$container,
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$this->assertSame($validator, (new ReflectionProperty(ImportHandler::class, 'flowTriggerValidator'))->getValue($handler));
+	}//end testTheImportHandlerIsGivenTheFlowTriggerValidator()
 }//end class
