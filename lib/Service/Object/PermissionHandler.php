@@ -69,6 +69,7 @@ use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
 use OCA\OpenRegister\Service\Rbac\RoleBlockExpander;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
+use OCA\OpenRegister\Service\Rbac\TokenGrantTarget;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -1544,10 +1545,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 			$denials[$action] = $this->denialFor(authorization: $cascaded, action: $action, userId: $userId, object: $object);
 		}
 
-		$resolver = new ProvenanceResolver(denyResolver: $this->denyResolver());
+		$resolver = new ProvenanceResolver(denyResolver: $this->denyResolver(), principals: $principals);
 		$enforced = $this->denyEnforcementMode()->enforces();
 
-		return $resolver->forActions(actions: $actions, principals: $principals, blocks: $blocks, denials: $denials, enforced: $enforced);
+		return $resolver->forActions(actions: $actions, blocks: $blocks, denials: $denials, enforced: $enforced);
 	}//end provenanceFor()
 
 	/**
@@ -2958,8 +2959,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		return $this->tokenGrantNarrower->narrow(
 			authorization: $authorization,
 			grant: $grant,
-			schemaSlug: $schema->getSlug(),
-			registerSlug: $registerSlug
+			target: new TokenGrantTarget(schemaSlug: $schema->getSlug(), registerSlug: $registerSlug)
 		);
 	}//end narrowByToken()
 

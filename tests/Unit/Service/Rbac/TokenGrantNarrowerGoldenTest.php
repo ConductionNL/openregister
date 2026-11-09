@@ -30,6 +30,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
+use OCA\OpenRegister\Service\Rbac\TokenGrantTarget;
 use OCA\OpenRegister\Service\Rbac\TokenGrantReach;
 use OCA\OpenRegister\Service\Rbac\TokenGrantTerms;
 use PHPUnit\Framework\TestCase;
@@ -114,7 +115,7 @@ final class TokenGrantNarrowerGoldenTest extends TestCase {
 		$actual = [];
 		foreach ($blocks as $blockKey => $block) {
 			foreach ($grants as $grantKey => $grant) {
-				$actual[$blockKey.'|'.$grantKey] = $narrower->narrow($block, $grant, 'zaken', 'main', self::now());
+				$actual[$blockKey.'|'.$grantKey] = $narrower->narrow($block, $grant, new TokenGrantTarget('zaken', 'main'), self::now());
 			}
 		}
 
@@ -189,11 +190,11 @@ final class TokenGrantNarrowerGoldenTest extends TestCase {
 	 */
 	public function testNoGrantStripsADeclaredMarkerOnly(): void {
 		$narrower = new TokenGrantNarrower();
-		$this->assertNull($narrower->narrow(null, null, 'zaken', 'main', self::now()));
-		$this->assertSame([], $narrower->narrow([], null, null, null));
-		$this->assertSame(['read' => ['x']], $narrower->narrow(['read' => ['x']], null, null, null));
-		$this->assertSame(['read' => ['x']], $narrower->narrow(['read' => ['x'], self::M => ['verbs' => ['delete']]], null, null, null));
-		$this->assertSame([], $narrower->narrow([self::M => null], null, null, null));
+		$this->assertNull($narrower->narrow(null, null, new TokenGrantTarget('zaken', 'main'), self::now()));
+		$this->assertSame([], $narrower->narrow([], null, new TokenGrantTarget(null, null)));
+		$this->assertSame(['read' => ['x']], $narrower->narrow(['read' => ['x']], null, new TokenGrantTarget(null, null)));
+		$this->assertSame(['read' => ['x']], $narrower->narrow(['read' => ['x'], self::M => ['verbs' => ['delete']]], null, new TokenGrantTarget(null, null)));
+		$this->assertSame([], $narrower->narrow([self::M => null], null, new TokenGrantTarget(null, null)));
 	}//end testNoGrantStripsADeclaredMarkerOnly()
 
 	/**
@@ -203,8 +204,8 @@ final class TokenGrantNarrowerGoldenTest extends TestCase {
 	 */
 	public function testTheDefaultClockIsUsedWhenNoneIsGiven(): void {
 		$narrower = new TokenGrantNarrower();
-		$this->assertSame(['read'], $narrower->narrow([], self::grant(['read'], null, null, '2999-01-01T00:00:00+00:00'), null, null)[self::M]['verbs']);
-		$this->assertSame([], $narrower->narrow([], self::grant(['read'], null, null, '2000-01-01T00:00:00+00:00'), null, null)[self::M]['verbs']);
+		$this->assertSame(['read'], $narrower->narrow([], self::grant(['read'], null, null, '2999-01-01T00:00:00+00:00'), new TokenGrantTarget(null, null))[self::M]['verbs']);
+		$this->assertSame([], $narrower->narrow([], self::grant(['read'], null, null, '2000-01-01T00:00:00+00:00'), new TokenGrantTarget(null, null))[self::M]['verbs']);
 	}//end testTheDefaultClockIsUsedWhenNoneIsGiven()
 
 	/**
