@@ -339,23 +339,24 @@ final class FilterParams {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
 	 */
 	public static function warnUnknownKeys(?LoggerInterface $logger, array $keys, string $endpoint, string $register, string $schema): void {
-		if ($logger === null || $keys === []) {
-			return;
-		}
-
-		$context = ['app' => 'openregister', 'endpoint' => $endpoint, 'register' => $register, 'schema' => $schema, 'keys' => array_values($keys)];
-		$logger->warning(self::unknownKeysMessage(context: $context), $context);
+		$context = ['app' => 'openregister', 'endpoint' => $endpoint, 'register' => $register, 'schema' => $schema];
+		self::logUnknownKeys(logger: $logger, context: $context + ['keys' => array_values($keys)]);
 	}//end warnUnknownKeys()
 
 	/**
-	 * The warning line for the unknown filter keys a log context names.
+	 * Write the one warning line for the unknown filter keys a log context names.
 	 *
+	 * @param LoggerInterface|null                                                                    $logger  Where to write; null writes nothing.
 	 * @param array{app: string, endpoint: string, register: string, schema: string, keys: list<string>} $context The log context.
 	 *
-	 * @return string The line.
+	 * @return void
 	 */
-	private static function unknownKeysMessage(array $context): string {
-		return sprintf(
+	private static function logUnknownKeys(?LoggerInterface $logger, array $context): void {
+		if ($logger === null || $context['keys'] === []) {
+			return;
+		}
+
+		$message = sprintf(
 			'[OpenRegister] %s: filter key(s) "%s" name no property of schema "%s" in register "%s", so they do not'
 			. ' filter on a property. Check the spelling; an unknown filter key is meant to become an HTTP 400.',
 			$context['endpoint'],
@@ -363,7 +364,8 @@ final class FilterParams {
 			$context['schema'],
 			$context['register']
 		);
-	}//end unknownKeysMessage()
+		$logger->warning($message, $context);
+	}//end logUnknownKeys()
 
 	/**
 	 * The names an aggregation action never reads as a filter: its own control
