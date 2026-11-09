@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service\Object\DeletionGraph;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 
 /**
  * Redacts the objects of a deletion analysis that the caller cannot read.
@@ -82,9 +83,11 @@ final class ReadableDeletionAnalysis {
 
 		return new DeletionAnalysis(
 			deletable: $analysis->deletable,
-			cascadeTargets: $this->redactEntries(entries: $analysis->cascadeTargets),
-			nullifyTargets: $this->redactEntries(entries: $analysis->nullifyTargets),
-			defaultTargets: $this->redactEntries(entries: $analysis->defaultTargets),
+			effects: new DeletionEffects(
+				cascadeTargets: $this->redactEntries(entries: $analysis->cascadeTargets),
+				nullifyTargets: $this->redactEntries(entries: $analysis->nullifyTargets),
+				defaultTargets: $this->redactEntries(entries: $analysis->defaultTargets)
+			),
 			blockers: $this->redactEntries(entries: $analysis->blockers),
 			chainPaths: array_map(fn ($chain) => $this->redactChain(chain: $chain), $analysis->chainPaths)
 		);
