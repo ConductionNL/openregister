@@ -547,7 +547,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$limiter = $this->createMock(CallerRateLimiter::class);
 		$limiter->method('consume')->willReturn($outcome);
 		$recorder = $this->createMock(ApiCallRecorder::class);
-		$recorder->expects($this->once())->method('record')->with('caller-1', '/api/objects', 'GET', '1');
+		$recorder->expects($this->once())->method('record')->with('/api/objects', 'GET', '1');
 		$mw = $this->caller('/api/objects', $policy, $limiter, $recorder);
 		$mw->beforeController(null, 'm');
 		$response = new Response();
