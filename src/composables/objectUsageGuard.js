@@ -14,11 +14,16 @@ import { objectStore, schemaStore } from '../store/store.js'
 /**
  * Build the guard mixin.
  *
+ * @spec exclude UI plumbing — builds the delete-enablement guard mixin.
  * @param {function(): boolean} isOpen Whether the dialog is open
  * @return {object} The mixin
  */
 export function objectUsageGuard(isOpen) {
 	return {
+		/**
+		 * @spec exclude UI state — whether the one-time dialog init has run.
+		 * @return {object} The mixin's data
+		 */
 		data() {
 			return { isUpdated: false }
 		},
