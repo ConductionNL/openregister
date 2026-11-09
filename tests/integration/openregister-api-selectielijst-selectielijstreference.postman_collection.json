@@ -5,6 +5,19 @@
 		"description": "Route coverage for selectielijst, selectielijstReference, Settings\\EdepotSettings, transfer, gitHubIssues, flowRun, flowRunMigration, task, taskNotes, taskEvents, portalTask, case and federatedConfig. Each route gets its success path, an unknown-id or invalid-input answer where the controller has one, and for non-admin routes the answer for a non-admin user without rights. Seeds its own data: 00 setup creates a register, schema, object and a non-admin user, stores their ids in collection variables, and 99 teardown deletes them; every folder creates and removes the further fixtures it needs. Depends on no other collection.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Every request authenticates on its own basic-auth header: drop the Nextcloud session cookie",
+					"// so a non-admin or anonymous request never rides on the admin session (and vice versa).",
+					"pm.cookies.jar().clear(pm.variables.replaceIn('{{base_url}}'), function () {});"
+				]
+			}
+		}
+	],
 	"auth": {
 		"type": "basic",
 		"basic": [
