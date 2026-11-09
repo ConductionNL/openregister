@@ -50,16 +50,29 @@ final class VeventCodec {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function calendarData(string $uid, DateTime $dtstart, array $data, array $link): string {
+		return $this->calendarDataOf(draft: new VeventDraft(uid: $uid, dtstart: $dtstart, data: $data, link: $link));
+	}//end calendarData()
+
+	/**
+	 * The iCalendar text of a new event, as calendarData() builds it.
+	 *
+	 * @param VeventDraft $draft The UID, start, event data and linked object.
+	 *
+	 * @return string The CRLF-terminated iCalendar text.
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function calendarDataOf(VeventDraft $draft): string {
 		$lines = array_merge(
-			$this->eventOpeningLines(uid: $uid),
-			$this->eventStartLines(summary: ($data['summary'] ?? 'Untitled event'), dtstart: $dtstart),
-			$this->eventDetailLines(data: $data),
-			$this->eventLinkLines(link: $link),
+			$this->eventOpeningLines(uid: $draft->uid),
+			$this->eventStartLines(summary: ($draft->data['summary'] ?? 'Untitled event'), dtstart: $draft->dtstart),
+			$this->eventDetailLines(data: $draft->data),
+			$this->eventLinkLines(link: $draft->link),
 			['END:VEVENT', 'END:VCALENDAR']
 		);
 
 		return implode("\r\n", $lines) . "\r\n";
-	}//end calendarData()
+	}//end calendarDataOf()
 
 	/**
 	 * Read the start time an event must have, or refuse to build one.
@@ -215,16 +228,30 @@ final class VeventCodec {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function eventArray(mixed $vevent, string $calendarId, string $uri): array {
+		return $this->eventArrayAt(vevent: $vevent, address: new CalendarObjectAddress(calendarId: $calendarId, uri: $uri));
+	}//end eventArray()
+
+	/**
+	 * The event array of a VEVENT stored at one calendar object address.
+	 *
+	 * @param mixed                 $vevent  The VEVENT component.
+	 * @param CalendarObjectAddress $address The calendar and object URI the VEVENT is stored under.
+	 *
+	 * @return array<string, mixed> The event.
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function eventArrayAt(mixed $vevent, CalendarObjectAddress $address): array {
 		return array_merge(
 			[
-				'id' => $uri,
+				'id' => $address->uri,
 				'uid' => $this->veventText(vevent: $vevent, property: 'UID'),
-				'calendarId' => $calendarId,
+				'calendarId' => $address->calendarId,
 			],
 			$this->veventFields(vevent: $vevent),
 			$this->extractOpenRegisterProperties(vevent: $vevent)
 		);
-	}//end eventArray()
+	}//end eventArrayAt()
 
 	/**
 	 * The descriptive fields of a VEVENT, in the order the event array lists them.
