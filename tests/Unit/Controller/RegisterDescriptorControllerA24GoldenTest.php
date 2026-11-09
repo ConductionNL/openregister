@@ -89,7 +89,6 @@ class RegisterDescriptorControllerA24GoldenTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->willReturnCallback(fn (string $checked): bool => ($checked === $uid && $admin));
 		return RegisterDescriptorControllerFactory::create(
-			"openregister",
 			$this->createMock(IRequest::class),
 			$this->descriptors,
 			$session,
