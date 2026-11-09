@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Notifications\Service\Timeline;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
+use OCA\OpenRegister\Notifications\Db\TimelineEntryScope;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use Psr\Log\LoggerInterface;
@@ -126,10 +127,8 @@ class TimelineEntrySearchService {
 
 		$candidates = $this->entries->search(
 			term: $trimmed,
-			objectUuids: null,
-			visibility: $normalised,
-			kind: $kind,
-			limit: ($limit * self::OVERFETCH)
+			scope: new TimelineEntryScope(objectUuids: null, kind: $kind, limit: ($limit * self::OVERFETCH)),
+			visibility: $normalised
 		);
 
 		$hits = [];

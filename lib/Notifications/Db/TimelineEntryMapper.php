@@ -147,26 +147,19 @@ class TimelineEntryMapper extends QBMapper {
 	 * page that was already built (D-1): filtering afterwards shortens every
 	 * page by an unknown amount and still reports the unfiltered count.
 	 *
-	 * `$objectUuids` has three states and they are deliberately not two.
-	 * `null` means "do not narrow by object": the caller resolves access per
-	 * row, which is what the cross-object search does, because the set of
-	 * objects a handler may read is unbounded. An EMPTY ARRAY means "narrow to
-	 * nothing" and returns nothing, which is what a subject-scoped reader with
-	 * an empty scope must get. Collapsing those two onto one empty value is
-	 * how an access failure turns into a full read.
+	 * The scope's object list has three states, see {@see TimelineEntryScope}:
+	 * null does not narrow, an EMPTY list returns nothing.
 	 *
-	 * @param string                 $term        The search term.
-	 * @param array<int,string>|null $objectUuids The objects to narrow to, or null for no narrowing.
-	 * @param string|null            $visibility  The visibility the caller is entitled to, or null for both.
-	 * @param string|null            $kind        Narrow to one kind.
-	 * @param integer                $limit       Page size, capped at SEARCH_LIMIT.
+	 * @param string             $term       The search term.
+	 * @param TimelineEntryScope $scope      The objects, kind and page size (capped at SEARCH_LIMIT).
+	 * @param string|null        $visibility The visibility the caller is entitled to, or null for both.
 	 *
 	 * @return array<int, TimelineEntry> The matching rows, newest first.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/unified-search-provider/spec.md
 	 */
-	public function search(string $term, ?array $objectUuids = null, ?string $visibility = null, ?string $kind = null, int $limit = 50): array {
-		if (is_array($objectUuids) === true && $objectUuids === []) {
+	public function search(string $term, TimelineEntryScope $scope, ?string $visibility = null): array {
+		if ($scope->narrowsToNothing() === true) {
 			return [];
 		}
 
@@ -175,12 +168,12 @@ class TimelineEntryMapper extends QBMapper {
 			->from($this->getTableName())
 			->where($qb->expr()->iLike('message', $qb->createNamedParameter('%'.$this->db->escapeLikeParameter($term).'%')))
 			->orderBy('created', 'DESC')
-			->setMaxResults(min(max($limit, 1), self::SEARCH_LIMIT));
+			->setMaxResults(min(max($scope->limit, 1), self::SEARCH_LIMIT));
 
-		$this->whereObjectIn(qb: $qb, objectUuids: $objectUuids);
+		$this->whereObjectIn(qb: $qb, objectUuids: $scope->objectUuids);
 		$this->whereEqualsWhenGiven(qb: $qb, column: 'visibility', value: $visibility);
 
-		return $this->findOfKind(qb: $qb, kind: $kind);
+		return $this->findOfKind(qb: $qb, kind: $scope->kind);
 	}//end search()
 
 	/**
@@ -189,26 +182,24 @@ class TimelineEntryMapper extends QBMapper {
 	 * A callback nobody made is a property of the request, not of the case
 	 * (D-3), so the list that answers "what is still open" spans cases.
 	 *
-	 * @param array<int,string>|null $objectUuids The objects to narrow to; null does not narrow, [] narrows to nothing.
-	 * @param string|null            $kind        Narrow to one kind.
-	 * @param integer                $limit       Page size.
+	 * @param TimelineEntryScope $scope The objects (null does not narrow, [] narrows to nothing), kind and page size.
 	 *
 	 * @return array<int, TimelineEntry> The open rows, oldest first.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function findOpenFollowUps(?array $objectUuids = null, ?string $kind = null, int $limit = 50): array {
-		if (is_array($objectUuids) === true && $objectUuids === []) {
+	public function findOpenFollowUps(TimelineEntryScope $scope): array {
+		if ($scope->narrowsToNothing() === true) {
 			return [];
 		}
 
 		$qb = $this->selectWhereEquals(columns: ['follow_up' => TimelineEntry::FOLLOW_UP_OPEN]);
 		$qb->orderBy('created', 'ASC')
-			->setMaxResults($limit);
+			->setMaxResults($scope->limit);
 
-		$this->whereObjectIn(qb: $qb, objectUuids: $objectUuids);
+		$this->whereObjectIn(qb: $qb, objectUuids: $scope->objectUuids);
 
-		return $this->findOfKind(qb: $qb, kind: $kind);
+		return $this->findOfKind(qb: $qb, kind: $scope->kind);
 	}//end findOpenFollowUps()
 
 	/**
