@@ -33,7 +33,6 @@ use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
 use OCA\OpenRegister\Service\Sync\SyncScheduleInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -79,22 +78,28 @@ class SyncDataJob extends TimedJob {
 	private readonly HarvestPipelineServiceInterface $pipeline;
 
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory                    $time            Time factory for scheduling
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
 	 * @param SyncDataServices $services Sources, schedule, fetchers and harvest pipeline.
-	 * @param LoggerInterface                 $logger          Logger
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		JobRuntime $runtime,
 		SyncDataServices $services,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->logger = $runtime->logger;
 		$this->sourceMapper = $services->sourceMapper;
 		$this->scheduleService = $services->scheduleService;
 		$this->fetcherRegistry = $services->fetcherRegistry;
 		$this->pipeline = $services->pipeline;
-		parent::__construct(time: $time);
+		parent::__construct(time: $runtime->time);
 
 		// Run every hour; each source is gated by its own interval.
 		$this->setInterval(seconds: 3600);

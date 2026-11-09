@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use DateTime;
 use Exception;
 use GuzzleHttp\Client;
@@ -41,13 +42,12 @@ class SyncConfigurationsJobTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->job = new SyncConfigurationsJob(
-			$timeFactory,
+			new JobRuntime($timeFactory, $this->logger),
 			$this->configurationMapper,
 			$this->configurationService,
 			$this->githubService,
 			$this->gitlabService,
 			$this->httpClient,
-			$this->logger,
 		);
 	}
 

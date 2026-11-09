@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\BackgroundJob\TransferCheckJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
@@ -62,10 +63,8 @@ class TransferCheckJobTest extends TestCase {
 		);
 
 		$this->job = new TransferCheckJob(
-			$this->createMock(ITimeFactory::class),
-			new TransferCheckServices($this->retentionService, $this->transferListService, $this->transferRecordService),
-			$this->appConfig,
-			$this->createMock(LoggerInterface::class)
+			new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $this->appConfig, $this->createMock(LoggerInterface::class)),
+			new TransferCheckServices($this->retentionService, $this->transferListService, $this->transferRecordService)
 		);
 	}//end setUp()
 
@@ -128,10 +127,8 @@ class TransferCheckJobTest extends TestCase {
 		);
 
 		$job = new TransferCheckJob(
-			$this->createMock(ITimeFactory::class),
-			new TransferCheckServices($this->retentionService, $this->transferListService, $this->transferRecordService),
-			$appConfig,
-			$this->createMock(LoggerInterface::class)
+			new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $this->createMock(LoggerInterface::class)),
+			new TransferCheckServices($this->retentionService, $this->transferListService, $this->transferRecordService)
 		);
 
 		$this->retentionService->expects($this->never())->method('findEligibleForTransfer');

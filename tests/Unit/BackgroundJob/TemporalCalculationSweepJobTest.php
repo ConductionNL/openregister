@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -85,10 +86,8 @@ class TemporalCalculationSweepJobTest extends TestCase {
 		);
 
 		return new TemporalCalculationSweepJob(
-			$this->createMock(ITimeFactory::class),
-			$appConfig,
+			new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $this->logger),
 			$this->sweep,
-			$this->logger,
 		);
 	}//end job()
 

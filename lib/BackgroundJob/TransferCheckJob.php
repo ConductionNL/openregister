@@ -30,7 +30,6 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\Service\Edepot\TransferListRunInterface;
 use OCA\OpenRegister\Service\Edepot\TransferRecordServiceInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -76,25 +75,37 @@ class TransferCheckJob extends TimedJob {
 	private readonly TransferRecordServiceInterface $transferRecords;
 
 	/**
+	 * AppConfig, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time The time factory.
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
 	 * @param TransferCheckServices $services Retention sweep, transfer list run and transfer records.
-	 * @param IAppConfig $appConfig The app configuration.
-	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		ConfiguredJobRuntime $runtime,
 		TransferCheckServices $services,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->logger = $runtime->logger;
+		$this->appConfig = $runtime->appConfig;
 		$this->retentionService = $services->retentionService;
 		$this->transferListService = $services->transferListService;
 		$this->transferRecords = $services->transferRecords;
-		parent::__construct(time: $time);
+		parent::__construct(time: $runtime->time);
 
 		$interval = (int)$this->appConfig->getValueString(
 			'openregister',

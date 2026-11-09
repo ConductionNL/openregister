@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\Support\SyncDataServices;
 use OCA\OpenRegister\BackgroundJob\SyncDataJob;
@@ -41,9 +42,8 @@ class SyncDataJobBehaviourTest extends TestCase {
 		$fetchers = $this->createMock(SourceFetcherLookupInterface::class);
 		$fetchers->method('get')->willReturn($this->createMock(SourceFetcherInterface::class));
 		$job = new SyncDataJob(
-			$this->createMock(ITimeFactory::class),
-			new SyncDataServices($sources, $schedule, $fetchers, $pipeline),
-			$logger
+			new JobRuntime($this->createMock(ITimeFactory::class), $logger),
+			new SyncDataServices($sources, $schedule, $fetchers, $pipeline)
 		);
 		(new \ReflectionMethod($job, 'run'))->invoke($job, null);
 	}
