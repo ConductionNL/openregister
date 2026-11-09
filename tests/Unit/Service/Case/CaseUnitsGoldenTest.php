@@ -47,8 +47,11 @@ use OCA\OpenRegister\Service\Case\CasePlanBringOver;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
 use OCA\OpenRegister\Service\Case\CasePlanEnsurer;
+use OCA\OpenRegister\Service\Case\CasePlanInsertion;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\CasePlanMechanics;
+use OCA\OpenRegister\Service\Case\CasePlanPlacement;
+use OCA\OpenRegister\Service\Case\CasePlanProvenance;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanStore;
@@ -467,17 +470,13 @@ class CaseUnitsGoldenTest extends TestCase {
 		];
 		$rowFrom = static fn (array $node, string $origin, ?string $flowUuid = null, ?int $flowVersion = null): mixed => self::attempt(
 			static fn (): CaseItem => $definitions->rowFrom(
-				node: $node,
-				objectUuid: 'obj',
-				registerId: 1,
-				schemaId: null,
-				parentId: 9,
-				position: 3,
-				settings: ['a' => 1],
-				origin: $origin,
-				actor: 'alice',
-				flowUuid: $flowUuid,
-				flowVersion: $flowVersion
+				placed: new CasePlanPlacement(node: $node, parentId: 9, position: 3),
+				insertion: new CasePlanInsertion(
+					anchor: new CaseAnchor(objectUuid: 'obj', registerId: 1, schemaId: null),
+					settings: ['a' => 1],
+					actor: 'alice',
+					provenance: new CasePlanProvenance(flowUuid: $flowUuid, flowVersion: $flowVersion, origin: $origin)
+				)
 			)
 		);
 		$out['rowFrom']['full'] = $rowFrom($full, CaseItem::ORIGIN_DISCRETIONARY, 'f', 4);

@@ -36,39 +36,34 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\WorkflowEngine;
 
-use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
 use OCP\WorkflowEngine\IRuleMatcher;
-use OCP\WorkflowEngine\ISpecificOperation;
 use Psr\Log\LoggerInterface;
 use UnexpectedValueException;
 
 /**
  * Runs a named OpenRegister flow when a matching Nextcloud Flow rule fires.
  */
-class RunFlowOperation implements ISpecificOperation {
+class RunFlowOperation implements RunFlowOperationInterface {
 	/**
 	 * Constructor.
 	 *
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator Icon path resolver.
-	 * @param FlowMapperInterface $flows Resolves a flow by the name the rule configured.
-	 * @param FlowRunServiceInterface $runner Queues the run.
+	 * @param RunFlowOperationFlows $flowRuns Resolves a flow by name and queues its run.
 	 * @param LoggerInterface $logger Logs skipped/failed invocations.
 	 */
 	public function __construct(
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
-		private readonly FlowMapperInterface $flows,
-		private readonly FlowRunServiceInterface $runner,
+		private readonly RunFlowOperationFlows $flowRuns,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -192,7 +187,7 @@ class RunFlowOperation implements ISpecificOperation {
 		try {
 			$matches = array_values(
 				array_filter(
-					$this->flows->findAllFlows(limit: 500),
+					$this->flowRuns->flows->findAllFlows(limit: 500),
 					static fn ($f): bool => $f->getName() === $name
 				)
 			);
@@ -218,7 +213,7 @@ class RunFlowOperation implements ISpecificOperation {
 		}
 
 		try {
-			$this->runner->queue(
+			$this->flowRuns->runner->queue(
 				flowId: (string)$flow->getUuid(),
 				subject: [
 					'uuid' => $object->getUuid(),

@@ -47,6 +47,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorStores;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunStores;
@@ -420,11 +421,9 @@ abstract class ManifestScheduleHarness extends TestCase {
 	 */
 	private function flowLocator(FlowMapper $flowMapper): FlowLocator {
 		return new FlowLocator(
-			$flowMapper,
-			$this->createMock(FlowTriggerMapper::class),
+			new FlowLocatorStores($flowMapper, $this->createMock(FlowTriggerMapper::class), $this->createMock(FlowVersionMapper::class)),
 			$this->createMock(ObjectOperationsInterface::class),
-			$this->logger,
-			$this->createMock(FlowVersionMapper::class)
+			$this->logger
 		);
 	}
 

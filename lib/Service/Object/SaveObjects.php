@@ -85,6 +85,8 @@ use OCA\OpenRegister\Service\Object\SaveObjects\BulkRowPropertyAuthorization;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkEventCandidate;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
+use OCA\OpenRegister\Service\Object\SaveObjects\IdentifiedRow;
+use OCA\OpenRegister\Service\Object\SaveObjects\PersistedChunk;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -714,11 +716,7 @@ class SaveObjects {
 			return $this->prepareObjectsForBulkSave(objects: $objects);
 		}
 
-		return $this->prepareSingleSchemaObjectsOptimized(
-			objects: $objects,
-			register: $run->register,
-			schema: $run->schema
-		);
+		return $this->prepareSingleSchemaObjectsOptimized(objects: $objects, run: $run);
 	}//end prepareByPath()
 
 	/**
@@ -1560,7 +1558,7 @@ class SaveObjects {
 		}
 
 		try {
-			return self::validationFailure(validator: $validator, row: $row, schema: $run->rowSchema);
+			return $this->validationFailure(row: $row, schema: $run->rowSchema);
 		} catch (\Throwable $e) {
 			return 'Schema validation threw: ' . $e->getMessage();
 		}
@@ -1569,13 +1567,19 @@ class SaveObjects {
 	/**
 	 * The validation failure of a row's business data, or null when it is valid.
 	 *
-	 * @param ValidateObjectInterface $validator The validator
-	 * @param array                   $row       The row
-	 * @param Schema                  $schema    The row's schema
+	 * Reached only once validationRefusal() saw a validator; without one nothing is refused.
+	 *
+	 * @param array  $row    The row
+	 * @param Schema $schema The row's schema
 	 *
 	 * @return string|null
 	 */
-	private static function validationFailure(ValidateObjectInterface $validator, array $row, Schema $schema): ?string {
+	private function validationFailure(array $row, Schema $schema): ?string {
+		$validator = $this->validateHandler;
+		if ($validator === null) {
+			return null;
+		}
+
 		unset($row['@self']);
 		$validationResult = $validator->validateObject(object: $row, schema: $schema);
 		if ($validationResult->isValid() === true) {
@@ -2311,7 +2315,7 @@ class SaveObjects {
 		$schema = $this->cachedPreparationSchema(schemaId: $schemaId, schemaCache: $schemaCache);
 		$object = $this->withGeneratedSelfId(object: $object);
 		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
-		$selfData = $this->applyHydratedMetadata(selfData: ($object['@self'] ?? []), object: $object, tempEntity: $tempEntity);
+		$selfData = $this->applyHydratedMetadata(object: $object, tempEntity: $tempEntity);
 		$selfData['relations'] = (new BulkRelationScanner())->scan(data: $tempEntity->getObject(), run: new BulkRelationRun(schema: $schema));
 		$object['@self'] = $selfData;
 
@@ -2364,9 +2368,8 @@ class SaveObjects {
 	 * SaveObject::hydrateObjectMetadata() to extract name, description, summary, etc.
 	 * from object data based on schema configuration.
 	 *
-	 * @param array $objects Array of objects in serialized format
-	 * @param Register|string|int $register Register context
-	 * @param Schema|string|int $schema Schema context
+	 * @param array       $objects Array of objects in serialized format
+	 * @param BulkSaveRun $run     The bulk save call; its register and schema are the context
 	 *
 	 * @return array Array containing [prepared objects, schema cache, invalid objects]
 	 *
@@ -2375,11 +2378,11 @@ class SaveObjects {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function prepareSingleSchemaObjectsOptimized(array $objects, Register|string|int $register, Schema|string|int $schema): array {
+	private function prepareSingleSchemaObjectsOptimized(array $objects, BulkSaveRun $run): array {
 		$startTime = microtime(true);
 
 		// PERFORMANCE OPTIMIZATION: Load and validate schema context once, pre-calculate metadata once.
-		$context  = $this->loadAndValidateSchemaContext(register: $register, schema: $schema);
+		$context  = $this->loadAndValidateSchemaContext(register: $run->register, schema: $run->schema);
 		$defaults = $this->singleSchemaDefaults(context: $context);
 
 		// PERFORMANCE OPTIMIZATION: Process all objects with pre-calculated values.
@@ -2390,7 +2393,7 @@ class SaveObjects {
 
 		// INVERSE RELATIONS PROCESSING - Handle bulk inverse relations.
 		$this->handleBulkInverseRelationsWithAnalysis(preparedObjects: $preparedObjects, schemaAnalysis: $context[5]);
-		$this->logSingleSchemaPreparation(objectCount: count($objects), preparedObjects: $preparedObjects, startTime: $startTime);
+		$this->logSingleSchemaPreparation(preparedObjects: $preparedObjects, startTime: $startTime);
 
 		return [$preparedObjects, $context[4], []];
 	}//end prepareSingleSchemaObjectsOptimized()
@@ -2416,15 +2419,16 @@ class SaveObjects {
 	/**
 	 * Debug-log a large single-schema preparation; smaller ones are not logged, for performance.
 	 *
-	 * @param int   $objectCount     The number of rows passed.
+	 * Every passed row yields one prepared row, so the prepared count is the passed count.
+	 *
 	 * @param array $preparedObjects The prepared rows.
 	 * @param float $startTime       When the preparation started.
 	 *
 	 * @return void
 	 */
-	private function logSingleSchemaPreparation(int $objectCount, array $preparedObjects, float $startTime): void {
+	private function logSingleSchemaPreparation(array $preparedObjects, float $startTime): void {
 		$elapsed = microtime(true) - $startTime;
-		if ($objectCount <= 10000) {
+		if (count($preparedObjects) <= 10000) {
 			return;
 		}
 
@@ -2605,7 +2609,7 @@ class SaveObjects {
 	private function hydrateBulkMetadata(array $object, Schema $schema): array {
 		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
 
-		return $this->applyHydratedMetadata(selfData: $object['@self'], object: $object, tempEntity: $tempEntity);
+		return $this->applyHydratedMetadata(object: $object, tempEntity: $tempEntity);
 	}//end hydrateBulkMetadata()
 
 	/**
@@ -2673,20 +2677,20 @@ class SaveObjects {
 	}//end logBulkRelationScan()
 
 	/**
-	 * Apply hydrated metadata from a temporary entity back to selfData and object arrays
+	 * Apply hydrated metadata from a temporary entity back to the @self data and object array
 	 *
 	 * Extracts name, description, summary, image, and slug from the hydrated entity
-	 * and sets them in both the @self data and top-level object (for bulk SQL).
+	 * and sets them in both the object's @self data and its top level (for bulk SQL).
 	 *
-	 * @param array $selfData The @self metadata array
-	 * @param array $object The full object data (modified in-place for top-level)
+	 * @param array        $object     The full object data with its @self metadata (modified in-place for top-level)
 	 * @param ObjectEntity $tempEntity The hydrated temporary entity
 	 *
-	 * @return array Updated selfData with metadata fields
+	 * @return array The object's @self data with metadata fields
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function applyHydratedMetadata(array $selfData, array &$object, ObjectEntity $tempEntity): array {
+	private function applyHydratedMetadata(array &$object, ObjectEntity $tempEntity): array {
+		$selfData = ($object['@self'] ?? []);
 		foreach (self::HYDRATED_METADATA_GETTERS as $field => $getter) {
 			$value = $tempEntity->$getter();
 			if ($value !== null) {
@@ -2749,7 +2753,7 @@ class SaveObjects {
 	private function guardedChunkRows(BulkChunkRun $chunk, array $objects): array {
 		$run = $chunk->run;
 		$phaseStart = microtime(true);
-		$rows = $this->transformChunk(objects: $objects, schemaCache: $run->schemaCache, result: $chunk->result);
+		$rows = $this->transformChunk(chunk: $chunk, objects: $objects);
 		$chunk->finishPhase(phase: 'transform', start: $phaseStart);
 		if (empty($rows) === true) {
 			return [];
@@ -2782,7 +2786,7 @@ class SaveObjects {
 		// Build and classify results from bulk operation output. Returns the
 		// hydrated entities (with pre-update state for updates) for side effects.
 		$phaseStart  = microtime(true);
-		$sideEffects = $this->buildChunkResults(bulkResult: $bulkResult, transformedObjects: $rows, result: $chunk->result);
+		$sideEffects = $this->buildChunkResults(persisted: new PersistedChunk(rows: $rows, returned: $bulkResult), result: $chunk->result);
 		$chunk->finishPhase(phase: 'buildResults', start: $phaseStart);
 
 		$this->timedSideEffects(chunk: $chunk, sideEffects: $sideEffects);
@@ -2839,7 +2843,7 @@ class SaveObjects {
 	private function timedSideEffects(BulkChunkRun $chunk, array $sideEffects): void {
 		$run = $chunk->run;
 		$phaseStart = microtime(true);
-		$this->emitChunkSideEffects(sideEffects: $sideEffects, _events: $run->events, _audit: $run->audit);
+		$this->emitChunkSideEffects(sideEffects: $sideEffects, run: $run);
 		$this->emitTargetedEvents(sideEffects: $sideEffects, targets: $chunk->eventTargets);
 		$chunk->finishPhase(phase: 'sideEffects', start: $phaseStart);
 	}//end timedSideEffects()
@@ -3009,11 +3013,9 @@ class SaveObjects {
 			return;
 		}
 
-		$this->emitChunkSideEffects(
-			sideEffects: $this->sideEffectsWithin(sideEffects: $sideEffects, targets: $targets),
-			_events: true,
-			_audit: false
-		);
+		if ($this->dispatchesChunkEvents(events: true) === true) {
+			$this->dispatchChunkEvents(sideEffects: $this->sideEffectsWithin(sideEffects: $sideEffects, targets: $targets));
+		}
 	}//end emitTargetedEvents()
 
 	/**
@@ -3229,19 +3231,25 @@ class SaveObjects {
 			return null;
 		}
 
-		return self::chunkSchemaRefusal(validator: $validator, schema: $schema, data: ($objData['object'] ?? []));
+		return $this->chunkSchemaRefusal(schema: $schema, data: ($objData['object'] ?? []));
 	}//end chunkValidationRefusal()
 
 	/**
 	 * The refusal of business data that fails its schema, or null.
 	 *
-	 * @param ValidateObjectInterface $validator The validator.
-	 * @param Schema                  $schema    The row's schema.
-	 * @param array                   $data      The row's business data.
+	 * Reached only once chunkValidationRefusal() saw a validator; without one nothing is refused.
+	 *
+	 * @param Schema $schema The row's schema.
+	 * @param array  $data   The row's business data.
 	 *
 	 * @return array{error: string, type: string}|null The refusal.
 	 */
-	private static function chunkSchemaRefusal(ValidateObjectInterface $validator, Schema $schema, array $data): ?array {
+	private function chunkSchemaRefusal(Schema $schema, array $data): ?array {
+		$validator = $this->validateHandler;
+		if ($validator === null) {
+			return null;
+		}
+
 		$validationResult = $validator->validateObject(object: $data, schema: $schema);
 		if ($validationResult->isValid() === true) {
 			return null;
@@ -3279,34 +3287,43 @@ class SaveObjects {
 	 * so peak memory never holds a whole 20k-object chunk's audit entities (each
 	 * embeds an old+new payload diff). Update rows carry the REAL pre-update
 	 * state so their changeset is an accurate old-vs-new diff.
-	 * ObjectCreated/ObjectUpdatedEvent are only dispatched when $_events is true.
+	 * Audit rows are written only when the run's audit flag (the bulk mirror of
+	 * the single-object path's `silent` flag) is on; ObjectCreated/ObjectUpdatedEvent
+	 * are only dispatched when the run's events flag is on. The audit trail is
+	 * written before any event is dispatched.
 	 *
-	 * @param array $sideEffects Side-effect payload from buildChunkResults():
-	 *                           'created' => list<ObjectEntity>,
-	 *                           'updated' => list<array{old: ObjectEntity|null, new: ObjectEntity}>
-	 * @param bool $_events Whether to dispatch object lifecycle events
-	 * @param bool $_audit Whether to write audit trail rows; the bulk mirror of
-	 *                     the single-object path's `silent` flag
+	 * @param array       $sideEffects Side-effect payload from buildChunkResults():
+	 *                                 'created' => list<ObjectEntity>,
+	 *                                 'updated' => list<array{old: ObjectEntity|null, new: ObjectEntity}>
+	 * @param BulkSaveRun $run         The bulk save call, carrying the events and audit flags
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function emitChunkSideEffects(array $sideEffects, bool $_events, bool $_audit = true): void {
-		$createdEntities = ($sideEffects['created'] ?? []);
-		$updatedEntities = ($sideEffects['updated'] ?? []);
-
-		if ($this->writesChunkAudit(audit: $_audit) === true) {
-			$this->insertAuditEntries(auditEntries: $this->chunkAuditEntries(created: $createdEntities, updated: $updatedEntities));
+	private function emitChunkSideEffects(array $sideEffects, BulkSaveRun $run): void {
+		if ($this->writesChunkAudit(audit: $run->audit) === true) {
+			$this->insertAuditEntries(
+				auditEntries: $this->chunkAuditEntries(created: ($sideEffects['created'] ?? []), updated: ($sideEffects['updated'] ?? []))
+			);
 		}
 
-		if ($this->dispatchesChunkEvents(events: $_events) === false) {
-			return;
+		if ($this->dispatchesChunkEvents(events: $run->events) === true) {
+			$this->dispatchChunkEvents(sideEffects: $sideEffects);
 		}
-
-		$this->dispatchCreatedEvents(createdEntities: $createdEntities);
-		$this->dispatchUpdatedEvents(updatedEntities: $updatedEntities);
 	}//end emitChunkSideEffects()
+
+	/**
+	 * Dispatch the created and updated events of a chunk's side effects, created first.
+	 *
+	 * @param array $sideEffects Side-effect payload from buildChunkResults().
+	 *
+	 * @return void
+	 */
+	private function dispatchChunkEvents(array $sideEffects): void {
+		$this->dispatchCreatedEvents(createdEntities: ($sideEffects['created'] ?? []));
+		$this->dispatchUpdatedEvents(updatedEntities: ($sideEffects['updated'] ?? []));
+	}//end dispatchChunkEvents()
 
 	/**
 	 * Whether the chunk's audit trail is written: an audit mapper is wired and the caller did not opt out.
@@ -3480,27 +3497,27 @@ class SaveObjects {
 	/**
 	 * Transform a chunk of objects to database format and collect invalid objects
 	 *
-	 * Performs in-place transformation and moves any invalid objects into the result
-	 * arrays. Returns only the valid transformed objects ready for persistence.
+	 * Performs in-place transformation against the run's schema cache and moves
+	 * any invalid objects into the chunk's result. Returns only the valid
+	 * transformed objects ready for persistence.
 	 *
-	 * @param array $objects The objects to transform
-	 * @param array $schemaCache Pre-built schema cache for performance optimization
-	 * @param array $result The result array to populate with invalid objects
+	 * @param BulkChunkRun $chunk   The chunk being processed (its run carries the schema cache)
+	 * @param array        $objects The objects to transform
 	 *
 	 * @return array Valid transformed objects ready for database operations
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function transformChunk(array $objects, array $schemaCache, array &$result): array {
-		$transformationResult = $this->transformObjectsToDatabaseFormatInPlace(objects: $objects, schemaCache: $schemaCache);
+	private function transformChunk(BulkChunkRun $chunk, array $objects): array {
+		$transformationResult = $this->transformObjectsToDatabaseFormatInPlace(objects: $objects, schemaCache: $chunk->run->schemaCache);
 		$transformedObjects = $transformationResult['valid'];
 
 		// PERFORMANCE OPTIMIZATION: Batch error processing.
 		if (empty($transformationResult['invalid']) === false) {
 			$invalidCount = count($transformationResult['invalid']);
-			$result['invalid'] = array_merge($result['invalid'], $transformationResult['invalid']);
-			$result['statistics']['invalid'] += $invalidCount;
-			$result['statistics']['errors'] += $invalidCount;
+			$chunk->result['invalid'] = array_merge($chunk->result['invalid'], $transformationResult['invalid']);
+			$chunk->result['statistics']['invalid'] += $invalidCount;
+			$chunk->result['statistics']['errors'] += $invalidCount;
 		}
 
 		return $transformedObjects;
@@ -3615,18 +3632,18 @@ class SaveObjects {
 	 * database-computed status (created, updated, unchanged) and populating the
 	 * result arrays accordingly.
 	 *
-	 * @param mixed $bulkResult The raw result from ultraFastBulkSave
-	 * @param array $transformedObjects The original transformed objects (for fallback)
-	 * @param array $result The result array to populate
+	 * @param PersistedChunk $persisted The rows written and what ultraFastBulkSave returned
+	 * @param array          $result    The result array to populate
 	 *
 	 * @return array Side-effect payload: 'created' => list<ObjectEntity>,
 	 *               'updated' => list<array{old: ObjectEntity|null, new: ObjectEntity}>
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function buildChunkResults(mixed $bulkResult, array $transformedObjects, array &$result): array {
+	private function buildChunkResults(PersistedChunk $persisted, array &$result): array {
+		$bulkResult = $persisted->returned;
 		if (is_array($bulkResult) === false) {
-			return $this->unexpectedChunkResults(transformedObjects: $transformedObjects, result: $result);
+			return $this->unexpectedChunkResults(transformedObjects: $persisted->rows, result: $result);
 		}
 
 		// Check if we got complete objects (new approach) or just UUIDs (fallback).
@@ -3641,7 +3658,7 @@ class SaveObjects {
 			return $this->classifyDatabaseComputedResults(bulkResult: $bulkResult, result: $result);
 		}
 
-		return $this->legacyChunkResults(bulkResult: $bulkResult, transformedObjects: $transformedObjects, result: $result);
+		return $this->legacyChunkResults(persisted: $persisted, result: $result);
 	}//end buildChunkResults()
 
 	/**
@@ -3668,18 +3685,17 @@ class SaveObjects {
 	 * This path cannot reconstruct entities, so it yields NO side effects: no audit
 	 * rows are written and no lifecycle events are dispatched for these objects.
 	 *
-	 * @param array $bulkResult         The UUID array from bulk save.
-	 * @param array $transformedObjects The chunk's rows.
-	 * @param array $result             The result array to populate.
+	 * @param PersistedChunk $persisted The chunk's rows and the UUID array from bulk save.
+	 * @param array          $result    The result array to populate.
 	 *
 	 * @return array The (empty) side effects.
 	 */
-	private function legacyChunkResults(array $bulkResult, array $transformedObjects, array &$result): array {
+	private function legacyChunkResults(PersistedChunk $persisted, array &$result): array {
 		$this->logger->warning(
 			message: '[SaveObjects] Legacy uuid-array bulk result — audit trail and lifecycle events are skipped for this chunk',
-			context: ['objects' => count($bulkResult)]
+			context: ['objects' => count($persisted->returned)]
 		);
-		$this->classifyLegacyResults(bulkResult: $bulkResult, transformedObjects: $transformedObjects, result: $result);
+		$this->classifyLegacyResults(persisted: $persisted, result: $result);
 
 		return ['created' => [], 'updated' => []];
 	}//end legacyChunkResults()
@@ -3850,24 +3866,18 @@ class SaveObjects {
 	 * Falls back to matching UUIDs against input objects when the database
 	 * does not return complete objects with status classification.
 	 *
-	 * @param array $bulkResult The UUID array from bulk save
-	 * @param array $transformedObjects The original transformed objects
-	 * @param array $result The result array to populate
+	 * @param PersistedChunk $persisted The chunk's rows and the UUID array from bulk save
+	 * @param array          $result    The result array to populate
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function classifyLegacyResults(array $bulkResult, array $transformedObjects, array &$result): void {
+	private function classifyLegacyResults(PersistedChunk $persisted, array &$result): void {
 		$this->logger->debug('[SaveObjects] Processing UUID array (legacy mode)');
 
 		// Fallback: Use traditional object reconstruction.
-		$savedObjects = $this->reconstructSavedObjects(
-			insertObjects: $transformedObjects,
-			updateObjects: [],
-			savedObjectIds: $bulkResult,
-			existingObjects: []
-		);
+		$savedObjects = $this->reconstructSavedObjects(insertObjects: $persisted->rows, savedObjectIds: $persisted->returned);
 
 		foreach ($savedObjects as $obj) {
 			$result['saved'][] = $obj->jsonSerialize();
@@ -3945,16 +3955,16 @@ class SaveObjects {
 		$transformedObjects = [];
 		$invalidObjects     = [];
 		foreach ($objects as $index => $object) {
-			$selfData = $this->identifiedSelfData(object: $object);
+			$row = new IdentifiedRow(selfData: $this->identifiedSelfData(object: $object), object: $object, index: $index);
 
 			// Validate required fields; skip invalid objects.
-			$validationError = $this->validateObjectRequiredFields(selfData: $selfData, object: $object, index: $index, schemaCache: $schemaCache);
+			$validationError = $this->validateObjectRequiredFields(row: $row, schemaCache: $schemaCache);
 			if ($validationError !== null) {
 				$invalidObjects[] = $validationError;
 				continue;
 			}
 
-			$transformedObjects[] = $this->databaseRow(selfData: $selfData, object: $object, schemaCache: $schemaCache);
+			$transformedObjects[] = $this->databaseRow(row: $row, schemaCache: $schemaCache);
 		}
 
 		return ['valid' => $transformedObjects, 'invalid' => $invalidObjects];
@@ -3985,23 +3995,24 @@ class SaveObjects {
 	 *
 	 * The schema-cache entry is handed over as-is: extractBusinessData() decides what counts as a
 	 * usable schema, so a cache miss or an unexpected value is judged in ONE place instead of at
-	 * every call site (openregister#2781).
+	 * every call site (openregister#2781). Relations are scanned from the business data (UUIDs
+	 * and URLs) unless the preparation phase already set them or the schema is not in the cache.
 	 *
-	 * @param array $selfData    The object's @self data with identifiers.
-	 * @param array $object      The object.
-	 * @param array $schemaCache The schema cache.
+	 * @param IdentifiedRow $row         The object with its identified @self data.
+	 * @param array         $schemaCache The schema cache.
 	 *
 	 * @return array
 	 */
-	private function databaseRow(array $selfData, array $object, array $schemaCache): array {
-		$selfData = $this->hydrateObjectMetadataFields(selfData: $selfData);
-		$this->logger->debug(
-			'[SaveObjects] DEBUG - Mixed schema object structure',
-			['available_keys' => array_keys($object), 'has_object_property' => isset($object['object'])]
-		);
+	private function databaseRow(IdentifiedRow $row, array $schemaCache): array {
+		$selfData = $this->hydrateObjectMetadataFields(selfData: $row->selfData);
+		$this->logMixedSchemaRow(object: $row->object);
 
-		$businessData = $this->extractBusinessData(object: $object, schema: ($schemaCache[$selfData['schema']] ?? null));
-		$selfData     = $this->withScannedRelations(selfData: $selfData, businessData: $businessData, schemaCache: $schemaCache);
+		$cached       = ($schemaCache[$selfData['schema']] ?? null);
+		$businessData = $this->extractBusinessData(object: $row->object, schema: $cached);
+		if ($this->hasPreparedRelations(selfData: $selfData) === false && $cached !== null) {
+			$selfData['relations'] = (new BulkRelationScanner())->scan(data: $businessData, run: new BulkRelationRun(schema: $cached));
+			$this->logRelationCount(message: '[SaveObjects] Relations scanned in transformation', selfData: $selfData);
+		}
 
 		// Store the clean business data in the database object column.
 		$selfData['object'] = $businessData;
@@ -4010,31 +4021,35 @@ class SaveObjects {
 	}//end databaseRow()
 
 	/**
-	 * The @self data with the relations scanned from the business data (UUIDs and URLs),
-	 * unless the preparation phase already set them or the schema is not in the cache.
+	 * Log the shape of an object on the mixed-schema transform path.
 	 *
-	 * @param array $selfData     The @self data.
-	 * @param array $businessData The business data.
-	 * @param array $schemaCache  The schema cache.
+	 * @param array $object The object.
 	 *
-	 * @return array
+	 * @return void
 	 */
-	private function withScannedRelations(array $selfData, array $businessData, array $schemaCache): array {
-		if (isset($selfData['relations']) === true && empty($selfData['relations']) === false) {
-			$this->logRelationCount(message: '[SaveObjects] Relations already set from preparation', selfData: $selfData);
-			return $selfData;
+	private function logMixedSchemaRow(array $object): void {
+		$this->logger->debug(
+			'[SaveObjects] DEBUG - Mixed schema object structure',
+			['available_keys' => array_keys($object), 'has_object_property' => isset($object['object'])]
+		);
+	}//end logMixedSchemaRow()
+
+	/**
+	 * Whether the preparation phase already set the relations; logged when it did.
+	 *
+	 * @param array $selfData The @self data.
+	 *
+	 * @return bool
+	 */
+	private function hasPreparedRelations(array $selfData): bool {
+		if (isset($selfData['relations']) === false || empty($selfData['relations']) === true) {
+			return false;
 		}
 
-		if (isset($schemaCache[$selfData['schema']]) === false) {
-			return $selfData;
-		}
+		$this->logRelationCount(message: '[SaveObjects] Relations already set from preparation', selfData: $selfData);
 
-		$run = new BulkRelationRun(schema: $schemaCache[$selfData['schema']]);
-		$selfData['relations'] = (new BulkRelationScanner())->scan(data: $businessData, run: $run);
-		$this->logRelationCount(message: '[SaveObjects] Relations scanned in transformation', selfData: $selfData);
-
-		return $selfData;
-	}//end withScannedRelations()
+		return true;
+	}//end hasPreparedRelations()
 
 	/**
 	 * Debug-log the relation count of an object.
@@ -4077,22 +4092,20 @@ class SaveObjects {
 	 *
 	 * Returns null if valid, or an error array describing the validation failure.
 	 *
-	 * @param array $selfData The @self metadata with identifiers
-	 * @param array $object The full object data for error context
-	 * @param int $index The object index for error reporting
-	 * @param array $schemaCache The schema cache to validate against
+	 * @param IdentifiedRow $row         The object, its @self metadata with identifiers and its index
+	 * @param array         $schemaCache The schema cache to validate against
 	 *
 	 * @return array|null Null if valid, error array if invalid
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function validateObjectRequiredFields(array $selfData, array $object, int $index, array $schemaCache): ?array {
-		$failure = self::requiredFieldFailure(selfData: $selfData, schemaCache: $schemaCache);
+	private function validateObjectRequiredFields(IdentifiedRow $row, array $schemaCache): ?array {
+		$failure = self::requiredFieldFailure(selfData: $row->selfData, schemaCache: $schemaCache);
 		if ($failure === null) {
 			return null;
 		}
 
-		return ['object' => $object, 'error' => $failure[0], 'index' => $index, 'type' => $failure[1]];
+		return ['object' => $row->object, 'error' => $failure[0], 'index' => $row->index, 'type' => $failure[1]];
 	}//end validateObjectRequiredFields()
 
 	/**
@@ -4232,7 +4245,7 @@ class SaveObjects {
 		// LEGACY STRUCTURE: Remove metadata fields to isolate business data.
 		$kept         = self::declaredMetadataFields(schema: $schema);
 		$businessData = self::withoutMetadataFields(object: $object, kept: $kept);
-		$this->logMetadataRemoval(object: $object, kept: $kept, businessData: $businessData);
+		$this->logMetadataRemoval(object: $object, kept: $kept);
 
 		return $businessData;
 	}//end extractBusinessData()
@@ -4296,19 +4309,18 @@ class SaveObjects {
 	/**
 	 * Debug-log which metadata fields were removed, which were kept as schema properties, and what remains.
 	 *
-	 * @param array    $object       The object.
-	 * @param string[] $kept         The metadata names kept.
-	 * @param array    $businessData The business data that remains.
+	 * @param array    $object The object.
+	 * @param string[] $kept   The metadata names kept.
 	 *
 	 * @return void
 	 */
-	private function logMetadataRemoval(array $object, array $kept, array $businessData): void {
+	private function logMetadataRemoval(array $object, array $kept): void {
 		$this->logger->debug(
 			'[SaveObjects] Metadata removal applied (mixed)',
 			[
 				'removed_fields' => array_values(array_diff(array_intersect(self::metadataFields(), array_keys($object)), $kept)),
 				'kept_as_schema_properties' => array_values(array_intersect($kept, array_keys($object))),
-				'remaining_keys' => array_keys($businessData),
+				'remaining_keys' => array_keys(self::withoutMetadataFields(object: $object, kept: $kept)),
 			]
 		);
 	}//end logMetadataRemoval()
@@ -4317,27 +4329,23 @@ class SaveObjects {
 	 * Reconstruct saved objects without additional database fetch
 	 *
 	 * PERFORMANCE OPTIMIZATION: Avoids redundant database query by reconstructing
-	 * ObjectEntity objects from the already available arrays.
+	 * ObjectEntity objects from the already available arrays. The legacy bulk
+	 * path writes every row as an insert, so only inserted rows are rebuilt.
 	 *
-	 * @param array $insertObjects New objects that were inserted
-	 * @param array $updateObjects Existing objects that were updated
+	 * @param array $insertObjects  New objects that were inserted
 	 * @param array $savedObjectIds Array of UUIDs that were saved
-	 * @param array $existingObjects Original existing objects cache
 	 *
 	 * @return array Array of ObjectEntity objects representing saved objects
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function reconstructSavedObjects(array $insertObjects, array $updateObjects, array $savedObjectIds, array $existingObjects): array {
+	private function reconstructSavedObjects(array $insertObjects, array $savedObjectIds): array {
 		// Build a lookup set of saved IDs for filtering — only reconstruct objects that were actually saved.
 		// Restrict to scalar ids first: array_flip warns and skips any non-scalar
 		// (e.g. a null id from a failed save), so filtering yields the same set cleanly.
 		$savedIdSet = array_flip(array_filter($savedObjectIds, 'is_scalar'));
 
-		return [
-			...$this->reconstructInserted(insertObjects: $insertObjects, savedIdSet: $savedIdSet),
-			...$this->reconstructUpdated(updateObjects: $updateObjects, savedIdSet: $savedIdSet, existingObjects: $existingObjects),
-		];
+		return $this->reconstructInserted(insertObjects: $insertObjects, savedIdSet: $savedIdSet);
 	}//end reconstructSavedObjects()
 
 	/**
@@ -4405,44 +4413,6 @@ class SaveObjects {
 			]
 		);
 	}//end logMissingUuid()
-
-	/**
-	 * The updated entities that were saved, preferring stored data for fields the update omits.
-	 *
-	 * @param array $updateObjects   The updated entities.
-	 * @param array $savedIdSet      The saved uuids, as keys.
-	 * @param array $existingObjects The stored entities by uuid.
-	 *
-	 * @return list<ObjectEntity>
-	 */
-	private function reconstructUpdated(array $updateObjects, array $savedIdSet, array $existingObjects): array {
-		$savedObjects = [];
-		foreach ($updateObjects as $obj) {
-			if (isset($savedIdSet[$obj->getUuid()]) === true) {
-				self::mergeStoredData(obj: $obj, existingObjects: $existingObjects);
-				$savedObjects[] = $obj;
-			}
-		}
-
-		return $savedObjects;
-	}//end reconstructUpdated()
-
-	/**
-	 * Merge the stored object data under the update's, to preserve fields the update payload omits.
-	 *
-	 * @param ObjectEntity $obj             The updated entity.
-	 * @param array        $existingObjects The stored entities by uuid.
-	 *
-	 * @return void
-	 */
-	private static function mergeStoredData(ObjectEntity $obj, array $existingObjects): void {
-		$uuid = $obj->getUuid();
-		if ($uuid === null || isset($existingObjects[$uuid]) === false) {
-			return;
-		}
-
-		$obj->setObject(array_merge(($existingObjects[$uuid]->getObject() ?? []), ($obj->getObject() ?? [])));
-	}//end mergeStoredData()
 
 	/**
 	 * Drop the decision-table rows the single save would have refused.

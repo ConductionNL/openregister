@@ -21,6 +21,7 @@
 namespace OCA\OpenRegister\BackgroundJob;
 
 use Exception;
+use OCA\OpenRegister\BackgroundJob\Support\ConfigurationCheckServices;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
@@ -49,26 +50,46 @@ class ConfigurationCheckJob extends TimedJob {
 	private const TAG = '[ConfigurationCheckJob] ';
 
 	/**
+	 * Where the configurations are.
+	 *
+	 * @var ConfigurationMapperInterface
+	 */
+	private readonly ConfigurationMapperInterface $configurationMapper;
+
+	/**
+	 * Checks remote versions and imports updates.
+	 *
+	 * @var ConfigurationServiceInterface
+	 */
+	private readonly ConfigurationServiceInterface $configurationService;
+
+	/**
+	 * Tells admins an update is available.
+	 *
+	 * @var NotificationServiceInterface
+	 */
+	private readonly NotificationServiceInterface $notificationService;
+
+	/**
 	 * Constructor
 	 *
-	 * @param ITimeFactory $time Time factory for job scheduling
-	 * @param ConfigurationMapperInterface $configurationMapper Configuration mapper
-	 * @param ConfigurationServiceInterface $configurationService Configuration service
-	 * @param NotificationServiceInterface $notificationService Notification service
-	 * @param IAppConfig $appConfig App configuration
-	 * @param LoggerInterface $logger Logger
+	 * @param ITimeFactory                $time      Time factory for job scheduling
+	 * @param ConfigurationCheckServices $services  Configuration mapper, configuration service and notification service
+	 * @param IAppConfig                  $appConfig App configuration
+	 * @param LoggerInterface             $logger    Logger
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ConfigurationMapperInterface $configurationMapper,
-		private readonly ConfigurationServiceInterface $configurationService,
-		private readonly NotificationServiceInterface $notificationService,
+		ConfigurationCheckServices $services,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
+		$this->configurationMapper = $services->configurationMapper;
+		$this->configurationService = $services->configurationService;
+		$this->notificationService = $services->notificationService;
 		$this->applyInterval(interval: $this->configuredInterval());
 	}//end __construct()
 

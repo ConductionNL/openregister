@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
 use OCA\OpenRegister\Event\ConfigurationDeletedEvent;
 use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
@@ -35,7 +36,6 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
-use OCP\ISession;
 use OCP\IUserSession;
 
 /**
@@ -92,13 +92,6 @@ class ConfigurationMapper extends QBMapper implements ConfigurationMapperInterfa
 	private IGroupManager $groupManager;
 
 	/**
-	 * Session for caching configurations
-	 *
-	 * @var ISession
-	 */
-	private ISession $session;
-
-	/**
 	 * Event dispatcher for dispatching configuration events
 	 *
 	 * @var IEventDispatcher
@@ -108,28 +101,21 @@ class ConfigurationMapper extends QBMapper implements ConfigurationMapperInterfa
 	/**
 	 * Constructor
 	 *
-	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param IUserSession $userSession User session
-	 * @param IGroupManager $groupManager Group manager
-	 * @param ISession $session Session
+	 * @param IDBConnection    $db              Database connection
+	 * @param TenancyServices  $tenancy         Organisation mapper, user session and groups for multi-tenancy and RBAC
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher
 	 */
 	public function __construct(
 		IDBConnection $db,
 		// REMOVED: Services should not be in mappers.
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
-		ISession $session,
+		TenancyServices $tenancy,
 		IEventDispatcher $eventDispatcher,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_configurations', entityClass: Configuration::class);
 		// REMOVED: Services should not be in mappers.
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
-		$this->session = $session;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
 		$this->eventDispatcher = $eventDispatcher;
 	}//end __construct()
 

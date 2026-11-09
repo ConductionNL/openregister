@@ -4,10 +4,10 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
-use OCP\ISession;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -24,7 +24,6 @@ class ConfigurationMapperTest extends TestCase {
 	private OrganisationMapper&MockObject $organisationMapper;
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
-	private ISession&MockObject $session;
 	private IEventDispatcher&MockObject $eventDispatcher;
 	private ConfigurationMapper $mapper;
 
@@ -33,15 +32,11 @@ class ConfigurationMapperTest extends TestCase {
 		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
-		$this->session = $this->createMock(ISession::class);
 		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 
 		$this->mapper = new ConfigurationMapper(
 			$this->db,
-			$this->organisationMapper,
-			$this->userSession,
-			$this->groupManager,
-			$this->session,
+			new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
 			$this->eventDispatcher
 		);
 	}

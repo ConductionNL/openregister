@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
+use OCA\OpenRegister\Service\Flow\FlowRunCommitRows;
 use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
 use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
@@ -298,10 +299,7 @@ class RunLockReleaseTerminalityTest extends TestCase {
 
 		$commit = new FlowRunCommit(
 			db: $db,
-			runs: $runs,
-			streams: $streams,
-			claims: $claims,
-			steps: $steps,
+			rows: new FlowRunCommitRows(runs: $runs, streams: $streams, claims: $claims, steps: $steps),
 			logger: new NullLogger()
 		);
 

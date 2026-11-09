@@ -44,7 +44,11 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FlowRunFilter;
+use OCA\OpenRegister\Db\FlowRunListing;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\FlowRunSubjectScope;
+use OCA\OpenRegister\Db\FlowRunViewer;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -455,7 +459,7 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 		$live = [];
 
 		try {
-			foreach ($this->runs->findActive(subject: $subjectUuid) as $run) {
+			foreach ($this->runs->findActive(scope: new FlowRunSubjectScope(subject: $subjectUuid)) as $run) {
 				if ($run instanceof FlowRun === true) {
 					$live[] = $run;
 				}
@@ -480,7 +484,9 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 */
 	public function runsOnVersion(string $flowId, int $version, int $limit = 100): array {
 		$found = [];
-		foreach ($this->runs->findAllRuns(flowId: $flowId, limit: $limit) as $run) {
+		$listing = new FlowRunListing(filter: new FlowRunFilter(flowId: $flowId), limit: $limit);
+		$everyone = new FlowRunViewer(requesterUid: null, ownedFlowIds: []);
+		foreach ($this->runs->findAllRuns(listing: $listing, viewer: $everyone) as $run) {
 			if ($run instanceof FlowRun === false) {
 				continue;
 			}

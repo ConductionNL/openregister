@@ -40,6 +40,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceSe
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
 use OCP\BackgroundJob\IJobList;
@@ -112,14 +113,14 @@ class RecordingTalkSender extends TalkSender {
 
 	public ?TalkSendException $throwOnPost = null;
 
-	protected function postViaTalkApp(string $token, string $message, string $actorUid): void {
+	protected function postViaTalkApp(TalkMessage $talkMessage, string $actorUid): void {
 		if ($this->throwOnPost !== null) {
 			throw $this->throwOnPost;
 		}
 
 		$this->posts[] = [
-			'token' => $token,
-			'message' => $message,
+			'token' => $talkMessage->token,
+			'message' => $talkMessage->message,
 			'actor' => $actorUid,
 		];
 	}

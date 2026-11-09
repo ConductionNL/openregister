@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Calendar;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Calendar\CalendarDefinition;
 use OCA\OpenRegister\Calendar\CalendarEventTransformer;
 use OCA\OpenRegister\Calendar\RegisterCalendar;
 use OCA\OpenRegister\Calendar\RegisterCalendarSources;
@@ -135,7 +136,7 @@ class RegisterCalendarSearchGoldenTest extends TestCase {
 
 		$transformer = $this->createMock(CalendarEventTransformer::class);
 		$transformer->method('transform')->willReturnCallback(
-			static function (ObjectEntity $object, Schema $schema, array $config) use ($scenario, &$record): ?array {
+			static function (ObjectEntity $object, CalendarDefinition $calendar) use ($scenario, &$record): ?array {
 				$uuid = (string) $object->getUuid();
 				$record['transformed'][] = $uuid;
 				$name = substr($uuid, -1);

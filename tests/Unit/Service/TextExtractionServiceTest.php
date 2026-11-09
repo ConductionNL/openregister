@@ -19,6 +19,7 @@ use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
+use OCA\OpenRegister\Files\Service\TextExtraction\SourceText;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -2131,9 +2132,7 @@ class TextExtractionServiceTest extends TestCase {
 		// 1 text chunk + 1 metadata chunk = 2 inserts.
 		$this->chunkMapper->expects($this->exactly(2))->method('insert');
 
-		$this->invokePrivate('persistChunksForSource', [
-			new ChunkSource('file', 1, new ChunkOwnership('admin', 'org1'), 1000000), $chunks, $payload,
-		]);
+		$this->invokePrivate('persistChunksForSource', [new SourceText($payload, 1000000), $chunks]);
 	}
 
 	public function testPersistChunksForSourceMultipleChunks(): void {
@@ -2161,9 +2160,7 @@ class TextExtractionServiceTest extends TestCase {
 		// 5 text chunks + 1 metadata chunk = 6 inserts.
 		$this->chunkMapper->expects($this->exactly(6))->method('insert');
 
-		$this->invokePrivate('persistChunksForSource', [
-			new ChunkSource('file', 1, new ChunkOwnership(null, null), time()), $chunks, $payload,
-		]);
+		$this->invokePrivate('persistChunksForSource', [new SourceText($payload, time()), $chunks]);
 	}
 
 	public function testPersistChunksForSourceWithNullOwnerAndOrg(): void {
@@ -2192,9 +2189,7 @@ class TextExtractionServiceTest extends TestCase {
 			}
 		);
 
-		$this->invokePrivate('persistChunksForSource', [
-			new ChunkSource('file', 1, new ChunkOwnership(null, null), 1000000), $chunks, $payload,
-		]);
+		$this->invokePrivate('persistChunksForSource', [new SourceText($payload, 1000000), $chunks]);
 
 		foreach ($insertedChunks as $chunk) {
 			$this->assertNull($chunk->getOwner());
@@ -3652,9 +3647,9 @@ class TextExtractionServiceTest extends TestCase {
 		$this->expectExceptionMessage('Insert failed');
 
 		$this->invokePrivate('persistChunksForSource', [
-			new ChunkSource('object', 1, new ChunkOwnership('owner1', 'org1'), time()), // source
+			// The source (object 1, owner1/org1) and its payload.
+			new SourceText(['source_type' => 'object', 'source_id' => 1, 'owner' => 'owner1', 'organisation' => 'org1'], time()),
 			[['text_content' => 'test', 'chunk_index' => 0, 'start_offset' => 0, 'end_offset' => 4]], // chunks
-			['source_type' => 'object'], // payload
 		]);
 	}
 
@@ -3671,9 +3666,11 @@ class TextExtractionServiceTest extends TestCase {
 		$this->chunkMapper->method('insert')->willReturnArgument(0);
 
 		$this->invokePrivate('persistChunksForSource', [
-			new ChunkSource('file', 42, new ChunkOwnership('owner1', 'org1'), time()),
+			new SourceText(
+				['source_type' => 'file', 'source_id' => 42, 'owner' => 'owner1', 'organisation' => 'org1', 'text' => 'hello world', 'checksum' => 'abc123'],
+				time()
+			),
 			[['text_content' => 'hello world', 'chunk_index' => 0, 'start_offset' => 0, 'end_offset' => 11]],
-			['source_type' => 'file', 'text' => 'hello world', 'checksum' => 'abc123'],
 		]);
 
 		$this->assertTrue(true); // no exception

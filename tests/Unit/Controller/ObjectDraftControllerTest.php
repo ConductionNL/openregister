@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
+use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -211,8 +212,8 @@ class ObjectDraftControllerTest extends TestCase {
 	 */
 	private function activationAnswers(ObjectEntity|\Throwable $answer): void {
 		$this->activation->method('activateAsUser')->willReturnCallback(
-			function (Register $register, Schema $schema, string $draftId, IUser $user, array $changes = []) use ($answer): ObjectEntity {
-				$this->activations[] = ['register' => $register, 'schema' => $schema, 'draftId' => $draftId, 'user' => $user, 'changes' => $changes];
+			function (DraftAddress $address, IUser $user, array $changes = []) use ($answer): ObjectEntity {
+				$this->activations[] = ['register' => $address->register, 'schema' => $address->schema, 'draftId' => $address->draftId, 'user' => $user, 'changes' => $changes];
 				if ($answer instanceof \Throwable) {
 					throw $answer;
 				}

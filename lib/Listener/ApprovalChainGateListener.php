@@ -312,11 +312,12 @@ class ApprovalChainGateListener implements IEventListener {
 		}
 
 		$this->sequenceService->provision(
-			template: $run->template,
-			anchorObjectUuid: $run->edit->uuid(),
-			requesterId: $this->userSession->getUser()?->getUID(),
-			tierPositions: $run->tierPositions,
-			registerId: $registerId
+			chain: $this->sequenceService->chain(template: $run->template, tierPositions: $run->tierPositions),
+			anchor: $this->sequenceService->anchorOf(
+				objectUuid: $run->edit->uuid(),
+				requesterId: $this->userSession->getUser()?->getUID(),
+				registerId: $registerId
+			)
 		);
 	}//end provision()
 

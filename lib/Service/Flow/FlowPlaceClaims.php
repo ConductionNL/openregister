@@ -56,6 +56,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Acquires and releases place claims for one run.
+ *
+ * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
  */
 class FlowPlaceClaims {
 
@@ -153,57 +155,123 @@ class FlowPlaceClaims {
 			);
 		}
 
-		$places = array_values(array_unique(array_map('strval', $places)));
-		sort($places, SORT_STRING);
+		$places = self::normalised(places: $places);
 		if ($places === []) {
 			return [];
 		}
 
 		// CAPS, before the first insert. A run may hold at most `runCap`
 		// claims; a pass at most `passCap()` across every run it advances.
-		if ($this->claims->countHeldForRun(runUuid: $runUuid) >= self::streamCap(configured: $runCap)) {
+		if ($this->runFull(runUuid: $runUuid, runCap: $runCap) === true || $this->passFull(owner: $owner) === true) {
 			return null;
 		}
 
-		if ($this->claims->countHeldByOwner(owner: $owner) >= self::passCap()) {
-			return null;
-		}
+		$template = new FlowClaim();
+		$template->setRunUuid($runUuid);
+		$template->setOwner($owner);
+		$template->setStreamId($streamId);
+		$template->setTransition($transition);
+		$template->setClaimedAt(new DateTime());
 
+		return $this->claimEach(template: $template, places: $places);
+	}//end acquire()
+
+	/**
+	 * The places of a firing as claimed: strings, once each, in bytewise order.
+	 *
+	 * @param array<int, string|int> $places `froms ∪ tos`, in any order.
+	 *
+	 * @return array<int, string> The places, deduplicated and sorted.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
+	 */
+	private static function normalised(array $places): array {
+		$places = array_values(array_unique(array_map('strval', $places)));
+		sort($places, SORT_STRING);
+
+		return $places;
+	}//end normalised()
+
+	/**
+	 * Whether a run already holds as many claims as its stream cap allows.
+	 *
+	 * @param string   $runUuid The run.
+	 * @param int|null $runCap  The per-run stream cap; null for the default.
+	 *
+	 * @return bool True when the run may take no further claim.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-intra-run-fan-out-must-be-bounded
+	 */
+	private function runFull(string $runUuid, ?int $runCap): bool {
+		return $this->claims->countHeldForRun(runUuid: $runUuid) >= self::streamCap(configured: $runCap);
+	}//end runFull()
+
+	/**
+	 * Whether a pass already holds as many claims as the per-pass ceiling allows.
+	 *
+	 * @param string $owner The pass token.
+	 *
+	 * @return bool True when the pass may take no further claim.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-intra-run-fan-out-must-be-bounded
+	 */
+	private function passFull(string $owner): bool {
+		return $this->claims->countHeldByOwner(owner: $owner) >= self::passCap();
+	}//end passFull()
+
+	/**
+	 * Insert one claim per place, in order; on the first refusal release what
+	 * this attempt already took and abandon the candidate. The firing stays
+	 * enabled for a later attempt.
+	 *
+	 * @param FlowClaim          $template The run, owner, stream, transition and claim time every row shares.
+	 * @param array<int, string> $places   The normalised places.
+	 *
+	 * @return array<int, string>|null The claimed places, or null when refused.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
+	 */
+	private function claimEach(FlowClaim $template, array $places): ?array {
 		$taken = [];
-		$now = new DateTime();
 		foreach ($places as $place) {
-			$claim = new FlowClaim();
-			$claim->setRunUuid($runUuid);
+			$claim = clone $template;
 			$claim->setPlace($place);
-			$claim->setOwner($owner);
-			$claim->setStreamId($streamId);
-			$claim->setTransition($transition);
-			$claim->setClaimedAt($now);
-
 			if ($this->claims->insertOrRefuse(claim: $claim) === false) {
-				// Refused: release what this attempt already took and abandon
-				// the candidate. The firing stays enabled for a later attempt.
-				$this->claims->release(runUuid: $runUuid, places: $taken);
-				$this->logger->debug(
-					message: '[FlowPlaceClaims] Claim refused; candidate skipped',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'run' => $runUuid,
-						'transition' => $transition,
-						'place' => $place,
-						'places' => $places,
-					]
-				);
+				$this->claims->release(runUuid: (string)$template->getRunUuid(), places: $taken);
+				$this->logRefusal(refused: $claim, places: $places);
 
 				return null;
 			}
 
 			$taken[] = $place;
-		}//end foreach
+		}
 
 		return $taken;
-	}//end acquire()
+	}//end claimEach()
+
+	/**
+	 * Log a refused claim; the candidate is skipped, never waited on.
+	 *
+	 * @param FlowClaim          $refused The claim that was refused.
+	 * @param array<int, string> $places  Every place the firing asked for.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
+	 */
+	private function logRefusal(FlowClaim $refused, array $places): void {
+		$this->logger->debug(
+			message: '[FlowPlaceClaims] Claim refused; candidate skipped',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'run' => $refused->getRunUuid(),
+				'transition' => $refused->getTransition(),
+				'place' => $refused->getPlace(),
+				'places' => $places,
+			]
+		);
+	}//end logRefusal()
 
 	/**
 	 * Release the places a firing held.

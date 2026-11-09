@@ -60,7 +60,6 @@ class AgentsControllerAccessGoldenTest extends TestCase {
 
 	private function controller(?string $userId): AgentsController {
 		return AgentsControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->agentMapper,
 			$this->organisationService,

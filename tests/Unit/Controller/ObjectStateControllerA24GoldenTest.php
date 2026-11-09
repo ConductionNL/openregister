@@ -77,7 +77,7 @@ final class ObjectStateControllerA24GoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		return new ObjectStateController('openregister', $request, $this->handler, $session);
+		return new ObjectStateController($request, $this->handler, $session);
 	}//end controller()
 
 	/**

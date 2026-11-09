@@ -484,68 +484,58 @@ import {
 							</template>
 						</FormSelectField>
 
-						<NcNoteCard
+						<template
 							v-if="
 								selectedSourceType
 								&& selectedSourceType.value === 'github'
-							"
-							type="info">
-							<p>GitHub Integration Settings</p>
-						</NcNoteCard>
+							">
+							<NcNoteCard
+								type="info">
+								<p>GitHub Integration Settings</p>
+							</NcNoteCard>
 
-						<NcTextField
-							v-if="
-								selectedSourceType
-								&& selectedSourceType.value === 'github'
-							"
-							label="GitHub Repository"
-							placeholder="owner/repository"
-							:modelValue="
-								configurationStore.configurationItem?.githubRepo
-								|| ''
-							"
-							@update:modelValue="updateGithubRepo">
-							<template #helper-text-message>
-								<p>Repository in format: owner/repo</p>
-							</template>
-						</NcTextField>
+							<NcTextField
+								label="GitHub Repository"
+								placeholder="owner/repository"
+								:modelValue="
+									configurationStore.configurationItem?.githubRepo
+									|| ''
+								"
+								@update:modelValue="updateGithubRepo">
+								<template #helper-text-message>
+									<p>Repository in format: owner/repo</p>
+								</template>
+							</NcTextField>
 
-						<NcTextField
-							v-if="
-								selectedSourceType
-								&& selectedSourceType.value === 'github'
-							"
-							label="GitHub Branch"
-							placeholder="main"
-							:modelValue="
-								configurationStore.configurationItem?.githubBranch
-								|| 'main'
-							"
-							@update:modelValue="updateGithubBranch">
-							<template #helper-text-message>
-								<p>Branch to push/pull configurations</p>
-							</template>
-						</NcTextField>
+							<NcTextField
+								label="GitHub Branch"
+								placeholder="main"
+								:modelValue="
+									configurationStore.configurationItem?.githubBranch
+									|| 'main'
+								"
+								@update:modelValue="updateGithubBranch">
+								<template #helper-text-message>
+									<p>Branch to push/pull configurations</p>
+								</template>
+							</NcTextField>
 
-						<NcTextField
-							v-if="
-								selectedSourceType
-								&& selectedSourceType.value === 'github'
-							"
-							label="GitHub Path"
-							placeholder="configs/configuration.json"
-							:modelValue="
-								configurationStore.configurationItem?.githubPath
-								|| ''
-							"
-							@update:modelValue="updateGithubPath">
-							<template #helper-text-message>
-								<p>
-									Path within the repository for the configuration
-									file
-								</p>
-							</template>
-						</NcTextField>
+							<NcTextField
+								label="GitHub Path"
+								placeholder="configs/configuration.json"
+								:modelValue="
+									configurationStore.configurationItem?.githubPath
+									|| ''
+								"
+								@update:modelValue="updateGithubPath">
+								<template #helper-text-message>
+									<p>
+										Path within the repository for the configuration
+										file
+									</p>
+								</template>
+							</NcTextField>
+						</template>
 					</div>
 				</AppTab>
 			</AppTabs>
@@ -1188,13 +1178,7 @@ export default {
 		 * @return {void}
 		 */
 		resetSelections() {
-			this.selectedRegisters = []
-			this.selectedSchemas = []
-			this.selectedObjects = []
-			this.selectedSources = []
-			this.selectedAgents = []
-			this.selectedViews = []
-			this.selectedApplication = null
+			this.clearSelections()
 			this.selectedType = this.typeOptions[0] // 'default'
 			// Management tab defaults
 			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
@@ -1292,6 +1276,16 @@ export default {
 			navigationStore.setModal(false)
 			this.loading = false
 			this.error = null
+			this.clearSelections()
+		},
+
+		/**
+		 * Empty the settings selections both a close and a reset clear.
+		 *
+		 * @spec exclude Resets local select-model refs; modal plumbing.
+		 * @return {void}
+		 */
+		clearSelections() {
 			this.selectedRegisters = []
 			this.selectedSchemas = []
 			this.selectedObjects = []

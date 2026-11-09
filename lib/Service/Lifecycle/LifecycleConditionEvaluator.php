@@ -137,17 +137,17 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 		string $field,
 	): ?array {
 		$condition = $this->activeCondition(spec: $spec);
-		$write     = new LifecycleWrite(newData: $newData, oldData: $oldData, schemaSlug: $schemaSlug, field: $field);
-		if (
-			$condition === null
-			|| $this->holds(rule: $condition, write: $write, move: new TransitionMove(action: $action, from: $from, to: $to)) === true
-		) {
+		$attempt   = new TransitionAttempt(
+			write: new LifecycleWrite(newData: $newData, oldData: $oldData, schemaSlug: $schemaSlug, field: $field),
+			move: new TransitionMove(action: $action, from: $from, to: $to)
+		);
+		if ($condition === null || $this->holds(rule: $condition, attempt: $attempt) === true) {
 			return null;
 		}
 
 		$this->logMiss(condition: $condition, context: ['schema' => $schemaSlug, 'action' => $action, 'field' => $field]);
 
-		return $this->refusalFor(spec: $spec, action: $action, field: $field);
+		return $this->refusalFor(spec: $spec, attempt: $attempt);
 	}//end refusal()
 
 	/**
@@ -213,16 +213,18 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	 * `autoWhen` that is the common case on every write, and a line per write
 	 * per candidate would drown the log that the malformed case needs to reach.
 	 *
-	 * @param mixed          $rule  The rule to evaluate: a `condition` or an `autoWhen`.
-	 * @param LifecycleWrite $write The object after and before the write, its schema's slug and the lifecycle field.
-	 * @param TransitionMove $move  The transition's name and the states it moves between.
+	 * @param mixed             $rule    The rule to evaluate: a `condition` or an `autoWhen`.
+	 * @param TransitionAttempt $attempt The write (object after and before, schema slug, lifecycle field)
+	 *                                   and the transition it attempts (name, from, to).
 	 *
 	 * @return bool True only when the rule is a non-empty rule object that evaluates true.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function holds(mixed $rule, LifecycleWrite $write, TransitionMove $move): bool {
+	public function holds(mixed $rule, TransitionAttempt $attempt): bool {
+		$write = $attempt->write;
+		$move  = $attempt->move;
 		if (is_array($rule) === false || $rule === []) {
 			// A fault in the schema, not the rule working, hence a warning.
 			// The runtime does not trust save-time validation: a schema written
@@ -249,18 +251,23 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	/**
 	 * Build the refusal error for a transition.
 	 *
-	 * @param array<string, mixed> $spec The matched transition's spec.
-	 * @param string $action The matched transition's name.
-	 * @param string $field The lifecycle field's name.
+	 * @param array<string, mixed> $spec    The matched transition's spec.
+	 * @param TransitionAttempt    $attempt The refused attempt: its lifecycle field and transition name.
 	 *
 	 * @return array{code: string, field: string, action: string, message: string}
 	 */
-	private function refusalFor(array $spec, string $action, string $field): array {
+	private function refusalFor(array $spec, TransitionAttempt $attempt): array {
+		$action = $attempt->move->action;
+		$field  = $attempt->write->field;
+
 		return [
 			'code' => self::CODE_UNMET,
 			'field' => $field,
 			'action' => $action,
-			'message' => $this->message(declared: ($spec['message'] ?? null), action: $action, field: $field),
+			'message' => $this->message(declared: ($spec['message'] ?? null)) ?? $this->l10n->t(
+				'The conditions for "%1$s" are not met, so "%2$s" cannot change yet.',
+				[$action, $field]
+			),
 		];
 	}//end refusalFor()
 
@@ -308,34 +315,27 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	}//end document()
 
 	/**
-	 * The text a refusal carries.
+	 * The author's text a refusal carries, when the transition declares one.
 	 *
 	 * An author's `message` is passed through UNTRANSLATED in both shapes: it
 	 * is their words, and a catalogue lookup would search for a string that was
-	 * never in one. Only the engine's own fallback is translated.
+	 * never in one. Only the engine's own fallback, which the caller supplies
+	 * when this answers null, is translated.
 	 *
 	 * @param mixed $declared The transition's `message`: string, map, or absent.
-	 * @param string $action The matched transition's name.
-	 * @param string $field The lifecycle field's name.
 	 *
-	 * @return string
+	 * @return string|null The author's text, or null when there is none to use.
 	 */
-	private function message(mixed $declared, string $action, string $field): string {
+	private function message(mixed $declared): ?string {
 		if (is_string($declared) === true && $declared !== '') {
 			return $declared;
 		}
 
 		if (is_array($declared) === true) {
-			$resolved = $this->fromLocaleMap(map: $declared);
-			if ($resolved !== null) {
-				return $resolved;
-			}
+			return $this->fromLocaleMap(map: $declared);
 		}
 
-		return $this->l10n->t(
-			'The conditions for "%1$s" are not met, so "%2$s" cannot change yet.',
-			[$action, $field]
-		);
+		return null;
 	}//end message()
 
 	/**
