@@ -140,3 +140,4 @@
 2026-11-09T13:48:04Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7676 b05c580f
 2026-11-09T13:51:15Z integrator-20261109T130654-5892e14f RED tree 2770c45354 prs 3 front=red: Tests: 52004, Assertions: 169543, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprec; first failures: FAIL src/views/flows/pageShell.components.golden.spec.js;FAIL src/views/migrationPack/migrationPackTables.dom.golden.spec.js;FAIL src/views/schema/CalendarProviderTab.dom.golden.spec.js
 2026-11-09T13:51:27Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7653 f5eed6aa
+2026-11-09T13:51:36Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7660 d5e9c640
