@@ -106,25 +106,16 @@
 							v-model="window.end"
 							type="time"
 							:label="t('openregister', 'Closes at')" />
-						<NcButton
-							variant="tertiary"
-							:ariaLabel="t('openregister', 'Remove these hours')"
-							@click="removeWindow(weekday.iso, index)">
-							<template #icon>
-								<Delete :size="20" />
-							</template>
-						</NcButton>
+						<CalendarRowButton
+							action="remove"
+							:label="t('openregister', 'Remove these hours')"
+							@click="removeWindow(weekday.iso, index)" />
 					</div>
 
-					<NcButton
-						variant="secondary"
+					<CalendarRowButton
 						:data-testid="'working-calendar-add-window-' + weekday.iso"
-						@click="addWindow(weekday.iso)">
-						<template #icon>
-							<Plus :size="20" />
-						</template>
-						{{ t('openregister', 'Add hours') }}
-					</NcButton>
+						:label="t('openregister', 'Add hours')"
+						@click="addWindow(weekday.iso)" />
 				</div>
 			</section>
 
@@ -180,25 +171,16 @@
 							type="number"
 							:label="t('openregister', 'Moves by days')" />
 					</template>
-					<NcButton
-						variant="tertiary"
-						:ariaLabel="t('openregister', 'Remove this rule')"
-						@click="removeRule(index)">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-					</NcButton>
+					<CalendarRowButton
+						action="remove"
+						:label="t('openregister', 'Remove this rule')"
+						@click="removeRule(index)" />
 				</div>
 
-				<NcButton
-					variant="secondary"
+				<CalendarRowButton
 					data-testid="working-calendar-add-rule"
-					@click="addRule">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					{{ t('openregister', 'Add a rule') }}
-				</NcButton>
+					:label="t('openregister', 'Add a rule')"
+					@click="addRule" />
 			</section>
 
 			<section class="calendar-form__block">
@@ -224,25 +206,16 @@
 					<NcTextField
 						v-model="exception.name"
 						:label="t('openregister', 'Why it is closed')" />
-					<NcButton
-						variant="tertiary"
-						:ariaLabel="t('openregister', 'Remove this closure day')"
-						@click="removeException(index)">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-					</NcButton>
+					<CalendarRowButton
+						action="remove"
+						:label="t('openregister', 'Remove this closure day')"
+						@click="removeException(index)" />
 				</div>
 
-				<NcButton
-					variant="secondary"
+				<CalendarRowButton
 					data-testid="working-calendar-add-exception"
-					@click="addException">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					{{ t('openregister', 'Add a closure day') }}
-				</NcButton>
+					:label="t('openregister', 'Add a closure day')"
+					@click="addException" />
 			</section>
 
 			<section class="calendar-form__block">
@@ -324,9 +297,8 @@ import {
 } from '@nextcloud/vue'
 import Calendar from 'vue-material-design-icons/Calendar.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import CalendarRowButton from './CalendarRowButton.vue'
 
 /**
  * Edits one working calendar and previews what its rules mean in a year.
@@ -346,9 +318,9 @@ export default {
 
 	components: {
 		Calendar,
+		CalendarRowButton,
 		CloseCancelButton,
 		ContentSave,
-		Delete,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcDialog,
@@ -356,7 +328,6 @@ export default {
 		NcNoteCard,
 		NcSelect,
 		NcTextField,
-		Plus,
 	},
 
 	props: {
