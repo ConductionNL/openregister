@@ -85,7 +85,9 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider {
 	 * @return ObjectEntity|null The virtual object, or null when absent/unreachable.
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		return $this->findRecord(peer: $this->peer(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config), id: $id);
+		$peer = $this->peer(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config);
+
+		return $this->findRecord(peer: $peer, id: $id);
 	}//end find()
 
 	/**
@@ -123,7 +125,9 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider {
 	 * @return ObjectEntity[] The matching virtual objects (possibly empty).
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		return $this->listRecords(peer: $this->peer(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config), query: $query);
+		$peer = $this->peer(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config);
+
+		return $this->listRecords(peer: $peer, query: $query);
 	}//end findAll()
 
 	/**

@@ -110,7 +110,9 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-5.1
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		return $this->findTask(selection: VtodoSelection::fromConfig(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config), id: $id);
+		$selection = VtodoSelection::fromConfig(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config);
+
+		return $this->findTask(selection: $selection, id: $id);
 	}//end find()
 
 	/**
@@ -144,7 +146,9 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-5.1
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		return $this->listTasks(selection: VtodoSelection::fromConfig(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config), query: $query);
+		$selection = VtodoSelection::fromConfig(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config);
+
+		return $this->listTasks(selection: $selection, query: $query);
 	}//end findAll()
 
 	/**
