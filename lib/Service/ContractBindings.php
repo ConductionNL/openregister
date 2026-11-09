@@ -20,8 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\AppHost\AppContainerLocator;
-use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
@@ -631,7 +629,6 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Anonymisation\AnonymiserRequestInterface::class => AnonymisationBackendService::class,
 		ApiCapabilitiesServiceInterface::class => ApiCapabilitiesService::class,
 		AppConfigurationImporterInterface::class => ConfigurationService::class,
-		AppContainerFinderInterface::class => AppContainerLocator::class,
 		ApplicationServiceInterface::class => ApplicationService::class,
 		AppointmentAttendeeServiceInterface::class => AppointmentAttendeeService::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
