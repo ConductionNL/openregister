@@ -321,9 +321,7 @@ class CrossSchemaAggregationGoldenTest extends TestCase {
 		);
 
 		return new AggregationRunner(
-			magicMapper: $magic,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magic),
 			placeholders: new PlaceholderResolver($session),
 			db: $db,
 			cache: $cache,

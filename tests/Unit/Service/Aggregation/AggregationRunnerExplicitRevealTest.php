@@ -140,9 +140,7 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 		$schemaMapper->method('findInIds')->willReturn($this->schema());
 
 		return new AggregationRunner(
-			magicMapper: $magicMapper,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
 			placeholders: new PlaceholderResolver($session),
 			db: $this->createMock(originalClassName: IDBConnection::class),
 			cache: $this->createMock(originalClassName: AggregationCache::class),

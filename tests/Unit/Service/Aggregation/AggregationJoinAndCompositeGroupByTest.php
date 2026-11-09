@@ -1723,9 +1723,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 	 */
 	private function makeRunner(): AggregationRunner {
 		return new AggregationRunner(
-			magicMapper: $this->magicMapper,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
 			placeholders: new PlaceholderResolver($this->userSession),
 			db: $this->db,
 			cache: $this->cache,

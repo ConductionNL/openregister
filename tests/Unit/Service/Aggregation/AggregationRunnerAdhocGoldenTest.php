@@ -341,9 +341,7 @@ class AggregationRunnerAdhocGoldenTest extends TestCase {
 		$propertyRbac->method('canReadProperty')->willReturn(true);
 
 		$runner = new AggregationRunner(
-			magicMapper: $magic,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magic),
 			placeholders: new PlaceholderResolver($session),
 			db: $db,
 			cache: $cache,
