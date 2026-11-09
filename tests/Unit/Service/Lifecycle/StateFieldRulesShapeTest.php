@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 
+use OCA\OpenRegister\Service\Lifecycle\StateFieldLists;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use PHPUnit\Framework\TestCase;
 
@@ -33,9 +34,7 @@ final class StateFieldRulesShapeTest extends TestCase {
 	public function testWhatTheDecidedRulesAnswer(): void {
 		$rules = new StateFieldRules(
 			state: 'open',
-			hidden: [3 => 'secret'],
-			readOnly: ['ref'],
-			required: ['name'],
+			fields: new StateFieldLists(hidden: [3 => 'secret'], readOnly: ['ref'], required: ['name']),
 			messages: ['ref' => 'Ref is fixed.']
 		);
 
@@ -64,6 +63,6 @@ final class StateFieldRulesShapeTest extends TestCase {
 		$this->assertSame(['state' => null, 'hidden' => [], 'readOnly' => [], 'required' => []], $none->jsonSerialize());
 		$this->assertFalse($none->hides('x'));
 		$this->assertTrue((new StateFieldRules(state: 'closed'))->isEmpty());
-		$this->assertFalse((new StateFieldRules(state: 'closed', required: ['name']))->isEmpty());
+		$this->assertFalse((new StateFieldRules(state: 'closed', fields: new StateFieldLists(required: ['name'])))->isEmpty());
 	}//end testNoRulesAnswerNothing()
 }//end class
