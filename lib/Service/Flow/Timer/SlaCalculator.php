@@ -167,15 +167,9 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function add(DateTimeInterface $from, float $value, string $unit, ?WorkingCalendar $calendar): DateTimeImmutable {
-		return $this->addWatched(
-			addition: new SlaAddition(
-				start: DateTimeImmutable::createFromInterface($from),
-				value: $value,
-				unit: $unit,
-				calendar: $calendar
-			),
-			collector: null
-		);
+		$addition = new SlaAddition(start: DateTimeImmutable::createFromInterface($from), value: $value, unit: $unit, calendar: $calendar);
+
+		return $this->addWatched(addition: $addition, collector: null);
 	}//end add()
 
 	/**
@@ -342,27 +336,30 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
 	public function convert(float $value, string $fromUnit, string $toUnit, WorkingCalendar $calendar): float {
-		$this->validateUnit(unit: $fromUnit);
-		$this->validateUnit(unit: $toUnit);
-		if ($fromUnit === $toUnit) {
-			return $value;
-		}
-
-		return (($value * self::hoursPer(unit: $fromUnit, calendar: $calendar)) / self::hoursPer(unit: $toUnit, calendar: $calendar));
+		$fromHours = $this->hoursPer(unit: $fromUnit, calendar: $calendar);
+		$toHours = $this->hoursPer(unit: $toUnit, calendar: $calendar);
+		// An identical unit returns the amount untouched rather than through
+		// the pivot, so no rounding is introduced where nothing changed.
+		return match ($fromUnit) { $toUnit => $value, default => (($value * $fromHours) / $toHours) };
 	}//end convert()
 
 	/**
-	 * How many hours one of a validated unit stands for on this calendar; the
-	 * only unit left after hours and calendar days is business days.
+	 * How many hours one of a unit stands for on this calendar, once the unit
+	 * is validated; the only unit left after hours and calendar days is
+	 * business days.
 	 *
 	 * @param string          $unit     The unit.
 	 * @param WorkingCalendar $calendar Supplies hoursPerWorkingDay.
 	 *
 	 * @return float
 	 *
+	 * @throws FlowTimerValidationException When the unit is not one of the three.
+	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
-	private static function hoursPer(string $unit, WorkingCalendar $calendar): float {
+	private function hoursPer(string $unit, WorkingCalendar $calendar): float {
+		$this->validateUnit(unit: $unit);
+
 		return match ($unit) {
 			self::UNIT_HOURS => 1.0,
 			self::UNIT_CALENDAR_DAYS => 24.0,

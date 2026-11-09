@@ -113,29 +113,29 @@ class QualityScoreOnSaveListener implements IEventListener {
 			return;
 		}
 
-		$score = $this->score(object: $object, data: ($object->getObject() ?? []), rules: $rules);
+		$score = $this->score(object: $object, rules: $rules);
 		if ($score !== null) {
 			$status = $this->scorer->status(score: $score, thresholds: $this->thresholdsOf(quality: $quality));
-			$this->writeAssessment(object: $object, score: $score, status: $status);
-			$fields = $this->bodyFields(schema: $schema, quality: $quality, assessment: ['score' => $score, 'status' => $status]);
-			$this->writeBodyFields(object: $object, fields: $fields);
+			$assessment = ['score' => $score, 'status' => $status];
+			$this->writeAssessment(object: $object, assessment: $assessment);
+			$candidates = $this->candidateFields(quality: $quality, assessment: $assessment);
+			$this->writeBodyFields(object: $object, fields: $this->bodyFields(schema: $schema, candidates: $candidates));
 		}
 	}//end process()
 
 	/**
 	 * Score the data, or log and answer null when the scorer fails.
 	 *
-	 * @param ObjectEntity             $object The object being saved.
-	 * @param array<string, mixed>     $data   Its data.
+	 * @param ObjectEntity             $object The object being saved; its data is scored.
 	 * @param array<int|string, mixed> $rules  The quality rules.
 	 *
 	 * @return float|null The score, or null on failure.
 	 *
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
 	 */
-	private function score(ObjectEntity $object, array $data, array $rules): ?float {
+	private function score(ObjectEntity $object, array $rules): ?float {
 		try {
-			return $this->scorer->score(object: $data, rules: $rules, now: new DateTimeImmutable());
+			return $this->scorer->score(object: ($object->getObject() ?? []), rules: $rules, now: new DateTimeImmutable());
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				sprintf('Quality scoring failed on %s: %s', (string)$object->getUuid(), $e->getMessage())
@@ -171,19 +171,18 @@ class QualityScoreOnSaveListener implements IEventListener {
 	 * number field the platform overwrites on save in front of whoever was
 	 * filling the form.
 	 *
-	 * @param ObjectEntity $object The object being saved.
-	 * @param float        $score  The score.
-	 * @param string       $status The status the score reaches.
+	 * @param ObjectEntity                        $object     The object being saved.
+	 * @param array{score: float, status: string} $assessment The score and the status it reaches.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
 	 */
-	private function writeAssessment(ObjectEntity $object, float $score, string $status): void {
+	private function writeAssessment(ObjectEntity $object, array $assessment): void {
 		$object->setQuality(
 			[
-				'score' => $score,
-				'status' => $status,
+				'score' => $assessment['score'],
+				'status' => $assessment['status'],
 				'scoredAt' => (new DateTimeImmutable())->format(DATE_ATOM),
 			]
 		);
@@ -198,20 +197,15 @@ class QualityScoreOnSaveListener implements IEventListener {
 	 * `@self.quality` declares neither, so this answers nothing and the object
 	 * body stays clean.
 	 *
-	 * @param Schema                              $schema     The object's schema.
-	 * @param array<string, mixed>                $quality    The quality configuration.
-	 * @param array{score: float, status: string} $assessment The score and status.
+	 * @param Schema                                  $schema     The object's schema.
+	 * @param list<array{0: string, 1: float|string}> $candidates The configured fields and their values.
 	 *
 	 * @return list<array{0: string, 1: float|string}> Property and value, score first.
 	 *
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
 	 */
-	private function bodyFields(Schema $schema, array $quality, array $assessment): array {
+	private function bodyFields(Schema $schema, array $candidates): array {
 		$properties = ($schema->getProperties() ?? []);
-		$candidates = [
-			[$this->scoreField(quality: $quality), $assessment['score']],
-			[(string)($quality['statusField'] ?? ''), $assessment['status']],
-		];
 		$fields = [];
 		foreach ($candidates as $pair) {
 			if ($pair[0] !== '' && array_key_exists($pair[0], $properties) === true) {
@@ -221,6 +215,23 @@ class QualityScoreOnSaveListener implements IEventListener {
 
 		return $fields;
 	}//end bodyFields()
+
+	/**
+	 * The configured score and status fields with their values, score first.
+	 *
+	 * @param array<string, mixed>                $quality    The quality configuration.
+	 * @param array{score: float, status: string} $assessment The score and status.
+	 *
+	 * @return list<array{0: string, 1: float|string}> Property (empty when not configured) and value.
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 */
+	private function candidateFields(array $quality, array $assessment): array {
+		return [
+			[$this->scoreField(quality: $quality), $assessment['score']],
+			[(string)($quality['statusField'] ?? ''), $assessment['status']],
+		];
+	}//end candidateFields()
 
 	/**
 	 * Write values into the object body, replacing the data only when one differs.
