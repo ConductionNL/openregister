@@ -30,6 +30,7 @@ use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Notifications\Controller\Support\EmailsControllerServices;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Notifications\Service\ReplyThreadService;
 use OCA\OpenRegister\Service\EmailLinkServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
@@ -134,12 +135,8 @@ class EmailsController extends Controller {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
-	public function index(
-		string $register,
-		string $schema,
-		string $id,
-	): JSONResponse {
-		return $this->listFor(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->listFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end index()
 
 	/**
@@ -156,12 +153,8 @@ class EmailsController extends Controller {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
-	public function create(
-		string $register,
-		string $schema,
-		string $id,
-	): JSONResponse {
-		return $this->linkTo(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	public function create(string $register, string $schema, string $id): JSONResponse {
+		return $this->linkTo(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end create()
 
 	/**
@@ -179,13 +172,8 @@ class EmailsController extends Controller {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
-	public function destroy(
-		string $register,
-		string $schema,
-		string $id,
-		string $emailId,
-	): JSONResponse {
-		return $this->unlinkFrom(path: ['register' => $register, 'schema' => $schema, 'id' => $id], emailId: $emailId);
+	public function destroy(string $register, string $schema, string $id, string $emailId): JSONResponse {
+		return $this->unlinkFrom(ref: new ObjectRef(register: $register, schema: $schema, id: $id), emailId: $emailId);
 	}//end destroy()
 
 	/**
@@ -205,20 +193,20 @@ class EmailsController extends Controller {
 	}//end mailUnavailable()
 
 	/**
-	 * List the email links of the object at a path.
+	 * List the email links of the object a reference names.
 	 *
-	 * @param array<string, string> $path The register, schema and object id.
+	 * @param ObjectRef $ref The register, schema and object id.
 	 *
 	 * @return JSONResponse JSON response with email links
 	 */
-	private function listFor(array $path): JSONResponse {
+	private function listFor(ObjectRef $ref): JSONResponse {
 		$unavailable = $this->mailUnavailable();
 		if ($unavailable !== null) {
 			return $unavailable;
 		}
 
 		try {
-			$object = $this->validateObject(path: $path);
+			$object = $this->validateObject(ref: $ref);
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
@@ -254,17 +242,17 @@ class EmailsController extends Controller {
 	}//end linksOf()
 
 	/**
-	 * The object at a path when the caller may change it, else the refusal.
+	 * The object a reference names when the caller may change it, else the refusal.
 	 *
 	 * A missing object is a 404 and the update right is asked before anything
 	 * is written; a DoesNotExistException propagates to the caller's 404.
 	 *
-	 * @param array<string, string> $path The register, schema and object id.
+	 * @param ObjectRef $ref The register, schema and object id.
 	 *
 	 * @return \OCA\OpenRegister\Db\ObjectEntity|JSONResponse The object, or the 404/403 refusal.
 	 */
-	private function writableObject(array $path): \OCA\OpenRegister\Db\ObjectEntity|JSONResponse {
-		$object = $this->validateObject(path: $path);
+	private function writableObject(ObjectRef $ref): \OCA\OpenRegister\Db\ObjectEntity|JSONResponse {
+		$object = $this->validateObject(ref: $ref);
 		if ($object === null) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		}
@@ -277,20 +265,20 @@ class EmailsController extends Controller {
 	}//end writableObject()
 
 	/**
-	 * Link the requested email to the object at a path.
+	 * Link the requested email to the object a reference names.
 	 *
-	 * @param array<string, string> $path The register, schema and object id.
+	 * @param ObjectRef $ref The register, schema and object id.
 	 *
 	 * @return JSONResponse JSON response with the created email link
 	 */
-	private function linkTo(array $path): JSONResponse {
+	private function linkTo(ObjectRef $ref): JSONResponse {
 		$unavailable = $this->mailUnavailable();
 		if ($unavailable !== null) {
 			return $unavailable;
 		}
 
 		try {
-			$object = $this->writableObject(path: $path);
+			$object = $this->writableObject(ref: $ref);
 			if ($object instanceof JSONResponse) {
 				return $object;
 			}
@@ -355,21 +343,21 @@ class EmailsController extends Controller {
 	}//end linkFailure()
 
 	/**
-	 * Remove an email link from the object at a path.
+	 * Remove an email link from the object a reference names.
 	 *
-	 * @param array<string, string> $path    The register, schema and object id.
+	 * @param ObjectRef $ref     The register, schema and object id.
 	 * @param string                $emailId The email link ID
 	 *
 	 * @return JSONResponse JSON response confirming deletion
 	 */
-	private function unlinkFrom(array $path, string $emailId): JSONResponse {
+	private function unlinkFrom(ObjectRef $ref, string $emailId): JSONResponse {
 		$unavailable = $this->mailUnavailable();
 		if ($unavailable !== null) {
 			return $unavailable;
 		}
 
 		try {
-			$object = $this->writableObject(path: $path);
+			$object = $this->writableObject(ref: $ref);
 			if ($object instanceof JSONResponse) {
 				return $object;
 			}
@@ -479,7 +467,7 @@ class EmailsController extends Controller {
 	/**
 	 * Validate that the object exists and return it.
 	 *
-	 * @param array<string, string> $path The register, schema and object id.
+	 * @param ObjectRef $ref The register, schema and object id.
 	 *
 	 * @return \OCA\OpenRegister\Db\ObjectEntity|null The object or null
 	 *
@@ -488,10 +476,10 @@ class EmailsController extends Controller {
 	 *                               Swallowing it here would collapse "no such object" into the same null this method
 	 *                               returns for other reasons, which the caller could no longer tell apart.
 	 */
-	private function validateObject(array $path): ?\OCA\OpenRegister\Db\ObjectEntity {
-		$this->objectService->setRegister($path['register']);
-		$this->objectService->setSchema($path['schema']);
-		$this->objectService->setObject($path['id']);
+	private function validateObject(ObjectRef $ref): ?\OCA\OpenRegister\Db\ObjectEntity {
+		$this->objectService->setRegister($ref->register);
+		$this->objectService->setSchema($ref->schema);
+		$this->objectService->setObject($ref->id);
 
 		return $this->objectService->getObject();
 	}//end validateObject()
