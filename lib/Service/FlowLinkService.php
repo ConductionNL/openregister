@@ -74,23 +74,43 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	private const REQUIRED_APP = 'workflowengine';
 
 	/**
+	 * Persistence for link rows.
+	 *
+	 * @var FlowLinkMapperInterface
+	 */
+	private readonly FlowLinkMapperInterface $flowLinkMapper;
+
+	/**
+	 * Database connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowLinkMapperInterface $flowLinkMapper Persistence for link rows.
-	 * @param IDBConnection $db Database connection.
-	 * @param IAppManager $appManager NC app manager.
+	 * @param FlowLinkPlatform $platform Link-row mapper, database connection and app manager.
 	 * @param IUserSession $userSession Active session.
 	 * @param IGroupManager $groupManager Group manager (for admin checks).
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly FlowLinkMapperInterface $flowLinkMapper,
-		private readonly IDBConnection $db,
-		private readonly IAppManager $appManager,
+		FlowLinkPlatform $platform,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->flowLinkMapper = $platform->flowLinkMapper;
+		$this->db             = $platform->db;
+		$this->appManager     = $platform->appManager;
 	}//end __construct()
 
 	/**
