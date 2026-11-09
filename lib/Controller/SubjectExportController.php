@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
+use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportRequest;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -90,9 +91,11 @@ class SubjectExportController extends Controller {
 		}
 
 		$export = $this->exports->request(
-			subject: $subject,
-			type: $this->params->castTrimmed(key: 'type'),
-			requestId: $this->params->castTrimmed(key: 'request')
+			request: new SubjectExportRequest(
+				subject: $subject,
+				type: $this->params->castTrimmed(key: 'type'),
+				requestId: $this->params->castTrimmed(key: 'request')
+			)
 		);
 
 		return new JSONResponse(data: $export->jsonSerialize());

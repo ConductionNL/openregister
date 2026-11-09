@@ -31,15 +31,13 @@ interface SubjectExportServiceInterface {
 	/**
 	 * Ask for a subject's own export. Queues the assembly, writes nothing else.
 	 *
-	 * @param string      $subject   The data subject.
-	 * @param string|null $type      Optional PII type filter.
-	 * @param string|null $requestId The data subject request this answers.
+	 * @param SubjectExportRequest $request The subject, type filter and request id.
 	 *
 	 * @return SubjectExport The recorded request.
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
-	public function request(string $subject, ?string $type = null, ?string $requestId = null): SubjectExport;
+	public function request(SubjectExportRequest $request): SubjectExport;
 
 	/**
 	 * Load an export the caller may see, or null.

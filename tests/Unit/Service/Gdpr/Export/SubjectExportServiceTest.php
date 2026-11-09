@@ -31,6 +31,7 @@ use OCA\OpenRegister\BackgroundJob\SubjectExportJob;
 use OCA\OpenRegister\Db\SubjectExport;
 use OCA\OpenRegister\Db\SubjectExportMapper;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportRequest;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportQueue;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -150,7 +151,7 @@ final class SubjectExportServiceTest extends TestCase {
 	public function testArticle20IsAnsweredWithoutADatabaseExport(): void {
 		$service = $this->service();
 
-		$export = $service->request(self::SUBJECT, 'email', 'DSR-2026-14');
+		$export = $service->request(new SubjectExportRequest(self::SUBJECT, 'email', 'DSR-2026-14'));
 
 		self::assertSame(self::SUBJECT, $export->getSubject());
 		self::assertSame('email', $export->getSubjectType());
