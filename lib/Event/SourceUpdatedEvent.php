@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Kernel\Contracts\SourceReadInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -34,22 +35,22 @@ class SourceUpdatedEvent extends Event {
 	/**
 	 * The updated source state.
 	 *
-	 * @var SourceReadInterface The source after update.
+	 * @var SourceReadInterface&Entity The source after update.
 	 */
 	private SourceReadInterface $newSource;
 
 	/**
 	 * The previous source state.
 	 *
-	 * @var SourceReadInterface The source before update.
+	 * @var SourceReadInterface&Entity The source before update.
 	 */
 	private SourceReadInterface $oldSource;
 
 	/**
 	 * Constructor for SourceUpdatedEvent.
 	 *
-	 * @param SourceReadInterface $newSource The source after update.
-	 * @param SourceReadInterface $oldSource The source before update.
+	 * @param SourceReadInterface&Entity $newSource The source after update.
+	 * @param SourceReadInterface&Entity $oldSource The source before update.
 	 *
 	 * @return void
 	 */
@@ -62,7 +63,7 @@ class SourceUpdatedEvent extends Event {
 	/**
 	 * Get the updated source.
 	 *
-	 * @return SourceReadInterface The source after update.
+	 * @return SourceReadInterface&Entity The source after update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
@@ -73,7 +74,7 @@ class SourceUpdatedEvent extends Event {
 	/**
 	 * Get the new source state.
 	 *
-	 * @return SourceReadInterface The source after update.
+	 * @return SourceReadInterface&Entity The source after update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
@@ -84,7 +85,7 @@ class SourceUpdatedEvent extends Event {
 	/**
 	 * Get the old source state.
 	 *
-	 * @return SourceReadInterface The source before update.
+	 * @return SourceReadInterface&Entity The source before update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */

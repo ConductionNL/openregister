@@ -1030,7 +1030,7 @@
                 "objectType": "source",
                 "action": "created",
                 "source": {
-                    "entity": "Source",
+                    "entity": "SourceReadInterface",
                     "from": "getSource"
                 }
             }
@@ -1049,7 +1049,7 @@
                 "objectType": "source",
                 "action": "deleted",
                 "source": {
-                    "entity": "Source",
+                    "entity": "SourceReadInterface",
                     "from": "getSource"
                 }
             }
@@ -1068,7 +1068,7 @@
                 "objectType": "source",
                 "action": "updated",
                 "source": {
-                    "entity": "Source",
+                    "entity": "SourceReadInterface",
                     "from": "getSource"
                 }
             }
