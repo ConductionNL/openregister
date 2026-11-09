@@ -106,18 +106,35 @@ class CasePlanCascade {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function evaluate(string $objectUuid, ?string $event = null, array $payload = [], ?string $actor = null): array {
+		return $this->evaluateOn(trigger: new CasePlanTrigger(objectUuid: $objectUuid, event: $event, payload: $payload), actor: $actor);
+	}//end evaluate()
+
+	/**
+	 * Evaluate one object's plan to a fixpoint on one trigger: see {@see evaluate()}.
+	 *
+	 * @param CasePlanTrigger $trigger The anchoring object, and the event with its payload when an event caused this.
+	 * @param string|null     $actor   The identity whose act triggered this, or null for the system.
+	 *
+	 * @return array{passes: int, transitions: int, skipped: bool} What happened.
+	 *
+	 * @throws CaseCascadeBoundException At the bound, after rolling back.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 */
+	public function evaluateOn(CasePlanTrigger $trigger, ?string $actor = null): array {
+		$objectUuid = $trigger->objectUuid;
 		if (isset($this->evaluating[$objectUuid]) === true) {
 			return ['passes' => 0, 'transitions' => 0, 'skipped' => true];
 		}
 
 		$this->evaluating[$objectUuid] = true;
 		$outermost = $this->store->db->inTransaction() === false;
-		$run = new CaseCascadeRun(objectUuid: $objectUuid, event: $event, payload: $payload, actor: $actor);
+		$run = new CaseCascadeRun(objectUuid: $objectUuid, event: $trigger->event, payload: $trigger->payload, actor: $actor);
 		$this->evaluateInTransaction(run: $run);
 		$this->settle(objectUuid: $objectUuid, outermost: $outermost);
 
 		return ['passes' => $run->passes, 'transitions' => $run->transitions, 'skipped' => false];
-	}//end evaluate()
+	}//end evaluateOn()
 
 	/**
 	 * Run the passes inside a transaction; on any failure roll back, drop the
