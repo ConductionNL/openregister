@@ -303,7 +303,6 @@ class FlowNodeRunController extends Controller {
 			run: $run,
 			flow: $flowDocument,
 			subject: $object,
-			nodeId: $nodeId,
 			config: $callerConfig
 		);
 
@@ -328,7 +327,7 @@ class FlowNodeRunController extends Controller {
 				flowId: $call->flowId,
 				subject: $ref,
 				trigger: FlowRunServiceInterface::TRIGGER_DIRECT_NODE,
-				context: ['nodeId' => $call->nodeId],
+				context: [FlowRunServiceInterface::NODE_ID_CONTEXT_KEY => $call->nodeId],
 				user: $callerUid
 			);
 		} catch (FlowLifecycleRefused $e) {

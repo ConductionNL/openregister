@@ -1196,8 +1196,10 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @param FlowRun $run The queued run.
 	 * @param array $flow The flow document (used only to resolve the published pin).
+	 * The node to run is the one the run was queued for, named in its context
+	 * under {@see FlowRunServiceInterface::NODE_ID_CONTEXT_KEY}.
+	 *
 	 * @param object $subject The subject object the node acts on.
-	 * @param string $nodeId The node to run.
 	 * @param array $config The caller's config, overlaid on the published step's config after
 	 *                      pinning (caller keys win). The pin replaces the graph's nodes, so
 	 *                      this is the only way a picker's choice reaches the node.
@@ -1214,7 +1216,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * suppression reasoning already given there: injecting a factory to call
 	 * them would add a dependency without removing any coupling.
 	 */
-	public function executeNode(FlowRun $run, array $flow, object $subject, string $nodeId, array $config = []): FlowRun {
+	public function executeNode(FlowRun $run, array $flow, object $subject, array $config = []): FlowRun {
 		if ($run->getStatus() !== FlowRun::STATUS_QUEUED) {
 			// Parked awaiting delegated-identity consent, or otherwise not
 			// ready to proceed — the same "do not double-act" rule execute()
@@ -1228,6 +1230,7 @@ class FlowRunService implements FlowRunServiceInterface {
 			return $this->failUnresolvableVersion(run: $run);
 		}
 
+		$nodeId = (string)(($run->getContext() ?? [])[self::NODE_ID_CONTEXT_KEY] ?? '');
 		$step = $this->stepById(pinned: $pinned, nodeId: $nodeId);
 		if ($step === null) {
 			return $this->failMissingNode(run: $run, nodeId: $nodeId);
