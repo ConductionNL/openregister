@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Service\Export;
 
 /**
  * A titled table of rows a caller already read, for rendering as a PDF section.
+ *
+ * @spec openspec/specs/export-pdf-format/spec.md
  */
 final class RowsTable {
 	/**

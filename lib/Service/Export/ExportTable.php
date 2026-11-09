@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
  * The rows of one export section with their columns and resolved relation names.
+ *
+ * @spec openspec/specs/data-import-export/spec.md
  */
 final class ExportTable {
 	/**

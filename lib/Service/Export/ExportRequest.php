@@ -34,6 +34,8 @@ use OCP\IUser;
  * What one object export covers: the register and schema, the filters and the user it runs for.
  *
  * A null schema with a register means every schema of that register.
+ *
+ * @spec openspec/specs/data-import-export/spec.md
  */
 final class ExportRequest {
 	/**

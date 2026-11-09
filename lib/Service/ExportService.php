@@ -211,7 +211,12 @@ class ExportService implements ObjectExporterInterface {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function exportToExcel(?RegisterInterface $register = null, ?SchemaInterface $schema = null, array $filters = [], ?IUser $currentUser = null): Spreadsheet {
+	public function exportToExcel(
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
+		array $filters = [],
+		?IUser $currentUser = null,
+	): Spreadsheet {
 		$register = StoredEntity::register(register: $register);
 		$schema   = StoredEntity::schema(schema: $schema);
 
@@ -233,7 +238,7 @@ class ExportService implements ObjectExporterInterface {
 
 		if ($request->register !== null && $request->schema === null) {
 			foreach ($this->getSchemasForRegister(register: $request->register) as $schema) {
-				$this->populateSheet(spreadsheet: $spreadsheet, request: new ExportRequest(register: $request->register, schema: $schema, filters: $request->filters, currentUser: $request->currentUser));
+				$this->populateSheet(spreadsheet: $spreadsheet, request: $this->schemaRequest(request: $request, schema: $schema));
 			}
 
 			return $spreadsheet;
@@ -258,7 +263,12 @@ class ExportService implements ObjectExporterInterface {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function exportToCsv(?RegisterInterface $register = null, ?SchemaInterface $schema = null, array $filters = [], ?IUser $currentUser = null): string {
+	public function exportToCsv(
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
+		array $filters = [],
+		?IUser $currentUser = null,
+	): string {
 		$register = StoredEntity::register(register: $register);
 		$schema   = StoredEntity::schema(schema: $schema);
 
@@ -364,12 +374,17 @@ class ExportService implements ObjectExporterInterface {
 	 *
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
-	public function exportToPdf(?RegisterInterface $register = null, ?SchemaInterface $schema = null, array $filters = [], ?IUser $currentUser = null): string {
-		if ($this->isPdfAvailable() === false) {
-			throw new OfficeServerRequiredException();
-		}
+	public function exportToPdf(
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
+		array $filters = [],
+		?IUser $currentUser = null,
+	): string {
+		$this->assertPdfAvailable();
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
 
-		return $this->pdfFor(request: new ExportRequest(register: StoredEntity::register(register: $register), schema: StoredEntity::schema(schema: $schema), filters: $filters, currentUser: $currentUser));
+		return $this->pdfFor(request: new ExportRequest(register: $register, schema: $schema, filters: $filters, currentUser: $currentUser));
 	}//end exportToPdf()
 
 	/**
@@ -385,9 +400,7 @@ class ExportService implements ObjectExporterInterface {
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
 	public function pdfFor(ExportRequest $request): string {
-		if ($this->isPdfAvailable() === false) {
-			throw new OfficeServerRequiredException();
-		}
+		$this->assertPdfAvailable();
 
 		// Capture register context so getHeaders/getObjectValue can emit
 		// per-language columns for translatable properties, same as the
@@ -441,9 +454,7 @@ class ExportService implements ObjectExporterInterface {
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
 	public function renderTableToPdf(RowsTable $table): string {
-		if ($this->isPdfAvailable() === false) {
-			throw new OfficeServerRequiredException();
-		}
+		$this->assertPdfAvailable();
 
 		$this->guardPdfRowCap(rowCount: count($table->rows));
 
@@ -467,7 +478,7 @@ class ExportService implements ObjectExporterInterface {
 		$totalRows = 0;
 
 		foreach ($this->getSchemasForRegister(register: $request->register) as $schemaItem) {
-			$schemaRequest = new ExportRequest(register: $request->register, schema: $schemaItem, filters: $request->filters, currentUser: $request->currentUser);
+			$schemaRequest = $this->schemaRequest(request: $request, schema: $schemaItem);
 			$objects = $this->fetchObjectsForExport(request: $schemaRequest);
 			$totalRows += count($objects);
 			$sectionInput[] = ['request' => $schemaRequest, 'objects' => $objects];
@@ -589,6 +600,31 @@ class ExportService implements ObjectExporterInterface {
 
 		return $value;
 	}//end truncatePdfCellValue()
+
+	/**
+	 * The same export narrowed to one schema of its register.
+	 *
+	 * @param ExportRequest $request The register-level export.
+	 * @param Schema        $schema  One schema of that register.
+	 *
+	 * @return ExportRequest
+	 */
+	private function schemaRequest(ExportRequest $request, Schema $schema): ExportRequest {
+		return new ExportRequest(register: $request->register, schema: $schema, filters: $request->filters, currentUser: $request->currentUser);
+	}//end schemaRequest()
+
+	/**
+	 * Refuse PDF output when no office server converts to PDF.
+	 *
+	 * @return void
+	 *
+	 * @throws OfficeServerRequiredException When no office server converts to PDF.
+	 */
+	private function assertPdfAvailable(): void {
+		if ($this->isPdfAvailable() === false) {
+			throw new OfficeServerRequiredException();
+		}
+	}//end assertPdfAvailable()
 
 	/**
 	 * Whether PDF output is possible: an office server converts ODT to PDF.
