@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
 use OCA\OpenRegister\Service\Deletion\DestructionServices;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
@@ -90,8 +91,7 @@ class DeletedControllerReadScopeTest extends TestCase {
 
 		$authorizer = new DeletedObjectAuthorizer(
 			$this->createMock(SchemaMapper::class),
-			$this->userSession,
-			$this->groupManager,
+			new CallerContext($this->userSession, $this->groupManager),
 			$this->createMock(PermissionHandler::class),
 		);
 
