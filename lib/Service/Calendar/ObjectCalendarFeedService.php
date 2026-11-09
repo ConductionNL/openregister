@@ -205,8 +205,7 @@ class ObjectCalendarFeedService {
 			calendarName: $scope['name'],
 			timeZone: $timeZone,
 			componentLines: $events['lines'],
-			fromYear: min($events['years']),
-			toYear: max($events['years'])
+			years: new CalendarYearSpan(fromYear: min($events['years']), toYear: max($events['years']))
 		);
 	}//end renderAsCurrentUser()
 

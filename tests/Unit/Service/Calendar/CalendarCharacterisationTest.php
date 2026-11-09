@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
 use OCA\OpenRegister\Service\Calendar\DeadlineDateResolver;
+use OCA\OpenRegister\Service\Calendar\CalendarYearSpan;
 use OCA\OpenRegister\Service\Calendar\IcalendarWriter;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedRendering;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
@@ -671,8 +672,7 @@ class CalendarCharacterisationTest extends TestCase {
 			calendarName: 'Zaken; open',
 			timeZone: null,
 			componentLines: ['BEGIN:VEVENT', 'END:VEVENT'],
-			fromYear: 2026,
-			toYear: 2026
+			years: new CalendarYearSpan(fromYear: 2026, toYear: 2026)
 		);
 
 		$this->assertSame(
@@ -687,8 +687,7 @@ class CalendarCharacterisationTest extends TestCase {
 			calendarName: 'Zaken',
 			timeZone: new DateTimeZone('Europe/Amsterdam'),
 			componentLines: [],
-			fromYear: 2027,
-			toYear: 2028
+			years: new CalendarYearSpan(fromYear: 2027, toYear: 2028)
 		);
 
 		$this->assertStringContainsString("X-WR-TIMEZONE:Europe/Amsterdam\r\nBEGIN:VTIMEZONE\r\n", $body);
