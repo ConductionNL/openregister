@@ -3004,13 +3004,9 @@ class ImportHandler {
 	 */
 	private function importSeedDataContained(ImportRun $run): void {
 		try {
-			$this->importSeedData(
-				configData: $run->data,
-				owner: $run->owner,
-				appId: $run->appId,
-				configuration: $run->configuration,
-				result: $run->result
-			);
+			$seed = new SeedImport(configData: $run->data, result: $run->result);
+			$seed->appId = $run->appId;
+			$this->importSeedData(seed: $seed, configuration: $run->configuration);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ImportHandler] Seed-data import failed - registers/schemas/objects kept: ' . $e->getMessage(),
@@ -4507,32 +4503,21 @@ class ImportHandler {
 	 * Processes the x-openregister.seedData section and creates initial objects
 	 * using the ObjectService for proper validation and handling.
 	 *
-	 * @param array $configData The configuration data containing seedData.
-	 * @param string|null $owner The owner of the objects.
-	 * @param string|null $appId The application ID.
+	 * @param SeedImport    $seed          The seed pass: the configuration data with seedData, the
+	 *                                     application ID and the result the objects are appended to.
 	 * @param Configuration $configuration The configuration entity.
-	 * @param array $result The result array to append object IDs to.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
-	 * @spec openspec/specs/data-import-export/spec.md
-	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function importSeedData(
-		array $configData,
-		?string $owner,
-		?string $appId,
-		Configuration $configuration,
-		array &$result,
-	): void {
-
-		$seedData = $configData['x-openregister']['seedData'] ?? null;
+	private function importSeedData(SeedImport $seed, Configuration $configuration): void {
+		$seedData = $seed->configData['x-openregister']['seedData'] ?? null;
 
 		if ($seedData === null || empty($seedData['objects']) === true) {
 			$this->logger->debug(
 				message: '[ImportHandler] No seed data found for configuration',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $seed->appId]
 			);
 			return;
 		}
@@ -4551,9 +4536,7 @@ class ImportHandler {
 		// Scoped to seeding alone. Schemas, registers and mappings are imported
 		// outside this call and are unaffected, as is every ordinary save.
 		SystemOperationContext::run(
-			function () use ($configData, $appId, $configuration, &$result): void {
-				$seed = new SeedImport(configData: $configData, result: $result);
-				$seed->appId = $appId;
+			function () use ($seed, $configuration): void {
 				$this->importSeedDataObjects(seed: $seed, configuration: $configuration);
 			}
 		);

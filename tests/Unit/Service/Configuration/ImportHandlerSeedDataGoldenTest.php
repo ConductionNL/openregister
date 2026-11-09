@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SeedImport;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -203,7 +204,9 @@ class ImportHandlerSeedDataGoldenTest extends TestCase {
 		$configData = ['info' => ['title' => 'Seed test'], 'x-openregister' => ['seedData' => ['description' => 'Seeds', 'objects' => self::objects()]]];
 		$result = ['objects' => []];
 		try {
-			$ref->getMethod('importSeedData')->invokeArgs($handler, [$configData, 'owner', 'app', $configuration, &$result]);
+			$seed = new SeedImport(configData: $configData, result: $result);
+			$seed->appId = 'app';
+			$ref->getMethod('importSeedData')->invokeArgs($handler, [$seed, $configuration]);
 		} catch (\Throwable $e) {
 			$this->calls[] = ['threw' => get_class($e), 'message' => $e->getMessage()];
 		}

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SeedImport;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
@@ -423,7 +424,9 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 		$result = ['objects' => []];
 		$method = $ref->getMethod('importSeedData');
 		for ($run = 0; $run < $runs; $run++) {
-			$method->invokeArgs($handler, [$configData, 'admin', 'learniq', $configuration, &$result]);
+			$seed = new SeedImport(configData: $configData, result: $result);
+			$seed->appId = 'learniq';
+			$method->invokeArgs($handler, [$seed, $configuration]);
 		}
 	}//end importSeed()
 
