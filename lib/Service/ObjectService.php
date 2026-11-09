@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -7695,14 +7696,30 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function validateAndSaveObjectsBySchema(int $registerId, int $schemaId, ?int $limit=null, int $offset=0): array
     {
-        return $this->validationHandler->validateAndSaveObjectsBySchema(
-            registerId: $registerId,
-            schemaId: $schemaId,
-            saveCallback: [$this, 'saveObject'],
-            limit: $limit,
-            offset: $offset
-        );
+        $query = new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset);
+        return $this->validateAndSaveTable(table: new RegisterSchemaRef(register: $registerId, schema: $schemaId), query: $query);
     }//end validateAndSaveObjectsBySchema()
+
+    /**
+     * Validate and save one page of a register and schema's objects; an unbounded query processes them all.
+     *
+     * @param RegisterSchemaRef $table The register and schema ids.
+     * @param ListQuery         $query The page: its limit (or unbounded) and offset.
+     *
+     * @return array{processed: int, updated: int, failed: int, total: int, errors: array} Validation statistics
+     *
+     * @spec exclude Delegation to ValidationHandler::validateAndSaveObjectsBySchema() with a saveObject callback; handler owns the loop.
+     */
+    public function validateAndSaveTable(RegisterSchemaRef $table, ListQuery $query): array
+    {
+        return $this->validationHandler->validateAndSaveObjectsBySchema(
+            registerId: (int) $table->register,
+            schemaId: (int) $table->schema,
+            saveCallback: [$this, 'saveObject'],
+            limit: $query->limitOrNull(),
+            offset: ($query->offset ?? 0)
+        );
+    }//end validateAndSaveTable()
 
     /**
      * Reset the current register, schema, and object context.
