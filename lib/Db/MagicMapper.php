@@ -9851,16 +9851,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
 	public function searchBy(MagicSearchRequest $search, bool $_rbac=true, bool $_multitenancy=true): array|int {
-		$query = $search->query;
-		$ids   = $search->ids;
-		$uses  = $search->uses;
-
-		$query = $this->narrowedToIds(query: $query, ids: $ids);
-		if ($this->selectsNothing(query: $query, ids: $ids) === true) {
+		$query = $this->narrowedSearchQuery(search: $search);
+		if ($query === null) {
 			return [];
 		}
-
-		$query = $this->narrowedToUses(query: $query, uses: $uses);
 
 		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
 		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
@@ -9873,15 +9867,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// the ONLY bound left on the query, which made that somebody else's data.
 		// searchObjectsPaginated() has branched on the array form since the
 		// unified-search work; this entry point never did.
-		if ($this->namesSeveral(registerRaw: $registerRaw, schemaRaw: $schemaRaw) === true) {
-			$result = $this->searchObjectsPaginatedMultiSchema(
-				search: (new MultiSchemaSearch(
-					searchQuery: $query,
-					countQuery: $query,
-					registerIds: $this->identifierList(value: $registerRaw),
-					schemaIds: $this->identifierList(value: $schemaRaw)
-				))->securedBy(rbac: $_rbac, multitenancy: $_multitenancy)
-			);
+		$several = $this->severalSchemaSearch(query: $query);
+		if ($several !== null) {
+			$result = $this->searchObjectsPaginatedMultiSchema(search: $several->securedBy(rbac: $_rbac, multitenancy: $_multitenancy));
 
 			return ($result['results'] ?? []);
 		}
@@ -10026,31 +10014,19 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
 	public function countBy(MagicSearchRequest $search, bool $_rbac=true, bool $_multitenancy=true): int {
-		$query = $search->query;
-		$ids   = $search->ids;
-		$uses  = $search->uses;
-
-		$query = $this->narrowedToIds(query: $query, ids: $ids);
-		if ($this->selectsNothing(query: $query, ids: $ids) === true) {
+		$query = $this->narrowedSearchQuery(search: $search);
+		if ($query === null) {
 			return 0;
 		}
-
-		$query = $this->narrowedToUses(query: $query, uses: $uses);
 
 		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
 		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
 
 		// Same array collapse as searchObjects(): a count that silently answered
 		// for register 1 is the same defect wearing a different return type.
-		if ($this->namesSeveral(registerRaw: $registerRaw, schemaRaw: $schemaRaw) === true) {
-			$result = $this->searchObjectsPaginatedMultiSchema(
-				search: (new MultiSchemaSearch(
-					searchQuery: $query,
-					countQuery: $query,
-					registerIds: $this->identifierList(value: $registerRaw),
-					schemaIds: $this->identifierList(value: $schemaRaw)
-				))->securedBy(rbac: $_rbac, multitenancy: $_multitenancy)
-			);
+		$several = $this->severalSchemaSearch(query: $query);
+		if ($several !== null) {
+			$result = $this->searchObjectsPaginatedMultiSchema(search: $several->securedBy(rbac: $_rbac, multitenancy: $_multitenancy));
 
 			return (int)($result['total'] ?? 0);
 		}
@@ -10082,6 +10058,44 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return 0;
 	}//end countBy()
+
+	/**
+	 * The search query narrowed to the request's ids and relation, or null when the ids select nothing.
+	 *
+	 * @param MagicSearchRequest $search The search parameters and the ids and relation to narrow to.
+	 *
+	 * @return array|null The narrowed query, or null.
+	 */
+	private function narrowedSearchQuery(MagicSearchRequest $search): ?array {
+		$query = $this->narrowedToIds(query: $search->query, ids: $search->ids);
+		if ($this->selectsNothing(query: $query, ids: $search->ids) === true) {
+			return null;
+		}
+
+		return $this->narrowedToUses(query: $query, uses: $search->uses);
+	}//end narrowedSearchQuery()
+
+	/**
+	 * The multi-schema search of a query that names several registers or schemas, unsecured; null when it names at most one of each.
+	 *
+	 * @param array $query The narrowed search query.
+	 *
+	 * @return MultiSchemaSearch|null The search, to be secured by the caller, or null.
+	 */
+	private function severalSchemaSearch(array $query): ?MultiSchemaSearch {
+		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
+		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+		if ($this->namesSeveral(registerRaw: $registerRaw, schemaRaw: $schemaRaw) === false) {
+			return null;
+		}
+
+		return new MultiSchemaSearch(
+			searchQuery: $query,
+			countQuery: $query,
+			registerIds: $this->identifierList(value: $registerRaw),
+			schemaIds: $this->identifierList(value: $schemaRaw)
+		);
+	}//end severalSchemaSearch()
 
 	/**
 	 * Count all objects with optional filtering.
