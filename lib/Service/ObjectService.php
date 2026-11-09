@@ -4222,7 +4222,7 @@ class ObjectService implements ObjectServiceInterface
         }
 
         if (empty($extend) === false) {
-            $result['@self']['objects'] = $this->getExtendedObjects();
+            $result['@self']['objects'] = $this->getExtendedObjects(_rbac: $_rbac);
         }
 
         // Add names mapping if _names is in _extend.
@@ -4712,11 +4712,13 @@ class ObjectService implements ObjectServiceInterface
      * Objects are indexed by their UUID for easy lookup by the frontend.
      * Should be called after renderEntity() to get the extended objects.
      *
+     * @param bool $_rbac Whether this is a user-facing read (strips unreadable properties).
+     *
      * @return array<string, array> Objects indexed by UUID
      */
-    public function getExtendedObjects(): array
+    public function getExtendedObjects(bool $_rbac=true): array
     {
-        return $this->renderHandler->getObjectsCache();
+        return $this->renderHandler->getObjectsCache(_rbac: $_rbac);
     }//end getExtendedObjects()
 
     /**

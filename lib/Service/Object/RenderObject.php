@@ -565,11 +565,13 @@ class RenderObject {
 	 * This method returns all objects that were loaded during rendering (via _extend).
 	 * Objects are indexed by their UUID for easy lookup by the frontend.
 	 *
+	 * @param bool $_rbac Whether this is a user-facing read (strips unreadable properties).
+	 *
 	 * @return array<string, array> Objects indexed by UUID, serialized as arrays
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	public function getObjectsCache(): array {
+	public function getObjectsCache(bool $_rbac=true): array {
 		$result = [];
 		foreach ($this->objectsCache as $key => $object) {
 			// Only include entries keyed by UUID (skip numeric IDs).
@@ -582,6 +584,10 @@ class RenderObject {
 				}
 			}
 		}
+
+		// The cache holds stored records; the response gets them as any read does,
+		// with unreadable and writeOnly properties stripped.
+		$this->redactWriteOnlyFromRows(rows: $result, _rbac: $_rbac);
 
 		return $result;
 	}//end getObjectsCache()
@@ -4577,12 +4583,15 @@ class RenderObject {
 			$additionalFields = array_slice($inversedByFields, 1);
 		}
 
-		return $this->objectEntityMapper->findByRelationBatchInSchema(
-			uuids: $entityUuids,
-			schemaId: $schemaIdInt,
-			registerId: $registerId,
-			fieldName: $inversedByFields[0],
-			additionalFieldNames: $additionalFields
+		// The relation lookup applies no access rule: keep only what the caller may read.
+		return $this->objectCacheService->readableOnly(
+			objects: $this->objectEntityMapper->findByRelationBatchInSchema(
+				uuids: $entityUuids,
+				schemaId: $schemaIdInt,
+				registerId: $registerId,
+				fieldName: $inversedByFields[0],
+				additionalFieldNames: $additionalFields
+			)
 		);
 	}//end batchLoadReferencingObjects()
 
@@ -4852,6 +4861,9 @@ class RenderObject {
 				}
 			}//end if
 		}//end foreach
+
+		// The relation lookups apply no access rule: keep only what the caller may read.
+		$referencingObjects = $this->objectCacheService->readableOnly(objects: $referencingObjects);
 
 		// Set all found objects to the objectsCache.
 		$ids = array_map(

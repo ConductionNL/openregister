@@ -98,6 +98,9 @@ class RenderObjectCoverageTest extends TestCase {
 		$this->systemTagMapper = $this->createMock(ISystemTagObjectMapper::class);
 		$this->cacheHandler = $this->createMock(CacheHandler::class);
 		$this->objectCacheService = $this->createMock(CacheHandler::class);
+		// Every object these tests hand the renderer is readable; the readability
+		// filter itself is covered in CacheHandlerBranchCoverageTest.
+		$this->objectCacheService->method('readableOnly')->willReturnArgument(0);
 		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->fileService = $this->createMock(FileService::class);

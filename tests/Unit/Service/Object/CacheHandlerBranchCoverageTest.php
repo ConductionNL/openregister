@@ -171,14 +171,46 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 	}
 
 	public function testPreloadObjectsSuccess(): void {
-		$obj1 = $this->createObjectMock(1, 'uuid-1');
-		$obj2 = $this->createObjectMock(2, 'uuid-2');
+		$obj1 = $this->createObjectMock(1, 'uuid-1', '3', '4');
+		$obj2 = $this->createObjectMock(2, 'uuid-2', '3', '4');
 
 		$this->objectMapper->method('findMultiple')
 			->willReturn([$obj1, $obj2]);
+		$this->objectMapper->method('filterReadableUuids')
+			->with(3, 4, ['uuid-1', 'uuid-2'])
+			->willReturn(['uuid-1', 'uuid-2']);
 
 		$result = $this->handler->preloadObjects([1, 2]);
 		$this->assertCount(2, $result);
+	}
+
+	/**
+	 * The bulk loader applies no access rule, so a preload keeps, and caches,
+	 * only what the caller may read (or-a-f1).
+	 */
+	public function testPreloadObjectsDropsAndDoesNotCacheUnreadableObjects(): void {
+		$readable = $this->createObjectMock(1, 'uuid-1', '3', '4');
+		$hidden   = $this->createObjectMock(2, 'uuid-2', '3', '4');
+		$homeless = $this->createObjectMock(5, 'uuid-5');
+
+		$this->objectMapper->method('findMultiple')
+			->willReturn([$readable, $hidden, $homeless]);
+		$this->objectMapper->method('filterReadableUuids')->willReturn(['uuid-1']);
+		$this->objectMapper->method('find')->willThrowException(new \Exception('Not found'));
+
+		$result = $this->handler->preloadObjects(['uuid-1', 'uuid-2', 'uuid-5']);
+
+		$this->assertSame([$readable], $result);
+		$this->assertNull($this->handler->getObject('uuid-2'));
+		$this->assertSame($readable, $this->handler->getObject('uuid-1'));
+	}
+
+	public function testPreloadObjectsDisclosesNoneWhenTheCheckFails(): void {
+		$this->objectMapper->method('findMultiple')
+			->willReturn([$this->createObjectMock(1, 'uuid-1', '3', '4')]);
+		$this->objectMapper->method('filterReadableUuids')->willThrowException(new \RuntimeException('db down'));
+
+		$this->assertSame([], $this->handler->preloadObjects(['uuid-1']));
 	}
 
 	// =========================================================================

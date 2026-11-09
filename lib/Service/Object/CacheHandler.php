@@ -813,9 +813,13 @@ class CacheHandler implements ObjectNameCacheInterface {
 			);
 		}
 
-		// Bulk load from database.
+		// Bulk load from database. The bulk loader applies no access rule, so the
+		// rows are cut to what the caller may read BEFORE they are cached: getObject()
+		// answers from this cache without asking again.
 		try {
-			$objects = $this->findForPreload(identifiers: array_values($identifiersToLoad), registerId: $registerId);
+			$objects = $this->readableOnly(
+				objects: $this->findForPreload(identifiers: array_values($identifiersToLoad), registerId: $registerId)
+			);
 
 			// Cache all loaded objects.
 			foreach ($objects as $object) {
@@ -838,6 +842,62 @@ class CacheHandler implements ObjectNameCacheInterface {
 			return [];
 		}//end try
 	}//end preloadObjects()
+
+	/**
+	 * Keep only the objects the caller may read.
+	 *
+	 * Asked of the object read path itself (MagicMapper::filterReadableUuids(),
+	 * the RBAC + multitenancy filter of GET /api/objects/{register}/{schema}/{id}),
+	 * one query per register+schema table. An object without a uuid, register or
+	 * schema, and every object of a table whose check fails, is dropped.
+	 *
+	 * @param array<ObjectEntity> $objects Objects loaded without an access rule.
+	 *
+	 * @return array<int, ObjectEntity> The readable subset, in the order given.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function readableOnly(array $objects): array {
+		$uuidsByTable = [];
+		foreach ($objects as $object) {
+			$uuid = (string)$object->getUuid();
+			$table = (int)$object->getRegister() . ':' . (int)$object->getSchema();
+			if ($uuid !== '') {
+				$uuidsByTable[$table][] = $uuid;
+			}
+		}
+
+		$readable = [];
+		foreach ($uuidsByTable as $table => $uuids) {
+			[$registerId, $schemaId] = array_map('intval', explode(':', (string)$table, 2));
+			if ($registerId <= 0 || $schemaId <= 0) {
+				continue;
+			}
+
+			$readableHere = [];
+			try {
+				$readableHere = $this->getObjectMapper()->filterReadableUuids(registerId: $registerId, schemaId: $schemaId, uuids: $uuids);
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[CacheHandler] Read access for related objects could not be established; disclosing none',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $table, 'error' => $e->getMessage()]
+				);
+			}
+
+			foreach ($readableHere as $uuid) {
+				$readable[$table . '|' . $uuid] = true;
+			}
+		}
+
+		return array_values(
+			array_filter(
+				$objects,
+				static fn (ObjectEntity $object): bool => isset(
+					$readable[(int)$object->getRegister() . ':' . (int)$object->getSchema() . '|' . (string)$object->getUuid()]
+				)
+			)
+		);
+	}//end readableOnly()
 
 	/**
 	 * Load objects by identifier, from one register's tables first when given.
