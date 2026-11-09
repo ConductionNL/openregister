@@ -75,28 +75,15 @@
 					</NcEmptyContent>
 
 					<table v-else class="avgTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Name') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Code') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Legal basis') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Retention period') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Status') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Actions') }}
-								</th>
-							</tr>
-						</thead>
+						<AvgTableHead
+							:labels="[
+								t('openregister', 'Name'),
+								t('openregister', 'Code'),
+								t('openregister', 'Legal basis'),
+								t('openregister', 'Retention period'),
+								t('openregister', 'Status'),
+								t('openregister', 'Actions'),
+							]" />
 						<tbody>
 							<tr v-for="a in activities" :key="a.uuid">
 								<td>{{ a.name }}</td>
@@ -179,34 +166,17 @@
 					</NcEmptyContent>
 
 					<table v-else class="avgTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Activity') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Legal basis') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Retention period') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Total events') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Create') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Update') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Delete') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Read') }}
-								</th>
-							</tr>
-						</thead>
+						<AvgTableHead
+							:labels="[
+								t('openregister', 'Activity'),
+								t('openregister', 'Legal basis'),
+								t('openregister', 'Retention period'),
+								t('openregister', 'Total events'),
+								t('openregister', 'Create'),
+								t('openregister', 'Update'),
+								t('openregister', 'Delete'),
+								t('openregister', 'Read'),
+							]" />
 						<tbody>
 							<tr
 								v-for="row in accountability.activities"
@@ -429,25 +399,14 @@
 					</NcEmptyContent>
 
 					<table v-else class="avgTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Schema') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Register') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'PII rows') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Schema annotation') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Register annotation') }}
-								</th>
-							</tr>
-						</thead>
+						<AvgTableHead
+							:labels="[
+								t('openregister', 'Schema'),
+								t('openregister', 'Register'),
+								t('openregister', 'PII rows'),
+								t('openregister', 'Schema annotation'),
+								t('openregister', 'Register annotation'),
+							]" />
 						<tbody>
 							<tr
 								v-for="issue in complianceReport.issues
@@ -571,31 +530,16 @@
 						</NcEmptyContent>
 
 						<table v-else class="avgTable">
-							<thead>
-								<tr>
-									<th scope="col">
-										{{ t('openregister', 'Subject') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Type') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Status') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Handler') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Deadline') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Escalation') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Actions') }}
-									</th>
-								</tr>
-							</thead>
+							<AvgTableHead
+								:labels="[
+									t('openregister', 'Subject'),
+									t('openregister', 'Type'),
+									t('openregister', 'Status'),
+									t('openregister', 'Handler'),
+									t('openregister', 'Deadline'),
+									t('openregister', 'Escalation'),
+									t('openregister', 'Actions'),
+								]" />
 							<tbody>
 								<tr v-for="c in filteredCases" :key="caseId(c)">
 									<td>{{ c.subjectId || '—' }}</td>
@@ -861,16 +805,11 @@
 								{{ t('openregister', 'No evidence collected yet.') }}
 							</p>
 							<table v-else class="avgTable">
-								<thead>
-									<tr>
-										<th scope="col">
-											{{ t('openregister', 'Source') }}
-										</th>
-										<th scope="col">
-											{{ t('openregister', 'Status') }}
-										</th>
-									</tr>
-								</thead>
+								<AvgTableHead
+									:labels="[
+										t('openregister', 'Source'),
+										t('openregister', 'Status'),
+									]" />
 								<tbody>
 									<tr v-for="(ev, i) in caseEvidence" :key="i">
 										<td>
@@ -904,16 +843,11 @@
 								{{ t('openregister', 'No redactions applied.') }}
 							</p>
 							<table v-else class="avgTable">
-								<thead>
-									<tr>
-										<th scope="col">
-											{{ t('openregister', 'Field') }}
-										</th>
-										<th scope="col">
-											{{ t('openregister', 'Ground') }}
-										</th>
-									</tr>
-								</thead>
+								<AvgTableHead
+									:labels="[
+										t('openregister', 'Field'),
+										t('openregister', 'Ground'),
+									]" />
 								<tbody>
 									<tr v-for="(r, i) in caseRedactions" :key="i">
 										<td>
@@ -1073,6 +1007,7 @@ import RefreshButton from '../../components/shared/RefreshButton.vue'
 import DenialComposerDialog from '../../dialogs/avg/DenialComposerDialog.vue'
 import EditActivityDialog from '../../dialogs/avg/EditActivityDialog.vue'
 import RedactionDialog from '../../dialogs/avg/RedactionDialog.vue'
+import AvgTableHead from './AvgTableHead.vue'
 import {
 	CASE_LIFECYCLE_TRANSITIONS,
 	CASE_STATUS_VOCABULARY,
@@ -1095,6 +1030,7 @@ export default {
 	name: 'AvgIndex',
 
 	components: {
+		AvgTableHead,
 		NcAppContent,
 		NcButton,
 		NcActions,
@@ -2079,7 +2015,7 @@ export default {
 	border-collapse: collapse;
 }
 
-.avgTable th,
+.avgTable :deep(th),
 .avgTable td {
 	padding: 10px 12px;
 	border-bottom: 1px solid var(--color-border);
