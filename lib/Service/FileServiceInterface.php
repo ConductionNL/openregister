@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
@@ -139,9 +139,9 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	/**
 	 * Get the file audit handler.
 	 *
-	 * @return FileAuditHandler The audit handler.
+	 * @return FileAuditHandlerInterface The audit handler.
 	 */
-	public function getAuditHandler(): FileAuditHandler;
+	public function getAuditHandler(): FileAuditHandlerInterface;
 
 	/**
 	 * Get the file batch handler.

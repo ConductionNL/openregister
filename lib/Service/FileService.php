@@ -61,7 +61,7 @@ use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
-use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandlerInterface;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileContentHandlers;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
@@ -269,9 +269,9 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	/**
 	 * File audit handler (Single Responsibility: Download audit logging)
 	 *
-	 * @var FileAuditHandler
+	 * @var FileAuditHandlerInterface
 	 */
-	private FileAuditHandler $fileAuditHandler;
+	private FileAuditHandlerInterface $fileAuditHandler;
 
 	/**
 	 * Per-request memoization for the defense-in-depth folder-access
@@ -1944,9 +1944,9 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	/**
 	 * Get the file audit handler.
 	 *
-	 * @return FileAuditHandler The audit handler.
+	 * @return FileAuditHandlerInterface The audit handler.
 	 */
-	public function getAuditHandler(): FileAuditHandler {
+	public function getAuditHandler(): FileAuditHandlerInterface {
 		return $this->fileAuditHandler;
 	}//end getAuditHandler()
 

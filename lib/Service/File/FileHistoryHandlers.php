@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
-use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandlerInterface;
 
 /**
  * The versioning, lock and audit handlers of the file service.
@@ -35,14 +35,14 @@ final class FileHistoryHandlers {
 	 *
 	 * @param FileVersioningHandler $fileVerHandler   File versioning handler
 	 * @param FileLockHandler       $fileLockHandler  File lock handler
-	 * @param FileAuditHandler      $fileAuditHandler File audit handler
+	 * @param FileAuditHandlerInterface $fileAuditHandler File audit handler
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public readonly FileVersioningHandler $fileVerHandler,
 		public readonly FileLockHandler $fileLockHandler,
-		public readonly FileAuditHandler $fileAuditHandler,
+		public readonly FileAuditHandlerInterface $fileAuditHandler,
 	) {
 	}//end __construct()
 }//end class
