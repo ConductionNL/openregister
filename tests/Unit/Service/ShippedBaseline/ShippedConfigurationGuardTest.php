@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedDefinition;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -82,7 +83,8 @@ class ShippedConfigurationGuardTest extends TestCase {
 			])
 		);
 		$store->method('record')->willReturnCallback(
-			function (string $subject, array $definition): bool {
+			function (string $subject, ShippedDefinition $shipped): bool {
+				$definition = $shipped->definition;
 				$this->recorded[] = ['subject' => $subject, 'definition' => $definition];
 				return true;
 			}
