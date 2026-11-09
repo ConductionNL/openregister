@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
+use OCA\OpenRegister\AppHost\Observability\MetricFamily;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityValidationException;
 use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
@@ -39,7 +40,7 @@ use Psr\Log\LoggerInterface;
  */
 class MetricSourceTest extends TestCase {
 	private function descriptor(array $source, string $name = 'm', string $type = 'gauge'): MetricDescriptor {
-		return new MetricDescriptor($name, $type, $source['kind'], $source);
+		return new MetricDescriptor(new MetricFamily($name, $type), $source);
 	}
 
 	// --- TableMetricSource ---------------------------------------------------
@@ -124,7 +125,7 @@ class MetricSourceTest extends TestCase {
 
 		// Bypass the descriptor validator to prove the source RE-ENFORCES the
 		// allowlist (defence in depth) — construct a descriptor directly.
-		$descriptor = new MetricDescriptor('m', 'gauge', 'tableCount', ['kind' => 'tableCount', 'table' => 'oc_users; DROP']);
+		$descriptor = new MetricDescriptor(new MetricFamily('m', 'gauge'), ['kind' => 'tableCount', 'table' => 'oc_users; DROP']);
 
 		$this->expectException(ObservabilityValidationException::class);
 		$source->collect('app', $descriptor);
