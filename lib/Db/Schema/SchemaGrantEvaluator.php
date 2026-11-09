@@ -155,8 +155,13 @@ final class SchemaGrantEvaluator {
 	 * @return bool True if all conditions match
 	 */
 	private function conditionsHold(array $conditions, GrantQuery $query): bool {
-		foreach ($conditions as $field => $expectedValue) {
-			if ($this->conditionHolds(field: $field, expectedValue: $expectedValue, query: $query) === false) {
+		$expected = $this->resolvedConditions(conditions: $conditions, query: $query);
+		if ($expected === null) {
+			return false;
+		}
+
+		foreach ($expected as $field => $expectedValue) {
+			if ($this->actualValue(field: $field, object: $query->object) !== $expectedValue) {
 				return false;
 			}
 		}
@@ -165,26 +170,28 @@ final class SchemaGrantEvaluator {
 	}//end conditionsHold()
 
 	/**
-	 * Whether one match condition holds.
+	 * The match conditions with `$organisation` resolved to the caller's active organisation.
 	 *
-	 * @param int|string $field         The matched field.
-	 * @param mixed      $expectedValue The expected value, or `$organisation`.
-	 * @param GrantQuery $query         The question.
+	 * @param array      $conditions The match conditions (field => expected value)
+	 * @param GrantQuery $query      The question.
 	 *
-	 * @return bool
+	 * @return array|null The conditions, or null when one names `$organisation` and the caller has none.
 	 */
-	private function conditionHolds(int|string $field, mixed $expectedValue, GrantQuery $query): bool {
-		// Resolve $organisation variable in the expected value.
-		if ($expectedValue === '$organisation') {
-			if ($query->actor->activeOrganisation === null) {
-				return false;
+	private function resolvedConditions(array $conditions, GrantQuery $query): ?array {
+		foreach ($conditions as $field => $expectedValue) {
+			if ($expectedValue !== '$organisation') {
+				continue;
 			}
 
-			$expectedValue = $query->actor->activeOrganisation;
+			if ($query->actor->activeOrganisation === null) {
+				return null;
+			}
+
+			$conditions[$field] = $query->actor->activeOrganisation;
 		}
 
-		return $this->actualValue(field: $field, object: $query->object) === $expectedValue;
-	}//end conditionHolds()
+		return $conditions;
+	}//end resolvedConditions()
 
 	/**
 	 * The value a condition compares against.
