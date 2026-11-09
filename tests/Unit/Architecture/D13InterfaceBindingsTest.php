@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\EndpointLogMapperInterface;
 use OCA\OpenRegister\Db\EndpointMapper;
 use OCA\OpenRegister\Db\EndpointMapperInterface;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
-use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowTriggerMapperInterface;
 use OCA\OpenRegister\Db\JobRunMapper;
 use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;

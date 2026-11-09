@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Repair\BackfillFlowSemanticVersions;
 use OCA\OpenRegister\Service\Flow\FlowSemanticVersion;
-use OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowSemanticVersionInterface;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;

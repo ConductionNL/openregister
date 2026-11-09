@@ -35,7 +35,7 @@ use OCA\OpenRegister\Listener\ObjectQuotaListener;
 use OCA\OpenRegister\Listener\RelatedRetentionRecalculationListener;
 use OCA\OpenRegister\Listener\StateFieldRuleListener;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
-use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
+use OCA\OpenRegister\Kernel\Contracts\StateConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldLists;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;

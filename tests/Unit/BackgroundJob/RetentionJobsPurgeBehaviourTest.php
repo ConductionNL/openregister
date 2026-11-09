@@ -32,7 +32,7 @@ use OCA\OpenRegister\BackgroundJob\RuleRunRetentionJob;
 use OCA\OpenRegister\BackgroundJob\Support\ProcessingLogRetentionStores;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
-use OCA\OpenRegister\Db\RuleRunMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RuleRunMapperInterface;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;

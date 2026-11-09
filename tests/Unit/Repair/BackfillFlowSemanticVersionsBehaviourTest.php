@@ -25,7 +25,7 @@ use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapperInterface;
 use OCA\OpenRegister\Repair\BackfillFlowSemanticVersions;
-use OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowSemanticVersionInterface;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

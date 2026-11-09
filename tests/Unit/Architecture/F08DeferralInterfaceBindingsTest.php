@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
-use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListenerDeferralInterface;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

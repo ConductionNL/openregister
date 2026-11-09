@@ -28,7 +28,7 @@ use OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancerInterface;
 use OCA\OpenRegister\Service\Flow\FlowSemanticVersion;
-use OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowSemanticVersionInterface;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndex;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndexInterface;
 use OCA\OpenRegister\Service\Flow\FlowTriggerService;

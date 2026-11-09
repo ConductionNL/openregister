@@ -34,7 +34,7 @@ use OCA\OpenRegister\Repair\TypePerformerReferences;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
-use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
+use OCA\OpenRegister\Kernel\Contracts\PrincipalKindsInterface;
 use OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
