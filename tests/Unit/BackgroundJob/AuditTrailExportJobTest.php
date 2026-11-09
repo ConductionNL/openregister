@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailPageQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\LogService;
@@ -72,9 +73,7 @@ class AuditTrailExportJobTest extends TestCase {
 
 		$logService = new LogService(
 			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class)
+			new SchemaCatalog($this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class), $this->createMock(MagicMapper::class))
 		);
 
 		$written = [];
