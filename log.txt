@@ -123,3 +123,4 @@
 2026-11-09T13:36:45Z reviewer-20261109T130910-1f3e3b38 6973 e37838719e0c24186d8f9279aca58947cbccca7a NOT REVIEWED: still conflicts with main 0a58def603 (main already carries the refactor); merged guard suites cannot run; needs a fresh branch or close
 2026-11-09T13:36:48Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7653 f5eed6aa
 2026-11-09T13:37:12Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7660 d5e9c640
+2026-11-09T13:37:39Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7675 0c3847e7
