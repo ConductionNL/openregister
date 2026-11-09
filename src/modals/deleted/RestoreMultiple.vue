@@ -1,7 +1,44 @@
 <script setup>
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { deletedStore, navigationStore } from '../../store/store.js'
-defineOptions({
+</script>
+
+<template>
+	<BulkSelectionDialog
+		v-if="navigationStore.dialog === 'restoreMultiple'"
+		:name="
+			n(
+				'openregister',
+				'Restore {count} object',
+				'Restore {count} objects',
+				objectsToRestore.length,
+				{ count: objectsToRestore.length },
+			)
+		"
+		:heading="t('openregister', 'Confirm Object Restoration')"
+		:note="reviewNote"
+		noteType="info"
+		:emptyText="
+			t('openregister', 'No objects are currently selected for restoration.')
+		"
+		:submitLabel="t('openregister', 'Restore')"
+		submitVariant="primary"
+		stepClass="restore-step"
+		v-bind="reviewStateOf($data)"
+		@close="closeDialog"
+		@remove="removeObject"
+		@submit="restoreMultiple()">
+		<template #submitIcon>
+			<Restore :size="20" />
+		</template>
+	</BulkSelectionDialog>
+</template>
+
+<script>
+import Restore from 'vue-material-design-icons/Restore.vue'
+import { bulkDialog, BulkSelectionDialog, reviewStateOf, runBulkAction } from './bulkDialog.js'
+
+export default {
 	name: 'RestoreMultiple',
 	components: {
 		BulkSelectionDialog,
@@ -83,43 +120,5 @@ defineOptions({
 			)
 		},
 	},
-})
-
-</script>
-
-<template>
-	<BulkSelectionDialog
-		v-if="navigationStore.dialog === 'restoreMultiple'"
-		:name="
-			n(
-				'openregister',
-				'Restore {count} object',
-				'Restore {count} objects',
-				objectsToRestore.length,
-				{ count: objectsToRestore.length },
-			)
-		"
-		:heading="t('openregister', 'Confirm Object Restoration')"
-		:note="reviewNote"
-		noteType="info"
-		:emptyText="
-			t('openregister', 'No objects are currently selected for restoration.')
-		"
-		:submitLabel="t('openregister', 'Restore')"
-		submitVariant="primary"
-		stepClass="restore-step"
-		v-bind="reviewStateOf($data)"
-		@close="closeDialog"
-		@remove="removeObject"
-		@submit="restoreMultiple()">
-		<template #submitIcon>
-			<Restore :size="20" />
-		</template>
-	</BulkSelectionDialog>
-</template>
-
-<script>
-import Restore from 'vue-material-design-icons/Restore.vue'
-import { bulkDialog, BulkSelectionDialog, reviewStateOf, runBulkAction } from './bulkDialog.js'
-
+}
 </script>
