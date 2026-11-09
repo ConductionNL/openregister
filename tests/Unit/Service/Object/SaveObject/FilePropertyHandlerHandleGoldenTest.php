@@ -16,6 +16,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -116,9 +117,9 @@ class FilePropertyHandlerHandleGoldenTest extends TestCase {
 			->getMock();
 		$nextId = 100;
 		$handler->method('processSingleFileProperty')->willReturnCallback(
-			function (ObjectEntity $objectEntity, mixed $fileInput, string $propertyName, array $fileConfig, ?int $index = null) use (&$calls, &$nextId): int {
+			function (FileStoreRequest $request, mixed $fileInput) use (&$calls, &$nextId): int {
 				$nextId++;
-				$calls[] = ['store' => $fileInput, 'object' => $objectEntity->getUuid(), 'property' => $propertyName, 'fileConfig' => $fileConfig, 'index' => $index];
+				$calls[] = ['store' => $fileInput, 'object' => $request->objectEntity->getUuid(), 'property' => $request->propertyName, 'fileConfig' => $request->fileConfig, 'index' => $request->index];
 				return $nextId;
 			}
 		);

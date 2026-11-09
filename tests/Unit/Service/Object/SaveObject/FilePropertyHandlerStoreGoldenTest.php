@@ -15,6 +15,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest;
 use OCP\Files\File;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -340,7 +341,7 @@ class FilePropertyHandlerStoreGoldenTest extends TestCase {
 
 		$entity = new ObjectEntity();
 		$entity->setUuid('obj-1');
-		$result = $this->outcome(fn () => $this->handler()->processSingleFileProperty($entity, $input, 'doc', $fileConfig, $index));
+		$result = $this->outcome(fn () => $this->handler()->processSingleFileProperty(new FileStoreRequest($entity, 'doc', $fileConfig, $index), $input));
 		return $result;
 	}//end store()
 
