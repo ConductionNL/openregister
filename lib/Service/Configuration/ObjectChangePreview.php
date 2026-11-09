@@ -62,24 +62,21 @@ final class ObjectChangePreview {
 	 * The row carries the register and schema slugs and the object slug, which
 	 * is the key ImportSelection reads back when the administrator picks it.
 	 *
-	 * @param array<string, mixed>                                                 $objectData      The remote object.
-	 * @param array<string, Register>                                              $registersBySlug Local registers by lowercased slug.
-	 * @param array<string, Schema>                                                $schemasBySlug   Local schemas by lowercased slug.
-	 * @param array{registers: array<string, true>, schemas: array<string, true>} $planned         Register and schema slugs this import creates.
+	 * @param array<string, mixed> $objectData The remote object.
+	 * @param ObjectPreviewTargets $targets    The local registers and schemas, and those this import creates.
 	 *
 	 * @return array<string, mixed> Preview row: type, action, slug, title, register, schema, current, proposed, changes,
 	 *                              discarded (undeclared properties the import drops), and reason on a skip.
 	 *
 	 * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
 	 */
-	public function preview(array $objectData, array $registersBySlug, array $schemasBySlug, array $planned): array {
+	public function preview(array $objectData, ObjectPreviewTargets $targets): array {
 		$preview = $this->baseRow(objectData: $objectData);
 		if (in_array('', [$preview['slug'], $preview['register'], $preview['schema']], true) === true) {
 			$preview['reason'] = 'Missing required fields (slug, register, or schema)';
 			return $preview;
 		}
 
-		$targets = new ObjectPreviewTargets(registersBySlug: $registersBySlug, schemasBySlug: $schemasBySlug, planned: $planned);
 		$local = $targets->local(row: $preview);
 		if ($local === null) {
 			return $this->withoutLocalTarget(preview: $preview, targets: $targets);
