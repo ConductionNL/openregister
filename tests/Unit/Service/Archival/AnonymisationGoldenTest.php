@@ -23,6 +23,7 @@ use OCA\OpenRegister\Service\Archival\AnonymisationPlan;
 use OCA\OpenRegister\Service\Archival\AnonymisationPlanner;
 use OCA\OpenRegister\Service\Archival\AnonymisationRefusedException;
 use OCA\OpenRegister\Service\Archival\AnonymisationRun;
+use OCA\OpenRegister\Service\Archival\AnonymisationSubject;
 use OCA\OpenRegister\Service\Archival\AnonymisationService;
 use OCA\OpenRegister\Service\Archival\AnonymisationSweep;
 use OCA\OpenRegister\Service\Archival\AnonymisationTarget;
@@ -187,7 +188,7 @@ class AnonymisationGoldenTest extends TestCase {
 
 	public function testThePlanCarriesBothListsAndRefusesANoOp(): void {
 		$run = new AnonymisationRun();
-		$plan = $run->plan('u1', $this->payload(), $this->annotation(), 'salt', 'p');
+		$plan = $run->plan(new AnonymisationSubject('u1', $this->payload(), $this->annotation(), 'p'), 'salt');
 		$this->assertSame('u1', $plan->objectUuid);
 		$this->assertSame('p', $plan->profileName);
 		$this->assertSame($this->payload(), $plan->before);
@@ -196,14 +197,14 @@ class AnonymisationGoldenTest extends TestCase {
 		$this->assertSame($run->fingerprint('salt'), $plan->saltFingerprint);
 
 		try {
-			$run->plan('u2', ['zaak' => 'Z'], ['anonymisation' => ['zaak' => ['treatment' => 'fixed', 'value' => 'Z']]], 'salt');
+			$run->plan(new AnonymisationSubject('u2', ['zaak' => 'Z'], ['anonymisation' => ['zaak' => ['treatment' => 'fixed', 'value' => 'Z']]]), 'salt');
 			$this->fail('expected a refusal');
 		} catch (AnonymisationRefusedException $e) {
 			$this->assertSame('Anonymising u2 would change nothing: the declared profile touches no property this record carries.', $e->getMessage());
 		}
 
 		$this->expectException(InvalidArgumentException::class);
-		$run->plan('u3', ['zaak' => 'Z'], ['anonymisation' => ['ghost' => 'remove']], 'salt');
+		$run->plan(new AnonymisationSubject('u3', ['zaak' => 'Z'], ['anonymisation' => ['ghost' => 'remove']]), 'salt');
 	}//end testThePlanCarriesBothListsAndRefusesANoOp()
 
 	/**
