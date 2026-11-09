@@ -50,6 +50,13 @@ final class ObservabilityManifest {
 	public const POLICIES = [self::POLICY_ADR006, self::POLICY_ALWAYS200];
 
 	/**
+	 * Calling app id.
+	 *
+	 * @var string
+	 */
+	public readonly string $appId;
+
+	/**
 	 * Parsed health checks.
 	 *
 	 * @var HealthCheckDescriptor[]
@@ -65,13 +72,24 @@ final class ObservabilityManifest {
 
 	/**
 	 * Status-code policy: adr006|always200.
+	 *
+	 * @var string
 	 */
 	public readonly string $statusCodePolicy;
 
 	/**
 	 * Emit CORS headers when true.
+	 *
+	 * @var bool
 	 */
 	public readonly bool $cors;
+
+	/**
+	 * Validation diagnostics (block fell back to defaults).
+	 *
+	 * @var string[]
+	 */
+	public readonly array $diagnostics;
 
 	/**
 	 * Constructor.
@@ -82,15 +100,17 @@ final class ObservabilityManifest {
 	 * @param string[] $diagnostics Validation diagnostics (block fell back to defaults).
 	 */
 	public function __construct(
-		public readonly string $appId,
+		string $appId,
 		ObservabilityProbes $probes,
 		HealthResponsePolicy $response = new HealthResponsePolicy(),
-		public readonly array $diagnostics = [],
+		array $diagnostics = [],
 	) {
+		$this->appId            = $appId;
 		$this->checks           = $probes->checks;
 		$this->metrics          = $probes->metrics;
 		$this->statusCodePolicy = $response->statusCodePolicy;
 		$this->cors             = $response->cors;
+		$this->diagnostics      = $diagnostics;
 	}//end __construct()
 
 	/**

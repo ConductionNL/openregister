@@ -36,11 +36,15 @@ namespace OCA\OpenRegister\Service\SchemaImport;
 final class ImportedSchema implements ImportedSchemaInterface {
 	/**
 	 * The schema title.
+	 *
+	 * @var string
 	 */
 	public readonly string $title;
 
 	/**
 	 * The schema description.
+	 *
+	 * @var string
 	 */
 	public readonly string $description;
 
@@ -59,6 +63,20 @@ final class ImportedSchema implements ImportedSchemaInterface {
 	public readonly array $jsonld;
 
 	/**
+	 * The `configuration.importSource` provenance block.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public readonly array $importSource;
+
+	/**
+	 * Requested property names not present on the source type.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $unknownRequested;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ImportedSchemaHeading $heading The schema title and description.
@@ -69,13 +87,15 @@ final class ImportedSchema implements ImportedSchemaInterface {
 	public function __construct(
 		ImportedSchemaHeading $heading,
 		ImportedSchemaDefinition $definition,
-		public readonly array $importSource,
-		public readonly array $unknownRequested = [],
+		array $importSource,
+		array $unknownRequested = [],
 	) {
-		$this->title       = $heading->title;
-		$this->description = $heading->description;
-		$this->properties  = $definition->properties;
-		$this->jsonld      = $definition->jsonld;
+		$this->title            = $heading->title;
+		$this->description      = $heading->description;
+		$this->properties       = $definition->properties;
+		$this->jsonld           = $definition->jsonld;
+		$this->importSource     = $importSource;
+		$this->unknownRequested = $unknownRequested;
 	}//end __construct()
 
 	/**
