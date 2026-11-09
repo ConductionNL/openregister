@@ -33,7 +33,7 @@ use OCA\OpenRegister\Listener\ListenerRegistrar;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListenerInterface;
 use OCA\OpenRegister\Listener\UniqueConstraintListener;
-use OCA\OpenRegister\Listener\UniqueConstraintListenerInterface;
+use OCA\OpenRegister\Kernel\Contracts\UniqueConstraintListenerInterface;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Mcp\McpRegistrar;

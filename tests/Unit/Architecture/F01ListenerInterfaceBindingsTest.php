@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Listener\DecisionTableValidationListener;
-use OCA\OpenRegister\Listener\DecisionTableValidationListenerInterface;
+use OCA\OpenRegister\Kernel\Contracts\DecisionTableValidationListenerInterface;
 use OCA\OpenRegister\Listener\ListenerBootstrap;
 use OCA\OpenRegister\Listener\ListenerRegistrar;
 use OCA\OpenRegister\Listener\NotifyPushListener;

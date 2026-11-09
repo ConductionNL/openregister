@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Dmn;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Listener\DecisionTableValidationListenerInterface;
+use OCA\OpenRegister\Kernel\Contracts\DecisionTableValidationListenerInterface;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

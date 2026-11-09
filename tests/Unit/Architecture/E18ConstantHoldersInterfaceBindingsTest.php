@@ -23,8 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Repair\FlowTimerRegisterPathInterface;
-use OCA\OpenRegister\Repair\IntakeSourceRegisterSlugsInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerRegisterPathInterface;
+use OCA\OpenRegister\Kernel\Contracts\IntakeSourceRegisterSlugsInterface;
 use OCA\OpenRegister\Repair\SeedFlowTimerRegister;
 use OCA\OpenRegister\Repair\SeedIntakeSourceRegister;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform;
@@ -113,7 +113,7 @@ final class E18ConstantHoldersInterfaceBindingsTest extends TestCase {
 		[$contract, $registrar] = self::CLASSES[$class];
 		$this->assertTrue(interface_exists($contract), $contract . ' exists');
 		$this->assertContains($contract, class_implements($class), $class . ' implements ' . $contract);
-		$this->assertSame(explode('\\', $class)[2], explode('\\', $contract)[2], 'The interface lives in the component of the class');
+		$this->assertContains(explode('\\', $contract)[2], [explode('\\', $class)[2], 'Kernel'], 'The interface lives in the component of the class, or in the Kernel (ADR-012)');
 		if ($registrar !== null) {
 			$this->assertSame(explode('\\', $class)[2], explode('\\', $registrar)[2], 'Bound in its own component');
 		}

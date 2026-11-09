@@ -23,7 +23,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Listener\DecisionTableValidationListener;
-use OCA\OpenRegister\Listener\DecisionTableValidationListenerInterface;
+use OCA\OpenRegister\Kernel\Contracts\DecisionTableValidationListenerInterface;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Object\BulkRowChecks;

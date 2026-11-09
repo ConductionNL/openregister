@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Listener\DecisionTableValidationListener;
-use OCA\OpenRegister\Listener\DecisionTableValidationListenerInterface;
+use OCA\OpenRegister\Kernel\Contracts\DecisionTableValidationListenerInterface;
 use OCA\OpenRegister\Listener\ListenerRegistrar;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -89,7 +89,7 @@ final class E18DecisionTableInterfaceBindingsTest extends TestCase {
 		[$contract, $registrar] = self::CLASSES[$class];
 		$this->assertTrue(interface_exists($contract), $contract . ' exists');
 		$this->assertContains($contract, class_implements($class), $class . ' implements ' . $contract);
-		$this->assertSame(explode('\\', $class)[2], explode('\\', $contract)[2], 'The interface lives in the component of the class');
+		$this->assertContains(explode('\\', $contract)[2], [explode('\\', $class)[2], 'Kernel'], 'The interface lives in the component of the class, or in the Kernel (ADR-012)');
 		if ($registrar !== null) {
 			$this->assertSame(explode('\\', $class)[2], explode('\\', $registrar)[2], 'Bound in its own component');
 		}
