@@ -47,6 +47,7 @@ use OCA\OpenRegister\Listener\FlowRunLockReleaseListener;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FiringClaim;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
 use OCA\OpenRegister\Service\Flow\FlowRunCommitRows;
@@ -305,7 +306,8 @@ class RunLockReleaseTerminalityTest extends TestCase {
 
 		// Claims are not the property under test: every acquire succeeds.
 		$places = $this->createMock(FlowPlaceClaims::class);
-		$places->method('acquire')->willReturnCallback(static function (string $runUuid, string $streamId, string $transition, array $places): ?array {
+		$places->method('claim')->willReturnCallback(static function (FiringClaim $firing): ?array {
+			$places = $firing->places;
 			sort($places, SORT_STRING);
 			return $places;
 		});
