@@ -35,11 +35,13 @@ use OCA\OpenRegister\Exception\CaseCascadeBoundException;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
+use OCA\OpenRegister\Service\Case\CasePlanMove;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanTree;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseTransitionCause;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -116,8 +118,10 @@ class CasePlanCascadeGoldenTest extends TestCase {
 		);
 
 		$machine = $this->createMock(CasePlanStateMachine::class);
-		$machine->method('transition')->willReturnCallback(
-			function (CaseItem $item, string $to, string $cause, ?string $causeRef, ?string $actor, ?string $reason = null, ?CasePlanTree $tree = null): CaseItem {
+		$machine->method('commit')->willReturnCallback(
+			function (CasePlanMove $move): CaseItem {
+				[$item, $to, $why, $tree] = [$move->item, $move->to, $move->why, $move->tree];
+				[$cause, $causeRef, $actor, $reason] = [$why->cause, $why->causeRef, $why->actor, $why->reason];
 				$this->calls[] = sprintf('transition:%d:%s:%s:%s:%s:%s:%s', $item->getId(), $to, $cause, $causeRef ?? '-', $actor ?? '-', $reason ?? '-', $tree === null ? 'no-tree' : 'tree');
 				if ($this->moves === true) {
 					$item->setState($to);
@@ -130,9 +134,9 @@ class CasePlanCascadeGoldenTest extends TestCase {
 				return $item;
 			}
 		);
-		$machine->method('recordCreation')->willReturnCallback(
-			function (CaseItem $item, string $cause, ?string $causeRef, ?string $actor): void {
-				$this->calls[] = sprintf('created:%d:%s:%s:%s', $item->getId(), $cause, $causeRef ?? '-', $actor ?? '-');
+		$machine->method('recordCreationOf')->willReturnCallback(
+			function (CaseItem $item, CaseTransitionCause $why): void {
+				$this->calls[] = sprintf('created:%d:%s:%s:%s', $item->getId(), $why->cause, $why->causeRef ?? '-', $why->actor ?? '-');
 			}
 		);
 		$machine->method('flushEvents')->willReturnCallback(

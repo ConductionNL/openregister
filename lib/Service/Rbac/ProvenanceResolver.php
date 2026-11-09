@@ -189,19 +189,28 @@ class ProvenanceResolver {
 	 * Typed, so a block that is neither an array nor null is refused here
 	 * rather than read as "not configured".
 	 *
-	 * @param array|null $objectAuthorization The object's own block.
-	 * @param array|null $schemaAuthorization The schema's block.
-	 * @param array|null $registerAuth        The register's block.
+	 * @param array<string, mixed> $blocks Keys: object, schema, register (each an array or null).
 	 *
 	 * @return array<string, array|null> Level name to block.
 	 */
-	private function levelsOf(?array $objectAuthorization, ?array $schemaAuthorization, ?array $registerAuth): array {
+	private function levelsOf(array $blocks): array {
 		return [
-			self::SOURCE_OBJECT => $objectAuthorization,
-			self::SOURCE_SCHEMA => $schemaAuthorization,
-			self::SOURCE_REGISTER => $registerAuth,
+			self::SOURCE_OBJECT => $this->typedBlock(block: ($blocks['object'] ?? null)),
+			self::SOURCE_SCHEMA => $this->typedBlock(block: ($blocks['schema'] ?? null)),
+			self::SOURCE_REGISTER => $this->typedBlock(block: ($blocks['register'] ?? null)),
 		];
 	}//end levelsOf()
+
+	/**
+	 * One level's block, refused with a TypeError when it is neither an array nor null.
+	 *
+	 * @param array|null $block The block.
+	 *
+	 * @return array|null The same block.
+	 */
+	private function typedBlock(?array $block): ?array {
+		return $block;
+	}//end typedBlock()
 
 	/**
 	 * Attach an enforced denial to a grant record: the denial is the answer.
@@ -281,11 +290,7 @@ class ProvenanceResolver {
 	 */
 	private function grantFor(string $action, array $blocks): array {
 		$configured = $this->configuredLevels(
-			levels: $this->levelsOf(
-				objectAuthorization: ($blocks['object'] ?? null),
-				schemaAuthorization: ($blocks['schema'] ?? null),
-				registerAuth: ($blocks['register'] ?? null)
-			)
+			levels: $this->levelsOf(blocks: $blocks)
 		);
 		$carrying = $this->rolesCarrying(action: $action, roleDefinitions: ($blocks['roleDefinitions'] ?? null));
 

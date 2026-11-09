@@ -148,11 +148,8 @@ final class NullFilter {
 	 */
 	public static function conditionsFor(mixed $criterion, string $column, callable $build): array {
 		[$criterion, $orNull] = self::splitOrNull(criterion: $criterion);
-		if ($orNull === true && $criterion === []) {
-			return [];
-		}
-
-		return self::admitNull(conditions: $build($criterion), column: $column, orNull: $orNull);
+		$onlyNull = ($orNull === true && $criterion === []);
+		return $onlyNull === true ? [] : self::admitNull(conditions: $build($criterion), column: $column, orNull: $orNull);
 	}//end conditionsFor()
 
 	/**
@@ -176,11 +173,25 @@ final class NullFilter {
 			return $conditions;
 		}
 
+		return ['(' . self::andGroup(conditions: $conditions) . " OR {$column} IS NULL)"];
+	}//end admitNull()
+
+	/**
+	 * AND a non-empty list of conditions into one parenthesised group.
+	 *
+	 * A single condition keeps its one pair of parentheses; two or more are
+	 * wrapped once more so the OR beside them binds to the whole group.
+	 *
+	 * @param non-empty-list<string|\Stringable> $conditions The conditions.
+	 *
+	 * @return string The grouped predicate.
+	 */
+	private static function andGroup(array $conditions): string {
 		$group = implode(' AND ', array_map(static fn (string|\Stringable $condition): string => '(' . $condition . ')', $conditions));
 		if (count($conditions) > 1) {
 			$group = '(' . $group . ')';
 		}
 
-		return ['(' . $group . " OR {$column} IS NULL)"];
-	}//end admitNull()
+		return $group;
+	}//end andGroup()
 }//end class
