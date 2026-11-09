@@ -299,12 +299,30 @@ class FeatureToggleService {
 	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
 	 */
 	public function update(string $app, array $declarations, array $overrides): array {
-		$undeclared = $this->undeclaredKeyIn(overrides: $overrides, declarations: $declarations);
+		return $this->updateToggles(toggles: new ToggleSet(app: $app, declarations: $declarations), overrides: $overrides);
+	}//end update()
+
+	/**
+	 * Write the overrides, audit each changed toggle, return the merged map:
+	 * the value-object form of update().
+	 *
+	 * @param ToggleSet            $toggles   The app and its declared toggles.
+	 * @param array<string, mixed> $overrides The submitted overrides.
+	 *
+	 * @return array<string, bool> The merged map after the write.
+	 *
+	 * @throws FeatureToggleRefusedException When a key is not declared.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	public function updateToggles(ToggleSet $toggles, array $overrides): array {
+		$app = $toggles->app;
+		$undeclared = $this->undeclaredKeyIn(overrides: $overrides, declarations: $toggles->declarations);
 		if ($undeclared !== null) {
 			throw new FeatureToggleRefusedException(appId: $app, key: $undeclared);
 		}
 
-		$before = $this->merged(app: $app, declarations: $declarations);
+		$before = $this->merged(app: $app, declarations: $toggles->declarations);
 
 		$stored = ($this->storedOverrides(app: $app) ?? []);
 		foreach ($overrides as $key => $value) {
@@ -317,11 +335,11 @@ class FeatureToggleService {
 		// here rather than recomputing keeps one place where the map is built.
 		unset($this->memo[$app]);
 
-		$after = $this->merged(app: $app, declarations: $declarations);
+		$after = $this->merged(app: $app, declarations: $toggles->declarations);
 		$this->audit(app: $app, change: new ToggleChange(before: $before, after: $after));
 
 		return $after;
-	}//end update()
+	}//end updateToggles()
 
 	/**
 	 * The stored overrides, or null when they cannot be read.

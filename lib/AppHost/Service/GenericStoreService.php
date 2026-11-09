@@ -189,18 +189,28 @@ class GenericStoreService {
 	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 */
 	public function search(StoreDescriptor $descriptor, ?string $query = null, ?string $kind = null): array {
+		return $this->searchStore(descriptor: $descriptor, search: new StoreSearch(query: $query, kind: $kind));
+	}//end search()
+
+	/**
+	 * Search the remote store: the value-object form of search().
+	 *
+	 * Returns `not_configured` with an empty card list and makes NO network
+	 * call when no registry is set.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param StoreSearch     $search     The free-text term and the `kind` filter, both optional.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 */
+	public function searchStore(StoreDescriptor $descriptor, StoreSearch $search): array {
 		if ($this->isConfigured(descriptor: $descriptor) === false) {
 			return ['outcome' => self::OUTCOME_NOT_CONFIGURED, 'cards' => []];
 		}
 
-		$params = ['_limit' => self::SEARCH_LIMIT];
-		if ($query !== null && trim($query) !== '') {
-			$params['_search'] = trim($query);
-		}
-
-		if ($kind !== null && trim($kind) !== '') {
-			$params['kind'] = trim($kind);
-		}
+		$params = ['_limit' => self::SEARCH_LIMIT] + $search->filters();
 
 		$result = $this->fetch(descriptor: $descriptor, params: $params);
 		if ($result['outcome'] !== self::OUTCOME_OK) {
@@ -215,7 +225,7 @@ class GenericStoreService {
 		}
 
 		return ['outcome' => self::OUTCOME_OK, 'cards' => $cards];
-	}//end search()
+	}//end searchStore()
 
 	/**
 	 * Resolve a single remote item by slug, returning its FULL payload for the
