@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Db;
  * not derived here: MagicTableHandler::getTableNameForRegisterSchema() owns
  * that rule and also fills the mapper's table-name cache, so it stays a
  * mapper call (MagicTableLocatorInterface::getTableNameForRegisterSchema()).
+ *
+ * @spec exclude ADR-011 shared parameter object, not a capability of its own
  */
 final class RegisterSchema {
 
@@ -46,6 +48,8 @@ final class RegisterSchema {
 	 * The database id of the register.
 	 *
 	 * @return int The id.
+	 *
+	 * @spec exclude ADR-011 shared parameter object, not a capability of its own
 	 */
 	public function registerId(): int {
 		return $this->register->getId();
@@ -55,6 +59,8 @@ final class RegisterSchema {
 	 * The database id of the schema.
 	 *
 	 * @return int The id.
+	 *
+	 * @spec exclude ADR-011 shared parameter object, not a capability of its own
 	 */
 	public function schemaId(): int {
 		return $this->schema->getId();

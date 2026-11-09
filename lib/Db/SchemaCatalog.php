@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Db;
  *
  * Autowired by the container; it holds no state of its own and no
  * permission or tenancy guard.
+ *
+ * @spec exclude ADR-011 constructor aggregate, container plumbing with no behaviour of its own
  */
 final class SchemaCatalog implements SchemaCatalogInterface {
 
@@ -47,6 +49,8 @@ final class SchemaCatalog implements SchemaCatalogInterface {
 	 * The register mapper.
 	 *
 	 * @return RegisterMapperInterface The mapper.
+	 *
+	 * @spec exclude ADR-011 constructor aggregate, container plumbing with no behaviour of its own
 	 */
 	public function registers(): RegisterMapperInterface {
 		return $this->registers;
@@ -56,6 +60,8 @@ final class SchemaCatalog implements SchemaCatalogInterface {
 	 * The schema mapper.
 	 *
 	 * @return SchemaMapperInterface The mapper.
+	 *
+	 * @spec exclude ADR-011 constructor aggregate, container plumbing with no behaviour of its own
 	 */
 	public function schemas(): SchemaMapperInterface {
 		return $this->schemas;
@@ -65,6 +71,8 @@ final class SchemaCatalog implements SchemaCatalogInterface {
 	 * The magic-table mapper.
 	 *
 	 * @return MagicMapperInterface The mapper.
+	 *
+	 * @spec exclude ADR-011 constructor aggregate, container plumbing with no behaviour of its own
 	 */
 	public function tables(): MagicMapperInterface {
 		return $this->tables;

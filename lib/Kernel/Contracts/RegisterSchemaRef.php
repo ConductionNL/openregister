@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Kernel\Contracts;
  *
  * Each is the id, uuid or slug exactly as the route or caller carries it
  * (ADR-011 rule 1). Resolving it is the job of the mappers, not of this object.
+ *
+ * @spec exclude ADR-011 shared parameter object, not a capability of its own
  */
 final class RegisterSchemaRef {
 

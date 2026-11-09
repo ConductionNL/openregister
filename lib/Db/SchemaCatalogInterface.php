@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Db;
  * accessor methods. The implementation also exposes the same members as
  * public readonly properties of the same names; a consumer that types
  * against this interface calls the accessors.
+ *
+ * @spec exclude ADR-011 constructor aggregate, container plumbing with no behaviour of its own
  */
 interface SchemaCatalogInterface {
 
@@ -35,6 +37,8 @@ interface SchemaCatalogInterface {
 	 * The register mapper.
 	 *
 	 * @return RegisterMapperInterface The mapper.
+	 *
+	 * @spec exclude ADR-011 constructor aggregate, container plumbing with no behaviour of its own
 	 */
 	public function registers(): RegisterMapperInterface;
 
@@ -42,6 +46,8 @@ interface SchemaCatalogInterface {
 	 * The schema mapper.
 	 *
 	 * @return SchemaMapperInterface The mapper.
+	 *
+	 * @spec exclude ADR-011 constructor aggregate, container plumbing with no behaviour of its own
 	 */
 	public function schemas(): SchemaMapperInterface;
 
@@ -49,6 +55,8 @@ interface SchemaCatalogInterface {
 	 * The magic-table mapper.
 	 *
 	 * @return MagicMapperInterface The mapper.
+	 *
+	 * @spec exclude ADR-011 constructor aggregate, container plumbing with no behaviour of its own
 	 */
 	public function tables(): MagicMapperInterface;
 }//end interface

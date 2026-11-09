@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Kernel\Contracts;
  *
  * Replaces the loose `string $register, string $schema, string $id` triple
  * (ADR-011 rule 1), which travelled in two different orders.
+ *
+ * @spec exclude ADR-011 shared parameter object, not a capability of its own
  */
 final class ObjectRef {
 
@@ -46,6 +48,8 @@ final class ObjectRef {
 	 * The register and schema without the object id.
 	 *
 	 * @return RegisterSchemaRef The pair.
+	 *
+	 * @spec exclude ADR-011 shared parameter object, not a capability of its own
 	 */
 	public function registerSchema(): RegisterSchemaRef {
 		return new RegisterSchemaRef(register: $this->register, schema: $this->schema);

@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Db;
  *
  * The defaults are the ones the object controllers apply today: a page of
  * 20, no offset, no filters, no sort and no search.
+ *
+ * @spec exclude ADR-011 shared parameter object, not a capability of its own
  */
 final class ListQuery {
 
@@ -64,6 +66,8 @@ final class ListQuery {
 	 * @param array<string, mixed> $params The request parameters, without the route keys.
 	 *
 	 * @return self The listing.
+	 *
+	 * @spec exclude ADR-011 shared parameter object, not a capability of its own
 	 */
 	public static function fromParams(array $params): self {
 		$limit  = (int)($params['limit'] ?? $params['_limit'] ?? self::DEFAULT_LIMIT);
@@ -86,6 +90,8 @@ final class ListQuery {
 	 * The page this listing starts on, counted from 1.
 	 *
 	 * @return int The page; 1 without an offset or without a page size.
+	 *
+	 * @spec exclude ADR-011 shared parameter object, not a capability of its own
 	 */
 	public function page(): int {
 		if ($this->offset === null || $this->limit <= 0) {
