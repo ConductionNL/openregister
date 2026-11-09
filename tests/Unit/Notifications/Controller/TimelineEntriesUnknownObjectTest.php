@@ -61,7 +61,6 @@ class TimelineEntriesUnknownObjectTest extends TestCase {
 		$this->entries = $this->createMock(TimelineEntryService::class);
 		$this->writer = $this->createMock(TimelineWriteService::class);
 		$this->controller = TimelineEntriesControllerFactory::create(
-			'openregister',
 			$request,
 			$this->objects,
 			$this->entries,
