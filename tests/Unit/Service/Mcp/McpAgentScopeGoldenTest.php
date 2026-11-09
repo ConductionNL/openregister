@@ -28,6 +28,8 @@ use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolCatalogueInterface;
 use OCA\OpenRegister\Service\Capability\ToolGrantResolver;
 use OCA\OpenRegister\Service\Mcp\McpAgentScope;
+use OCA\OpenRegister\Service\Mcp\McpSessionCaller;
+use OCA\OpenRegister\Service\Mcp\ToolCall;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -104,7 +106,7 @@ class McpAgentScopeGoldenTest extends TestCase {
 
 	private function refusal(string $sessionId, string $userId, string $name, array $arguments): ?string {
 		try {
-			$this->scope->assertMayCall($sessionId, $userId, $name, $arguments);
+			$this->scope->assertMayCall(new McpSessionCaller($sessionId, $userId), new ToolCall($name, $arguments));
 		} catch (InvalidArgumentException $e) {
 			return $e->getMessage();
 		}
@@ -115,7 +117,7 @@ class McpAgentScopeGoldenTest extends TestCase {
 	public function testASessionWithoutAnAgentSeesAndCallsEverything(): void {
 		$listing = ['tools' => self::catalog()];
 
-		$this->assertSame($listing, $this->scope->filterListing('s0', 'alice', $listing));
+		$this->assertSame($listing, $this->scope->filterListing(new McpSessionCaller('s0', 'alice'), $listing));
 		$this->assertNull($this->refusal('s0', 'alice', 'openregister.objects.delete', []));
 	}//end testASessionWithoutAnAgentSeesAndCallsEverything()
 
@@ -123,7 +125,7 @@ class McpAgentScopeGoldenTest extends TestCase {
 		$this->agent('a1', ['openregister.objects.search', 'openregister.registers.search']);
 		$this->scope->bind('s1', 'a1');
 
-		$listing = $this->scope->filterListing('s1', 'alice', ['tools' => self::catalog()]);
+		$listing = $this->scope->filterListing(new McpSessionCaller('s1', 'alice'), ['tools' => self::catalog()]);
 
 		$this->assertSame(['openregister.objects.search', 'openregister.registers.search'], array_column($listing['tools'], 'id'));
 		$this->assertSame([0, 1], array_keys($listing['tools']));
@@ -202,7 +204,7 @@ class McpAgentScopeGoldenTest extends TestCase {
 
 		$this->assertSame('Agent p1 is not available to this user', $this->refusal('s1', 'alice', 'openregister.objects.search', []));
 		$this->expectException(InvalidArgumentException::class);
-		$this->scope->filterListing('s1', 'alice', ['tools' => self::catalog()]);
+		$this->scope->filterListing(new McpSessionCaller('s1', 'alice'), ['tools' => self::catalog()]);
 	}//end testABoundAgentThatTurnedPrivateRefusesEveryPath()
 
 	public function testABoundAgentThatIsGoneOrInactiveRefuses(): void {
