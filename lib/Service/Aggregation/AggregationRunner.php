@@ -409,7 +409,10 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	private function resolveRunFilter(NamedAggregationRun $run): void {
 		$declared = $this->placeholders->resolveArray($run->getDeclaredFilter());
-		$run->filter = $this->mergeNarrowingFilter(declared: $declared, extra: $run->extraFilter, name: $run->name);
+		$run->filter = $this->mergeNarrowingFilter(
+			declared: $declared,
+			narrowing: new RequestedNarrowing(constraints: $run->extraFilter, aggregation: $run->name)
+		);
 		$run->appliedExtraFilter = array_diff_key($run->filter, $declared);
 	}//end resolveRunFilter()
 
@@ -2147,7 +2150,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 		}
 
 		foreach ($criterion as $op => $onValue) {
-			if ($this->checkOn(value: $value, op: (string)$op, onValue: $onValue) === false) {
+			if ($this->operatorCheck(op: (string)$op)($value, $onValue) === false) {
 				return false;
 			}
 		}
@@ -2156,7 +2159,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 	}//end criterionMatches()
 
 	/**
-	 * Apply a single operator check.
+	 * The check of a single operator, applied as `$check($value, $onValue)`.
 	 *
 	 * `eq`/`ne`/`in`/`notIn` all route through {@see valueMatchesAnyOf()} —
 	 * REQ-AGG-106 / bug #2027 — so a multi-value (array) row value (a
@@ -2167,11 +2170,9 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * `gt`/`gte`/`lt`/`lte` are unaffected — range comparisons over a
 	 * multi-value row aren't part of this fix's scope.
 	 *
-	 * @param mixed $value The value extracted from the row.
 	 * @param string $op Operator name ('eq','ne','gt','gte','lt','lte','in','notIn','isnull').
-	 * @param mixed $onValue The operand value to compare against.
 	 *
-	 * @return bool True when the value satisfies the operator.
+	 * @return \Closure(mixed, mixed): bool True when the row value satisfies the operator against the operand.
 	 *
 	 * @throws RuntimeException When the operator is not one of the nine implemented
 	 *                          spellings. It previously matched every row instead,
@@ -2180,10 +2181,10 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function checkOn(mixed $value, string $op, mixed $onValue): bool {
+	private function operatorCheck(string $op): \Closure {
 		$check = ($this->operatorChecks()[$op] ?? null);
 		if ($check !== null) {
-			return $check($value, $onValue);
+			return $check;
 		}
 
 		// AN UNRECOGNISED OPERATOR IS REFUSED, NOT IGNORED.
@@ -2209,7 +2210,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 			. 'eq, ne, gt, gte, lt, lte, in, notIn, isnull. An unknown operator used to match every '
 			. 'row, which silently widened the filter instead of narrowing it.'
 		);
-	}//end checkOn()
+	}//end operatorCheck()
 
 	/**
 	 * The implemented operators, each as a check of (row value, operand).
@@ -3907,8 +3908,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 		if ($applicable !== []) {
 			$joined->filter = $this->mergeNarrowingFilter(
 				declared: $joined->filter,
-				extra: $applicable,
-				name: $joined->through . ' (join)'
+				narrowing: new RequestedNarrowing(constraints: $applicable, aggregation: $joined->through . ' (join)')
 			);
 		}
 	}//end narrowJoinedFilter()
@@ -3928,9 +3928,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 
 		$envelope['groups'] = $this->mergeJoinedValues(
 			groups: $envelope['groups'],
-			onMap: $joined->onMap,
-			aliases: $aliases,
-			lookup: $lookup['values']
+			lookup: new JoinedValueLookup(onMap: $joined->onMap, aliases: $aliases, values: $lookup['values'])
 		);
 
 		$envelope['join'] = [
@@ -3967,15 +3965,15 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 *   3. an empty-string value is dropped, because a caller omitting a
 	 *      parameter should not silently become a filter on ''.
 	 *
-	 * @param array<string, mixed> $declared The declared, placeholder-resolved filter.
-	 * @param array<string, mixed> $extra    Caller-supplied constraints.
-	 * @param string               $name     Aggregation name, for the debug log.
+	 * @param array<string, mixed> $declared  The declared, placeholder-resolved filter.
+	 * @param RequestedNarrowing   $narrowing Caller-supplied constraints and the aggregation name, for the debug log.
 	 *
 	 * @return array<string, mixed> The merged filter.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function mergeNarrowingFilter(array $declared, array $extra, string $name): array {
+	private function mergeNarrowingFilter(array $declared, RequestedNarrowing $narrowing): array {
+		$extra = $narrowing->constraints;
 		if ($extra === []) {
 			return $declared;
 		}
@@ -3994,7 +3992,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 				// rule, would be the worst possible place for one.
 				$this->logger?->debug(
 					'Aggregation: refusing a request filter that would relax a declared one.',
-					['aggregation' => $name, 'key' => $key]
+					['aggregation' => $narrowing->aggregation, 'key' => $key]
 				);
 				continue;
 			}
@@ -4058,16 +4056,14 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * "this alias was never requested".
 	 *
 	 * @param array<int, mixed> $groups The parent grouped rows.
-	 * @param array<string, string> $onMap Ordered parentField => joinedField map.
-	 * @param array<int, string> $aliases The select aliases, in declaration order.
-	 * @param array<string, array<string, int|float|null>> $lookup Joined values by merge key.
+	 * @param JoinedValueLookup $lookup The join map, the select aliases and the joined values by merge key.
 	 *
 	 * @return array<int, mixed> The grouped rows, each carrying a `joined` map.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function mergeJoinedValues(array $groups, array $onMap, array $aliases, array $lookup): array {
-		$parentFields = array_keys($onMap);
+	private function mergeJoinedValues(array $groups, JoinedValueLookup $lookup): array {
+		$parentFields = array_keys($lookup->onMap);
 
 		foreach ($groups as $index => $group) {
 			if (is_array($group) === false) {
@@ -4087,8 +4083,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 			$tupleKey = $this->joinTupleKey(values: $tuple);
 
 			$joined = [];
-			foreach ($aliases as $alias) {
-				$joined[$alias] = ($lookup[$tupleKey][$alias] ?? null);
+			foreach ($lookup->aliases as $alias) {
+				$joined[$alias] = ($lookup->values[$tupleKey][$alias] ?? null);
 			}
 
 			$groups[$index]['joined'] = $joined;
@@ -4368,7 +4364,6 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return [
 				'values' => $this->indexJoinedGroups(
 					perAlias: $native,
-					isMulti: $joined->isMultiKey(),
 					joinedFields: $joined->getJoinedFields()
 				),
 				'backend' => 'postgres',
@@ -4449,7 +4444,6 @@ class AggregationRunner implements AggregationRunnerInterface {
 		return [
 			'values' => $this->indexJoinedGroups(
 				perAlias: $perAlias,
-				isMulti: $joined->isMultiKey(),
 				joinedFields: $joined->getJoinedFields()
 			),
 			'backend' => 'php-fallback',
@@ -4461,15 +4455,16 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * Fold per-alias grouped rows into one `joinKey => alias => value` lookup.
 	 *
 	 * @param array<string, array<int, array<string, mixed>>> $perAlias Grouped rows per select alias.
-	 * @param bool $isMulti Whether the join key is composite (rows carry `keys`, not `key`).
-	 * @param array<int, string> $joinedFields Joined-side join key field(s), in key order.
+	 * @param array<int, string> $joinedFields Joined-side join key field(s), in key order; more than one
+	 *                                         makes the key composite (rows carry `keys`, not `key`).
 	 *
 	 * @return array<string, array<string, int|float|null>> Lookup keyed by {@see joinTupleKey()}.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function indexJoinedGroups(array $perAlias, bool $isMulti, array $joinedFields): array {
-		$lookup = [];
+	private function indexJoinedGroups(array $perAlias, array $joinedFields): array {
+		$isMulti = count($joinedFields) > 1;
+		$lookup  = [];
 		foreach ($perAlias as $alias => $groups) {
 			foreach ($groups as $group) {
 				if (is_array($group) === false) {
