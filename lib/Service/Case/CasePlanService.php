@@ -561,7 +561,7 @@ class CasePlanService implements CasePlanServiceInterface {
 			schemaId: $item->getSchemaId()
 		);
 
-		return $this->mechanics->sentries->entrySentry(item: $item, tree: $tree, object: $object) !== null;
+		return $this->mechanics->sentries->entrySentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: $object)) !== null;
 	}//end isEnableable()
 
 	/**

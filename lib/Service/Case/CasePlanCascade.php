@@ -357,7 +357,7 @@ class CasePlanCascade {
 		}
 
 		$sentries = $this->readers->sentries;
-		$sentry = $sentries->exitSentry(item: $row, tree: $state->tree, object: $state->object, event: $state->event, payload: $state->payload);
+		$sentry = $sentries->exitSentryOn(item: $row, occasion: CaseSentryOccasion::fromPass(state: $state));
 		if ($sentry === null) {
 			return null;
 		}
@@ -382,7 +382,7 @@ class CasePlanCascade {
 		}
 
 		$sentries = $this->readers->sentries;
-		$sentry = $sentries->entrySentry(item: $row, tree: $state->tree, object: $state->object, event: $state->event, payload: $state->payload);
+		$sentry = $sentries->entrySentryOn(item: $row, occasion: CaseSentryOccasion::fromPass(state: $state));
 		if ($sentry === null) {
 			return null;
 		}
