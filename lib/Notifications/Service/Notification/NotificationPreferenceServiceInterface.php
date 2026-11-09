@@ -61,4 +61,17 @@ interface NotificationPreferenceServiceInterface {
 	public function resolveEffective(
 		array $schemaDefault, string $userId, string $schemaSlug, string $notificationKey, array $scopes = [], ?array $groupIds = null
 	): array;
+
+	/**
+	 * Resolve the effective preference as `schema-default ⊕ group-default ⊕ user-override`.
+	 *
+	 * The value-object form of {@see resolveEffective()}: same layers, same answer.
+	 *
+	 * @param PreferenceResolution $resolution The rule's default, the user, the topic and the user's groups.
+	 *
+	 * @return array{enabled: bool, channels: array<int, string>|null, source: string, scope: string, layers: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 */
+	public function resolve(PreferenceResolution $resolution): array;
 }//end interface
