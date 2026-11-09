@@ -140,7 +140,7 @@ class ApiCallerMiddleware extends Middleware {
 		}
 
 		$this->refuseOutOfBounds(principal: $this->recorder->principal());
-		$this->servedVersion = $this->negotiator->negotiate(request: $this->request)->version?->id;
+		$this->servedVersion = $this->negotiator->negotiate(request: $this->request)->answeringVersion()?->identifier();
 
 	}//end beforeController()
 
