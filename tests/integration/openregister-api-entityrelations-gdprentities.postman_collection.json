@@ -69,9 +69,10 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -106,9 +107,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json"
-            },
+            "url": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
             "body": {
               "mode": "raw",
               "raw": "{\n \"userid\": \"{{t31_user}}\",\n \"password\": \"{{t31_password}}\",\n \"displayName\": \"T31 user\"\n}",
@@ -118,6 +117,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -152,9 +154,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json"
-            },
+            "url": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
             "body": {
               "mode": "raw",
               "raw": "{\n \"userid\": \"{{t31_user2}}\",\n \"password\": \"{{t31_password2}}\",\n \"displayName\": \"T31 user2\"\n}",
@@ -164,6 +164,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -200,9 +203,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/schemas",
             "body": {
               "mode": "raw",
               "raw": "{\n \"title\": \"T31 schema {{t31_run}}\",\n \"slug\": \"{{t31_schema_slug}}\",\n \"required\": [\n  \"name\"\n ],\n \"properties\": {\n  \"name\": {\n   \"type\": \"string\"\n  },\n  \"note\": {\n   \"type\": \"string\"\n  }\n }\n}",
@@ -212,6 +213,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -248,9 +252,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/registers"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/registers",
             "body": {
               "mode": "raw",
               "raw": "{\n \"title\": \"T31 register {{t31_run}}\",\n \"slug\": \"{{t31_register_slug}}\",\n \"schemas\": [\n  {{t31_schema_id}}\n ]\n}",
@@ -260,6 +262,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -298,9 +303,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_schema_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_schema_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\n \"name\": \"t31-object\",\n \"note\": \"seeded by T31\"\n}",
@@ -310,6 +313,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         }
       ]
@@ -353,9 +359,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me"
           }
         },
         {
@@ -392,9 +396,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me",
             "auth": {
               "type": "basic",
               "basic": [
@@ -444,9 +446,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me",
             "auth": {
               "type": "noauth"
             }
@@ -485,9 +485,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me",
             "auth": {
               "type": "basic",
               "basic": [
@@ -543,9 +541,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me",
             "body": {
               "mode": "raw",
               "raw": "{\"displayName\":\"T31 User2 {{t31_run}}\",\"uid\":\"hijack-{{t31_run}}\",\"id\":\"x\"}",
@@ -605,9 +601,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me",
             "auth": {
               "type": "basic",
               "basic": [
@@ -657,9 +651,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me",
             "auth": {
               "type": "noauth"
             }
@@ -699,9 +691,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me"
           }
         },
         {
@@ -739,9 +729,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/login"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/login",
             "body": {
               "mode": "raw",
               "raw": "{}",
@@ -791,9 +779,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/login"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/login",
             "body": {
               "mode": "raw",
               "raw": "{\"username\":\"a\",\"password\":\"x\"}",
@@ -843,9 +829,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/login"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/login",
             "body": {
               "mode": "raw",
               "raw": "{\"username\":\"bad/name\",\"password\":\"x\"}",
@@ -898,9 +882,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/login"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/login",
             "body": {
               "mode": "raw",
               "raw": "{\"username\":\"t31-nouser-{{t31_run}}\",\"password\":\"wrong-password\"}",
@@ -950,9 +932,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/password"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/password",
             "body": {
               "mode": "raw",
               "raw": "{\"currentPassword\":\"definitely-wrong-{{t31_run}}\",\"newPassword\":\"{{t31_password2}}Xq7!t31\"}",
@@ -1018,9 +998,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/login"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/login",
             "body": {
               "mode": "raw",
               "raw": "{\"username\":\"{{t31_user2}}\",\"password\":\"{{t31_password2}}\"}",
@@ -1066,9 +1044,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/logout"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/logout",
             "auth": {
               "type": "basic",
               "basic": [
@@ -1117,9 +1093,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/logout"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/logout",
             "auth": {
               "type": "noauth"
             }
@@ -1156,9 +1130,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me",
             "auth": {
               "type": "basic",
               "basic": [
@@ -1211,9 +1183,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/password"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/password",
             "body": {
               "mode": "raw",
               "raw": "{}",
@@ -1275,9 +1245,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/password"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/password",
             "body": {
               "mode": "raw",
               "raw": "{\"currentPassword\":\"{{t31_password2}}\"}",
@@ -1336,9 +1304,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/password"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/password",
             "auth": {
               "type": "noauth"
             }
@@ -1381,9 +1347,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/password"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/password",
             "body": {
               "mode": "raw",
               "raw": "{\"currentPassword\":\"{{t31_password2}}\",\"newPassword\":\"{{t31_password2}}Xq7!t31\"}",
@@ -1441,9 +1405,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me",
             "auth": {
               "type": "basic",
               "basic": [
@@ -1496,9 +1458,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/password"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/password",
             "body": {
               "mode": "raw",
               "raw": "{\"currentPassword\":\"{{t31_password2}}Xq7!t31\",\"newPassword\":\"{{t31_password2}}\"}",
@@ -1556,9 +1516,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me",
             "auth": {
               "type": "basic",
               "basic": [
@@ -1607,9 +1565,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me"
           }
         },
         {
@@ -1643,9 +1599,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/avatar"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/avatar",
             "auth": {
               "type": "basic",
               "basic": [
@@ -1698,9 +1652,7 @@
                 "value": "text/plain"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/avatar"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/avatar",
             "body": {
               "mode": "raw",
               "raw": "this is not an image"
@@ -1754,9 +1706,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/avatar"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/avatar",
             "auth": {
               "type": "noauth"
             }
@@ -1795,9 +1745,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/avatar"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/avatar",
             "auth": {
               "type": "basic",
               "basic": [
@@ -1847,9 +1795,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/avatar"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/avatar",
             "auth": {
               "type": "noauth"
             }
@@ -1895,9 +1841,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/export"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/export",
             "auth": {
               "type": "basic",
               "basic": [
@@ -1948,9 +1892,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/export"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/export",
             "auth": {
               "type": "basic",
               "basic": [
@@ -2000,9 +1942,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/export"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/export",
             "auth": {
               "type": "noauth"
             }
@@ -2041,9 +1981,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications",
             "auth": {
               "type": "basic",
               "basic": [
@@ -2099,9 +2037,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications",
             "body": {
               "mode": "raw",
               "raw": "{\"emailDigest\":\"weekly\",\"objectChanges\":false,\"notAPref\":\"ignored\"}",
@@ -2163,9 +2099,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications",
             "body": {
               "mode": "raw",
               "raw": "{\"emailDigest\":\"hourly\"}",
@@ -2225,9 +2159,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications",
             "auth": {
               "type": "basic",
               "basic": [
@@ -2278,9 +2210,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications",
             "auth": {
               "type": "basic",
               "basic": [
@@ -2330,9 +2260,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications",
             "auth": {
               "type": "noauth"
             }
@@ -2375,9 +2303,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/notifications",
             "body": {
               "mode": "raw",
               "raw": "{\"emailDigest\":\"daily\",\"objectChanges\":true}",
@@ -2438,9 +2364,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/activity?_limit=5&_offset=0"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/activity?_limit=5&_offset=0",
             "auth": {
               "type": "basic",
               "basic": [
@@ -2492,9 +2416,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/activity?_limit=2"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/activity?_limit=2"
           }
         },
         {
@@ -2529,9 +2451,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/activity"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/activity",
             "auth": {
               "type": "noauth"
             }
@@ -2568,9 +2488,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens",
             "auth": {
               "type": "basic",
               "basic": [
@@ -2623,9 +2541,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens",
             "body": {
               "mode": "raw",
               "raw": "{\"expiresIn\":\"90d\"}",
@@ -2692,9 +2608,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-tok-{{t31_run}}\",\"expiresIn\":\"90d\"}",
@@ -2757,9 +2671,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens",
             "auth": {
               "type": "basic",
               "basic": [
@@ -2809,9 +2721,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens",
             "auth": {
               "type": "basic",
               "basic": [
@@ -2860,9 +2770,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens/{{t31_user_token_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens/{{t31_user_token_id}}",
             "auth": {
               "type": "basic",
               "basic": [
@@ -2911,9 +2819,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens",
             "auth": {
               "type": "basic",
               "basic": [
@@ -2962,9 +2868,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens/00000000-0000-0000-0000-000000000000"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens/00000000-0000-0000-0000-000000000000",
             "auth": {
               "type": "basic",
               "basic": [
@@ -3014,9 +2918,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens",
             "auth": {
               "type": "noauth"
             }
@@ -3055,9 +2957,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens/{{t31_user_token_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens/{{t31_user_token_id}}",
             "auth": {
               "type": "basic",
               "basic": [
@@ -3106,9 +3006,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens/{{t31_user_token_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens/{{t31_user_token_id}}",
             "auth": {
               "type": "basic",
               "basic": [
@@ -3157,9 +3055,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens",
             "auth": {
               "type": "basic",
               "basic": [
@@ -3210,9 +3106,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate",
             "auth": {
               "type": "basic",
               "basic": [
@@ -3263,9 +3157,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivation-status"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivation-status",
             "auth": {
               "type": "basic",
               "basic": [
@@ -3321,9 +3213,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate",
             "body": {
               "mode": "raw",
               "raw": "{\"reason\":\"t31 test {{t31_run}}\"}",
@@ -3387,9 +3277,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate",
             "body": {
               "mode": "raw",
               "raw": "{\"reason\":\"again\"}",
@@ -3449,9 +3337,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivation-status"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivation-status",
             "auth": {
               "type": "basic",
               "basic": [
@@ -3502,9 +3388,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivation-status"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivation-status",
             "auth": {
               "type": "basic",
               "basic": [
@@ -3553,9 +3437,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me",
             "auth": {
               "type": "basic",
               "basic": [
@@ -3605,9 +3487,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate",
             "auth": {
               "type": "noauth"
             }
@@ -3645,9 +3525,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivation-status"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivation-status",
             "auth": {
               "type": "noauth"
             }
@@ -3687,9 +3565,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate",
             "auth": {
               "type": "basic",
               "basic": [
@@ -3738,9 +3614,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate",
             "auth": {
               "type": "basic",
               "basic": [
@@ -3789,9 +3663,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivation-status"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivation-status",
             "auth": {
               "type": "basic",
               "basic": [
@@ -3856,9 +3728,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/user/me"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/user/me",
                 "body": {
                   "mode": "raw",
                   "raw": "{{t31_user_u2_restore}}",
@@ -3916,9 +3786,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens/{{t31_user_token_id}}"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/user/me/tokens/{{t31_user_token_id}}",
                 "auth": {
                   "type": "basic",
                   "basic": [
@@ -3967,9 +3835,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/user/me/deactivate",
                 "auth": {
                   "type": "basic",
                   "basic": [
@@ -4031,9 +3897,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/entity-relations/999999999"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/entity-relations/999999999",
             "body": {
               "mode": "raw",
               "raw": "{\"skipAnonymization\":true}",
@@ -4080,9 +3944,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/entity-relations/999999999"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/entity-relations/999999999",
             "body": {
               "mode": "raw",
               "raw": "{\"anonymized\":true,\"bogus\":1}",
@@ -4129,9 +3991,7 @@
                 "value": "application/x-www-form-urlencoded"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/entity-relations/999999999"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/entity-relations/999999999",
             "body": {
               "mode": "raw",
               "raw": "skipAnonymization=1"
@@ -4175,9 +4035,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/entity-relations/999999999"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/entity-relations/999999999",
             "body": {
               "mode": "raw",
               "raw": "{\"skipAnonymization\":true}",
@@ -4239,9 +4097,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/entity-relations/abc"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/entity-relations/abc",
             "body": {
               "mode": "raw",
               "raw": "{\"skipAnonymization\":true}",
@@ -4289,9 +4145,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/entity-relations/999999999"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/entity-relations/999999999",
             "body": {
               "mode": "raw",
               "raw": "{\"skipAnonymization\":true}",
@@ -4339,9 +4193,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/contract"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/contract"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4366,9 +4221,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/contract"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/contract",
             "auth": {
               "type": "basic",
               "basic": [
@@ -4384,6 +4237,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4412,9 +4268,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles",
             "body": {
               "mode": "raw",
               "raw": "{}",
@@ -4424,6 +4278,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4452,9 +4309,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-ep-bad-{{t31_run}}\",\"registerId\":{{t31_register_id}},\"fields\":[]}",
@@ -4464,6 +4319,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4492,9 +4350,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-ep-bad-{{t31_run}}\",\"registerId\":{{t31_register_id}},\"fields\":[\"name\"],\"retentionDays\":0}",
@@ -4504,6 +4360,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4532,9 +4391,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-ep-bad-{{t31_run}}\",\"registerId\":{{t31_register_id}},\"fields\":[\"name\"],\"format\":\"xml\"}",
@@ -4544,6 +4401,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4584,9 +4444,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-ep-{{t31_run}}\",\"description\":\"t31 profile\",\"registerId\":{{t31_register_id}},\"schemaId\":{{t31_schema_id}},\"fields\":[\"name\",\"note\"],\"valueMode\":\"stored\",\"format\":\"csv\",\"retentionDays\":7}",
@@ -4596,6 +4454,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4625,9 +4486,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4657,9 +4519,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4692,9 +4555,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}/run"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}/run"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4728,9 +4592,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-ep-upd-{{t31_run}}\",\"format\":\"json\"}",
@@ -4740,6 +4602,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4768,9 +4633,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4800,9 +4666,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}/run"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}/run"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4831,9 +4698,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"valueMode\": \"raw\"\n}",
@@ -4843,6 +4708,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4867,9 +4735,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/999999999"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/999999999"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4898,9 +4767,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/999999999"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/999999999",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"x\"\n}",
@@ -4910,6 +4777,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4934,9 +4804,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/999999999/run"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/999999999/run"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4961,9 +4832,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/999999999"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/999999999"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -4993,9 +4865,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles",
             "auth": {
               "type": "basic",
               "basic": [
@@ -5011,6 +4881,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5035,9 +4908,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}",
             "auth": {
               "type": "basic",
               "basic": [
@@ -5053,6 +4924,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5081,9 +4955,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"hijacked\"\n}",
@@ -5108,6 +4980,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5132,9 +5007,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}/run"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}/run",
             "auth": {
               "type": "basic",
               "basic": [
@@ -5150,6 +5023,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5174,9 +5050,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}",
             "auth": {
               "type": "basic",
               "basic": [
@@ -5192,6 +5066,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5216,9 +5093,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5249,9 +5127,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-ep-user-{{t31_run}}\",\"registerId\":{{t31_register_id}},\"schemaId\":{{t31_schema_id}},\"fields\":[\"name\"]}",
@@ -5276,6 +5152,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5300,9 +5179,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_user_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_user_id}}",
             "auth": {
               "type": "basic",
               "basic": [
@@ -5318,6 +5195,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5346,9 +5226,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5373,9 +5254,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5400,9 +5282,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5430,9 +5313,10 @@
                     "value": "true"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -5457,9 +5341,10 @@
                     "value": "true"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_user_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/export-profiles/{{t31_ep_user_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             }
           ]
@@ -5495,9 +5380,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports",
             "body": {
               "mode": "raw",
               "raw": "{\"registerId\":{{t31_register_id}},\"schemaId\":{{t31_schema_id}},\"format\":\"csv\",\"scheduleType\":\"daily\"}",
@@ -5507,6 +5390,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5535,9 +5421,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-sr-bad\",\"registerId\":{{t31_register_id}},\"schemaId\":{{t31_schema_id}},\"format\":\"xml\",\"scheduleType\":\"daily\"}",
@@ -5547,6 +5431,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5575,9 +5462,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-sr-bad\",\"registerId\":{{t31_register_id}},\"format\":\"csv\",\"scheduleType\":\"daily\"}",
@@ -5587,6 +5472,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5615,9 +5503,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-sr-bad\",\"registerId\":999999999,\"format\":\"pdf\",\"scheduleType\":\"daily\"}",
@@ -5627,6 +5513,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5655,9 +5544,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-sr-bad\",\"registerId\":{{t31_register_id}},\"schemaId\":{{t31_schema_id}},\"format\":\"csv\",\"scheduleType\":\"weekly\"}",
@@ -5667,6 +5554,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5695,9 +5585,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-sr-bad\",\"registerId\":{{t31_register_id}},\"schemaId\":{{t31_schema_id}},\"format\":\"csv\",\"scheduleType\":\"daily\",\"deliveryMode\":\"email\",\"recipients\":[\"not-an-email\"]}",
@@ -5707,6 +5595,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5750,9 +5641,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-sr-{{t31_run}}\",\"registerId\":{{t31_register_id}},\"schemaId\":{{t31_schema_id}},\"format\":\"csv\",\"scheduleType\":\"daily\",\"scheduleHour\":3,\"deliveryFolder\":\"Reports/t31/\",\"deliveryMode\":\"email\",\"recipients\":[\" t31@example.com \",\"t31@example.com\"]}",
@@ -5762,6 +5651,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5791,9 +5683,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5819,9 +5712,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5846,9 +5740,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports?all=true"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports?all=true"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5885,9 +5780,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\"name\":\"t31-sr-upd-{{t31_run}}\",\"scheduleType\":\"weekly\",\"scheduleDayOfWeek\":2,\"enabled\":false}",
@@ -5897,6 +5790,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5921,9 +5817,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5952,9 +5849,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"scheduleHour\": 30\n}",
@@ -5964,6 +5859,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -5992,9 +5890,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"deliveryMode\": \"fax\"\n}",
@@ -6004,6 +5900,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6028,9 +5927,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}/run-now"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}/run-now"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6055,9 +5955,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/999999999"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/999999999"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6086,9 +5987,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/999999999"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/999999999",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"x\"\n}",
@@ -6098,6 +5997,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6122,9 +6024,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/999999999"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/999999999"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6149,9 +6052,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/999999999/run-now"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/999999999/run-now"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6176,9 +6080,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports",
             "auth": {
               "type": "basic",
               "basic": [
@@ -6194,6 +6096,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6218,9 +6123,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports?all=true"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports?all=true",
             "auth": {
               "type": "basic",
               "basic": [
@@ -6236,6 +6139,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6260,9 +6166,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}",
             "auth": {
               "type": "basic",
               "basic": [
@@ -6278,6 +6182,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6306,9 +6213,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"hijacked\"\n}",
@@ -6333,6 +6238,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6357,9 +6265,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}/run-now"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}/run-now",
             "auth": {
               "type": "basic",
               "basic": [
@@ -6375,6 +6281,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6399,9 +6308,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}",
             "auth": {
               "type": "basic",
               "basic": [
@@ -6417,6 +6324,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6441,9 +6351,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6468,9 +6379,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6495,9 +6407,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6525,9 +6438,10 @@
                     "value": "true"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/scheduled-reports/{{t31_sr_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             }
           ]
@@ -6568,9 +6482,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"definition\": {\n    \"id\": \"Bad Slug\",\n    \"name\": \"\",\n    \"sourceFormat\": \"xml\",\n    \"version\": \"1\",\n    \"fieldMappings\": [],\n    \"idStrategy\": {\n      \"type\": \"nope\"\n    }\n  }\n}",
@@ -6580,6 +6492,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6618,9 +6533,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs",
             "body": {
               "mode": "raw",
               "raw": "{\"definition\": {\n    \"id\": \"t31-pack-{{t31_run}}\",\n    \"name\": \"T31 pack\",\n    \"sourceFormat\": \"csv\",\n    \"version\": \"1.0.0\",\n    \"fieldMappings\": [\n      {\"source\": \"Naam\", \"target\": \"name\", \"required\": true},\n      {\"source\": \"Opmerking\", \"target\": \"note\"}\n    ],\n    \"defaults\": {\"note\": \"none\"},\n    \"idStrategy\": {\"type\": \"generate\"}\n  }}",
@@ -6630,6 +6543,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6658,9 +6574,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs",
             "body": {
               "mode": "raw",
               "raw": "{\n    \"id\": \"t31-pack-{{t31_run}}\",\n    \"name\": \"T31 dup\",\n    \"sourceFormat\": \"csv\",\n    \"version\": \"1.0.0\",\n    \"fieldMappings\": [\n      {\"source\": \"Naam\", \"target\": \"name\", \"required\": true},\n      {\"source\": \"Opmerking\", \"target\": \"note\"}\n    ],\n    \"defaults\": {\"note\": \"none\"},\n    \"idStrategy\": {\"type\": \"generate\"}\n  }",
@@ -6670,6 +6584,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6694,9 +6611,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6721,9 +6639,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6753,9 +6672,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}/export"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}/export"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6784,9 +6704,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\"definition\": {\n    \"id\": \"t31-pack-{{t31_run}}\",\n    \"name\": \"T31 pack updated\",\n    \"sourceFormat\": \"csv\",\n    \"version\": \"1.0.0\",\n    \"fieldMappings\": [\n      {\"source\": \"Naam\", \"target\": \"name\", \"required\": true},\n      {\"source\": \"Opmerking\", \"target\": \"note\"}\n    ],\n    \"defaults\": {\"note\": \"none\"},\n    \"idStrategy\": {\"type\": \"generate\"}\n  }}",
@@ -6796,6 +6714,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6820,9 +6741,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6851,9 +6773,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"definition\": {\n    \"id\": \"t31-x\",\n    \"name\": \"x\",\n    \"sourceFormat\": \"csv\",\n    \"version\": \"v1\",\n    \"fieldMappings\": [\n      {\n        \"source\": \"a\",\n        \"target\": \"b\"\n      }\n    ],\n    \"idStrategy\": {\n      \"type\": \"generate\"\n    }\n  }\n}",
@@ -6863,6 +6783,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6891,9 +6814,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\"definition\": {\n    \"id\": \"t31-pack-{{t31_run}}\",\n    \"name\": \"T31 stale\",\n    \"sourceFormat\": \"csv\",\n    \"version\": \"1.0.0\",\n    \"fieldMappings\": [\n      {\"source\": \"Naam\", \"target\": \"name\", \"required\": true},\n      {\"source\": \"Opmerking\", \"target\": \"note\"}\n    ],\n    \"defaults\": {\"note\": \"none\"},\n    \"idStrategy\": {\"type\": \"generate\"}\n  }, \"expectedUpdatedAt\": \"2000-01-01T00:00:00+00:00\"}",
@@ -6903,6 +6824,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6931,9 +6855,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\"definition\": {\n    \"id\": \"t31-pack-{{t31_run}}\",\n    \"name\": \"T31 bad time\",\n    \"sourceFormat\": \"csv\",\n    \"version\": \"1.0.0\",\n    \"fieldMappings\": [\n      {\"source\": \"Naam\", \"target\": \"name\", \"required\": true},\n      {\"source\": \"Opmerking\", \"target\": \"note\"}\n    ],\n    \"defaults\": {\"note\": \"none\"},\n    \"idStrategy\": {\"type\": \"generate\"}\n  }, \"expectedUpdatedAt\": \"yesterday\"}",
@@ -6943,6 +6865,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -6967,9 +6892,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7007,9 +6933,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/preview"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/preview",
             "body": {
               "mode": "raw",
               "raw": "{\"definition\": {\n    \"id\": \"t31-pack-{{t31_run}}\",\n    \"name\": \"T31 preview\",\n    \"sourceFormat\": \"csv\",\n    \"version\": \"1.0.0\",\n    \"fieldMappings\": [\n      {\"source\": \"Naam\", \"target\": \"name\", \"required\": true},\n      {\"source\": \"Opmerking\", \"target\": \"note\"}\n    ],\n    \"defaults\": {\"note\": \"none\"},\n    \"idStrategy\": {\"type\": \"generate\"}\n  }, \"rows\": [{\"Naam\": \"Alice\", \"Opmerking\": \"hi\"}, {\"Opmerking\": \"no name\"}]}",
@@ -7019,6 +6943,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7047,9 +6974,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/preview"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/preview",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"rows\": []\n}",
@@ -7059,6 +6984,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7087,9 +7015,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/preview"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/preview",
             "body": {
               "mode": "raw",
               "raw": "{\"definition\": {\n    \"id\": \"t31-pack-{{t31_run}}\",\n    \"name\": \"x\",\n    \"sourceFormat\": \"csv\",\n    \"version\": \"1.0.0\",\n    \"fieldMappings\": [\n      {\"source\": \"Naam\", \"target\": \"name\", \"required\": true},\n      {\"source\": \"Opmerking\", \"target\": \"note\"}\n    ],\n    \"defaults\": {\"note\": \"none\"},\n    \"idStrategy\": {\"type\": \"generate\"}\n  }, \"rows\": {\"a\": {\"Naam\": \"x\"}}}",
@@ -7099,6 +7025,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7127,9 +7056,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/preview"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/preview",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"definition\": {\n    \"id\": \"x\"\n  },\n  \"rows\": []\n}",
@@ -7139,6 +7066,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7167,9 +7097,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/import"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/import",
             "body": {
               "mode": "raw",
               "raw": "{}",
@@ -7179,6 +7107,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7203,9 +7134,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/999999999"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/999999999"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7230,9 +7162,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/999999999/export"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/999999999/export"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7261,9 +7194,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/999999999"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/999999999",
             "body": {
               "mode": "raw",
               "raw": "{\"definition\": {\n    \"id\": \"t31-pack-{{t31_run}}\",\n    \"name\": \"x\",\n    \"sourceFormat\": \"csv\",\n    \"version\": \"1.0.0\",\n    \"fieldMappings\": [\n      {\"source\": \"Naam\", \"target\": \"name\", \"required\": true},\n      {\"source\": \"Opmerking\", \"target\": \"note\"}\n    ],\n    \"defaults\": {\"note\": \"none\"},\n    \"idStrategy\": {\"type\": \"generate\"}\n  }}",
@@ -7273,6 +7204,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7297,9 +7231,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/999999999"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/999999999"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7324,9 +7259,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs",
             "auth": {
               "type": "basic",
               "basic": [
@@ -7342,6 +7275,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7366,9 +7302,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}",
             "auth": {
               "type": "basic",
               "basic": [
@@ -7384,6 +7318,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7408,9 +7345,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}/export"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}/export",
             "auth": {
               "type": "basic",
               "basic": [
@@ -7426,6 +7361,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7454,9 +7392,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs",
             "body": {
               "mode": "raw",
               "raw": "{\"definition\": {\n    \"id\": \"t31-pack-user-{{t31_run}}\",\n    \"name\": \"hijack\",\n    \"sourceFormat\": \"csv\",\n    \"version\": \"1.0.0\",\n    \"fieldMappings\": [\n      {\"source\": \"Naam\", \"target\": \"name\", \"required\": true},\n      {\"source\": \"Opmerking\", \"target\": \"note\"}\n    ],\n    \"defaults\": {\"note\": \"none\"},\n    \"idStrategy\": {\"type\": \"generate\"}\n  }}",
@@ -7481,6 +7417,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7509,9 +7448,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\"definition\": {\n    \"id\": \"t31-pack-{{t31_run}}\",\n    \"name\": \"hijacked\",\n    \"sourceFormat\": \"csv\",\n    \"version\": \"1.0.0\",\n    \"fieldMappings\": [\n      {\"source\": \"Naam\", \"target\": \"name\", \"required\": true},\n      {\"source\": \"Opmerking\", \"target\": \"note\"}\n    ],\n    \"defaults\": {\"note\": \"none\"},\n    \"idStrategy\": {\"type\": \"generate\"}\n  }}",
@@ -7536,6 +7473,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7564,9 +7504,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/preview"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/preview",
             "body": {
               "mode": "raw",
               "raw": "{\"definition\": {\n    \"id\": \"t31-pack-{{t31_run}}\",\n    \"name\": \"x\",\n    \"sourceFormat\": \"csv\",\n    \"version\": \"1.0.0\",\n    \"fieldMappings\": [\n      {\"source\": \"Naam\", \"target\": \"name\", \"required\": true},\n      {\"source\": \"Opmerking\", \"target\": \"note\"}\n    ],\n    \"defaults\": {\"note\": \"none\"},\n    \"idStrategy\": {\"type\": \"generate\"}\n  }, \"rows\": []}",
@@ -7591,6 +7529,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7619,9 +7560,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/import"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/import",
             "body": {
               "mode": "raw",
               "raw": "{}",
@@ -7646,6 +7585,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7670,9 +7612,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}",
             "auth": {
               "type": "basic",
               "basic": [
@@ -7688,6 +7628,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7718,9 +7661,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7745,9 +7689,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7772,9 +7717,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -7802,9 +7748,10 @@
                     "value": "true"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/migration-packs/{{t31_mp_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             }
           ]
@@ -7848,9 +7795,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/settings/archival"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/settings/archival"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -7888,9 +7836,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/schemas"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/schemas",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"title\": \"T31 Archival List {{t31_run}}\",\n \"slug\": \"t31-arch-list-{{t31_run}}\",\n \"properties\": {\n  \"name\": {\n   \"type\": \"string\"\n  },\n  \"status\": {\n   \"type\": \"string\"\n  },\n  \"createdAt\": {\n   \"type\": \"string\"\n  },\n  \"objectCount\": {\n   \"type\": \"integer\"\n  },\n  \"objects\": {\n   \"type\": \"array\",\n   \"items\": {\n    \"type\": \"object\"\n   }\n  },\n  \"decisions\": {\n   \"type\": \"array\",\n   \"items\": {\n    \"type\": \"object\"\n   }\n  },\n  \"approvals\": {\n   \"type\": \"array\",\n   \"items\": {\n    \"type\": \"object\"\n   }\n  },\n  \"rejections\": {\n   \"type\": \"array\",\n   \"items\": {\n    \"type\": \"object\"\n   }\n  }\n }\n}",
@@ -7900,6 +7846,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -7937,9 +7886,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/registers"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/registers",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"title\": \"T31 Archival Register {{t31_run}}\",\n \"slug\": \"t31-arch-reg-{{t31_run}}\",\n \"schemas\": [{{t31_arch_schema_id}}]\n}",
@@ -7949,6 +7896,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -7986,9 +7936,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_schema_id}}"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_schema_id}}",
                 "body": {
                   "mode": "raw",
                   "raw": "{\"name\":\"t31-arch-{{t31_run}}\"}",
@@ -7998,6 +7946,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8036,9 +7987,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_arch_register_id}}/{{t31_arch_schema_id}}"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_arch_register_id}}/{{t31_arch_schema_id}}",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"name\": \"t31-arch-list-{{t31_run}}\",\n \"status\": \"in_review\",\n \"objectCount\": 1,\n \"objects\": [{\"uuid\": \"{{t31_arch_victim_id}}\", \"title\": \"t31-arch-{{t31_run}}\"}],\n \"decisions\": [],\n \"approvals\": [],\n \"rejections\": []\n}",
@@ -8048,6 +7997,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8096,9 +8048,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/settings/archival"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/settings/archival",
                 "body": {
                   "mode": "raw",
                   "raw": "{{t31_arch_settings_new}}",
@@ -8108,6 +8058,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             }
           ]
@@ -8153,9 +8106,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8189,9 +8143,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists?status=in_review"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists?status=in_review"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8224,9 +8179,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists?status=completed"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists?status=completed"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8258,9 +8214,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists",
                 "auth": {
                   "type": "basic",
                   "basic": [
@@ -8276,6 +8230,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8311,9 +8268,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists",
                 "body": {
                   "mode": "raw",
                   "raw": "{}",
@@ -8323,6 +8278,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8358,9 +8316,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"objects\": [\n  123,\n  \"\"\n ]\n}",
@@ -8370,6 +8326,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8409,9 +8368,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists",
                 "body": {
                   "mode": "raw",
                   "raw": "{\"objects\": [\"{{t31_object_id}}\", \"00000000-0000-0000-0000-000000000000\"]}",
@@ -8421,6 +8378,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8457,9 +8417,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists",
                 "body": {
                   "mode": "raw",
                   "raw": "{\"objects\": [\"{{t31_arch_victim_id}}\"]}",
@@ -8484,6 +8442,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8515,9 +8476,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8553,9 +8515,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8587,9 +8550,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/00000000-0000-0000-0000-000000000000"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/00000000-0000-0000-0000-000000000000"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8621,9 +8585,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}",
                 "auth": {
                   "type": "basic",
                   "basic": [
@@ -8639,6 +8601,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             }
           ]
@@ -8679,9 +8644,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"answer\": \"destroy\",\n \"reason\": \"t31\"\n}",
@@ -8691,6 +8654,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8726,9 +8692,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/00000000-0000-0000-0000-000000000000/entries/{{t31_arch_victim_id}}/reviewer"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/00000000-0000-0000-0000-000000000000/entries/{{t31_arch_victim_id}}/reviewer",
                 "body": {
                   "mode": "raw",
                   "raw": "{\"reviewer\": \"{{t31_user}}\"}",
@@ -8738,6 +8702,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8773,9 +8740,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/00000000-0000-0000-0000-000000000000/reviewer"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/00000000-0000-0000-0000-000000000000/reviewer",
                 "body": {
                   "mode": "raw",
                   "raw": "{\"reviewer\": \"{{t31_user}}\"}",
@@ -8785,6 +8750,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8820,9 +8788,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/reviewer"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/reviewer",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"reviewer\": 123\n}",
@@ -8832,6 +8798,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8868,9 +8837,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/reviewer"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/reviewer",
                 "body": {
                   "mode": "raw",
                   "raw": "{\"reviewer\": \"{{t31_user2}}\"}",
@@ -8895,6 +8862,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8927,9 +8897,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -8968,9 +8939,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/reviewer"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/reviewer",
                 "body": {
                   "mode": "raw",
                   "raw": "{\"reviewer\": \"{{t31_user}}\"}",
@@ -8980,6 +8949,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9017,9 +8989,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/reviews/pending"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/reviews/pending",
                 "auth": {
                   "type": "basic",
                   "basic": [
@@ -9035,6 +9005,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9067,9 +9040,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/reviews/pending"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/reviews/pending",
                 "auth": {
                   "type": "basic",
                   "basic": [
@@ -9085,6 +9056,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9120,9 +9094,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/00000000-0000-0000-0000-000000000000/entries/{{t31_arch_victim_id}}/decision"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/00000000-0000-0000-0000-000000000000/entries/{{t31_arch_victim_id}}/decision",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"answer\": \"destroy\",\n \"reason\": \"t31\"\n}",
@@ -9147,6 +9119,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9182,9 +9157,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/00000000-0000-0000-0000-000000000000/decision"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/00000000-0000-0000-0000-000000000000/decision",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"answer\": \"destroy\",\n \"reason\": \"t31\"\n}",
@@ -9209,6 +9182,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9244,9 +9220,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"answer\": \"destroy\",\n \"reason\": \"t31 not mine\"\n}",
@@ -9271,6 +9245,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9303,9 +9280,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9341,9 +9319,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"answer\": \"maybe\",\n \"reason\": \"t31\"\n}",
@@ -9368,6 +9344,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9403,9 +9382,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"answer\": \"retain\",\n \"reason\": \"t31\"\n}",
@@ -9430,6 +9407,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9465,9 +9445,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"answer\": \"destroy\"\n}",
@@ -9492,6 +9470,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9532,9 +9513,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"answer\": \"destroy\",\n \"reason\": \"t31 reviewer agrees\"\n}",
@@ -9559,6 +9538,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9594,9 +9576,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/decision",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"answer\": \"destroy\",\n \"reason\": \"again\"\n}",
@@ -9621,6 +9601,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9656,9 +9639,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/reviewer"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/entries/{{t31_arch_victim_id}}/reviewer",
                 "body": {
                   "mode": "raw",
                   "raw": "{\"reviewer\": \"{{t31_user2}}\"}",
@@ -9668,6 +9649,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9700,9 +9684,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/reviews/pending"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/reviews/pending",
                 "auth": {
                   "type": "basic",
                   "basic": [
@@ -9718,6 +9700,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9751,9 +9736,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             }
           ]
@@ -9794,9 +9780,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/reject"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/reject",
                 "body": {
                   "mode": "raw",
                   "raw": "{}",
@@ -9806,6 +9790,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9841,9 +9828,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/reject"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/reject",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"reason\": \"t31 not allowed\"\n}",
@@ -9868,6 +9853,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9903,9 +9891,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/approve"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/approve",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"action\": \"approve_all\"\n}",
@@ -9930,6 +9916,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -9962,9 +9951,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10002,9 +9992,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/reject"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/reject",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"reason\": \"t31 rejection\"\n}",
@@ -10014,6 +10002,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10052,9 +10043,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/approve"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}/approve",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"action\": \"approve_all\"\n}",
@@ -10064,6 +10053,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10096,9 +10088,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/destruction-lists/{{t31_arch_list_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             }
           ]
@@ -10139,9 +10132,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds",
                 "body": {
                   "mode": "raw",
                   "raw": "{\"objectId\": \"{{t31_object_id}}\"}",
@@ -10151,6 +10142,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10186,9 +10180,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"reason\": \"t31\"\n}",
@@ -10198,6 +10190,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10233,9 +10228,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds",
                 "body": {
                   "mode": "raw",
                   "raw": "{\"reason\": \"t31\", \"schemaId\": {{t31_schema_id}}}",
@@ -10245,6 +10238,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10280,9 +10276,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds",
                 "body": {
                   "mode": "raw",
                   "raw": "{\"objectId\": \"{{t31_object_id}}\", \"reason\": \"t31 sneaky\", \"ownerKey\": \"t31-sneaky-{{t31_run}}\"}",
@@ -10307,6 +10301,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10340,9 +10337,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10383,9 +10381,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds",
                 "body": {
                   "mode": "raw",
                   "raw": "{\"objectId\": \"{{t31_object_id}}\", \"reason\": \"t31 litigation\", \"ownerKey\": \"t31-{{t31_run}}\"}",
@@ -10395,6 +10391,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10431,9 +10430,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10465,9 +10465,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds",
                 "auth": {
                   "type": "basic",
                   "basic": [
@@ -10483,6 +10481,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10514,9 +10515,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds/{{t31_object_id}}?ownerKey=t31-{{t31_run}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds/{{t31_object_id}}?ownerKey=t31-{{t31_run}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10548,9 +10550,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds/{{t31_object_id}}?reason=t31&ownerKey=t31-{{t31_run}}"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds/{{t31_object_id}}?reason=t31&ownerKey=t31-{{t31_run}}",
                 "auth": {
                   "type": "basic",
                   "basic": [
@@ -10566,6 +10566,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10601,9 +10604,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10640,9 +10644,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds/{{t31_object_id}}?reason=t31%20done&ownerKey=t31-{{t31_run}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds/{{t31_object_id}}?reason=t31%20done&ownerKey=t31-{{t31_run}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10675,9 +10680,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/legal-holds"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             }
           ]
@@ -10717,9 +10723,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/certificates"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/certificates"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10753,9 +10760,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/certificates?destructionList={{t31_arch_list_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/certificates?destructionList={{t31_arch_list_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10788,9 +10796,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/certificates"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/certificates",
                 "auth": {
                   "type": "basic",
                   "basic": [
@@ -10806,6 +10812,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             }
           ]
@@ -10846,9 +10855,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/objects/{{t31_object_id}}/nomination/recompute"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/objects/{{t31_object_id}}/nomination/recompute",
                 "body": {
                   "mode": "raw",
                   "raw": "{}",
@@ -10858,6 +10865,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10893,9 +10903,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/objects/00000000-0000-0000-0000-000000000000/nomination/recompute"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/objects/00000000-0000-0000-0000-000000000000/nomination/recompute",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"reason\": \"t31\"\n}",
@@ -10905,6 +10913,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -10941,9 +10952,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/objects/{{t31_object_id}}/nomination/recompute"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/objects/{{t31_object_id}}/nomination/recompute",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"reason\": \"t31 sneaky\"\n}",
@@ -10968,6 +10977,9 @@
                     }
                   ]
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -11000,9 +11012,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_schema_id}}/{{t31_object_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_schema_id}}/{{t31_object_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -11043,9 +11056,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/archival/objects/{{t31_object_id}}/nomination/recompute"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/archival/objects/{{t31_object_id}}/nomination/recompute",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n \"reason\": \"t31 selectielijst moved\"\n}",
@@ -11055,6 +11066,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             }
           ]
@@ -11093,9 +11107,7 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/settings/archival"
-                },
+                "url": "{{base_url}}/index.php/apps/openregister/api/settings/archival",
                 "body": {
                   "mode": "raw",
                   "raw": "{{t31_arch_settings_orig}}",
@@ -11105,6 +11117,9 @@
                     }
                   }
                 }
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -11134,9 +11149,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_arch_register_id}}/{{t31_arch_schema_id}}/{{t31_arch_list_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_arch_register_id}}/{{t31_arch_schema_id}}/{{t31_arch_list_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -11166,9 +11182,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_schema_id}}/{{t31_arch_victim_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_schema_id}}/{{t31_arch_victim_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -11198,9 +11215,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{t31_arch_register_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{t31_arch_register_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -11230,9 +11248,10 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{t31_arch_schema_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{t31_arch_schema_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             }
           ]
@@ -11273,9 +11292,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -11299,9 +11319,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover",
             "auth": {
               "type": "noauth"
             }
@@ -11339,9 +11357,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover/registers"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover/registers"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -11372,9 +11391,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover/schemas"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover/schemas"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -11404,9 +11424,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover/nope"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover/nope"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -11435,9 +11456,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover/registers"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover/registers",
             "auth": {
               "type": "basic",
               "basic": [
@@ -11453,6 +11472,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -11474,9 +11496,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover/registers"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/discover/registers",
             "auth": {
               "type": "noauth"
             }
@@ -11511,9 +11531,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/grantable-rights"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/grantable-rights"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -11542,9 +11563,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/grantable-rights"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/grantable-rights",
             "auth": {
               "type": "basic",
               "basic": [
@@ -11560,6 +11579,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -11581,9 +11603,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/grantable-rights"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp/v1/grantable-rights",
             "auth": {
               "type": "noauth"
             }
@@ -11634,9 +11654,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
             "body": {
               "mode": "raw",
               "raw": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"initialize\", \"params\": {\"protocolVersion\": \"2025-03-26\", \"capabilities\": {}, \"clientInfo\": {\"name\": \"t31-newman\", \"version\": \"1.0\"}}}",
@@ -11646,253 +11664,9 @@
                 }
               }
             }
-          }
-        },
-        {
-          "name": "ping - with session",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200 ping returns an empty result', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "    var j = pm.response.json();",
-                  "    pm.expect(j.id).to.eql(2);",
-                  "    pm.expect(j).to.not.have.property('error');",
-                  "    pm.expect(j).to.have.property('result');",
-                  "    pm.expect(Object.keys(j.result)).to.have.lengthOf(0);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "OCS-APIRequest",
-                "value": "true"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Mcp-Session-Id",
-                "value": "{{t31_mcp_session}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 2, \"method\": \"ping\"}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "tools/list - admin with session",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200 tools/list returns a tools array', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "    var j = pm.response.json();",
-                  "    pm.expect(j.id).to.eql(3);",
-                  "    pm.expect(j, JSON.stringify(j.error || {})).to.not.have.property('error');",
-                  "    pm.expect(j.result.tools).to.be.an('array');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "OCS-APIRequest",
-                "value": "true"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Mcp-Session-Id",
-                "value": "{{t31_mcp_session}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 3, \"method\": \"tools/list\"}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "unknown method - -32601",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('JSON-RPC -32601 Method not found (HTTP 200)', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "    var j = pm.response.json();",
-                  "    pm.expect(j.id).to.eql(4);",
-                  "    pm.expect(j).to.not.have.property('result');",
-                  "    pm.expect(j.error.code).to.eql(-32601);",
-                  "    pm.expect(j.error.message).to.eql('Method not found: t31/nope');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "OCS-APIRequest",
-                "value": "true"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Mcp-Session-Id",
-                "value": "{{t31_mcp_session}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 4, \"method\": \"t31/nope\"}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "tools/call without name - -32602",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('JSON-RPC -32602 Missing required parameter: name', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "    var j = pm.response.json();",
-                  "    pm.expect(j.id).to.eql(5);",
-                  "    pm.expect(j.error.code).to.eql(-32602);",
-                  "    pm.expect(j.error.message).to.include('Missing required parameter: name');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "OCS-APIRequest",
-                "value": "true"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Mcp-Session-Id",
-                "value": "{{t31_mcp_session}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 5, \"method\": \"tools/call\", \"params\": {\"arguments\": {}}}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "resources/read without uri - -32602",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('JSON-RPC -32602 Missing required parameter: uri', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "    var j = pm.response.json();",
-                  "    pm.expect(j.id).to.eql(6);",
-                  "    pm.expect(j.error.code).to.eql(-32602);",
-                  "    pm.expect(j.error.message).to.include('Missing required parameter: uri');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "OCS-APIRequest",
-                "value": "true"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Mcp-Session-Id",
-                "value": "{{t31_mcp_session}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 6, \"method\": \"resources/read\", \"params\": {}}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -11927,9 +11701,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
             "body": {
               "mode": "raw",
               "raw": "{\"jsonrpc\": \"2.0\", \"id\": 7, \"method\": \"tools/list\"}",
@@ -11939,6 +11711,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -11976,9 +11751,7 @@
                 "value": "t31-not-a-session-{{t31_run}}"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
             "body": {
               "mode": "raw",
               "raw": "{\"jsonrpc\": \"2.0\", \"id\": 8, \"method\": \"tools/list\"}",
@@ -11988,6 +11761,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12022,9 +11798,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
             "body": {
               "mode": "raw",
               "raw": "{\"jsonrpc\": \"2.0\", \"id\": 9, \"method\": ",
@@ -12034,6 +11808,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12067,9 +11844,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
             "body": {
               "mode": "raw",
               "raw": "{\"jsonrpc\": \"1.0\", \"id\": 10, \"method\": \"ping\"}",
@@ -12079,6 +11854,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12111,9 +11889,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
             "body": {
               "mode": "raw",
               "raw": "{\"jsonrpc\": \"2.0\", \"id\": 11}",
@@ -12123,6 +11899,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12153,9 +11932,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
             "body": {
               "mode": "raw",
               "raw": "{\"jsonrpc\": \"2.0\", \"method\": \"notifications/initialized\"}",
@@ -12165,6 +11942,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12199,9 +11979,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
             "body": {
               "mode": "raw",
               "raw": "{\"jsonrpc\": \"2.0\", \"id\": 12, \"method\": \"initialize\", \"params\": {\"agent\": 123}}",
@@ -12211,6 +11989,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12245,9 +12026,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
             "body": {
               "mode": "raw",
               "raw": "{\"jsonrpc\": \"2.0\", \"id\": 13, \"method\": \"initialize\", \"params\": {\"agent\": \"00000000-0000-0000-0000-000000000000\"}}",
@@ -12257,6 +12036,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12294,9 +12076,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
             "body": {
               "mode": "raw",
               "raw": "{\"jsonrpc\": \"2.0\", \"id\": 14, \"method\": \"initialize\", \"params\": {}}",
@@ -12321,70 +12101,9 @@
                 }
               ]
             }
-          }
-        },
-        {
-          "name": "tools/list - non-admin with own session",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200 tools/list for non-admin', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "    var j = pm.response.json();",
-                  "    pm.expect(j.id).to.eql(15);",
-                  "    pm.expect(j, JSON.stringify(j.error || {})).to.not.have.property('error');",
-                  "    pm.expect(j.result.tools).to.be.an('array');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "OCS-APIRequest",
-                "value": "true"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Mcp-Session-Id",
-                "value": "{{t31_mcp_session_user}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 15, \"method\": \"tools/list\"}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "auth": {
-              "type": "basic",
-              "basic": [
-                {
-                  "key": "username",
-                  "value": "{{t31_user}}",
-                  "type": "string"
-                },
-                {
-                  "key": "password",
-                  "value": "{{t31_password}}",
-                  "type": "string"
-                }
-              ]
-            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12411,9 +12130,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/mcp"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
             "body": {
               "mode": "raw",
               "raw": "{\"jsonrpc\": \"2.0\", \"id\": 16, \"method\": \"initialize\", \"params\": {}}",
@@ -12455,9 +12172,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/graphql/subscribe?schema={{t31_schema_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/graphql/subscribe?schema={{t31_schema_id}}",
             "auth": {
               "type": "noauth"
             }
@@ -12491,9 +12206,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/graphql/subscribe?schema={{t31_schema_id}}&register={{t31_register_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/graphql/subscribe?schema={{t31_schema_id}}&register={{t31_register_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         }
       ]
@@ -12532,9 +12248,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/search/files/semantic"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/search/files/semantic",
             "body": {
               "mode": "raw",
               "raw": "{\"limit\": 5}",
@@ -12544,6 +12258,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12577,9 +12294,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/search/files/semantic"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/search/files/semantic",
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"\", \"limit\": 5}",
@@ -12589,6 +12304,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12622,9 +12340,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/search/files/hybrid"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/search/files/hybrid",
             "body": {
               "mode": "raw",
               "raw": "{\"limit\": 5, \"keyword_weight\": 0.7, \"semantic_weight\": 0.3}",
@@ -12634,6 +12350,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12667,9 +12386,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/search/files/hybrid"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/search/files/hybrid",
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"\"}",
@@ -12679,6 +12396,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12712,9 +12432,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/search/files/semantic"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/search/files/semantic",
             "body": {
               "mode": "raw",
               "raw": "{}",
@@ -12739,6 +12457,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12772,9 +12493,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/search/files/hybrid"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/search/files/hybrid",
             "body": {
               "mode": "raw",
               "raw": "{}",
@@ -12799,6 +12518,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12825,9 +12547,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/search/files/semantic"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/search/files/semantic",
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"t31\"}",
@@ -12869,9 +12589,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/search/files/hybrid"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/search/files/hybrid",
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"t31\"}",
@@ -12925,9 +12643,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/schemas",
             "body": {
               "mode": "raw",
               "raw": "{\"register\": \"{{t31_register_id}}\", \"slug\": \"t31-report-{{t31_run}}\", \"title\": \"T31 Report {{t31_run}}\", \"properties\": {\"titel\": {\"type\": \"string\"}, \"widgets\": {\"type\": \"array\", \"items\": {\"type\": \"object\"}}}, \"required\": [\"titel\"], \"authorization\": {\"read\": [\"admin\"], \"create\": [\"admin\"], \"update\": [\"admin\"], \"delete\": [\"admin\"]}}",
@@ -12937,6 +12653,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -12972,9 +12691,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_rep_schema_id}}"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_rep_schema_id}}",
             "body": {
               "mode": "raw",
               "raw": "{\"titel\": \"T31 Report {{t31_run}}\", \"widgets\": []}",
@@ -12984,6 +12701,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13012,9 +12732,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/render?format=html"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/render?format=html"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13042,9 +12763,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/preview"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/preview"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13077,9 +12799,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/render"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/render",
             "body": {
               "mode": "raw",
               "raw": "{\"format\": \"docx\"}",
@@ -13089,6 +12809,9 @@
                 }
               }
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13116,9 +12839,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_object_id}}/render?format=html"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_object_id}}/render?format=html"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13147,9 +12871,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/reports/999999999/render?format=html"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/reports/999999999/render?format=html"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13178,9 +12903,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/reports/00000000-0000-0000-0000-000000000000/render"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/reports/00000000-0000-0000-0000-000000000000/render"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13208,9 +12934,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/reports/999999999/preview"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/reports/999999999/preview"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13239,9 +12966,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/render?format=html"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/render?format=html",
             "auth": {
               "type": "basic",
               "basic": [
@@ -13257,6 +12982,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13284,9 +13012,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/preview"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/preview",
             "auth": {
               "type": "basic",
               "basic": [
@@ -13302,6 +13028,9 @@
                 }
               ]
             }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13323,9 +13052,7 @@
           "request": {
             "method": "POST",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/render?format=html"
-            },
+            "url": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/render?format=html",
             "auth": {
               "type": "noauth"
             }
@@ -13358,9 +13085,10 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/preview"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/reports/{{t31_rep_object_id}}/preview"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13389,9 +13117,10 @@
                     "value": "true"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_rep_schema_id}}/{{t31_rep_object_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_rep_schema_id}}/{{t31_rep_object_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             },
             {
@@ -13417,9 +13146,10 @@
                     "value": "true"
                   }
                 ],
-                "url": {
-                  "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{t31_rep_schema_id}}"
-                }
+                "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{t31_rep_schema_id}}"
+              },
+              "protocolProfileBehavior": {
+                "disableCookies": true
               }
             }
           ]
@@ -13455,9 +13185,10 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_schema_id}}/{{t31_object_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_schema_id}}/{{t31_object_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13486,9 +13217,10 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{t31_register_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{t31_register_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13517,9 +13249,10 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{t31_schema_id}}"
-            }
+            "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{t31_schema_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13547,9 +13280,10 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/ocs/v2.php/cloud/users/{{t31_user}}?format=json"
-            }
+            "url": "{{base_url}}/ocs/v2.php/cloud/users/{{t31_user}}?format=json"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         },
         {
@@ -13577,9 +13311,10 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/ocs/v2.php/cloud/users/{{t31_user2}}?format=json"
-            }
+            "url": "{{base_url}}/ocs/v2.php/cloud/users/{{t31_user2}}?format=json"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
           }
         }
       ]
