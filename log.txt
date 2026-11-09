@@ -537,3 +537,4 @@
 2026-11-09T19:23:50Z integrator-20261109T183615-6540b4de RED tree ab94234a74 prs 6 front=skip: Tests: 53909, Assertions: 175187, Errors: 6, Failures: 14, Warnings: 1, Deprecations: 4, P; first failures: OCA\OpenRegister\Tests\Unit\Architecture\ComponentDefinitionTest::testEveryFileHasACsvRowAndTheYamlAgrees;OCA\OpenRegister\Tests\Unit\Architecture\ComponentDefinitionTest::testEveryFileMatchesExactlyOneComponent;OCA\OpenRegister\Tests\Unit\Architecture\ComponentDefinitionTest::testYamlIsTheGeneratorsOutput
 2026-11-09T19:24:20Z integrator-20261109T183615-6540b4de CONFLICT-DEV #7653 f5eed6aa
 2026-11-09T19:24:33Z integrator-20261109T183615-6540b4de CONFLICT-DEV #7701 aadd9d43
+2026-11-09T19:24:47Z integrator-20261109T183615-6540b4de CONFLICT-DEV #7721 06e07913
