@@ -2811,7 +2811,7 @@ class ImportHandler {
 			}
 
 			try {
-				$this->importListedObject(objectData: $objectData, appId: $run->appId, actingUser: $run->actingUser, result: $run->result);
+				$this->importListedObject(run: $run, objectData: $objectData);
 			} catch (\Throwable $e) {
 				$this->logger->debug(
 					message: '[ImportHandler] Object failed on the first pass, retried after the rest',
@@ -2841,13 +2841,13 @@ class ImportHandler {
 	private function retryListedObjects(ImportRun $run, array $retry): void {
 		foreach ($retry as $objectData) {
 			try {
-				$this->importListedObject(objectData: $objectData, appId: $run->appId, actingUser: $run->actingUser, result: $run->result);
+				$this->importListedObject(run: $run, objectData: $objectData);
 			} catch (\Throwable $e) {
 				if ($e instanceof HookStoppedException === true) {
 					$run->refusedByListener = true;
 				}
 
-				$this->recordFailedObject(objectData: $objectData, appId: $run->appId, error: $e, result: $run->result);
+				$this->recordFailedObject(run: $run, failure: $this->failedObjectEntry(objectData: $objectData, error: $e));
 			}
 		}
 	}//end retryListedObjects()
@@ -3033,10 +3033,8 @@ class ImportHandler {
 	 *
 	 * Throws on a failed save; the caller decides whether to retry or record it.
 	 *
+	 * @param ImportRun            $run        The import: its app, the user the save acts as, and the result it updates.
 	 * @param array<string, mixed> $objectData The listed object, with `@self`.
-	 * @param string|null          $appId      The importing app.
-	 * @param IUser|null           $actingUser The user the save acts as.
-	 * @param array<string, mixed> $result     The import result, updated in place.
 	 *
 	 * @return void
 	 *
@@ -3044,8 +3042,8 @@ class ImportHandler {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function importListedObject(array $objectData, ?string $appId, ?IUser $actingUser, array &$result): void {
-		$seed = $this->listedSeed(objectData: $objectData, actor: ['appId' => $appId, 'user' => $actingUser]);
+	private function importListedObject(ImportRun $run, array $objectData): void {
+		$seed = $this->listedSeed(objectData: $objectData, actor: ['appId' => $run->appId, 'user' => $run->actingUser]);
 		if ($seed === null) {
 			return;
 		}
@@ -3053,8 +3051,8 @@ class ImportHandler {
 		// A seed whose schema slug resolved to ANOTHER app's schema,
 		// one its register does not list, is a stale seed, not a
 		// write target ({@see ForeignSeedSchema}).
-		if ($this->seedSchemaCheck(appId: $appId)->isForeign(register: $seed->register, schema: $seed->schema) === true) {
-			$result['skipped']['objects']++;
+		if ($this->seedSchemaCheck(appId: $run->appId)->isForeign(register: $seed->register, schema: $seed->schema) === true) {
+			$run->result['skipped']['objects']++;
 			return;
 		}
 
@@ -3073,7 +3071,7 @@ class ImportHandler {
 		$objectData = $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $seed->schema);
 
 		if ($existingObject === null) {
-			$result['objects'][] = $this->createListedObject(seed: $seed, listed: ['data' => $objectData, 'uuid' => $listedUuid]);
+			$run->result['objects'][] = $this->createListedObject(seed: $seed, listed: ['data' => $objectData, 'uuid' => $listedUuid]);
 			return;
 		}
 
@@ -3090,11 +3088,11 @@ class ImportHandler {
 			// DESIGNED behaviour of a re-import, but a debug line is invisible
 			// to the caller, and the caller is the one that has to tell an
 			// operator whether the import worked.
-			$result['unchanged']['objects']++;
+			$run->result['unchanged']['objects']++;
 			return;
 		}
 
-		$result['objects'][] = $updated;
+		$run->result['objects'][] = $updated;
 	}//end importListedObject()
 
 	/**
@@ -3295,11 +3293,9 @@ class ImportHandler {
 		$objectData = $listed['data'];
 		$object = $this->saveListedObject(seed: $seed, save: $listed);
 
-		$seedKey = $seed->seedKey();
-		$this->rememberShippedContent(appId: $seed->appId, seedKey: $seedKey, shipped: $objectData);
+		$this->rememberShippedContent(seed: $seed, shipped: $objectData);
 		$this->rememberShippedVersion(
-			appId: $seed->appId,
-			seedKey: $seedKey,
+			seed: $seed,
 			version: (string)($objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0')
 		);
 
@@ -3340,8 +3336,8 @@ class ImportHandler {
 		}
 
 		$object = $this->saveListedObject(seed: $seed, save: $listed);
-		$this->rememberShippedVersion(appId: $seed->appId, seedKey: $seedKey, version: (string)$listed['importedVersion']);
-		$this->rememberShippedContent(appId: $seed->appId, seedKey: $seedKey, shipped: $objectData);
+		$this->rememberShippedVersion(seed: $seed, version: (string)$listed['importedVersion']);
+		$this->rememberShippedContent(seed: $seed, shipped: $objectData);
 		return $object;
 	}//end updateListedObject()
 
@@ -3371,13 +3367,13 @@ class ImportHandler {
 		$follow = $this->shippedContent->update(stored: $listed['existing'], shipped: $listed['data'], remembered: $remembered);
 		if ($follow !== null) {
 			$object = $this->saveListedObject(seed: $seed, save: ['data' => $follow, 'uuid' => $listed['uuid']]);
-			$this->rememberShippedContent(appId: $seed->appId, seedKey: $seedKey, shipped: $listed['data']);
+			$this->rememberShippedContent(seed: $seed, shipped: $listed['data']);
 			return $object;
 		}
 
-		$this->rememberShippedContent(appId: $seed->appId, seedKey: $seedKey, shipped: $listed['data']);
+		$this->rememberShippedContent(seed: $seed, shipped: $listed['data']);
 		if ($listed['shipped'] === null) {
-			$this->rememberShippedVersion(appId: $seed->appId, seedKey: $seedKey, version: (string)$listed['importedVersion']);
+			$this->rememberShippedVersion(seed: $seed, version: (string)$listed['importedVersion']);
 		}
 
 		$this->logger->debug(
@@ -3425,74 +3421,85 @@ class ImportHandler {
 	/**
 	 * Remember the hash of the content a seed object was shipped with, when the import knows its app.
 	 *
-	 * @param string|null          $appId   The importing app.
-	 * @param string|null          $seedKey The seed's identity; null when there is no app to remember it under.
+	 * @param ListedSeed           $seed    The listed object's target; it has no key without an app.
 	 * @param array<string, mixed> $shipped The seed as listed.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function rememberShippedContent(?string $appId, ?string $seedKey, array $shipped): void {
-		if ($appId === null || $appId === '' || $seedKey === null) {
+	private function rememberShippedContent(ListedSeed $seed, array $shipped): void {
+		$seedKey = $seed->seedKey();
+		if ($seedKey === null) {
 			return;
 		}
 
-		$this->seedHashes()->record(appId: $appId, seed: $seedKey, version: $this->shippedContent->hash(shipped: $shipped));
+		$this->seedHashes()->record(appId: (string)$seed->appId, seed: $seedKey, version: $this->shippedContent->hash(shipped: $shipped));
 	}//end rememberShippedContent()
 
 	/**
 	 * Remember the version a seed object was shipped at, when the import knows its app.
 	 *
-	 * @param string|null $appId   The importing app.
-	 * @param string|null $seedKey The seed's identity; null when there is no app to remember it under.
-	 * @param string      $version The shipped version.
+	 * @param ListedSeed $seed    The listed object's target; it has no key without an app.
+	 * @param string     $version The shipped version.
 	 *
 	 * @return void
 	 */
-	private function rememberShippedVersion(?string $appId, ?string $seedKey, string $version): void {
-		if ($appId === null || $appId === '' || $seedKey === null) {
+	private function rememberShippedVersion(ListedSeed $seed, string $version): void {
+		$seedKey = $seed->seedKey();
+		if ($seedKey === null) {
 			return;
 		}
 
-		$this->seedVersions()->record(appId: $appId, seed: $seedKey, version: $version);
+		$this->seedVersions()->record(appId: (string)$seed->appId, seed: $seedKey, version: $version);
 	}//end rememberShippedVersion()
 
 	/**
 	 * Record a listed object that failed twice: counted, named and logged.
 	 *
-	 * @param array<string, mixed> $objectData The listed object, with `@self`.
-	 * @param string|null          $appId      The importing app.
-	 * @param \Throwable           $error      Why the save failed.
-	 * @param array<string, mixed> $result     The import result, updated in place.
+	 * @param ImportRun            $run     The import; its result is updated in place.
+	 * @param array<string, mixed> $failure The entry {@see failedObjectEntry()} built.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function recordFailedObject(array $objectData, ?string $appId, \Throwable $error, array &$result): void {
-		$slug = (string)($objectData['@self']['slug'] ?? '');
-		$result['skipped']['objects']++;
-		$result['failed']['objects'][] = [
-			'slug' => $slug,
+	private function recordFailedObject(ImportRun $run, array $failure): void {
+		$run->result['skipped']['objects']++;
+		$run->result['failed']['objects'][] = $failure;
+		$this->logger->warning(
+			message: "[ImportHandler] Skipping object '{$failure['slug']}' - import failed: " . $failure['error'],
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'appId' => $run->appId,
+				'objectSlug' => $failure['slug'],
+				'registerSlug' => $failure['register'],
+				'schemaSlug' => $failure['schema'],
+				'error' => $failure['error'],
+			]
+		);
+	}//end recordFailedObject()
+
+	/**
+	 * The `failed.objects` entry of a listed object whose save failed.
+	 *
+	 * @param array<string, mixed> $objectData The listed object, with `@self`.
+	 * @param \Throwable           $error      Why the save failed.
+	 *
+	 * @return array{slug: string, register: mixed, schema: mixed, error: string, refusedByListener: bool}
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function failedObjectEntry(array $objectData, \Throwable $error): array {
+		return [
+			'slug' => (string)($objectData['@self']['slug'] ?? ''),
 			'register' => $objectData['@self']['register'] ?? null,
 			'schema' => $objectData['@self']['schema'] ?? null,
 			'error' => $error->getMessage(),
 			'refusedByListener' => ($error instanceof HookStoppedException),
 		];
-		$this->logger->warning(
-			message: "[ImportHandler] Skipping object '{$slug}' - import failed: " . $error->getMessage(),
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'appId' => $appId,
-				'objectSlug' => $slug,
-				'registerSlug' => $objectData['@self']['register'] ?? null,
-				'schemaSlug' => $objectData['@self']['schema'] ?? null,
-				'error' => $error->getMessage(),
-			]
-		);
-	}//end recordFailedObject()
+	}//end failedObjectEntry()
 
 	/**
 	 * Resolve `@ref:<slug>` seed-reference tokens to target object UUIDs.
