@@ -306,7 +306,7 @@ class RunLockReleaseTerminalityTest extends TestCase {
 
 		// Claims are not the property under test: every acquire succeeds.
 		$places = $this->createMock(FlowPlaceClaims::class);
-		$places->method('acquire')->willReturnCallback(static function (FiringClaim $firing): ?array {
+		$places->method('claim')->willReturnCallback(static function (FiringClaim $firing): ?array {
 			$places = $firing->places;
 			sort($places, SORT_STRING);
 			return $places;

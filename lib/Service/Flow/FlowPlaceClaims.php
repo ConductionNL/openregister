@@ -131,6 +131,31 @@ class FlowPlaceClaims {
 	/**
 	 * Try to claim every place a firing touches.
 	 *
+	 * Kept with its loose parameters because other Conduction apps name this
+	 * class (ADR-011 Rule 5); it builds the claim and delegates to {@see self::claim()}.
+	 *
+	 * @param string             $runUuid    The run.
+	 * @param string             $streamId   The stream the firing belongs to.
+	 * @param string             $transition The transition name.
+	 * @param array<int, string> $places     `froms ∪ tos`, in any order.
+	 * @param string             $owner      The pass token.
+	 * @param int|null           $runCap     The per-run stream cap; null for the default.
+	 *
+	 * @return array<int, string>|null The claimed places, sorted, or null when refused.
+	 *
+	 * @throws LogicException When called inside a transaction.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
+	 */
+	public function acquire(string $runUuid, string $streamId, string $transition, array $places, string $owner, ?int $runCap = null): ?array {
+		$firing = new FiringClaim(runUuid: $runUuid, streamId: $streamId, transition: $transition, places: $places);
+
+		return $this->claim(firing: $firing, pass: new ClaimPass(owner: $owner, runCap: $runCap));
+	}//end acquire()
+
+	/**
+	 * Try to claim every place a firing touches.
+	 *
 	 * Returns the claimed place list on success, or null on refusal — with
 	 * every partial claim already released. Never waits, never retries in
 	 * place.
@@ -144,7 +169,7 @@ class FlowPlaceClaims {
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
 	 */
-	public function acquire(FiringClaim $firing, ClaimPass $pass): ?array {
+	public function claim(FiringClaim $firing, ClaimPass $pass): ?array {
 		if ($this->db->inTransaction() === true) {
 			throw new LogicException(
 				'FlowPlaceClaims::acquire() must not run inside a transaction: an uncommitted claim would block a rival for the whole step.'
@@ -163,7 +188,7 @@ class FlowPlaceClaims {
 		}
 
 		return $this->claimEach(template: self::template(firing: $firing, owner: $pass->owner), places: $places);
-	}//end acquire()
+	}//end claim()
 
 	/**
 	 * The row every place of one firing shares: run, owner, stream,
