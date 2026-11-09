@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabProjectRef;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\NotificationService;
 use OCP\App\IAppManager;
@@ -172,8 +173,8 @@ class ConfigurationControllerImportGoldenTest extends TestCase {
 			$this->calls[] = ['gitlab.getProjectByPath' => $args];
 			return ['id' => 77];
 		});
-		$gitlab->method('getFileContent')->willReturnCallback(function (...$args) use ($case) {
-			$this->calls[] = ['gitlab.getFileContent' => $args];
+		$gitlab->method('fileContent')->willReturnCallback(function (GitLabProjectRef $project, string $path) use ($case) {
+			$this->calls[] = ['gitlab.getFileContent' => [$project->projectId, $path, $project->ref]];
 			return $case['config'] ?? [];
 		});
 		$gitlab->method('getApiBase')->willReturnCallback(function () {
