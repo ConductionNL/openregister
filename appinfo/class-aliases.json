@@ -1342,7 +1342,7 @@
 			"service": true
 		},
 		"OCA\\OpenRegister\\Service\\File\\Pdf\\Fallback\\NcOfficeConverterInterface": {
-			"class": "OCA\\OpenRegister\\Files\\Service\\File\\Pdf\\Fallback\\NcOfficeConverterInterface",
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\NcOfficeConverterInterface",
 			"eager": false,
 			"service": true
 		},
