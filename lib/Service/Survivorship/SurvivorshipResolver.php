@@ -430,9 +430,7 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 		return $trust->trustResolver->applyFreshnessDecay(
 			tier: $baseline['tier'],
 			tierOrder: $run->policy->tierOrder,
-			freshnessDecayDays: $baseline['decayDays'],
-			anchor: $source->anchor,
-			asOf: $trust->asOf
+			freshness: new SourceFreshness(decayDays: $baseline['decayDays'], anchor: $source->anchor, asOf: $trust->asOf)
 		);
 	}//end effectiveTier()
 
@@ -450,13 +448,7 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 	 */
 	private function baselineTier(TrustTuple $tuple, SurvivorshipRun $run): array {
 		$trust = $run->trust;
-		$tier  = $trust->trustResolver->resolveTier(
-			entityType: $tuple->entityType,
-			attribute: $tuple->attribute,
-			sourceSystem: $tuple->sourceSystem,
-			trustRows: $trust->trustRows,
-			asOf: $trust->asOf
-		);
+		$tier  = $trust->trustResolver->resolveTier(tuple: $tuple, trustRows: $trust->trustRows, asOf: $trust->asOf);
 
 		if ($tier === null) {
 			return ['tier' => $run->policy->defaultTier, 'decayDays' => null];

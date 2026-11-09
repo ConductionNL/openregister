@@ -51,9 +51,7 @@ class TrustTierResolver implements TrustTierResolverInterface {
 	 * possible). When no row matches, returns null so the caller falls back
 	 * to the annotation's `defaultTier`.
 	 *
-	 * @param string $entityType Entity type to match.
-	 * @param string $attribute Attribute name to match.
-	 * @param string $sourceSystem Source system to match.
+	 * @param TrustTuple $tuple The (entityType, attribute, sourceSystem) tuple to match.
 	 * @param array<int, array<string, mixed>> $trustRows Candidate trust-configuration rows.
 	 * @param DateTimeImmutable $asOf Reference instant for effectiveFrom resolution.
 	 *
@@ -61,16 +59,9 @@ class TrustTierResolver implements TrustTierResolverInterface {
 	 *
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#1.1
 	 */
-	public function resolveTier(
-		string $entityType,
-		string $attribute,
-		string $sourceSystem,
-		array $trustRows,
-		DateTimeImmutable $asOf,
-	): ?string {
+	public function resolveTier(TrustTuple $tuple, array $trustRows, DateTimeImmutable $asOf): ?string {
 		$best = null;
 		$bestFrom = null;
-		$tuple = new TrustTuple(entityType: $entityType, attribute: $attribute, sourceSystem: $sourceSystem);
 
 		foreach ($trustRows as $row) {
 			$candidate = $this->eligibleCandidate(row: $row, tuple: $tuple, asOf: $asOf);
@@ -170,22 +161,14 @@ class TrustTierResolver implements TrustTierResolverInterface {
 	 *
 	 * @param string $tier Starting tier.
 	 * @param array<int, string> $tierOrder Ordered tier names, weakest first.
-	 * @param int|null $freshnessDecayDays Decay window in days, or null for no decay.
-	 * @param DateTimeImmutable|null $anchor The source's freshness anchor date, or null.
-	 * @param DateTimeImmutable $asOf Reference instant.
+	 * @param SourceFreshness $freshness Decay window, anchor date and reference instant.
 	 *
 	 * @return string The (possibly stepped-down) tier.
 	 *
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#1.1
 	 */
-	public function applyFreshnessDecay(
-		string $tier,
-		array $tierOrder,
-		?int $freshnessDecayDays,
-		?DateTimeImmutable $anchor,
-		DateTimeImmutable $asOf,
-	): string {
-		if ($this->hasDecayed(freshnessDecayDays: $freshnessDecayDays, anchor: $anchor, asOf: $asOf) === false) {
+	public function applyFreshnessDecay(string $tier, array $tierOrder, SourceFreshness $freshness): string {
+		if ($this->hasDecayed(freshness: $freshness) === false) {
 			return $tier;
 		}
 
@@ -196,18 +179,20 @@ class TrustTierResolver implements TrustTierResolverInterface {
 	 * Whether the tier decays: a decay window and an anchor are present and
 	 * more whole days than the window have elapsed since the anchor.
 	 *
-	 * @param int|null               $freshnessDecayDays Decay window in days, or null for no decay.
-	 * @param DateTimeImmutable|null $anchor             The source's freshness anchor date, or null.
-	 * @param DateTimeImmutable      $asOf               Reference instant.
+	 * @param SourceFreshness $freshness Decay window, anchor date and reference instant.
 	 *
 	 * @return bool True when the tier steps down.
 	 */
-	private function hasDecayed(?int $freshnessDecayDays, ?DateTimeImmutable $anchor, DateTimeImmutable $asOf): bool {
-		if ($freshnessDecayDays === null || $anchor === null) {
+	private function hasDecayed(SourceFreshness $freshness): bool {
+		if ($freshness->decayDays === null || $freshness->anchor === null) {
 			return false;
 		}
 
-		return $this->elapsedBeyond(freshnessDecayDays: $freshnessDecayDays, anchor: $anchor, asOf: $asOf);
+		return $this->elapsedBeyond(
+			freshnessDecayDays: $freshness->decayDays,
+			anchor: $freshness->anchor,
+			asOf: $freshness->asOf
+		);
 	}//end hasDecayed()
 
 	/**

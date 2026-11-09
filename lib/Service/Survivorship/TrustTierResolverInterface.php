@@ -39,9 +39,7 @@ interface TrustTierResolverInterface {
 	 * possible). When no row matches, returns null so the caller falls back
 	 * to the annotation's `defaultTier`.
 	 *
-	 * @param string $entityType Entity type to match.
-	 * @param string $attribute Attribute name to match.
-	 * @param string $sourceSystem Source system to match.
+	 * @param TrustTuple $tuple The (entityType, attribute, sourceSystem) tuple to match.
 	 * @param array<int, array<string, mixed>> $trustRows Candidate trust-configuration rows.
 	 * @param DateTimeImmutable $asOf Reference instant for effectiveFrom resolution.
 	 *
@@ -49,13 +47,7 @@ interface TrustTierResolverInterface {
 	 *
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#1.1
 	 */
-	public function resolveTier(
-		string $entityType,
-		string $attribute,
-		string $sourceSystem,
-		array $trustRows,
-		DateTimeImmutable $asOf,
-	): ?string;
+	public function resolveTier(TrustTuple $tuple, array $trustRows, DateTimeImmutable $asOf): ?string;
 
 	/**
 	 * Apply freshness decay: step the tier down exactly one level on
@@ -65,21 +57,13 @@ interface TrustTierResolverInterface {
 	 *
 	 * @param string $tier Starting tier.
 	 * @param array<int, string> $tierOrder Ordered tier names, weakest first.
-	 * @param int|null $freshnessDecayDays Decay window in days, or null for no decay.
-	 * @param DateTimeImmutable|null $anchor The source's freshness anchor date, or null.
-	 * @param DateTimeImmutable $asOf Reference instant.
+	 * @param SourceFreshness $freshness Decay window, anchor date and reference instant.
 	 *
 	 * @return string The (possibly stepped-down) tier.
 	 *
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#1.1
 	 */
-	public function applyFreshnessDecay(
-		string $tier,
-		array $tierOrder,
-		?int $freshnessDecayDays,
-		?DateTimeImmutable $anchor,
-		DateTimeImmutable $asOf,
-	): string;
+	public function applyFreshnessDecay(string $tier, array $tierOrder, SourceFreshness $freshness): string;
 
 	/**
 	 * Step a tier down exactly one level on the ordered tier list (weakest

@@ -21,7 +21,9 @@ declare(strict_types=1);
 namespace Unit\Service\Survivorship;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Survivorship\SourceFreshness;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
+use OCA\OpenRegister\Service\Survivorship\TrustTuple;
 use PHPUnit\Framework\TestCase;
 
 class TrustTierResolverTest extends TestCase {
@@ -41,7 +43,7 @@ class TrustTierResolverTest extends TestCase {
 			['entityType' => 'organisation', 'attribute' => 'legalName', 'sourceSystem' => 'crm', 'trustTier' => 'gold', 'effectiveFrom' => '2026-01-01'],
 		];
 
-		$tier = $this->resolver->resolveTier('organisation', 'legalName', 'crm', $rows, $this->asOf);
+		$tier = $this->resolver->resolveTier(new TrustTuple('organisation', 'legalName', 'crm'), $rows, $this->asOf);
 
 		$this->assertSame('gold', $tier);
 	}//end testMostRecentEffectiveRowWins()
@@ -51,7 +53,7 @@ class TrustTierResolverTest extends TestCase {
 			['entityType' => 'organisation', 'attribute' => 'legalName', 'sourceSystem' => 'crm', 'trustTier' => 'gold', 'effectiveFrom' => '2027-01-01'],
 		];
 
-		$tier = $this->resolver->resolveTier('organisation', 'legalName', 'crm', $rows, $this->asOf);
+		$tier = $this->resolver->resolveTier(new TrustTuple('organisation', 'legalName', 'crm'), $rows, $this->asOf);
 
 		$this->assertNull($tier);
 	}//end testFutureDatedRowIsIgnored()
@@ -61,7 +63,7 @@ class TrustTierResolverTest extends TestCase {
 			['entityType' => 'organisation', 'attribute' => 'legalName', 'sourceSystem' => 'other', 'trustTier' => 'gold', 'effectiveFrom' => '2026-01-01'],
 		];
 
-		$tier = $this->resolver->resolveTier('organisation', 'legalName', 'crm', $rows, $this->asOf);
+		$tier = $this->resolver->resolveTier(new TrustTuple('organisation', 'legalName', 'crm'), $rows, $this->asOf);
 
 		$this->assertNull($tier);
 	}//end testNoMatchingRowReturnsNull()
@@ -71,7 +73,7 @@ class TrustTierResolverTest extends TestCase {
 			['entityType' => 'organisation', 'attribute' => 'legalName', 'sourceSystem' => 'crm', 'trustTier' => 'bronze'],
 		];
 
-		$tier = $this->resolver->resolveTier('organisation', 'legalName', 'crm', $rows, $this->asOf);
+		$tier = $this->resolver->resolveTier(new TrustTuple('organisation', 'legalName', 'crm'), $rows, $this->asOf);
 
 		$this->assertSame('bronze', $tier);
 	}//end testRowWithoutEffectiveFromIsAlwaysEffective()
@@ -85,7 +87,7 @@ class TrustTierResolverTest extends TestCase {
 
 		// The unparseable effectiveFrom is treated as null (always effective),
 		// so this row still resolves; nothing throws.
-		$tier = $this->resolver->resolveTier('organisation', 'legalName', 'crm', $rows, $this->asOf);
+		$tier = $this->resolver->resolveTier(new TrustTuple('organisation', 'legalName', 'crm'), $rows, $this->asOf);
 
 		$this->assertSame('gold', $tier);
 	}//end testMalformedRowsAreSkippedNullSafe()
@@ -94,7 +96,7 @@ class TrustTierResolverTest extends TestCase {
 		$tierOrder = ['discard', 'bronze', 'silver', 'gold'];
 		$anchor = new DateTimeImmutable('2026-02-01');
 		// 120 days elapsed (2026-02-01 -> 2026-06-01), decay window 90.
-		$result = $this->resolver->applyFreshnessDecay('gold', $tierOrder, 90, $anchor, $this->asOf);
+		$result = $this->resolver->applyFreshnessDecay('gold', $tierOrder, new SourceFreshness(90, $anchor, $this->asOf));
 
 		$this->assertSame('silver', $result);
 	}//end testApplyFreshnessDecayStepsOneTierDown()
@@ -102,7 +104,7 @@ class TrustTierResolverTest extends TestCase {
 	public function testApplyFreshnessDecayWithinWindowUnchanged(): void {
 		$tierOrder = ['discard', 'bronze', 'silver', 'gold'];
 		$anchor = new DateTimeImmutable('2026-05-20');
-		$result = $this->resolver->applyFreshnessDecay('gold', $tierOrder, 90, $anchor, $this->asOf);
+		$result = $this->resolver->applyFreshnessDecay('gold', $tierOrder, new SourceFreshness(90, $anchor, $this->asOf));
 
 		$this->assertSame('gold', $result);
 	}//end testApplyFreshnessDecayWithinWindowUnchanged()
@@ -111,11 +113,11 @@ class TrustTierResolverTest extends TestCase {
 		$tierOrder = ['discard', 'bronze', 'silver', 'gold'];
 
 		// Null decay days -> unchanged.
-		$this->assertSame('gold', $this->resolver->applyFreshnessDecay('gold', $tierOrder, null, new DateTimeImmutable('2020-01-01'), $this->asOf));
+		$this->assertSame('gold', $this->resolver->applyFreshnessDecay('gold', $tierOrder, new SourceFreshness(null, new DateTimeImmutable('2020-01-01'), $this->asOf)));
 		// Null anchor -> unchanged.
-		$this->assertSame('gold', $this->resolver->applyFreshnessDecay('gold', $tierOrder, 10, null, $this->asOf));
+		$this->assertSame('gold', $this->resolver->applyFreshnessDecay('gold', $tierOrder, new SourceFreshness(10, null, $this->asOf)));
 		// Non-positive decay days -> unchanged.
-		$this->assertSame('gold', $this->resolver->applyFreshnessDecay('gold', $tierOrder, 0, new DateTimeImmutable('2020-01-01'), $this->asOf));
+		$this->assertSame('gold', $this->resolver->applyFreshnessDecay('gold', $tierOrder, new SourceFreshness(0, new DateTimeImmutable('2020-01-01'), $this->asOf)));
 	}//end testApplyFreshnessDecayNullSafe()
 
 	public function testStepDownAtWeakestTierStaysUnchanged(): void {
