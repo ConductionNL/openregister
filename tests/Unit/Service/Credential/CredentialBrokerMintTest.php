@@ -144,6 +144,28 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->assertSame('admin-uid', $this->savedObject['owner']);
 	}
 
+	/**
+	 * A scope that is not `organisation` is stored as personal: no scope or
+	 * organisation on the object, and the vault write under the personal scope.
+	 */
+	public function testAnUnknownScopeMintsAPersonalCredential(): void {
+		$this->stubSaveObject(uuid: 'odd-scope');
+		$this->store->expects($this->once())->method('put')
+			->with('odd-scope', 'secret', 'personal');
+
+		$this->makeBroker()->mint(
+			name: 'Odd scope',
+			provider: 'github',
+			owner: 'alice',
+			secret: 'secret',
+			scope: 'tenant',
+			organisation: 'org-ignored'
+		);
+
+		$this->assertArrayNotHasKey('scope', $this->savedObject);
+		$this->assertArrayNotHasKey('organisation', $this->savedObject);
+	}
+
 	public function testMintWithoutSecretNeverTouchesTheVault(): void {
 		$this->stubSaveObject(uuid: 'metadata-only');
 		$this->store->expects($this->never())->method('put');
