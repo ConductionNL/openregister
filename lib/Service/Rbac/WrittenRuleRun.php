@@ -27,7 +27,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 
 /**
- * The permission handler, the schema, the verb and the record a written rule is read for. Built and consumed by AccessReviewGate only; it never leaves that class.
+ * The permission handler, the schema, the verb and the record a written rule
+ * is read for. Built and consumed by AccessReviewGate only; it never leaves
+ * that class.
  *
  * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
  */
