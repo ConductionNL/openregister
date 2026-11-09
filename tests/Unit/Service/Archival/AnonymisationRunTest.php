@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Archival\AnonymisationPlan;
 use OCA\OpenRegister\Service\Archival\AnonymisationProfile;
 use OCA\OpenRegister\Service\Archival\AnonymisationRefusedException;
 use OCA\OpenRegister\Service\Archival\AnonymisationRun;
+use OCA\OpenRegister\Service\Archival\AnonymisationSubject;
 use OCA\OpenRegister\Service\Archival\AnonymisationTarget;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -145,11 +146,8 @@ class AnonymisationRunTest extends TestCase {
 	 */
 	private function plan(): AnonymisationPlan {
 		return $this->run->plan(
-			objectUuid: 'obj-1',
-			payload: $this->payload(),
-			annotation: $this->annotation(),
-			salt: 'instance-salt',
-			profileName: 'zaak-statistiek'
+			subject: new AnonymisationSubject(objectUuid: 'obj-1', payload: $this->payload(), annotation: $this->annotation(), profileName: 'zaak-statistiek'),
+			salt: 'instance-salt'
 		);
 	}//end plan()
 
@@ -265,9 +263,7 @@ class AnonymisationRunTest extends TestCase {
 		$this->expectExceptionMessageMatches('/would change nothing/');
 
 		$this->run->plan(
-			objectUuid: 'obj-2',
-			payload: ['zaaknummer' => 'ZK-1'],
-			annotation: [AnonymisationProfile::ANNOTATION_KEY => []],
+			subject: new AnonymisationSubject(objectUuid: 'obj-2', payload: ['zaaknummer' => 'ZK-1'], annotation: [AnonymisationProfile::ANNOTATION_KEY => []]),
 			salt: 'instance-salt'
 		);
 	}//end testAPlanThatWouldChangeNothingIsRefused()

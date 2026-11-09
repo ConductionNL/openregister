@@ -139,7 +139,7 @@ class AnonymisationFlowTest extends TestCase {
 			$this->assertIsString($bytes, 'Fixture must be readable: ' . $pdfPath);
 
 			try {
-				$output = $replacer->replaceInPdf(pdfBytes: $bytes, substitutions: $substitutions, strict: true);
+				$output = $replacer->replaceInPdf(pdfBytes: $bytes, substitutions: $substitutions, strict: true)->bytes;
 			} catch (PdfAnonymisationException $e) {
 				$this->fail(sprintf(
 					'Fixture %s raised PdfAnonymisationException reason=%s. '

@@ -38,6 +38,7 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskProjectionService;
@@ -228,9 +229,7 @@ final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 				audit: new WriteBackRefusalAudit(audits: $audits, logger: $logger),
 				projections: $projections,
 				notice: new WriteBackRefusalNotice(
-					inbox: $inbox,
-					dispatcher: $dispatcher,
-					rules: $this->createMock(TaskNotificationRulesInterface::class),
+					notifier: new TaskTransitionNotifier(dispatcher: $dispatcher, rules: $this->createMock(TaskNotificationRulesInterface::class), inbox: $inbox),
 					logger: $logger
 				),
 				logger: $logger
