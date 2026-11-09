@@ -589,6 +589,8 @@ use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepositoryInterface;
+use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
+use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolverInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuardInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -669,6 +671,8 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface::class => \OCA\OpenRegister\Service\Task\TaskMetricsProvider::class,
 		DoriathApplicationRegistrarInterface::class => DoriathApplicationRegistrar::class,
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
+		\OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilderInterface::class => \OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder::class,
+		\OCA\OpenRegister\Service\Dbal\DbalConnectionFactoryInterface::class => \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class,
 		\OCA\OpenRegister\Service\Archival\DestructionListCreatorInterface::class => \OCA\OpenRegister\Service\Archival\DestructionListCreator::class,
 		\OCA\OpenRegister\Service\Archival\DestructionServiceInterface::class => \OCA\OpenRegister\Service\Archival\DestructionService::class,
 		ConfigurationKeyRegistryInterface::class => ConfigurationKeyRegistry::class,
@@ -720,6 +724,13 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Operations\MaintenanceModeHoldInterface::class => MaintenanceModeService::class,
 		MapNodeInterface::class => MapNode::class,
 		MergeNodeInterface::class => MergeNode::class,
+		\OCA\OpenRegister\Service\Geo\PdokGeocoderInterface::class => \OCA\OpenRegister\Service\Geo\PdokGeocoder::class,
+		\OCA\OpenRegister\Service\Registers\RegisterCacheHandlerInterface::class => \OCA\OpenRegister\Service\Registers\RegisterCacheHandler::class,
+		\OCA\OpenRegister\Service\Serializer\RegisterSerializerInterface::class => \OCA\OpenRegister\Service\Serializer\RegisterSerializer::class,
+		RouterNodeInterface::class => RouterNode::class,
+		\OCA\OpenRegister\Service\Schema\SchemaMigrationServiceInterface::class => \OCA\OpenRegister\Service\Schema\SchemaMigrationService::class,
+		\OCA\OpenRegister\Service\Schema\SchemaObjectReaderInterface::class => \OCA\OpenRegister\Service\Schema\SchemaObjectReader::class,
+		\OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilderInterface::class => \OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilder::class,
 		\OCA\OpenRegister\Service\Archival\ReviewOutcomeServiceInterface::class => \OCA\OpenRegister\Service\Archival\ReviewOutcomeService::class,
 		\OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface::class => \OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class,
 		\OCA\OpenRegister\Service\Audit\ReadableAuditTrailListerInterface::class => \OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister::class,
@@ -746,7 +757,6 @@ final class ContractBindings {
 		RegistrySubscriptionLifecycleInterface::class => RegistrySubscriptionService::class,
 		RestApiTransportInterface::class => RestApiTransport::class,
 		\OCA\OpenRegister\Service\Rbac\PrincipalReachListerInterface::class => \OCA\OpenRegister\Service\Rbac\PrincipalReachService::class,
-		RouterNodeInterface::class => RouterNode::class,
 		SelectielijstImportServiceInterface::class => SelectielijstImportService::class,
 		SelectielijstReferenceResolverInterface::class => SelectielijstReferenceResolver::class,
 		SetFieldsNodeInterface::class => SetFieldsNode::class,
@@ -761,6 +771,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\TmloServiceInterface::class => \OCA\OpenRegister\Service\TmloService::class,
 		\OCA\OpenRegister\Service\UserServiceInterface::class => \OCA\OpenRegister\Service\UserService::class,
 		SubFlowNodeInterface::class => SubFlowNode::class,
+		VocabularyDeclarationResolverInterface::class => VocabularyDeclarationResolver::class,
 		SubjectExportServiceInterface::class => SubjectExportService::class,
 		\OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControlInterface::class => \OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl::class,
 		\OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface::class => \OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor::class,
