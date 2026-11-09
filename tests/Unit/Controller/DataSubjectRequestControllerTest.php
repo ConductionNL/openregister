@@ -75,7 +75,6 @@ class DataSubjectRequestControllerTest extends TestCase {
 		$this->service = $this->createMock(DataSubjectRequestService::class);
 
 		$this->controller = new DataSubjectRequestController(
-			'openregister',
 			$this->request,
 			$this->service
 		);
