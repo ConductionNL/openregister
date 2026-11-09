@@ -84,7 +84,7 @@ class FlowRunAttributionTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($flowMapper, $activeOrg, $delegation, $versions): object {
-				if ($id === 'OCA\OpenRegister\Db\FlowMapper') {
+				if ($id === \OCA\OpenRegister\Db\FlowMapperInterface::class) {
 					return $flowMapper;
 				}
 

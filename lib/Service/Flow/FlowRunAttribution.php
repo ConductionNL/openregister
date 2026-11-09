@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -309,7 +310,7 @@ class FlowRunAttribution {
 	 */
 	private function loadFlow(string $flowId): ?object {
 		try {
-			return $this->container->get('OCA\OpenRegister\Db\FlowMapper')->findByUuid($flowId);
+			return $this->container->get(FlowMapperInterface::class)->findByUuid($flowId);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				message: '[FlowRunAttribution] Could not load the flow to attribute its run: ' . $e->getMessage(),
