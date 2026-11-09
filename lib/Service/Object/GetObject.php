@@ -468,14 +468,10 @@ class GetObject
     }//end hydrateFiles()
 
     /**
-     * Find logs for a given object.
+     * Find the whole history of an object, newest first.
      *
      * @param ObjectEntity $object        The object to find logs for
-     * @param int|null     $limit         Maximum number of logs to return
-     * @param int|null     $offset        Number of logs to skip
      * @param array|null   $filters       Additional filters to apply
-     * @param array|null   $sort          Sort criteria ['field' => 'ASC|DESC']
-     * @param string|null  $search        Optional search term
      * @param bool         $_rbac         Whether to apply RBAC checks (default: true).
      * @param bool         $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
@@ -490,11 +486,7 @@ class GetObject
      */
     public function findLogs(
         ObjectEntity $object,
-        ?int $limit=null,
-        ?int $offset=null,
         ?array $filters=[],
-        ?array $sort=['created' => 'DESC'],
-        ?string $search=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
@@ -503,13 +495,6 @@ class GetObject
         unset($filters['object'], $filters['register'], $filters['schema']);
         $filters['object_uuid'] = $object->getUuid();
 
-        // Get audit trails using all available options.
-        return $this->auditTrailMapper->findAll(
-            limit: $limit,
-            offset: $offset,
-            filters: $filters,
-            sort: $sort,
-            search: $search
-        );
+        return $this->auditTrailMapper->findAll(filters: $filters, sort: ['created' => 'DESC']);
     }//end findLogs()
 }//end class
