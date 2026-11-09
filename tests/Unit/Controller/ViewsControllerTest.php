@@ -9,6 +9,8 @@ use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
@@ -447,19 +449,15 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				'Config View',
-				'From configuration',
-				'testuser',
-				true,
-				true,
-				[
+				new ViewDefinition('Config View', 'From configuration', [
 					'registers' => [1, 2],
 					'schemas' => [3],
 					'source' => 'manual',
 					'searchTerms' => ['test'],
 					'facetFilters' => ['status' => 'active'],
 					'enabledFacets' => ['status'],
-				],
+				], null),
+				new ViewAudience('testuser', true, true, null),
 				null
 			)
 			->willReturn($view);
@@ -483,19 +481,15 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				'Minimal Config View',
-				'',
-				'testuser',
-				false,
-				false,
-				[
+				new ViewDefinition('Minimal Config View', '', [
 					'registers' => [],
 					'schemas' => [],
 					'source' => 'auto',
 					'searchTerms' => [],
 					'facetFilters' => [],
 					'enabledFacets' => [],
-				],
+				], null),
+				new ViewAudience('testuser', false, false, null),
 				null
 			)
 			->willReturn($view);
@@ -931,13 +925,9 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				'Kanban View',
-				'',
-				'testuser',
-				false,
-				false,
-				['registers' => [1], 'schemas' => [2]],
-				$presentation
+				new ViewDefinition('Kanban View', '', ['registers' => [1], 'schemas' => [2]], $presentation),
+				new ViewAudience('testuser', false, false, null),
+				null
 			)
 			->willReturn($view);
 

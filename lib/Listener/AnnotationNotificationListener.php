@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\AnnotationNotificationDispatchJob;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -231,7 +231,7 @@ class AnnotationNotificationListener implements IEventListener {
 	 */
 	private function deferEntry(ObjectEntity $object, array $extra): void {
 		$this->deferral->defer(
-			jobClass: AnnotationNotificationDispatchJob::class,
+			jobClass: JobHandles::ANNOTATION_NOTIFICATION_DISPATCH,
 			entry: array_merge(
 				[
 					'uuid' => (string)$object->getUuid(),

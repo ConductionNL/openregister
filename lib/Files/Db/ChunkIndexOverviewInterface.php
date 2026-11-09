@@ -46,14 +46,13 @@ interface ChunkIndexOverviewInterface extends ChunkSourceReaderInterface {
 	 *
 	 * @param int|null    $limit  Maximum number of results
 	 * @param int|null    $offset Offset for pagination
-	 * @param string|null $search Optional search filter on file name
-	 * @param string      $sort   Sort field (fileName, fileSize, extractedAt, chunkCount)
-	 * @param string      $order  Sort direction (ASC or DESC)
+	 * @param string|null     $search Optional search filter on file name
+	 * @param FileSourceOrder $order  The sort field and direction (default: last extracted, descending)
 	 *
 	 * @return array List of file source summaries
 	 */
 	public function getFileSourceSummaries(
-		?int $limit=null, ?int $offset=null, ?string $search=null, string $sort='extractedAt', string $order='DESC'
+		?int $limit=null, ?int $offset=null, ?string $search=null, FileSourceOrder $order=new FileSourceOrder()
 	): array;
 
 	/**

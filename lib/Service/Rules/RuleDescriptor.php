@@ -58,18 +58,82 @@ final class RuleDescriptor implements JsonSerializable {
 	public const ID_SEPARATOR = ':';
 
 	/**
+	 * One of the RuleVocabulary KIND_ constants.
+	 *
+	 * @var string
+	 */
+	private readonly string $kind;
+
+	/**
+	 * The slug of the schema the rule acts on.
+	 *
+	 * @var string
+	 */
+	private readonly string $schemaSlug;
+
+	/**
+	 * The rule's own key within its kind.
+	 *
+	 * @var string
+	 */
+	private readonly string $key;
+
+	/**
+	 * What the rule is called on screen.
+	 *
+	 * @var string
+	 */
+	private readonly string $label;
+
+	/**
+	 * The annotation path the rule was read from.
+	 *
+	 * @var string
+	 */
+	private readonly string $source;
+
+	/**
+	 * Whether the rule is switched on.
+	 *
+	 * @var bool
+	 */
+	private readonly bool $enabled;
+
+	/**
+	 * What the rule does when it fires.
+	 *
+	 * @var array<int, string>
+	 */
+	private readonly array $actions;
+
+	/**
+	 * The rule's condition, as the author declared it.
+	 *
+	 * @var mixed
+	 */
+	private readonly mixed $condition;
+
+	/**
+	 * The ceiling the rule declares for one run.
+	 *
+	 * @var int|null
+	 */
+	private readonly ?int $maxObjects;
+
+	/**
+	 * The objects the rule is about, or null for all.
+	 *
+	 * @var array{property: string, value: string}|null
+	 */
+	private readonly ?array $scope;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $kind One of the RuleVocabulary KIND_ constants.
-	 * @param string $schemaSlug The slug of the schema the rule acts on.
-	 * @param string $key The rule's own key within its kind.
-	 * @param string $label What the rule is called on screen.
-	 * @param string $source The annotation path the rule was read from.
-	 * @param bool $enabled Whether the rule is switched on.
-	 * @param array<int, string> $actions What the rule does when it fires.
-	 * @param mixed $condition The rule's condition, as the author declared it.
-	 * @param int|null $maxObjects The ceiling the rule declares for one run.
-	 * @param array{property: string, value: string}|null $scope The objects the rule is about, or null for all.
+	 * @param RuleOrigin $origin  The kind, the schema, the key and the annotation path the rule was read from.
+	 * @param string     $label   What the rule is called on screen.
+	 * @param RuleEffect $effect  What the rule does, its condition, its ceiling and its scope.
+	 * @param bool       $enabled Whether the rule is switched on.
 	 *
 	 * @return void
 	 *
@@ -77,21 +141,23 @@ final class RuleDescriptor implements JsonSerializable {
 	 *   object, not a mode switch: it records whether the rule is on, every caller passes
 	 *   it by name, and the class branches on it nowhere. Splitting the constructor in two
 	 *   would produce two descriptors that differ only in one stored value.
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One argument per field of the value
-	 *   object, each passed by name; a builder would add a second class for no behaviour.
 	 */
 	public function __construct(
-		private readonly string $kind,
-		private readonly string $schemaSlug,
-		private readonly string $key,
-		private readonly string $label,
-		private readonly string $source,
-		private readonly bool $enabled = true,
-		private readonly array $actions = [],
-		private readonly mixed $condition = null,
-		private readonly ?int $maxObjects = null,
-		private readonly ?array $scope = null,
+		RuleOrigin $origin,
+		string $label,
+		RuleEffect $effect = new RuleEffect(),
+		bool $enabled = true,
 	) {
+		$this->kind = $origin->kind;
+		$this->schemaSlug = $origin->schemaSlug;
+		$this->key = $origin->key;
+		$this->label = $label;
+		$this->source = $origin->source;
+		$this->enabled = $enabled;
+		$this->actions = $effect->actions;
+		$this->condition = $effect->condition;
+		$this->maxObjects = $effect->maxObjects;
+		$this->scope = $effect->scope;
 	}//end __construct()
 
 	/**

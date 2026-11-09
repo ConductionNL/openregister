@@ -69,21 +69,13 @@ interface TimeTrackerLinkMapperInterface {
 	 * The composite (entry_type + client_id + task_id + time_id) matches
 	 * the unique index. Null id components are matched with `IS NULL`.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param string $entryType The entry kind (`client`|`task`|`time`).
-	 * @param string|null $clientId The client uuid (or null).
-	 * @param string|null $taskId The task uuid (or null).
-	 * @param string|null $timeId The time-entry uuid (or null).
+	 * @param string          $objectUuid The object UUID.
+	 * @param TimeTrackerLink $entry      An unsaved row carrying the entry kind (`client`|`task`|`time`)
+	 *                                    and its client, task and time-entry uuids (each possibly null).
 	 *
 	 * @return TimeTrackerLink|null The link or null if not found.
 	 */
-	public function findByObjectAndEntry(
-		string $objectUuid,
-		string $entryType,
-		?string $clientId,
-		?string $taskId,
-		?string $timeId,
-	): ?TimeTrackerLink;
+	public function findByObjectAndEntry(string $objectUuid, TimeTrackerLink $entry): ?TimeTrackerLink;
 
 	/**
 	 * Find the links of an object, newest first.

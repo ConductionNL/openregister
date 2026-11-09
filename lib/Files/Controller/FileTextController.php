@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Files\Controller\Support\FileTextControllerServices;
@@ -31,6 +32,7 @@ use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Files\Service\File\ManualEntityRequest;
 use OCA\OpenRegister\Files\Service\File\ManualEntityResult;
 use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileServiceInterface;
@@ -123,16 +125,14 @@ class FileTextController extends Controller {
 	/**
 	 * Constructor
 	 *
-	 * @param string $appName App name
 	 * @param IRequest $request Request object
 	 * @param FileTextControllerServices $services The file text controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FileTextControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->textExtractor = $services->domain->textExtractor;
 		$this->fileService = $services->domain->fileService;
 		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
@@ -766,14 +766,9 @@ class FileTextController extends Controller {
 		);
 
 		try {
-			$result = $this->manualEntityService->addManualEntity(
-				fileId: $fileId,
-				value: $input['value'],
-				type: $input['type'],
-				wholeWord: $input['wholeWord'],
-				caseSensitive: $input['caseSensitive'],
-				actor: $user
-			);
+			$manualEntity = (new ManualEntityRequest(fileId: $fileId, value: $input['value'], type: $input['type'], actor: $user))
+				->withMatching(wholeWord: $input['wholeWord'], caseSensitive: $input['caseSensitive']);
+			$result       = $this->manualEntityService->addManualEntity(request: $manualEntity);
 		} catch (ManualEntityException $e) {
 			return $this->mapManualEntityException(exception: $e, fileId: $fileId);
 		} catch (Throwable $e) {

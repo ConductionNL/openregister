@@ -3,7 +3,7 @@
 /**
  * OAuth2RefreshTarget — the credential one refresh works on, and as whom.
  *
- * The private steps of {@see OAuth2RefreshService} all pass the same five values
+ * The private steps of {@see OAuth2RefreshService} all pass the same values
  * along (the credential's data, its provider entry, its id, its custody scope and
  * the asserted acting user). Bundling them keeps every step's signature about what
  * that step adds, not about what it forwards. Non-secret: no token is ever held here.
@@ -32,12 +32,25 @@ namespace OCA\OpenRegister\Service\Credential;
  */
 final readonly class OAuth2RefreshTarget {
 	/**
+	 * The credential UUID.
+	 *
+	 * @var string
+	 */
+	public string $credentialId;
+
+	/**
+	 * The credential scope (`personal`|`organisation`).
+	 *
+	 * @var string
+	 */
+	public string $scope;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param array<string, mixed> $credential The credential object's serialised data.
 	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $credentialId The credential UUID.
-	 * @param string $scope The credential scope (`personal`|`organisation`).
+	 * @param TokenSetAddress $address The credential UUID and its scope (`personal`|`organisation`).
 	 * @param string|null $actingUserId The asserted user for a sessionless caller.
 	 *
 	 * @return void
@@ -45,9 +58,10 @@ final readonly class OAuth2RefreshTarget {
 	public function __construct(
 		public array $credential,
 		public array $provider,
-		public string $credentialId,
-		public string $scope,
+		TokenSetAddress $address,
 		public ?string $actingUserId,
 	) {
+		$this->credentialId = $address->credentialId;
+		$this->scope = $address->scope;
 	}//end __construct()
 }//end class

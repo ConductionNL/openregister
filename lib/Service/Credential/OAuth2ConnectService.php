@@ -165,6 +165,21 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	}//end oauth2Provider()
 
 	/**
+	 * The per-request values an authorization URL is built from.
+	 *
+	 * @param string $redirectUri The callback the provider must redirect to.
+	 * @param string $state The signed state.
+	 * @param string $challenge The PKCE code challenge.
+	 *
+	 * @return OAuth2AuthorizationRequest The request, to hand to {@see authorizationUrl()}.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+	 */
+	public function authorizationRequest(string $redirectUri, string $state, string $challenge): OAuth2AuthorizationRequest {
+		return new OAuth2AuthorizationRequest(redirectUri: $redirectUri, state: $state, challenge: $challenge);
+	}//end authorizationRequest()
+
+	/**
 	 * Build the authorization URL a person is sent to.
 	 *
 	 * The OAuth2 client is resolved HERE rather than by the caller, so a controller
@@ -172,9 +187,7 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	 *
 	 * @param array<string, mixed> $provider The catalogue provider entry.
 	 * @param array<string, mixed> $claims The flow's claims (provider, scopes, host, client).
-	 * @param string $redirectUri The callback the provider must redirect to.
-	 * @param string $state The signed state.
-	 * @param string $challenge The PKCE code challenge.
+	 * @param OAuth2AuthorizationRequest $request The callback, signed state and PKCE challenge, from {@see authorizationRequest()}.
 	 *
 	 * @return string The absolute authorization URL.
 	 *
@@ -182,13 +195,13 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
-	public function authorizationUrl(array $provider, array $claims, string $redirectUri, string $state, string $challenge): string {
+	public function authorizationUrl(array $provider, array $claims, OAuth2AuthorizationRequest $request): string {
 		$flow = new OAuth2FlowClaims(claims: $claims);
 		$config = new OAuth2ProviderConfig(provider: $provider);
 		$instanceBaseUrl = $flow->pinnedHost();
 		$query = array_merge(
-			$this->authorizationQuery(flow: $flow, provider: $provider, redirectUri: $redirectUri, state: $state),
-			$this->pkceChallenge(config: $config, challenge: $challenge),
+			$this->authorizationQuery(flow: $flow, provider: $provider, request: $request),
+			$this->pkceChallenge(config: $config, challenge: $request->challenge),
 			$config->authorizationParameters()
 		);
 
@@ -281,14 +294,13 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	 *
 	 * @param OAuth2FlowClaims $flow The flow's claims.
 	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $redirectUri The callback the provider must redirect to.
-	 * @param string $state The signed state.
+	 * @param OAuth2AuthorizationRequest $request The callback and signed state.
 	 *
 	 * @return array<string, string> The query parameters.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
-	private function authorizationQuery(OAuth2FlowClaims $flow, array $provider, string $redirectUri, string $state): array {
+	private function authorizationQuery(OAuth2FlowClaims $flow, array $provider, OAuth2AuthorizationRequest $request): array {
 		$scopes = $flow->scopes(provider: $provider);
 		$client = $this->clients->resolve(
 			credential: ['clientId' => $flow->string(key: 'cl'), 'clientCredentialRef' => $flow->string(key: 'cr')],
@@ -299,8 +311,8 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 		return [
 			'response_type' => 'code',
 			'client_id' => $client['clientId'],
-			'redirect_uri' => $redirectUri,
-			'state' => $state,
+			'redirect_uri' => $request->redirectUri,
+			'state' => $request->state,
 			'scope' => implode((new OAuth2ProviderConfig(provider: $provider))->scopeSeparator(), $scopes),
 		];
 	}//end authorizationQuery()

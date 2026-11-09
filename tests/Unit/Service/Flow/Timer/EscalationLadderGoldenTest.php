@@ -188,7 +188,7 @@ class EscalationLadderGoldenTest extends TestCase {
 		foreach ($fired as $name => $keys) {
 			$actual['nextRungAt / ' . $name] = self::instants($this->ladder->nextRungAt(rungs: $rungs, fireAt: $fireAt, firedKeys: $keys, calendar: $this->calendar));
 			foreach (['2026-06-01 00:00:00', '2026-06-29 12:00:00', '2026-06-30 17:00:00', '2026-08-01 00:00:00'] as $now) {
-				$actual['dueRungs / ' . $name . ' / ' . $now] = self::instants($this->ladder->dueRungs(rungs: $rungs, fireAt: $fireAt, now: self::at($now), firedKeys: $keys, calendar: $this->calendar));
+				$actual['dueRungs / ' . $name . ' / ' . $now] = self::instants($this->ladder->dueRungs(timeline: new \OCA\OpenRegister\Service\Flow\Timer\RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: $keys, calendar: $this->calendar), now: self::at($now)));
 			}
 		}
 

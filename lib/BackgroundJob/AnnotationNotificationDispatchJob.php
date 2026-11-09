@@ -40,14 +40,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
-use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\IUserManager;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -59,31 +57,25 @@ class AnnotationNotificationDispatchJob extends ActorForwardedJob {
 	/**
 	 * Wire the dispatcher on top of the actor plumbing.
 	 *
-	 * @param ITimeFactory $time Time factory for the parent job class.
-	 * @param IUserSession $userSession Session to impersonate on / restore.
-	 * @param IUserManager $userManager Resolver for the captured user id.
-	 * @param OrganisationServiceInterface $organisation Active-organisation resolver.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param DeferredEntryObjectResolverInterface $resolver Stale-safe entry re-fetch.
-	 * @param NotificationRuleDispatcherInterface $dispatcher Notification dispatcher doing the real work.
+	 * @param ITimeFactory                         $time       Time factory for the parent job class.
+	 * @param ActorForwardingServices              $actor      Session, user manager, organisation and logger for the parent job class.
+	 * @param DeferredEntryObjectResolverInterface $resolver   Stale-safe entry re-fetch.
+	 * @param NotificationRuleDispatcherInterface  $dispatcher Notification dispatcher doing the real work.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		IUserSession $userSession,
-		IUserManager $userManager,
-		OrganisationServiceInterface $organisation,
-		LoggerInterface $logger,
+		ActorForwardingServices $actor,
 		private readonly DeferredEntryObjectResolverInterface $resolver,
 		private readonly NotificationRuleDispatcherInterface $dispatcher,
 	) {
 		parent::__construct(
 			time: $time,
-			userSession: $userSession,
-			userManager: $userManager,
-			organisation: $organisation,
-			logger: $logger
+			userSession: $actor->userSession,
+			userManager: $actor->userManager,
+			organisation: $actor->organisation,
+			logger: $actor->logger
 		);
 	}//end __construct()
 

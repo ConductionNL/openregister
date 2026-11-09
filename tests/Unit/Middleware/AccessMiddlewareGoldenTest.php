@@ -232,14 +232,14 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 	 *
 	 * @return RateLimitMiddleware
 	 */
-	private function limiter(SecurityService $security, bool $public=false, ?IUser $user=null, string $auth=''): RateLimitMiddleware {
+	private function limiter(SecurityService $security, bool $public=false, ?IUser $user=null, string $auth='', ?LoggerInterface $logger=null): RateLimitMiddleware {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getHeader')->willReturnMap([['Authorization', $auth]]);
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$security->method('getTrustedClientIpAddress')->willReturn('10.0.0.1');
 
-		return new RateLimitMiddleware($request, new RateLimitPlatform($session, $this->reflector($public), $this->createMock(LoggerInterface::class)), $security);
+		return new RateLimitMiddleware($request, new RateLimitPlatform($session, $this->reflector($public), $logger ?? $this->createMock(LoggerInterface::class)), $security);
 	}
 
 	/**
@@ -342,8 +342,10 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 	public function testRateLimitAllowsWhenTheCheckErrors(): void {
 		$security = $this->createMock(SecurityService::class);
 		$security->method('checkAuthRateLimit')->willThrowException(new RuntimeException('apcu'));
-		$this->limiter($security)->beforeController($this->controller(), 'm');
-		$this->addToAssertionCount(1);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with($this->stringContains('failed open'));
+
+		$this->limiter($security, logger: $logger)->beforeController($this->controller(), 'm');
 	}
 
 	public function testRateLimitTreatsAFailedReflectionAsProtected(): void {
@@ -545,7 +547,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$limiter = $this->createMock(CallerRateLimiter::class);
 		$limiter->method('consume')->willReturn($outcome);
 		$recorder = $this->createMock(ApiCallRecorder::class);
-		$recorder->expects($this->once())->method('record')->with('caller-1', '/api/objects', 'GET', '1');
+		$recorder->expects($this->once())->method('record')->with('/api/objects', 'GET', '1');
 		$mw = $this->caller('/api/objects', $policy, $limiter, $recorder);
 		$mw->beforeController(null, 'm');
 		$response = new Response();

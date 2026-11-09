@@ -105,7 +105,6 @@ class WebPushControllerTest extends TestCase {
 		$this->request->method('getHeader')->willReturn('Mozilla/5.0 (Test)');
 
 		$this->controller = new WebPushController(
-			'openregister',
 			$this->request,
 			new WebPushControllerServices(
 				webPushService: $this->webPushService,
@@ -210,7 +209,15 @@ class WebPushControllerTest extends TestCase {
 		$this->subscriptionMapper
 			->expects($this->once())
 			->method('store')
-			->with('alice', 'https://push.example/endpoint', 'p256dh-key', 'auth-secret', 'Mozilla/5.0 (Test)')
+			->with(
+				$this->callback(
+					fn (PushSubscription $candidate): bool => $candidate->getUserId() === 'alice'
+						&& $candidate->getEndpoint() === 'https://push.example/endpoint'
+						&& $candidate->getP256dh() === 'p256dh-key'
+						&& $candidate->getAuth() === 'auth-secret'
+						&& $candidate->getUserAgent() === 'Mozilla/5.0 (Test)'
+				)
+			)
 			->willReturn($stored);
 
 		$result = $this->controller->subscribe(

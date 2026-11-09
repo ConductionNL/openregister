@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
-use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNodeInterface;
 
 /**
@@ -41,11 +41,11 @@ final readonly class LockFlowNodes {
 	/**
 	 * Bundle the nodes.
 	 *
-	 * @param LockObjectNode $lockObject The built-in "Lock an object" node.
+	 * @param LockObjectNodeInterface $lockObject The built-in "Lock an object" node.
 	 * @param UnlockObjectNodeInterface $unlockObject The built-in "Unlock an object" node.
 	 */
 	public function __construct(
-		private LockObjectNode $lockObject,
+		private LockObjectNodeInterface $lockObject,
 		private UnlockObjectNodeInterface $unlockObject,
 	) {
 	}//end __construct()

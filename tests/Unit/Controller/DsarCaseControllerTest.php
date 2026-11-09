@@ -581,7 +581,7 @@ class DsarCaseControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testDownloadBundleReturnsTheSignedBytes(): void {
-		$bundle = new SignedBundle('%PDF-1.7 bytes', 'sha256:abc', false, 'unsigned', 'application/pdf');
+		$bundle = new SignedBundle('%PDF-1.7 bytes', 'sha256:abc', false, 'unsigned');
 
 		$bundles = $this->createMock(ExportBundleService::class);
 		$bundles->expects($this->once())

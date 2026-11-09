@@ -48,12 +48,14 @@ use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
 use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
 use OCA\OpenRegister\Service\SystemOperationContext;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
-use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
-use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
+use OCA\OpenRegister\Service\Rbac\RbacFallbacks;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\RuleColumns;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -137,7 +139,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @param RbacResolvers|null $resolvers The shared object-scope, per-object grant and deny-grammar resolvers,
 	 *                                      bundled together; nullable so adding them is not a fatal at existing
 	 *                                      construction sites.
-	 * @param DenyEnforcementMode|null $denyEnforcementMode The staging switch; nullable for the same reason.
+	 * @param DenyEnforcementModeInterface|null $denyEnforcementMode The staging switch; nullable for the same reason.
 	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not be healed still lacks.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection; the optional
@@ -152,7 +154,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 		private readonly ?RbacResolvers $resolvers = null,
-		private readonly ?DenyEnforcementMode $denyEnforcementMode = null,
+		private readonly ?DenyEnforcementModeInterface $denyEnforcementMode = null,
 		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
 	) {
 	}//end __construct()
@@ -182,12 +184,12 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * equivalent when freshly built, like the resolvers above: it reads the same
 	 * app-config key either way.
 	 *
-	 * @return DenyEnforcementMode The one reader of `openregister.deny_enforcement`.
+	 * @return DenyEnforcementModeInterface The one reader of `openregister.deny_enforcement`.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function denyEnforcementMode(): DenyEnforcementMode {
-		return ($this->denyEnforcementMode ?? new DenyEnforcementMode(
+	private function denyEnforcementMode(): DenyEnforcementModeInterface {
+		return ($this->denyEnforcementMode ?? RbacFallbacks::denyEnforcement(
 			appConfig: $this->appConfig,
 			logger: $this->logger
 		));
@@ -200,10 +202,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * construction site. The resolver is a stateless value object, so a fresh
 	 * instance is equivalent to the injected one.
 	 *
-	 * @return ObjectScopeResolver The one definition of the scope vocabulary.
+	 * @return ObjectScopeResolverInterface The one definition of the scope vocabulary.
 	 */
-	private function objectScope(): ObjectScopeResolver {
-		return ($this->resolvers->objectScopeResolver ?? new ObjectScopeResolver());
+	private function objectScope(): ObjectScopeResolverInterface {
+		return ($this->resolvers->objectScopeResolver ?? RbacFallbacks::objectScope());
 	}//end objectScope()
 
 	/**
@@ -432,7 +434,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * THE OWNING GROUP IS AN OWNER, so it sits with the other owner admits
 	 * rather than inside the not-private predicate: here the term is ORed over
 	 * the whole query, there it would have been ANDed with the schema's rules.
-	 * Only this placement matches what ObjectScopeResolver::admitsUnconditionally()
+	 * Only this placement matches what ObjectScopeResolverInterface::admitsUnconditionally()
 	 * answers on a single read.
 	 *
 	 * @param RbacAccessCall $call The call.
@@ -451,7 +453,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * The "this caller may reach this row at all" predicate, as raw SQL.
 	 *
 	 * Both list emitters call this ONE method, and it in turn calls the ONE
-	 * builder on {@see ObjectScopeResolver}. The QueryBuilder emitter wraps the
+	 * builder on {@see ObjectScopeResolverInterface}. The QueryBuilder emitter wraps the
 	 * result in `createFunction()` because QueryBuilder cannot express JSON
 	 * member extraction portably — writing a second, QueryBuilder-native
 	 * implementation would be a second definition of the vocabulary, which is
@@ -470,9 +472,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function reachableRowSqlFor(RbacAccessCall $call): string {
 		$reachable = $this->objectScope()->notPrivateOrGrantedSql(
-			authColumn: $call->authorizationColumn(),
-			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $call->authorization),
-			isPostgres: $this->isPostgres(),
+			notPrivateSql: $this->notPrivateSqlFor(call: $call),
 			uuidColumn: $call->columnPrefix . '_uuid',
 			quotedUuids: $this->quotedGrantedUuids(userId: $call->userId, action: $call->action)
 		);
@@ -483,6 +483,21 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		return $reachable;
 	}//end reachableRowSqlFor()
+
+	/**
+	 * The not-private term of the call's rows, as raw SQL.
+	 *
+	 * @param RbacAccessCall $call The call.
+	 *
+	 * @return string The predicate.
+	 */
+	private function notPrivateSqlFor(RbacAccessCall $call): string {
+		return $this->objectScope()->notPrivateSql(
+			columnName: $call->authorizationColumn(),
+			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $call->authorization),
+			isPostgres: $this->isPostgres()
+		);
+	}//end notPrivateSqlFor()
 
 	/**
 	 * Whether the call keeps drafts to their owner.
@@ -1385,12 +1400,14 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * qualifies for the group AND (when object data is supplied) ConditionMatcher
 	 * confirms the object satisfies the match clause.
 	 *
+	 * The row's own `_authorization` and uuid are not in play here; a check on
+	 * a stored row goes through {@see hasRowPermission()}, which reads them off
+	 * the row.
+	 *
 	 * @param Schema $schema Schema to check
 	 * @param string $action CRUD action to check
 	 * @param string|null $objectOwner Optional object owner for ownership check
 	 * @param array|null $objectData Optional object data for conditional checks
-	 * @param array|null $objectAuthorization Optional per-object `_authorization`, carrying its scope
-	 * @param string|null $objectUuid Optional object UUID, for per-object grant resolution
 	 *
 	 * @return bool True if user has permission
 	 *
@@ -1401,13 +1418,46 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		string $action,
 		?string $objectOwner = null,
 		?array $objectData = null,
-		?array $objectAuthorization = null,
-		?string $objectUuid = null,
 	): bool {
 		$check = $this->permissionCheckFor(schema: $schema, action: $action)
-			->onObject(objectData: $objectData, objectAuthorization: $objectAuthorization)
-			->identifiedBy(objectUuid: $objectUuid);
+			->onObject(objectData: $objectData, objectAuthorization: null)
+			->identifiedBy(objectUuid: null);
 
+		return $this->verdictOf(check: $check, objectOwner: $objectOwner);
+	}//end hasPermission()
+
+	/**
+	 * Check if a user has permission to perform an action on one stored row.
+	 *
+	 * The row supplies every object fact of the check: its owner, its match
+	 * envelope, its own `_authorization` (carrying scope and deny) and its uuid
+	 * (for per-object grants).
+	 *
+	 * @param Schema       $schema Schema to check
+	 * @param string       $action CRUD action to check
+	 * @param ObjectEntity $row    The stored row
+	 *
+	 * @return bool True if user has permission
+	 *
+	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 */
+	public function hasRowPermission(Schema $schema, string $action, ObjectEntity $row): bool {
+		$check = $this->permissionCheckFor(schema: $schema, action: $action)
+			->onObject(objectData: $row->getMatchEnvelope(), objectAuthorization: $row->getAuthorization())
+			->identifiedBy(objectUuid: $row->getUuid());
+
+		return $this->verdictOf(check: $check, objectOwner: $row->getOwner());
+	}//end hasRowPermission()
+
+	/**
+	 * The verdict of one prepared permission check.
+	 *
+	 * @param RbacPermissionCheck $check       The check, with its caller and object set.
+	 * @param string|null         $objectOwner The object owner, for the ownership check.
+	 *
+	 * @return bool True if user has permission
+	 */
+	private function verdictOf(RbacPermissionCheck $check, ?string $objectOwner): bool {
 		// Admin users have all permissions.
 		if ($check->callerIsAdmin() === true) {
 			return true;
@@ -1420,7 +1470,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		}
 
 		return $this->objectVerdict(check: $check, objectOwner: $objectOwner);
-	}//end hasPermission()
+	}//end verdictOf()
 
 	/**
 	 * Resolve the cascaded authorization block of a permission check.
@@ -2176,7 +2226,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * The caller's group ids, quoted as SQL literals.
 	 *
 	 * Quoted here, beside the quoter, so the predicate builder on
-	 * {@see \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver} never handles an
+	 * {@see \OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface} never handles an
 	 * unquoted value — the same contract `quotedGrantedUuids()` already honours.
 	 *
 	 * @return string[] Quoted group ids, empty when the caller is anonymous.

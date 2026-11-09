@@ -34,7 +34,6 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
@@ -102,26 +101,22 @@ class AgentMapper extends QBMapper implements AgentMapperInterface {
 	/**
 	 * Constructor
 	 *
-	 * @param IDBConnection $db Database connection
+	 * @param AgentMapperPlatform $platform Database connection and event dispatcher
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
 	 * @param IUserSession $userSession User session
 	 * @param IGroupManager $groupManager Group manager
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher
 	 */
 	public function __construct(
-		IDBConnection $db,
-		// REMOVED: Services should not be in mappers.
+		AgentMapperPlatform $platform,
 		OrganisationMapperInterface $organisationMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
-		IEventDispatcher $eventDispatcher,
 	) {
-		parent::__construct(db: $db, tableName: 'openregister_agents', entityClass: Agent::class);
-		// REMOVED: Services should not be in mappers.
+		parent::__construct(db: $platform->db, tableName: 'openregister_agents', entityClass: Agent::class);
 		$this->organisationMapper = $organisationMapper;
 		$this->userSession = $userSession;
 		$this->groupManager = $groupManager;
-		$this->eventDispatcher = $eventDispatcher;
+		$this->eventDispatcher = $platform->eventDispatcher;
 	}//end __construct()
 
 	/**

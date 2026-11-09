@@ -185,9 +185,7 @@ class ObjectScopeResolverOwnerGroupTest extends TestCase {
 		$this->assertStringNotContainsString(
 			'ownerGroup',
 			$this->resolver->notPrivateOrGrantedSql(
-				authColumn: '_authorization',
-				defaultPrivate: true,
-				isPostgres: false,
+				notPrivateSql: $this->resolver->notPrivateSql(columnName: '_authorization', defaultPrivate: true, isPostgres: false),
 				uuidColumn: '_uuid',
 				quotedUuids: ["'uuid-1'"]
 			)

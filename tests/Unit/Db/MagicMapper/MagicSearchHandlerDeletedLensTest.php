@@ -179,7 +179,7 @@ final class MagicSearchHandlerDeletedLensTest extends TestCase {
 		);
 		$method = (new ReflectionClass(objectOrClass: MagicSearchHandler::class))->getMethod('applyBasicFilters');
 		$method->setAccessible(true);
-		$method->invoke($this->handlerWithDb(), $qb, DeletedLens::ONLY, MagicSearchHandler::ARCHIVED_ANY, [], null, []);
+		$method->invoke($this->handlerWithDb(), $qb, ['_deleted' => 'true', '_archived' => 'any'], null, []);
 
 		$this->assertContains('t._deleted IS NOT NULL', $added);
 		$this->assertNotContains('t._deleted IS NULL', $added);

@@ -95,7 +95,7 @@ class ApplyRuleActionTest extends TestCase {
 	 * @return RuleDescriptor
 	 */
 	private function rule(string $kind, bool $enabled=true): RuleDescriptor {
-		return new RuleDescriptor($kind, 'orders', 'total', 'Total', 'schema', $enabled, [], ['+' => [1, 2]]);
+		return new RuleDescriptor(origin: new \OCA\OpenRegister\Service\Rules\RuleOrigin(kind: $kind, schemaSlug: 'orders', key: 'total', source: 'schema'), label: 'Total', effect: new \OCA\OpenRegister\Service\Rules\RuleEffect(actions: [], condition: ['+' => [1, 2]]), enabled: $enabled);
 	}//end rule()
 
 	/**

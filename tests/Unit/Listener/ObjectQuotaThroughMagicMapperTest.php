@@ -23,6 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -113,17 +116,22 @@ class ObjectQuotaThroughMagicMapperTest extends TestCase {
 
 		$mapper = new MagicMapper(
 			$db,
-			$schemas,
-			$registers,
-			$this->createMock(IConfig::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(\OCA\OpenRegister\Service\SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$schemas,
+				$registers,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$this->createMock(IConfig::class),
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 		foreach (['tableHandler' => $tables, 'searchHandler' => $search] as $property => $value) {
 			$reflection = new \ReflectionProperty(MagicMapper::class, $property);

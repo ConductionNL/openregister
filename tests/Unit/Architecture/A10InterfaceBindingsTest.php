@@ -59,14 +59,12 @@ final class A10InterfaceBindingsTest extends TestCase {
 	 *
 	 * ContractBindings binds the interface to the class. RegisterFlowNodesEvent
 	 * is the public event other apps receive; its constructor stays as it is.
-	 * FlowTimerService is changed by an open pull request, so its constructor
-	 * is left for after it lands.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
 		FlowNodeRegistry::class => ['Service/ContractBindings.php', 'Service/Flow/RegisterFlowNodesEvent.php'],
-		SlaCalculator::class => ['Service/ContractBindings.php', 'Service/Flow/Timer/FlowTimerService.php'],
+		SlaCalculator::class => ['Service/ContractBindings.php'],
 	];
 
 	/**

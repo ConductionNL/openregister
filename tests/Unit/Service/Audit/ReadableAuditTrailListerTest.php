@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Audit\PurposeContext;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRegistry;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
+use OCA\OpenRegister\Service\Audit\AuditTrailQuery;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -569,8 +570,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::READABLE => true]
 		);
 
-		$this->assertSame([], $lister->page(userId: 'alice', limit: 20, search: 'klokkenluider')['results'], 'A search matched a withheld value.');
-		$this->assertCount(1, $lister->page(userId: 'alice', limit: 20, search: 'nieuw')['results'], 'A search on a visible value found nothing.');
+		$this->assertSame([], $lister->page(userId: 'alice', limit: 20, query: new AuditTrailQuery(search: 'klokkenluider'))['results'], 'A search matched a withheld value.');
+		$this->assertCount(1, $lister->page(userId: 'alice', limit: 20, query: new AuditTrailQuery(search: 'nieuw'))['results'], 'A search on a visible value found nothing.');
 		foreach ($this->queries as $query) {
 			$this->assertNull(($query[4] ?? null), 'The search term reached the query on the stored change set.');
 		}
@@ -589,7 +590,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 		)->page(
 			userId: 'alice',
 			limit: 20,
-			filters: ['changed' => 'x', 'session' => 'sess-abc', 'request' => 'req-1', 'ip_address' => '203.0.113.9', 'action' => 'update']
+			query: new AuditTrailQuery(filters: ['changed' => 'x', 'session' => 'sess-abc', 'request' => 'req-1', 'ip_address' => '203.0.113.9', 'action' => 'update'])
 		);
 
 		$this->assertSame(['action' => 'update'], $this->queries[0][2], 'A filter on a withheld column reached the query.');
@@ -949,9 +950,9 @@ class ReadableAuditTrailListerTest extends TestCase {
 			entries: $this->entriesOf(count: 7, objectUuid: self::HIDDEN),
 			located: [$this->object(uuid: self::HIDDEN)],
 			readable: [self::HIDDEN => false]
-		)->page(userId: 'alice', limit: 20, filters: ['object_uuid' => self::HIDDEN]);
+		)->page(userId: 'alice', limit: 20, query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN]));
 		$withNone = $this->lister(entries: [], located: [], readable: [])
-			->page(userId: 'alice', limit: 20, filters: ['object_uuid' => self::HIDDEN]);
+			->page(userId: 'alice', limit: 20, query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN]));
 
 		$this->assertSame($withNone, $withEntries);
 		$this->assertSame(['results', 'limit', 'cursor', 'nextCursor'], array_keys($withEntries));
@@ -1055,7 +1056,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 
 		$page = $lister->page(userId: 'alice', limit: 1);
 		$this->queries = [];
-		$lister->page(userId: 'alice', limit: 1, cursor: $page['nextCursor'], search: 'Nieuw');
+		$lister->page(userId: 'alice', limit: 1, cursor: $page['nextCursor'], query: new AuditTrailQuery(search: 'Nieuw'));
 
 		$this->assertSame(0, $this->queries[0][1]);
 	}//end testACursorDoesNotResumeAnotherSearch()
@@ -1227,8 +1228,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::HIDDEN => false]
 		);
 
-		$a = $this->rw126Shape($short->page(userId: 'alice', limit: 20, cursor: '346', filters: ['object_uuid' => self::HIDDEN]));
-		$b = $this->rw126Shape($long->page(userId: 'alice', limit: 20, cursor: '346', filters: ['object_uuid' => self::HIDDEN]));
+		$a = $this->rw126Shape($short->page(userId: 'alice', limit: 20, cursor: '346', query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN])));
+		$b = $this->rw126Shape($long->page(userId: 'alice', limit: 20, cursor: '346', query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN])));
 		$this->assertSame($a, $b, 'offset 346: the answer tells a 2345-row hidden trail from a 2346-row one');
 	}//end testRw126PlainOffsetDoesNotTellTheHiddenTrailsLength()
 
@@ -1249,7 +1250,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 		$calls = 0;
 		while ($lo < $hi) {
 			$mid = intdiv($lo + $hi, 2);
-			$page = $lister->page(userId: 'alice', limit: 20, cursor: (string)$mid, filters: ['object_uuid' => self::HIDDEN]);
+			$page = $lister->page(userId: 'alice', limit: 20, cursor: (string)$mid, query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN]));
 			$calls++;
 			if ($page['nextCursor'] === null) {
 				$hi = $mid;
@@ -1282,11 +1283,11 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::READABLE => true, self::HIDDEN => false, self::HIDDEN . '-2' => false]
 		);
 
-		$first = $lister->page(userId: 'alice', limit: 1, filters: ['object_uuid' => 'mixed']);
+		$first = $lister->page(userId: 'alice', limit: 1, query: new AuditTrailQuery(filters: ['object_uuid' => 'mixed']));
 		$this->assertCount(1, $first['results']);
 		$this->assertNotNull($first['nextCursor']);
 
-		$replay = $lister->page(userId: 'alice', limit: 1, cursor: $first['nextCursor'], filters: ['object_uuid' => self::READABLE]);
+		$replay = $lister->page(userId: 'alice', limit: 1, cursor: $first['nextCursor'], query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE]));
 		$got = ($replay['results'][0]['uuid'] ?? 'none');
 		$this->assertSame('audit-' . self::READABLE . '-0', $got, 'the replayed cursor revealed its raw offset');
 	}//end testRw126ACursorDoesNotCarryItsOffsetToAnotherFilter()
@@ -1302,7 +1303,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			located: [$this->object(uuid: self::HIDDEN)],
 			readable: [self::HIDDEN => false]
 		);
-		$page = $lister->page(userId: 'alice', limit: 20, filters: ['object_uuid' => self::HIDDEN]);
+		$page = $lister->page(userId: 'alice', limit: 20, query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN]));
 		$this->assertSame([], $page['results']);
 		$this->assertNull($page['nextCursor']);
 	}//end testRw126ControlShortHiddenTrailEnds()
@@ -1319,8 +1320,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			located: [$this->object(uuid: self::READABLE)],
 			readable: [self::READABLE => true]
 		);
-		$first = $lister->page(userId: 'alice', limit: 5, filters: ['object_uuid' => self::READABLE]);
-		$second = $lister->page(userId: 'alice', limit: 5, cursor: $first['nextCursor'], filters: ['object_uuid' => self::READABLE, 'cursor' => $first['nextCursor']]);
+		$first = $lister->page(userId: 'alice', limit: 5, query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE]));
+		$second = $lister->page(userId: 'alice', limit: 5, cursor: $first['nextCursor'], query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE, 'cursor' => $first['nextCursor']]));
 		$this->assertSame('audit-' . self::READABLE . '-5', ($second['results'][0]['uuid'] ?? 'none'), 'page 2 restarted at the top');
 	}//end testRw139SecondPageResumesWhenTheCursorIsAlsoAFilter()
 
@@ -1354,8 +1355,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			located: [$this->object(uuid: self::HIDDEN), $this->object(uuid: self::HIDDEN . '-2'), $this->object(uuid: self::READABLE)],
 			readable: [self::READABLE => true, self::HIDDEN => false, self::HIDDEN . '-2' => false]
 		);
-		$first = $lister->page(userId: 'alice', limit: 1, filters: ['object_uuid' => 'mixed', 'x' => "\xff"]);
-		$replay = $lister->page(userId: 'alice', limit: 1, cursor: $first['nextCursor'], filters: ['object_uuid' => self::READABLE, 'x' => "\xff"]);
+		$first = $lister->page(userId: 'alice', limit: 1, query: new AuditTrailQuery(filters: ['object_uuid' => 'mixed', 'x' => "\xff"]));
+		$replay = $lister->page(userId: 'alice', limit: 1, cursor: $first['nextCursor'], query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE, 'x' => "\xff"]));
 		$this->assertSame('audit-' . self::READABLE . '-0', ($replay['results'][0]['uuid'] ?? 'none'), 'the replayed cursor kept its raw offset');
 	}//end testRw139ReplayAcrossFiltersWithAnIgnoredNonUtf8Key()
 
@@ -1372,12 +1373,12 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::HIDDEN => false]
 		);
 
-		$page = $lister->page(userId: 'alice', limit: 1, search: "\xff");
+		$page = $lister->page(userId: 'alice', limit: 1, query: new AuditTrailQuery(search: "\xff"));
 		$this->assertNull($page['nextCursor']);
 
 		$sealed = $lister->page(userId: 'alice', limit: 1)['nextCursor'];
 		$this->queries = [];
-		$lister->page(userId: 'alice', limit: 1, cursor: $sealed, search: "\xff");
+		$lister->page(userId: 'alice', limit: 1, cursor: $sealed, query: new AuditTrailQuery(search: "\xff"));
 		$this->assertSame(0, $this->queries[0][1]);
 	}//end testAnUnencodableSearchIsHandedNoCursorAndResumesNothing()
 
@@ -1393,7 +1394,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::READABLE => true]
 		);
 
-		$lister->page(userId: 'alice', limit: 1, filters: ['object_uuid' => self::READABLE, 'x' => 'y', '_cursor' => 'c', 'cursor' => 'c']);
+		$lister->page(userId: 'alice', limit: 1, query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE, 'x' => 'y', '_cursor' => 'c', 'cursor' => 'c']));
 
 		$this->assertSame(['object_uuid' => self::READABLE], $this->queries[0][2]);
 	}//end testOnlyAppliedColumnsReachTheQuery()

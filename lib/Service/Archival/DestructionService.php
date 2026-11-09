@@ -203,9 +203,8 @@ class DestructionService implements DestructionServiceInterface {
 	 * handlePartialApproval(), which REPLACES `objects`.
 	 *
 	 * @param array<string, mixed> $destructionList The destruction list data.
-	 * @param string $action The approval action: 'approve_all' or 'approve_partial'.
-	 * @param array<int, string> $excludedIds UUIDs of objects to exclude (for partial approval).
-	 * @param array<string, string> $exclusionReasons Reasons per excluded object UUID.
+	 * @param ApprovalChoice|null $choice Approve all (the default), or approve with records excluded and why;
+	 *                                    from {@see approvalChoice()}.
 	 * @param bool $requiresDual Whether two-step approval is required.
 	 * @param string|null $listUuid UUID of the persisted destruction list; passed to the
 	 *                              execution job so it can reload the list from storage.
@@ -219,14 +218,16 @@ class DestructionService implements DestructionServiceInterface {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function approveList(
-		array $destructionList, string $action='approve_all', array $excludedIds=[],
-		array $exclusionReasons=[], bool $requiresDual=false, ?string $listUuid=null
+		array $destructionList, ?ApprovalChoice $choice=null, bool $requiresDual=false, ?string $listUuid=null
 	): array {
+		$choice = ($choice ?? new ApprovalChoice());
 		$userId = $this->getCurrentUserId();
-		$destructionList['approvals'][] = ['userId' => $userId, 'approvedAt' => (new DateTime())->format('c'), 'action' => $action];
+		$destructionList['approvals'][] = ['userId' => $userId, 'approvedAt' => (new DateTime())->format('c'), 'action' => $choice->action];
 
-		if ($action === 'approve_partial' && empty($excludedIds) === false) {
-			$exclusion = new PartialExclusion(excludedIds: $excludedIds, reasons: $exclusionReasons, extensionPeriod: $this->extensionPeriod());
+		if ($choice->excludesRecords() === true) {
+			$exclusion = new PartialExclusion(
+				excludedIds: $choice->excludedIds, reasons: $choice->exclusionReasons, extensionPeriod: $this->extensionPeriod()
+			);
 			$destructionList = $this->handlePartialApproval(destructionList: $destructionList, exclusion: $exclusion);
 		}
 
@@ -237,9 +238,24 @@ class DestructionService implements DestructionServiceInterface {
 			$unfinished = $this->unfinishedDualApproval(destructionList: $destructionList, userId: $userId);
 		}
 
-		$approval = new DestructionApproval(userId: $userId, action: $action, listUuid: $listUuid);
+		$approval = new DestructionApproval(userId: $userId, action: $choice->action, listUuid: $listUuid);
 		return ($unfinished ?? $this->markApproved(destructionList: $destructionList, approval: $approval));
 	}//end approveList()
+
+	/**
+	 * The choice an archivist makes when approving a list.
+	 *
+	 * @param string                $action           The approval action: 'approve_all' or 'approve_partial'.
+	 * @param array<int, string>    $excludedIds      UUIDs of objects to exclude (for partial approval).
+	 * @param array<string, string> $exclusionReasons Reasons per excluded object UUID.
+	 *
+	 * @return ApprovalChoice The choice, to hand to {@see approveList()}.
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function approvalChoice(string $action, array $excludedIds, array $exclusionReasons): ApprovalChoice {
+		return new ApprovalChoice(action: $action, excludedIds: $excludedIds, exclusionReasons: $exclusionReasons);
+	}//end approvalChoice()
 
 	/**
 	 * A dual sign-off that is not complete yet, or null when it is.

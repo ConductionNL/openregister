@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowTimer;
@@ -195,13 +196,7 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		$this->resolves($run);
 		$this->runs->expects(self::once())->method('update');
 
-		$outcome = $this->service()->migrate(
-			runUuid: self::RUN,
-			targetVersion: 3,
-			reason: 'Version 3 renamed the review step',
-			actor: 'anna',
-			mapping: ['review' => 'assess'],
-		);
+		$outcome = $this->service()->migrate(runUuid: self::RUN, target: new FlowRunMigrationTarget(targetVersion: 3, reason: 'Version 3 renamed the review step', actor: 'anna', mapping: ['review' => 'assess']));
 
 		self::assertTrue($outcome['migrated']);
 		self::assertSame(['assess' => 1], $outcome['marking']);
@@ -223,13 +218,7 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		$run = $this->aRun();
 		$this->resolves($run);
 
-		$this->service()->migrate(
-			runUuid: self::RUN,
-			targetVersion: 3,
-			reason: 'Version 3 renamed the review step',
-			actor: 'anna',
-			mapping: ['review' => 'assess'],
-		);
+		$this->service()->migrate(runUuid: self::RUN, target: new FlowRunMigrationTarget(targetVersion: 3, reason: 'Version 3 renamed the review step', actor: 'anna', mapping: ['review' => 'assess']));
 
 		$log = $run->getLog();
 		$entry = end($log);
@@ -256,12 +245,7 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		$this->resolves($run);
 		$this->runs->expects(self::never())->method('update');
 
-		$outcome = $this->service()->migrate(
-			runUuid: self::RUN,
-			targetVersion: 3,
-			reason: 'Trying it without a mapping',
-			actor: 'anna',
-		);
+		$outcome = $this->service()->migrate(runUuid: self::RUN, target: new FlowRunMigrationTarget(targetVersion: 3, reason: 'Trying it without a mapping', actor: 'anna'));
 
 		self::assertFalse($outcome['migrated']);
 		self::assertSame(['review'], $outcome['unmapped']);
@@ -287,12 +271,7 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		$run = $this->aRun();
 		$this->resolves($run);
 
-		$outcome = $this->service()->migrate(
-			runUuid: self::RUN,
-			targetVersion: 4,
-			reason: 'The id is the same, the kind is not',
-			actor: 'anna',
-		);
+		$outcome = $this->service()->migrate(runUuid: self::RUN, target: new FlowRunMigrationTarget(targetVersion: 4, reason: 'The id is the same, the kind is not', actor: 'anna'));
 
 		self::assertFalse($outcome['migrated'], 'same id, different kind, still refused');
 		self::assertSame(['review'], $outcome['unmapped']);
@@ -311,13 +290,7 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		// The assertion that matters: not that it returned, that it never wrote.
 		$this->runs->expects(self::never())->method('update');
 
-		$outcome = $this->service()->preview(
-			runUuid: self::RUN,
-			targetVersion: 3,
-			reason: '',
-			actor: 'anna',
-			mapping: ['review' => 'assess'],
-		);
+		$outcome = $this->service()->preview(runUuid: self::RUN, target: new FlowRunMigrationTarget(targetVersion: 3, reason: '', actor: 'anna', mapping: ['review' => 'assess']));
 
 		self::assertTrue($outcome['dryRun']);
 		self::assertFalse($outcome['migrated']);
@@ -337,13 +310,7 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		$run = $this->aRun(marking: ['review#edge-a' => 1]);
 		$this->resolves($run);
 
-		$outcome = $this->service()->migrate(
-			runUuid: self::RUN,
-			targetVersion: 3,
-			reason: 'A half-arrived join moves too',
-			actor: 'anna',
-			mapping: ['review' => 'assess'],
-		);
+		$outcome = $this->service()->migrate(runUuid: self::RUN, target: new FlowRunMigrationTarget(targetVersion: 3, reason: 'A half-arrived join moves too', actor: 'anna', mapping: ['review' => 'assess']));
 
 		self::assertTrue($outcome['migrated']);
 		self::assertSame(
@@ -365,13 +332,7 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		$this->resolves($run);
 		$this->runs->expects(self::never())->method('update');
 
-		$outcome = $this->service()->migrate(
-			runUuid: self::RUN,
-			targetVersion: 3,
-			reason: 'Trying to move a finished run',
-			actor: 'anna',
-			mapping: ['review' => 'assess'],
-		);
+		$outcome = $this->service()->migrate(runUuid: self::RUN, target: new FlowRunMigrationTarget(targetVersion: 3, reason: 'Trying to move a finished run', actor: 'anna', mapping: ['review' => 'assess']));
 
 		self::assertFalse($outcome['migrated']);
 		self::assertStringContainsString('completed', $outcome['reason']);
@@ -388,13 +349,7 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		$run = $this->aRun();
 		$this->resolves($run);
 
-		$outcome = $this->service()->migrate(
-			runUuid: self::RUN,
-			targetVersion: 3,
-			reason: '   ',
-			actor: 'anna',
-			mapping: ['review' => 'assess'],
-		);
+		$outcome = $this->service()->migrate(runUuid: self::RUN, target: new FlowRunMigrationTarget(targetVersion: 3, reason: '   ', actor: 'anna', mapping: ['review' => 'assess']));
 
 		self::assertFalse($outcome['migrated']);
 		self::assertStringContainsString('why', $outcome['reason']);
@@ -411,12 +366,7 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		$run = $this->aRun();
 		$this->resolves($run);
 
-		$outcome = $this->service()->migrate(
-			runUuid: self::RUN,
-			targetVersion: 99,
-			reason: 'There is no version 99',
-			actor: 'anna',
-		);
+		$outcome = $this->service()->migrate(runUuid: self::RUN, target: new FlowRunMigrationTarget(targetVersion: 99, reason: 'There is no version 99', actor: 'anna'));
 
 		self::assertFalse($outcome['migrated']);
 		self::assertStringContainsString('99', $outcome['reason']);
@@ -453,13 +403,7 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		$run = $this->aRun();
 		$this->resolves($run);
 
-		$this->service(timerService: $timerService)->migrate(
-			runUuid: self::RUN,
-			targetVersion: 3,
-			reason: 'Version 3 renamed the review step',
-			actor: 'anna',
-			mapping: ['review' => 'assess'],
-		);
+		$this->service(timerService: $timerService)->migrate(runUuid: self::RUN, target: new FlowRunMigrationTarget(targetVersion: 3, reason: 'Version 3 renamed the review step', actor: 'anna', mapping: ['review' => 'assess']));
 
 		self::assertSame(
 			[['timer-moved', FlowRunMigrationService::LOG_ENTRY]],

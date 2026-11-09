@@ -31,13 +31,26 @@ namespace OCA\OpenRegister\Files\Service\TextExtraction;
  */
 final class ChunkSource {
 	/**
+	 * Owner identifier.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $owner;
+
+	/**
+	 * Organisation identifier.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $organisation;
+
+	/**
 	 * Bundle the source facts.
 	 *
-	 * @param string      $sourceType      Source type identifier (`file` or `object`).
-	 * @param int         $sourceId        Source identifier.
-	 * @param string|null $owner           Owner identifier.
-	 * @param string|null $organisation    Organisation identifier.
-	 * @param int         $sourceTimestamp Source modification timestamp.
+	 * @param string         $sourceType      Source type identifier (`file` or `object`).
+	 * @param int            $sourceId        Source identifier.
+	 * @param ChunkOwnership $ownership       Owner and organisation of the source.
+	 * @param int            $sourceTimestamp Source modification timestamp.
 	 *
 	 * @phpstan-param non-empty-string $sourceType
 	 * @psalm-param   non-empty-string $sourceType
@@ -45,9 +58,10 @@ final class ChunkSource {
 	public function __construct(
 		public readonly string $sourceType,
 		public readonly int $sourceId,
-		public readonly ?string $owner,
-		public readonly ?string $organisation,
+		ChunkOwnership $ownership,
 		public readonly int $sourceTimestamp,
 	) {
+		$this->owner        = $ownership->owner;
+		$this->organisation = $ownership->organisation;
 	}//end __construct()
 }//end class

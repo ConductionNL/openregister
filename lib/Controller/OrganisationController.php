@@ -35,7 +35,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
@@ -102,9 +102,9 @@ class OrganisationController extends Controller {
 	/**
 	 * Tenant usage mapper for quota data
 	 *
-	 * @var TenantUsageMapper
+	 * @var TenantUsageMapperInterface
 	 */
-	private TenantUsageMapper $tenantUsageMapper;
+	private TenantUsageMapperInterface $tenantUsageMapper;
 
 	/**
 	 * The session bundle, which answers the admin check.

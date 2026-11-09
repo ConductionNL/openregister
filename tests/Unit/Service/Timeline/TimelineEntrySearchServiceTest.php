@@ -30,6 +30,7 @@ namespace Unit\Service\Timeline;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
+use OCA\OpenRegister\Notifications\Db\TimelineEntryScope;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntrySearchService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
@@ -180,10 +181,8 @@ class TimelineEntrySearchServiceTest extends TestCase {
 		$this->entries->expects($this->once())->method('search')
 			->with(
 				$this->anything(),
-				null,
-				'public',
-				$this->anything(),
-				$this->anything()
+				$this->callback(static fn (TimelineEntryScope $scope): bool => $scope->objectUuids === null),
+				'public'
 			)
 			->willReturn([]);
 
@@ -192,7 +191,7 @@ class TimelineEntrySearchServiceTest extends TestCase {
 
 	public function testAnUnfilteredSearchPassesNoVisibilityCondition(): void {
 		$this->entries->expects($this->once())->method('search')
-			->with($this->anything(), null, null, $this->anything(), $this->anything())
+			->with($this->anything(), $this->callback(static fn (TimelineEntryScope $scope): bool => $scope->objectUuids === null), null)
 			->willReturn([]);
 
 		$this->service->search('Jansen');
@@ -202,10 +201,8 @@ class TimelineEntrySearchServiceTest extends TestCase {
 		$this->entries->expects($this->once())->method('search')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				(10 * TimelineEntrySearchService::OVERFETCH)
+				$this->callback(static fn (TimelineEntryScope $scope): bool => $scope->limit === (10 * TimelineEntrySearchService::OVERFETCH)),
+				$this->anything()
 			)
 			->willReturn([]);
 

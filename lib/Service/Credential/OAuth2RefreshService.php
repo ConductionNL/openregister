@@ -167,7 +167,7 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 		}
 
 		$target = new OAuth2RefreshTarget(
-			credential: $credential, provider: $provider, credentialId: $credentialId, scope: $scope, actingUserId: $actingUserId
+			credential: $credential, provider: $provider, address: new TokenSetAddress(credentialId: $credentialId, scope: $scope), actingUserId: $actingUserId
 		);
 		if ($this->lock->acquire($credentialId) === false) {
 			return $this->afterContention(target: $target);
@@ -205,7 +205,8 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 		}
 
 		$owner = $this->nullIfEmpty(value: trim((string)($credential['owner'] ?? '')));
-		$target = new OAuth2RefreshTarget(credential: $credential, provider: $provider, credentialId: $credentialId, scope: $scope, actingUserId: $owner);
+		$address = new TokenSetAddress(credentialId: $credentialId, scope: $scope);
+		$target = new OAuth2RefreshTarget(credential: $credential, provider: $provider, address: $address, actingUserId: $owner);
 		$this->rotateLocked(target: $target, current: $set);
 
 		return true;

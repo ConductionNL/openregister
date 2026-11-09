@@ -118,6 +118,8 @@ use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
@@ -592,15 +594,15 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function viewService(): ViewService {
 		$service = $this->createMock(ViewService::class);
 		$service->method('create')->willReturnCallback(
-			function (string $name, string $description, string $owner, bool $isPublic, bool $isDefault, array $query, ?array $presentation = null, ?array $sharedWith = null, ?array $alert = null): View {
+			function (ViewDefinition $definition, ViewAudience $audience, ?array $alert = null): View {
 				$view = new View();
 				$view->setUuid('view-'.(++$this->viewsCreated));
-				$view->setName($name);
-				$view->setOwner($owner);
-				$view->setIsPublic($isPublic);
-				$view->setQuery($query);
+				$view->setName($definition->name);
+				$view->setOwner($audience->owner);
+				$view->setIsPublic($audience->isPublic);
+				$view->setQuery($definition->query);
 				$view->setAlert($alert);
-				$view->setSharedWith($sharedWith ?? []);
+				$view->setSharedWith($audience->sharedWith ?? []);
 				$this->savedViews[(string) $view->getUuid()] = $view;
 				return $view;
 			}
@@ -1222,8 +1224,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function readStateMapper(): ObjectReadStateMapper {
 		$mapper = $this->createMock(ObjectReadStateMapper::class);
 		$mapper->method('markSeen')->willReturnCallback(
-			function (string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?array $subSeen = null, ?\DateTime $seenAt = null): ObjectReadState {
-				$this->readStates[$userId.' '.$objectUuid] = ($seenAt ?? new \DateTime());
+			function (ObjectReadState $sighting): ObjectReadState {
+				$this->readStates[$sighting->getUserId().' '.$sighting->getObjectUuid()] = ($sighting->getLastSeenAt() ?? new \DateTime());
 				return new ObjectReadState();
 			}
 		);
@@ -1245,14 +1247,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function watcherMapper(): WatcherMapper {
 		$mapper = $this->createMock(WatcherMapper::class);
 		$mapper->method('subscribe')->willReturnCallback(
-			function (string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?bool $notify = null): Watcher {
-				$watcher = new Watcher();
-				$watcher->setUserId($userId);
-				$watcher->setObjectUuid($objectUuid);
-				$watcher->setRegister($register);
-				$watcher->setSchema($schema);
+			function (Watcher $watcher, ?bool $notify = null): Watcher {
 				$watcher->setNotify($notify ?? true);
-				$this->follows[$userId.' '.$objectUuid] = $watcher;
+				$this->follows[$watcher->getUserId().' '.$watcher->getObjectUuid()] = $watcher;
 				return $watcher;
 			}
 		);
@@ -1274,7 +1271,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function partyRoles(): PartyRoleService {
 		$roles = $this->createMock(PartyRoleService::class);
 		$roles->method('importParty')->willReturnCallback(
-			function (string $objectUuid, int $registerId, int|string|null $schemaId, array $payload, string $linkedBy): ContactLink {
+			function (ObjectEntity $object, array $payload, string $linkedBy): ContactLink {
+				$objectUuid = (string) $object->getUuid();
+				$registerId = (int) $object->getRegister();
 				if (str_starts_with((string) $payload['partyUuid'], 'not-a-party') === true) {
 					throw new \Exception('Object "'.$payload['partyUuid'].'" is not a party', 400);
 				}

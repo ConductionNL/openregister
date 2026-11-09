@@ -42,9 +42,8 @@ interface ApiCallRecorderInterface {
 	public function principal(): string;
 
 	/**
-	 * Record one call.
+	 * Record one call against the caller making the current request.
 	 *
-	 * @param string $principal The caller.
 	 * @param string $path The request path.
 	 * @param string $method The HTTP method.
 	 * @param string $apiVersion The contract version that served it.
@@ -55,7 +54,6 @@ interface ApiCallRecorderInterface {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public function record(
-		string $principal,
 		string $path,
 		string $method,
 		string $apiVersion,

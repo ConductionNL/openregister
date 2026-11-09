@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
+use OCA\OpenRegister\Service\Archival\ReviewerAnswer;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ArchivalControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -191,7 +192,7 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 		$this->recordWrites();
 
 		$this->outcomes->expects($this->once())->method('apply')
-			->with('retain', 'obj-1', 'Still in use', '2031', 'els')
+			->with('obj-1', new ReviewerAnswer('retain', 'Still in use', '2031', 'els'))
 			->willReturnCallback(
 				function (): ?string {
 					$this->calls[] = 'apply';
@@ -223,7 +224,7 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 		$this->withParams(['answer' => 'destroy', 'reason' => 'Past its date']);
 
 		$this->outcomes->expects($this->once())->method('apply')
-			->with('destroy', 'obj-1', 'Past its date', null, 'els')
+			->with('obj-1', new ReviewerAnswer('destroy', 'Past its date', null, 'els'))
 			->willReturn(null);
 
 		$this->assertSame(Http::STATUS_OK, $this->controller->decideEntry('dl-1', 'obj-1')->getStatus());

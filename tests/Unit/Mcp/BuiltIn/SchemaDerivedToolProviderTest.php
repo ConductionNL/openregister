@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp\BuiltIn;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -401,10 +402,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 				string $toolId,
 				string $paramsDigest,
 				array $resultSummary,
-				?int $register,
-				?int $schema,
-				?int $object,
-				?string $objectUuid,
+				AuditedObject $about,
 			) use (&$capturedDigest) {
 				$capturedDigest = $paramsDigest;
 				$this->assertSame('pipelinq.lead.search', $toolId);
@@ -515,10 +513,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 				$this->callback(function ($summary) {
 					return $summary['isError'] === true && $summary['errorClass'] === RuntimeException::class;
 				}),
-				null,
-				1,
-				null,
-				null
+				new AuditedObject(null, 1, null, null)
 			)
 			->willReturn($this->createMock(AuditTrail::class));
 

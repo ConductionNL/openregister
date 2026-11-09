@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutor;
+use OCA\OpenRegister\Service\BulkJob\BulkJobPass;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
@@ -250,11 +251,8 @@ final class BulkJobExecutorTest extends TestCase {
 		$this->permissionHandler->method('hasPermission')->willReturn(true);
 
 		$this->executor()->writePreviewMembers(
-			$this->job(),
-			['a', 'b'],
-			['a' => $this->object('a'), 'b' => $this->object('b')],
-			$this->action([], BulkActionResult::applied(), $calls),
-			null
+			new BulkJobPass($this->job(), $this->action([], BulkActionResult::applied(), $calls), null, ['a' => $this->object('a'), 'b' => $this->object('b')]),
+			['a', 'b']
 		);
 
 		$this->assertSame([['uuid' => 'a', 'commit' => false], ['uuid' => 'b', 'commit' => false]], $calls);
@@ -266,13 +264,9 @@ final class BulkJobExecutorTest extends TestCase {
 	public function testThePreviewMemberRowsArePinnedKeyForKey(): void {
 		$this->permissionHandler->method('hasPermission')->willReturn(true);
 
-		$this->executor()->writePreviewMembers(
-			$this->job(),
-			['a', 'gone'],
-			['a' => $this->object('a', '2.1.0')],
-			$this->action([], BulkActionResult::skipped('nothing to change')),
-			null,
-			true
+		$this->executor()->writeAddedMembers(
+			new BulkJobPass($this->job(), $this->action([], BulkActionResult::skipped('nothing to change')), null, ['a' => $this->object('a', '2.1.0')]),
+			['a', 'gone']
 		);
 
 		$this->assertSame(
@@ -318,11 +312,8 @@ final class BulkJobExecutorTest extends TestCase {
 		);
 
 		$this->executor()->writePreviewMembers(
-			$this->job(),
-			['a', 'b'],
-			['a' => $this->object('a'), 'b' => $this->object('b')],
-			$this->action([], BulkActionResult::skipped('the object is closed')),
-			null
+			new BulkJobPass($this->job(), $this->action([], BulkActionResult::skipped('the object is closed')), null, ['a' => $this->object('a'), 'b' => $this->object('b')]),
+			['a', 'b']
 		);
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $this->written[0]['outcome']);
@@ -336,11 +327,8 @@ final class BulkJobExecutorTest extends TestCase {
 		$this->permissionHandler->method('hasPermission')->willReturn(true);
 
 		$this->executor()->writePreviewMembers(
-			$this->job(),
-			['gone'],
-			[],
-			$this->action(),
-			null
+			new BulkJobPass($this->job(), $this->action(), null, []),
+			['gone']
 		);
 
 		$this->assertSame(BulkJobMember::OUTCOME_REFUSED, $this->written[0]['outcome']);

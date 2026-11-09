@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -93,9 +94,7 @@ final class ToolInvocationAudit {
 				toolId: $target->toolId,
 				paramsDigest: $paramsDigest,
 				resultSummary: $resultSummary,
-				register: $target->register,
-				schema: $target->schema,
-				objectUuid: ToolInvocationDigest::resultId(result: $result)
+				about: new AuditedObject(register: $target->register, schema: $target->schema, objectUuid: ToolInvocationDigest::resultId(result: $result))
 			);
 		} catch (Throwable $e) {
 			$message = '[' . $this->source . '] Failed to write invocation audit record';

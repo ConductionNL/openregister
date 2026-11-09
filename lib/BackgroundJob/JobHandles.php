@@ -35,6 +35,11 @@ namespace OCA\OpenRegister\BackgroundJob;
 final class JobHandles {
 
 	/**
+	 * Deferred x-openregister-notifications dispatch job.
+	 */
+	public const ANNOTATION_NOTIFICATION_DISPATCH = AnnotationNotificationDispatchJob::class;
+
+	/**
 	 * Audit trail export job.
 	 */
 	public const AUDIT_TRAIL_EXPORT = AuditTrailExportJob::class;
@@ -48,6 +53,11 @@ final class JobHandles {
 	 * The user folder the audit trail export job writes into.
 	 */
 	public const AUDIT_TRAIL_EXPORT_FOLDER = AuditTrailExportJob::FOLDER;
+
+	/**
+	 * Queued automatic lifecycle transition job.
+	 */
+	public const AUTO_TRANSITION = AutoTransitionJob::class;
 
 	/**
 	 * Bulk job runner.

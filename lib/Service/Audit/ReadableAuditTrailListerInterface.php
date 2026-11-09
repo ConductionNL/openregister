@@ -46,8 +46,7 @@ interface ReadableAuditTrailListerInterface {
 	 * @param string|null     $userId  The caller, or null when anonymous.
 	 * @param int             $limit   How many readable rows the caller asked for.
 	 * @param int|string|null $cursor  A sealed cursor this list handed out under the same caller, filters and search.
-	 * @param array           $filters Column filters, as `AuditTrailMapper::findAll()` takes them.
-	 * @param string|null     $search  Optional free-text term.
+	 * @param AuditTrailQuery|null $query The filters and search, from {@see query()}; none when null.
 	 *
 	 * @return array{results: array<int, array>, limit: int, cursor: int|string|null, nextCursor: string|null}
 	 *     The page. `nextCursor` is null when the trail was exhausted, and a
@@ -60,7 +59,18 @@ interface ReadableAuditTrailListerInterface {
 		?string $userId,
 		int $limit = 20,
 		int|string|null $cursor = null,
-		array $filters = [],
-		?string $search = null,
+		?AuditTrailQuery $query = null,
 	): array;
+
+	/**
+	 * The query a page is walked under.
+	 *
+	 * @param array       $filters Column filters, as `AuditTrailMapper::findAll()` takes them.
+	 * @param string|null $search  Optional free-text term.
+	 *
+	 * @return AuditTrailQuery The query, to hand to {@see page()}.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
+	 */
+	public function query(array $filters = [], ?string $search = null): AuditTrailQuery;
 }//end interface
