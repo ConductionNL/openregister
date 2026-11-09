@@ -153,7 +153,7 @@ use OCA\OpenRegister\Service\Config\Types\RegisterSchemaShareableConfigType;
 use OCA\OpenRegister\Service\Config\Types\RegisterSchemaShareableConfigTypeInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
-use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\Configuration\RegisterBundleBinding;
 use OCA\OpenRegister\Service\Configuration\RegisterBundleBindingInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
@@ -204,7 +204,7 @@ use OCA\OpenRegister\Service\Export\ExportProfileServiceInterface;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportProfileWriterInterface;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
-use OCA\OpenRegister\Service\Export\Odt\OdtWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\OdtWriterInterface;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
@@ -344,7 +344,7 @@ use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Import\ImportPreviewService;
 use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
 use OCA\OpenRegister\Service\Import\SourceRowReader;
-use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\SourceRowReaderInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
@@ -381,7 +381,7 @@ use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
-use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstallerInterface;
+use OCA\OpenRegister\Kernel\Contracts\NotificationsAnnotationInstallerInterface;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
@@ -438,23 +438,23 @@ use OCA\OpenRegister\Service\Object\TranslationHandlerInterface;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckService;
-use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConsistencyCheckServiceInterface;
 use OCA\OpenRegister\Service\Operations\ConsistencyRepairService;
-use OCA\OpenRegister\Service\Operations\ConsistencyRepairServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConsistencyRepairServiceInterface;
 use OCA\OpenRegister\Service\Operations\JobAlertService;
-use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\JobAlertServiceInterface;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
 use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
 use OCA\OpenRegister\Service\Operations\JobScheduleService;
 use OCA\OpenRegister\Service\Operations\JobScheduleServiceInterface;
 use OCA\OpenRegister\Service\Operations\MaintenanceModeService;
-use OCA\OpenRegister\Service\Operations\MaintenanceModeServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\MaintenanceModeServiceInterface;
 use OCA\OpenRegister\Service\Operations\MovedJobState;
-use OCA\OpenRegister\Service\Operations\MovedJobStateInterface;
+use OCA\OpenRegister\Kernel\Contracts\MovedJobStateInterface;
 use OCA\OpenRegister\Service\Operations\OperationsJobsService;
 use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
 use OCA\OpenRegister\Service\Operations\SupportBundleService;
-use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\SupportBundleServiceInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
@@ -664,7 +664,7 @@ final class ContractBindings {
 		AwaitSignalNodeInterface::class => AwaitSignalNode::class,
 		\OCA\OpenRegister\Service\AuthenticationTokenFetcherInterface::class => \OCA\OpenRegister\Service\AuthenticationService::class,
 		\OCA\OpenRegister\Service\Rbac\ObjectOwnershipServiceInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectOwnershipService::class,
-		\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
+		\OCA\OpenRegister\Kernel\Contracts\ObjectPreviewFormatterInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
 		\OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface::class => \OCA\OpenRegister\Service\Task\TaskMetricsProvider::class,
 		DoriathApplicationRegistrarInterface::class => DoriathApplicationRegistrar::class,
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
@@ -718,7 +718,7 @@ final class ContractBindings {
 		LinkObjectNodeInterface::class => LinkObjectNode::class,
 		LoopNodeInterface::class => LoopNode::class,
 		MaintenanceModeServiceInterface::class => MaintenanceModeService::class,
-		\OCA\OpenRegister\Service\Operations\MaintenanceModeHoldInterface::class => MaintenanceModeService::class,
+		\OCA\OpenRegister\Kernel\Contracts\MaintenanceModeHoldInterface::class => MaintenanceModeService::class,
 		MapNodeInterface::class => MapNode::class,
 		MergeNodeInterface::class => MergeNode::class,
 		\OCA\OpenRegister\Service\Geo\PdokGeocoderInterface::class => \OCA\OpenRegister\Service\Geo\PdokGeocoder::class,
@@ -889,11 +889,11 @@ final class ContractBindings {
 		FormSubmitServiceInterface::class => FormSubmitService::class,
 		FormUploadStoreInterface::class => FormUploadStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
-		\OCA\OpenRegister\Service\Configuration\GitHubGuardsInterface::class
+		\OCA\OpenRegister\Kernel\Contracts\GitHubGuardsInterface::class
 			=> \OCA\OpenRegister\Service\Configuration\GitHubGuards::class,
-		\OCA\OpenRegister\Service\Configuration\GitHubRequestValidatorInterface::class
+		\OCA\OpenRegister\Kernel\Contracts\GitHubRequestValidatorInterface::class
 			=> \OCA\OpenRegister\Service\Configuration\GitHubRequestValidator::class,
-		\OCA\OpenRegister\Service\Configuration\RateLimiterServiceInterface::class
+		\OCA\OpenRegister\Kernel\Contracts\RateLimiterServiceInterface::class
 			=> \OCA\OpenRegister\Service\Configuration\RateLimiterService::class,
 		GitLabHandlerInterface::class => GitLabHandler::class,
 		\OCA\OpenRegister\Service\Hardening\ElevationServiceInterface::class => \OCA\OpenRegister\Service\Hardening\ElevationService::class,
@@ -925,9 +925,9 @@ final class ContractBindings {
 		MapLinkServiceInterface::class => MapLinkService::class,
 		MappingServiceInterface::class => MappingService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
-		\OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponderInterface::class
+		\OCA\OpenRegister\Kernel\Contracts\MigrationPackErrorResponderInterface::class
 			=> \OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder::class,
-		\OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReaderInterface::class
+		\OCA\OpenRegister\Kernel\Contracts\MigrationPackRequestReaderInterface::class
 			=> \OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReader::class,
 		MigrationPackServiceInterface::class => MigrationPackService::class,
 		MigrationServiceInterface::class => MigrationService::class,

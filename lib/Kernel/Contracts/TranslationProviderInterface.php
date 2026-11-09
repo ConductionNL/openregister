@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Translation;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 interface TranslationProviderInterface {
 	/**

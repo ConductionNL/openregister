@@ -1815,6 +1815,106 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Configuration\\DescriptorConfigIdsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DescriptorConfigIdsInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Configuration\\GitHubGuardsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\GitHubGuardsInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Configuration\\GitHubRequestValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\GitHubRequestValidatorInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Configuration\\GitLabHandlerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\GitLabHandlerInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Configuration\\RateLimiterServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RateLimiterServiceInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Export\\Odt\\OdtWriterInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\OdtWriterInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Import\\SourceRowReaderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SourceRowReaderInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\MigrationPack\\MigrationPackErrorResponderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\MigrationPackErrorResponderInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\MigrationPack\\MigrationPackRequestReaderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\MigrationPackRequestReaderInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationsAnnotationInstallerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\NotificationsAnnotationInstallerInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatterInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectPreviewFormatterInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Translation\\TranslationProviderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TranslationProviderInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\ImportPreviewRowMapperInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ImportPreviewRowMapperInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Operations\\ConsistencyCheckServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ConsistencyCheckServiceInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Operations\\ConsistencyRepairServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ConsistencyRepairServiceInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Operations\\JobAlertServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\JobAlertServiceInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Operations\\MaintenanceModeHoldInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\MaintenanceModeHoldInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Operations\\MaintenanceModeServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\MaintenanceModeServiceInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Operations\\MovedJobStateInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\MovedJobStateInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Operations\\SupportBundleServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SupportBundleServiceInterface",
+			"eager": false,
+			"service": true
 		}
 	}
 }

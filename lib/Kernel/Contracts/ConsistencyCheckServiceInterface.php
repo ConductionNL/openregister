@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Operations;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The read-only consistency check, as the operations controller and the

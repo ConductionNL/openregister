@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\MigrationPack;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use OCA\OpenRegister\Exception\MigrationPackRefusedException;
 use OCP\AppFramework\Http\JSONResponse;

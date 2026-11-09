@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Configuration;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The fixed-window rate limit the GitHub-issues endpoints check.

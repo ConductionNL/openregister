@@ -31,7 +31,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Configuration;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The configuration ids OpenRegister's own descriptors import under, as constants.

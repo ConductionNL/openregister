@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
-use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
+use OCA\OpenRegister\Kernel\Contracts\TranslationProviderInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;

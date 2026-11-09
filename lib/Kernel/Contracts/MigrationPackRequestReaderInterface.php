@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\MigrationPack;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Exception\InvalidPackDefinitionException;

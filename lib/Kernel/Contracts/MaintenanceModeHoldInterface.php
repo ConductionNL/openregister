@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Operations;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * What the maintenance mode middleware needs of MaintenanceModeService.

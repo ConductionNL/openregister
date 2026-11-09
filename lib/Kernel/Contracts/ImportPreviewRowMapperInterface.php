@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Db;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The methods of ImportPreviewRowMapper that callers outside the Db component use.
@@ -38,7 +38,7 @@ interface ImportPreviewRowMapperInterface {
 	 * @param int|null $limit Optional page size.
 	 * @param int|null $offset Optional page offset.
 	 *
-	 * @return ImportPreviewRow[] The rows.
+	 * @return \OCA\OpenRegister\Db\ImportPreviewRow[] The rows.
 	 */
 	public function findByPreview(int $previewId, ?string $decision = null, ?int $limit = null, ?int $offset = null): array;
 }//end interface

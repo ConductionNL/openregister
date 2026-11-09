@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Operations;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Administers a job's failure-alert threshold, as the operations console changes it.

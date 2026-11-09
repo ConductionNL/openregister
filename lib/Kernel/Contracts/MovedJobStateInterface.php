@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Operations;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Carrying the per-job-class state to a moved job class, as the repair step
