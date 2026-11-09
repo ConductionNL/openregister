@@ -233,7 +233,9 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
 	public function scopedConfigKey(string $scope, string $schemaSlug, string $notificationKey, ?string $groupId = null): string {
-		return $this->scopedKeyFor(address: new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope), groupId: $groupId);
+		$address = new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope);
+
+		return $this->scopedKeyFor(address: $address, groupId: $groupId);
 	}//end scopedConfigKey()
 
 	/**
@@ -298,7 +300,9 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 		string $notificationKey,
 		?string $scope = null,
 	): string {
-		return $this->groupKeyFor(groupId: $groupId, address: new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope));
+		$address = new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope);
+
+		return $this->groupKeyFor(groupId: $groupId, address: $address);
 	}//end groupConfigKey()
 
 	/**
@@ -331,7 +335,8 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 		string $notificationKey,
 		?string $scope = null,
 	): ?array {
-		$key = $this->groupKeyFor(groupId: $groupId, address: new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope));
+		$address = new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope);
+		$key = $this->groupKeyFor(groupId: $groupId, address: $address);
 
 		return self::decodedValue(raw: $this->config->getAppValue(self::APP_NAME, $key, ''));
 	}//end getGroupDefault()
