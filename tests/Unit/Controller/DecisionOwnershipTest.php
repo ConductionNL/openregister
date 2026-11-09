@@ -200,7 +200,7 @@ class DecisionOwnershipTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$decide = new RelationDecisionService(
 			stores: new RelationDecisionStores(relationMapper: $relations, decisions: new DecisionService(decisionMapper: $decisionMapper), db: $this->createMock(IDBConnection::class)),
-			ownership: new DecisionOwnership(groupManager: $groups, eventDispatcher: $this->createMock(IEventDispatcher::class), logger: $logger),
+			ownership: new DecisionOwnership(groupManager: $groups, platform: new DecisionVisibilityPlatform($this->createMock(IEventDispatcher::class), $logger)),
 			policies: new ReviewPolicyResolver(
 				schemaMapper: $schemas,
 				fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),

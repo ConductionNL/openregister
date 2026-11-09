@@ -31,6 +31,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Db\DecisionMapper;
 use OCA\OpenRegister\Service\Decision\DecisionOwnership;
+use OCA\OpenRegister\Service\Decision\DecisionVisibilityPlatform;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners;
 use OCA\OpenRegister\Service\Decision\DecisionService;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
@@ -131,8 +132,7 @@ class EntityRelationsControllerTest extends TestCase {
 			stores: new RelationDecisionStores(relationMapper: $this->mapper, decisions: new DecisionService(decisionMapper: $decisionMapper), db: $this->createMock(IDBConnection::class)),
 			ownership: new DecisionOwnership(
 				groupManager: $this->createMock(IGroupManager::class),
-				eventDispatcher: $this->createMock(IEventDispatcher::class),
-				logger: $this->logger
+				platform: new DecisionVisibilityPlatform($this->createMock(IEventDispatcher::class), $this->logger)
 			),
 			policies: new ReviewPolicyResolver(
 				schemaMapper: $this->schemaMapper,
