@@ -323,13 +323,8 @@ class MergeService implements ObjectMergerInterface {
 		$fromData = ($fromObject->getObject() ?? []);
 		$intoData = ($intoObject->getObject() ?? []);
 
-		if ((string)($fromData[$statusField] ?? '') === $mergedStatus) {
-			throw new RuntimeException('Source object has already been merged into another object.');
-		}
-
-		if ((string)($intoData[$statusField] ?? $survivorStatus) !== $survivorStatus) {
-			throw new RuntimeException('Target object is not active and cannot receive a merge.');
-		}
+		$this->refuseAlreadyMerged(config: $config, fromData: $fromData);
+		$this->refuseInactiveSurvivor(config: $config, intoData: $intoData);
 
 		$snapshot = $this->buildSnapshot(from: $fromObject, into: $intoObject);
 		$survivorshipConfig = $this->getSurvivorshipConfig(schema: $schema);
@@ -460,6 +455,46 @@ class MergeService implements ObjectMergerInterface {
 
 		return $operationData;
 	}//end executeMerge()
+
+	/**
+	 * Refuse a merge whose losing object has already been merged into another.
+	 *
+	 * @param array<string, mixed> $config   The `x-openregister-merge` annotation (its `statusField` and `mergedStatus`).
+	 * @param array<string, mixed> $fromData The losing object's payload.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the losing object already carries the merged status.
+	 *
+	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.3
+	 */
+	private function refuseAlreadyMerged(array $config, array $fromData): void {
+		$statusField  = (string)($config['statusField'] ?? self::DEFAULT_STATUS_FIELD);
+		$mergedStatus = (string)($config['mergedStatus'] ?? self::DEFAULT_MERGED_STATUS);
+		if ((string)($fromData[$statusField] ?? '') === $mergedStatus) {
+			throw new RuntimeException('Source object has already been merged into another object.');
+		}
+	}//end refuseAlreadyMerged()
+
+	/**
+	 * Refuse a merge into an object that is not active.
+	 *
+	 * @param array<string, mixed> $config   The `x-openregister-merge` annotation (its `statusField` and `survivorStatus`).
+	 * @param array<string, mixed> $intoData The surviving object's payload; no status counts as active.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the survivor carries a status other than the survivor status.
+	 *
+	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.3
+	 */
+	private function refuseInactiveSurvivor(array $config, array $intoData): void {
+		$statusField    = (string)($config['statusField'] ?? self::DEFAULT_STATUS_FIELD);
+		$survivorStatus = (string)($config['survivorStatus'] ?? self::DEFAULT_SURVIVOR_STATUS);
+		if ((string)($intoData[$statusField] ?? $survivorStatus) !== $survivorStatus) {
+			throw new RuntimeException('Target object is not active and cannot receive a merge.');
+		}
+	}//end refuseInactiveSurvivor()
 
 	/**
 	 * Reverse a merge within the reversal window: restore both objects from
