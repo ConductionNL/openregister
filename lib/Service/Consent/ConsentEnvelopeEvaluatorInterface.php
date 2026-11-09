@@ -35,13 +35,8 @@ interface ConsentEnvelopeEvaluatorInterface {
 	/**
 	 * Evaluate one consent-shaped property's write.
 	 *
-	 * @param string $name The property name (used only in the refusal message).
-	 * @param array<string, mixed> $annotation The property's `x-openregister-consent` declaration.
-	 * @param mixed $incoming The caller-submitted value for this property.
-	 * @param mixed $persisted The previously persisted value for this property.
-	 * @param string|null $actingIdentity The resolved acting identity ("by"), already resolved by the caller.
-	 * @param string|null $ipAddress The caller's remote address, already resolved by the caller.
-	 * @param string|null $userAgent The caller's User-Agent header, already resolved by the caller.
+	 * @param ConsentPropertyWrite  $write  The write: the property's name and declaration, the submitted and the stored value.
+	 * @param ConsentEvidenceSource $source Who writes and from where, already resolved by the caller.
 	 *
 	 * @return array{refused: bool, value: array<int, array<string, mixed>>, message: string|null}
 	 *     `refused` is true when an existing entry was mutated or dropped — `value` is then the
@@ -51,13 +46,5 @@ interface ConsentEnvelopeEvaluatorInterface {
 	 *
 	 * @spec openspec/specs/consent-evidence-envelope/spec.md
 	 */
-	public function evaluate(
-		string $name,
-		array $annotation,
-		mixed $incoming,
-		mixed $persisted,
-		?string $actingIdentity,
-		?string $ipAddress,
-		?string $userAgent
-	): array;
+	public function evaluate(ConsentPropertyWrite $write, ConsentEvidenceSource $source): array;
 }//end interface

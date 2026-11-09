@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Consent;
 
+use OCA\OpenRegister\Service\Consent\ConsentEvidenceSource;
+use OCA\OpenRegister\Service\Consent\ConsentPropertyWrite;
 use OCA\OpenRegister\Service\Consent\ConsentEnvelopeEvaluator;
 use OCA\OpenRegister\Service\Consent\ConsentEnvelopeEvaluatorInterface;
 use OCA\OpenRegister\Service\Consent\ConsentEnvelopeEvaluators;
@@ -47,8 +49,8 @@ final class ConsentEnvelopeEvaluatorsTest extends TestCase {
 		$persisted  = [['granted' => true, 'at' => '2026-01-01T00:00:00+00:00', 'by' => 'alice']];
 		$mutated    = [['granted' => false, 'at' => '2026-01-01T00:00:00+00:00', 'by' => 'alice']];
 		foreach ([[$persisted, $persisted], [$mutated, $persisted], [[], null]] as [$incoming, $stored]) {
-			$expected = (new ConsentEnvelopeEvaluator())->evaluate('consent', $annotation, $incoming, $stored, 'alice', '127.0.0.1', 'ua');
-			$actual   = ConsentEnvelopeEvaluators::evaluator()->evaluate('consent', $annotation, $incoming, $stored, 'alice', '127.0.0.1', 'ua');
+			$expected = (new ConsentEnvelopeEvaluator())->evaluate(new ConsentPropertyWrite('consent', $annotation, $incoming, $stored), new ConsentEvidenceSource('alice', '127.0.0.1', 'ua'));
+			$actual   = ConsentEnvelopeEvaluators::evaluator()->evaluate(new ConsentPropertyWrite('consent', $annotation, $incoming, $stored), new ConsentEvidenceSource('alice', '127.0.0.1', 'ua'));
 			unset($expected['value'], $actual['value']);
 			$this->assertSame($expected, $actual);
 		}
