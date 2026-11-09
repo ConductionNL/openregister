@@ -199,15 +199,23 @@ class RelationTypeResolver implements RelationTypeResolverInterface {
 	public function row(?array $descriptor, string $direction, ?string $path = null): array {
 		$descriptor = ($descriptor ?? self::fallbackDescriptor(path: $path));
 
-		return array_merge(
-			$descriptor,
-			[
-				'direction' => $direction,
-				'displayLabel' => self::displayLabel(descriptor: $descriptor, direction: $direction),
-				'path' => $path,
-			]
-		);
+		return array_merge($descriptor, self::directionFields(descriptor: $descriptor, direction: $direction) + ['path' => $path]);
 	}//end row()
+
+	/**
+	 * The direction a row is read in and the label that reads it.
+	 *
+	 * @param array<string, mixed> $descriptor The descriptor.
+	 * @param string               $direction  One of the DIRECTION_* constants.
+	 *
+	 * @return array{direction: string, displayLabel: mixed} The two fields.
+	 */
+	private static function directionFields(array $descriptor, string $direction): array {
+		return [
+			'direction' => $direction,
+			'displayLabel' => self::displayLabel(descriptor: $descriptor, direction: $direction),
+		];
+	}//end directionFields()
 
 	/**
 	 * The descriptor a row reads under when its property declares nothing resolvable.
