@@ -40,6 +40,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\VocabularyControllerServices;
 use OCA\OpenRegister\Controller\Support\VocabularyLanguage;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -105,24 +107,44 @@ class VocabularyController extends Controller {
 	private readonly VocabularyLanguage $language;
 
 	/**
+	 * OR object read path (findAll, real API only).
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Builds a coded property option list or option tree.
+	 *
+	 * @var CodedOptionsBuilderInterface
+	 */
+	private readonly CodedOptionsBuilderInterface $options;
+
+	/**
+	 * Resolves the coded declaration a read is about.
+	 *
+	 * @var VocabularyDeclarationResolverInterface
+	 */
+	private readonly VocabularyDeclarationResolverInterface $declarationResolver;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by NC).
-	 * @param IRequest $request Current request.
-	 * @param ObjectOperationsInterface $objectService OR object read path (findAll, real API only).
-	 * @param CodedOptionsBuilderInterface $options Builds a coded property's option list or option tree.
-	 * @param VocabularyDeclarationResolverInterface $declarationResolver Resolves the coded declaration a read is about.
+	 * @param IRequest $request HTTP request.
+	 * @param VocabularyControllerServices $services The vocabulary controller services.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly CodedOptionsBuilderInterface $options,
-		private readonly VocabularyDeclarationResolverInterface $declarationResolver,
+		VocabularyControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->objectService = $services->objectService;
+		$this->options = $services->options;
+		$this->declarationResolver = $services->declarationResolver;
 		$this->language = new VocabularyLanguage(request: $request);
 	}//end __construct()
 

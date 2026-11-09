@@ -57,15 +57,16 @@ final class ObjectActionElevation {
 	/**
 	 * Refusals about one action's `elevate`.
 	 *
-	 * @param string                    $key           The action key.
-	 * @param array<string, mixed>      $definition    The declared entry.
+	 * @param ObjectActionEntry         $action        The action key and its declared entry.
 	 * @param array<string, mixed>|null $authorization The authorization block; null skips the grant check.
 	 *
 	 * @return list<string> The refusals.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
-	public static function refusals(string $key, array $definition, ?array $authorization): array {
+	public static function refusals(ObjectActionEntry $action, ?array $authorization): array {
+		$key        = $action->key;
+		$definition = $action->definition;
 		if (array_key_exists('elevate', $definition) === false) {
 			return [];
 		}
