@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
+use OCA\OpenRegister\Service\Audit\ReadableObject;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -310,7 +311,7 @@ class ExplicitRevealTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setObject(['citizenServiceNumber' => self::BSN]);
 
-		$rows = (new HistoryEntryRedactor($properties))->redact(rows: [$entry], schema: $schema, object: $object);
+		$rows = (new HistoryEntryRedactor($properties))->redact(rows: [$entry], readable: new ReadableObject(object: $object, schema: $schema));
 
 		$this->assertSame(['old' => '*****0000', 'new' => self::MASK], $rows[0]['changed']['citizenServiceNumber']);
 		$this->assertNull($rows[0]['changed']['@self']['new']['name']);
