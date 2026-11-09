@@ -603,7 +603,7 @@ class PollLinkService implements PollLinkServiceInterface {
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->select('id', 'title', 'type', 'expire', 'owner', 'deleted')->from('polls_polls');
-			$this->whereLive(qb: $qb, column: 'id', pollId: $pollId);
+			$this->whereLivePoll(qb: $qb, pollId: $pollId);
 			$row = $qb->executeQuery()->fetch();
 			if ($row === false) {
 				return null;
@@ -617,18 +617,41 @@ class PollLinkService implements PollLinkServiceInterface {
 	}//end fetchPollRow()
 
 	/**
-	 * Restrict a query to the non-deleted rows of one poll.
+	 * Restrict a `polls_polls` query to one poll, when it is not deleted.
 	 *
 	 * @param IQueryBuilder $qb     The query being built.
-	 * @param string        $column Poll id column (`id` or `poll_id`).
 	 * @param int           $pollId Poll id.
 	 *
 	 * @return void
 	 */
-	private function whereLive(IQueryBuilder $qb, string $column, int $pollId): void {
-		$qb->where($qb->expr()->eq($column, $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
-	}//end whereLive()
+	private function whereLivePoll(IQueryBuilder $qb, int $pollId): void {
+		$qb->where($qb->expr()->eq('id', $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)));
+		$this->andNotDeleted(qb: $qb);
+	}//end whereLivePoll()
+
+	/**
+	 * Restrict a query on a poll's child table (`poll_id`) to the non-deleted rows of one poll.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param int           $pollId Poll id.
+	 *
+	 * @return void
+	 */
+	private function whereLiveRowsOf(IQueryBuilder $qb, int $pollId): void {
+		$qb->where($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)));
+		$this->andNotDeleted(qb: $qb);
+	}//end whereLiveRowsOf()
+
+	/**
+	 * Keep only rows that are not deleted.
+	 *
+	 * @param IQueryBuilder $qb The query being built.
+	 *
+	 * @return void
+	 */
+	private function andNotDeleted(IQueryBuilder $qb): void {
+		$qb->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
+	}//end andNotDeleted()
 
 	/**
 	 * Distinct user count that has cast at least one non-deleted vote.
@@ -641,7 +664,7 @@ class PollLinkService implements PollLinkServiceInterface {
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->selectDistinct('user_id')->from('polls_votes');
-			$this->whereLive(qb: $qb, column: 'poll_id', pollId: $pollId);
+			$this->whereLiveRowsOf(qb: $qb, pollId: $pollId);
 			return count($qb->executeQuery()->fetchAll());
 		} catch (Throwable $e) {
 			return 0;
@@ -659,7 +682,7 @@ class PollLinkService implements PollLinkServiceInterface {
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->select($qb->func()->count('*', 'cnt'))->from('polls_options');
-			$this->whereLive(qb: $qb, column: 'poll_id', pollId: $pollId);
+			$this->whereLiveRowsOf(qb: $qb, pollId: $pollId);
 			// A missing count (false or null) casts to 0.
 			return (int)$qb->executeQuery()->fetchOne();
 		} catch (Throwable $e) {
