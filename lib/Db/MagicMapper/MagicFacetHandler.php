@@ -383,13 +383,13 @@ class MagicFacetHandler {
 	 * The facets of one magic table, with timing metadata.
 	 *
 	 * @param TermsFacetTable $table       The table and its filters, without the facet configuration.
-	 * @param array           $facetConfig The facet configuration of the query.
+	 * @param mixed           $facetConfig The facet configuration of the query.
 	 *
 	 * @return array Facet results with buckets; empty when no facet is asked for.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
-	private function tableFacets(TermsFacetTable $table, array $facetConfig): array {
+	private function tableFacets(TermsFacetTable $table, mixed $facetConfig): array {
 		$startTime = microtime(true);
 		if (empty($facetConfig) === true) {
 			return [];
