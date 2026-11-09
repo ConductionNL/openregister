@@ -8408,13 +8408,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		bool $_multitenancy = true,
 		?int $registerIdScope = null,
 	): array {
-		return $this->findAcrossAllMagicTables(
-			identifier: $identifier,
-			includeDeleted: $includeDeleted,
-			_rbac: $_rbac,
-			_multitenancy: $_multitenancy,
-			registerIdScope: $registerIdScope
-		);
+		$find = new MagicIdentifierFind(identifier: $identifier, includeDeleted: $includeDeleted, registerIdScope: $registerIdScope);
+		return $this->findAcross(find: $find, _rbac: $_rbac, _multitenancy: $_multitenancy);
 	}//end findAcrossAllSources()
 
 	/**
