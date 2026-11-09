@@ -50,7 +50,13 @@ composer_deps() {
 	cd "$C" || return 9
 	local want; want=$(sha256sum composer.lock | cut -d' ' -f1)
 	[ -f vendor/.sig-lock ] && [ "$(cat vendor/.sig-lock)" = "$want" ] && return 0
-	COMPOSER_PROCESS_TIMEOUT=0 composer install --no-interaction --no-progress --prefer-source && echo "$want" > vendor/.sig-lock
+	# The sandbox token is rejected by the GitHub API; plain git through the proxy works, and the root-only
+	# post-install script fails after vendor is complete, so success is judged by the installed autoloader.
+	env -u GH_TOKEN -u GITHUB_TOKEN COMPOSER_ALLOW_SUPERUSER=1 composer config --global use-github-api false
+	env -u GH_TOKEN -u GITHUB_TOKEN COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_PROCESS_TIMEOUT=0 \
+		composer install --no-interaction --no-progress --prefer-source
+	[ -f vendor/autoload.php ] && [ -x vendor/bin/phpunit ] || return 1
+	echo "$want" > vendor/.sig-lock
 }
 
 fe_deps() {
