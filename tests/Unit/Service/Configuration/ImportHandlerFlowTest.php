@@ -769,6 +769,46 @@ class ImportHandlerFlowTest extends TestCase {
 	}//end testSessionlessLocalAppImportAcceptsRunAsFlow()
 
 	/**
+	 * The cron sync of a remote source refuses a new runAs flow even when the bundle omits its sourceType.
+	 *
+	 * importFromApp() is called the way SyncConfigurationsJob calls it (force,
+	 * no session) with the configuration being synced. Without that
+	 * configuration the bundle resolves its own: here the app's trusted local
+	 * configuration, which would accept the flow without a stamp.
+	 */
+	public function testCronSyncOfRemoteBundleWithoutSourceTypeRefusesNewRunAsFlow(): void {
+		$this->handler->setFlowTriggerValidator($this->triggerValidator(triggerTypes: ['trigger.schedule']));
+
+		$trustedLocal = $this->configuration();
+		$trustedLocal->setApp('myapp');
+		$trustedLocal->setIsLocal(true);
+		$this->configurationMapper->method('findBySourceUrl')->willReturn($trustedLocal);
+		$this->configurationMapper->method('findByApp')->willReturn([$trustedLocal]);
+		$this->configurationMapper->method('insert')->willReturnArgument(0);
+
+		$this->flowMapper->method('findByUuid')
+			->willThrowException(new DoesNotExistException('not found'));
+		$this->flowMapper->expects($this->never())->method('insert');
+
+		$bundle = [
+			'x-openregister' => ['app' => 'myapp', 'sourceUrl' => 'https://example.org/config.json'],
+			'info' => ['version' => '1.0.0'],
+			'components' => ['flows' => ['flow-uuid-1' => ['nodes' => [$this->scheduleNode('someone-else')]]]],
+		];
+
+		$result = $this->handler->importFromApp(
+			appId: 'myapp',
+			data: $bundle,
+			version: '1.0.0',
+			force: true,
+			configuration: $this->remoteConfiguration()
+		);
+
+		$this->assertSame(1, $result['skipped']['flows']);
+		$this->assertSame([], $result['flows']);
+	}//end testCronSyncOfRemoteBundleWithoutSourceTypeRefusesNewRunAsFlow()
+
+	/**
 	 * importFlow() drops a delegation stamp the bundle carried, even on a node this instance cannot resolve.
 	 */
 	public function testImportFlowStripsAnIncomingDelegationStamp(): void {
