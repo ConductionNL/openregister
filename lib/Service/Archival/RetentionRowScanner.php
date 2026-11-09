@@ -382,8 +382,6 @@ class RetentionRowScanner {
 	 * @param SourceScan $scan The source, which rows count and how many may still be taken; collects the outcome.
 	 *
 	 * @return array{objects: ObjectEntity[], scanned: int, truncated: bool} What this source contributed.
-	 *
-	 * @psalm-param callable(ObjectEntity): bool $accept
 	 */
 	private function scanRetentionSource(SourceScan $scan): array {
 		$scan->outcome['truncated'] = ($scan->criteria->remaining <= 0);
