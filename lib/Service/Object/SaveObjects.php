@@ -85,6 +85,7 @@ use OCA\OpenRegister\Service\Object\SaveObjects\BulkRowPropertyAuthorization;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkEventCandidate;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
+use OCA\OpenRegister\Service\Object\SaveObjects\IdentifiedRow;
 use OCA\OpenRegister\Service\Object\SaveObjects\PersistedChunk;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -3939,16 +3940,16 @@ class SaveObjects {
 		$transformedObjects = [];
 		$invalidObjects     = [];
 		foreach ($objects as $index => $object) {
-			$selfData = $this->identifiedSelfData(object: $object);
+			$row = new IdentifiedRow(selfData: $this->identifiedSelfData(object: $object), object: $object, index: $index);
 
 			// Validate required fields; skip invalid objects.
-			$validationError = $this->validateObjectRequiredFields(selfData: $selfData, object: $object, index: $index, schemaCache: $schemaCache);
+			$validationError = $this->validateObjectRequiredFields(row: $row, schemaCache: $schemaCache);
 			if ($validationError !== null) {
 				$invalidObjects[] = $validationError;
 				continue;
 			}
 
-			$transformedObjects[] = $this->databaseRow(selfData: $selfData, object: $object, schemaCache: $schemaCache);
+			$transformedObjects[] = $this->databaseRow(row: $row, schemaCache: $schemaCache);
 		}
 
 		return ['valid' => $transformedObjects, 'invalid' => $invalidObjects];
@@ -3979,23 +3980,24 @@ class SaveObjects {
 	 *
 	 * The schema-cache entry is handed over as-is: extractBusinessData() decides what counts as a
 	 * usable schema, so a cache miss or an unexpected value is judged in ONE place instead of at
-	 * every call site (openregister#2781).
+	 * every call site (openregister#2781). Relations are scanned from the business data (UUIDs
+	 * and URLs) unless the preparation phase already set them or the schema is not in the cache.
 	 *
-	 * @param array $selfData    The object's @self data with identifiers.
-	 * @param array $object      The object.
-	 * @param array $schemaCache The schema cache.
+	 * @param IdentifiedRow $row         The object with its identified @self data.
+	 * @param array         $schemaCache The schema cache.
 	 *
 	 * @return array
 	 */
-	private function databaseRow(array $selfData, array $object, array $schemaCache): array {
-		$selfData = $this->hydrateObjectMetadataFields(selfData: $selfData);
-		$this->logger->debug(
-			'[SaveObjects] DEBUG - Mixed schema object structure',
-			['available_keys' => array_keys($object), 'has_object_property' => isset($object['object'])]
-		);
+	private function databaseRow(IdentifiedRow $row, array $schemaCache): array {
+		$selfData = $this->hydrateObjectMetadataFields(selfData: $row->selfData);
+		$this->logMixedSchemaRow(object: $row->object);
 
-		$businessData = $this->extractBusinessData(object: $object, schema: ($schemaCache[$selfData['schema']] ?? null));
-		$selfData     = $this->withScannedRelations(selfData: $selfData, businessData: $businessData, schemaCache: $schemaCache);
+		$cached       = ($schemaCache[$selfData['schema']] ?? null);
+		$businessData = $this->extractBusinessData(object: $row->object, schema: $cached);
+		if ($this->hasPreparedRelations(selfData: $selfData) === false && $cached !== null) {
+			$selfData['relations'] = (new BulkRelationScanner())->scan(data: $businessData, run: new BulkRelationRun(schema: $cached));
+			$this->logRelationCount(message: '[SaveObjects] Relations scanned in transformation', selfData: $selfData);
+		}
 
 		// Store the clean business data in the database object column.
 		$selfData['object'] = $businessData;
@@ -4004,31 +4006,35 @@ class SaveObjects {
 	}//end databaseRow()
 
 	/**
-	 * The @self data with the relations scanned from the business data (UUIDs and URLs),
-	 * unless the preparation phase already set them or the schema is not in the cache.
+	 * Log the shape of an object on the mixed-schema transform path.
 	 *
-	 * @param array $selfData     The @self data.
-	 * @param array $businessData The business data.
-	 * @param array $schemaCache  The schema cache.
+	 * @param array $object The object.
 	 *
-	 * @return array
+	 * @return void
 	 */
-	private function withScannedRelations(array $selfData, array $businessData, array $schemaCache): array {
-		if (isset($selfData['relations']) === true && empty($selfData['relations']) === false) {
-			$this->logRelationCount(message: '[SaveObjects] Relations already set from preparation', selfData: $selfData);
-			return $selfData;
+	private function logMixedSchemaRow(array $object): void {
+		$this->logger->debug(
+			'[SaveObjects] DEBUG - Mixed schema object structure',
+			['available_keys' => array_keys($object), 'has_object_property' => isset($object['object'])]
+		);
+	}//end logMixedSchemaRow()
+
+	/**
+	 * Whether the preparation phase already set the relations; logged when it did.
+	 *
+	 * @param array $selfData The @self data.
+	 *
+	 * @return bool
+	 */
+	private function hasPreparedRelations(array $selfData): bool {
+		if (isset($selfData['relations']) === false || empty($selfData['relations']) === true) {
+			return false;
 		}
 
-		if (isset($schemaCache[$selfData['schema']]) === false) {
-			return $selfData;
-		}
+		$this->logRelationCount(message: '[SaveObjects] Relations already set from preparation', selfData: $selfData);
 
-		$run = new BulkRelationRun(schema: $schemaCache[$selfData['schema']]);
-		$selfData['relations'] = (new BulkRelationScanner())->scan(data: $businessData, run: $run);
-		$this->logRelationCount(message: '[SaveObjects] Relations scanned in transformation', selfData: $selfData);
-
-		return $selfData;
-	}//end withScannedRelations()
+		return true;
+	}//end hasPreparedRelations()
 
 	/**
 	 * Debug-log the relation count of an object.
@@ -4071,22 +4077,20 @@ class SaveObjects {
 	 *
 	 * Returns null if valid, or an error array describing the validation failure.
 	 *
-	 * @param array $selfData The @self metadata with identifiers
-	 * @param array $object The full object data for error context
-	 * @param int $index The object index for error reporting
-	 * @param array $schemaCache The schema cache to validate against
+	 * @param IdentifiedRow $row         The object, its @self metadata with identifiers and its index
+	 * @param array         $schemaCache The schema cache to validate against
 	 *
 	 * @return array|null Null if valid, error array if invalid
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function validateObjectRequiredFields(array $selfData, array $object, int $index, array $schemaCache): ?array {
-		$failure = self::requiredFieldFailure(selfData: $selfData, schemaCache: $schemaCache);
+	private function validateObjectRequiredFields(IdentifiedRow $row, array $schemaCache): ?array {
+		$failure = self::requiredFieldFailure(selfData: $row->selfData, schemaCache: $schemaCache);
 		if ($failure === null) {
 			return null;
 		}
 
-		return ['object' => $object, 'error' => $failure[0], 'index' => $index, 'type' => $failure[1]];
+		return ['object' => $row->object, 'error' => $failure[0], 'index' => $row->index, 'type' => $failure[1]];
 	}//end validateObjectRequiredFields()
 
 	/**

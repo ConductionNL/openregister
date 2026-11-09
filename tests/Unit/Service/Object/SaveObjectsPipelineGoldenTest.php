@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkChunkRun;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
+use OCA\OpenRegister\Service\Object\SaveObjects\IdentifiedRow;
 use OCA\OpenRegister\Service\Object\SaveObjects\PersistedChunk;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUser;
@@ -139,10 +140,10 @@ class SaveObjectsPipelineGoldenTest extends TestCase {
 			),
 			'extract legacy no schema' => fn (SaveObjects $h) => $this->call($h, 'extractBusinessData', [['name' => 'n', 'image' => 'i', 'k' => 'v'], 'not a schema']),
 			'required fields'          => fn (SaveObjects $h) => [
-				$this->call($h, 'validateObjectRequiredFields', [['register' => false, 'schema' => 7], ['o' => 1], 0, $schemaCache]),
-				$this->call($h, 'validateObjectRequiredFields', [['register' => 1, 'schema' => false], ['o' => 2], 1, $schemaCache]),
-				$this->call($h, 'validateObjectRequiredFields', [['register' => 1, 'schema' => 5], ['o' => 3], 2, $schemaCache]),
-				$this->call($h, 'validateObjectRequiredFields', [['register' => null, 'schema' => 7], ['o' => 4], 3, $schemaCache]),
+				$this->call($h, 'validateObjectRequiredFields', [new IdentifiedRow(['register' => false, 'schema' => 7], ['o' => 1], 0), $schemaCache]),
+				$this->call($h, 'validateObjectRequiredFields', [new IdentifiedRow(['register' => 1, 'schema' => false], ['o' => 2], 1), $schemaCache]),
+				$this->call($h, 'validateObjectRequiredFields', [new IdentifiedRow(['register' => 1, 'schema' => 5], ['o' => 3], 2), $schemaCache]),
+				$this->call($h, 'validateObjectRequiredFields', [new IdentifiedRow(['register' => null, 'schema' => 7], ['o' => 4], 3), $schemaCache]),
 			],
 			'persist ids'              => fn (SaveObjects $h) => $this->call($h, 'persistChunk', [[['uuid' => 'a']], 10, 7, false]),
 			'persist failing ids'      => fn (SaveObjects $h) => $this->call($h, 'persistChunk', [[['uuid' => 'a']], 404, 404, true]),
