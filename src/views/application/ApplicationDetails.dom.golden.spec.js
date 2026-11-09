@@ -24,6 +24,11 @@ const ICONS = [
 ICONS.forEach((name) =>
 	jest.mock(`vue-material-design-icons/${name}.vue`, () => stubModule(name)),
 )
+jest.mock('@nextcloud/l10n', () => ({
+	__esModule: true,
+	t: (app, text) => `t:${text}`,
+	translate: (app, text) => `t:${text}`,
+}))
 jest.mock('@nextcloud/vue', () => require('../__mocks__/goldenDom.js').library())
 jest.mock('../../store/store.js', () => ({
 	applicationStore: { applicationItem: null, loading: false, error: null },

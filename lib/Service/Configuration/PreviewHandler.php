@@ -26,13 +26,10 @@ namespace OCA\OpenRegister\Service\Configuration;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\AppFramework\Http\JSONResponse;
-use Psr\Log\LoggerInterface;
 
 /**
  * Class PreviewHandler
@@ -54,41 +51,6 @@ use Psr\Log\LoggerInterface;
 class PreviewHandler {
 
 	/**
-	 * Register mapper for database operations.
-	 *
-	 * @var RegisterMapperInterface The register mapper instance.
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Schema mapper for database operations.
-	 *
-	 * @var SchemaMapperInterface The schema mapper instance.
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Logger for logging operations.
-	 *
-	 * @var LoggerInterface The logger interface.
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Fetch handler for fetching remote configuration data.
-	 *
-	 * @var FetchHandler The fetch handler.
-	 */
-	private readonly FetchHandler $fetchHandler;
-
-	/**
-	 * Object mapper, to find the local object a remote one would update.
-	 *
-	 * @var MagicMapperInterface The object mapper.
-	 */
-	private readonly MagicMapperInterface $objectMapper;
-
-	/**
 	 * The component sections every preview starts with, in output order.
 	 *
 	 * @var array<string, array>
@@ -108,20 +70,13 @@ class PreviewHandler {
 	/**
 	 * Constructor for PreviewHandler.
 	 *
-	 * @param PreviewMappers  $mappers      The register, schema and object mappers.
-	 * @param LoggerInterface $logger       The logger interface.
-	 * @param FetchHandler    $fetchHandler The fetch handler for remote data fetching.
+	 * @param SchemaCatalogInterface $catalog      The register, schema and object mappers.
+	 * @param FetchHandler           $fetchHandler The fetch handler for remote data fetching.
 	 */
 	public function __construct(
-		PreviewMappers $mappers,
-		LoggerInterface $logger,
-		FetchHandler $fetchHandler,
+		private readonly SchemaCatalogInterface $catalog,
+		private readonly FetchHandler $fetchHandler,
 	) {
-		$this->registerMapper = $mappers->registerMapper;
-		$this->schemaMapper = $mappers->schemaMapper;
-		$this->logger = $logger;
-		$this->fetchHandler = $fetchHandler;
-		$this->objectMapper = $mappers->objectMapper;
 	}//end __construct()
 
 	/**
@@ -168,29 +123,29 @@ class PreviewHandler {
 			$preview['objects'] = $this->previewObjects(remoteObjects: $remoteObjects, preview: $preview);
 		}
 
-		$preview['metadata'] = self::previewMetadata(configuration: $configuration, remoteData: $remoteData, preview: $preview);
+		$remoteVersion = ($remoteData['version'] ?? $remoteData['info']['version'] ?? null);
+		$preview['metadata'] = self::previewMetadata(configuration: $configuration, remoteVersion: $remoteVersion);
+		$preview['metadata']['totalChanges'] = (count($preview['registers']) + count($preview['schemas']) + count($preview['objects']));
 
 		return $preview;
 	}//end previewConfigurationChanges()
 
 	/**
-	 * The metadata block of a preview: which configuration, which versions, when, and how many changes.
+	 * The metadata block of a preview: which configuration, which versions and when; the caller adds the change count.
 	 *
 	 * @param Configuration $configuration The configuration being previewed.
-	 * @param array         $remoteData    The remote document.
-	 * @param array         $preview       The preview rows so far.
+	 * @param mixed         $remoteVersion The version the remote document names, if any.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private static function previewMetadata(Configuration $configuration, array $remoteData, array $preview): array {
+	private static function previewMetadata(Configuration $configuration, mixed $remoteVersion): array {
 		return [
 			'configurationId' => $configuration->getId(),
 			'configurationTitle' => $configuration->getTitle(),
 			'sourceUrl' => $configuration->getSourceUrl(),
-			'remoteVersion' => $remoteData['version'] ?? $remoteData['info']['version'] ?? null,
+			'remoteVersion' => $remoteVersion,
 			'localVersion' => $configuration->getLocalVersion(),
 			'previewedAt' => (new DateTime())->format('c'),
-			'totalChanges' => (count($preview['registers']) + count($preview['schemas']) + count($preview['objects'])),
 		];
 	}//end previewMetadata()
 
@@ -249,19 +204,18 @@ class PreviewHandler {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
 	 */
 	private function previewObjects(array $remoteObjects, array $preview): array {
-		$registersBySlug = self::bySlug(entities: $this->registerMapper->findAll());
-		$schemasBySlug = self::bySlug(entities: $this->schemaMapper->findAll());
+		$registersBySlug = self::bySlug(entities: $this->catalog->registers()->findAll());
+		$schemasBySlug = self::bySlug(entities: $this->catalog->schemas()->findAll());
 
 		$compare = fn (array $current, array $proposed): array => $this->compareArrays(current: $current, proposed: $proposed);
-		$objectPreview = new ObjectChangePreview(objectMapper: $this->objectMapper, compare: $compare);
+		$objectPreview = new ObjectChangePreview(objectMapper: $this->catalog->tables(), compare: $compare);
 		$planned = ['registers' => $objectPreview->createdSlugs(rows: $preview['registers'])];
 		$planned['schemas'] = $objectPreview->createdSlugs(rows: $preview['schemas']);
+		$targets = new ObjectPreviewTargets(registersBySlug: $registersBySlug, schemasBySlug: $schemasBySlug, planned: $planned);
 
 		$rows = [];
 		foreach ($remoteObjects as $objectData) {
-			$rows[] = $objectPreview->preview(
-				objectData: (array)$objectData, registersBySlug: $registersBySlug, schemasBySlug: $schemasBySlug, planned: $planned
-			);
+			$rows[] = $objectPreview->preview(objectData: (array)$objectData, targets: $targets);
 		}
 
 		return $rows;
@@ -311,12 +265,15 @@ class PreviewHandler {
 
 		$existingRegister = null;
 		try {
-			$existingRegister = $this->registerMapper->find($slug);
+			$existingRegister = $this->catalog->registers()->find($slug);
 		} catch (Exception $e) {
 			// Register doesn't exist.
 		}
 
-		return $this->definitionChange(type: 'register', slug: $slug, proposed: $registerData, existing: $existingRegister);
+		return $this->definitionChange(
+			proposal: new ProposedDefinition(type: 'register', slug: $slug, data: $registerData),
+			existing: $existingRegister
+		);
 	}//end previewRegisterChange()
 
 	/**
@@ -345,34 +302,35 @@ class PreviewHandler {
 
 		$existingSchema = null;
 		try {
-			$existingSchema = $this->schemaMapper->find($slug);
+			$existingSchema = $this->catalog->schemas()->find($slug);
 		} catch (Exception $e) {
 			// Schema doesn't exist.
 		}
 
-		return $this->definitionChange(type: 'schema', slug: $slug, proposed: $schemaData, existing: $existingSchema);
+		return $this->definitionChange(
+			proposal: new ProposedDefinition(type: 'schema', slug: $slug, data: $schemaData),
+			existing: $existingSchema
+		);
 	}//end previewSchemaChange()
 
 	/**
 	 * The preview row of one register or schema: created when there is no local one, else
 	 * updated when the remote version is newer and skipped when it is not.
 	 *
-	 * @param string               $type     `register` or `schema`.
-	 * @param string               $slug     The lowercased slug.
-	 * @param array                $proposed The remote definition.
+	 * @param ProposedDefinition   $proposal The remote definition.
 	 * @param Register|Schema|null $existing The local definition, if any.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function definitionChange(string $type, string $slug, array $proposed, Register|Schema|null $existing): array {
+	private function definitionChange(ProposedDefinition $proposal, Register|Schema|null $existing): array {
 		$action = 'update';
 		if ($existing === null) {
 			$action = 'create';
 		}
 
 		$preview = [
-			'type' => $type, 'action' => $action, 'slug' => $slug, 'title' => $proposed['title'] ?? $slug,
-			'current' => null, 'proposed' => $proposed, 'changes' => [],
+			'type' => $proposal->type, 'action' => $action, 'slug' => $proposal->slug, 'title' => $proposal->title(),
+			'current' => null, 'proposed' => $proposal->data, 'changes' => [],
 		];
 		if ($existing === null) {
 			return $preview;
@@ -415,54 +373,51 @@ class PreviewHandler {
 	 * either). Nested maps are compared by dotted path; lists are compared
 	 * whole. A row's own `id`, `uuid`, `created` and `updated` are ignored.
 	 *
-	 * @param array<array-key, mixed> $current Current definition.
+	 * @param array<array-key, mixed> $current  Current definition.
 	 * @param array<array-key, mixed> $proposed Proposed definition.
-	 * @param string $prefix Path of the parent key, for nested maps.
 	 *
 	 * @return array<int, array{field: string, current: mixed, proposed: mixed}>
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-configuration-preview-names-what-an-import-would-change
 	 */
-	public function compareArrays(array $current, array $proposed, string $prefix = ''): array {
+	public function compareArrays(array $current, array $proposed): array {
 		$changes = [];
 		foreach ($proposed as $key => $proposedValue) {
 			if (in_array($key, ['id', 'uuid', 'created', 'updated'], true) === true) {
 				continue;
 			}
 
-			$field = (string)$key;
-			if ($prefix !== '') {
-				$field = $prefix . '.' . $key;
+			if (array_key_exists($key, $current) === false) {
+				$changes[] = ['field' => (string)$key, 'current' => null, 'proposed' => $proposedValue];
+				continue;
 			}
 
-			$changes = array_merge($changes, $this->fieldChanges(current: $current, key: $key, field: $field, proposedValue: $proposedValue));
+			$change = ['field' => (string)$key, 'current' => $current[$key], 'proposed' => $proposedValue];
+			$changes = array_merge($changes, $this->fieldChanges(change: $change));
 		}
 
 		return $changes;
 	}//end compareArrays()
 
 	/**
-	 * The changes of one proposed field: added, changed, or (for two maps) its nested changes.
+	 * The changes of one field both sides carry: none, the field itself, or (for two maps) its nested changes by dotted path.
 	 *
-	 * @param array<array-key, mixed> $current       Current definition.
-	 * @param int|string              $key           The field's key.
-	 * @param string                  $field         The field's dotted path.
-	 * @param mixed                   $proposedValue The proposed value.
+	 * @param array{field: string, current: mixed, proposed: mixed} $change The field with its current and proposed value.
 	 *
 	 * @return array<int, array{field: string, current: mixed, proposed: mixed}>
 	 */
-	private function fieldChanges(array $current, int|string $key, string $field, mixed $proposedValue): array {
-		if (array_key_exists($key, $current) === false) {
-			return [['field' => $field, 'current' => null, 'proposed' => $proposedValue]];
+	private function fieldChanges(array $change): array {
+		if ($this->bothMaps(current: $change['current'], proposed: $change['proposed']) === true) {
+			$nested = $this->compareArrays(current: $change['current'], proposed: $change['proposed']);
+			foreach ($nested as $index => $nestedChange) {
+				$nested[$index]['field'] = $change['field'] . '.' . $nestedChange['field'];
+			}
+
+			return $nested;
 		}
 
-		$currentValue = $current[$key];
-		if ($this->bothMaps(current: $currentValue, proposed: $proposedValue) === true) {
-			return $this->compareArrays(current: $currentValue, proposed: $proposedValue, prefix: $field);
-		}
-
-		if ($proposedValue !== $currentValue) {
-			return [['field' => $field, 'current' => $currentValue, 'proposed' => $proposedValue]];
+		if ($change['proposed'] !== $change['current']) {
+			return [$change];
 		}
 
 		return [];
