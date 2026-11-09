@@ -21,6 +21,8 @@
 namespace OCA\OpenRegister\Search\Controller;
 
 use DateTime;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use OCA\OpenRegister\Search\Controller\Support\DashboardControllerServices;
@@ -30,10 +32,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * DashboardController handles dashboard related operations
@@ -72,42 +71,23 @@ class DashboardController extends Controller {
 	private readonly DashboardService $dashboardService;
 
 	/**
-	 * Logger instance
+	 * Session user, group manager (admin checks) and logger.
 	 *
-	 * Used for error tracking and debugging dashboard operations.
-	 *
-	 * @var LoggerInterface Logger instance
+	 * @var ControllerSession
 	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Active user session for caller identity.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Group manager for admin checks.
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
+	private readonly ControllerSession $session;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string                      $appName  The application name.
 	 * @param IRequest                    $request  The current request.
 	 * @param DashboardControllerServices $services The dashboard API services.
 	 */
-	public function __construct(string $appName, IRequest $request, DashboardControllerServices $services) {
-		parent::__construct(appName: $appName, request: $request);
+	public function __construct(IRequest $request, DashboardControllerServices $services) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->dashboardService = $services->dashboardService;
-		$this->logger           = $services->logger;
-		$this->userSession      = $services->userSession;
-		$this->groupManager     = $services->groupManager;
+		$this->session          = $services->session;
 	}//end __construct()
 
 	/**
@@ -122,12 +102,7 @@ class DashboardController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**
@@ -653,7 +628,7 @@ class DashboardController extends Controller {
 			);
 			return new JSONResponse(data: $data);
 		} catch (\Exception $e) {
-			$this->logger->error(
+			$this->session->logger->error(
 				message: '[DashboardController] Error retrieving most active objects: ' . $e->getMessage(),
 				context: [
 					'file' => __FILE__,
