@@ -75,3 +75,4 @@ openregister#7502 0469bb38e166e5bb081df64e5c2e0172fcba67d7 bisect-park: jest lis
 openregister#7576 7be67d785511db6873298db2888520cd8d106bbf bisect-park: HardeningControllerBehaviourTest (2 tests) fails with this PR alone on main fdd553e4ed
 openregister#7678 c20844d8f3f66276a65b7ca5dbf972db9883969d bisect-park: SchemaImportServiceRegistryTest + TalkGatewayUserScopedLookupTest fail with this PR alone on main 4949ac2580
 openregister#7667 d0f25ce5f114872b3553c4ca8c3c83685f4eb25a bisect-park: FormDependentsCheckBehaviourTest (6 tests) fails with this PR alone on main 4949ac2580
+openregister#7694 c7501af08a3c99bcde91f9f1f8d50bd26c602714 bisect-park: ExampleSetConfigStoreBehaviourTest (7 tests, TypeError on ExampleSetConfigValue ctor) fails with this PR alone on main 8c6b2e9b4d
