@@ -297,7 +297,12 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 	 */
 	private function resave(Register $register, Schema $schema, string $field, string $uuid): int {
 		try {
-			$rows = $this->catalog->tables()->findAllInRegisterSchemaTable(register: $register, schema: $schema, limit: self::SYNC_LIMIT, filters: [$field => $uuid]);
+			$rows = $this->catalog->tables()->findAllInRegisterSchemaTable(
+				register: $register,
+				schema: $schema,
+				limit: self::SYNC_LIMIT,
+				filters: [$field => $uuid]
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[ReferencedCalculationRefresher] referrers could not be read',
