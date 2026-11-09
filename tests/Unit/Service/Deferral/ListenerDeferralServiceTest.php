@@ -156,13 +156,13 @@ class ListenerDeferralServiceTest extends TestCase {
 		foreach (['a', 'b', 'c', 'd'] as $uuid) {
 			$service->deferEntry(
 				new DeferredEntry('Some\\Job', ['uuid' => $uuid]),
-				new DeferralOptions(2, ($uuid === 'c') ? 'b' : $uuid)
+				new DeferralOptions(2, ($uuid === 'b') ? 'a' : $uuid)
 			);
 		}
 
 		$service->flushAll();
 
-		$this->assertSame([['a', 'b'], ['d']], $chunks);
+		$this->assertSame([['a', 'c'], ['d']], $chunks);
 	}
 
 	public function testBuffersAreIsolatedPerJobClass(): void {
