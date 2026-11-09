@@ -73,7 +73,6 @@ class ObjectWatchersControllerBehaviourTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(fn (string $key): mixed => $key === 'notify' ? $this->notify : null);
 		return new ObjectWatchersController(
-			'openregister',
 			$request,
 			new ObjectWatchersControllerServices($this->objects, $this->watchers, $this->users, $this->logger)
 		);

@@ -167,7 +167,7 @@ class NotificationHistoryControllerGoldenTest extends TestCase {
 			groupManager: $groups,
 			clearing: $clearing
 		);
-		$controller = new NotificationHistoryController('openregister', $httpRequest, $services);
+		$controller = new NotificationHistoryController($httpRequest, $services);
 
 		$response = match ($endpoint) {
 			'index'          => $controller->index(),
