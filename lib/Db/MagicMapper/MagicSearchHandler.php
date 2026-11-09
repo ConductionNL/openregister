@@ -1788,22 +1788,21 @@ class MagicSearchHandler {
 	/**
 	 * Build a `like` condition with bound parameters.
 	 *
-	 * @param IQueryBuilder $qb Query builder that binds the parameters.
-	 * @param string $columnRef Qualified column reference.
-	 * @param mixed $value The value under the `like` key: one term or a list.
+	 * @param BoundQueryColumn $column The column and the query builder that binds values.
+	 * @param mixed            $value  The `like` operand: one term or a list of terms.
 	 *
 	 * @return string|null The SQL condition, or null when no term is left.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
-	private function likeCondition(IQueryBuilder $qb, string $columnRef, mixed $value): ?string {
+	private function likeCondition(BoundQueryColumn $column, mixed $value): ?string {
 		$like = new LikeOperator(databasePlatform: $this->db->getDatabasePlatform());
 		$placeholders = [];
 		foreach ($like->terms(value: $value) as $term) {
-			$placeholders[] = (string)$qb->createNamedParameter($like->pattern(term: $term));
+			$placeholders[] = (string)$column->qb->createNamedParameter($like->pattern(term: $term));
 		}
 
-		return $like->anyCondition(column: $columnRef, patternSqls: $placeholders);
+		return $like->anyCondition(column: $column->ref, patternSqls: $placeholders);
 	}//end likeCondition()
 
 	/**
@@ -1813,22 +1812,21 @@ class MagicSearchHandler {
 	 * every other condition it builds, so the escaped pattern goes through the
 	 * platform's quote().
 	 *
-	 * @param string $column Quoted column identifier.
-	 * @param mixed $value The value under the `like` key: one term or a list.
-	 * @param object $connection Database connection for value quoting.
+	 * @param QuotedSqlColumn $column The column and the connection that quotes values.
+	 * @param mixed           $value  The `like` operand: one term or a list of terms.
 	 *
 	 * @return string|null The SQL condition, or null when no term is left.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
-	private function likeConditionSql(string $column, mixed $value, object $connection): ?string {
+	private function likeConditionSql(QuotedSqlColumn $column, mixed $value): ?string {
 		$like = new LikeOperator(databasePlatform: $this->db->getDatabasePlatform());
 		$quoted = [];
 		foreach ($like->terms(value: $value) as $term) {
-			$quoted[] = $connection->quote($like->pattern(term: $term));
+			$quoted[] = $column->connection->quote($like->pattern(term: $term));
 		}
 
-		return $like->anyCondition(column: $column, patternSqls: $quoted);
+		return $like->anyCondition(column: $column->name, patternSqls: $quoted);
 	}//end likeConditionSql()
 
 	/**
@@ -1965,7 +1963,7 @@ class MagicSearchHandler {
 
 		// `like` first, for every column type; see applyObjectFilters().
 		if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
-			$likeCondition = $this->likeConditionSql(column: $field->quotedCol, value: $value[LikeOperator::KEY], connection: $field->connection);
+			$likeCondition = $this->likeConditionSql(column: new QuotedSqlColumn(name: $field->quotedCol, connection: $field->connection), value: $value[LikeOperator::KEY]);
 			if ($likeCondition !== null) {
 				$fieldConditions[] = $likeCondition;
 			}
@@ -1979,9 +1977,8 @@ class MagicSearchHandler {
 		// Handle array-type properties (JSONB columns) with JSON containment operator.
 		if ($field->propertyType === 'array') {
 			$fieldConditions[] = $this->buildArrayPropertyConditionSql(
-				columnName: $field->quotedCol,
-				value: $value,
-				connection: $field->connection
+				column: new QuotedSqlColumn(name: $field->quotedCol, connection: $field->connection),
+				value: $value
 			);
 			return $fieldConditions;
 		}
@@ -2103,13 +2100,14 @@ class MagicSearchHandler {
 	 * Uses PostgreSQL JSONB containment operator (@>) to check if a JSON array
 	 * column contains the specified value(s).
 	 *
-	 * @param string $columnName Sanitized column name
-	 * @param mixed $value Filter value (string or array of strings)
-	 * @param object $connection Database connection for value quoting
+	 * @param QuotedSqlColumn $column The JSONB column and the connection that quotes values.
+	 * @param mixed           $value  The filter value (single value or array of values).
 	 *
 	 * @return string SQL condition for the array property filter
 	 */
-	private function buildArrayPropertyConditionSql(string $columnName, mixed $value, object $connection): string {
+	private function buildArrayPropertyConditionSql(QuotedSqlColumn $column, mixed $value): string {
+		$columnName = $column->name;
+		$connection = $column->connection;
 		// Normalize value to array.
 		$values = [$value];
 		if (is_array($value) === true) {
@@ -2183,9 +2181,8 @@ class MagicSearchHandler {
 				$conditions = array_merge(
 					$conditions,
 					$this->buildMetadataOperatorConditionsSql(
-						column: $column,
-						value: $value,
-						connection: $connection
+						column: new QuotedSqlColumn(name: $column, connection: $connection),
+						value: $value
 					)
 				);
 				continue;
@@ -2200,37 +2197,35 @@ class MagicSearchHandler {
 	/**
 	 * Build the SQL for one metadata column's operator bag (or bare IN list)
 	 *
-	 * @param string $column Quoted column identifier
-	 * @param array $value Operator bag or bare list of values
-	 * @param object $connection Database connection for value quoting
+	 * @param QuotedSqlColumn     $column The column and the connection that quotes values.
+	 * @param array<string, mixed> $value  The operator bag.
 	 *
 	 * @return string[] Array of SQL conditions
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
-	private function buildMetadataOperatorConditionsSql(string $column, array $value, object $connection): array {
+	private function buildMetadataOperatorConditionsSql(QuotedSqlColumn $column, array $value): array {
 		return NullFilter::conditionsFor(
 			criterion: $value,
-			column: $column,
-			build: fn (array $bag): array => $this->metadataBagConditionsSql(column: $column, value: $bag, connection: $connection)
+			column: $column->name,
+			build: fn (array $bag): array => $this->metadataBagConditionsSql(column: $column, value: $bag)
 		);
 	}//end buildMetadataOperatorConditionsSql()
 
 	/**
 	 * The SQL conditions of one metadata operator bag (or bare IN list), to be ANDed
 	 *
-	 * @param string $column Quoted column identifier
-	 * @param array $value Operator bag or bare list of values, without `orNull`
-	 * @param object $connection Database connection for value quoting
+	 * @param QuotedSqlColumn     $column The column and the connection that quotes values.
+	 * @param array<string, mixed> $value  The operator bag.
 	 *
 	 * @return string[] Array of SQL conditions
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
-	private function metadataBagConditionsSql(string $column, array $value, object $connection): array {
+	private function metadataBagConditionsSql(QuotedSqlColumn $column, array $value): array {
 		$likeConditions = [];
 		if (array_key_exists(LikeOperator::KEY, $value) === true) {
-			$likeCondition = $this->likeConditionSql(column: $column, value: $value[LikeOperator::KEY], connection: $connection);
+			$likeCondition = $this->likeConditionSql(column: $column, value: $value[LikeOperator::KEY]);
 			if ($likeCondition !== null) {
 				$likeConditions[] = $likeCondition;
 			}
@@ -2243,7 +2238,7 @@ class MagicSearchHandler {
 
 		// No operator key at all: a bare list keeps its historical IN(...) meaning.
 		if (empty(array_intersect(array_keys($value), self::COMPARISON_OPERATORS)) === true) {
-			return [$this->metadataInConditionSql(column: $column, values: $value, connection: $connection)];
+			return [$this->metadataInConditionSql(column: $column, values: $value)];
 		}
 
 		// Three families, in the order they have always been emitted. They were
@@ -2252,9 +2247,9 @@ class MagicSearchHandler {
 		// number of ways to read the code.
 		return array_merge(
 			$likeConditions,
-			$this->metadataComparisonConditionsSql(column: $column, value: $value, connection: $connection),
-			$this->metadataListConditionsSql(column: $column, value: $value, connection: $connection),
-			$this->metadataNullConditionsSql(column: $column, value: $value)
+			$this->metadataComparisonConditionsSql(column: $column, value: $value),
+			$this->metadataListConditionsSql(column: $column, value: $value),
+			$this->metadataNullConditionsSql(column: $column->name, value: $value)
 		);
 	}//end metadataBagConditionsSql()
 
@@ -2280,32 +2275,30 @@ class MagicSearchHandler {
 	/**
 	 * `IN (...)` for one bag, or the always-false condition an empty bag means
 	 *
-	 * @param string $column Quoted column identifier
-	 * @param mixed $values A list of values, or a single value
-	 * @param object $connection Database connection for value quoting
+	 * @param QuotedSqlColumn $column The column and the connection that quotes values.
+	 * @param mixed           $values One value or a list.
 	 *
 	 * @return string One SQL condition
 	 */
-	private function metadataInConditionSql(string $column, mixed $values, object $connection): string {
-		$quoted = $this->quoteMetadataValues(values: $values, connection: $connection);
+	private function metadataInConditionSql(QuotedSqlColumn $column, mixed $values): string {
+		$quoted = $this->quoteMetadataValues(values: $values, connection: $column->connection);
 		if (empty($quoted) === true) {
 			// An empty IN () is a syntax error and matches nothing by definition.
 			return '1 = 0';
 		}
 
-		return $column . ' IN (' . implode(', ', $quoted) . ')';
+		return $column->name . ' IN (' . implode(', ', $quoted) . ')';
 	}//end metadataInConditionSql()
 
 	/**
 	 * The scalar comparison operators, in their emitted order
 	 *
-	 * @param string $column Quoted column identifier
-	 * @param array $value Operator bag
-	 * @param object $connection Database connection for value quoting
+	 * @param QuotedSqlColumn     $column The column and the connection that quotes values.
+	 * @param array<string, mixed> $value  The operator bag.
 	 *
 	 * @return string[] Array of SQL conditions
 	 */
-	private function metadataComparisonConditionsSql(string $column, array $value, object $connection): array {
+	private function metadataComparisonConditionsSql(QuotedSqlColumn $column, array $value): array {
 		$simple = [
 			'gte' => '>=',
 			'lte' => '<=',
@@ -2317,7 +2310,7 @@ class MagicSearchHandler {
 		$conditions = [];
 		foreach ($simple as $operator => $sqlOperator) {
 			if (isset($value[$operator]) === true) {
-				$conditions[] = "{$column} {$sqlOperator} " . $connection->quote((string)$value[$operator]);
+				$conditions[] = "{$column->name} {$sqlOperator} " . $column->connection->quote((string)$value[$operator]);
 			}
 		}
 
@@ -2327,23 +2320,22 @@ class MagicSearchHandler {
 	/**
 	 * The `in` and `notIn` operators
 	 *
-	 * @param string $column Quoted column identifier
-	 * @param array $value Operator bag
-	 * @param object $connection Database connection for value quoting
+	 * @param QuotedSqlColumn     $column The column and the connection that quotes values.
+	 * @param array<string, mixed> $value  The operator bag.
 	 *
 	 * @return string[] Array of SQL conditions
 	 */
-	private function metadataListConditionsSql(string $column, array $value, object $connection): array {
+	private function metadataListConditionsSql(QuotedSqlColumn $column, array $value): array {
 		$conditions = [];
 		if (isset($value['in']) === true) {
-			$conditions[] = $this->metadataInConditionSql(column: $column, values: $value['in'], connection: $connection);
+			$conditions[] = $this->metadataInConditionSql(column: $column, values: $value['in']);
 		}
 
 		if (isset($value['notIn']) === true) {
-			$quoted = $this->quoteMetadataValues(values: $value['notIn'], connection: $connection);
+			$quoted = $this->quoteMetadataValues(values: $value['notIn'], connection: $column->connection);
 			// An empty NOT IN () is a syntax error and means "exclude nothing".
 			if (empty($quoted) === false) {
-				$conditions[] = $column . ' NOT IN (' . implode(', ', $quoted) . ')';
+				$conditions[] = $column->name . ' NOT IN (' . implode(', ', $quoted) . ')';
 			}
 		}
 
@@ -2870,7 +2862,7 @@ class MagicSearchHandler {
 			}
 
 			if (is_array($value) === true) {
-				$this->applyMetadataOperators(qb: $qb, columnRef: $columnRef, value: $value);
+				$this->applyMetadataOperators(column: new BoundQueryColumn(qb: $qb, ref: $columnRef), value: $value);
 				continue;
 			}
 
@@ -2881,9 +2873,8 @@ class MagicSearchHandler {
 	/**
 	 * Apply an operator bag (or a bare IN list) to one metadata column
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param string $columnRef Fully qualified column reference
-	 * @param array $value Operator bag or bare list of values
+	 * @param BoundQueryColumn     $column The column and the query builder that binds values.
+	 * @param array<string, mixed> $value  The operator criterion.
 	 *
 	 * @return void
 	 *
@@ -2891,33 +2882,34 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
-	private function applyMetadataOperators(IQueryBuilder $qb, string $columnRef, array $value): void {
+	private function applyMetadataOperators(BoundQueryColumn $column, array $value): void {
 		$conditions = NullFilter::conditionsFor(
 			criterion: $value,
-			column: $columnRef,
-			build: fn (array $bag): array => $this->metadataOperatorPredicates(qb: $qb, columnRef: $columnRef, value: $bag)
+			column: $column->ref,
+			build: fn (array $bag): array => $this->metadataOperatorPredicates(column: $column, value: $bag)
 		);
 		foreach ($conditions as $condition) {
-			$qb->andWhere($condition);
+			$column->qb->andWhere($condition);
 		}
 	}//end applyMetadataOperators()
 
 	/**
 	 * The predicates of one metadata operator bag (or bare IN list), to be ANDed
 	 *
-	 * @param IQueryBuilder $qb Query builder that binds the parameters
-	 * @param string $columnRef Fully qualified column reference
-	 * @param array $value Operator bag or bare list of values, without `orNull`
+	 * @param BoundQueryColumn     $column The column and the query builder that binds values.
+	 * @param array<string, mixed> $value  The operator bag.
 	 *
 	 * @return list<string|\Stringable> The predicates
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
-	private function metadataOperatorPredicates(IQueryBuilder $qb, string $columnRef, array $value): array {
+	private function metadataOperatorPredicates(BoundQueryColumn $column, array $value): array {
+		$qb        = $column->qb;
+		$columnRef = $column->ref;
 		$predicates = [];
 		if (array_key_exists(LikeOperator::KEY, $value) === true) {
-			$likeCondition = $this->likeCondition(qb: $qb, columnRef: $columnRef, value: $value[LikeOperator::KEY]);
+			$likeCondition = $this->likeCondition(column: $column, value: $value[LikeOperator::KEY]);
 			if ($likeCondition !== null) {
 				$predicates[] = $likeCondition;
 			}
@@ -3124,7 +3116,7 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function likePredicates(ObjectFieldFilter $field, mixed $value): array {
-		$likeCondition = $this->likeCondition(qb: $field->qb, columnRef: $field->columnRef(), value: $value);
+		$likeCondition = $this->likeCondition(column: new BoundQueryColumn(qb: $field->qb, ref: $field->columnRef()), value: $value);
 		if ($likeCondition === null) {
 			return [];
 		}
