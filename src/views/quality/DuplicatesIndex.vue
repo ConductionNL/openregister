@@ -76,8 +76,8 @@ import {
 } from '@nextcloud/vue'
 import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
 import MdmMergeWizardModal from '../../modals/mdm/MdmMergeWizardModal.vue'
-import { qualityListPage } from './qualityListPage.js'
 import { qualityStore } from '../../store/store.js'
+import { qualityListPage, QualityPageFrame, RangePager } from './qualityListPage.js'
 
 export default {
 	name: 'DuplicatesIndex',
@@ -86,6 +86,8 @@ export default {
 		NcAppContent,
 		NcButton,
 		ContentDuplicate,
+		QualityPageFrame,
+		RangePager,
 		MdmMergeWizardModal,
 	},
 

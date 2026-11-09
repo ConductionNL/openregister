@@ -90,8 +90,8 @@ import { CnChartWidget, CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { NcAppContent, NcEmptyContent } from '@nextcloud/vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
-import { qualityListPage } from './qualityListPage.js'
 import { qualityStore } from '../../store/store.js'
+import { qualityListPage, QualityPageFrame, RangePager } from './qualityListPage.js'
 
 export default {
 	name: 'QualityIndex',
@@ -102,6 +102,8 @@ export default {
 		CnChartWidget,
 		CnDataTable,
 		ChartBoxOutline,
+		QualityPageFrame,
+		RangePager,
 	},
 
 	mixins: [qualityListPage('fetchLowQualityObjects', 'lowQuality')],
