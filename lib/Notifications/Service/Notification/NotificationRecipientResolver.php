@@ -119,7 +119,11 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
 	 */
 	public function resolveWithDiagnostics(
-		array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = [], array $roleGroups = []
+		array $recipientsSpec,
+		array $data,
+		?ObjectEntity $object = null,
+		array $context = [],
+		array $roleGroups = [],
 	): array {
 		$source = new RecipientSource(data: $data, object: $object, context: $context, roleGroups: $roleGroups);
 
