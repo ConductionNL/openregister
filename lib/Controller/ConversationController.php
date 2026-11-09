@@ -30,6 +30,7 @@ use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
 use OCA\OpenRegister\Controller\Support\ConversationFailure;
 use OCA\OpenRegister\Db\FeedbackMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
@@ -327,8 +328,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 		$page     = $this->paging(params: $this->request->getParams());
 		$messages = $this->messageMapper->findByConversation(
 			conversationId: $conversation->getId(),
-			limit: $page['limit'],
-			offset: $page['offset']
+			page: new ListQuery(limit: $page['limit'], offset: $page['offset'])
 		);
 		$total    = $this->messageMapper->countByConversation($conversation->getId());
 

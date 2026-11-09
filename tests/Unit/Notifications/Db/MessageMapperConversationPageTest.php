@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Db;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Notifications\Db\MessageMapper;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -40,7 +41,7 @@ class MessageMapperConversationPageTest extends TestCase {
 	}//end testTheDefaultPageIsTheFirstHundredMessages()
 
 	public function testAGivenPageIsPassedThrough(): void {
-		$this->mapper()->findByConversation(42, 5, 10);
+		$this->mapper()->findByConversation(42, new ListQuery(limit: 5, offset: 10));
 
 		$this->assertSame(['max' => 5, 'first' => 10], $this->paging);
 	}//end testAGivenPageIsPassedThrough()
