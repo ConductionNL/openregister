@@ -29,6 +29,8 @@ namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
 /**
  * The deployment and author that last moved one value.
+ *
+ * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
  */
 final class ConfigurationProvenance {
 
