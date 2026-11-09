@@ -460,7 +460,9 @@ class ExportHandler {
 	 * the importer can resolve an existing flow on the target instance via
 	 * {@see \OCA\OpenRegister\Db\FlowMapper::findByUuid()}.
 	 *
-	 * A flow that cannot be loaded is logged and left out.
+	 * A flow that cannot be loaded, or that belongs to another organisation
+	 * than the configuration (FlowMapper::findByUuid() is deliberately not
+	 * organisation-scoped), is logged and left out.
 	 *
 	 * @param Configuration $configuration The configuration.
 	 *
@@ -473,6 +475,10 @@ class ExportHandler {
 		foreach ($configuration->getFlows() ?? [] as $flowUuid) {
 			try {
 				$flow = $this->flowMapper->findByUuid($flowUuid);
+				if ($flow->belongsTo($configuration->getOrganisation()) === false) {
+					throw new Exception('Flow belongs to another organisation than this configuration');
+				}
+
 				$flowArray = $flow->jsonSerialize();
 				unset(
 					$flowArray['id'],

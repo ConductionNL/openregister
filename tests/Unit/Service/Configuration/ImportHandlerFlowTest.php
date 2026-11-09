@@ -105,6 +105,15 @@ class ImportHandlerFlowTest extends TestCase {
 	}//end invokeMethod()
 
 	/**
+	 * A configuration in the given organisation, the scope an import writes flows into.
+	 */
+	private function configuration(?string $organisation = 'org-1'): Configuration {
+		$configuration = new Configuration();
+		$configuration->setOrganisation($organisation);
+		return $configuration;
+	}//end configuration()
+
+	/**
 	 * importFlow() returns null without touching the mapper when flowMapper was never wired.
 	 */
 	public function testImportFlowSkipsWhenNoFlowMapper(): void {
@@ -177,6 +186,7 @@ class ImportHandlerFlowTest extends TestCase {
 	public function testImportFlowSkipsUpdateWhenGraphUnchanged(): void {
 		$existing = new Flow();
 		$existing->setUuid('flow-uuid-1');
+		$existing->setOrganisation('org-1');
 		$existing->setNodes(['n1']);
 		$existing->setEdges([]);
 		$existing->setLimits([]);
@@ -189,7 +199,7 @@ class ImportHandlerFlowTest extends TestCase {
 
 		$result = $this->invokeMethod($this->handler, 'importFlow', [
 			['uuid' => 'flow-uuid-1', 'nodes' => ['n1'], 'edges' => [], 'limits' => [], 'executionMode' => Flow::MODE_ASYNC],
-			null,
+			$this->configuration(),
 			null,
 			false,
 		]);
@@ -203,6 +213,7 @@ class ImportHandlerFlowTest extends TestCase {
 	public function testImportFlowForcesUpdateEvenWhenGraphUnchanged(): void {
 		$existing = new Flow();
 		$existing->setUuid('flow-uuid-1');
+		$existing->setOrganisation('org-1');
 		$existing->setNodes(['n1']);
 		$existing->setLifecycleStatus(FlowVersion::STATUS_DRAFT);
 
@@ -212,7 +223,7 @@ class ImportHandlerFlowTest extends TestCase {
 
 		$result = $this->invokeMethod($this->handler, 'importFlow', [
 			['uuid' => 'flow-uuid-1', 'nodes' => ['n1']],
-			null,
+			$this->configuration(),
 			null,
 			true,
 		]);
@@ -226,6 +237,7 @@ class ImportHandlerFlowTest extends TestCase {
 	public function testImportFlowOpensDraftWhenExistingIsPublished(): void {
 		$existing = new Flow();
 		$existing->setUuid('flow-uuid-1');
+		$existing->setOrganisation('org-1');
 		$existing->setNodes(['old']);
 		$existing->setLifecycleStatus(FlowVersion::STATUS_PUBLISHED);
 
@@ -236,7 +248,7 @@ class ImportHandlerFlowTest extends TestCase {
 
 		$result = $this->invokeMethod($this->handler, 'importFlow', [
 			['uuid' => 'flow-uuid-1', 'nodes' => ['new']],
-			null,
+			$this->configuration(),
 			null,
 			false,
 		]);
@@ -250,6 +262,7 @@ class ImportHandlerFlowTest extends TestCase {
 	public function testImportFlowLeavesExistingDraftAlone(): void {
 		$existing = new Flow();
 		$existing->setUuid('flow-uuid-1');
+		$existing->setOrganisation('org-1');
 		$existing->setNodes(['old']);
 		$existing->setLifecycleStatus(FlowVersion::STATUS_DRAFT);
 
@@ -259,7 +272,7 @@ class ImportHandlerFlowTest extends TestCase {
 
 		$this->invokeMethod($this->handler, 'importFlow', [
 			['uuid' => 'flow-uuid-1', 'nodes' => ['new']],
-			null,
+			$this->configuration(),
 			null,
 			false,
 		]);
@@ -271,6 +284,7 @@ class ImportHandlerFlowTest extends TestCase {
 	public function testImportFlowFallsBackToDirectPublishOnDeadEndRefusal(): void {
 		$existing = new Flow();
 		$existing->setUuid('flow-uuid-1');
+		$existing->setOrganisation('org-1');
 		$existing->setNodes(['old']);
 		$existing->setLifecycleStatus(FlowVersion::STATUS_DRAFT);
 
@@ -285,7 +299,7 @@ class ImportHandlerFlowTest extends TestCase {
 
 		$result = $this->invokeMethod($this->handler, 'importFlow', [
 			['uuid' => 'flow-uuid-1', 'nodes' => ['new']],
-			null,
+			$this->configuration(),
 			null,
 			false,
 		]);
@@ -299,6 +313,7 @@ class ImportHandlerFlowTest extends TestCase {
 	public function testImportFlowDoesNotFallBackForNonDeadEndRefusal(): void {
 		$existing = new Flow();
 		$existing->setUuid('flow-uuid-1');
+		$existing->setOrganisation('org-1');
 		$existing->setNodes(['old']);
 		$existing->setLifecycleStatus(FlowVersion::STATUS_DRAFT);
 
@@ -313,7 +328,7 @@ class ImportHandlerFlowTest extends TestCase {
 
 		$result = $this->invokeMethod($this->handler, 'importFlow', [
 			['uuid' => 'flow-uuid-1', 'nodes' => ['new']],
-			null,
+			$this->configuration(),
 			null,
 			false,
 		]);
@@ -332,13 +347,40 @@ class ImportHandlerFlowTest extends TestCase {
 
 		$result = $this->invokeMethod($this->handler, 'importFlow', [
 			['uuid' => 'flow-uuid-1', 'nodes' => ['n1']],
-			null,
+			$this->configuration(),
 			null,
 			false,
 		]);
 
 		$this->assertSame(FlowVersion::STATUS_DRAFT, $result->getLifecycleStatus());
 	}//end testImportFlowWithoutFlowVersionServiceLeavesFlowUnpublished()
+
+	/**
+	 * importFlow() refuses a uuid that already belongs to another organisation instead of overwriting it.
+	 */
+	public function testImportFlowRefusesExistingFlowOfAnotherOrganisation(): void {
+		$existing = new Flow();
+		$existing->setUuid('flow-uuid-1');
+		$existing->setOrganisation('org-A');
+		$existing->setNodes(['old']);
+		$existing->setLifecycleStatus(FlowVersion::STATUS_PUBLISHED);
+
+		$this->flowMapper->method('findByUuid')->willReturn($existing);
+		$this->flowMapper->expects($this->never())->method('update');
+		$this->flowMapper->expects($this->never())->method('insert');
+		$this->flowVersionService->expects($this->never())->method('createDraft');
+		$this->flowVersionService->expects($this->never())->method('publish');
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('another organisation');
+
+		$this->invokeMethod($this->handler, 'importFlow', [
+			['uuid' => 'flow-uuid-1', 'nodes' => ['new']],
+			$this->configuration('org-B'),
+			null,
+			true,
+		]);
+	}//end testImportFlowRefusesExistingFlowOfAnotherOrganisation()
 
 	/**
 	 * applyImportedFlowFields() carries every inheritable setting FlowService does, oversightEnabled included.

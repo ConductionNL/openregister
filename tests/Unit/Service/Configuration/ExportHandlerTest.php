@@ -330,6 +330,7 @@ class ExportHandlerTest extends TestCase {
 		$config->setVersion('1.0.0');
 		$config->setRegisters([]);
 		$config->setFlows(['flow-uuid-1']);
+		$config->setOrganisation('org-1');
 
 		$flow = new \OCA\OpenRegister\Db\Flow();
 		$flow->setUuid('flow-uuid-1');
@@ -351,6 +352,29 @@ class ExportHandlerTest extends TestCase {
 		$this->assertArrayNotHasKey('id', $exported);
 		$this->assertArrayNotHasKey('owner', $exported);
 		$this->assertArrayNotHasKey('organisation', $exported);
+	}
+
+	#[Test]
+	public function testExportConfigLeavesOutAFlowOfAnotherOrganisation(): void {
+		$config = new Configuration();
+		$config->setTitle('Config');
+		$config->setDescription('Desc');
+		$config->setVersion('1.0.0');
+		$config->setRegisters([]);
+		$config->setFlows(['flow-uuid-1']);
+		$config->setOrganisation('org-B');
+
+		$flow = new \OCA\OpenRegister\Db\Flow();
+		$flow->setUuid('flow-uuid-1');
+		$flow->setName('Not yours');
+		$flow->setOrganisation('org-A');
+
+		$this->flowMapper->method('findByUuid')->with('flow-uuid-1')->willReturn($flow);
+		$this->logger->expects($this->once())->method('warning');
+
+		$result = $this->handler->exportConfig($config);
+
+		$this->assertEmpty($result['components']['flows']);
 	}
 
 	#[Test]

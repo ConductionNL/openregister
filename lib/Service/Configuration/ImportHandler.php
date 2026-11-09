@@ -1349,6 +1349,8 @@ class ImportHandler {
 	 *
 	 * @return Flow|null The imported flow entity, or null if skipped.
 	 *
+	 * @throws Exception When the uuid belongs to a flow of another organisation.
+	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override the unchanged-graph skip
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -1373,6 +1375,20 @@ class ImportHandler {
 		}
 
 		$existingFlow = $this->findFlowByUuid(uuid: $uuid);
+
+		// FlowMapper::findByUuid() is deliberately NOT organisation-scoped; its
+		// callers scope with belongsTo(). A uuid that already belongs to another
+		// organisation is refused rather than overwritten, and rather than given
+		// a fresh uuid (that would break re-import idempotency). The caller's
+		// loop counts the refusal in `skipped['flows']`.
+		if ($existingFlow !== null
+			&& $existingFlow->belongsTo($configuration?->getOrganisation()) === false
+		) {
+			throw new Exception(
+				'Flow "' . $uuid . '" exists in another organisation than this configuration; not overwritten'
+			);
+		}
+
 		if ($existingFlow !== null
 			&& $force === false
 			&& $this->flowGraphUnchanged(existing: $existingFlow, data: $data) === true
