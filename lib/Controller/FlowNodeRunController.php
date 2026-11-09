@@ -51,6 +51,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowNodeCall;
 use OCA\OpenRegister\Controller\Support\FlowNodeRunControllerServices;
 use OCA\OpenRegister\Db\FlowRun;
@@ -166,7 +167,6 @@ class FlowNodeRunController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param FlowNodeRunControllerServices $services The flow node run controller services.
 	 *                              {@see FlowRunService::executeNode()}'s
@@ -178,11 +178,10 @@ class FlowNodeRunController extends Controller {
 	 *                              multitenancy.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FlowNodeRunControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->userSession = $services->platform->userSession;
 		$this->flows = $services->graph->flows;
 		$this->publishedGraphs = $services->graph->publishedGraphs;
