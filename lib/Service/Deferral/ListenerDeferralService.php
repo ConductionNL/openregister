@@ -221,7 +221,8 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 		int $chunkSize = self::DEFAULT_CHUNK_SIZE,
 		?string $dedupeKey = null,
 	): void {
-		$this->deferEntry(deferred: new DeferredEntry(jobClass: $jobClass, entry: $entry), options: new DeferralOptions(chunkSize: $chunkSize, dedupeKey: $dedupeKey));
+		$options = new DeferralOptions(chunkSize: $chunkSize, dedupeKey: $dedupeKey);
+		$this->deferEntry(deferred: new DeferredEntry(jobClass: $jobClass, entry: $entry), options: $options);
 	}//end defer()
 
 	/**
