@@ -120,7 +120,6 @@ class FlowTestRunControllerTest extends TestCase {
 	 */
 	private function controllerWith(?FlowAccess $access): FlowTestRunController {
 		return FlowTestRunControllerFactory::create(
-			appName: 'openregister',
 			request: $this->request,
 			runner: $this->runner,
 			resolvers: $this->resolvers,
