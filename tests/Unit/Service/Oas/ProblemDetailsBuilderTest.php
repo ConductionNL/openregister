@@ -111,6 +111,31 @@ class ProblemDetailsBuilderTest extends TestCase {
 
 	}//end testConflictHelperEmits409()
 
+	public function testEmptyTypeFallsBackToAboutBlankAndReservedExtensionsAreDropped(): void {
+		$problem = $this->builder->build(
+			status: 409,
+			title: 'Conflict',
+			description: new ProblemDescription(detail: '', type: '', instance: ''),
+			extensions: ['title' => 'x', 'detail' => 'y', 'instance' => 'z', 'retryAfter' => 5]
+		);
+
+		$this->assertSame(
+			['type' => 'about:blank', 'title' => 'Conflict', 'status' => 409, 'retryAfter' => 5],
+			$problem
+		);
+
+	}//end testEmptyTypeFallsBackToAboutBlankAndReservedExtensionsAreDropped()
+
+	public function testValidationFailedCarriesInstanceAndErrorsLast(): void {
+		$problem = $this->builder->validationFailed(errors: [], detail: '', instance: '/api/x');
+
+		$this->assertSame(
+			['type' => 'about:blank', 'title' => 'Validation failed', 'status' => 422, 'instance' => '/api/x', 'errors' => []],
+			$problem
+		);
+
+	}//end testValidationFailedCarriesInstanceAndErrorsLast()
+
 	public function testContentTypeConstantIsRfc7807(): void {
 		$this->assertSame('application/problem+json', ProblemDetailsBuilder::CONTENT_TYPE);
 
