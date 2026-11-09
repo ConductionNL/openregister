@@ -78,6 +78,10 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
+use OCA\OpenRegister\Db\MagicMapper\MagicUpsertBatch;
+use OCA\OpenRegister\Db\MagicMapper\RelationBatchLookup;
+use OCA\OpenRegister\Db\MagicMapper\UuidBatchLookup;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\MagicMapper\MagicRelationSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugTable;
@@ -5373,6 +5377,22 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		bool $includeDeleted = false,
 		?int $registerIdScope = null,
 	): array {
+		return $this->findMultipleAcross(lookup: new UuidBatchLookup(uuids: $uuids, includeDeleted: $includeDeleted), registerIdScope: $registerIdScope);
+	}//end findMultipleAcrossAllMagicTables()
+
+	/**
+	 * Find objects by uuid across the magic tables, narrowed to one register when named (see findMultipleAcrossAllMagicTables()).
+	 *
+	 * @param UuidBatchLookup $lookup          The uuids and whether soft-deleted rows count.
+	 * @param int|null        $registerIdScope Restrict the scan to one register's tables.
+	 *
+	 * @return array The found objects.
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function findMultipleAcross(UuidBatchLookup $lookup, ?int $registerIdScope=null): array {
+		$uuids          = $lookup->uuids;
+		$includeDeleted = $lookup->includeDeleted;
+
 		if (empty($uuids) === true) {
 			return [];
 		}
@@ -5403,7 +5423,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		);
 
 		return $foundObjects;
-	}//end findMultipleAcrossAllMagicTables()
+	}//end findMultipleAcross()
 
 	/**
 	 * Find objects by uuid across all magic tables, each with every stored column.
@@ -7299,6 +7319,27 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		string $tableName,
 		bool $needsPreUpdateState = true,
 	): array {
+		$target = new MagicTableTarget(register: $register, schema: $schema);
+		$target->tableName = $tableName;
+		return $this->bulkUpsertInto(target: $target, batch: new MagicUpsertBatch(objects: $objects, needsPreUpdateState: $needsPreUpdateState));
+	}//end bulkUpsert()
+
+	/**
+	 * Bulk upsert rows into a register+schema table, creating the table when it is missing (see bulkUpsert()).
+	 *
+	 * @param MagicTableTarget $target The register, schema and table name to write to.
+	 * @param MagicUpsertBatch $batch  The rows and whether their pre-update state is needed.
+	 *
+	 * @return array The handler's upsert result.
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function bulkUpsertInto(MagicTableTarget $target, MagicUpsertBatch $batch): array {
+		$register            = $target->register;
+		$schema              = $target->schema;
+		$tableName           = $target->tableName;
+		$objects             = $batch->objects;
+		$needsPreUpdateState = $batch->needsPreUpdateState;
+
 		$this->logger->debug(
 			message: '[MagicMapper] Delegating bulk upsert to MagicBulkHandler',
 			context: [
@@ -7337,7 +7378,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				tableName: $tableName
 			);
 		}//end try
-	}//end bulkUpsert()
+	}//end bulkUpsertInto()
 
 	/**
 	 * Create the table a failed bulk upsert found missing, or rethrow the failure.
@@ -7608,6 +7649,26 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		string $fieldName,
 		array $additionalFieldNames = [],
 	): array {
+		$lookup = new RelationBatchLookup(uuids: $uuids, fieldName: $fieldName, additionalFieldNames: $additionalFieldNames);
+		return $this->findByRelationBatchIn(ref: new RegisterSchemaRef(register: $registerId, schema: $schemaId), lookup: $lookup);
+	}//end findByRelationBatchInSchema()
+
+	/**
+	 * Find the objects of one register+schema table whose relation fields hold any of the given uuids (see findByRelationBatchInSchema()).
+	 *
+	 * @param RegisterSchemaRef   $ref    The register and schema ids of the table.
+	 * @param RelationBatchLookup $lookup The uuids and the relation fields to match in.
+	 *
+	 * @return ObjectEntity[] The matching objects.
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function findByRelationBatchIn(RegisterSchemaRef $ref, RelationBatchLookup $lookup): array {
+		$uuids                = $lookup->uuids;
+		$schemaId             = (int)$ref->schema;
+		$registerId           = (int)$ref->register;
+		$fieldName            = $lookup->fieldName;
+		$additionalFieldNames = $lookup->additionalFieldNames;
+
 		if (empty($uuids) === true) {
 			return [];
 		}
@@ -7640,7 +7701,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		);
 
 		return $results;
-	}//end findByRelationBatchInSchema()
+	}//end findByRelationBatchIn()
 
 	/**
 	 * The objects a statement selects.
@@ -8454,6 +8515,24 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @psalm-return list<ObjectEntity>
 	 */
 	public function findBySchema(int $schemaId, ?int $limit = null, ?int $offset = null, ?array $filter = null): array {
+		$listing = new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filter ?? []));
+		return $this->findBySchemaListed(schemaId: $schemaId, listing: $listing);
+	}//end findBySchema()
+
+	/**
+	 * Find the objects of one schema across every register that holds it (see findBySchema()).
+	 *
+	 * @param int       $schemaId The schema id.
+	 * @param ListQuery $listing  The limit (unbounded for all rows), offset and filters per table.
+	 *
+	 * @return ObjectEntity[] The objects.
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function findBySchemaListed(int $schemaId, ListQuery $listing): array {
+		$limit  = $listing->limitOrNull();
+		$offset = $listing->offset;
+		$filter = $listing->filters;
+
 		// Find all register+schema pairs that include this schema.
 		$allPairs = $this->getAllRegisterSchemaPairs();
 		$results = [];
@@ -8490,7 +8569,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}//end foreach
 
 		return $results;
-	}//end findBySchema()
+	}//end findBySchemaListed()
 
 	/**
 	 * Insert a new object entity with event dispatching.
@@ -9001,13 +9080,34 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		?Schema $schema = null,
 		bool $needsPreUpdateState = true,
 	): array {
+		$group = new MagicBulkSaveGroup(insertObjects: $insertObjects, needsPreUpdateState: $needsPreUpdateState);
+		$group->register = $register;
+		$group->schema   = $schema;
+		return $this->ultraFastBulkSaveGroup(group: $group);
+	}//end ultraFastBulkSave()
+
+	/**
+	 * Bulk save a batch of new objects, split per register+schema when no schema is given (see ultraFastBulkSave()).
+	 *
+	 * @param MagicBulkSaveGroup $group The objects, the pre-update-state flag and the register and schema, if known.
+	 *
+	 * @return array The saved rows.
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function ultraFastBulkSaveGroup(MagicBulkSaveGroup $group): array {
+		$insertObjects       = $group->insertObjects;
+		$needsPreUpdateState = $group->needsPreUpdateState;
+		$register            = $group->register;
+		$schema              = $group->schema;
+
 		$this->logger->debug(
 			message: '[MagicMapper] ultraFastBulkSave called',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'insertCount' => count($insertObjects),
-				'updateCount' => count($updateObjects),
+				// This path only inserts: update rows were never written, only counted here.
+				'updateCount' => 0,
 				'hasRegister' => $register !== null,
 				'hasSchema' => $schema !== null,
 			]
@@ -9039,7 +9139,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$group->register = $register;
 		$group->schema   = $schema;
 		return $this->ultraFastBulkSaveSingleSchema(group: $group);
-	}//end ultraFastBulkSave()
+	}//end ultraFastBulkSaveGroup()
 
 	/**
 	 * Group bulk inserts by their register and schema; objects without a schema are left out.
