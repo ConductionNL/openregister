@@ -563,7 +563,8 @@ class FederationController extends Controller {
 				id: $id,
 				register: $share->getRegister(),
 				schema: $share->getSchema(),
-				_rbac: false,
+				// phpcs:ignore Squiz.Commenting.InlineComment.NotCapital -- ADR-055 marker.
+				_rbac: false, // rbac-bypass: a token request has no user; the share guard (scope, query, organisation, confidentiality) judges the record.
 				_multitenancy: false
 			));
 		} catch (DoesNotExistException $e) {
@@ -614,7 +615,13 @@ class FederationController extends Controller {
 
 		$this->setServeContext(share: $share);
 
-		foreach ($this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false) as $hit) {
+		$hits = $this->objectService->findAll(
+			config: $config,
+			// phpcs:ignore Squiz.Commenting.InlineComment.NotCapital -- ADR-055 marker.
+			_rbac: false, // rbac-bypass: the share's own query is the filter; the hit must be the record the guard resolved.
+			_multitenancy: false
+		);
+		foreach ($hits as $hit) {
 			if ($uuid !== '' && $hit instanceof ObjectEntity === true && $hit->getUuid() === $uuid) {
 				return true;
 			}
