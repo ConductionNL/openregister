@@ -447,7 +447,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @param Task $task The task being offered.
 	 * @param array<string, mixed> $pool The sent routing fields.
 	 *
-	 * @return void
+	 * @return Task The same task, with its pool applied.
 	 */
 	private function pooled(Task $task, array $pool): Task {
 		$settable = [
@@ -617,7 +617,9 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function assign(string $uuid, string $assignee, ?string $actor): Task {
-		return $this->assignInternal(act: new TaskAct(verb: 'assign', actor: $actor, state: Task::STATE_ACTIVE), uuid: $uuid, assignee: $assignee);
+		$act = new TaskAct(verb: 'assign', actor: $actor, state: Task::STATE_ACTIVE);
+
+		return $this->assignInternal(act: $act, assignment: new TaskAssignment(uuid: $uuid, assignee: $assignee));
 	}//end assign()
 
 	/**
@@ -632,7 +634,9 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function reassign(string $uuid, string $assignee, ?string $actor): Task {
-		return $this->assignInternal(act: new TaskAct(verb: 'reassign', actor: $actor, state: Task::STATE_ACTIVE), uuid: $uuid, assignee: $assignee);
+		$act = new TaskAct(verb: 'reassign', actor: $actor, state: Task::STATE_ACTIVE);
+
+		return $this->assignInternal(act: $act, assignment: new TaskAssignment(uuid: $uuid, assignee: $assignee));
 	}//end reassign()
 
 	/**
@@ -1423,18 +1427,19 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * Shared body of assign and reassign.
 	 *
 	 * @param TaskAct $act The verb (assign or reassign), actor and target state.
-	 * @param string $uuid The task uuid.
-	 * @param string $assignee The new assignee.
+	 * @param TaskAssignment $assignment The task uuid and the new assignee.
 	 *
 	 * @return Task The assigned task.
 	 *
 	 * @throws TaskValidationException When the assignee is blank.
 	 */
-	private function assignInternal(TaskAct $act, string $uuid, string $assignee): Task {
-		$task = $this->openTaskFor(act: $act, uuid: $uuid);
-		$this->refuseBlank(value: $assignee, message: 'An assignment requires a non-empty assignee.');
+	private function assignInternal(TaskAct $act, TaskAssignment $assignment): Task {
+		$task = $this->openTaskFor(act: $act, uuid: $assignment->uuid);
+		$this->refuseBlank(value: $assignment->assignee, message: 'An assignment requires a non-empty assignee.');
 
-		return $this->transactional(mutation: fn (): Task => $this->settle(task: $this->assignedTo(task: $task, assignee: $assignee), act: $act));
+		$assigned = fn (): Task => $this->assignedTo(task: $task, assignee: $assignment->assignee);
+
+		return $this->transactional(mutation: fn (): Task => $this->settle(task: $assigned(), act: $act));
 	}//end assignInternal()
 
 	/**

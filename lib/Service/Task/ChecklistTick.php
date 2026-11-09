@@ -44,6 +44,8 @@ final class ChecklistTick {
 	 * The audit reason for this tick.
 	 *
 	 * @return string The reason.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function reason(): string {
 		return sprintf("Item '%s' set to '%s'.", $this->itemId, var_export($this->checked, true));
