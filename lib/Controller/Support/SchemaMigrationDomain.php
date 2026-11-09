@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Service\Schema\PropertyConversionServiceInterface;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
 use OCA\OpenRegister\Service\Schema\SchemaObjectReader;
-use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
+use OCA\OpenRegister\Service\Schema\SchemaRevalidatorInterface;
 
 /**
  * The domain services of the schema migration API.
@@ -36,7 +36,7 @@ final class SchemaMigrationDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param SchemaRevalidationService           $revalidationService Revalidation engine.
+	 * @param SchemaRevalidatorInterface          $revalidationService Revalidation engine.
 	 * @param SchemaMigrationService              $migrationService    Migration engine.
 	 * @param SchemaObjectReader                  $objectReader        Locates a schema's register and reads its stored values.
 	 * @param ?PropertyConversionServiceInterface $conversions         Publishes and previews a property type change.
@@ -44,7 +44,7 @@ final class SchemaMigrationDomain {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function __construct(
-		public readonly SchemaRevalidationService $revalidationService,
+		public readonly SchemaRevalidatorInterface $revalidationService,
 		public readonly SchemaMigrationService $migrationService,
 		public readonly SchemaObjectReader $objectReader,
 		public readonly ?PropertyConversionServiceInterface $conversions = null,

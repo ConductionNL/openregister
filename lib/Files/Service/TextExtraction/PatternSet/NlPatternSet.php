@@ -24,7 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction\PatternSet;
 
-use OCA\OpenRegister\Formats\BsnFormat;
+use OCA\OpenRegister\Formats\IdentifierFormats;
+use Opis\JsonSchema\Format;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 
 /**
@@ -32,7 +33,7 @@ use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
  *
  * A BSN is a nine-digit token, written plain or in the groups 4-2-3 or 3-2-4
  * separated by a dot or a space, that passes the elfproef. The elfproef is
- * the one in {@see BsnFormat}; no second copy is written here. A nine-digit
+ * the one in the Formats component; no second copy is written here. A nine-digit
  * token that fails it is not a BSN and is not reported. A BSN is reported as
  * {@see EntityRecognitionHandler::ENTITY_TYPE_SSN}, the citizen service number
  * type the risk service rates very high.
@@ -59,13 +60,19 @@ class NlPatternSet implements JurisdictionPatternSet {
 	private const BSN_CONFIDENCE = 0.85;
 
 	/**
+	 * The elfproef.
+	 *
+	 * @var Format
+	 */
+	private readonly Format $bsnFormat;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param BsnFormat $bsnFormat The elfproef.
+	 * @param Format|null $bsnFormat The elfproef; the Formats component's BSN check when null.
 	 */
-	public function __construct(
-		private readonly BsnFormat $bsnFormat = new BsnFormat(),
-	) {
+	public function __construct(?Format $bsnFormat=null) {
+		$this->bsnFormat = $bsnFormat ?? IdentifierFormats::bsn();
 	}//end __construct()
 
 	/**

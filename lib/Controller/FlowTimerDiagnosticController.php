@@ -38,9 +38,9 @@ use DateTimeImmutable;
 use Exception;
 use OCA\OpenRegister\Controller\Support\FlowTimerDiagnosticControllerServices;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
-use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
+use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use OCA\OpenRegister\Service\Flow\Timer\TermQuery;
-use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -73,9 +73,16 @@ class FlowTimerDiagnosticController extends Controller {
 	/**
 	 * The engine, narrating.
 	 *
-	 * @var TermDiagnostic
+	 * @var TermDiagnosticInterface
 	 */
-	private readonly TermDiagnostic $diagnostic;
+	private readonly TermDiagnosticInterface $diagnostic;
+
+	/**
+	 * Builds and validates the calendar definition.
+	 *
+	 * @var WorkingCalendarDefinitionsInterface
+	 */
+	private readonly WorkingCalendarDefinitionsInterface $calendars;
 
 	/**
 	 * Constructor.
@@ -93,6 +100,7 @@ class FlowTimerDiagnosticController extends Controller {
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;
 		$this->diagnostic = $services->diagnostic;
+		$this->calendars = $services->calendars;
 	}//end __construct()
 
 	/**
@@ -126,7 +134,7 @@ class FlowTimerDiagnosticController extends Controller {
 			return new JSONResponse(
 				data: $this->diagnostic->explain(
 					query: new TermQuery(
-						calendar: WorkingCalendars::fromDefinition(definition: $calendar),
+						calendar: $this->calendars->parse(definition: $calendar),
 						anchor: $anchor,
 						sla: $sla,
 						ladder: $ladder

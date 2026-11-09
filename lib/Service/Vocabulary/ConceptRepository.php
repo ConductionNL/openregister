@@ -147,9 +147,8 @@ class ConceptRepository implements ConceptRepositoryInterface {
 	}//end ids()
 
 	/**
-	 * Run one read against the vocabulary register.
+	 * Run one read against the vocabulary register, whose ids the caller has resolved.
 	 *
-	 * @param integer $registerId The vocabulary register's id.
 	 * @param integer $schemaId The schema to read from.
 	 * @param array<string,mixed> $filters Object-field filters.
 	 * @param integer $limit The row cap.
@@ -157,7 +156,8 @@ class ConceptRepository implements ConceptRepositoryInterface {
 	 *
 	 * @return array<int,ObjectEntity> The matching entities.
 	 */
-	private function read(int $registerId, int $schemaId, array $filters, int $limit, array $metadata = []): array {
+	private function read(int $schemaId, array $filters, int $limit, array $metadata = []): array {
+		$registerId = (int)($this->ids()[0] ?? 0);
 		// Vocabularies are public reference data and this read runs inside a
 		// write guard, so it is deliberately not RBAC-scoped: a value the
 		// caller may not LIST is still a value the scheme refuses to accept,
@@ -262,7 +262,7 @@ class ConceptRepository implements ConceptRepositoryInterface {
 			return null;
 		}
 
-		$results = $this->read(registerId: $ids[0], schemaId: $ids[1], filters: $filters, limit: 1, metadata: $metadata);
+		$results = $this->read(schemaId: $ids[1], filters: $filters, limit: 1, metadata: $metadata);
 
 		$entity = ($results[0] ?? null);
 		if ($entity instanceof ObjectEntity === false) {
@@ -340,7 +340,6 @@ class ConceptRepository implements ConceptRepositoryInterface {
 		}
 
 		$results = $this->read(
-			registerId: $ids[0],
 			schemaId: $ids[2],
 			filters: $filters,
 			limit: self::MAX_SCHEME_CONCEPTS

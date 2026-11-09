@@ -32,9 +32,7 @@ namespace OCA\OpenRegister\Service\Decision;
 use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Event\DecisionVisibilityRequestedEvent;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -68,15 +66,13 @@ class DecisionVisibility implements DecisionVisibilityInterface {
 	 * @param ReviewPolicyResolver $resolver        The policy of the relation's subject.
 	 * @param DecisionService      $decisions       The current decision.
 	 * @param IGroupManager        $groupManager    Administrators and supervisors.
-	 * @param IEventDispatcher     $eventDispatcher Asks the app that owns the subject (REQ-DEC-003).
-	 * @param LoggerInterface      $logger          Records a listener that failed.
+	 * @param DecisionVisibilityPlatform $platform The event dispatcher and the logger.
 	 */
 	public function __construct(
 		private readonly ReviewPolicyResolver $resolver,
 		private readonly DecisionService $decisions,
 		private readonly IGroupManager $groupManager,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly LoggerInterface $logger,
+		private readonly DecisionVisibilityPlatform $platform,
 	) {
 	}//end __construct()
 
@@ -185,9 +181,9 @@ class DecisionVisibility implements DecisionVisibilityInterface {
 		$event = new DecisionVisibilityRequestedEvent(decision: $decision, actorId: $userId, policy: $policy, subject: $subject);
 
 		try {
-			$this->eventDispatcher->dispatchTyped($event);
+			$this->platform->eventDispatcher->dispatchTyped($event);
 		} catch (Throwable $error) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[DecisionVisibility] A listener failed; the decision stays hidden.',
 				context: ['decision' => $decision?->getUuid(), 'actor' => $userId, 'error' => $error->getMessage()]
 			);

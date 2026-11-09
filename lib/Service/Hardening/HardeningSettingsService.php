@@ -84,13 +84,13 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 		try {
 			$this->guard->assertValue(control: $control, proposed: $value);
 		} catch (HardeningFloorException $refusal) {
-			$this->record(control: $control, before: $before, after: $value, accepted: false, refusal: $refusal->getMessage());
+			$this->record(control: $control, before: $before, after: $value, refusal: $refusal->getMessage());
 			throw $refusal;
 		}
 
 		[$key] = HardeningPolicy::CONTROLS[$control];
 		$this->store->appConfig->setValueInt(HardeningPolicy::APP_ID, $key, $value);
-		$this->record(control: $control, before: $before, after: $value, accepted: true);
+		$this->record(control: $control, before: $before, after: $value);
 
 		return $value;
 
@@ -130,14 +130,13 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 				control: 'origins.allowlistEntries',
 				before: $before,
 				after: $cleaned,
-				accepted: false,
 				refusal: $refusal->getMessage(),
 			);
 			throw $refusal;
 		}
 
 		$this->store->appConfig->setValueString(HardeningPolicy::APP_ID, HardeningPolicy::ORIGINS_KEY, implode(',', $cleaned));
-		$this->record(control: 'origins.allowlistEntries', before: $before, after: $cleaned, accepted: true);
+		$this->record(control: 'origins.allowlistEntries', before: $before, after: $cleaned);
 
 		return $cleaned;
 
@@ -174,7 +173,6 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 				control: ($control . '.floor'),
 				before: $before,
 				after: $floor,
-				accepted: false,
 				refusal: $refusal->getMessage(),
 			);
 			throw $refusal;
@@ -187,7 +185,7 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 			HardeningPolicy::FLOORS_KEY,
 			(string)json_encode($declared)
 		);
-		$this->record(control: ($control . '.floor'), before: $before, after: $floor, accepted: true);
+		$this->record(control: ($control . '.floor'), before: $before, after: $floor);
 
 		return $floor;
 
@@ -247,19 +245,18 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 	 * @param string $control The control identifier.
 	 * @param int|string|array $before The value before.
 	 * @param int|string|array $after The value asked for.
-	 * @param bool $accepted Whether the change was made.
-	 * @param string $refusal The refusal, when there was one.
+	 * @param string|null $refusal The refusal, or null when the change was made.
 	 *
 	 * @return void
 	 */
-	private function record(string $control, int|string|array $before, int|string|array $after, bool $accepted, string $refusal = ''): void {
+	private function record(string $control, int|string|array $before, int|string|array $after, ?string $refusal = null): void {
 		try {
 			$this->store->auditTrailMapper->createHardeningChangeEntry(
 				control: $control,
 				before: $before,
 				after: $after,
-				accepted: $accepted,
-				refusal: $refusal,
+				accepted: $refusal === null,
+				refusal: ($refusal ?? ''),
 			);
 		} catch (Throwable $failure) {
 			$this->store->logger->error(

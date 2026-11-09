@@ -58,21 +58,35 @@ class OrganisationHaltService implements OrganisationHaltServiceInterface {
 	public const ACTION_RELEASED = 'organisation.halt.released';
 
 	/**
+	 * Where the active halts are kept.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Where their history goes.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $audit;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig         $appConfig     Where the active halts are kept.
-	 * @param AuditTrailMapperInterface   $audit         Where their history goes.
-	 * @param IUserSession       $session       Who is acting.
+	 * @param OrganisationHaltRecords     $records       The app config holding the active halts and the audit trail holding their history.
+	 * @param IUserSession                $session       Who is acting.
 	 * @param OrganisationMapperInterface $organisations To refuse an organisation that does not exist.
-	 * @param LoggerInterface    $logger        The logger.
+	 * @param LoggerInterface             $logger        The logger.
 	 */
 	public function __construct(
-		private readonly IAppConfig $appConfig,
-		private readonly AuditTrailMapperInterface $audit,
+		OrganisationHaltRecords $records,
 		private readonly IUserSession $session,
 		private readonly OrganisationMapperInterface $organisations,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->appConfig = $records->appConfig;
+		$this->audit = $records->audit;
 	}//end __construct()
 
 	/**
