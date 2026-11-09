@@ -210,8 +210,8 @@ class ExampleSetUserObjectRowsGoldenTest extends TestCase {
 		$mapper = $this->createMock(WatcherMapperInterface::class);
 		$seen   = [];
 		$mapper->expects($this->exactly(2))->method('subscribe')->willReturnCallback(
-			function (...$args) use (&$seen) {
-				$seen[] = $args;
+			function (Watcher $follow, ?bool $notify) use (&$seen) {
+				$seen[] = [$follow->getUserId(), $follow->getObjectUuid(), $follow->getRegister(), $follow->getSchema(), $notify];
 				if (count($seen) === 2) {
 					throw new RuntimeException('no table');
 				}

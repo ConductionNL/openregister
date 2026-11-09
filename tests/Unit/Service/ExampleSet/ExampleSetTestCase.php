@@ -1245,14 +1245,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function watcherMapper(): WatcherMapper {
 		$mapper = $this->createMock(WatcherMapper::class);
 		$mapper->method('subscribe')->willReturnCallback(
-			function (string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?bool $notify = null): Watcher {
-				$watcher = new Watcher();
-				$watcher->setUserId($userId);
-				$watcher->setObjectUuid($objectUuid);
-				$watcher->setRegister($register);
-				$watcher->setSchema($schema);
+			function (Watcher $watcher, ?bool $notify = null): Watcher {
 				$watcher->setNotify($notify ?? true);
-				$this->follows[$userId.' '.$objectUuid] = $watcher;
+				$this->follows[$watcher->getUserId().' '.$watcher->getObjectUuid()] = $watcher;
 				return $watcher;
 			}
 		);
