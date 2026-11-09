@@ -1,0 +1,349 @@
+{
+	"info": {
+		"_postman_id": "or-t28-maintenance-reachable-2026-11-09",
+		"name": "OpenRegister maintenance mode round trip",
+		"description": "Enter maintenance mode over the API, see an ordinary route held with 503, and leave it again over the same API. Guards MaintenanceReachableControllersInterface::ALWAYS_REACHABLE: the controller that administers the mode must not be closed by it, or an administrator who entered it cannot leave without occ. Seeds its own register and deletes it; depends on no other collection.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin"
+		},
+		{
+			"key": "run",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "maintenance round trip",
+			"item": [
+				{
+					"name": "create register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\": \"t28-maint-{{run}}\", \"slug\": \"t28-maint-{{run}}\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+									"const body = pm.response.json();",
+									"pm.test('register carries the slug sent', () => pm.expect(body.slug).to.eql('t28-maint-' + pm.collectionVariables.get('run')));",
+									"pm.collectionVariables.set('register_id', String(body.id));"
+								]
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "the instance starts open",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the mode does not hold', () => pm.expect(body.holds).to.eql(false));"
+								]
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "enter maintenance mode",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"message\": \"t28 window {{run}}\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the mode holds', () => pm.expect(body.holds).to.eql(true));",
+									"pm.test('the message is the one sent', () => pm.expect(body.message).to.eql('t28 window ' + pm.collectionVariables.get('run')));",
+									"pm.test('the actor is the admin', () => pm.expect(body.actor).to.eql(pm.variables.get('admin_user')));"
+								]
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "a register read is held",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 503', () => pm.response.to.have.status(503));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the refusal names maintenance mode', () => pm.expect(body.error).to.eql('maintenance-mode'));",
+									"pm.test('and carries the operator message', () => pm.expect(body.message).to.eql('t28 window ' + pm.collectionVariables.get('run')));"
+								]
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "the maintenance state stays readable while the mode holds",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('it reports the mode holding', () => pm.expect(body.holds).to.eql(true));"
+								]
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "leave maintenance mode",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the mode no longer holds', () => pm.expect(body.holds).to.eql(false));",
+									"pm.test('since and actor cleared', () => { pm.expect(body.since).to.eql(null); pm.expect(body.actor).to.eql(null); });"
+								]
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "the register is readable again",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"",
+									"pm.test('the register read answers our register', () => pm.expect(String(body.id)).to.eql(pm.collectionVariables.get('register_id')));"
+								]
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "delete register",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register deleted', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));",
+									"pm.test('the instance is open for the delete', () => pm.expect(pm.response.code).to.not.eql(503));"
+								]
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				}
+			]
+		}
+	]
+}
