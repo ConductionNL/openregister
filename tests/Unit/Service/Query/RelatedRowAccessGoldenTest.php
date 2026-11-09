@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
+use OCA\OpenRegister\Service\Query\RelatedRowClauseBatch;
 use OCA\OpenRegister\Service\Query\RelatedRowExistsClause;
 use OCA\OpenRegister\Service\Query\RelatedRowFilter;
 use OCA\OpenRegister\Service\Query\RelatedRowInnerRow;
@@ -174,13 +175,15 @@ class RelatedRowAccessGoldenTest extends TestCase {
 	 */
 	private function renderMany(array $filters, callable $access): array {
 		return (new RelatedRowExistsClause())->renderAll(
-			filters: $filters,
-			target: new RelatedRowSqlTarget(
-				engine: RelatedRowExistsClause::ENGINE_POSTGRES,
-				table: 'oc_objects',
-				outerAlias: 'o'
-			),
-			accessPredicateFor: $access
+			new RelatedRowClauseBatch(
+				filters: $filters,
+				target: new RelatedRowSqlTarget(
+					engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+					table: 'oc_objects',
+					outerAlias: 'o'
+				),
+				accessPredicateFor: $access(...)
+			)
 		);
 	}//end renderMany()
 
