@@ -5106,10 +5106,20 @@ class ImportHandler {
 	 * configuration. It creates or finds a Configuration entity, performs the
 	 * import via importFromJson, and updates the Configuration tracking.
 	 *
-	 * @param string $appId The application ID.
-	 * @param array $data The configuration data.
-	 * @param string $version The configuration version.
-	 * @param bool $force Force import regardless of version.
+	 * A caller that imports a bundle on behalf of a known Configuration (the
+	 * cron sync of a GitHub, GitLab or URL source) passes it as
+	 * `$configuration`. The import then lands on that configuration instead
+	 * of one the bundle selects itself (by its own `sourceUrl` or app id, or a
+	 * newly created local one), so a remote bundle cannot make itself a
+	 * trusted local app bundle by leaving out `x-openregister.sourceType`:
+	 * the trust decision on imported flow delegation reads the configuration
+	 * the caller synced.
+	 *
+	 * @param string             $appId         The application ID.
+	 * @param array              $data          The configuration data.
+	 * @param string             $version       The configuration version.
+	 * @param bool               $force         Force import regardless of version.
+	 * @param Configuration|null $configuration The configuration being synced, or null to resolve it from the bundle.
 	 *
 	 * @return array The import results.
 	 *
@@ -5131,7 +5141,13 @@ class ImportHandler {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function importFromApp(string $appId, array $data, string $version, bool $force = false): array {
+	public function importFromApp(
+		string $appId,
+		array $data,
+		string $version,
+		bool $force = false,
+		?Configuration $configuration = null
+	): array {
 		try {
 			$import = new AppImport(
 				appId: $appId,
@@ -5140,7 +5156,7 @@ class ImportHandler {
 				force: $force
 			);
 
-			$configuration = ($this->findAppConfiguration(import: $import) ?? $this->createAppConfiguration(import: $import));
+			$configuration = ($configuration ?? $this->findAppConfiguration(import: $import) ?? $this->createAppConfiguration(import: $import));
 
 			// Run under its own import job id so the objects it creates can be
 			// removed by job later (a setup wizard's "remove this example set").

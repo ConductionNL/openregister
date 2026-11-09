@@ -561,4 +561,44 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$this->runJob(null);
 	}
+
+	/**
+	 * Every remote sync (github, gitlab, url) imports into the configuration it syncs,
+	 * so the bundle cannot resolve itself onto a trusted local configuration.
+	 */
+	public function testRemoteSyncsImportIntoTheSyncedConfiguration(): void {
+		$github = $this->createConfigEntity(['id' => 1, 'sourceType' => 'github']);
+		$gitlab = $this->createConfigEntity([
+			'id' => 2,
+			'sourceType' => 'gitlab',
+			'sourceUrl' => 'https://gitlab.com/myns/myproj/-/blob/main/config.json',
+		]);
+		$url    = $this->createConfigEntity(['id' => 3, 'sourceType' => 'url']);
+
+		$this->configurationMapper->method('findBySyncEnabled')->willReturn([$github, $gitlab, $url]);
+
+		// A remote bundle without x-openregister.sourceType.
+		$bundle = ['x-openregister' => ['app' => 'myapp'], 'info' => ['version' => '1.0.0']];
+		$this->githubService->method('getFileContent')->willReturn($bundle);
+		$this->gitlabService->method('getProjectByPath')->willReturn(['id' => 42]);
+		$this->gitlabService->method('getFileContent')->willReturn($bundle);
+
+		$body = $this->createMock(StreamInterface::class);
+		$body->method('getContents')->willReturn(json_encode($bundle));
+		$response = $this->createMock(ResponseInterface::class);
+		$response->method('getBody')->willReturn($body);
+		$this->httpClient->method('request')->willReturn($response);
+
+		$passed = [];
+		$this->configurationService->expects($this->exactly(3))
+			->method('importFromApp')
+			->willReturnCallback(static function (...$args) use (&$passed): array {
+				$passed[] = ($args[4] ?? null);
+				return [];
+			});
+
+		$this->runJob(null);
+
+		$this->assertSame([$github, $gitlab, $url], $passed);
+	}
 }
