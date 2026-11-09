@@ -19,7 +19,9 @@ declare(strict_types=1);
 namespace Unit\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\BackgroundJob\FlowRunRecoveryServices;
 use OCA\OpenRegister\BackgroundJob\FlowRunWorker;
+use OCA\OpenRegister\BackgroundJob\FlowRunWorkerServices;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -90,11 +92,14 @@ class FlowRunWorkerConsentTest extends TestCase {
 	private function worker(?DelegationService $delegation): FlowRunWorker {
 		return new FlowRunWorker(
 			$this->createMock(ITimeFactory::class),
-			$this->mapper,
-			$this->createMock(FlowRunAdvancer::class),
-			$this->createMock(IAppConfig::class),
-			$this->logger,
-			$delegation
+			new FlowRunWorkerServices(
+				$this->mapper,
+				$this->createMock(FlowRunAdvancer::class),
+				$this->createMock(IAppConfig::class),
+				$this->logger
+			),
+			new FlowRunRecoveryServices(),
+			$delegation === null ? null : new FlowConsentParking($this->mapper, $delegation, $this->logger)
 		);
 	}
 
