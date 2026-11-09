@@ -37,5 +37,7 @@ final class SchemasBindings {
 	 *
 	 * @var array<class-string, class-string>
 	 */
-	public const BINDINGS = [];
+	public const BINDINGS = [
+		\OCA\OpenRegister\Service\Schemas\ExtendingFormValidatorInterface::class => \OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration::class,
+	];
 }//end class
