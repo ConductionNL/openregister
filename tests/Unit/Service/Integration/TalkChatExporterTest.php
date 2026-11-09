@@ -110,7 +110,6 @@ class TalkChatExporterTest extends TestCase {
 		$fileService->method('formatFile')->willReturn(['title' => 'Overleg.txt']);
 
 		$controller = FilesControllerFactory::create(
-			'openregister',
 			$request,
 			$fileService,
 			$objectService,
