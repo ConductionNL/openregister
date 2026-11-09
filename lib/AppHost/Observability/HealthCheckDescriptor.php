@@ -109,23 +109,23 @@ final class HealthCheckDescriptor {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $id Stable check id used as the `checks` map key.
-	 * @param string $type One of self::TYPES.
-	 * @param string $severity One of self::SEVERITIES.
-	 * @param HealthCheckTarget $target What the check inspects (app, appConfig key, assertion).
+	 * @param string            $id       Stable check id used as the `checks` map key.
+	 * @param string            $type     One of self::TYPES.
+	 * @param string            $severity One of self::SEVERITIES.
+	 * @param HealthCheckTarget $target   What the check looks at: the app, or the appConfig key and assertion.
 	 */
 	public function __construct(
 		string $id,
 		string $type,
 		string $severity,
-		HealthCheckTarget $target = new HealthCheckTarget(),
+		HealthCheckTarget $target=new HealthCheckTarget(),
 	) {
 		$this->id       = $id;
 		$this->type     = $type;
 		$this->severity = $severity;
-		$this->app    = $target->app;
-		$this->key    = $target->key;
-		$this->assert = $target->assert;
+		$this->app      = $target->app;
+		$this->key      = $target->key;
+		$this->assert   = $target->assert;
 	}//end __construct()
 
 	/**
@@ -152,9 +152,9 @@ final class HealthCheckDescriptor {
 			throw new ObservabilityValidationException('Health check id must be a non-empty string.');
 		}
 
-		$target = ['app' => null, 'key' => null, 'assert' => null];
+		$target = new HealthCheckTarget();
 		if ($type === 'appEnabled') {
-			$target['app'] = self::appId(raw: $raw);
+			$target = new HealthCheckTarget(app: self::appId(raw: $raw));
 		}
 
 		if ($type === 'appConfig') {
@@ -165,7 +165,7 @@ final class HealthCheckDescriptor {
 			id: $id,
 			type: $type,
 			severity: $severity,
-			target: new HealthCheckTarget(app: $target['app'], key: $target['key'], assert: $target['assert'])
+			target: $target
 		);
 	}//end fromArray()
 
@@ -216,13 +216,13 @@ final class HealthCheckDescriptor {
 	 *
 	 * @param array<string, mixed> $raw The raw entry.
 	 *
-	 * @return array{app: null, key: string, assert: string}
+	 * @return HealthCheckTarget The key and assertion, with no app.
 	 *
 	 * @throws ObservabilityValidationException When the key is empty or the assertion unknown.
 	 *
 	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
 	 */
-	private static function appConfigTarget(array $raw): array {
+	private static function appConfigTarget(array $raw): HealthCheckTarget {
 		$key = $raw['key'] ?? null;
 		if (is_string($key) === false || $key === '') {
 			throw new ObservabilityValidationException('appConfig check requires a non-empty "key".');
@@ -233,7 +233,7 @@ final class HealthCheckDescriptor {
 			rule: ['allowed' => self::ASSERTIONS, 'message' => 'Invalid appConfig assert "%s" (allowed: %s).']
 		);
 
-		return ['app' => null, 'key' => $key, 'assert' => $assert];
+		return new HealthCheckTarget(key: $key, assert: $assert);
 	}//end appConfigTarget()
 
 	/**

@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Search;
 
 use OCA\OpenRegister\AppHost\SchemaScopedProvider;
+use OCA\OpenRegister\AppHost\SchemaScopeLookups;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -78,13 +79,32 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	private const LOG_NAME = 'AbstractSchemaSearchProvider';
 
 	/**
+	 * Register mapper for slug-to-id resolution, read by SchemaScopedProvider.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema mapper for slug-to-id resolution, read by SchemaScopedProvider.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Logger, read by SchemaScopedProvider.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for AbstractSchemaSearchProvider.
 	 *
 	 * @param ObjectOperationsInterface $objectService The object service for search operations
 	 * @param ObjectSearchResultFormatter $resultFormatter Shared result-formatting service
-	 * @param RegisterMapperInterface $registerMapper Register mapper for slug-to-id resolution
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for slug-to-id resolution and the `smartPickerEnabled` flag
-	 * @param LoggerInterface $logger Logger
+	 * @param SchemaScopeLookups $lookups The register and schema mappers and the logger
 	 *
 	 * @return void
 	 *
@@ -93,10 +113,11 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly ObjectSearchResultFormatter $resultFormatter,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly LoggerInterface $logger,
+		SchemaScopeLookups $lookups,
 	) {
+		$this->registerMapper = $lookups->registerMapper;
+		$this->schemaMapper = $lookups->schemaMapper;
+		$this->logger = $lookups->logger;
 	}//end __construct()
 
 	/**

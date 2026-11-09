@@ -37,6 +37,8 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\Support\ConsentSaveContext;
 use OCA\OpenRegister\Service\Consent\ConsentEnvelopeEvaluatorInterface;
 use OCA\OpenRegister\Service\Consent\ConsentEnvelopeEvaluators;
+use OCA\OpenRegister\Service\Consent\ConsentEvidenceSource;
+use OCA\OpenRegister\Service\Consent\ConsentPropertyWrite;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IRequest;
@@ -326,13 +328,17 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	 */
 	private function evaluateProperty(ConsentSaveContext $context, string $name, array $data): array {
 		$result = $this->evaluator->evaluate(
-			name: $name,
-			annotation: $context->properties[$name],
-			incoming: ($data[$name] ?? []),
-			persisted: ($context->persisted[$name] ?? []),
-			actingIdentity: $this->resolveActingIdentity(annotation: $context->properties[$name], allData: $data),
-			ipAddress: $this->safeRemoteAddress(),
-			userAgent: $this->safeUserAgent()
+			write: new ConsentPropertyWrite(
+				name: $name,
+				annotation: $context->properties[$name],
+				incoming: ($data[$name] ?? []),
+				persisted: ($context->persisted[$name] ?? [])
+			),
+			source: new ConsentEvidenceSource(
+				actingIdentity: $this->resolveActingIdentity(annotation: $context->properties[$name], allData: $data),
+				ipAddress: $this->safeRemoteAddress(),
+				userAgent: $this->safeUserAgent()
+			)
 		);
 
 		if ($result['refused'] === true) {
