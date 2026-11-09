@@ -136,6 +136,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerObjects;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerSetup;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerWriters;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverRows;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites;
@@ -446,36 +447,38 @@ abstract class ExampleSetTestCase extends TestCase {
 		$this->remover   = new ExampleSetRemover(
 			objects: new ExampleSetRemoverObjects(store: $this->store, record: $this->record, files: $files, changes: $changes),
 			settings: new ExampleSetRemoverSettings(appConfig: $setConfig, userPreferences: $preferences, registers: $this->registers, instance: $instance),
-			accounts: $this->accounts,
-			engineRows: new ExampleSetEngineKinds(
-				work: new ExampleSetWorkRowKinds(
-					tasks: new ExampleSetTasks(container: $container),
-					notes: new ExampleSetNotes(container: $container),
-					readStates: new ExampleSetReadStates(container: $container),
-					watchers: new ExampleSetWatchers(container: $container)
-				),
-				own: new ExampleSetOwnRowKinds(
-					views: new ExampleSetViews(container: $container),
-					flows: new ExampleSetFlows(container: $container),
-					casePlans: new ExampleSetCasePlans(container: $container)
-				),
-				links: new ExampleSetLinkRowKinds(
-					parties: new ExampleSetParties(container: $container),
-					emailLinks: new ExampleSetEmailLinks(container: $container),
-					accessLinks: new ExampleSetAccessLinks(container: $container),
-					grants: new ExampleSetGrants(container: $container)
-				),
-				apps: new ExampleSetAppRowKinds(
-					deckCards: new ExampleSetDeckCards(container: $container),
-					appointments: new ExampleSetAppointments(container: $container),
-					collectivesPages: new ExampleSetCollectivesPages(container: $container),
-					talkConversations: new ExampleSetTalkConversations(container: $container)
-				),
-				history: new ExampleSetHistoryRowKinds(
-					exportRuns: new ExampleSetExportRuns(container: $container),
-					archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
-					auditEntries: new ExampleSetAuditEntries(container: $container),
-					timelineEntries: new ExampleSetTimelineEntries(container: $container)
+			rows: new ExampleSetRemoverRows(
+				accounts: $this->accounts,
+				engineRows: new ExampleSetEngineKinds(
+					work: new ExampleSetWorkRowKinds(
+						tasks: new ExampleSetTasks(container: $container),
+						notes: new ExampleSetNotes(container: $container),
+						readStates: new ExampleSetReadStates(container: $container),
+						watchers: new ExampleSetWatchers(container: $container)
+					),
+					own: new ExampleSetOwnRowKinds(
+						views: new ExampleSetViews(container: $container),
+						flows: new ExampleSetFlows(container: $container),
+						casePlans: new ExampleSetCasePlans(container: $container)
+					),
+					links: new ExampleSetLinkRowKinds(
+						parties: new ExampleSetParties(container: $container),
+						emailLinks: new ExampleSetEmailLinks(container: $container),
+						accessLinks: new ExampleSetAccessLinks(container: $container),
+						grants: new ExampleSetGrants(container: $container)
+					),
+					apps: new ExampleSetAppRowKinds(
+						deckCards: new ExampleSetDeckCards(container: $container),
+						appointments: new ExampleSetAppointments(container: $container),
+						collectivesPages: new ExampleSetCollectivesPages(container: $container),
+						talkConversations: new ExampleSetTalkConversations(container: $container)
+					),
+					history: new ExampleSetHistoryRowKinds(
+						exportRuns: new ExampleSetExportRuns(container: $container),
+						archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
+						auditEntries: new ExampleSetAuditEntries(container: $container),
+						timelineEntries: new ExampleSetTimelineEntries(container: $container)
+					)
 				)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
