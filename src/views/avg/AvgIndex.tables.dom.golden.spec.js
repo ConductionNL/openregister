@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import AvgIndex from './AvgIndex.vue'
 
 /**
  * Golden record of the AVG screen's hand-built tables: the header row of
@@ -29,6 +30,31 @@ jest.mock('../../store/modules/avg.js', () => ({
 	resolveStatusLabel: (status) => `status:${status}`,
 	resolveTierLabel: (tier) => `tier:${tier}`,
 }))
+jest.mock('vue-material-design-icons/AccountCheckOutline.vue', () => mockComponent('AccountCheckOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/AccountSearch.vue', () => mockComponent('AccountSearch'), { virtual: true })
+jest.mock('vue-material-design-icons/AlertCircleOutline.vue', () => mockComponent('AlertCircleOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/AlertOutline.vue', () => mockComponent('AlertOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/Archive.vue', () => mockComponent('Archive'), { virtual: true })
+jest.mock('vue-material-design-icons/ArrowLeft.vue', () => mockComponent('ArrowLeft'), { virtual: true })
+jest.mock('vue-material-design-icons/BankOutline.vue', () => mockComponent('BankOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/CheckCircleOutline.vue', () => mockComponent('CheckCircleOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/CheckboxMarkedCircleOutline.vue', () => mockComponent('CheckboxMarkedCircleOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/ClipboardTextClockOutline.vue', () => mockComponent('ClipboardTextClockOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/ClockOutline.vue', () => mockComponent('ClockOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/DatabaseSearchOutline.vue', () => mockComponent('DatabaseSearchOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/Download.vue', () => mockComponent('Download'), { virtual: true })
+jest.mock('vue-material-design-icons/EyeOutline.vue', () => mockComponent('EyeOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/FileDocumentEditOutline.vue', () => mockComponent('FileDocumentEditOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/FileDocumentOutline.vue', () => mockComponent('FileDocumentOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/Magnify.vue', () => mockComponent('Magnify'), { virtual: true })
+jest.mock('vue-material-design-icons/MagnifyClose.vue', () => mockComponent('MagnifyClose'), { virtual: true })
+jest.mock('vue-material-design-icons/Marker.vue', () => mockComponent('Marker'), { virtual: true })
+jest.mock('vue-material-design-icons/OpenInNew.vue', () => mockComponent('OpenInNew'), { virtual: true })
+jest.mock('vue-material-design-icons/Pencil.vue', () => mockComponent('Pencil'), { virtual: true })
+jest.mock('vue-material-design-icons/Plus.vue', () => mockComponent('Plus'), { virtual: true })
+jest.mock('vue-material-design-icons/ShieldAlertOutline.vue', () => mockComponent('ShieldAlertOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/ShieldLockOutline.vue', () => mockComponent('ShieldLockOutline'), { virtual: true })
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () => mockComponent('TrashCanOutline'), { virtual: true })
 jest.mock('../../store/store.js', () => ({ avgStore: {} }))
 
 /**
@@ -41,10 +67,6 @@ function mockComponent(name) {
 	return { __esModule: true, default: { name, render: () => null } }
 }
 
-const ICONS = 'AccountCheckOutline AccountSearch AlertCircleOutline AlertOutline Archive ArrowLeft BankOutline CheckCircleOutline CheckboxMarkedCircleOutline ClipboardTextClockOutline ClockOutline DatabaseSearchOutline Download EyeOutline FileDocumentEditOutline FileDocumentOutline Magnify MagnifyClose Marker OpenInNew Pencil Plus ShieldAlertOutline ShieldLockOutline TrashCanOutline'.split(' ')
-for (const icon of ICONS) {
-	jest.doMock(`vue-material-design-icons/${icon}.vue`, () => mockComponent(icon))
-}
 
 const CASE = {
 	uuid: 'c1',
@@ -89,7 +111,6 @@ describe('AvgIndex table headers', () => {
 			fetchCase: () => Promise.resolve(),
 			fetchActivePolicyPack: () => Promise.resolve(),
 		})
-		const AvgIndex = require('./AvgIndex.vue').default
 		wrapper = mount(AvgIndex, {
 			global: { mocks: { t: (app, text, vars) => `t:${text}${vars ? JSON.stringify(vars) : ''}` } },
 		})
