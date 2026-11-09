@@ -22,6 +22,8 @@ use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
 use OCA\OpenRegister\AppHost\Observability\HealthResult;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityManifest;
+use OCA\OpenRegister\AppHost\Observability\HealthResponsePolicy;
+use OCA\OpenRegister\AppHost\Observability\ObservabilityProbes;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 
@@ -45,7 +47,7 @@ class GenericHealthControllerTest extends TestCase {
 	}
 
 	public function testRendersAdr006ShapeWithExecutorStatusCode(): void {
-		$manifest = new ObservabilityManifest('leafapp', [], []);
+		$manifest = new ObservabilityManifest('leafapp', new ObservabilityProbes([], []));
 		$result = new HealthResult('degraded', ['database' => 'ok', 'files' => 'failed: gone'], 503);
 
 		$response = $this->controller($manifest, $result)->index();
@@ -63,7 +65,7 @@ class GenericHealthControllerTest extends TestCase {
 	}
 
 	public function testNoCorsHeadersWhenManifestDoesNotEnableCors(): void {
-		$manifest = new ObservabilityManifest('leafapp', [], [], ObservabilityManifest::POLICY_ADR006, false);
+		$manifest = new ObservabilityManifest('leafapp', new ObservabilityProbes([], []), new HealthResponsePolicy(ObservabilityManifest::POLICY_ADR006, false));
 		$result = new HealthResult('ok', [], 200);
 
 		$headers = $this->controller($manifest, $result)->index()->getHeaders();
@@ -73,7 +75,7 @@ class GenericHealthControllerTest extends TestCase {
 	}
 
 	public function testCorsHeadersAddedWhenManifestEnablesCors(): void {
-		$manifest = new ObservabilityManifest('leafapp', [], [], ObservabilityManifest::POLICY_ADR006, true);
+		$manifest = new ObservabilityManifest('leafapp', new ObservabilityProbes([], []), new HealthResponsePolicy(ObservabilityManifest::POLICY_ADR006, true));
 		$result = new HealthResult('ok', [], 200);
 
 		$response = $this->controller($manifest, $result)->index();

@@ -21,6 +21,7 @@ use OCA\OpenRegister\AppHost\Controller\GenericMetricsController;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityManifest;
+use OCA\OpenRegister\AppHost\Observability\ObservabilityProbes;
 use OCA\OpenRegister\AppHost\Observability\PrometheusRenderer;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
@@ -34,7 +35,7 @@ use ReflectionMethod;
  */
 class GenericMetricsControllerTest extends TestCase {
 	public function testRendersCallingAppManifestAsPrometheusText(): void {
-		$manifest = new ObservabilityManifest('leafapp', [], []);
+		$manifest = new ObservabilityManifest('leafapp', new ObservabilityProbes([], []));
 		$body = "# TYPE leafapp_objects gauge\nleafapp_objects 7\n";
 
 		$loader = $this->createMock(ManifestLoader::class);
