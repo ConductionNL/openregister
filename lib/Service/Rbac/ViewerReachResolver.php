@@ -228,11 +228,25 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function assertMayNameRecipients(array $view, ViewerReach $reach, array $data): void {
-		$refused = $this->refusedOnSave(reached: new ReachedView(view: $view, reach: $reach), data: $data);
+		$this->assertRecipientsOnSave(reached: new ReachedView(view: $view, reach: $reach), data: $data);
+	}//end assertMayNameRecipients()
+
+	/**
+	 * Refuse a save that would leave recipients on the view's alert it may not name.
+	 *
+	 * @param ReachedView          $reached The stored view and the caller's reach.
+	 * @param array<string, mixed> $data    The request body.
+	 *
+	 * @return void
+	 *
+	 * @throws ViewAlertRecipientException Naming every refused recipient.
+	 */
+	private function assertRecipientsOnSave(ReachedView $reached, array $data): void {
+		$refused = $this->refusedOnSave(reached: $reached, data: $data);
 		if ($refused !== []) {
 			throw new ViewAlertRecipientException(recipients: $refused);
 		}
-	}//end assertMayNameRecipients()
+	}//end assertRecipientsOnSave()
 
 	/**
 	 * The recipients a save may not leave on the view's alert.
