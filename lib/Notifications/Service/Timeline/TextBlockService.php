@@ -32,9 +32,8 @@ namespace OCA\OpenRegister\Notifications\Service\Timeline;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\TextBlock;
 use OCA\OpenRegister\Notifications\Db\TextBlockMapper;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
 
 /**
  * Administered canned text blocks.
@@ -57,16 +56,14 @@ class TextBlockService {
 	/**
 	 * Constructor.
 	 *
-	 * @param TextBlockMapper $blocks       The administered blocks.
-	 * @param IUserSession    $userSession  The caller, whose groups scope the list.
-	 * @param IGroupManager   $groupManager Resolves the caller's groups.
+	 * @param TextBlockMapper    $blocks     The administered blocks.
+	 * @param PrincipalDirectory $principals The caller, whose groups scope the list, and their groups.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly TextBlockMapper $blocks,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly PrincipalDirectory $principals,
 	) {
 	}//end __construct()
 
@@ -269,11 +266,11 @@ class TextBlockService {
 	 * @return array<int,string> The group ids, empty for an anonymous caller.
 	 */
 	private function callerGroups(): array {
-		$user = $this->userSession->getUser();
+		$user = $this->principals->userSession->getUser();
 		if ($user === null) {
 			return [];
 		}
 
-		return $this->groupManager->getUserGroupIds($user);
+		return $this->principals->groupManager->getUserGroupIds($user);
 	}//end callerGroups()
 }//end class
