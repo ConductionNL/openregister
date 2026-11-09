@@ -85,20 +85,39 @@ class AuthorizationService {
 	private ?ResolvedConsumer $resolvedConsumer = null;
 
 	/**
+	 * Nextcloud user manager.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Nextcloud user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group lookups for an endpoint's users/groups allow-list.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IUserManager $userManager Nextcloud user manager
-	 * @param IUserSession $userSession Nextcloud user session
+	 * @param UserDirectory $directory Nextcloud user session, user manager and group lookups for an
+	 *                                 endpoint's users/groups allow-list
 	 * @param ConsumerMapperInterface $consumerMapper Consumer database mapper
 	 * @param \OCA\OpenRegister\Service\Rbac\TokenGrantSource|null $tokenGrantSource What the calling token may do
 	 * @param TokenContext|null $tokenContext Carries the calling token to the audit writer
 	 * @param ICacheFactory|null $cacheFactory Distributed cache for jti replay refusal
-	 * @param IGroupManager|null $groupManager Group lookups for an endpoint's users/groups allow-list
 	 * @param IRequest|null $request The current request (the OAuth Bearer guard)
 	 */
 	public function __construct(
-		private readonly IUserManager $userManager,
-		private readonly IUserSession $userSession,
+		UserDirectory $directory,
 		private readonly ConsumerMapperInterface $consumerMapper,
 		// BOTH SIDES OF THIS MERGE ADDED A NULLABLE-LAST PARAMETER and neither
 		// replaces the other: `tokenGrantSource` answers what a token may DO,
@@ -108,10 +127,11 @@ class AuthorizationService {
 		private readonly ?\OCA\OpenRegister\Service\Rbac\TokenGrantSource $tokenGrantSource = null,
 		private readonly ?TokenContext $tokenContext = null,
 		private readonly ?ICacheFactory $cacheFactory = null,
-		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?IRequest $request = null,
 	) {
-
+		$this->userManager = $directory->users;
+		$this->userSession = $directory->session;
+		$this->groupManager = $directory->groups;
 	}//end __construct()
 
 	/**

@@ -128,14 +128,12 @@ class AuthorizationServiceOutcomeGoldenTest extends TestCase {
 		}
 
 		return new AuthorizationService(
-			$users,
-			$session,
+			new \OCA\OpenRegister\Service\UserDirectory(session: $session, users: $users, groups: $groups),
 			$mapper,
 			$grants,
 			$tokenContext,
 			null,
-			$groups,
-			$theRequest,
+			$theRequest
 		);
 	}//end service()
 

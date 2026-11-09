@@ -39,17 +39,31 @@ use OCP\IUserSession;
 class UserLinkWriter {
 
 	/**
-	 * @param ContactLinkMapperInterface $links The link rows.
-	 * @param IUserManager $users The accounts.
-	 * @param IUserSession $session The signed-in user, recorded as the linker.
-	 * @param IURLGenerator $urls The avatar route.
+	 * The accounts.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $users;
+
+	/**
+	 * The signed-in user, recorded as the linker.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $session;
+
+	/**
+	 * @param ContactLinkMapperInterface $links     The link rows.
+	 * @param UserDirectory              $directory The accounts, and the signed-in user recorded as the linker.
+	 * @param IURLGenerator              $urls      The avatar route.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapperInterface $links,
-		private readonly IUserManager $users,
-		private readonly IUserSession $session,
+		UserDirectory $directory,
 		private readonly IURLGenerator $urls,
 	) {
+		$this->users = $directory->users;
+		$this->session = $directory->session;
 	}//end __construct()
 
 	/**

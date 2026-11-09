@@ -96,11 +96,10 @@ class AuthorizationServiceConsumerGrantTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
 		return new AuthorizationService(
-			userManager: $users,
-			userSession: $this->createMock(IUserSession::class),
+			directory: new \OCA\OpenRegister\Service\UserDirectory(session: $this->createMock(IUserSession::class), users: $users, groups: $this->createMock(\OCP\IGroupManager::class)),
 			consumerMapper: $this->createMock(ConsumerMapper::class),
 			tokenGrantSource: $grants,
-			cacheFactory: $cacheFactory,
+			cacheFactory: $cacheFactory
 		);
 	}//end service()
 
