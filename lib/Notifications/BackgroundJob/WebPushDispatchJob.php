@@ -161,7 +161,7 @@ class WebPushDispatchJob extends QueuedJob {
 			}
 
 			// First (or primary) action drives the body-click deeplink.
-			$buttons['url'] = $this->bodyClickUrl(current: $buttons['url'], url: $url, action: $action);
+			$buttons['url'] = $this->bodyClickUrl(current: $buttons['url'], action: $action);
 
 			$actionKey = 'action-' . (string)$idx;
 			$buttons['actions'][] = ['action' => $actionKey, 'title' => $this->actionLabel(action: $action)];
@@ -190,14 +190,13 @@ class WebPushDispatchJob extends QueuedJob {
 	 * The body-click deeplink after this action: the first URL, overridden by a primary action.
 	 *
 	 * @param string               $current The deeplink so far.
-	 * @param string               $url     This action's URL.
-	 * @param array<string, mixed> $action  This action.
+	 * @param array<string, mixed> $action  This action, with a non-empty URL.
 	 *
 	 * @return string The deeplink.
 	 */
-	private function bodyClickUrl(string $current, string $url, array $action): string {
+	private function bodyClickUrl(string $current, array $action): string {
 		if ($current === '' || ($action['primary'] ?? false) === true) {
-			return $url;
+			return $this->actionUrl(action: $action);
 		}
 
 		return $current;
