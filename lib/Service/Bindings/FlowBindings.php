@@ -43,5 +43,6 @@ final class FlowBindings {
 		\OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeInterface::class => \OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute::class,
 		\OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface::class => \OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic::class,
 		\OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface::class => \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars::class,
+		\OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface::class => \OCA\OpenRegister\Service\Task\TaskCalendarDocument::class,
 	];
 }//end class
