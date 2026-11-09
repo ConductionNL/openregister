@@ -31,7 +31,6 @@ class MigrationControllerTest extends TestCase {
 		$this->migrationService = $this->createMock(MigrationService::class);
 
 		$this->controller = new MigrationController(
-			'openregister',
 			$this->request,
 			$this->migrationService
 		);

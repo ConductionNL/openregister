@@ -44,10 +44,7 @@ namespace OCA\OpenRegister\Service\Task;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
-use OCA\OpenRegister\Db\TaskAuditMapperInterface;
-use OCA\OpenRegister\Db\TaskCandidateMapperInterface;
 use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Db\TaskRelationMapperInterface;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
@@ -55,9 +52,6 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
-use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IDBConnection;
-use Psr\Log\LoggerInterface;
 use Throwable;
 use UnexpectedValueException;
 
@@ -86,12 +80,6 @@ use UnexpectedValueException;
  * @SuppressWarnings(PHPMD.StaticAccess) TaskState is a stateless published
  * vocabulary (the one status mapping); calling it statically is the point,
  * an instance would be a second copy of the same table.
- * @SuppressWarnings(PHPMD.ExcessiveParameterList) The tenth constructor
- * argument is the nullable event dispatcher that announces the transition
- * to the projections and terminality to the flow side; it is last so the
- * hand-built test services keep their order, and folding it into another
- * collaborator would hide that a lifecycle verb has an after-commit side
- * effect.
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
@@ -107,37 +95,13 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskMapper $tasks The task table.
-	 * @param TaskCandidateMapperInterface $candidates The candidate index rows.
-	 * @param TaskRelationMapperInterface $relations The typed relation rows.
-	 * @param TaskAuditMapperInterface $audits The append-only audit.
-	 * @param TaskAuthorizationService $authorization The per-verb, fail-closed decisions.
-	 * @param TaskPerformerResolver $resolver The routing strategies.
-	 * @param IDBConnection $db Holds the one transaction per verb.
-	 * @param LoggerInterface $logger Failure reporting.
-	 * @param TaskBuilder $builder Validates and builds a new task from
-	 *                             boundary data (the vocabularies live there).
-	 * @param IEventDispatcher|null $dispatcher Announces the committed
-	 *                                          transition to the projections
-	 *                                          ({@see TaskTransitionedEvent})
-	 *                                          and, when the task came out
-	 *                                          terminal, its terminality to the
-	 *                                          flow side
-	 *                                          ({@see TaskTerminalEvent}) — both
-	 *                                          AFTER the commit. Last and
-	 *                                          nullable so the suites that build
-	 *                                          this service by hand keep their
-	 *                                          argument order; absent, nothing
-	 *                                          is projected, terminality goes
-	 *                                          unannounced, and the lifecycle is
-	 *                                          unchanged.
-	 * @param TaskFormReader|null $forms Refuses a run-less task's own form
-	 *                                   declaration (`metadata.form`) at
-	 *                                   creation, the way a step's is refused
-	 *                                   at save. Nullable for the same reason
-	 *                                   as the dispatcher; absent, a record
-	 *                                   declaration is stored unchecked and
-	 *                                   judged on read.
+	 * @param TaskAuthorizationService $authorization The per-verb, fail-closed
+	 *                                                decisions.
+	 * @param TaskLifecycleServices $services The tables, the commit (transaction,
+	 *                                        logger, after-commit announcer),
+	 *                                        the intake (builder, form reader,
+	 *                                        subject locator, editor) and the
+	 *                                        routing strategies.
 	 * @param TaskSequenceDecisionGuard|null $sequenceGuard Refuses a
 	 *                                                      self-decision on a
 	 *                                                      sequence position
@@ -150,40 +114,19 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *                                                      enforced here.
 	 * @param TaskSubjectAccessGuard|null $subjects Refuses a CREATE whose
 	 *                                              subject object the caller
-	 *                                              may not read. Nullable for
-	 *                                              the same hand-built-service
-	 *                                              reason as the two above,
-	 *                                              but absence does NOT mean
-	 *                                              "skipped": the guard itself
-	 *                                              refuses every named subject
-	 *                                              when it has no object
-	 *                                              service to ask, so a
+	 *                                              may not read. Absence does
+	 *                                              NOT mean "skipped": the
+	 *                                              guard itself refuses every
+	 *                                              named subject when it has no
+	 *                                              object service to ask, so a
 	 *                                              missing collaborator denies
 	 *                                              rather than admits.
-	 * @param TaskSubjectLocator|null $locator Records the subject's register
-	 *                                         and schema when the caller did
-	 *                                         not. Nullable for hand-built
-	 *                                         test services; absent, tasks are
-	 *                                         written as given.
-	 * @param TaskEdit|null $editor Validates and applies an edit of a
-	 *                              task's own fields; absent, a plain one.
 	 */
 	public function __construct(
-		private readonly TaskMapper $tasks,
-		private readonly TaskCandidateMapperInterface $candidates,
-		private readonly TaskRelationMapperInterface $relations,
-		private readonly TaskAuditMapperInterface $audits,
 		private readonly TaskAuthorizationService $authorization,
-		private readonly TaskPerformerResolver $resolver,
-		private readonly IDBConnection $db,
-		private readonly LoggerInterface $logger,
-		private readonly TaskBuilder $builder,
-		private readonly ?IEventDispatcher $dispatcher = null,
-		private readonly ?TaskFormReader $forms = null,
+		private readonly TaskLifecycleServices $services,
 		private readonly ?TaskSequenceDecisionGuard $sequenceGuard = null,
 		private readonly ?TaskSubjectAccessGuard $subjects = null,
-		private readonly ?TaskSubjectLocator $locator = null,
-		private readonly ?TaskEdit $editor = null,
 	) {
 
 	}//end __construct()
@@ -244,7 +187,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 
 		// Blocked is derived from blockedBy, for administrators too: nobody
 		// writes the state by hand (a-task-may-wait-on-another-task D-6).
-		(new TaskBlockerGuard(tasks: $this->tasks))->refuseHandWrittenState(data: $data);
+		(new TaskBlockerGuard(tasks: $this->services->tables->tasks))->refuseHandWrittenState(data: $data);
 
 		if ($this->authorization->isAdministrator(uid: $actor) === false) {
 			// A task is an annotation ON an object, so it inherits that
@@ -338,10 +281,10 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 */
 	public function import(array $data, ?string $actor, ?callable $mayReadBlocker = null, ?DateTime $createdAt = null): Task {
 		$data = $this->locate(data: $data);
-		$task = $this->builder->fromData(data: $data, actor: $actor);
+		$task = $this->services->intake->builder->fromData(data: $data, actor: $actor);
 		$task->setCreated($createdAt);
 		$this->refuseUnrenderableForm(task: $task);
-		(new TaskBlockerGuard(tasks: $this->tasks))->assertDeclarable(task: $task, mayRead: $mayReadBlocker);
+		(new TaskBlockerGuard(tasks: $this->services->tables->tasks))->assertDeclarable(task: $task, mayRead: $mayReadBlocker);
 		$act = new TaskAct(verb: 'create', actor: $actor);
 		$this->authorizeOrRecord(task: $task, act: $act);
 		$this->pending = [
@@ -352,7 +295,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 
 		return $this->transactional(
 			mutation: function () use ($task, $data, $act): Task {
-				$persisted = $this->tasks->insert($task);
+				$persisted = $this->services->tables->tasks->insert($task);
 				$this->rewriteCandidateIndex(task: $persisted);
 				$this->insertRelations(task: $persisted, data: $data);
 				$this->appendAudit(task: $persisted, act: $act);
@@ -371,8 +314,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @return void
 	 */
 	private function insertRelations(Task $task, array $data): void {
-		foreach ($this->builder->relationsFor(task: $task, data: $data) as $relation) {
-			$this->relations->insert(entity: $relation);
+		foreach ($this->services->intake->builder->relationsFor(task: $task, data: $data) as $relation) {
+			$this->services->tables->relations->insert(entity: $relation);
 		}
 	}//end insertRelations()
 
@@ -391,11 +334,11 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
 	private function locate(array $data): array {
-		if ($this->locator === null) {
+		if ($this->services->intake->locator === null) {
 			return $data;
 		}
 
-		return $this->locator->withLocation(data: $data);
+		return $this->services->intake->locator->withLocation(data: $data);
 	}//end locate()
 
 	/**
@@ -481,7 +424,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @return string The state the routing leaves the task in.
 	 */
 	private function route(Task $task): string {
-		$chosen = $this->resolver->resolveAssignee(task: $task);
+		$chosen = $this->services->resolver->resolveAssignee(task: $task);
 		$task->setAssignee($chosen);
 		if ($chosen !== null) {
 			return Task::STATE_ACTIVE;
@@ -510,7 +453,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 */
 	public function edit(string $uuid, array $changes, ?string $actor): Task {
 		$task = $this->openTaskFor(act: new TaskAct(verb: 'edit', actor: $actor), uuid: $uuid);
-		$changed = ($this->editor ?? new TaskEdit())->apply(task: $task, changes: $changes);
+		$changed = ($this->services->intake->editor ?? new TaskEdit())->apply(task: $task, changes: $changes);
 		if ($changed === []) {
 			return $task;
 		}
@@ -542,14 +485,14 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 
 		return $this->transactional(
 			mutation: function () use ($task, $act): Task {
-				$won = $this->tasks->claim(taskId: (int)$task->getId(), uid: (string)$act->actor);
+				$won = $this->services->tables->tasks->claim(taskId: (int)$task->getId(), uid: (string)$act->actor);
 				if ($won === false) {
 					throw new TaskConflictException(
 						message: sprintf("Task '%s' was not claimable: another claim won, or the task is no longer open.", (string)$task->getUuid())
 					);
 				}
 
-				$fresh = $this->tasks->findByUuid(uuid: (string)$task->getUuid());
+				$fresh = $this->services->tables->tasks->findByUuid(uuid: (string)$task->getUuid());
 				$this->appendAudit(task: $fresh, act: $act);
 
 				return $fresh;
@@ -833,7 +776,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 			return 0;
 		}
 
-		$open = $this->tasks->findOpenByRunUuid(runUuid: $runUuid);
+		$open = $this->services->tables->tasks->findOpenByRunUuid(runUuid: $runUuid);
 		$act = new TaskAct(
 			verb: 'terminate',
 			actor: sprintf('flow-run:%s', $runUuid),
@@ -862,7 +805,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 				continue;
 			} catch (Throwable $failure) {
 				$failed[] = (string)$task->getUuid();
-				$this->logger->error(
+				$this->services->commit->logger->error(
 					'[TaskService] Propagation could not terminate a task: ' . $failure->getMessage(),
 					['task' => $task->getUuid(), 'run' => $runUuid, 'exception' => $failure]
 				);
@@ -884,7 +827,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 */
 	private function warnUntouched(string $runUuid, array $failed): void {
 		if ($failed !== []) {
-			$this->logger->warning(
+			$this->services->commit->logger->warning(
 				sprintf('[TaskService] Propagation for run %s left %d task(s) untouched: %s', $runUuid, count($failed), implode(', ', $failed))
 			);
 		}
@@ -903,7 +846,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
 	public function terminateAsMoot(string $uuid, string $reason, string $source): Task {
-		$task = $this->tasks->findByUuid(uuid: $uuid);
+		$task = $this->services->tables->tasks->findByUuid(uuid: $uuid);
 		if ($task->isInTerminalState() === true) {
 			// Idempotent: already-terminal stays as it ended.
 			return $task;
@@ -949,7 +892,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
 	public function consume(string $uuid, string $source, string $reason): Task {
-		$task = $this->tasks->findByUuid(uuid: $uuid);
+		$task = $this->services->tables->tasks->findByUuid(uuid: $uuid);
 		$this->assertApprovingDecision(task: $task);
 		$this->refuseConsumed(task: $task, uuid: $uuid);
 		$this->markConsumed(task: $task, source: $source);
@@ -1012,13 +955,13 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 		// terminal long before this call, and re-announcing its terminality
 		// here would replay run continuation and sequence progression for a
 		// decision that already happened.
-		$this->db->beginTransaction();
+		$this->services->commit->db->beginTransaction();
 		try {
-			$persisted = $this->tasks->update($task);
+			$persisted = $this->services->tables->tasks->update($task);
 			$this->appendAudit(task: $persisted, act: $act);
-			$this->db->commit();
+			$this->services->commit->db->commit();
 		} catch (Throwable $failure) {
-			$this->db->rollBack();
+			$this->services->commit->db->rollBack();
 			throw $failure;
 		}
 
@@ -1086,7 +1029,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	public function enable(string $uuid, string $source, string $reason): Task {
-		$task = $this->tasks->findByUuid(uuid: $uuid);
+		$task = $this->services->tables->tasks->findByUuid(uuid: $uuid);
 		if ($task->isInTerminalState() === true) {
 			throw new TaskConflictException(
 				message: sprintf("Verb 'enable' refused: task '%s' is already in terminal state '%s'.", $uuid, (string)$task->getState())
@@ -1133,7 +1076,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	public function applyTimerOutcome(string $uuid, string $outcome, string $source, string $reason): Task {
 		[$state, $recorded, $action] = $this->timerOutcomeTarget(outcome: $outcome);
 
-		$task = $this->tasks->findByUuid(uuid: $uuid);
+		$task = $this->services->tables->tasks->findByUuid(uuid: $uuid);
 		if ($task->isInTerminalState() === true) {
 			// Idempotent: already-terminal stays as it ended.
 			return $task;
@@ -1218,7 +1161,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function get(string $uuid): Task {
-		return $this->tasks->findByUuid(uuid: $uuid);
+		return $this->services->tables->tasks->findByUuid(uuid: $uuid);
 	}//end get()
 
 	/**
@@ -1239,7 +1182,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 			return [];
 		}
 
-		return $this->tasks->findByKey(key: $key);
+		return $this->services->tables->tasks->findByKey(key: $key);
 	}//end findByKey()
 
 	/**
@@ -1285,7 +1228,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
 	 */
 	public function record(string $uuid, string $action, ?string $actor, string $reason): Task {
-		$task = $this->tasks->findByUuid(uuid: $uuid);
+		$task = $this->services->tables->tasks->findByUuid(uuid: $uuid);
 		$act = new TaskAct(verb: $action, actor: $actor, reason: $reason);
 
 		return $this->transactional(
@@ -1307,9 +1250,9 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	public function auditTrail(string $uuid): array {
-		$task = $this->tasks->findByUuid(uuid: $uuid);
+		$task = $this->services->tables->tasks->findByUuid(uuid: $uuid);
 
-		return $this->audits->findForTask(taskId: (int)$task->getId());
+		return $this->services->tables->audits->findForTask(taskId: (int)$task->getId());
 	}//end auditTrail()
 
 	/**
@@ -1355,7 +1298,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 		// requester who claimed their own approval would PASS the assignee
 		// check, and refusing after it would report the wrong reason.
 		if ($this->sequenceGuard !== null) {
-			$this->sequenceGuard->assertDecidable(task: $this->tasks->findByUuid(uuid: $completion->uuid), actor: $completion->actor);
+			$this->sequenceGuard->assertDecidable(task: $this->services->tables->tasks->findByUuid(uuid: $completion->uuid), actor: $completion->actor);
 		}
 
 		$task = $this->openTaskFor(act: new TaskAct(verb: $completion->verb, actor: $completion->actor), uuid: $completion->uuid);
@@ -1479,9 +1422,9 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 		try {
 			$entry = $this->auditEntry(task: $task, act: new TaskAct(verb: 'complete-refused', actor: $attempt->actor, reason: $attempt->reason));
 			$entry->setAuthorized(true);
-			$this->audits->insert($entry);
+			$this->services->tables->audits->insert($entry);
 		} catch (Throwable $auditFailure) {
-			$this->logger->warning(
+			$this->services->commit->logger->warning(
 				'[TaskService] Could not record a refused completion: ' . $auditFailure->getMessage(),
 				['task' => $task->getUuid()]
 			);
@@ -1506,12 +1449,12 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 */
 	private function refuseUnrenderableForm(Task $task): void {
 		$record = (($task->getMetadata() ?? [])['form'] ?? null);
-		if ($this->forms === null || is_array($record) === false || $record === []) {
+		if ($this->services->intake->forms === null || is_array($record) === false || $record === []) {
 			return;
 		}
 
 		try {
-			$this->forms->validate(form: $this->forms->fromRecord(record: $record));
+			$this->services->intake->forms->validate(form: $this->services->intake->forms->fromRecord(record: $record));
 		} catch (UnexpectedValueException $refused) {
 			throw new TaskValidationException(message: $refused->getMessage(), previous: $refused);
 		}
@@ -1533,7 +1476,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function openTaskFor(TaskAct $act, string $uuid): Task {
-		$task = $this->tasks->findByUuid(uuid: $uuid);
+		$task = $this->services->tables->tasks->findByUuid(uuid: $uuid);
 
 		// Authorization FIRST. The terminality conflict names the current
 		// state, and a caller with no relationship to the task must not be
@@ -1598,10 +1541,10 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 			if ($task->getId() !== null) {
 				$entry = $this->auditEntry(task: $task, act: $act);
 				$entry->setAuthorized(false);
-				$this->audits->insert($entry);
+				$this->services->tables->audits->insert($entry);
 			}
 		} catch (Throwable $auditFailure) {
-			$this->logger->warning(
+			$this->services->commit->logger->warning(
 				'[TaskService] Could not record an authorization denial: ' . $auditFailure->getMessage(),
 				['task' => $task->getUuid(), 'verb' => $act->verb]
 			);
@@ -1625,7 +1568,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function persistOpen(Task $task): Task {
-		if ($this->tasks->updateIfOpen(task: $task) === false) {
+		if ($this->services->tables->tasks->updateIfOpen(task: $task) === false) {
 			throw new TaskConflictException(
 				message: sprintf("Task '%s' was closed concurrently; this change was not applied.", (string)$task->getUuid())
 			);
@@ -1712,7 +1655,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 			$entry->setCreated($task->getCreated());
 		}
 
-		$this->audits->insert($entry);
+		$this->services->tables->audits->insert($entry);
 	}//end appendAudit()
 
 	/**
@@ -1754,13 +1697,13 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	private function transactional(callable $mutation): Task {
-		$this->db->beginTransaction();
+		$this->services->commit->db->beginTransaction();
 		try {
 			$result = $mutation();
-			$this->db->commit();
+			$this->services->commit->db->commit();
 		} catch (Throwable $failure) {
 			$this->pending = null;
-			$this->db->rollBack();
+			$this->services->commit->db->rollBack();
 			throw $failure;
 		}
 
@@ -1777,11 +1720,11 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 		// already exists on its own. A listener failure is logged and
 		// swallowed: the caller has a committed task in hand and must be told
 		// so, whatever the run did with it afterwards.
-		if ($this->dispatcher !== null && $result->isInTerminalState() === true) {
+		if ($this->services->commit->dispatcher !== null && $result->isInTerminalState() === true) {
 			try {
-				$this->dispatcher->dispatchTyped(new TaskTerminalEvent(task: $result));
+				$this->services->commit->dispatcher->dispatchTyped(new TaskTerminalEvent(task: $result));
 			} catch (Throwable $listenerFailure) {
-				$this->logger->warning(
+				$this->services->commit->logger->warning(
 					'[TaskService] A terminal-task listener failed; the task itself is unaffected: ' . $listenerFailure->getMessage(),
 					['task' => $result->getUuid(), 'exception' => $listenerFailure]
 				);
@@ -1809,12 +1752,12 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 		$pending = $this->pending;
 		$this->pending = null;
 
-		if ($this->dispatcher === null) {
+		if ($this->services->commit->dispatcher === null) {
 			return;
 		}
 
 		try {
-			$this->dispatcher->dispatchTyped(
+			$this->services->commit->dispatcher->dispatchTyped(
 				new TaskTransitionedEvent(
 					task: $task,
 					previousAssignee: ($pending['assignee'] ?? $task->getAssignee()),
@@ -1823,7 +1766,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 				)
 			);
 		} catch (Throwable $failure) {
-			$this->logger->warning(
+			$this->services->commit->logger->warning(
 				'[TaskService] A projection failed after the transition committed; the task is unchanged by it: ' . $failure->getMessage(),
 				['task' => $task->getUuid(), 'action' => $task->getLastAction()]
 			);
@@ -1871,6 +1814,6 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 			];
 		}
 
-		$this->candidates->replaceForTask(taskId: (int)$task->getId(), candidates: $rows);
+		$this->services->tables->candidates->replaceForTask(taskId: (int)$task->getId(), candidates: $rows);
 	}//end rewriteCandidateIndex()
 }//end class
