@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
+use OCA\OpenRegister\Service\Schemas\ReferencePick;
 use OCA\OpenRegister\Service\Schemas\RepeatingGroupDeclarationValidator;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -218,20 +219,20 @@ class SchemaDeclarationsGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['filtered' => false, 'needs' => [], 'filter' => [], 'target' => ['schema' => 'people', 'register' => 'r1']],
-			$reader->plan(schema: $schema, property: 'plain', record: [])
+			$reader->plan(schema: $schema, pick: new ReferencePick(property: 'plain', record: []))
 		);
-		$this->assertNull($reader->plan(schema: $schema, property: 'many', record: [])['target']['schema']);
-		$this->assertSame('deep', $reader->plan(schema: $schema, property: 'nested', record: [])['target']['schema']);
-		$this->assertNull($reader->plan(schema: $schema, property: 'none', record: [])['target']['schema']);
+		$this->assertNull($reader->plan(schema: $schema, pick: new ReferencePick(property: 'many', record: []))['target']['schema']);
+		$this->assertSame('deep', $reader->plan(schema: $schema, pick: new ReferencePick(property: 'nested', record: []))['target']['schema']);
+		$this->assertNull($reader->plan(schema: $schema, pick: new ReferencePick(property: 'none', record: []))['target']['schema']);
 		$this->assertSame(
 			['filtered' => true, 'needs' => [], 'filter' => ['org' => ['neq' => 7]], 'target' => ['schema' => 'orgs', 'register' => null]],
-			$reader->plan(schema: $schema, property: 'narrow', record: ['own' => 7])
+			$reader->plan(schema: $schema, pick: new ReferencePick(property: 'narrow', record: ['own' => 7]))
 		);
-		$this->assertSame(['own'], $reader->plan(schema: $schema, property: 'narrow', record: [])['needs']);
+		$this->assertSame(['own'], $reader->plan(schema: $schema, pick: new ReferencePick(property: 'narrow', record: []))['needs']);
 
 		$this->expectException(ReferenceFilterException::class);
 		$this->expectExceptionMessage("There is no property 'missing' on this schema to read options for.");
-		$reader->plan(schema: $schema, property: 'missing', record: []);
+		$reader->plan(schema: $schema, pick: new ReferencePick(property: 'missing', record: []));
 	}//end testTheOptionsPlanNamesItsTarget()
 
 	/**
