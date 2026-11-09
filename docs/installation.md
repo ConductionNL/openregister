@@ -457,6 +457,17 @@ After installation:
 
 ## Upgrading
 
+### Security changes to check before you upgrade
+
+- **A consumer or JWT issuer whose `userId` names a missing or disabled account
+  is refused with 401.** It used to run without a user under the consumer's grant.
+  Point such a consumer at an existing, enabled service account, or clear its
+  `userId`, before upgrading. A static API key whose account is missing or
+  disabled is refused too.
+- **Federated-config writes need the `OCS-APIRequest: true` header** when called
+  from a script (`PUT /api/federated-config/trust`, `POST /api/federated-config/install`);
+  see [Federated configuration](federated-configuration.md).
+
 ### From Nextcloud App Store
 
 Updates are automatic via the Nextcloud update mechanism:
