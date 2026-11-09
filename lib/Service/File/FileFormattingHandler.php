@@ -213,7 +213,9 @@ class FileFormattingHandler {
 		try {
 			return $this->formatFile(file: $file);
 		} catch (LockedException $lockedException) {
-			return $this->buildLockedStubEntry(file: $file, lockedException: $lockedException, isAuthenticated: $isAuthenticated);
+			$stub = $this->buildLockedStubEntry(file: $file, isAuthenticated: $isAuthenticated);
+			$this->logLockedStub(stub: $stub, reason: $lockedException->getMessage());
+			return $stub;
 		}
 	}//end formatOrStub()
 
@@ -466,26 +468,18 @@ class FileFormattingHandler {
 	 * it omits both fields entirely so the authentication gate is honoured
 	 * even on the error path. See design.md Decisions 3 and 6.
 	 *
-	 * @param Node            $file            The file node that failed to format.
-	 * @param LockedException $lockedException The raised LockedException.
-	 * @param bool            $isAuthenticated Whether the request has a user session.
+	 * @param Node $file            The file node that failed to format.
+	 * @param bool $isAuthenticated Whether the request has a user session.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function buildLockedStubEntry(Node $file, LockedException $lockedException, bool $isAuthenticated): array {
-		$bestEffortLock = null;
-		if ($isAuthenticated === true) {
-			$bestEffortLock = $this->lockEnvelope->forFile(fileId: (int)$file->getId());
-		}
-
-		$this->logLockedStub(file: $file, lock: $bestEffortLock, reason: $lockedException->getMessage());
-
+	private function buildLockedStubEntry(Node $file, bool $isAuthenticated): array {
 		$stub = ['id' => (int)$file->getId(), 'title' => $file->getName(), 'error' => 'locked'];
 		if ($isAuthenticated === false) {
 			return $stub;
 		}
 
-		return $this->withStubLock(stub: $stub, lock: $bestEffortLock);
+		return $this->withStubLock(stub: $stub, lock: $this->lockEnvelope->forFile(fileId: (int)$file->getId()));
 	}//end buildLockedStubEntry()
 
 	/**
@@ -510,15 +504,15 @@ class FileFormattingHandler {
 	/**
 	 * Log that a locked file is listed as a stub.
 	 *
-	 * @param Node                      $file   The locked file.
-	 * @param array<string, mixed>|null $lock   The best-effort lock envelope.
-	 * @param string                    $reason The LockedException message.
+	 * @param array<string, mixed> $stub   The stub entry, with its best-effort lock envelope when one was found.
+	 * @param string               $reason The LockedException message.
 	 *
 	 * @return void
 	 */
-	private function logLockedStub(Node $file, ?array $lock, string $reason): void {
-		$fileId = (int)$file->getId();
-		$name = $file->getName();
+	private function logLockedStub(array $stub, string $reason): void {
+		$fileId = $stub['id'];
+		$name = $stub['title'];
+		$lock = ($stub['lock'] ?? null);
 		$this->logger->info(
 			message: "[FileFormattingHandler] formatFiles: file {$name} (ID: {$fileId}) is locked, emitting stub entry",
 			context: [
