@@ -47,6 +47,7 @@ use OCA\OpenRegister\Notifications\Db\TimelineEntryScope;
 use OCA\OpenRegister\Notifications\Db\TimelineKindMapper;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\RecipientNotice;
 use OCA\OpenRegister\Notifications\Db\TextBlockScope;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\AppFramework\Db\Entity;
@@ -213,8 +214,8 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'history markRead'               => [$history, 'markRead', [7, 'alice', $at], [], false],
 			'history markReadForSubject'     => [$history, 'markReadForSubject', ['alice', 'o-1', 's-1', $at], [], false],
 			'history markReadForSubject all' => [$history, 'markReadForSubject', ['alice', 'o-1', '', $at], [], false],
-			'history snooze'                 => [$history, 'snooze', [7, 'alice', $at], [], false],
-			'history archive'                => [$history, 'archive', [7, 'alice', $at], [], false],
+			'history snooze'                 => [$history, 'snooze', [new RecipientNotice(7, 'alice'), $at], [], false],
+			'history archive'                => [$history, 'archive', [new RecipientNotice(7, 'alice'), $at], [], false],
 			'history archiveByObject'        => [$history, 'archiveByObject', ['o-1', $at], [], false],
 			'history findOwn found'          => [$history, 'findOwn', [7, 'alice'], [[self::ROW]], false],
 			'history findOwn missing'        => [$history, 'findOwn', [7, 'alice'], [[]], false],
