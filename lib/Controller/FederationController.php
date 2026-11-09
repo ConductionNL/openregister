@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -150,6 +151,8 @@ class FederationController extends Controller {
 	 *       that filter call is removed.
 	 *
 	 * @return JSONResponse `{ results, total }`.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-serves-exactly-what-its-scope-grants-req-fse-001
 	 */
 	#[NoAdminRequired]
 	public function shares(): JSONResponse {
@@ -166,7 +169,9 @@ class FederationController extends Controller {
 	/**
 	 * Create an outgoing federated share and return it (with its token).
 	 *
-	 * @return JSONResponse The created share, or a validation error.
+	 * @return JSONResponse The created share, a validation error, or a 403 when the caller does not hold the rights it grants.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-serves-exactly-what-its-scope-grants-req-fse-001
 	 */
 	#[NoAdminRequired]
 	public function createShare(): JSONResponse {
@@ -185,6 +190,8 @@ class FederationController extends Controller {
 			$share = $this->shareService->createOutgoingShare(params: $params);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
 		} catch (Throwable $e) {
 			$this->logger->error('[Federation] create share failed: ' . $e->getMessage());
 			return new JSONResponse(data: ['error' => 'Could not create share'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -198,7 +205,7 @@ class FederationController extends Controller {
 	 *
 	 * @param int $id The share id.
 	 *
-	 * @return JSONResponse The revoked share, or an error.
+	 * @return JSONResponse The revoked share, or an error (403 when the caller does not hold the rights the share grants).
 	 *
 	 * @no-admin-idor-exempt The id IS caller-supplied, and it is checked — one
 	 *       layer down. `FederationShareService::setStatus()` writes through
@@ -210,6 +217,8 @@ class FederationController extends Controller {
 	 *       id exists and turn this endpoint into an existence oracle for
 	 *       another tenant's shares. Pinned by
 	 *       tests/Unit/Db/FederatedShareMapperTenancyTest.php.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-serves-exactly-what-its-scope-grants-req-fse-001
 	 */
 	#[NoAdminRequired]
 	public function revokeShare(int $id): JSONResponse {
@@ -217,6 +226,8 @@ class FederationController extends Controller {
 			$share = $this->shareService->setStatus(id: $id, status: 'revoked');
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
 		} catch (Throwable $e) {
 			$this->logger->error('[Federation] revoke share failed: ' . $e->getMessage());
 			return new JSONResponse(data: ['error' => 'Could not revoke share'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -649,6 +660,8 @@ class FederationController extends Controller {
 
 		if ($share->getScope() === 'query' && is_array($share->getQueryFilter()) === true) {
 			$filters = array_merge($filters, $share->getQueryFilter());
+			// ObjectService takes these two as its context, which would move the search off the share's own target.
+			unset($filters['register'], $filters['schema']);
 		}
 
 		return ['filters' => $filters];
