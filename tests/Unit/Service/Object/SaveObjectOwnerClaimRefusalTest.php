@@ -137,7 +137,7 @@ class SaveObjectOwnerClaimRefusalTest extends TestCase {
 	private function prepareUpdate(ObjectEntity $entity, array $selfData): void {
 		$method = new ReflectionMethod(SaveObject::class, 'prepareObjectForUpdate');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $entity, new Schema(), [], $selfData, null, null);
+		$method->invoke($this->handler, $entity, new Schema(), new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload([], $selfData), null);
 	}//end prepareUpdate()
 
 	/**
@@ -151,7 +151,7 @@ class SaveObjectOwnerClaimRefusalTest extends TestCase {
 	private function prepareCreate(ObjectEntity $entity, array $selfData): void {
 		$method = new ReflectionMethod(SaveObject::class, 'prepareObjectForCreation');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $entity, new Schema(), [], $selfData, true, null, false);
+		$method->invoke($this->handler, $entity, new Schema(), new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload([], $selfData), new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags());
 	}//end prepareCreate()
 
 	/**

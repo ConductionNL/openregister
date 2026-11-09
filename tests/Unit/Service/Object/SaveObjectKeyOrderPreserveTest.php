@@ -147,7 +147,7 @@ class SaveObjectKeyOrderPreserveTest extends TestCase {
 		/** @var ObjectEntity $prepared */
 		$prepared = $method->invokeArgs(
 			$this->handler,
-			[$existing, $schema, $data, [], null]
+			[$existing, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, []), null]
 		);
 
 		return $prepared->getObject();
@@ -164,7 +164,7 @@ class SaveObjectKeyOrderPreserveTest extends TestCase {
 		/** @var ObjectEntity $prepared */
 		$prepared = $method->invokeArgs(
 			$this->handler,
-			[$objectEntity, $schema, $data, [], false, null]
+			[$objectEntity, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, []), new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags()]
 		);
 
 		return $prepared->getObject();

@@ -68,6 +68,8 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectImage;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\OutdatedTranslations;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass;
@@ -401,9 +403,7 @@ class SaveObject implements SaveObjectInterface {
 	 * fails still leaves the write refused. A refusal that could be turned off
 	 * by breaking the audit table would be no refusal at all.
 	 *
-	 * @param int|null $registerId The register being written.
-	 * @param int|null $schemaId The schema being written.
-	 * @param string|null $uuid The object's uuid, when the caller named one.
+	 * @param ObjectWriteTarget $target The register and schema being written, and the uuid when the caller named one.
 	 *
 	 * @return void
 	 *
@@ -412,7 +412,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
 	 */
-	private function refuseSharedMasterDataWrite(?int $registerId, ?int $schemaId, ?string $uuid): void {
+	private function refuseSharedMasterDataWrite(ObjectWriteTarget $target): void {
 		$resolver = $this->resolveSharedMasterDataService();
 		if ($resolver === null) {
 			return;
@@ -435,20 +435,18 @@ class SaveObject implements SaveObjectInterface {
 		try {
 			$resolver->assertWritable(
 				table: SharedMasterDataService::REGISTERS,
-				id: $registerId,
+				id: $target->registerId,
 				activeOrgUuids: $activeOrgUuids
 			);
 			$resolver->assertWritable(
 				table: SharedMasterDataService::SCHEMAS,
-				id: $schemaId,
+				id: $target->schemaId,
 				activeOrgUuids: $activeOrgUuids
 			);
 		} catch (SharedMasterDataWriteException $refusal) {
 			$this->recordSharedMasterDataRefusal(
 				refusal: $refusal,
-				registerId: $registerId,
-				schemaId: $schemaId,
-				uuid: $uuid,
+				target: $target,
 				activeOrgUuid: ($activeOrgUuids[0] ?? null)
 			);
 
@@ -460,9 +458,7 @@ class SaveObject implements SaveObjectInterface {
 	 * Record one refused cross-entity write, on the audit trail and in the log.
 	 *
 	 * @param SharedMasterDataWriteException $refusal The refusal.
-	 * @param int|null $registerId The register being written.
-	 * @param int|null $schemaId The schema being written.
-	 * @param string|null $uuid The object uuid, when the caller named one.
+	 * @param ObjectWriteTarget $target The register and schema being written, and the object uuid when named.
 	 * @param string|null $activeOrgUuid The organisation that attempted the write.
 	 *
 	 * @return void
@@ -471,11 +467,12 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	private function recordSharedMasterDataRefusal(
 		SharedMasterDataWriteException $refusal,
-		?int $registerId,
-		?int $schemaId,
-		?string $uuid,
+		ObjectWriteTarget $target,
 		?string $activeOrgUuid,
 	): void {
+		$registerId = $target->registerId;
+		$schemaId   = $target->schemaId;
+		$uuid       = $target->uuid;
 		$redactor = new TenantLogRedactor(appConfig: $this->appConfig);
 
 		$actorId = null;
@@ -1765,7 +1762,9 @@ class SaveObject implements SaveObjectInterface {
 		// property of the RESOURCE being written, decided before anything is
 		// prepared, validated or persisted.
 		if ($call->flags->persist === true && OrganisationContext::multitenancy(requested: $call->flags->multitenancy) === true) {
-			$this->refuseSharedMasterDataWrite(registerId: $call->registerId, schemaId: $call->schemaId, uuid: $call->uuid);
+			$this->refuseSharedMasterDataWrite(
+				target: new ObjectWriteTarget(registerId: $call->registerId, schemaId: $call->schemaId, uuid: $call->uuid)
+			);
 		}
 
 		// Read-only projection guard: a schema served from an external source
@@ -1774,14 +1773,7 @@ class SaveObject implements SaveObjectInterface {
 		// its backing source's writable flag live and fails closed.
 		$objectSource = $call->schema->getObjectSource();
 		if ($call->flags->persist === true && $objectSource !== null) {
-			return $this->delegateObjectSourceWrite(
-				register: $call->register,
-				schema: $call->schema,
-				objectSource: $objectSource,
-				data: $call->data,
-				uuid: $call->uuid,
-				silent: $call->flags->silent
-			);
+			return $this->delegateObjectSourceWrite(call: $call, objectSource: $objectSource);
 		}
 
 		// Normalize translatable properties (wrap simple values under default language).
@@ -1888,14 +1880,10 @@ class SaveObject implements SaveObjectInterface {
 			message: '[SaveObject] UUID provided, checking for existing object'
 		);
 
-		// Always disable RBAC and multitenancy for internal object lookup
-		// to avoid permission errors when validating existing objects.
 		$existingObject = $this->findAndValidateExistingObject(
 			uuid: $call->uuid,
 			register: $call->register,
-			schema: $call->schema,
-			_rbac: false,
-			_multitenancy: false
+			schema: $call->schema
 		);
 
 		if ($existingObject !== null) {
@@ -2289,11 +2277,13 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Find and validate existing object by UUID.
 	 *
+	 * RBAC and multitenancy are always off for this internal lookup, so that
+	 * validating the stored object never fails on the caller's permissions;
+	 * the caller's access to the write is decided elsewhere.
+	 *
 	 * @param string $uuid Object UUID.
 	 * @param Register|null $register Optional register for magic mapper routing.
 	 * @param Schema|null $schema Optional schema for magic mapper routing.
-	 * @param bool $_rbac Whether to apply RBAC checks.
-	 * @param bool $_multitenancy Whether to apply multitenancy checks.
 	 *
 	 * @return ObjectEntity|null Existing object or null if not found.
 	 *
@@ -2305,17 +2295,17 @@ class SaveObject implements SaveObjectInterface {
 		string $uuid,
 		?Register $register = null,
 		?Schema $schema = null,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
 	): ?ObjectEntity {
 		try {
+			// Always disable RBAC and multitenancy for internal object lookup
+			// to avoid permission errors when validating existing objects.
 			$existingObject = $this->objectEntityMapper->find(
 				identifier: $uuid,
 				register: $register,
 				schema: $schema,
 				includeDeleted: false,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy
+				_rbac: false,
+				_multitenancy: false
 			);
 
 			// An explicit uuid names the row of that uuid only. The lookup also
@@ -2561,8 +2551,7 @@ class SaveObject implements SaveObjectInterface {
 		return $this->prepareObjectForUpdate(
 			existingObject: $existingObject,
 			schema: $call->schema,
-			data: $call->data,
-			selfData: $call->selfData,
+			payload: new ObjectPayload(data: $call->data, selfData: $call->selfData),
 			currentUser: $call->flags->currentUser
 		);
 	}//end prepareUpdatedObject()
@@ -2669,12 +2658,8 @@ class SaveObject implements SaveObjectInterface {
 		$preparedObject = $this->prepareObjectForCreation(
 			objectEntity: $objectEntity,
 			schema: $call->schema,
-			data: $call->data,
-			selfData: $call->selfData,
-			_multitenancy: $call->flags->multitenancy,
-			currentUser: $call->flags->currentUser,
-			_unowned: $call->flags->unowned,
-			_owner: $call->flags->owner
+			payload: new ObjectPayload(data: $call->data, selfData: $call->selfData),
+			flags: $call->flags
 		);
 
 		return $this->applyArchivalOnCreate(schema: $call->schema, preparedObject: $preparedObject);
@@ -2769,12 +2754,11 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @param ObjectEntity $objectEntity The object entity to prepare.
 	 * @param Schema $schema The schema of the object.
-	 * @param array $data The object data.
-	 * @param array $selfData The @self metadata.
-	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
-	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
-	 * @param bool $_unowned Stamp the system identity even when a session exists.
-	 * @param string|null $_owner An explicit owner, such as a draft's scope value (decision 195).
+	 * @param ObjectPayload $payload The object data and the @self metadata.
+	 * @param ObjectSaveFlags $flags The save flags: the explicit acting user for `@self.folder` access
+	 *                               checks (forwarded to setSelfMetadata), whether to stamp the system
+	 *                               identity even when a session exists, and an explicit owner, such
+	 *                               as a draft's scope value (decision 195).
 	 *
 	 * @return ObjectEntity The prepared object entity.
 	 *
@@ -2789,15 +2773,14 @@ class SaveObject implements SaveObjectInterface {
 	private function prepareObjectForCreation(
 		ObjectEntity $objectEntity,
 		Schema $schema,
-		array $data,
-		array $selfData,
-		bool $_multitenancy,
-		?IUser $currentUser = null,
-		bool $_unowned = false,
-		?string $_owner = null,
+		ObjectPayload $payload,
+		ObjectSaveFlags $flags,
 	): ObjectEntity {
+		$data     = $payload->data;
+		$selfData = $payload->selfData;
+
 		// Set @self metadata properties.
-		$this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data, currentUser: $currentUser);
+		$this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data, currentUser: $flags->currentUser);
 
 		// Start the object's version sequence. Nothing wrote this before, so on
 		// the magic tables (which carry no column default) every object read
@@ -2853,7 +2836,7 @@ class SaveObject implements SaveObjectInterface {
 		// Set owner from the active user session, or fall back to the system
 		// identifier when no session is active. See applyOwnerAttribution()
 		// for the system-context contract (openregister#1617).
-		$this->applyOwnerAttribution(objectEntity: $objectEntity, _unowned: $_unowned, _owner: $_owner);
+		$this->applyOwnerAttribution(objectEntity: $objectEntity, _unowned: $flags->unowned, _owner: $flags->owner);
 
 		// Set organisation from active organisation if not already set.
 		// setSelfMetadata() (called above) only accepted a client-supplied @self.organisation
@@ -2956,8 +2939,7 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @param ObjectEntity $existingObject The existing object entity to prepare.
 	 * @param Schema $schema The schema of the object.
-	 * @param array $data The updated object data.
-	 * @param array $selfData The @self metadata.
+	 * @param ObjectPayload $payload The updated object data and the @self metadata.
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
 	 *
 	 * @return ObjectEntity The prepared object entity.
@@ -2969,10 +2951,12 @@ class SaveObject implements SaveObjectInterface {
 	private function prepareObjectForUpdate(
 		ObjectEntity $existingObject,
 		Schema $schema,
-		array $data,
-		array $selfData,
+		ObjectPayload $payload,
 		?IUser $currentUser = null,
 	): ObjectEntity {
+		$data     = $payload->data;
+		$selfData = $payload->selfData;
+
 		// The stored record as property rules see it, taken before this request's
 		// `@self` is applied to the entity.
 		$storedRecord = $existingObject->getMatchEnvelope();
@@ -4006,8 +3990,7 @@ class SaveObject implements SaveObjectInterface {
 		$preparedObject = $this->prepareObjectForUpdate(
 			existingObject: $existingObject,
 			schema: $run->schema,
-			data: $run->data,
-			selfData: $run->selfData
+			payload: new ObjectPayload(data: $run->data, selfData: $run->selfData)
 		);
 		$preparedObject = $this->recalculateArchiveDate(run: $run, preparedObject: $preparedObject);
 
@@ -4117,12 +4100,9 @@ class SaveObject implements SaveObjectInterface {
 	 * provider itself re-verifies the backing source's writable flag at write
 	 * time (fail closed), so a stale annotation can never authorize a write.
 	 *
-	 * @param Register|null $register The resolved register.
-	 * @param Schema $schema The sourced schema.
+	 * @param ObjectSaveCall $call The save call: the resolved register, the sourced schema, the
+	 *                            object data, the object id (null for creates) and the silent flag.
 	 * @param array<string, mixed> $objectSource The `x-openregister-object-source` annotation.
-	 * @param array<string, mixed> $data The validated object data.
-	 * @param string|null $uuid The object id for updates, null for creates.
-	 * @param bool $silent Whether to skip audit trail creation.
 	 *
 	 * @return ObjectEntity The written virtual object as returned by the provider.
 	 *
@@ -4130,14 +4110,12 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function delegateObjectSourceWrite(
-		?Register $register,
-		Schema $schema,
-		array $objectSource,
-		array $data,
-		?string $uuid,
-		bool $silent,
-	): ObjectEntity {
+	private function delegateObjectSourceWrite(ObjectSaveCall $call, array $objectSource): ObjectEntity {
+		$register = $call->register;
+		$schema   = $call->schema;
+		$data     = $call->data;
+		$uuid     = $call->uuid;
+		$silent   = $call->flags->silent;
 		$provider = null;
 		if ($this->objectSourceRegistry !== null) {
 			$provider = $this->objectSourceRegistry->get((string)$objectSource['provider']);
