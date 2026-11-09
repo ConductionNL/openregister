@@ -80,22 +80,36 @@ class FileFormattingHandler {
 	private readonly FileListFilter $listFilter;
 
 	/**
+	 * Session used to gate lock fields for authenticated callers only.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for logging operations.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for FileFormattingHandler.
 	 *
 	 * @param ILockManager             $lockManager Lock manager for reading file lock state.
-	 * @param IUserSession             $userSession Session used to gate lock fields for authenticated callers only.
-	 * @param LoggerInterface          $logger      Logger for logging operations.
+	 * @param FileSession              $session     The session that gates lock fields for authenticated callers only, and the logger.
 	 * @param FileMapperInterface|null $fileMapper  Optional OR-side metadata mapper for description / category /
 	 *                                              labels / downloadCount enrichment. When null (test fixtures,
 	 *                                              legacy callers), enrichment is skipped silently.
 	 */
 	public function __construct(
 		ILockManager $lockManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		FileSession $session,
 		private readonly ?FileMapperInterface $fileMapper = null,
 	) {
-		$this->lockEnvelope = new FileLockEnvelope(lockManager: $lockManager, logger: $logger);
+		$this->userSession = $session->userSession;
+		$this->logger = $session->logger;
+		$this->lockEnvelope = new FileLockEnvelope(lockManager: $lockManager, logger: $session->logger);
 		$this->listFilter = new FileListFilter();
 	}//end __construct()
 

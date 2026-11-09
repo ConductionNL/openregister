@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Service\File\FileSession;
 use Exception;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCP\ICache;
@@ -70,7 +71,7 @@ class FileLockHandlerOutcomeGoldenTest extends TestCase
         $groups = $this->createMock(IGroupManager::class);
         $groups->method('isAdmin')->willReturnCallback(static fn (string $uid): bool => $uid === 'admin');
 
-        return new FileLockHandler($factory, $session, $groups, $this->createMock(LoggerInterface::class));
+        return new FileLockHandler($factory, new FileSession($session, $groups, $this->createMock(LoggerInterface::class)));
     }
 
     public function actor(): string
@@ -148,9 +149,7 @@ class FileLockHandlerOutcomeGoldenTest extends TestCase
         $session->method('getUser')->willReturn(null);
         $handler = new FileLockHandler(
             $this->createMock(ICacheFactory::class),
-            $session,
-            $this->createMock(IGroupManager::class),
-            $this->createMock(LoggerInterface::class)
+            new FileSession($session, $this->createMock(IGroupManager::class), $this->createMock(LoggerInterface::class))
         );
 
         $this->expectExceptionMessage('No user logged in');

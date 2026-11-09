@@ -82,21 +82,41 @@ class FileLockHandler {
 	private array $localFallback = [];
 
 	/**
+	 * User session for current user context.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin checks.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Logger for logging operations.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for FileLockHandler.
 	 *
 	 * @param ICacheFactory $cacheFactory Distributed-cache factory; falls back
 	 *                                    to a per-instance map when no cache
 	 *                                    backend is wired.
-	 * @param IUserSession $userSession User session for current user context.
-	 * @param IGroupManager $groupManager Group manager for admin checks.
-	 * @param LoggerInterface $logger Logger for logging operations.
+	 * @param FileSession   $session      The user session, group manager and logger.
 	 */
 	public function __construct(
 		ICacheFactory $cacheFactory,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
+		FileSession $session,
 	) {
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
+		$this->logger = $session->logger;
 		$this->cache = $this->openCache(cacheFactory: $cacheFactory);
 	}//end __construct()
 

@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCP\IGroupManager;
+use OCA\OpenRegister\Service\File\FileSession;
 use OCA\OpenRegister\Service\File\FileVersionsPlatform;
 use Exception;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
@@ -148,7 +150,7 @@ class FileVersioningHandlerGoldenTest extends TestCase {
 			}
 		};
 
-		return new FileVersioningHandler(new FileVersionsPlatform($this->createMock(IRootFolder::class), $appManager, $container), $session, $logger);
+		return new FileVersioningHandler(new FileVersionsPlatform($this->createMock(IRootFolder::class), $appManager, $container), new FileSession($session, $this->createMock(IGroupManager::class), $logger));
 	}//end handler()
 
 	/**
