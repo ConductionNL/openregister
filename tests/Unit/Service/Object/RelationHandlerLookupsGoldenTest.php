@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use PHPUnit\Framework\TestCase;
@@ -358,12 +359,14 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 		}
 
 		return new RelationHandler(
-			objectEntityMapper: $magic,
-			schemaMapper: $schemaMapper,
+			stores: new RelationHandlerStores(
+				objects: $magic,
+				schemas: $schemaMapper,
+				registers: $registerMapper,
+				relationTypes: $resolver
+			),
 			rbacHandler: $rbac,
-			logger: $logger,
-			registerMapper: $registerMapper,
-			relationTypes: $resolver
+			logger: $logger
 		);
 	}//end handler()
 

@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Object\RelationLookup;
@@ -101,11 +102,13 @@ class RelationHandlerDraftTest extends TestCase {
 		$rbac->method('hasRowPermission')->willReturn(true);
 
 		$handler = new RelationHandler(
-			objectEntityMapper: $magic,
-			schemaMapper: $schemaMapper,
+			stores: new RelationHandlerStores(
+				objects: $magic,
+				schemas: $schemaMapper,
+				registers: $registerMapper
+			),
 			rbacHandler: $rbac,
-			logger: $this->createMock(LoggerInterface::class),
-			registerMapper: $registerMapper
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 		$result = $handler->getUses(lookup: new RelationLookup(objectId: 'lead-1'));

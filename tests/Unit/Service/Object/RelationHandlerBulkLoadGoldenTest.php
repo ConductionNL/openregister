@@ -14,7 +14,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
@@ -85,6 +88,11 @@ class RelationHandlerBulkLoadGoldenTest extends TestCase {
 			$args[] = match ($type) {
 				MagicMapperInterface::class => $mapper,
 				LoggerInterface::class => $logger,
+				RelationHandlerStores::class => new RelationHandlerStores(
+					objects: $mapper,
+					schemas: $this->createMock(SchemaMapperInterface::class),
+					registers: $this->createMock(RegisterMapperInterface::class)
+				),
 				default => $this->createMock($type),
 			};
 		}
