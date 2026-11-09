@@ -39,30 +39,8 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 class ExampleSetRewriter {
 
 	/**
-	 * A kept object: on `--refresh` (the plan's `refresh`) rewritten to today's declared values, otherwise pointed
-	 * at the objects it references now.
-	 *
-	 * @param array<string, mixed>                $plan       The plan.
-	 * @param array<string, mixed>                $run        The `store`, the `fragment`, the declared `object` and the stored `row`.
-	 * @param callable(): array<string, mixed>    $resolve    Resolves the declaration today.
-	 * @param callable(): array<string, mixed>    $references Refreshes only the references, when not refreshing.
-	 * @param array<string, mixed>                $report     The report.
-	 * @param array<string, array<string, mixed>> $written    Collects what this run sent, by record key.
-	 *
-	 * @return array<string, mixed> The object as stored afterwards.
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
-	 */
-	public function keep(array $plan, array $run, callable $resolve, callable $references, array &$report, array &$written): array {
-		if (($plan['refresh'] ?? false) !== true) {
-			return $references();
-		}
-
-		return $this->rewrite(run: $run, resolved: $resolve(), report: $report, written: $written);
-	}//end keep()
-
-	/**
-	 * Rewrite one kept object; the object as stored afterwards, or the row as it was when it could not be written.
+	 * Rewrite one kept object on `--refresh` (the plan's `refresh`) to today's declared values; the object as stored
+	 * afterwards, or the row as it was when it could not be written.
 	 *
 	 * @param array<string, mixed>                $run      The `store`, the `fragment`, the declared `object` and the stored `row`.
 	 * @param array<string, mixed>                $resolved The declaration resolved today: `refusal`, `data`, `sent`, and maybe `owner`.
@@ -73,7 +51,7 @@ class ExampleSetRewriter {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
 	 */
-	private function rewrite(array $run, array $resolved, array &$report, array &$written): array {
+	public function rewrite(array $run, array $resolved, array &$report, array &$written): array {
 		$where = $run['fragment']['file'].': object "'.$run['object']['key'].'"';
 		if ($resolved['refusal'] !== '') {
 			$report['dropped'][] = $where.': not refreshed: '.$resolved['refusal'];

@@ -44,44 +44,121 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     One install flow: check, accounts, objects, proof.
  * @SuppressWarnings(PHPMD.TooManyMethods)            Each part of a fragment has its own check and write step.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)    One collaborator per part of a fragment, each small and separately tested.
- * @SuppressWarnings(PHPMD.ExcessiveParameterList)    The constructor takes one collaborator per part of a fragment.
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
  */
 class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	/**
+	 * Register access.
+	 *
+	 * @var ExampleSetStore
+	 */
+	private readonly ExampleSetStore $store;
+
+	/**
+	 * The cast's and the service accounts' accounts and groups.
+	 *
+	 * @var ExampleSetPeople
+	 */
+	private readonly ExampleSetPeople $people;
+
+	/**
+	 * Fills placeholders.
+	 *
+	 * @var ExampleSetValues
+	 */
+	private readonly ExampleSetValues $values;
+
+	/**
+	 * What an install made.
+	 *
+	 * @var ExampleSetRecord
+	 */
+	private readonly ExampleSetRecord $record;
+
+	/**
+	 * Compares sent with stored.
+	 *
+	 * @var ExampleSetProof
+	 */
+	private readonly ExampleSetProof $proof;
+
+	/**
+	 * Registers and organisations before the check, and the base context.
+	 *
+	 * @var ExampleSetPrerequisites
+	 */
+	private readonly ExampleSetPrerequisites $prerequisites;
+
+	/**
+	 * Changes objects the set did not create.
+	 *
+	 * @var ExampleSetChanges
+	 */
+	private readonly ExampleSetChanges $changes;
+
+	/**
+	 * Attaches files to objects.
+	 *
+	 * @var ExampleSetFiles
+	 */
+	private readonly ExampleSetFiles $files;
+
+	/**
+	 * Writes a fragment's own app config.
+	 *
+	 * @var ExampleSetAppConfig
+	 */
+	private readonly ExampleSetAppConfig $appConfig;
+
+	/**
+	 * Writes a fragment's own app's preferences of the set's accounts.
+	 *
+	 * @var ExampleSetUserPreferences
+	 */
+	private readonly ExampleSetUserPreferences $userPreferences;
+
+	/**
+	 * Writes the tasks and saved views a fragment declares; null refuses them.
+	 *
+	 * @var ExampleSetEngineKinds|null
+	 */
+	private readonly ?ExampleSetEngineKinds $engineRows;
+
+	/**
+	 * Rewrites a kept object on `--refresh`.
+	 *
+	 * @var ExampleSetRewriter
+	 */
+	private readonly ExampleSetRewriter $rewriter;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ExampleSetStore         $store         Register access.
-	 * @param ExampleSetPeople        $people        The cast's and the service accounts' accounts and groups.
-	 * @param ExampleSetValues        $values        Fills placeholders.
-	 * @param ExampleSetRecord        $record        What an install made.
-	 * @param ExampleSetProof         $proof         Compares sent with stored.
-	 * @param ExampleSetPrerequisites $prerequisites Registers and organisations before the check, and the base context.
-	 * @param ExampleSetChanges       $changes       Changes objects the set did not create.
-	 * @param ExampleSetFiles         $files         Attaches files to objects.
-	 * @param ExampleSetAppConfig     $appConfig     Writes a fragment's own app config.
-	 * @param ExampleSetUserPreferences $userPreferences Writes a fragment's own app's preferences of the set's accounts.
-	 * @param ExampleSetEngineKinds|null $engineRows     Writes the tasks and saved views a fragment declares; null refuses them.
-	 * @param ExampleSetRewriter         $rewriter       Rewrites a kept object on `--refresh`.
-	 * @param ExampleSetLock|null        $lock           One install or removal of a set at a time; null holds nothing.
+	 * @param ExampleSetInstallerObjects $objects Register access, placeholders, the install record and the proof.
+	 * @param ExampleSetInstallerSetup   $setup   Accounts, prerequisites, app config and user preferences.
+	 * @param ExampleSetInstallerWriters $writers Changes, files, engine rows and the refresh rewriter.
+	 * @param ExampleSetLock|null        $lock    One install or removal of a set at a time; null holds nothing.
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ExampleSetStore $store,
-		private readonly ExampleSetPeople $people,
-		private readonly ExampleSetValues $values,
-		private readonly ExampleSetRecord $record,
-		private readonly ExampleSetProof $proof,
-		private readonly ExampleSetPrerequisites $prerequisites,
-		private readonly ExampleSetChanges $changes,
-		private readonly ExampleSetFiles $files,
-		private readonly ExampleSetAppConfig $appConfig,
-		private readonly ExampleSetUserPreferences $userPreferences,
-		private readonly ?ExampleSetEngineKinds $engineRows=null,
-		private readonly ExampleSetRewriter $rewriter=new ExampleSetRewriter(),
+		ExampleSetInstallerObjects $objects,
+		ExampleSetInstallerSetup $setup,
+		ExampleSetInstallerWriters $writers,
 		private readonly ?ExampleSetLock $lock=null,
 	) {
+		$this->store           = $objects->store;
+		$this->people          = $setup->people;
+		$this->values          = $objects->values;
+		$this->record          = $objects->record;
+		$this->proof           = $objects->proof;
+		$this->prerequisites   = $setup->prerequisites;
+		$this->changes         = $writers->changes;
+		$this->files           = $writers->files;
+		$this->appConfig       = $setup->appConfig;
+		$this->userPreferences = $setup->userPreferences;
+		$this->engineRows      = $writers->engineRows;
+		$this->rewriter        = $writers->rewriter;
 	}//end __construct()
 
 	/**
@@ -396,17 +473,18 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 				$files[$object['key']] = $this->heldFileIds(record: $record, name: $name);
 				$context = (['objects' => $objects, 'files' => $files] + $base);
-				$objects[$object['key']] = $this->rewriter->keep(
-					plan: $plan,
-					run: ['store' => $this->store, 'fragment' => $fragment, 'object' => $object, 'row' => $kept],
-					resolve: fn (): array => $this->resolve(object: $object, context: $context, planned: []),
-					references: function () use ($run, $object, $kept, $context, &$report, &$record): array {
-						$held = new ExampleSetKeptObject(object: $object, row: $kept, context: $context);
-						return $this->refreshReferences(run: $run, held: $held, report: $report, record: $record);
-					},
-					report: $report,
-					written: $written
-				);
+				$held    = new ExampleSetKeptObject(object: $object, row: $kept, context: $context);
+				if (($plan['refresh'] ?? false) !== true) {
+					$objects[$object['key']] = $this->refreshReferences(run: $run, held: $held, report: $report, record: $record);
+				} else {
+					$objects[$object['key']] = $this->rewriter->rewrite(
+						run: ['store' => $this->store, 'fragment' => $fragment, 'object' => $object, 'row' => $kept],
+						resolved: $this->resolve(object: $object, context: $context, planned: []),
+						report: $report,
+						written: $written
+					);
+				}
+
 				$this->rewriter->follow(record: $record, name: $name, written: $written, save: $save);
 
 				continue;
