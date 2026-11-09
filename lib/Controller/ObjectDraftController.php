@@ -274,10 +274,9 @@ class ObjectDraftController extends Controller {
 	 * @return JSONResponse The refusal.
 	 */
 	private function notSignedIn(): JSONResponse {
-		return $this->refusal(
-			message: $this->l10n->t('Please sign in to make this draft definitive.'),
-			reason: 'not-signed-in',
-			status: Http::STATUS_UNAUTHORIZED
+		return new JSONResponse(
+			data: $this->refusal(message: $this->l10n->t('Please sign in to make this draft definitive.'), reason: 'not-signed-in'),
+			statusCode: Http::STATUS_UNAUTHORIZED
 		);
 	}//end notSignedIn()
 
@@ -287,10 +286,9 @@ class ObjectDraftController extends Controller {
 	 * @return JSONResponse The refusal.
 	 */
 	private function notFound(): JSONResponse {
-		return $this->refusal(
-			message: $this->l10n->t('This draft does not exist.'),
-			reason: DraftActivationRefusedException::NOT_FOUND,
-			status: Http::STATUS_NOT_FOUND
+		return new JSONResponse(
+			data: $this->refusal(message: $this->l10n->t('This draft does not exist.'), reason: DraftActivationRefusedException::NOT_FOUND),
+			statusCode: Http::STATUS_NOT_FOUND
 		);
 	}//end notFound()
 
@@ -307,10 +305,12 @@ class ObjectDraftController extends Controller {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
 		);
 
-		return $this->refusal(
-			message: $this->l10n->t('The draft could not be made definitive right now. Nothing was changed; try again later.'),
-			reason: 'unavailable',
-			status: Http::STATUS_INTERNAL_SERVER_ERROR
+		return new JSONResponse(
+			data: $this->refusal(
+				message: $this->l10n->t('The draft could not be made definitive right now. Nothing was changed; try again later.'),
+				reason: 'unavailable'
+			),
+			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
 		);
 	}//end unavailable()
 
@@ -344,15 +344,14 @@ class ObjectDraftController extends Controller {
 	}//end renderedActivation()
 
 	/**
-	 * A refusal in the one body shape this endpoint answers with.
+	 * A refusal body in the one shape this endpoint answers with.
 	 *
 	 * @param string $message The sentence the caller shows.
 	 * @param string $reason  A stable word a client can branch on.
-	 * @param int    $status  The HTTP status.
 	 *
-	 * @return JSONResponse The refusal.
+	 * @return array{message: string, reason: string, findings: array<never>} The refusal body.
 	 */
-	private function refusal(string $message, string $reason, int $status): JSONResponse {
-		return new JSONResponse(data: ['message' => $message, 'reason' => $reason, 'findings' => []], statusCode: $status);
+	private function refusal(string $message, string $reason): array {
+		return ['message' => $message, 'reason' => $reason, 'findings' => []];
 	}//end refusal()
 }//end class
