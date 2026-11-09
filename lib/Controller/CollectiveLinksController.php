@@ -36,6 +36,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\CollectiveLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -55,20 +57,36 @@ class CollectiveLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var CollectiveLinkServiceInterface
+	 */
+	private readonly CollectiveLinkServiceInterface $linkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param CollectiveLinkServiceInterface $linkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param CollectiveLinksControllerServices $services The collective links controller services.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly CollectiveLinkServiceInterface $linkService,
-		private readonly ObjectOperationsInterface $objectService,
+		CollectiveLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->linkService = $services->linkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
