@@ -4,6 +4,7 @@ namespace Unit\Tool;
 
 use BadMethodCallException;
 use OCA\OpenRegister\Db\Application;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ApplicationMapper;
 use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -87,7 +88,7 @@ class ApplicationToolTest extends TestCase {
 	// ------------------------------------------------------------------
 
 	public function testExecuteFunctionCallsCorrectMethod(): void {
-		$this->applicationMapper->method('findAll')->willReturn([]);
+		$this->applicationMapper->method('findAllBy')->willReturn([]);
 		$this->applicationMapper->method('countAll')->willReturn(0);
 
 		$result = $this->tool->executeFunction('list_applications', []);
@@ -105,7 +106,7 @@ class ApplicationToolTest extends TestCase {
 
 	public function testListApplicationsSuccess(): void {
 		$app = $this->createApplicationEntity('uuid-1', 'MyApp', 'Desc');
-		$this->applicationMapper->method('findAll')->willReturn([$app]);
+		$this->applicationMapper->method('findAllBy')->willReturn([$app]);
 		$this->applicationMapper->method('countAll')->willReturn(1);
 
 		$result = $this->tool->listApplications();
@@ -118,8 +119,8 @@ class ApplicationToolTest extends TestCase {
 
 	public function testListApplicationsWithPagination(): void {
 		$this->applicationMapper->expects($this->once())
-			->method('findAll')
-			->with(10, 5)
+			->method('findAllBy')
+			->with(new ListQuery(limit: 10, offset: 5))
 			->willReturn([]);
 		$this->applicationMapper->method('countAll')->willReturn(0);
 
@@ -130,7 +131,7 @@ class ApplicationToolTest extends TestCase {
 	}
 
 	public function testListApplicationsEmpty(): void {
-		$this->applicationMapper->method('findAll')->willReturn([]);
+		$this->applicationMapper->method('findAllBy')->willReturn([]);
 		$this->applicationMapper->method('countAll')->willReturn(0);
 
 		$result = $this->tool->listApplications();
@@ -139,7 +140,7 @@ class ApplicationToolTest extends TestCase {
 	}
 
 	public function testListApplicationsException(): void {
-		$this->applicationMapper->method('findAll')
+		$this->applicationMapper->method('findAllBy')
 			->willThrowException(new \Exception('DB error'));
 
 		$result = $this->tool->listApplications();
