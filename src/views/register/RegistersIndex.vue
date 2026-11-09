@@ -101,11 +101,7 @@ import {
 						{{ row.title }}
 						<ManagedBadge :config="getManagingConfiguration(row)" />
 					</strong>
-					<span
-						v-if="row.description"
-						class="textDescription textEllipsis"
-						>{{ row.description }}</span
-					>
+					<IndexRowDescription :text="row.description" />
 				</div>
 			</template>
 
@@ -154,6 +150,7 @@ import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 import RegisterFormFields from '../../components/register/RegisterFormFields.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ManagedBadge from '../../components/shared/ManagedBadge.vue'
+import IndexRowDescription from '../IndexRowDescription.vue'
 import {
 	isExternalConfiguration,
 	isLocalConfiguration,
@@ -230,6 +227,7 @@ function failureText(error) {
 export default {
 	name: 'RegistersIndex',
 	components: {
+		IndexRowDescription,
 		ActionMenu,
 		NcActionButton,
 		Upload,

@@ -83,11 +83,7 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 			<template #column-title="{ row }">
 				<div class="titleContent">
 					<strong>{{ row.title }}</strong>
-					<span
-						v-if="row.description"
-						class="textDescription textEllipsis"
-						>{{ row.description }}</span
-					>
+					<IndexRowDescription :text="row.description" />
 				</div>
 			</template>
 
@@ -132,6 +128,7 @@ import { CnIndexPage } from '@conduction/nextcloud-vue'
 import { NcAppContent } from '@nextcloud/vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
+import IndexRowDescription from '../IndexRowDescription.vue'
 import { deleteAction, editAction, viewAction } from '../../services/menuActions.js'
 import {
 	BUILTIN_ACTIONS_OFF,
@@ -143,6 +140,7 @@ import { localPagination } from '../localPagination.js'
 export default {
 	name: 'SourcesIndex',
 	components: {
+		IndexRowDescription,
 		ActionMenu,
 		NcAppContent,
 		CnIndexPage,
