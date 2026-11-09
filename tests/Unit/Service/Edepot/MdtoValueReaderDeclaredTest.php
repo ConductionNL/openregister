@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Edepot;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Edepot\ArchivalFactKey;
+use OCA\OpenRegister\Service\Edepot\ArchivalSource;
 use OCA\OpenRegister\Service\Edepot\MdtoValueReader;
 use PHPUnit\Framework\TestCase;
 
@@ -59,6 +61,9 @@ class MdtoValueReaderDeclaredTest extends TestCase {
 		$object->setRetention($retention);
 		$object->setTmlo($tmlo);
 
-		return (new MdtoValueReader())->declared(object: $object, abstractKey: 'bewaartermijn', tmloKey: 'bewaarTermijn', annotation: $annotation);
+		return (new MdtoValueReader())->declared(
+			source: new ArchivalSource(object: $object, annotation: $annotation),
+			fact: new ArchivalFactKey(abstractKey: 'bewaartermijn', tmloKey: 'bewaarTermijn')
+		);
 	}
 }//end class
