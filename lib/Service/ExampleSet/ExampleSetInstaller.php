@@ -632,7 +632,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			}
 		}//end foreach
 
-		if (ExampleSetRecord::letGoUndeclared(fragment: $fragment, part: 'changes', noun: 'change', report: $report, record: $record) === true) {
+		if (ExampleSetRecord::letGoUndeclared(part: self::changesPart(), fragment: $fragment, report: $report, record: $record) === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 		}
 
@@ -1196,4 +1196,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			return new DateTimeImmutable('now');
 		}
 	}//end today()
+
+	/**
+	 * The record part of the changes a set makes to objects it did not create.
+	 *
+	 * @return ExampleSetRecordPart
+	 */
+	private static function changesPart(): ExampleSetRecordPart {
+		return new ExampleSetRecordPart(part: 'changes', noun: 'change');
+	}//end changesPart()
 }//end class
