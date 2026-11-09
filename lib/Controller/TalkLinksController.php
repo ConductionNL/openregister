@@ -77,12 +77,9 @@ class TalkLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		return $this->whenTalkInstalled(
-			answer: fn (): JSONResponse => $this->listLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-				action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->talkLinkService->getLinkedRooms($object->getUuid()))
-			)
-		);
+		$action = $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->talkLinkService->getLinkedRooms($object->getUuid()));
+
+		return $this->listWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end index()
 
 	/**
@@ -102,12 +99,9 @@ class TalkLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		return $this->whenTalkInstalled(
-			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-				action: $this->linkRoom(...)
-			)
-		);
+		$action = $this->linkRoom(...);
+
+		return $this->onWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end link()
 
 	/**
@@ -127,12 +121,9 @@ class TalkLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function createNew(string $register, string $schema, string $id): JSONResponse {
-		return $this->whenTalkInstalled(
-			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-				action: $this->createRoom(...)
-			)
-		);
+		$action = $this->createRoom(...);
+
+		return $this->onWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end createNew()
 
 	/**
@@ -151,12 +142,9 @@ class TalkLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function destroy(string $register, string $schema, string $id, string $roomToken): JSONResponse {
-		return $this->whenTalkInstalled(
-			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-				action: LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->talkLinkService->unlinkRoom($uuid, $roomToken))
-			)
-		);
+		$action = LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->talkLinkService->unlinkRoom($uuid, $roomToken));
+
+		return $this->onWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end destroy()
 
 	/**
@@ -246,6 +234,30 @@ class TalkLinksController extends Controller {
 
 		return (int)$type;
 	}//end roomType()
+
+	/**
+	 * List for the object its route names, when Talk is installed; 501 otherwise.
+	 *
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param Closure         $action Receives the object; returns the response.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function listWhenInstalled(ObjectLinkRoute $route, Closure $action): JSONResponse {
+		return $this->whenTalkInstalled(answer: fn (): JSONResponse => $this->listLinkedObject(route: $route, action: $action));
+	}//end listWhenInstalled()
+
+	/**
+	 * Run a link action on the object its route names, when Talk is installed; 501 otherwise.
+	 *
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param Closure         $action Receives the object; returns the response.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function onWhenInstalled(ObjectLinkRoute $route, Closure $action): JSONResponse {
+		return $this->whenTalkInstalled(answer: fn (): JSONResponse => $this->onLinkedObject(route: $route, action: $action));
+	}//end onWhenInstalled()
 
 	/**
 	 * Run the answer when the Talk app is installed; 501 otherwise.
