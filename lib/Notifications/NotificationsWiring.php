@@ -33,6 +33,7 @@ use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Notifications\Db\ScheduledReportMapperInterface;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
+use OCA\OpenRegister\Notifications\Search\TimelineEntriesProvider;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
@@ -61,6 +62,8 @@ use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifierInterface;
 use OCA\OpenRegister\Notifications\Service\PresenceService;
 use OCA\OpenRegister\Notifications\Service\PresenceServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
@@ -119,6 +122,7 @@ final class NotificationsWiring {
 		NotificationChannelPolicyInterface::class => NotificationChannelPolicy::class,
 		ScheduledReportMapperInterface::class => ScheduledReportMapper::class,
 		NotificationAnnotationValidatorInterface::class => NotificationAnnotationValidator::class,
+		TaskTransitionNotifierInterface::class => TaskTransitionNotifier::class,
 	];
 
 	/**
@@ -132,6 +136,11 @@ final class NotificationsWiring {
 	 */
 	public static function register(IRegistrationContext $context): void {
 		$context->registerService(HexIconService::class, self::buildHexIconService(...));
+
+		// The entries beside the objects. A provider of its own, because a Woo
+		// request asks for every mention of a subject and the answer is a
+		// list of entries, each naming the case it sits on.
+		$context->registerSearchProvider(TimelineEntriesProvider::class);
 
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
