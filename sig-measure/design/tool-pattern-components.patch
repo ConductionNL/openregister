@@ -1,0 +1,86 @@
+--- /home/rubenlinde/sig-lanes/doc3/m/lib/check_sig_maintainability.py	2026-11-07 07:53:21.000000000 +0100
++++ tool_patched.py	2026-11-09 18:40:13.629986774 +0100
+@@ -771,8 +771,62 @@
+     return deps
+ 
+ 
+-def component_of_factory(files):
+-    """Components are directories. Start at the repository root and descend
++def pattern_components(app):
++    """Sigrid `components:` from sigrid.yaml (or the file named in SIG_COMPONENTS_YAML):
++    [(name, [include regex], [exclude regex])]. Patterns are regular expressions matched
++    against the full path with a leading slash, as Sigrid matches them; exclude wins over
++    include; the first component whose patterns match a file owns it; a file no component
++    matches lands in "Remainder". Returns [] when the file has no `components:` key."""
++    path = os.environ.get("SIG_COMPONENTS_YAML") or os.path.join(app, "sigrid.yaml")
++    if not os.path.isfile(path):
++        return []
++    comps, cur, key = [], None, None
++    for line in open(path, encoding="utf-8", errors="replace"):
++        stripped = line.strip()
++        if not stripped or stripped.startswith("#"):
++            continue
++        if not line.startswith(" ") and stripped.startswith("components:"):
++            cur, key = "section", None
++            continue
++        if cur is None:
++            continue
++        if not line.startswith(" "):
++            break
++        m = re.match(r"^\s*-\s*name:\s*(.+?)\s*$", line)
++        if m:
++            comps.append((m.group(1).strip('"\''), [], [])); key = None
++            continue
++        m = re.match(r"^\s*(include|exclude):\s*$", line)
++        if m:
++            key = m.group(1)
++            continue
++        m = re.match(r"^\s*-\s*(.+?)\s*$", line)
++        if m and comps and key:
++            comps[-1][1 if key == "include" else 2].append(re.compile(m.group(1).strip().strip('"\'')))
++    return comps
++
++
++def pattern_component_of_factory(comps):
++    """Component function for pattern-defined components, see pattern_components()."""
++    cache = {}
++
++    def component(rel):
++        if rel in cache:
++            return cache[rel]
++        probe = "/" + rel
++        name = "Remainder"
++        for cname, inc, exc in comps:
++            if any(p.fullmatch(probe) for p in inc) and not any(p.fullmatch(probe) for p in exc):
++                name = cname
++                break
++        cache[rel] = name
++        return name
++    return component
++
++
++def component_of_factory(files, app=None):
++    """Components are directories, unless sigrid.yaml defines `components:` by pattern
++    (then pattern_component_of_factory() decides and the root is "(patterns)"). Start at the repository root and descend
+     while one child directory holds more than 80% of the modules under the
+     current root: lib/ in a Nextcloud app, src/api/ in a Python service. (In
+     the fleet's apps lib/Service holds 50 to 71% of lib/, so it stays a
+@@ -780,6 +834,9 @@
+     directory below that root, and "(root)" for files directly in it. A module
+     outside the root belongs to its own top-level directory ("(top)" for a file
+     at the repository root)."""
++    comps = pattern_components(app) if app else []
++    if comps:
++        return "(patterns)", pattern_component_of_factory(comps)
+     root = ""
+     while files:
+         children = collections.Counter()
+@@ -915,7 +972,7 @@
+         share = above / total
+         coupling.append({"above": bound, "share": round(share, 4), "loc": above, "limit": cap, "ok": share <= cap,
+                          "stars": stars_of("module_coupling", round(share, 4), i)})
+-    root, comp = component_of_factory(modules)
++    root, comp = component_of_factory(modules, app)
+     hidden = sum(loc[m] for m in modules if all(comp(s) == comp(m) for s in incoming[m]))
+     lines = collections.Counter()
+     for t, srcs in incoming.items():
