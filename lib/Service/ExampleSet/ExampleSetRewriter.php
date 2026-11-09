@@ -52,9 +52,23 @@ class ExampleSetRewriter {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
 	 */
 	public function rewrite(array $run, array $resolved, array &$report, array &$written): array {
+		$tally = new RewriteTally(report: $report, written: $written);
+		return $this->rewriteDeclared(rewrite: new RewriteRun(run: $run, resolved: $resolved, tally: $tally));
+	}//end rewrite()
+
+	/**
+	 * Rewrite one kept object unless its declaration is refused today or its schema is append-only.
+	 *
+	 * @param RewriteRun $rewrite The run of rewrite(), the declaration resolved today, and the report and what this
+	 *                            run sent.
+	 *
+	 * @return array<string, mixed> The object as stored afterwards, or the row as it was when it was not written.
+	 */
+	private function rewriteDeclared(RewriteRun $rewrite): array {
+		$run   = $rewrite->run;
 		$where = $run['fragment']['file'].': object "'.$run['object']['key'].'"';
-		if ($resolved['refusal'] !== '') {
-			$report['dropped'][] = $where.': not refreshed: '.$resolved['refusal'];
+		if ($rewrite->resolved['refusal'] !== '') {
+			$rewrite->tally->report['dropped'][] = $where.': not refreshed: '.$rewrite->resolved['refusal'];
 			return $run['row'];
 		}
 
@@ -64,14 +78,9 @@ class ExampleSetRewriter {
 			return $run['row'];
 		}
 
-		return $this->rewriteWritable(
-			rewrite: new RewriteRun(
-				run: [...$run, 'where' => $where, 'rules' => $rules],
-				resolved: $resolved,
-				tally: new RewriteTally(report: $report, written: $written)
-			)
-		);
-	}//end rewrite()
+		$run = [...$run, 'where' => $where, 'rules' => $rules];
+		return $this->rewriteWritable(rewrite: new RewriteRun(run: $run, resolved: $rewrite->resolved, tally: $rewrite->tally));
+	}//end rewriteDeclared()
 
 	/**
 	 * Rewrite a kept object its schema lets a write change: send the update, hand it to its owner, record what was
@@ -269,17 +278,25 @@ class ExampleSetRewriter {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
 	 */
 	public function follow(array &$record, string $name, array $written, callable $save): void {
-		if (isset($written[$name]) === false) {
-			return;
-		}
-
-		$object     = new RewrittenObject(name: $name, data: $written[$name]);
-		$refs       = $this->followRefs(record: $record, object: $object);
-		$references = $this->followReferences(record: $record, object: $object);
-		if ($refs === true || $references === true) {
+		if (isset($written[$name]) === true && $this->followed(record: $record, object: new RewrittenObject(name: $name, data: $written[$name])) === true) {
 			$save($record);
 		}
 	}//end follow()
+
+	/**
+	 * Move the record's reference values and `#references` change of a rewritten object to what the rewrite wrote.
+	 *
+	 * @param array<string, mixed> $record The record; updated.
+	 * @param RewrittenObject      $object The record key of the object and what this run wrote for it.
+	 *
+	 * @return bool Whether the record changed.
+	 */
+	private function followed(array &$record, RewrittenObject $object): bool {
+		$refs       = $this->followRefs(record: $record, object: $object);
+		$references = $this->followReferences(record: $record, object: $object);
+
+		return $refs === true || $references === true;
+	}//end followed()
 
 	/**
 	 * Move the record's reference values of an object to what the rewrite wrote.
