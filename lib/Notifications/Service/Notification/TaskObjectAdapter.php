@@ -99,7 +99,7 @@ class TaskObjectAdapter extends ObjectEntity {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
 	 */
 	public static function payload(Task $task, ?TaskPayloadOptions $options = null): array {
-		$row = ($options?->row ?? []);
+		$row = ($options->row ?? []);
 		$payload = array_merge(
 			self::stateFields(task: $task, row: $row),
 			self::peopleFields(task: $task),
@@ -107,7 +107,7 @@ class TaskObjectAdapter extends ObjectEntity {
 			self::originFields(task: $task, row: $row)
 		);
 
-		return self::withExtra(payload: $payload, extra: ($options?->extra ?? []));
+		return self::withExtra(payload: $payload, extra: ($options->extra ?? []));
 	}//end payload()
 
 	/**
