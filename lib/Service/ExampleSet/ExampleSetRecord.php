@@ -297,14 +297,13 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 */
 	public static function letGoUndeclared(ExampleSetRecordPart $part, array $fragment, array &$report, array &$record): bool {
-		$prefix   = $fragment['app'].'/';
-		$declared = self::declared(fragment: $fragment, part: $part, prefix: $prefix);
+		$declared = self::declared(fragment: $fragment, part: $part);
 		$noun     = $part->noun;
 		$part     = $part->part;
 		$changed  = false;
 		foreach (array_keys((array) ($record[$part] ?? [])) as $name) {
 			$name = (string) $name;
-			if (self::isUndeclared(name: $name, prefix: $prefix, declared: $declared) === false) {
+			if (self::isUndeclared(name: $name, declared: $declared) === false) {
 				continue;
 			}
 
@@ -317,34 +316,33 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	}//end letGoUndeclared()
 
 	/**
-	 * The record keys of the declarations of one part in a fragment.
+	 * The app's prefix, `<app>/`, and the record keys of the declarations of one part in a fragment.
 	 *
 	 * @param array<string, mixed> $fragment The fragment.
 	 * @param ExampleSetRecordPart $part     The part.
-	 * @param string               $prefix   The app's prefix, `<app>/`.
 	 *
-	 * @return array<string, bool>
+	 * @return FragmentDeclarations
 	 */
-	private static function declared(array $fragment, ExampleSetRecordPart $part, string $prefix): array {
+	private static function declared(array $fragment, ExampleSetRecordPart $part): FragmentDeclarations {
+		$prefix   = $fragment['app'].'/';
 		$declared = [];
 		foreach ((array) ($fragment[$part->part] ?? []) as $entry) {
 			$declared[$prefix.($entry['key'] ?? '')] = true;
 		}
 
-		return $declared;
+		return new FragmentDeclarations(prefix: $prefix, keys: $declared);
 	}//end declared()
 
 	/**
 	 * Whether a held entry is one of the app's own declarations of this part that the fragment no longer declares.
 	 *
-	 * @param string              $name     The record key.
-	 * @param string              $prefix   The app's prefix, `<app>/`.
-	 * @param array<string, bool> $declared The record keys the fragment declares.
+	 * @param string               $name     The record key.
+	 * @param FragmentDeclarations $declared The app's prefix and the record keys the fragment declares.
 	 *
 	 * @return bool
 	 */
-	private static function isUndeclared(string $name, string $prefix, array $declared): bool {
-		return str_starts_with($name, $prefix) === true && str_contains($name, '#') === false && isset($declared[$name]) === false;
+	private static function isUndeclared(string $name, FragmentDeclarations $declared): bool {
+		return str_starts_with($name, $declared->prefix) === true && str_contains($name, '#') === false && isset($declared->keys[$name]) === false;
 	}//end isUndeclared()
 
 	/**
