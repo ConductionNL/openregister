@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Mcp;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ToolRegistryInterface;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
@@ -33,7 +34,6 @@ use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolCatalogueInterface;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
-use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**

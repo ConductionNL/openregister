@@ -21,7 +21,7 @@
  * @link https://www.OpenRegister.nl
  */
 
-namespace OCA\OpenRegister\Mcp\Tool;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Tool Interface
@@ -110,11 +110,11 @@ interface ToolInterface {
 	 * Called when tool is used by an agent to provide agent context
 	 * for view filtering and permissions.
 	 *
-	 * @param \OCA\OpenRegister\Mcp\Db\Agent|null $agent The agent using this tool
+	 * @param AgentInterface|null $agent The agent using this tool
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function setAgent(?\OCA\OpenRegister\Mcp\Db\Agent $agent): void;
+	public function setAgent(?AgentInterface $agent): void;
 }//end interface

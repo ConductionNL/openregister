@@ -38,7 +38,7 @@ use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Mcp\McpRegistrar;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
-use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
+use OCA\OpenRegister\Kernel\Contracts\ToolRegistryInterface;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilderInterface;

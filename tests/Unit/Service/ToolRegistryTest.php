@@ -6,7 +6,7 @@ namespace Unit\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
-use OCA\OpenRegister\Mcp\Tool\ToolInterface;
+use OCA\OpenRegister\Kernel\Contracts\ToolInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

@@ -16,7 +16,7 @@ use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
-use OCA\OpenRegister\Mcp\Tool\ToolInterface;
+use OCA\OpenRegister\Kernel\Contracts\ToolInterface;
 use OCA\OpenRegister\Notifications\Db\Message;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use PHPUnit\Framework\Attributes\DataProvider;

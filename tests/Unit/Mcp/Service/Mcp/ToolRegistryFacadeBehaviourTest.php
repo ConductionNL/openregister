@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp\Service\Mcp;
 
 use OCA\OpenRegister\Mcp\Service\Mcp\ToolRegistryFacade;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
-use OCA\OpenRegister\Mcp\Tool\ToolInterface;
+use OCA\OpenRegister\Kernel\Contracts\ToolInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

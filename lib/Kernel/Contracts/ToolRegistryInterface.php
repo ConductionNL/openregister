@@ -20,10 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Mcp\Service;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Mcp\Tool\ToolInterface;
 
 /**
  * The registry of agent tools, as the agents controller and the tool registration event use it.

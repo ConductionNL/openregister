@@ -11,7 +11,7 @@ use OCA\OpenRegister\Service\EndpointMappers;
 use OCA\OpenRegister\Service\EndpointService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
-use OCA\OpenRegister\Mcp\Tool\ToolInterface;
+use OCA\OpenRegister\Kernel\Contracts\ToolInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;

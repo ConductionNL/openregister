@@ -1815,6 +1815,16 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Mcp\\Tool\\ToolInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ToolInterface",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Mcp\\Service\\ToolRegistryInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ToolRegistryInterface",
+			"eager": false,
+			"service": true
 		}
 	}
 }

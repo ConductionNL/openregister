@@ -37,7 +37,7 @@ use OCA\OpenRegister\Mcp\Tool\McpProviderBridge;
 use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
 use OCA\OpenRegister\Mcp\Tool\RegisterTool;
 use OCA\OpenRegister\Mcp\Tool\SchemaTool;
-use OCA\OpenRegister\Mcp\Tool\ToolInterface;
+use OCA\OpenRegister\Kernel\Contracts\ToolInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

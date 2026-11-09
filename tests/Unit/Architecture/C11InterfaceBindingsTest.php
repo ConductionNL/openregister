@@ -22,7 +22,7 @@ use OCA\OpenRegister\Mcp\McpRegistrar;
 use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
-use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
+use OCA\OpenRegister\Kernel\Contracts\ToolRegistryInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;

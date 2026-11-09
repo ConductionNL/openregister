@@ -83,9 +83,9 @@ class McpProviderBridge implements ToolInterface {
 	/**
 	 * Optional agent context attached by the registry.
 	 *
-	 * @var \OCA\OpenRegister\Mcp\Db\Agent|null
+	 * @var \OCA\OpenRegister\Kernel\Contracts\AgentInterface|null
 	 */
-	private ?\OCA\OpenRegister\Mcp\Db\Agent $agent = null;
+	private ?\OCA\OpenRegister\Kernel\Contracts\AgentInterface $agent = null;
 
 	/**
 	 * Optional whitelist — when set, getFunctions() returns ONLY the
@@ -314,13 +314,13 @@ class McpProviderBridge implements ToolInterface {
 	/**
 	 * Attach the active agent context.
 	 *
-	 * @param \OCA\OpenRegister\Mcp\Db\Agent|null $agent Acting agent or null.
+	 * @param \OCA\OpenRegister\Kernel\Contracts\AgentInterface|null $agent Acting agent or null.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 */
-	public function setAgent(?\OCA\OpenRegister\Mcp\Db\Agent $agent): void {
+	public function setAgent(?\OCA\OpenRegister\Kernel\Contracts\AgentInterface $agent): void {
 		$this->agent = $agent;
 	}//end setAgent()
 

@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Mcp\Tool;
 
 use BadMethodCallException;
 use InvalidArgumentException;
-use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Kernel\Contracts\AgentInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
@@ -62,9 +62,9 @@ abstract class AbstractTool implements ToolInterface {
 	/**
 	 * Current agent (optional, set when tool is used by agent)
 	 *
-	 * @var Agent|null
+	 * @var AgentInterface|null
 	 */
-	protected ?Agent $agent = null;
+	protected ?AgentInterface $agent = null;
 
 	/**
 	 * Constructor
@@ -86,13 +86,13 @@ abstract class AbstractTool implements ToolInterface {
 	 * Called when tool is used by an agent to provide agent context
 	 * for view filtering and permissions.
 	 *
-	 * @param Agent|null $agent The agent using this tool
+	 * @param AgentInterface|null $agent The agent using this tool
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function setAgent(?Agent $agent): void {
+	public function setAgent(?AgentInterface $agent): void {
 		$this->agent = $agent;
 	}//end setAgent()
 
