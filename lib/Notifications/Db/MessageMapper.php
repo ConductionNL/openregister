@@ -111,6 +111,8 @@ class MessageMapper extends QBMapper implements MessageMapperInterface {
 	 * @return Message[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Notifications\Db\Message>
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function findByConversation(int $conversationId, ListQuery $page = new ListQuery(limit: 100)): array {
 		// Step 1: Get query builder instance.

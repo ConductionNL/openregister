@@ -261,6 +261,8 @@ class ChatCompatMiddleware extends Middleware {
 	 * @return Response The (possibly decorated) response.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function afterController($controller, $methodName, Response $response): Response {
 		if ($this->isChatFamilyController(controller: $controller) === true) {
