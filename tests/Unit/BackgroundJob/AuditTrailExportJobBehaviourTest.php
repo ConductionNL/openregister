@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\RecordedJobRuntime;
 use OCA\OpenRegister\BackgroundJob\AuditExportDelivery;
 use OCA\OpenRegister\BackgroundJob\AuditExportSource;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
@@ -112,8 +113,7 @@ class AuditTrailExportJobBehaviourTest extends TestCase {
 		);
 
 		$this->job = new AuditTrailExportJob(
-			$this->createMock(ITimeFactory::class),
-			$recorder,
+			new RecordedJobRuntime($this->createMock(ITimeFactory::class), $recorder),
 			new AuditExportSource(pageQuery: $this->pageQuery, logService: $this->logService),
 			new AuditExportDelivery(rootFolder: $root, notifications: $notifications)
 		);
