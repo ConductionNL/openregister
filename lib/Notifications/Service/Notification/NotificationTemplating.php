@@ -197,7 +197,8 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 
 		$unanswered = array_filter(
 			$matches[1],
-			fn (string $key): bool => $this->answers(source: $values->data, key: $key) === false && $this->answers(source: $values->context, key: $key) === false
+			fn (string $key): bool => $this->answers(source: $values->data, key: $key) === false
+				&& $this->answers(source: $values->context, key: $key) === false
 		);
 
 		return array_values(array_unique($unanswered));
