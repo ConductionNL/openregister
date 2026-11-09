@@ -203,6 +203,23 @@ class ViewerReachResolverTest extends TestCase {
 	}//end testTheOwnerIsRefusedNothingOnTheirOwnView()
 
 	/**
+	 * An administrator is refused nothing on somebody else's view, and a
+	 * write member is refused the share list on it.
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorIsRefusedNothingAndAWriteMemberTheShares(): void {
+		$view = ['owner' => 'someone-else', 'isPublic' => false, 'sharedWith' => [['group' => 'sales', 'mode' => 'write']]];
+		$update = ['query' => ['q' => 'x'], 'sharedWith' => []];
+
+		$admin = $this->resolver->refusedFields(view: $view, reach: new ViewerReach(userId: 'root', groups: [], isAdmin: true), update: $update);
+		$member = $this->resolver->refusedFields(view: $view, reach: new ViewerReach(userId: 'pieter', groups: ['sales'], isAdmin: false), update: $update);
+
+		$this->assertSame([], $admin);
+		$this->assertSame(['sharedWith'], $member);
+	}//end testAnAdministratorIsRefusedNothingAndAWriteMemberTheShares()
+
+	/**
 	 * An unreadable membership refuses the recipient rather than admitting it.
 	 *
 	 * @return void
