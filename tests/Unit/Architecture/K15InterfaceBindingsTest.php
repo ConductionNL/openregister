@@ -20,6 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Object\CorrectionTargets;
+use OCA\OpenRegister\Service\Object\CorrectionTargetsInterface;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrameInterface;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
@@ -40,6 +42,7 @@ final class K15InterfaceBindingsTest extends TestCase {
 	public static function bindings(): array {
 		return [
 			'retention destruction' => [RetentionDestructionInterface::class, RetentionDestruction::class],
+			'correction targets' => [CorrectionTargetsInterface::class, CorrectionTargets::class],
 			'draft removal frame' => [DraftRemovalFrameInterface::class, DraftRemovalFrame::class],
 		];
 	}//end bindings()
