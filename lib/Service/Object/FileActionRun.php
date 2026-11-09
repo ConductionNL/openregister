@@ -26,6 +26,8 @@ use Closure;
  * One file action (transfer or delete) applied to every file of a merge source, with its outcome so far.
  *
  * Built by MergeHandler for one action and never leaves MergeHandler.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class FileActionRun {
 

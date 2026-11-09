@@ -24,6 +24,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
  * The two objects a merge moves files between: each file leaves the source for the target.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class FileMove {
 	/**
