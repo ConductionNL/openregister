@@ -6,6 +6,7 @@ use BadMethodCallException;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Tool\AgentTool;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -25,9 +26,8 @@ class AgentToolTest extends TestCase {
 		$this->agentMapper = $this->createMock(AgentMapper::class);
 
 		$this->tool = new AgentTool(
-			$this->agentMapper,
-			$this->userSession,
-			$this->logger
+			new ToolCallTrail($this->userSession, $this->logger),
+			$this->agentMapper
 		);
 
 		$user = $this->createMock(IUser::class);

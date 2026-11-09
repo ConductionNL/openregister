@@ -27,8 +27,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * Schema Tool
@@ -49,28 +47,18 @@ use Psr\Log\LoggerInterface;
 class SchemaTool extends AbstractTool {
 
 	/**
-	 * Schema mapper
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private SchemaMapperInterface $schemaMapper;
-
-	/**
 	 * Constructor
 	 *
-	 * @param IUserSession $userSession User session service
-	 * @param LoggerInterface $logger Logger service
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper
+	 * @param ToolCallTrail                $trail            The session that names the caller and the log of each call.
+	 * @param SchemaMapperInterface        $schemaMapper     Schema mapper
 	 * @param SchemaVersioningService|null $schemaVersioning Classifies, versions and logs a definition change (#4102)
 	 */
 	public function __construct(
-		IUserSession $userSession,
-		LoggerInterface $logger,
-		SchemaMapperInterface $schemaMapper,
+		ToolCallTrail $trail,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ?SchemaVersioningService $schemaVersioning = null,
 	) {
-		parent::__construct(userSession: $userSession, logger: $logger);
-		$this->schemaMapper = $schemaMapper;
+		parent::__construct(trail: $trail);
 	}//end __construct()
 
 	/**

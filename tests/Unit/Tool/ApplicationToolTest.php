@@ -6,6 +6,7 @@ use BadMethodCallException;
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapper;
 use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -25,9 +26,8 @@ class ApplicationToolTest extends TestCase {
 		$this->applicationMapper = $this->createMock(ApplicationMapper::class);
 
 		$this->tool = new ApplicationTool(
-			$this->applicationMapper,
-			$this->userSession,
-			$this->logger
+			new ToolCallTrail($this->userSession, $this->logger),
+			$this->applicationMapper
 		);
 
 		$user = $this->createMock(IUser::class);

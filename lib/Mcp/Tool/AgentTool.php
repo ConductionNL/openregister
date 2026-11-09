@@ -28,8 +28,6 @@ namespace OCA\OpenRegister\Mcp\Tool;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * AgentTool
@@ -43,26 +41,16 @@ use Psr\Log\LoggerInterface;
 class AgentTool extends AbstractTool implements ToolInterface {
 
 	/**
-	 * Agent mapper for database operations
+	 * Constructor
 	 *
-	 * @var AgentMapper
-	 */
-	private AgentMapper $agentMapper;
-
-	/**
-	 * AgentTool constructor
-	 *
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
 	 * @param AgentMapper $agentMapper Agent mapper instance
-	 * @param IUserSession $userSession User session
-	 * @param LoggerInterface $logger Logger instance
 	 */
 	public function __construct(
-		AgentMapper $agentMapper,
-		IUserSession $userSession,
-		LoggerInterface $logger,
+		ToolCallTrail $trail,
+		private readonly AgentMapper $agentMapper,
 	) {
-		parent::__construct(userSession: $userSession, logger: $logger);
-		$this->agentMapper = $agentMapper;
+		parent::__construct(trail: $trail);
 	}//end __construct()
 
 	/**

@@ -69,15 +69,11 @@ abstract class AbstractTool implements ToolInterface {
 	/**
 	 * Constructor
 	 *
-	 * @param IUserSession $userSession User session service
-	 * @param LoggerInterface $logger Logger service
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
 	 */
-	public function __construct(
-		IUserSession $userSession,
-		LoggerInterface $logger,
-	) {
-		$this->userSession = $userSession;
-		$this->logger = $logger;
+	public function __construct(ToolCallTrail $trail) {
+		$this->userSession = $trail->userSession;
+		$this->logger = $trail->logger;
 	}//end __construct()
 
 	/**
