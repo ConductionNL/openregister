@@ -1178,6 +1178,7 @@ class SchemaMapper extends QBMapper {
 		// Verify RBAC permission to create.
 		$this->verifyRbacPermission(action: 'create', entityType: 'schema');
 		$this->assertScopedPropertiesAreGoverned(entity: $entity);
+		$this->assertActionStepsMailAuthor(oldSchema: null, newSchema: $entity);
 		// Auto-set organisation from active session.
 		$this->setOrganisationOnCreate(entity: $entity);
 
@@ -1418,6 +1419,69 @@ class SchemaMapper extends QBMapper {
 		$message .= ' Typo? See Schema::ANNOTATION_VOCABULARY for the declared keys.';
 		$this->logger->warning($message);
 	}//end logDroppedAnnotationKeys()
+
+	/**
+	 * Refuse a new or changed action step that mails any address unless an administrator saves it.
+	 *
+	 * ObjectActionStepsFlow::flowFor() later stores and publishes an action's
+	 * inline steps as a flow, for whoever runs the action, so the author is
+	 * judged here, when the step is written. Only steps that are new or
+	 * changed against the stored schema count: an unchanged admin-authored
+	 * step does not block a delegated manager's later save. Same rule and
+	 * gate as FlowService::save() and SchemaFlowImportListener.
+	 *
+	 * @param Entity|null $oldSchema The stored schema, or null on create.
+	 * @param Entity      $newSchema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When a non-administrator adds or changes such a step.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function assertActionStepsMailAuthor(?Entity $oldSchema, Entity $newSchema): void {
+		$before = $this->actionSteps(schema: $oldSchema);
+		foreach ($this->actionSteps(schema: $newSchema) as $key => $steps) {
+			if (json_encode($before[$key] ?? null) === json_encode($steps)) {
+				continue;
+			}
+
+			if (\OCA\OpenRegister\Service\Flow\ExternalMailAuthorGate::mailsAnyAddress(graph: $steps) === true) {
+				(new \OCA\OpenRegister\Service\Flow\ExternalMailAuthorGate(
+					userSession: $this->userSession,
+					groupManager: $this->groupManager,
+					trustCli: true
+				))->assertAdministratorAuthor();
+			}
+		}
+	}//end assertActionStepsMailAuthor()
+
+	/**
+	 * The inline steps of a schema's declared actions, by action key.
+	 *
+	 * @param Entity|null $schema The schema.
+	 *
+	 * @return array<string, array<mixed>> The steps per action key.
+	 */
+	private function actionSteps(?Entity $schema): array {
+		if ($schema instanceof Schema === false) {
+			return [];
+		}
+
+		$steps = [];
+		foreach (ObjectActionDefinition::declarations(configuration: ($schema->getConfiguration() ?? [])) as $key => $definition) {
+			if (is_array($definition) === false) {
+				continue;
+			}
+
+			$declared = ($definition[ObjectActionDefinition::KIND_STEPS] ?? null);
+			if (is_array($declared) === true) {
+				$steps[(string)$key] = $declared;
+			}
+		}
+
+		return $steps;
+	}//end actionSteps()
 
 	/**
 	 * Refuse a declared action bound to a flow nobody can run.
@@ -3231,6 +3295,7 @@ class SchemaMapper extends QBMapper {
 			->from('openregister_schemas')
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId(), IQueryBuilder::PARAM_INT)));
 		$oldSchema = $this->findEntity(query: $qb);
+		$this->assertActionStepsMailAuthor(oldSchema: $oldSchema, newSchema: $entity);
 
 		// Clean the schema object to ensure UUID, slug, and version are set.
 		$this->cleanObject(schema: $entity);
