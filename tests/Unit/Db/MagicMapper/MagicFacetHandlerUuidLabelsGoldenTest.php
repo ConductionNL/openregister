@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\FacetLabelLookup;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -82,7 +84,7 @@ class MagicFacetHandlerUuidLabelsGoldenTest extends TestCase {
 			$steps = [];
 			foreach ($calls as [$uuids, $field]) {
 				$this->events = [];
-				$labels = $method->invoke($handler, $uuids, $field, $schema, $register, 't');
+				$labels = $method->invoke($handler, new FacetLabelLookup($uuids, $field), new RegisterSchema($register, $schema));
 				$steps[] = [
 					'labels' => $labels,
 					'events' => $this->events,
@@ -173,6 +175,7 @@ class MagicFacetHandlerUuidLabelsGoldenTest extends TestCase {
 			'logger' => $logger,
 			'distLabelCache' => $cache,
 			'cacheHandler' => $objectNames,
+			'cacheFactory' => null,
 			'container' => null,
 			'lazyResolved' => true,
 		];
