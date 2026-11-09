@@ -26,6 +26,7 @@ use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\ContactLink\ContactLinkFieldTypes;
 use OCA\OpenRegister\Db\ContactLink\ContactLinkJson;
+use OCA\OpenRegister\Kernel\Contracts\ContactLinkReadInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -81,7 +82,7 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.TooManyFields) One field per column of the link table; the four
  *                                        people-on-objects columns (user, validity, note) took it past fifteen.
  */
-class ContactLink extends Entity implements JsonSerializable {
+class ContactLink extends Entity implements JsonSerializable, ContactLinkReadInterface {
 
 	/**
 	 * The object uuid.

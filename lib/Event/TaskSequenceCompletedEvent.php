@@ -34,8 +34,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Db\TaskSequence;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskSequenceReadInterface;
 
 /**
  * Carries the completed sequence, its final task and the resolved status.
@@ -47,14 +47,14 @@ class TaskSequenceCompletedEvent extends AbstractTaskSequenceEvent {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskSequence $sequence The completed sequence, as persisted.
-	 * @param Task $finalTask The final position's task.
+	 * @param TaskSequenceReadInterface $sequence The completed sequence, as persisted.
+	 * @param TaskInterface $finalTask The final position's task.
 	 * @param string|null $decider The identity that decided the final position.
 	 * @param string $statusOnApprove The resolved approving status.
 	 */
 	public function __construct(
-		TaskSequence $sequence,
-		private readonly Task $finalTask,
+		TaskSequenceReadInterface $sequence,
+		private readonly TaskInterface $finalTask,
 		private readonly ?string $decider,
 		private readonly string $statusOnApprove,
 	) {
@@ -65,11 +65,11 @@ class TaskSequenceCompletedEvent extends AbstractTaskSequenceEvent {
 	/**
 	 * The final position's task.
 	 *
-	 * @return Task The task whose completion completed the sequence.
+	 * @return TaskInterface The task whose completion completed the sequence.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
 	 */
-	public function getFinalTask(): Task {
+	public function getFinalTask(): TaskInterface {
 		return $this->finalTask;
 	}//end getFinalTask()
 

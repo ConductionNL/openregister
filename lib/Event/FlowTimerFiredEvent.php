@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerInterface;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -49,7 +49,7 @@ class FlowTimerFiredEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimer $timer The timer that fired.
+	 * @param FlowTimerInterface $timer The timer that fired.
 	 * @param string $kind `rung` or `expiry`.
 	 * @param string $transition The named transition raised.
 	 * @param string|null $rungKey The rung's stable key, for a rung fire.
@@ -59,7 +59,7 @@ class FlowTimerFiredEvent extends Event {
 	 * @param string|null $consequence What the party is told will happen, for a postBreach rung.
 	 */
 	public function __construct(
-		private readonly FlowTimer $timer,
+		private readonly FlowTimerInterface $timer,
 		private readonly string $kind,
 		private readonly string $transition,
 		private readonly ?string $rungKey,
@@ -75,11 +75,11 @@ class FlowTimerFiredEvent extends Event {
 	/**
 	 * The timer that fired.
 	 *
-	 * @return FlowTimer The timer.
+	 * @return FlowTimerInterface The timer.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
-	public function getTimer(): FlowTimer {
+	public function getTimer(): FlowTimerInterface {
 		return $this->timer;
 	}//end getTimer()
 

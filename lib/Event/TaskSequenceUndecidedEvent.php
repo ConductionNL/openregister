@@ -27,8 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Db\TaskSequence;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskSequenceReadInterface;
 
 /**
  * Carries the undecided sequence and the task whose outcome closed it.
@@ -40,12 +40,12 @@ class TaskSequenceUndecidedEvent extends AbstractTaskSequenceEvent {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskSequence $sequence The closed sequence, as persisted.
-	 * @param Task $task The position that completed without a decision.
+	 * @param TaskSequenceReadInterface $sequence The closed sequence, as persisted.
+	 * @param TaskInterface $task The position that completed without a decision.
 	 */
 	public function __construct(
-		TaskSequence $sequence,
-		private readonly Task $task,
+		TaskSequenceReadInterface $sequence,
+		private readonly TaskInterface $task,
 	) {
 		parent::__construct(sequence: $sequence);
 
@@ -54,11 +54,11 @@ class TaskSequenceUndecidedEvent extends AbstractTaskSequenceEvent {
 	/**
 	 * The position that completed without a decision.
 	 *
-	 * @return Task The task, carrying its outcome and decider.
+	 * @return TaskInterface The task, carrying its outcome and decider.
 	 *
 	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
-	public function getTask(): Task {
+	public function getTask(): TaskInterface {
 		return $this->task;
 	}//end getTask()
 }//end class

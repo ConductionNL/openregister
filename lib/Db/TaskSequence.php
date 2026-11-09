@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\TaskSequence\TaskSequenceFieldTypes;
+use OCA\OpenRegister\Kernel\Contracts\TaskSequenceReadInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -92,7 +93,7 @@ use OCP\AppFramework\Db\Entity;
  * row, and hiding columns in a JSON bag would trade a countable shape for
  * an invisible one.
  */
-class TaskSequence extends Entity implements JsonSerializable {
+class TaskSequence extends Entity implements JsonSerializable, TaskSequenceReadInterface {
 	use TypedFieldsJsonTrait;
 
 	/**

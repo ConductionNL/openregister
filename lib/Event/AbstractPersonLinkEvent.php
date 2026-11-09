@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\ContactLink;
+use OCA\OpenRegister\Kernel\Contracts\ContactLinkReadInterface;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -28,20 +28,20 @@ abstract class AbstractPersonLinkEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLink $link The link, a user or a contact on an object.
+	 * @param ContactLinkReadInterface $link The link, a user or a contact on an object.
 	 */
-	public function __construct(private readonly ContactLink $link) {
+	public function __construct(private readonly ContactLinkReadInterface $link) {
 		parent::__construct();
 	}//end __construct()
 
 	/**
 	 * The link.
 	 *
-	 * @return ContactLink The link as stored.
+	 * @return ContactLinkReadInterface The link as stored.
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-link-changes-are-events
 	 */
-	public function getLink(): ContactLink {
+	public function getLink(): ContactLinkReadInterface {
 		return $this->link;
 	}//end getLink()
 }//end class

@@ -23,7 +23,7 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Source;
+use OCA\OpenRegister\Kernel\Contracts\SourceReadInterface;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -34,26 +34,26 @@ class SourceUpdatedEvent extends Event {
 	/**
 	 * The updated source state.
 	 *
-	 * @var Source The source after update.
+	 * @var SourceReadInterface The source after update.
 	 */
-	private Source $newSource;
+	private SourceReadInterface $newSource;
 
 	/**
 	 * The previous source state.
 	 *
-	 * @var Source The source before update.
+	 * @var SourceReadInterface The source before update.
 	 */
-	private Source $oldSource;
+	private SourceReadInterface $oldSource;
 
 	/**
 	 * Constructor for SourceUpdatedEvent.
 	 *
-	 * @param Source $newSource The source after update.
-	 * @param Source $oldSource The source before update.
+	 * @param SourceReadInterface $newSource The source after update.
+	 * @param SourceReadInterface $oldSource The source before update.
 	 *
 	 * @return void
 	 */
-	public function __construct(Source $newSource, Source $oldSource) {
+	public function __construct(SourceReadInterface $newSource, SourceReadInterface $oldSource) {
 		parent::__construct();
 		$this->newSource = $newSource;
 		$this->oldSource = $oldSource;
@@ -62,33 +62,33 @@ class SourceUpdatedEvent extends Event {
 	/**
 	 * Get the updated source.
 	 *
-	 * @return Source The source after update.
+	 * @return SourceReadInterface The source after update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getSource(): Source {
+	public function getSource(): SourceReadInterface {
 		return $this->newSource;
 	}//end getSource()
 
 	/**
 	 * Get the new source state.
 	 *
-	 * @return Source The source after update.
+	 * @return SourceReadInterface The source after update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getNewSource(): Source {
+	public function getNewSource(): SourceReadInterface {
 		return $this->newSource;
 	}//end getNewSource()
 
 	/**
 	 * Get the old source state.
 	 *
-	 * @return Source The source before update.
+	 * @return SourceReadInterface The source before update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getOldSource(): Source {
+	public function getOldSource(): SourceReadInterface {
 		return $this->oldSource;
 	}//end getOldSource()
 }//end class

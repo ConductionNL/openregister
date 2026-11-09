@@ -27,6 +27,7 @@ use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\Source\SourceFieldTypes;
 use OCA\OpenRegister\Db\Source\SourceJson;
+use OCA\OpenRegister\Kernel\Contracts\SourceReadInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -83,7 +84,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Source extends Entity implements JsonSerializable {
+class Source extends Entity implements JsonSerializable, SourceReadInterface {
 	use JsonFieldsTrait;
 	use OrganisationFieldTrait;
 	use ManagedByConfigurationTrait;

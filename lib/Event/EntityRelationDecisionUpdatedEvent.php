@@ -28,7 +28,7 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\EntityRelation;
+use OCA\OpenRegister\Kernel\Contracts\EntityRelationReadInterface;
 use OCP\EventDispatcher\Event;
 use OCP\IUser;
 
@@ -43,7 +43,7 @@ class EntityRelationDecisionUpdatedEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param EntityRelation $relation The relation row in its post-update state.
+	 * @param EntityRelationReadInterface $relation The relation row in its post-update state.
 	 * @param array<string, array{previous: mixed, new: mixed}> $changedFields Per-field diff
 	 *                                                                         (only keys that actually changed).
 	 * @param IUser|null $actingUser The user who performed the change, or null
@@ -52,7 +52,7 @@ class EntityRelationDecisionUpdatedEvent extends Event {
 	 *                               system).
 	 */
 	public function __construct(
-		private readonly EntityRelation $relation,
+		private readonly EntityRelationReadInterface $relation,
 		private readonly array $changedFields,
 		private readonly ?IUser $actingUser,
 	) {
@@ -63,9 +63,9 @@ class EntityRelationDecisionUpdatedEvent extends Event {
 	/**
 	 * Get the post-update relation row.
 	 *
-	 * @return EntityRelation
+	 * @return EntityRelationReadInterface
 	 */
-	public function getRelation(): EntityRelation {
+	public function getRelation(): EntityRelationReadInterface {
 		return $this->relation;
 	}//end getRelation()
 

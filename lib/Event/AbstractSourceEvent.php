@@ -22,7 +22,7 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Source;
+use OCA\OpenRegister\Kernel\Contracts\SourceReadInterface;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -32,22 +32,22 @@ abstract class AbstractSourceEvent extends Event {
 	/**
 	 * Constructor for AbstractSourceEvent.
 	 *
-	 * @param Source $source The entity the event is about.
+	 * @param SourceReadInterface $source The entity the event is about.
 	 *
 	 * @return void
 	 */
-	public function __construct(private readonly Source $source) {
+	public function __construct(private readonly SourceReadInterface $source) {
 		parent::__construct();
 	}//end __construct()
 
 	/**
 	 * Get the entity the event is about.
 	 *
-	 * @return Source The entity.
+	 * @return SourceReadInterface The entity.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getSource(): Source {
+	public function getSource(): SourceReadInterface {
 		return $this->source;
 	}//end getSource()
 }//end class

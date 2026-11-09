@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\TaskSequence;
+use OCA\OpenRegister\Kernel\Contracts\TaskSequenceReadInterface;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -36,21 +36,21 @@ abstract class AbstractTaskSequenceEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskSequence $sequence The sequence as persisted.
+	 * @param TaskSequenceReadInterface $sequence The sequence as persisted.
 	 */
-	public function __construct(private readonly TaskSequence $sequence) {
+	public function __construct(private readonly TaskSequenceReadInterface $sequence) {
 		parent::__construct();
 	}//end __construct()
 
 	/**
 	 * The sequence the event is about.
 	 *
-	 * @return TaskSequence The sequence as persisted.
+	 * @return TaskSequenceReadInterface The sequence as persisted.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
 	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
-	public function getSequence(): TaskSequence {
+	public function getSequence(): TaskSequenceReadInterface {
 		return $this->sequence;
 	}//end getSequence()
 }//end class
