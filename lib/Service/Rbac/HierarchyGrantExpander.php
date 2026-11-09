@@ -59,7 +59,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Support\PermissionBit;
 use Psr\Log\LoggerInterface;
 use Throwable;
 

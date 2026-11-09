@@ -25,6 +25,7 @@ namespace Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\FlowLink;
 use OCA\OpenRegister\Db\FlowLinkMapper;
+use OCA\OpenRegister\Service\FlowLinkPlatform;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
@@ -100,9 +101,7 @@ class FlowLinkServiceOperationsGoldenTest extends TestCase {
 		}
 
 		$this->service = new FlowLinkService(
-			$this->mapper,
-			$this->db,
-			$this->appManager,
+			new FlowLinkPlatform($this->mapper, $this->db, $this->appManager),
 			$this->userSession,
 			$this->groupManager,
 			$this->logger

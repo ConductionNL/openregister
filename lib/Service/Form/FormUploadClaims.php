@@ -86,40 +86,38 @@ class FormUploadClaims {
 	/**
 	 * Whether a token was already claimed by this draft for this property of this form, and the record is still live.
 	 *
-	 * @param ISimpleFolder|null $folder   The store folder; null when it does not exist yet.
-	 * @param string             $formId   The form submitting it.
-	 * @param string             $token    The token.
-	 * @param string             $property The destination property the payload put it on.
-	 * @param string|null        $draftId  The draft being saved or left; null (a final submit of no draft) claims nothing.
+	 * @param ISimpleFolder|null $folder The store folder; null when it does not exist yet.
+	 * @param string             $token  The token.
+	 * @param FormUploadClaim    $claim  The form, property and draft; a claim of no draft claims nothing.
 	 *
 	 * @return bool True when the draft already holds the file this token named.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
-	public function isClaimedBy(?ISimpleFolder $folder, string $formId, string $token, string $property, ?string $draftId): bool {
-		if ($draftId === null || $folder === null) {
+	public function isClaimedBy(?ISimpleFolder $folder, string $token, FormUploadClaim $claim): bool {
+		if ($claim->draftId === null || $folder === null) {
 			return false;
 		}
 
-		return $this->recordMatches(folder: $folder, token: $token, expected: ['formId' => $formId, 'property' => $property, 'draftId' => $draftId]);
+		return $this->recordMatches(folder: $folder, token: $token, claim: $claim);
 	}//end isClaimedBy()
 
 	/**
 	 * Whether a token's claim record exists and names exactly the expected form, property and draft.
 	 *
-	 * @param ISimpleFolder         $folder   The store folder.
-	 * @param string                $token    The token.
-	 * @param array<string, string> $expected Key => the value the record must hold.
+	 * @param ISimpleFolder   $folder The store folder.
+	 * @param string          $token  The token.
+	 * @param FormUploadClaim $claim  The form, property and draft the record must name.
 	 *
 	 * @return bool True when the record matches and is still live.
 	 */
-	private function recordMatches(ISimpleFolder $folder, string $token, array $expected): bool {
+	private function recordMatches(ISimpleFolder $folder, string $token, FormUploadClaim $claim): bool {
 		$record = $this->recordOf(folder: $folder, token: $token);
 		if ($record === null) {
 			return false;
 		}
 
-		return $this->matches(record: $record, expected: $expected);
+		return $this->matches(record: $record, claim: $claim);
 	}//end recordMatches()
 
 	/**
@@ -146,16 +144,14 @@ class FormUploadClaims {
 	/**
 	 * Whether a claim record names exactly the expected form, property and draft, and is still live.
 	 *
-	 * @param array<mixed>          $record   The record.
-	 * @param array<string, string> $expected Key => the value the record must hold.
+	 * @param array<mixed>    $record The record.
+	 * @param FormUploadClaim $claim  The form, property and draft it must name.
 	 *
 	 * @return bool True when every value matches and the record has not expired.
 	 */
-	private function matches(array $record, array $expected): bool {
-		foreach ($expected as $key => $value) {
-			if (($record[$key] ?? null) !== $value) {
-				return false;
-			}
+	private function matches(array $record, FormUploadClaim $claim): bool {
+		if ($claim->isNamedBy(record: $record) === false) {
+			return false;
 		}
 
 		return (int)($record['expiresAt'] ?? 0) > $this->time->getTime();

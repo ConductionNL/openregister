@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
-use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -47,25 +47,45 @@ use Throwable;
  *
  * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
  */
-class RecomputeTimersForCalendarJob extends QueuedJob {
+class RecomputeTimersForCalendarJob extends QueuedJob implements CalendarRecomputeJobInterface {
+
+	/**
+	 * Where the timers are.
+	 *
+	 * @var FlowTimerMapperInterface
+	 */
+	private readonly FlowTimerMapperInterface $timers;
+
+	/**
+	 * The supersession path, reused whole.
+	 *
+	 * @var FlowTimerControlInterface
+	 */
+	private readonly FlowTimerControlInterface $service;
+
+	/**
+	 * The rule.
+	 *
+	 * @var CalendarRecomputeInterface
+	 */
+	private readonly CalendarRecomputeInterface $recompute;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory      $time      The clock.
-	 * @param FlowTimerMapperInterface   $timers    Where the timers are.
-	 * @param FlowTimerControlInterface  $service   The supersession path, reused whole.
-	 * @param CalendarRecompute $recompute The rule.
-	 * @param LoggerInterface   $logger    The logger.
+	 * @param ITimeFactory                          $time     The clock.
+	 * @param RecomputeTimersForCalendarJobServices $services The timers, the supersession path and the rule.
+	 * @param LoggerInterface                       $logger   The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly FlowTimerMapperInterface $timers,
-		private readonly FlowTimerControlInterface $service,
-		private readonly CalendarRecompute $recompute,
+		RecomputeTimersForCalendarJobServices $services,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
+		$this->timers = $services->timers;
+		$this->service = $services->service;
+		$this->recompute = $services->recompute;
 	}//end __construct()
 
 	/**
@@ -106,8 +126,8 @@ class RecomputeTimersForCalendarJob extends QueuedJob {
 					$this->service->supersede(
 						uuid: (string)$timer->getUuid(),
 						anchorEventAt: ($timer->getAnchorAt() ?? $timer->getRunningSince()),
-						reason: CalendarRecompute::REASON,
-						actor: CalendarRecompute::ACTOR
+						reason: CalendarRecomputeInterface::REASON,
+						actor: CalendarRecomputeInterface::ACTOR
 					);
 				}
 			);
@@ -159,7 +179,7 @@ class RecomputeTimersForCalendarJob extends QueuedJob {
 					$page = $this->timers->findByStatePaged(
 						state: $state,
 						afterId: $afterId,
-						limit: CalendarRecompute::BATCH
+						limit: CalendarRecomputeInterface::BATCH
 					);
 				} catch (Throwable $e) {
 					$this->logger->error(
@@ -177,7 +197,7 @@ class RecomputeTimersForCalendarJob extends QueuedJob {
 					yield $timer;
 				}
 
-				if (count($page) < CalendarRecompute::BATCH) {
+				if (count($page) < CalendarRecomputeInterface::BATCH) {
 					break;
 				}
 			}//end while

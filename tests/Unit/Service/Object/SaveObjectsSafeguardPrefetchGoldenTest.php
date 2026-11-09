@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -172,8 +173,7 @@ class SaveObjectsSafeguardPrefetchGoldenTest extends TestCase {
 			$handler,
 			[
 				$case['rows'],
-				null,
-				$schema,
+				new BulkBatchDefaults(null, $schema),
 				['rbac' => true, 'validation' => false, 'multitenancy' => ($case['multitenancy'] ?? true)],
 				&$result,
 			]

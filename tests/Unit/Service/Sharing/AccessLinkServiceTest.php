@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCP\IURLGenerator;
@@ -123,7 +124,8 @@ class AccessLinkServiceTest extends TestCase {
 		$this->service->mint(
 			userId: 'owner',
 			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: 'object-uuid'
+			subjectId: 'object-uuid',
+			terms: new AccessLinkTerms()
 		);
 	}
 
@@ -135,7 +137,9 @@ class AccessLinkServiceTest extends TestCase {
 			userId: 'owner',
 			subjectType: AccessLink::SUBJECT_OBJECT,
 			subjectId: 'object-uuid',
-			expiresAt: '2001-01-01T00:00:00+00:00'
+			terms: new AccessLinkTerms(
+				expiresAt: '2001-01-01T00:00:00+00:00'
+			)
 		);
 	}
 
@@ -146,7 +150,9 @@ class AccessLinkServiceTest extends TestCase {
 			userId: 'owner',
 			subjectType: AccessLink::SUBJECT_OBJECT,
 			subjectId: 'object-uuid',
-			expiresAt: 'whenever'
+			terms: new AccessLinkTerms(
+				expiresAt: 'whenever'
+			)
 		);
 	}
 
@@ -195,7 +201,9 @@ class AccessLinkServiceTest extends TestCase {
 			userId: 'owner',
 			subjectType: 'register',
 			subjectId: 'x',
-			expiresAt: '+1 day'
+			terms: new AccessLinkTerms(
+				expiresAt: '+1 day'
+			)
 		);
 	}
 
@@ -206,7 +214,9 @@ class AccessLinkServiceTest extends TestCase {
 			userId: '  ',
 			subjectType: AccessLink::SUBJECT_OBJECT,
 			subjectId: 'object-uuid',
-			expiresAt: '+1 day'
+			terms: new AccessLinkTerms(
+				expiresAt: '+1 day'
+			)
 		);
 	}
 
@@ -441,10 +451,12 @@ class AccessLinkServiceTest extends TestCase {
 			userId: 'owner',
 			subjectType: AccessLink::SUBJECT_OBJECT,
 			subjectId: 'object-uuid',
-			capabilities: $capabilities,
-			expiresAt: '+7 days',
-			password: $password,
-			label: 'Advice request'
+			terms: new AccessLinkTerms(
+				capabilities: $capabilities,
+				expiresAt: '+7 days',
+				password: $password,
+				label: 'Advice request'
+			)
 		);
 	}
 }

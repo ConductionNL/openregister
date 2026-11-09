@@ -6021,6 +6021,18 @@ class ObjectsController extends Controller {
 				return new JSONResponse(data: ['error' => $refusal], statusCode: 400);
 			}
 
+			// The merge reads and writes both objects without RBAC, so the
+			// caller's own rights on them are checked before it runs.
+			$denied = $this->mergeAccessRefusal(
+				register: $register,
+				schema: $schema,
+				sourceId: $id,
+				targetId: (string)$requestParams['target']
+			);
+			if ($denied !== null) {
+				return $denied;
+			}
+
 			// Perform the merge operation with the new payload structure.
 			$mergeResult = $objectService->mergeObjects(sourceObjectId: $id, mergeData: $requestParams);
 			return new JSONResponse(data: $mergeResult);
@@ -6037,6 +6049,40 @@ class ObjectsController extends Controller {
 			);
 		}//end try
 	}//end merge()
+
+	/**
+	 * Why the caller may not merge these two objects, or null when they may.
+	 *
+	 * Both objects must be readable to the caller (otherwise they do not exist
+	 * for them: 404), the target must be theirs to update and the source theirs
+	 * to delete, because a merge overwrites the one and removes the other.
+	 *
+	 * @param string $register The register slug or id.
+	 * @param string $schema   The schema slug or id.
+	 * @param string $sourceId The object merged away.
+	 * @param string $targetId The object merged into.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the merge may run.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function mergeAccessRefusal(string $register, string $schema, string $sourceId, string $targetId): ?JSONResponse {
+		$source = $this->presenceObject(register: $register, schema: $schema, id: $sourceId);
+		$target = $this->presenceObject(register: $register, schema: $schema, id: $targetId);
+		if ($source === null || $target === null) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}
+
+		$schemaEntity = $this->services->store->schemaMapper->find($schema);
+		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		$mayUpdateTarget = $permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $target->getOwner(), object: $target);
+		$mayDeleteSource = $permissions->hasPermission(schema: $schemaEntity, action: 'delete', objectOwner: $source->getOwner(), object: $source);
+		if ($mayUpdateTarget === false || $mayDeleteSource === false) {
+			return new JSONResponse(data: ['error' => 'You may not merge these objects.'], statusCode: 403);
+		}
+
+		return null;
+	}//end mergeAccessRefusal()
 
 	/**
 	 * What a merge request is missing.

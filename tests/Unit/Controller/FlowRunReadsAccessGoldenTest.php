@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowCaller;
+use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
@@ -404,6 +405,8 @@ class FlowRunReadsAccessGoldenTest extends TestCase {
 		$this->flows->method('find')->willReturn($flow);
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1']);
 		$this->runner->method('queue')->with('flow-1', [], 'test', ['pins' => ['n1' => [1]]], 'alice')->willReturn($run);
+		$this->runner->expects($this->once())->method('seedItemsFrom')->with([['json' => ['a' => 1]]])
+			->willReturnCallback(static fn (mixed $value): array => FlowItems::normalise(value: $value));
 		$this->runner->expects($this->once())->method('execute')->willReturnCallback(
 			function (...$positional) use ($run): FlowRun {
 				$args = $this->named(FlowRunService::class, 'execute', $positional);

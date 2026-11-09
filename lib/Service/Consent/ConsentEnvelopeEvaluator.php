@@ -48,13 +48,8 @@ final class ConsentEnvelopeEvaluator implements ConsentEnvelopeEvaluatorInterfac
 	/**
 	 * Evaluate one consent-shaped property's write.
 	 *
-	 * @param string $name The property name (used only in the refusal message).
-	 * @param array<string, mixed> $annotation The property's `x-openregister-consent` declaration.
-	 * @param mixed $incoming The caller-submitted value for this property.
-	 * @param mixed $persisted The previously persisted value for this property.
-	 * @param string|null $actingIdentity The resolved acting identity ("by"), already resolved by the caller.
-	 * @param string|null $ipAddress The caller's remote address, already resolved by the caller.
-	 * @param string|null $userAgent The caller's User-Agent header, already resolved by the caller.
+	 * @param ConsentPropertyWrite  $write  The write: the property's name and declaration, the submitted and the stored value.
+	 * @param ConsentEvidenceSource $source Who writes and from where, already resolved by the caller.
 	 *
 	 * @return array{refused: bool, value: array<int, array<string, mixed>>, message: string|null}
 	 *     `refused` is true when an existing entry was mutated or dropped — `value` is then the
@@ -64,60 +59,34 @@ final class ConsentEnvelopeEvaluator implements ConsentEnvelopeEvaluatorInterfac
 	 *
 	 * @spec openspec/specs/consent-evidence-envelope/spec.md
 	 */
-	public function evaluate(
-		string $name,
-		array $annotation,
-		mixed $incoming,
-		mixed $persisted,
-		?string $actingIdentity,
-		?string $ipAddress,
-		?string $userAgent
-	): array {
-		$incoming = $this->normaliseArray(value: $incoming);
-		$persisted = $this->normaliseArray(value: $persisted);
-
-		$violation = $this->appendOnlyViolation(name: $name, incoming: $incoming, persisted: $persisted);
+	public function evaluate(ConsentPropertyWrite $write, ConsentEvidenceSource $source): array {
+		$violation = $this->appendOnlyViolation(write: $write);
 		if ($violation !== null) {
-			return ['refused' => true, 'value' => $incoming, 'message' => $violation];
+			return ['refused' => true, 'value' => $write->incomingEntries(), 'message' => $violation];
 		}
 
-		$purpose = (string)($annotation['purpose'] ?? '');
 		$filled = $this->fillNewEntries(
-			incoming: $incoming,
-			persistedCount: count($persisted),
-			purpose: $purpose,
-			source: new ConsentEvidenceSource(actingIdentity: $actingIdentity, ipAddress: $ipAddress, userAgent: $userAgent)
+			incoming: $write->incomingEntries(),
+			persistedCount: count($write->persistedEntries()),
+			purpose: (string)($write->annotation['purpose'] ?? ''),
+			source: $source
 		);
 
 		return ['refused' => false, 'value' => $filled, 'message' => null];
 	}//end evaluate()
 
 	/**
-	 * Normalise a caller-submitted property value into a re-indexed array.
-	 *
-	 * @param mixed $value The raw value.
-	 *
-	 * @return array<int, mixed>
-	 */
-	private function normaliseArray(mixed $value): array {
-		if (is_array($value) === false) {
-			return [];
-		}
-
-		return array_values($value);
-	}//end normaliseArray()
-
-	/**
 	 * The append-only violation message, or null when the incoming array is
 	 * a valid append (or equal to) the persisted array.
 	 *
-	 * @param string $name The property name.
-	 * @param array<int, mixed> $incoming The caller-submitted, normalised array.
-	 * @param array<int, mixed> $persisted The previously persisted, normalised array.
+	 * @param ConsentPropertyWrite $write The write.
 	 *
 	 * @return string|null
 	 */
-	private function appendOnlyViolation(string $name, array $incoming, array $persisted): ?string {
+	private function appendOnlyViolation(ConsentPropertyWrite $write): ?string {
+		$name      = $write->name;
+		$incoming  = $write->incomingEntries();
+		$persisted = $write->persistedEntries();
 		$persistedCount = count($persisted);
 		$incomingCount = count($incoming);
 

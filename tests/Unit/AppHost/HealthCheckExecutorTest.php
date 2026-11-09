@@ -21,8 +21,11 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IHealthCheckProvider;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckDescriptor;
+use OCA\OpenRegister\AppHost\Observability\HealthCheckTarget;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityManifest;
+use OCA\OpenRegister\AppHost\Observability\HealthResponsePolicy;
+use OCA\OpenRegister\AppHost\Observability\ObservabilityProbes;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
 use OCP\DB\IResult;
@@ -87,7 +90,7 @@ class HealthCheckExecutorTest extends TestCase {
 	}
 
 	private function manifest(array $checks, string $policy = ObservabilityManifest::POLICY_ADR006): ObservabilityManifest {
-		return new ObservabilityManifest('myapp', $checks, [], $policy);
+		return new ObservabilityManifest('myapp', new ObservabilityProbes($checks, []), new HealthResponsePolicy($policy));
 	}
 
 	public function testDatabaseCheckPasses(): void {
@@ -105,10 +108,10 @@ class HealthCheckExecutorTest extends TestCase {
 	public function testAppEnabledCheckPassesAndFails(): void {
 		$this->appManager->method('isInstalled')->willReturnMap([['openregister', true], ['ghost', false]]);
 
-		$ok = $this->executor->execute($this->manifest([new HealthCheckDescriptor('or', 'appEnabled', 'critical', 'openregister')]));
+		$ok = $this->executor->execute($this->manifest([new HealthCheckDescriptor('or', 'appEnabled', 'critical', new HealthCheckTarget(app: 'openregister'))]));
 		$this->assertSame('ok', $ok->checks['or']);
 
-		$fail = $this->executor->execute($this->manifest([new HealthCheckDescriptor('g', 'appEnabled', 'critical', 'ghost')]));
+		$fail = $this->executor->execute($this->manifest([new HealthCheckDescriptor('g', 'appEnabled', 'critical', new HealthCheckTarget(app: 'ghost'))]));
 		$this->assertStringStartsWith('failed', $fail->checks['g']);
 		$this->assertSame('error', $fail->status);
 	}
@@ -117,7 +120,7 @@ class HealthCheckExecutorTest extends TestCase {
 		$this->appConfig->method('hasKey')->willReturn(true);
 		$this->appConfig->method('getValueString')->willReturn('value');
 
-		$r = $this->executor->execute($this->manifest([new HealthCheckDescriptor('c', 'appConfig', 'degraded', null, 'token_set', 'nonEmpty')]));
+		$r = $this->executor->execute($this->manifest([new HealthCheckDescriptor('c', 'appConfig', 'degraded', new HealthCheckTarget(key: 'token_set', assert: 'nonEmpty'))]));
 		$this->assertSame('ok', $r->checks['c']);
 	}
 
@@ -125,7 +128,7 @@ class HealthCheckExecutorTest extends TestCase {
 		$this->appConfig->method('hasKey')->willReturn(true);
 		$this->appConfig->method('getValueString')->willReturn('');
 
-		$r = $this->executor->execute($this->manifest([new HealthCheckDescriptor('c', 'appConfig', 'degraded', null, 'token_set', 'nonEmpty')]));
+		$r = $this->executor->execute($this->manifest([new HealthCheckDescriptor('c', 'appConfig', 'degraded', new HealthCheckTarget(key: 'token_set', assert: 'nonEmpty'))]));
 		$this->assertStringStartsWith('failed', $r->checks['c']);
 		$this->assertSame('degraded', $r->status);
 	}
@@ -139,7 +142,7 @@ class HealthCheckExecutorTest extends TestCase {
 	public function testCriticalFailureUnderAdr006Yields503(): void {
 		$this->appManager->method('isInstalled')->willReturn(false);
 		$r = $this->executor->execute($this->manifest(
-			[new HealthCheckDescriptor('or', 'appEnabled', 'critical', 'ghost')],
+			[new HealthCheckDescriptor('or', 'appEnabled', 'critical', new HealthCheckTarget(app: 'ghost'))],
 			ObservabilityManifest::POLICY_ADR006
 		));
 		$this->assertSame('error', $r->status);
@@ -158,7 +161,7 @@ class HealthCheckExecutorTest extends TestCase {
 	public function testCriticalFailureUnderAlways200StillReturns200(): void {
 		$this->appManager->method('isInstalled')->willReturn(false);
 		$r = $this->executor->execute($this->manifest(
-			[new HealthCheckDescriptor('or', 'appEnabled', 'critical', 'ghost')],
+			[new HealthCheckDescriptor('or', 'appEnabled', 'critical', new HealthCheckTarget(app: 'ghost'))],
 			ObservabilityManifest::POLICY_ALWAYS200
 		));
 		$this->assertSame('error', $r->status);

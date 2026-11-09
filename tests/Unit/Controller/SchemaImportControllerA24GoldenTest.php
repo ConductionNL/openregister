@@ -33,6 +33,8 @@ use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchema;
+use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaDefinition;
+use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaHeading;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -119,7 +121,7 @@ class SchemaImportControllerA24GoldenTest extends TestCase {
 	}
 
 	private function imported(): ImportedSchema {
-		return new ImportedSchema('Persoon', 'd', ['naam' => []], [], ['dialect' => 'ggm'], ['x']);
+		return new ImportedSchema(new ImportedSchemaHeading('Persoon', 'd'), new ImportedSchemaDefinition(['naam' => []], []), ['dialect' => 'ggm'], ['x']);
 	}
 
 	private function persisted(int $id): Schema {
