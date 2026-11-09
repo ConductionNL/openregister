@@ -16,3 +16,4 @@
 2026-11-09T09:04:19Z fixerF2-20261109T083856-9ec52c22 FIXED #6965 6737dd46987d merged main (13 conflicts, main's interfaces kept, PR methods added on top), emptied the stale KEPT_CALLERS entries in C01Audit/C01Sharing/C03Audit
 2026-11-09T09:07:57Z fixer-F1-20261109T084925-fdca83bf FIXED #7568 6dd1f31e9791 merged main, golden-test writer double stubs rows() for both row interfaces; guard suites green
 2026-11-09T09:10:04Z fixerF2-20261109T083856-9ec52c22 FIXED #7435 9dc9d6120464 merged main (FlowBindings: main's LockObjectNode binding kept beside the timer bindings)
+2026-11-09T09:15:10Z fixer-F1-20261109T084925-fdca83bf FIXED #7686 f441bab610b0 collection urls written as strings, OCS-APIRequest header on every request
