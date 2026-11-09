@@ -111,7 +111,7 @@ final class ProcessingAndSearchTrailReadsGoldenTest extends TestCase {
 			foreach ([[null, false], ['org-1', false], [null, true], ['', true]] as [$org, $confidential]) {
 				$label = 'filtered ' . var_export($org, true) . ' confidential ' . var_export($confidential, true) . ': ' . $name;
 				$actual[$label] = $this->recorded(
-					fn () => count($this->processingLog()->findFiltered($filters, null, null, $org, $confidential)),
+					fn () => count($this->processingLog()->findFiltered($filters, new \OCA\OpenRegister\Db\ProcessingLogReadScope(null, null, $org, $confidential))),
 					[]
 				);
 			}

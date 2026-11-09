@@ -122,28 +122,17 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	 *
 	 * @param string $idType Subject identifier type (e.g. `BSN`).
 	 * @param string $idValue Subject identifier value.
-	 * @param DateTime|null $from Inclusive lower bound.
-	 * @param DateTime|null $to Inclusive upper bound.
-	 * @param string|null $organisationId Tenant scope (null = all, admin only).
-	 * @param bool $includeConfidential Whether to include confidential entries (FG only).
+	 * @param ProcessingLogReadScope|null $scope Period, tenant scope and confidentiality; null for the defaults.
 	 *
 	 * @return ProcessingLogEntry[]
 	 */
-	public function findBySubject(
-		string $idType,
-		string $idValue,
-		?DateTime $from = null,
-		?DateTime $to = null,
-		?string $organisationId = null,
-		bool $includeConfidential = false,
-	): array {
+	public function findBySubject(string $idType, string $idValue, ?ProcessingLogReadScope $scope = null): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($this->subjectMatch(qb: $qb, idType: $idType, idValue: $idValue));
 
-		$this->applyPeriod(qb: $qb, from: $from, to: $to);
-		$this->applyScope(qb: $qb, organisationId: $organisationId, includeConfidential: $includeConfidential);
+		$this->applyReadScope(qb: $qb, scope: ($scope ?? new ProcessingLogReadScope()));
 
 		$qb->orderBy('created', 'ASC');
 
@@ -223,10 +212,7 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	 * here: unlike the per-subject extract, it goes to the FG or the auditor.
 	 *
 	 * @param array<string, mixed> $filters register_id, schema_id, activity_id, actor, action, subject_id_type, subject_id_value.
-	 * @param DateTime|null $from Inclusive lower bound.
-	 * @param DateTime|null $to Inclusive upper bound.
-	 * @param string|null $organisationId Tenant scope (null = all, admin only).
-	 * @param bool $includeConfidential Whether to include confidential entries (FG only).
+	 * @param ProcessingLogReadScope|null $scope Period, tenant scope and confidentiality; null for the defaults.
 	 * @param int $limit Page size.
 	 * @param int $offset Page offset.
 	 *
@@ -236,10 +222,7 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	 */
 	public function findFiltered(
 		array $filters = [],
-		DateTime|null $from = null,
-		DateTime|null $to = null,
-		string|null $organisationId = null,
-		bool $includeConfidential = false,
+		ProcessingLogReadScope|null $scope = null,
 		int $limit = 100,
 		int $offset = 0,
 	): array {
@@ -249,8 +232,7 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 		$this->applyColumnFilters(qb: $qb, filters: $filters);
 		$this->applySubjectFilter(qb: $qb, filters: $filters);
 
-		$this->applyPeriod(qb: $qb, from: $from, to: $to);
-		$this->applyScope(qb: $qb, organisationId: $organisationId, includeConfidential: $includeConfidential);
+		$this->applyReadScope(qb: $qb, scope: ($scope ?? new ProcessingLogReadScope()));
 
 		$qb->orderBy('created', 'DESC')
 			->setMaxResults($limit)
@@ -366,6 +348,19 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 
 		return $qb->executeStatement();
 	}//end deleteCreatedBefore()
+
+	/**
+	 * Apply a read's period, then its tenant and confidentiality scope.
+	 *
+	 * @param IQueryBuilder          $qb    Query under construction.
+	 * @param ProcessingLogReadScope $scope What the read may see.
+	 *
+	 * @return void
+	 */
+	private function applyReadScope(IQueryBuilder $qb, ProcessingLogReadScope $scope): void {
+		$this->applyPeriod(qb: $qb, from: $scope->from, to: $scope->to);
+		$this->applyScope(qb: $qb, organisationId: $scope->organisationId, includeConfidential: $scope->includeConfidential);
+	}//end applyReadScope()
 
 	/**
 	 * Apply the period filter shared by the read helpers.

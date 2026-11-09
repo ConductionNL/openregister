@@ -37,6 +37,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ProcessingLogController;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
+use OCA\OpenRegister\Db\ProcessingLogReadScope;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
@@ -177,13 +178,9 @@ class ProcessingLogControllerTest extends TestCase {
 		$this->logMapper->expects($this->once())
 			->method('findFiltered')
 			->willReturnCallback(
-				function (
-					array $filters,
-					$from,
-					$to,
-					?string $organisationId,
-					bool $includeConfidential,
-				): array {
+				function (array $filters, ProcessingLogReadScope $scope): array {
+					$organisationId = $scope->organisationId;
+					$includeConfidential = $scope->includeConfidential;
 					$this->assertSame('org-7', $organisationId);
 					$this->assertTrue($includeConfidential);
 					return [];
@@ -207,13 +204,9 @@ class ProcessingLogControllerTest extends TestCase {
 		$this->logMapper->expects($this->once())
 			->method('findFiltered')
 			->willReturnCallback(
-				function (
-					array $filters,
-					$from,
-					$to,
-					?string $organisationId,
-					bool $includeConfidential,
-				): array {
+				function (array $filters, ProcessingLogReadScope $scope): array {
+					$organisationId = $scope->organisationId;
+					$includeConfidential = $scope->includeConfidential;
 					$this->assertNull($organisationId);
 					$this->assertTrue($includeConfidential);
 					return [];
