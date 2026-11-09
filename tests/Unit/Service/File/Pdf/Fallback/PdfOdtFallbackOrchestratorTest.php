@@ -31,7 +31,9 @@ namespace Unit\Service\File\Pdf\Fallback;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\PdfOdtFallbackOrchestrator;
+use OCA\OpenRegister\Files\Service\File\Pdf\PdfRedaction;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -201,7 +203,7 @@ class PdfOdtFallbackOrchestratorTest extends TestCase {
 			->expects($this->once())
 			->method('replaceInPdf')
 			->with('rebuilt-pdf', ['Jan Jansen' => '[PERSON: 1]'], true)
-			->willReturn('clean-pdf');
+			->willReturn(new PdfRedaction('clean-pdf', new StructurePreservation(false, false, 0, 0)));
 
 		$cause = new PdfAnonymisationException(
 			reason: PdfAnonymisationException::REASON_VALIDATION_FAILED,

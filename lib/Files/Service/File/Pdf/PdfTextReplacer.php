@@ -114,8 +114,8 @@ class PdfTextReplacer {
 	 *
 	 * Runs the full pipeline: load → replace → re-serialise → validate.
 	 * Residual entity text does not fail the run: the output is returned and
-	 * the residual needles land in $residualEntities. A strict run throws
-	 * when the output cannot be re-read for that check.
+	 * the residual needles land in the result's residualEntities. A strict run
+	 * throws when the output cannot be re-read for that check.
 	 *
 	 * @param string $pdfBytes Raw input PDF bytes.
 	 * @param array $substitutions Map: entity-text => placeholder
@@ -123,20 +123,15 @@ class PdfTextReplacer {
 	 *                             '[PERSON: 7]']).
 	 * @param bool $strict Forwarded to {@see validateOutput}: when
 	 *                     true, an output that cannot be re-read is refused.
-	 * @param array $residualEntities Out-param receiving any entity text that
-	 *                                remained after replacement.
 	 * @param bool|null $preserveStructure Tri-state structure-preservation option
 	 *                                     (REQ-ORTPR-004): null/absent = auto
 	 *                                     (preserve iff the input is tagged);
 	 *                                     true = attempt even on ambiguous
 	 *                                     detection; false = skip but still
 	 *                                     measure. Default null (auto).
-	 * @param StructurePreservation|null $structureResult Out-param receiving the
-	 *                                                    `structurePreservation` result block
-	 *                                                    (REQ-ORTPR-003) for this run. Always populated
-	 *                                                    on return (never left null).
 	 *
-	 * @return string Anonymised PDF bytes.
+	 * @return PdfRedaction The anonymised PDF bytes, the residual entity text and
+	 *                      the `structurePreservation` result block (REQ-ORTPR-003).
 	 *
 	 * @throws PdfAnonymisationException On any pipeline failure, and in a strict
 	 *                                   run when the output cannot be re-read.
@@ -153,20 +148,17 @@ class PdfTextReplacer {
 		string $pdfBytes,
 		array $substitutions,
 		bool $strict = false,
-		array &$residualEntities = [],
 		?bool $preserveStructure = null,
-		?StructurePreservation &$structureResult = null,
-	): string {
-		$residualEntities = [];
-		$structureResult = null;
-
+	): PdfRedaction {
 		if (count($substitutions) === 0) {
 			// No-op: nothing to anonymise. Output bytes are byte-identical to
 			// the input (REQ-ORTPR-005), so tagCountAfter trivially equals
 			// tagCountBefore — still measured for a truthful report even on
 			// this fast path.
-			$structureResult = $this->measureNoOnStructurePreservation(pdfBytes: $pdfBytes, preserveStructure: $preserveStructure);
-			return $pdfBytes;
+			return new PdfRedaction(
+				bytes: $pdfBytes,
+				structurePreservation: $this->measureNoOnStructurePreservation(pdfBytes: $pdfBytes, preserveStructure: $preserveStructure)
+			);
 		}
 
 		$substitutions = self::longestFirst(substitutions: $substitutions);
@@ -183,7 +175,7 @@ class PdfTextReplacer {
 		// structure-tree objects — `/StructTreeRoot`, `/MarkInfo`,
 		// `/StructElem` — are not content streams, so this reflects what
 		// `to_pdf_file_s(rebuild: true)` will serialise). Never a silent
-		// flatten: any loss surfaces via $structureResult regardless of
+		// flatten: any loss surfaces via the structure report regardless of
 		// $preserveStructure (REQ-ORTPR-002).
 		$measurement = new StructureMeasurement(
 			rawOption: $preserveStructure,
@@ -217,7 +209,7 @@ class PdfTextReplacer {
 			]
 		);
 
-		return $outputBytes;
+		return new PdfRedaction(bytes: $outputBytes, structurePreservation: $structureResult, residualEntities: $residualEntities);
 	}//end replaceInPdf()
 
 	/**
