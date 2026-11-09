@@ -564,7 +564,7 @@ class MagicBulkHandler {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) See bulkUpsert(): a fact about
 	 * the caller, carried to the one statement that varies on it.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
 	 */

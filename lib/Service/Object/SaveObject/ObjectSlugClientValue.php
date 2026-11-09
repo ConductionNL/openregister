@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 /**
  * A client slug as the candidate rule stores it, and its comparison with a stored slug.
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
  */
 class ObjectSlugClientValue {
 
@@ -55,7 +55,7 @@ class ObjectSlugClientValue {
 	 * @return string|null The slugified, column-width slug; null when nothing was sent
 	 *                     or the value slugifies to nothing (it then counts as not sent).
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
 	public function normalise(?string $clientSlug): ?string {
 		if ($clientSlug === null || trim($clientSlug) === '') {
@@ -82,7 +82,7 @@ class ObjectSlugClientValue {
 	 *
 	 * @return bool True when the client asked for a different slug.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
 	public function differsFromStored(?string $clientSlug, string $stored): bool {
 		if ($clientSlug === null || $clientSlug === '' || $clientSlug === $stored) {

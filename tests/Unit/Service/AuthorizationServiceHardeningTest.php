@@ -332,6 +332,46 @@ PEM;
 		}
 	}//end testAnHmacSecretOfTheHashOutputSizeIsAccepted()
 
+
+	/**
+	 * An HMAC token signed with another secret is refused, for every HS algorithm.
+	 *
+	 * @return void
+	 */
+	public function testAnHmacTokenSignedWithAnotherSecretIsRefused(): void {
+		foreach ([['HS256', 32], ['HS384', 48], ['HS512', 64]] as [$algorithm, $bytes]) {
+			$this->consumers = [];
+			$this->consumer(algorithm: $algorithm, publicKey: str_repeat('k', $bytes));
+
+			try {
+				$this->service()->authorizeJwt(authorization: 'Bearer ' . $this->hmacToken(algorithm: $algorithm, secret: str_repeat('x', $bytes)));
+				$this->fail(message: $algorithm . ' signed with another secret must be refused');
+			} catch (AuthenticationException $e) {
+				$this->assertStringContainsString(needle: 'does not match the public key', haystack: (string)json_encode($e->getDetails()), message: $algorithm);
+				$this->assertSame(expected: [], actual: $this->volatileUsers, message: $algorithm);
+			}
+		}
+	}//end testAnHmacTokenSignedWithAnotherSecretIsRefused()
+
+
+	/**
+	 * A token whose header names another HS algorithm than the consumer's pin is refused before its signature is checked.
+	 *
+	 * @return void
+	 */
+	public function testAnHmacTokenOfAnotherHmacAlgorithmIsRefused(): void {
+		$secret = str_repeat('k', 64);
+		$this->consumer(algorithm: 'HS256', publicKey: $secret);
+
+		try {
+			$this->service()->authorizeJwt(authorization: 'Bearer ' . $this->hmacToken(algorithm: 'HS512', secret: $secret));
+			$this->fail(message: 'an HS512 token against an HS256 consumer must be refused');
+		} catch (AuthenticationException $e) {
+			$this->assertStringContainsString(needle: 'Token algorithm does not match issuer configuration', haystack: (string)json_encode($e->getDetails()));
+			$this->assertSame(expected: [], actual: $this->volatileUsers);
+		}
+	}//end testAnHmacTokenOfAnotherHmacAlgorithmIsRefused()
+
 	public function testAReusedJtiIsRefused(): void {
 		$secret = str_repeat('k', 32);
 		$this->consumer('HS256', $secret);

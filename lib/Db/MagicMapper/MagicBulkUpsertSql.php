@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * Builds the `ON DUPLICATE KEY UPDATE` / `ON CONFLICT DO UPDATE` assignment of one column.
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
  */
 class MagicBulkUpsertSql {
 
@@ -44,7 +44,7 @@ class MagicBulkUpsertSql {
 	 *
 	 * @return bool True when `objectSlugField` is a non-empty string.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public static function hasManagedSlugs(Schema $schema): bool {
 		$field = ($schema->getConfiguration() ?? [])['objectSlugField'] ?? null;
@@ -64,7 +64,7 @@ class MagicBulkUpsertSql {
 	 *
 	 * @return mixed The slug, or null.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) A fact about the schema, not a mode of the method.
 	 */
@@ -91,7 +91,7 @@ class MagicBulkUpsertSql {
 	 *
 	 * @return string The assignment, e.g. "`_title` = VALUES(`_title`)".
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Platform and schema facts the one statement varies on.
 	 */

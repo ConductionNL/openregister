@@ -243,7 +243,7 @@ class LogService {
 	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When the slug is held by more than one live object,
 	 *                                                                   or only by deleted ones.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
 	private function findObjectInScope(string $register, string $schema, string $id): ObjectEntity {
 		try {

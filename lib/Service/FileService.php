@@ -983,22 +983,24 @@ class FileService {
 	}//end getUser()
 
 	/**
-	 * Check file ownership and fix it if needed to prevent "File not found" errors.
+	 * Gate access to a file node on readability.
 	 *
-	 * @param Node $file The file node to check ownership for
+	 * Despite the name this never changes ownership: the delegate checks
+	 * `Node::isReadable()` and throws when the session cannot read the node.
+	 * The former repair path (`ownFile()` → `FileMapper::setFileOwnership()`)
+	 * renamed the whole `home::openregister` storage to the session user and
+	 * is gone (WOO-582).
+	 *
+	 * @param Node $file The file node to check access for
 	 *
 	 * @return void
 	 *
-	 * @throws Exception If ownership check/fix fails
-	 *
-	 * @TODO: This is a hack to fix NextCloud file ownership issues on production
-	 * @TODO: where files exist but can't be accessed due to permission problems.
-	 * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
+	 * @throws NotPermittedException If the session cannot read the node
 	 *
 	 * @psalm-return   void
 	 * @phpstan-return void
 	 *
-	 * @spec exclude Ownership-guard delegation; throws when the current user does not own the node, no standalone business logic.
+	 * @spec exclude Readability-guard delegation; throws when the session cannot read the node, no standalone business logic.
 	 */
 	public function checkOwnership(Node $file): void {
 		$this->fileValidationHandler->checkOwnership(file: $file);

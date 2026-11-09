@@ -56,10 +56,10 @@ Acceptance criteria:
 
 ## 7. Schema editor
 
-- [ ] 7.1 nextcloud-vue PR: `CnSchemaConfigurationTab.vue` gets the "Object slug field" `NcSelect` over `propertyOptions` and the `objectSlugSuffix` switch (disabled without a slug field) plus the freeze note; defaults in `CnSchemaFormDialog.vue`; strings in nextcloud-vue's catalogue. 26-10: the select offers "Schema name + object name" (`@schema.name`) first, then the properties (nextcloud-vue#1869)
+- [x] 7.1 nextcloud-vue PR: `CnSchemaConfigurationTab.vue` gets the "Object slug field" `NcSelect` over `propertyOptions` and the `objectSlugSuffix` switch (disabled without a slug field) plus the freeze note; defaults in `CnSchemaFormDialog.vue`; strings in nextcloud-vue's catalogue. 26-10: the select offers "Schema name + object name" (`@schema.name`) first, then the properties (nextcloud-vue#1869)
 - [x] 7.4 `@schema.name` as the second slug source (`ObjectSlugSource`): `<schema slug>-<objectNameField value>`, no fallback; tests on the handler (26-10, Robert's choice)
-- [ ] 7.2 OpenRegister: bump `@conduction/nextcloud-vue`; add both keys to `src/entities/schema/schema.ts` (type, default, zod) and `src/store/modules/schema.js` defaults
-- [ ] 7.3 l10n: run `npm run check:l10n`, `npm run test:l10n` and `npm run test:l10n:parity`; any new `t('openregister', …)` string goes in through the `docs/l10n-workflow.md` §6.15 procedure, never by hand-editing `l10n/*.js`
+- [x] 7.2 OpenRegister: bump `@conduction/nextcloud-vue`; add both keys to `src/entities/schema/schema.ts` (type, default, zod) and `src/store/modules/schema.js` defaults — 2.129.0 → 2.175.0 (nextcloud-vue#1869 merged 27-10); keys also in `schema.types.ts`
+- [x] 7.3 l10n: run `npm run check:l10n`, `npm run test:l10n` and `npm run test:l10n:parity`; any new `t('openregister', …)` string goes in through the `docs/l10n-workflow.md` §6.15 procedure, never by hand-editing `l10n/*.js` — no new OpenRegister strings (the labels live in nextcloud-vue's catalogue); `test:l10n` and `test:l10n:parity` green
 
 Acceptance criteria:
 - Picking a slug field and saving round-trips; clearing it stores `null`.

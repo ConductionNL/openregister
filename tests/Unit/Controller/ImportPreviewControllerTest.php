@@ -280,7 +280,7 @@ final class ImportPreviewControllerTest extends TestCase {
 
 		$refused = new ImportPreviewRow();
 		$refused->setPreviewId(7);
-		$refused->setRowNumber(2);
+		$refused->setSourceRow(2);
 		$refused->setDecision(ImportPreviewRow::DECISION_REFUSE);
 		$refused->setReason('The match key hits more than one object: object-a, object-b.');
 		$refused->setCandidates(['object-a', 'object-b']);

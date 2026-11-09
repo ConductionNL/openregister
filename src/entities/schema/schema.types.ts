@@ -15,6 +15,8 @@ export type TSchema = {
 		objectDescriptionField?: string // Field to use as object description
 		objectSummaryField?: string // Field to use as object summary
 		objectImageField?: string // Field to use as object image
+		objectSlugField?: string // Field (or '@schema.name') the object slug is derived from; frozen once set
+		objectSlugSuffix?: boolean // Append a date-time suffix on a slug collision instead of leaving the object without a slug
 		allowFiles?: boolean // Whether files are allowed for this schema
 		allowedTags?: string[] // Array of allowed tags for files
 		linkedTypes?: string[] // Nc entity types this schema can link to (mail, contacts, etc.)

@@ -37,7 +37,7 @@ use Throwable;
 /**
  * The write side of the slug backfill.
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
  */
 class ObjectSlugBackfillWriter {
 
@@ -89,7 +89,7 @@ class ObjectSlugBackfillWriter {
 	 * @throws SlugBackfillWriteException When a write fails (that chunk is rolled back first; the
 	 *                                     earlier chunks are audited and evicted before it is thrown).
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function write(array $plan, Register $register, Schema $schema, array $summary): int {
 		$skipped = 0;

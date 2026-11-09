@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * The bulk side of the slug rules: two queries per group, then each row in batch order.
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
  */
 class ObjectSlugBatch {
 
@@ -59,7 +59,7 @@ class ObjectSlugBatch {
 	 *
 	 * @return array<int|string, string|null> Row index => slug.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function decide(array $rows, Register $register, Schema $schema): array {
 		$wanted = $this->wanted(rows: $rows, schema: $schema);
@@ -231,7 +231,7 @@ class ObjectSlugBatch {
 	 *
 	 * @return string The key.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function fold(string $slug): string {
 		return mb_strtolower(trim($slug));

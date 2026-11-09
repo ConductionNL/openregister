@@ -21,11 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
 use OCP\Files\Node;
 use OCP\Files\NotPermittedException;
-use OCP\IUser;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -34,8 +31,7 @@ use Psr\Log\LoggerInterface;
  * This handler is responsible for:
  * - Blocking executable files for security
  * - Detecting executable magic bytes in file content
- * - Checking and fixing file ownership issues
- * - Validating file access permissions
+ * - Gating file access on readability (never on ownership)
  *
  * @category Service
  * @package  OCA\OpenRegister
@@ -48,14 +44,10 @@ class FileValidationHandler {
 	/**
 	 * Constructor for FileValidationHandler.
 	 *
-	 * @param FileMapper $fileMapper File mapper for ownership operations.
-	 * @param IUserSession $userSession User session for user context.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param ExecutableContentDetector $executableDetector Shared executable-content detection.
 	 */
 	public function __construct(
-		private readonly FileMapper $fileMapper,
-		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly ExecutableContentDetector $executableDetector = new ExecutableContentDetector(),
 	) {
@@ -312,6 +304,14 @@ class FileValidationHandler {
 	 * underlying Nextcloud node operations enforce permissions natively, so the
 	 * readability gate here does not over-grant.
 	 *
+	 * There is no repair path any more. The former `ownFile()` →
+	 * `FileMapper::setFileOwnership()` chain rewrote `oc_storages.id` of the
+	 * file's whole storage to `home::<session user>`, which either collided with
+	 * that user's own storage (`storages_id_index` unique violation, logged on
+	 * every attachment a sync touched) or, when no such storage existed yet,
+	 * silently re-homed the entire `openregister` storage. Both were removed
+	 * (WOO-582); the app-user transfer lives in `FileOwnershipHandler`.
+	 *
 	 * @param Node $file The file node to check access for.
 	 *
 	 * @return void
@@ -333,81 +333,4 @@ class FileValidationHandler {
 			throw new NotPermittedException("File {$fileName} is not readable by the current session");
 		}
 	}//end checkOwnership()
-
-	/**
-	 * Set file ownership to the OpenRegister user.
-	 *
-	 * This method updates the file ownership in the database to the OpenRegister
-	 * user to fix access permission issues.
-	 *
-	 * @param Node $file The file node to set ownership for.
-	 *
-	 * @return bool True if ownership was set successfully, false otherwise.
-	 *
-	 * @throws Exception If ownership update fails.
-	 *
-	 * @psalm-return   bool
-	 * @phpstan-return bool
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function ownFile(Node $file): bool {
-		try {
-			$openRegisterUser = $this->getUser();
-			$userId = $openRegisterUser->getUID();
-			$fileId = $file->getId();
-
-			$this->logger->info(
-				message: "[FileValidationHandler] ownFile: Setting ownership of {$file->getName()} to {$userId}",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			$result = $this->fileMapper->setFileOwnership(fileId: $fileId, userId: $userId);
-
-			if ($result === false) {
-				$this->logger->warning(
-					message: "[FileValidationHandler] ownFile: Failed to set ownership of {$file->getName()} to {$userId}",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-
-				return $result;
-			}
-
-			$this->logger->info(
-				message: "[FileValidationHandler] ownFile: Set ownership of {$file->getName()} to {$userId}",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return $result;
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: "[FileValidationHandler] ownFile: Error setting ownership of {$file->getName()}: " . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			throw new Exception('Failed to set file ownership: ' . $e->getMessage());
-		}//end try
-	}//end ownFile()
-
-	/**
-	 * Get the OpenRegister user from the session.
-	 *
-	 * This method retrieves the current user from the session context.
-	 * The OpenRegister user is used for file ownership operations.
-	 *
-	 * @return IUser The OpenRegister user.
-	 *
-	 * @throws Exception If user is not logged in.
-	 *
-	 * @psalm-return   IUser
-	 * @phpstan-return IUser
-	 */
-	private function getUser(): IUser {
-		$user = $this->userSession->getUser();
-
-		if ($user === null) {
-			throw new Exception('User not logged in');
-		}
-
-		return $user;
-	}//end getUser()
 }//end class

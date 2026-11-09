@@ -2878,7 +2878,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-schema-configuration-must-accept-and-persist-the-object-slug-keys
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-schema-configuration-must-accept-and-persist-the-object-slug-keys
 	 */
 	private function validateConfigurationArray(array $configuration): array {
 		$validatedConfig = [];

@@ -20,6 +20,8 @@ export class Schema implements TSchema {
 		objectDescriptionField?: string
 		objectSummaryField?: string
 		objectImageField?: string
+		objectSlugField?: string
+		objectSlugSuffix?: boolean
 		allowFiles?: boolean
 		allowedTags?: string[]
 		linkedTypes?: string[]
@@ -60,6 +62,8 @@ export class Schema implements TSchema {
 			objectDescriptionField: '',
 			objectSummaryField: '',
 			objectImageField: '',
+			objectSlugField: '',
+			objectSlugSuffix: false,
 			allowFiles: false,
 			allowedTags: [],
 			linkedTypes: [],
@@ -95,6 +99,8 @@ export class Schema implements TSchema {
 				.object({
 					objectNameField: z.string().optional(),
 					objectDescriptionField: z.string().optional(),
+					objectSlugField: z.string().optional(),
+					objectSlugSuffix: z.boolean().optional(),
 				})
 				.optional(),
 			hardValidation: z.boolean(),

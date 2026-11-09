@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\Schema;
  * paths and templates), with no fallback to other fields: an object without a name
  * gets no slug, and the uuid link stays its address (Robert Zondervan, 2026-10-26).
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-an-object-slug-must-come-only-from-the-configured-slug-field-and-must-not-be-written-into-the-object-data
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-an-object-slug-must-come-only-from-the-configured-slug-field-and-must-not-be-written-into-the-object-data
  */
 class ObjectSlugSource {
 
@@ -65,7 +65,7 @@ class ObjectSlugSource {
 	 *
 	 * @return string|null The normalised slug, or null.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
 	public function normaliseClient(?string $clientSlug): ?string {
 		return $this->clientValue->normalise(clientSlug: $clientSlug);
@@ -79,7 +79,7 @@ class ObjectSlugSource {
 	 *
 	 * @return bool True when the client asked for a different slug.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
 	public function differsFromStored(?string $clientSlug, string $stored): bool {
 		return $this->clientValue->differsFromStored(clientSlug: $clientSlug, stored: $stored);
@@ -94,7 +94,7 @@ class ObjectSlugSource {
 	 *
 	 * @return string|null The slugified value cut to the column, or null when there is none.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-an-object-slug-must-come-only-from-the-configured-slug-field-and-must-not-be-written-into-the-object-data
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-an-object-slug-must-come-only-from-the-configured-slug-field-and-must-not-be-written-into-the-object-data
 	 */
 	public function candidate(array $objectData, Schema $schema, int $maxLength): ?string {
 		$businessData = $objectData;
