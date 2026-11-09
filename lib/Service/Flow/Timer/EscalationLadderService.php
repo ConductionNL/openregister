@@ -240,7 +240,7 @@ class EscalationLadderService {
 	 */
 	public function nextRungAt(array $rungs, DateTimeInterface $fireAt, array $firedKeys, WorkingCalendar $calendar): ?DateTimeImmutable {
 		$earliest = null;
-		foreach ($this->unfired(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $calendar) as $entry) {
+		foreach ($this->unfired(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $calendar)) as $entry) {
 			if ($earliest === null || $entry['at'] < $earliest) {
 				$earliest = $entry['at'];
 			}
@@ -254,19 +254,16 @@ class EscalationLadderService {
 	 * LADDER ORDER (earliest instant first), each to fire once. A gap fires
 	 * every passed rung; nothing collapses them into the most severe.
 	 *
-	 * @param array<int, array<string, mixed>> $rungs The normalised rungs.
-	 * @param DateTimeInterface $fireAt The fire moment.
-	 * @param DateTimeInterface $now The sweep instant.
-	 * @param array<int, string> $firedKeys Rung keys already in the ledger.
-	 * @param WorkingCalendar $calendar The resolved calendar.
+	 * @param RungTimeline      $timeline The rungs, the fire moment, the fired keys and the calendar.
+	 * @param DateTimeInterface $now      The sweep instant.
 	 *
 	 * @return array<int, array{rung: array<string, mixed>, at: DateTimeImmutable}> The due rungs.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
-	public function dueRungs(array $rungs, DateTimeInterface $fireAt, DateTimeInterface $now, array $firedKeys, WorkingCalendar $calendar): array {
+	public function dueRungs(RungTimeline $timeline, DateTimeInterface $now): array {
 		$due = [];
-		foreach ($this->unfired(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $calendar) as $entry) {
+		foreach ($this->unfired(timeline: $timeline) as $entry) {
 			if ($entry['at'] > $now) {
 				continue;
 			}
@@ -280,19 +277,17 @@ class EscalationLadderService {
 	/**
 	 * The rungs placed on the timeline of one fire moment, in ladder order, minus those already fired.
 	 *
-	 * @param array<int, array<string, mixed>> $rungs     The normalised rungs.
-	 * @param DateTimeInterface                $fireAt    The fire moment.
-	 * @param array<int, string>               $firedKeys Rung keys already in the ledger.
-	 * @param WorkingCalendar                  $calendar  The resolved calendar.
+	 * @param RungTimeline $timeline The rungs, the fire moment, the fired keys and the calendar.
 	 *
 	 * @return list<array{rung: array<string, mixed>, at: DateTimeImmutable}> The unfired entries.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
-	private function unfired(array $rungs, DateTimeInterface $fireAt, array $firedKeys, WorkingCalendar $calendar): array {
+	private function unfired(RungTimeline $timeline): array {
 		$entries = [];
-		foreach ($this->ordered(rungs: $rungs, instantOf: $this->instantOf(fireAt: $fireAt, calendar: $calendar)) as $entry) {
-			if (in_array((string)$entry['rung']['key'], $firedKeys, true) === false) {
+		$instantOf = $this->instantOf(fireAt: $timeline->fireAt, calendar: $timeline->calendar);
+		foreach ($this->ordered(rungs: $timeline->rungs, instantOf: $instantOf) as $entry) {
+			if (in_array((string)$entry['rung']['key'], $timeline->firedKeys, true) === false) {
 				$entries[] = $entry;
 			}
 		}

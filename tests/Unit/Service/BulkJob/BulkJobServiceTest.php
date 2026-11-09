@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\BulkJobMemberMapper;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutor;
+use OCA\OpenRegister\Service\BulkJob\BulkJobPass;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCA\OpenRegister\Service\ObjectService;
@@ -264,13 +265,12 @@ final class BulkJobServiceTest extends TestCase {
 			],
 			$rows
 		);
-		$this->assertSame($job, $previewed[0]);
+		$this->assertSame($job, $previewed[0]->job);
 		$this->assertSame(['o1', 'o2'], $previewed[1]);
-		$this->assertSame($objects, $previewed[2]);
-		$this->assertSame($action, $previewed[3]);
-		$this->assertNull($previewed[4]);
-		$this->assertFalse($previewed[5]);
-		$this->assertCount(6, $previewed);
+		$this->assertSame($objects, $previewed[0]->objects);
+		$this->assertSame($action, $previewed[0]->action);
+		$this->assertNull($previewed[0]->actor);
+		$this->assertCount(2, $previewed);
 	}
 
 	public function testCreateNamesTheReversalWindowOfAReversibleAction(): void {
@@ -351,8 +351,8 @@ final class BulkJobServiceTest extends TestCase {
 		$this->resolver->method('hydrate')->willReturn([]);
 
 		$added = null;
-		$this->executor->method('writePreviewMembers')->willReturnCallback(
-			static function (BulkJob $job, array $uuids) use (&$added): void {
+		$this->executor->method('writeAddedMembers')->willReturnCallback(
+			static function (BulkJobPass $pass, array $uuids) use (&$added): void {
 				$added = $uuids;
 			}
 		);

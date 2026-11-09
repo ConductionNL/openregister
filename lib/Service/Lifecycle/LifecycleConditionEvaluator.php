@@ -137,18 +137,10 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 		string $field,
 	): ?array {
 		$condition = $this->activeCondition(spec: $spec);
+		$write     = new LifecycleWrite(newData: $newData, oldData: $oldData, schemaSlug: $schemaSlug, field: $field);
 		if (
 			$condition === null
-			|| $this->holds(
-				rule: $condition,
-				newData: $newData,
-				oldData: $oldData,
-				action: $action,
-				from: $from,
-				to: $to,
-				schemaSlug: $schemaSlug,
-				field: $field
-			) === true
+			|| $this->holds(rule: $condition, write: $write, move: new TransitionMove(action: $action, from: $from, to: $to)) === true
 		) {
 			return null;
 		}
@@ -221,44 +213,36 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	 * `autoWhen` that is the common case on every write, and a line per write
 	 * per candidate would drown the log that the malformed case needs to reach.
 	 *
-	 * @param mixed $rule The rule to evaluate: a `condition` or an `autoWhen`.
-	 * @param array<string, mixed> $newData The object as it would be saved, or as stored.
-	 * @param array<string, mixed> $oldData The object as it was before the write.
-	 * @param string $action The transition's name.
-	 * @param string $from The lifecycle value being moved away from.
-	 * @param string $to The lifecycle value being moved to.
-	 * @param string $schemaSlug The schema's slug, for the log line.
-	 * @param string $field The lifecycle field's name.
+	 * @param mixed          $rule  The rule to evaluate: a `condition` or an `autoWhen`.
+	 * @param LifecycleWrite $write The object after and before the write, its schema's slug and the lifecycle field.
+	 * @param TransitionMove $move  The transition's name and the states it moves between.
 	 *
 	 * @return bool True only when the rule is a non-empty rule object that evaluates true.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function holds(
-		mixed $rule,
-		array $newData,
-		array $oldData,
-		string $action,
-		string $from,
-		string $to,
-		string $schemaSlug,
-		string $field,
-	): bool {
+	public function holds(mixed $rule, LifecycleWrite $write, TransitionMove $move): bool {
 		if (is_array($rule) === false || $rule === []) {
 			// A fault in the schema, not the rule working, hence a warning.
 			// The runtime does not trust save-time validation: a schema written
 			// by a path that skipped the mapper can still carry a scalar here.
 			$this->logger->warning(
 				'[LifecycleConditionEvaluator] Transition condition is not a rule object; refusing.',
-				['schema' => $schemaSlug, 'action' => $action, 'field' => $field]
+				['schema' => $write->schemaSlug, 'action' => $move->action, 'field' => $write->field]
 			);
 			return false;
 		}
 
 		return $this->dialect->holds(
 			node: $rule,
-			document: $this->document(newData: $newData, oldData: $oldData, action: $action, from: $from, to: $to)
+			document: $this->document(
+				newData: $write->newData,
+				oldData: $write->oldData,
+				action: $move->action,
+				from: $move->from,
+				to: $move->to
+			)
 		);
 	}//end holds()
 

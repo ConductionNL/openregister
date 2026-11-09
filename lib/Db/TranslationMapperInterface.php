@@ -144,54 +144,30 @@ interface TranslationMapperInterface {
 	 * Postgres and MariaDB without DB-specific FTS. tsvector
 	 * optimisation is a v1.1 follow-up.
 	 *
+	 * @param TranslationFilter $filter The language, status, object and source-language filters.
 	 * @param string|null $query Case-insensitive substring against the value column.
-	 * @param string|null $language Optional language filter (BCP-47 tag).
-	 * @param string|null $status Optional workflow-status filter.
-	 * @param string|null $objectUuid Optional object-uuid scope.
 	 * @param int $limit Maximum number of rows to return (1..1000).
-	 * @param string|null $sourceLanguage Optional source-language filter (BCP-47 tag).
 	 * @param bool $isOutOfDate When true, narrows to status='outdated'.
 	 *
 	 * @return Translation[]
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
 	 */
-	public function search(
-		?string $query = null,
-		?string $language = null,
-		?string $status = null,
-		?string $objectUuid = null,
-		int $limit = 100,
-		?string $sourceLanguage = null,
-		bool $isOutOfDate = false,
-	): array;
+	public function search(TranslationFilter $filter, ?string $query = null, int $limit = 100, bool $isOutOfDate = false): array;
 
 	/**
 	 * UPSERT a translation slot. Returns the persisted entity.
 	 *
 	 * Slot key is `(object_uuid, property, language)`. When updating
 	 * an existing slot, status defaults to retaining the previous
-	 * status unless caller passes a non-null override.
+	 * status unless the edit carries a non-null override.
 	 *
-	 * @param string $objectUuid UUID of the object being translated.
-	 * @param string $property Property path within the object.
-	 * @param string $language BCP-47 language tag of the slot.
-	 * @param string|null $value Translated value (null clears).
-	 * @param string|null $status Optional workflow status override.
-	 * @param string|null $translator Optional UID of the translator.
-	 * @param string|null $sourceLanguage Optional canonical source language for the property.
+	 * @param TranslationSlot $slot The object, property and language of the slot.
+	 * @param TranslationEdit $edit The value, status, translator and source language to write.
 	 *
 	 * @return Translation Persisted translation row.
 	 */
-	public function upsert(
-		string $objectUuid,
-		string $property,
-		string $language,
-		?string $value,
-		?string $status = null,
-		?string $translator = null,
-		?string $sourceLanguage = null,
-	): Translation;
+	public function upsert(TranslationSlot $slot, TranslationEdit $edit): Translation;
 
 	/**
 	 * Back-fill the source_language column on rows that have an empty value.

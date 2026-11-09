@@ -80,11 +80,6 @@ use Throwable;
  * refusal branches; each method is small.
  * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the codebase's uuid
  * factory, as in TaskBuilder, and DateTime::createFromInterface is PHP's own.
- * @SuppressWarnings(PHPMD.ExcessiveParameterList) Eleven constructor
- * dependencies: three timer mappers, the task table and service, the
- * calendar, the calculator, the ladder, the connection, the dispatcher and
- * the logger. Each is a distinct collaborator the lifecycle needs; bundling
- * them into a holder object would hide the coupling, not remove it.
  */
 class FlowTimerService implements FlowTimerControlInterface {
 
@@ -96,34 +91,99 @@ class FlowTimerService implements FlowTimerControlInterface {
 	public const ACTOR_SWEEP = 'flow-timer-sweep';
 
 	/**
+	 * The timer table.
+	 *
+	 * @var FlowTimerMapperInterface
+	 */
+	private readonly FlowTimerMapperInterface $timers;
+
+	/**
+	 * The rung dedup ledger.
+	 *
+	 * @var FlowTimerFireMapperInterface
+	 */
+	private readonly FlowTimerFireMapperInterface $fires;
+
+	/**
+	 * The append-only history.
+	 *
+	 * @var FlowTimerEventMapperInterface
+	 */
+	private readonly FlowTimerEventMapperInterface $events;
+
+	/**
+	 * The task table, for the projection and the subject read.
+	 *
+	 * @var TaskMapper
+	 */
+	private readonly TaskMapper $tasks;
+
+	/**
+	 * Applies enforcing outcomes as named task actions.
+	 *
+	 * @var TaskServiceInterface
+	 */
+	private readonly TaskServiceInterface $taskService;
+
+	/**
+	 * Calendar resolution.
+	 *
+	 * @var WorkingCalendarService
+	 */
+	private readonly WorkingCalendarService $calendars;
+
+	/**
+	 * Business-time arithmetic.
+	 *
+	 * @var SlaCalculatorInterface
+	 */
+	private readonly SlaCalculatorInterface $calculator;
+
+	/**
+	 * Rung resolution and validation.
+	 *
+	 * @var EscalationLadderService
+	 */
+	private readonly EscalationLadderService $ladder;
+
+	/**
+	 * Holds the one transaction per operation.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Raises the fired transitions.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $dispatcher;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimerMapperInterface $timers The timer table.
-	 * @param FlowTimerFireMapperInterface $fires The rung dedup ledger.
-	 * @param FlowTimerEventMapperInterface $events The append-only history.
-	 * @param TaskMapper $tasks The task table, for the projection and the subject read.
-	 * @param TaskServiceInterface $taskService Applies enforcing outcomes as named task actions.
-	 * @param WorkingCalendarService $calendars Calendar resolution.
-	 * @param SlaCalculator $calculator Business-time arithmetic.
-	 * @param EscalationLadderService $ladder Rung resolution and validation.
-	 * @param IDBConnection $db Holds the one transaction per operation.
-	 * @param IEventDispatcher $dispatcher Raises the fired transitions.
-	 * @param LoggerInterface $logger Diagnostics.
+	 * @param FlowTimerStorage    $storage    The timer tables and the connection.
+	 * @param FlowTimerSubjects   $subjects   The task table, the task actions and the dispatcher.
+	 * @param FlowTimerArithmetic $arithmetic The calendar, the calculator and the ladder.
+	 * @param LoggerInterface     $logger     Diagnostics.
 	 */
 	public function __construct(
-		private readonly FlowTimerMapperInterface $timers,
-		private readonly FlowTimerFireMapperInterface $fires,
-		private readonly FlowTimerEventMapperInterface $events,
-		private readonly TaskMapper $tasks,
-		private readonly TaskServiceInterface $taskService,
-		private readonly WorkingCalendarService $calendars,
-		private readonly SlaCalculator $calculator,
-		private readonly EscalationLadderService $ladder,
-		private readonly IDBConnection $db,
-		private readonly IEventDispatcher $dispatcher,
+		FlowTimerStorage $storage,
+		FlowTimerSubjects $subjects,
+		FlowTimerArithmetic $arithmetic,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->timers = $storage->timers;
+		$this->fires = $storage->fires;
+		$this->events = $storage->events;
+		$this->tasks = $subjects->tasks;
+		$this->taskService = $subjects->taskService;
+		$this->calendars = $arithmetic->calendars;
+		$this->calculator = $arithmetic->calculator;
+		$this->ladder = $arithmetic->ladder;
+		$this->db = $storage->db;
+		$this->dispatcher = $subjects->dispatcher;
 	}//end __construct()
 
 	/**
@@ -350,7 +410,11 @@ class FlowTimerService implements FlowTimerControlInterface {
 			);
 		}
 
-		return $this->applyExtension(timer: $timer, amount: $amount, unit: $unit, rationale: $rationale, actor: $actor, now: $now, basis: 'Awb 4:14');
+		return $this->applyExtension(
+			timer: $timer,
+			extension: new FlowTimerExtension(amount: $amount, unit: $unit, rationale: $rationale, basis: 'Awb 4:14'),
+			act: new FlowTimerAct(actor: $actor, now: $now)
+		);
 	}//end extend()
 
 	/**
@@ -388,7 +452,11 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$timer = $this->timers->findByUuid(uuid: $uuid);
 		$this->assertExtendable(timer: $timer, now: $now);
 
-		return $this->applyExtension(timer: $timer, amount: $amount, unit: $unit, rationale: $rationale, actor: $actor, now: $now, basis: 'override');
+		return $this->applyExtension(
+			timer: $timer,
+			extension: new FlowTimerExtension(amount: $amount, unit: $unit, rationale: $rationale, basis: 'override'),
+			act: new FlowTimerAct(actor: $actor, now: $now)
+		);
 	}//end extendWithOverride()
 
 	/**
@@ -663,11 +731,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$fired = 0;
 
 		$due = $this->ladder->dueRungs(
-			rungs: $ladder['rungs'],
-			fireAt: $timer->getFireAt(),
-			now: $now,
-			firedKeys: $firedKeys,
-			calendar: $calendar
+			timeline: new RungTimeline(rungs: $ladder['rungs'], fireAt: $timer->getFireAt(), firedKeys: $firedKeys, calendar: $calendar),
+			now: $now
 		);
 		foreach ($due as $entry) {
 			$rung = $entry['rung'];
@@ -746,45 +811,27 @@ class FlowTimerService implements FlowTimerControlInterface {
 	/**
 	 * The shared body of extend() and extendWithOverride().
 	 *
-	 * @param FlowTimer $timer The open timer.
-	 * @param int $amount The extension amount.
-	 * @param string $unit Its unit.
-	 * @param string $rationale Why.
-	 * @param string|null $actor The acting identity.
-	 * @param DateTimeImmutable $now The clock.
-	 * @param string $basis The recorded basis (`Awb 4:14` or `override`).
+	 * @param FlowTimer          $timer     The open timer.
+	 * @param FlowTimerExtension $extension The amount, unit, rationale and basis.
+	 * @param FlowTimerAct       $act       The acting identity and the clock.
 	 *
 	 * @return FlowTimer The extended timer.
 	 *
 	 * @throws FlowTimerValidationException When the rationale is empty or the amount is not positive.
 	 */
-	private function applyExtension(
-		FlowTimer $timer,
-		int $amount,
-		string $unit,
-		string $rationale,
-		?string $actor,
-		DateTimeImmutable $now,
-		string $basis,
-	): FlowTimer {
-		if (trim($rationale) === '') {
-			throw new FlowTimerValidationException(message: 'An extension requires a non-empty rationale.');
-		}
-
-		if ($amount <= 0) {
-			throw new FlowTimerValidationException(message: sprintf('An extension amount must be positive; got %d.', $amount));
-		}
+	private function applyExtension(FlowTimer $timer, FlowTimerExtension $extension, FlowTimerAct $act): FlowTimer {
+		$extension->assertValid();
 
 		$calendar = $this->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 		$added = $this->calculator->convert(
-			value: (float)$amount,
-			fromUnit: $this->calculator->validateUnit(unit: $unit),
+			value: (float)$extension->amount,
+			fromUnit: $this->calculator->validateUnit(unit: $extension->unit),
 			toUnit: (string)$timer->getBudgetUnit(),
 			calendar: $calendar
 		);
 
 		return $this->transactional(
-			mutation: function () use ($timer, $calendar, $added, $rationale, $actor, $now, $basis, $amount, $unit): FlowTimer {
+			mutation: function () use ($timer, $calendar, $added, $extension, $act): FlowTimer {
 				$priorFireAt = $timer->getFireAt();
 				$timer->setBudgetValue((float)$timer->getBudgetValue() + $added);
 				$timer->setExtensionCount((int)$timer->getExtensionCount() + 1);
@@ -792,12 +839,12 @@ class FlowTimerService implements FlowTimerControlInterface {
 				$persisted = $this->timers->update($timer);
 				$entry = new FlowTimerLedgerEntry(
 					type: FlowTimerEvent::TYPE_EXTENDED,
-					actor: $actor,
-					reason: sprintf('%s (+%d %s)', $rationale, $amount, $unit),
-					moment: $now
+					actor: $act->actor,
+					reason: $extension->reason(),
+					moment: $act->now
 				);
 				$entry = $entry->withFireMoments(prior: $priorFireAt, next: $persisted->getFireAt());
-				$this->record(timer: $persisted, entry: $entry->withBasis(basis: $basis, impact: $added));
+				$this->record(timer: $persisted, entry: $entry->withBasis(basis: $extension->basis, impact: $added));
 				$this->projection()->project(timer: $persisted);
 
 				return $persisted;

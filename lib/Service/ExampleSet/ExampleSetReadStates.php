@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapperInterface;
 use Psr\Container\ContainerInterface;
 
@@ -126,16 +127,27 @@ class ExampleSetReadStates extends ExampleSetEngineRows {
 	public function write(ExampleSetRow $row): array {
 		$data = $row->data;
 		return $this->userObjectWrite(
-			write: fn () => $this->mapper()->markSeen(
-				userId: (string) $data['user'],
-				objectUuid: (string) $data['objectUuid'],
-				register: $this->textOrNull(value: ($data['register'] ?? null)),
-				schema: $this->textOrNull(value: ($data['schema'] ?? null)),
-				seenAt: $this->moment(value: ($data['seenAt'] ?? null))
-			),
+			write: fn () => $this->mapper()->markSeen(sighting: $this->sighting(data: $data)),
 			data: $data
 		);
 	}//end write()
+
+	/**
+	 * The sighting a fragment row records: the account, the object, its scope and when.
+	 *
+	 * @param array<string, mixed> $data The row's filled fields.
+	 *
+	 * @return ObjectReadState The unsaved sighting.
+	 */
+	private function sighting(array $data): ObjectReadState {
+		$sighting = new ObjectReadState();
+		$sighting->setUserId((string) $data['user']);
+		$sighting->setObjectUuid((string) $data['objectUuid']);
+		$sighting->setRegister($this->textOrNull(value: ($data['register'] ?? null)));
+		$sighting->setSchema($this->textOrNull(value: ($data['schema'] ?? null)));
+		$sighting->setLastSeenAt($this->moment(value: ($data['seenAt'] ?? null)));
+		return $sighting;
+	}//end sighting()
 
 	/**
 	 * Whether a written read state is no longer there.
