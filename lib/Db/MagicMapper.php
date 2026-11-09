@@ -1330,13 +1330,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return int Count of matching objects.
 	 */
 	public function countObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): int {
-		$tableName = $this->resolveCountTable(register: $register, schema: $schema);
-		if ($tableName === null) {
+		$target = $this->resolveCountTable(register: $register, schema: $schema);
+		if ($target === null) {
 			return 0;
 		}
 
+		$tableName = $target->tableName;
+
 		try {
-			$result = $this->runCountQuery(query: $query, register: $register, schema: $schema, tableName: $tableName);
+			$result = $this->runCountQuery(query: $query, target: $target);
 
 			$count = 0;
 			if (is_int($result) === true) {
@@ -1396,12 +1398,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
 	public function countObjectsOrFail(array $query, Register $register, Schema $schema): int {
-		$tableName = $this->resolveCountTable(register: $register, schema: $schema);
-		if ($tableName === null) {
+		$target = $this->resolveCountTable(register: $register, schema: $schema);
+		if ($target === null) {
 			return 0;
 		}
 
-		$result = $this->runCountQuery(query: $query, register: $register, schema: $schema, tableName: $tableName);
+		$tableName = $target->tableName;
+
+		$result = $this->runCountQuery(query: $query, target: $target);
 		if (is_int($result) === false) {
 			throw new RuntimeException('The count query did not answer with a number.');
 		}
@@ -1415,11 +1419,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param Register $register The register context for table selection.
 	 * @param Schema   $schema   The schema for table selection.
 	 *
-	 * @return string|null The table name, or null when there is no table and magic mapping is off (count 0).
+	 * @return MagicTableTarget|null The register, schema and table name, or null when there is no table and magic mapping is off (count 0).
 	 *
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
-	private function resolveCountTable(Register $register, Schema $schema): ?string {
+	private function resolveCountTable(Register $register, Schema $schema): ?MagicTableTarget {
 		if ($this->ensureTableWhenMagicEnabled(register: $register, schema: $schema) === false) {
 			$this->logger->debug(
 				message: '[MagicMapper] Register+schema table does not exist for count, returning 0',
@@ -1428,31 +1432,32 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return null;
 		}
 
-		return $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$target = new MagicTableTarget(register: $register, schema: $schema);
+		$target->tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+
+		return $target;
 	}//end resolveCountTable()
 
 	/**
 	 * Run a count query through the search handler (RBAC and multi-tenancy filters apply).
 	 *
-	 * @param array    $query     Search parameters for filtering (excluding pagination).
-	 * @param Register $register  The register context.
-	 * @param Schema   $schema    The schema context.
-	 * @param string   $tableName The table to count in.
+	 * @param array            $query  Search parameters for filtering (excluding pagination).
+	 * @param MagicTableTarget $target The register, schema and the table to count in.
 	 *
 	 * @return mixed The handler's answer: an integer when the count was made.
 	 *
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
-	private function runCountQuery(array $query, Register $register, Schema $schema, string $tableName): mixed {
+	private function runCountQuery(array $query, MagicTableTarget $target): mixed {
 		// Add _count flag to use MagicSearchHandler with RBAC and multi-tenancy filters.
 		$countQuery = $query;
 		$countQuery['_count'] = true;
 
 		return $this->searchHandler->searchObjects(
 			query: $countQuery,
-			register: $register,
-			schema: $schema,
-			tableName: $tableName
+			register: $target->register,
+			schema: $target->schema,
+			tableName: $target->tableName
 		);
 	}//end runCountQuery()
 
@@ -2813,7 +2818,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$this->invalidateTableMemos();
 
 		// Create indexes for performance.
-		$this->createTableIndexes(tableName: $tableName, _register: $register, _schema: $schema);
+		$this->createTableIndexes(tableName: $tableName, schema: $schema);
 
 		// Store schema version for change detection.
 		$this->storeRegisterSchemaVersion(register: $register, schema: $schema);
@@ -2904,17 +2909,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Create indexes for table performance
 	 *
 	 * @param string $tableName The table name
-	 * @param Register $_register The register context (unused)
-	 * @param Schema $_schema The schema for index analysis
+	 * @param Schema $schema    The schema for index analysis
 	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
-	private function createTableIndexes(string $tableName, Register $_register, Schema $_schema): void {
+	private function createTableIndexes(string $tableName, Schema $schema): void {
 		$run = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
 		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
-		$indexer->create(run: $run, schema: $_schema);
+		$indexer->create(run: $run, schema: $schema);
 	}//end createTableIndexes()
 
 	/**
@@ -2933,8 +2937,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	protected function saveObjectToRegisterSchemaTable(MagicRowWrite $write): string {
 		$write->row = $this->prepareObjectDataForTable(
 			objectData: $write->objectData,
-			register: $write->register,
-			schema: $write->schema
+			table: new RegisterSchema(register: $write->register, schema: $write->schema)
 		);
 		$this->refuseNumbersTheColumnsWouldRound(row: $write->row, tableName: $write->tableName);
 		$write->row[self::METADATA_PREFIX . 'uuid'] = $this->rowUuid(write: $write);
@@ -3132,16 +3135,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * Prepare object data for storage in register+schema table
 	 *
-	 * @param array $objectData The object data to prepare
-	 * @param Register $register The register context
-	 * @param Schema $schema The schema for validation
+	 * @param array          $objectData The object data to prepare
+	 * @param RegisterSchema $table      The register context and the schema for validation
 	 *
 	 * @return (false|mixed|null|string)[]
 	 *
 	 * @psalm-return array<string, false|mixed|null|string>
 	 */
-	private function prepareObjectDataForTable(array $objectData, Register $register, Schema $schema): array {
-		$now = new DateTime();
+	private function prepareObjectDataForTable(array $objectData, RegisterSchema $table): array {
+		$now    = new DateTime();
+		$schema = $table->schema;
 
 		$data = $objectData;
 		unset($data['@self']);
@@ -3153,7 +3156,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$rowMetadata = new MagicRowMetadata(container: $this->container);
 		$metadata = $rowMetadata->authoritative(
 			objectData: $objectData,
-			ids: ['register' => $register->getId(), 'schema' => $schema->getId()]
+			ids: ['register' => $table->register->getId(), 'schema' => $schema->getId()]
 		);
 		$metadata['created'] ??= $now;
 		$metadata['updated'] ??= $now;
@@ -3845,7 +3848,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	public function updateTableIndexes(string $tableName, Register $register, Schema $schema): void {
 		// For now, recreate all indexes (more complex differential updates can be added later).
-		$this->createTableIndexes(tableName: $tableName, _register: $register, _schema: $schema);
+		$this->createTableIndexes(tableName: $tableName, schema: $schema);
 	}//end updateTableIndexes()
 
 	/**
@@ -4140,7 +4143,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 
 			// Several rows: a key match wins, otherwise the identifier is ambiguous (#4037).
-			$row = $this->singleRow(rows: $rows, identifier: $lookup->identifier, register: $lookup->register, schema: $lookup->schema);
+			$row = $this->singleRow(rows: $rows, lookup: $lookup);
 
 			$objectEntity = $this->convertRowToObjectEntity(row: $row, _register: $lookup->register, _schema: $lookup->schema);
 
@@ -4263,10 +4266,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * one row is the identifier ambiguous. Both holders are logged for the
 	 * administrator and kept out of the message, which can reach an API caller.
 	 *
-	 * @param list<array<string, mixed>> $rows       The matched rows, at least one.
-	 * @param string|int                 $identifier The identifier the caller sent.
-	 * @param Register                   $register   The register (log context).
-	 * @param Schema                     $schema     The schema (log context).
+	 * @param list<array<string, mixed>> $rows   The matched rows, at least one.
+	 * @param MagicObjectLookup          $lookup The lookup: the identifier the caller sent, its register and schema (log context).
 	 *
 	 * @return array<string, mixed> The row.
 	 *
@@ -4274,8 +4275,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
-	private function singleRow(array $rows, string|int $identifier, Register $register, Schema $schema): array {
-		$row = $this->rowForIdentifier(rows: $rows, identifier: $identifier);
+	private function singleRow(array $rows, MagicObjectLookup $lookup): array {
+		$identifier = $lookup->identifier;
+		$register   = $lookup->register;
+		$schema     = $lookup->schema;
+		$row        = $this->rowForIdentifier(rows: $rows, identifier: $identifier);
 		if ($row !== null) {
 			return $row;
 		}
