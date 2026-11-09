@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCP\IAppConfig;
@@ -100,43 +101,19 @@ class FileSettingsHandler {
 	];
 
 	/**
-	 * Configuration service
-	 *
-	 * @var IAppConfig
-	 */
-	private IAppConfig $appConfig;
-
-	/**
-	 * Application name
-	 *
-	 * @var string
-	 */
-	private string $appName;
-
-	/**
-	 * Records every save on the audit trail (openregister#4100).
-	 *
-	 * @var OwnSettingsChangeRecorder|null
-	 */
-	private ?OwnSettingsChangeRecorder $changeRecorder;
-
-	/**
 	 * Constructor for FileSettingsHandler
 	 *
+	 * The app id comes from Application::APP_ID (ADR-011 Rule 4).
+	 *
 	 * @param IAppConfig $appConfig Configuration service.
-	 * @param string $appName Application name.
-	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail.
+	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail (openregister#4100).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		IAppConfig $appConfig,
-		string $appName = 'openregister',
-		?OwnSettingsChangeRecorder $changeRecorder = null,
+		private readonly IAppConfig $appConfig,
+		private readonly ?OwnSettingsChangeRecorder $changeRecorder = null,
 	) {
-		$this->appConfig = $appConfig;
-		$this->appName = $appName;
-		$this->changeRecorder = $changeRecorder;
 	}//end __construct()
 
 	/**
@@ -150,7 +127,7 @@ class FileSettingsHandler {
 	 */
 	public function getFileSettingsOnly(): array {
 		try {
-			$fileConfig = $this->appConfig->getValueString($this->appName, 'fileManagement', '');
+			$fileConfig = $this->appConfig->getValueString(Application::APP_ID, 'fileManagement', '');
 			if (empty($fileConfig) === true) {
 				$defaults = self::FILE_DEFAULTS;
 				$defaults['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
@@ -235,7 +212,7 @@ class FileSettingsHandler {
 
 			$auditKeys = ['fileManagement', OwnSettingsChangeRecorder::PLAIN_PREFIX . self::OPENANONYMISER_PASSWORD_KEY];
 			$before = $this->changeRecorder?->snapshot(keys: $auditKeys);
-			$this->appConfig->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));
+			$this->appConfig->setValueString(Application::APP_ID, 'fileManagement', json_encode($fileConfig));
 			$this->storeOpenAnonymiserPassword(fileData: $fileData);
 			if ($before !== null) {
 				$this->changeRecorder?->record(before: $before, keys: $auditKeys);
@@ -318,7 +295,7 @@ class FileSettingsHandler {
 	 * @spec exclude credential plumbing for the external OpenAnonymiser transport
 	 */
 	public function getOpenAnonymiserPassword(): string {
-		return $this->appConfig->getValueString($this->appName, self::OPENANONYMISER_PASSWORD_KEY, '');
+		return $this->appConfig->getValueString(Application::APP_ID, self::OPENANONYMISER_PASSWORD_KEY, '');
 	}//end getOpenAnonymiserPassword()
 
 	/**
@@ -350,12 +327,12 @@ class FileSettingsHandler {
 
 		$password = $fileData[self::OPENANONYMISER_PASSWORD_KEY];
 		if ($password === '') {
-			$this->appConfig->deleteKey($this->appName, self::OPENANONYMISER_PASSWORD_KEY);
+			$this->appConfig->deleteKey(Application::APP_ID, self::OPENANONYMISER_PASSWORD_KEY);
 			return;
 		}
 
 		$this->appConfig->setValueString(
-			$this->appName,
+			Application::APP_ID,
 			self::OPENANONYMISER_PASSWORD_KEY,
 			$password,
 			sensitive: true
