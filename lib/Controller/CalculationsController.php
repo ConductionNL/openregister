@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CalculationsControllerServices;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
@@ -58,11 +59,18 @@ class CalculationsController extends Controller {
 	private readonly CalculationTrialServiceInterface $trials;
 
 	/**
-	 * Register, schema and object lookups, each scoped to the caller by RBAC and tenancy.
+	 * Register and schema lookups, each scoped to the caller by RBAC and tenancy.
 	 *
 	 * @var SchemaCatalogInterface
 	 */
 	private readonly SchemaCatalogInterface $schemaCatalog;
+
+	/**
+	 * Object lookup, scoped to the caller by RBAC and tenancy.
+	 *
+	 * @var MagicTableRowReaderInterface
+	 */
+	private readonly MagicTableRowReaderInterface $objectMapper;
 
 	/**
 	 * Constructor.
@@ -80,6 +88,7 @@ class CalculationsController extends Controller {
 		$this->catalogue = $services->catalogue;
 		$this->trials = $services->trials;
 		$this->schemaCatalog = $services->schemaCatalog;
+		$this->objectMapper = $services->objectMapper;
 
 	}//end __construct()
 
@@ -222,7 +231,7 @@ class CalculationsController extends Controller {
 	private function readableObject(array $target): array {
 		$register = $this->schemaCatalog->registers()->find($target['register'], _rbac: true, _multitenancy: true);
 		$schema = $this->schemaCatalog->schemas()->find($target['schema'], _rbac: true, _multitenancy: true);
-		$object = $this->schemaCatalog->tables()->findInRegisterSchemaTable(
+		$object = $this->objectMapper->findInRegisterSchemaTable(
 			identifier: $target['objectId'],
 			register: $register,
 			schema: $schema,

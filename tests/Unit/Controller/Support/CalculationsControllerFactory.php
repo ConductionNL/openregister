@@ -41,6 +41,7 @@ final class CalculationsControllerFactory {
 				catalogue: $catalogue,
 				trials: $trials,
 				schemaCatalog: new \OCA\OpenRegister\Db\SchemaCatalog($registerMapper, $schemaMapper, $objectMapper),
+				objectMapper: $objectMapper,
 			),
 		];
 	}
