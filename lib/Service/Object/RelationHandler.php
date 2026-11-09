@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -97,7 +98,10 @@ class RelationHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function tables(): RelationTables {
-		$this->tables ??= new RelationTables(registers: $this->stores->registers, schemas: $this->stores->schemas, logger: $this->logger);
+		$this->tables ??= new RelationTables(
+			catalog: new SchemaCatalog(registers: $this->stores->registers, schemas: $this->stores->schemas, tables: $this->stores->objects),
+			logger: $this->logger
+		);
 		return $this->tables;
 	}//end tables()
 
