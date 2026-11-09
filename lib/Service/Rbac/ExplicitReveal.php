@@ -195,7 +195,7 @@ class ExplicitReveal implements ExplicitRevealInterface {
 		}
 
 		$names = [];
-		foreach (($schema->getProperties() ?? []) as $name => $definition) {
+		foreach ($schema->getProperties() as $name => $definition) {
 			if (self::isExplicit(definition: $definition) === true) {
 				$names[] = (string)$name;
 			}
