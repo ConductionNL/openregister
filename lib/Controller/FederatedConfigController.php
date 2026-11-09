@@ -145,12 +145,14 @@ class FederatedConfigController extends Controller {
 	 * @return JSONResponse The install result, 404 unknown type, or 403 when the
 	 *                      source is not allowlisted.
 	 *
+	 * CSRF is required: an install writes registers, schemas, objects or flows
+	 * as the system. No frontend calls this route; an API client sends the
+	 * `OCS-APIRequest: true` header (or a request token) to pass the check.
+	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	#[NoCSRFRequired]
 	public function install(): JSONResponse {
 		if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
 			$this->logger?->warning(
@@ -296,7 +298,8 @@ class FederatedConfigController extends Controller {
 	 *       to contradict it; this states the posture rather than leaving it to a default.
 	 *       CSRF is required: a trusted key or `allowUnverifiedBundles` outlives any credential
 	 *       rotation, so a forged browser request must not set one. No frontend calls this route;
-	 *       API clients on Basic auth or an app password pass Nextcloud's CSRF check as before.
+	 *       an API client (Basic auth or an app password included) must send the
+	 *       `OCS-APIRequest: true` header, or Nextcloud refuses the request with 412.
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */

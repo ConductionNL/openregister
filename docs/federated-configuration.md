@@ -72,6 +72,23 @@ An administrator manages trust at `GET`/`PUT /api/federated-config/trust`:
 Share this instance's public key (`GET /api/federated-config/public-key`) with
 organisations that want to trust the configuration you publish.
 
+The trust write and the install are protected against cross-site requests. An
+API client, Basic auth and app passwords included, must send the
+`OCS-APIRequest: true` header, or Nextcloud answers 412:
+
+```bash
+curl -u admin:app-password -X PUT \
+  -H 'OCS-APIRequest: true' -H 'Content-Type: application/json' \
+  -d '{"field": "sourceAllowlist", "value": "ConductionNL"}' \
+  https://cloud.example.org/index.php/apps/openregister/api/federated-config/trust
+```
+
+The same header applies to `POST /api/federated-config/install`. Scripts written
+for an earlier version without it stop working on upgrade.
+
+Every install, refused install and trust change is written to the Nextcloud log
+with the user who did it; a trust change also lands on the audit trail.
+
 ## Configuration sets and installable apps
 
 A whole app's worth of configuration — registers, schemas, objects, views, flows,

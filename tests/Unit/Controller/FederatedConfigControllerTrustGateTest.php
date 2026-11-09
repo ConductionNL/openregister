@@ -287,6 +287,17 @@ class FederatedConfigControllerTrustGateTest extends TestCase {
 
 		$this->assertSame([], $method->getAttributes(\OCP\AppFramework\Http\Attribute\NoCSRFRequired::class));
 		$this->assertStringNotContainsString('@NoCSRFRequired', (string)$method->getDocComment());
+		$this->assertStringContainsString('OCS-APIRequest', (string)$method->getDocComment());
+	}
+
+	/**
+	 * pp-f8: the install requires CSRF too.
+	 */
+	public function testTheInstallRequiresCsrf(): void {
+		$method = new \ReflectionMethod(FederatedConfigController::class, 'install');
+
+		$this->assertSame([], $method->getAttributes(\OCP\AppFramework\Http\Attribute\NoCSRFRequired::class));
+		$this->assertStringNotContainsString('@NoCSRFRequired', (string)$method->getDocComment());
 	}
 
 	/**
