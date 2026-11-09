@@ -165,7 +165,10 @@ import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import DashboardKpiCard from './DashboardKpiCard.vue'
 import KpiRangeChip from './KpiRangeChip.vue'
-import { liveCollectionMethods } from '../../composables/liveCollectionSubscription.js'
+import {
+	liveCollectionLifecycle,
+	liveCollectionMethods,
+} from '../../composables/liveCollectionSubscription.js'
 import {
 	chartRows,
 	dashboardWidgets,
@@ -204,6 +207,10 @@ export default {
 		FileTreeOutline,
 		History,
 	},
+
+	// Re-scopes the live subscription when the sidebar filter changes, and
+	// releases it (cancelling a pending debounced refetch) on unmount.
+	mixins: [liveCollectionLifecycle],
 
 	data() {
 		return {
@@ -413,16 +420,6 @@ export default {
 
 	watch: {
 		/**
-		 * Re-scope the live collection subscription when the user changes the
-		 * dashboard's register/schema filter in the sidebar.
-		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 */
-		liveCollectionType() {
-			this.syncLiveSubscription()
-		},
-
-		/**
 		 * A live event arrived on the object store (the plugin stamps
 		 * liveLastEventAt on every event). While the dashboard holds a
 		 * collection subscription, treat it as a refetch HINT for the
@@ -459,17 +456,6 @@ export default {
 			console.warn('Search trail data not available:', error)
 			this.setEmptySearchTrailData()
 		}
-	},
-
-	/**
-	 * Lifecycle hook: release the live collection subscription and cancel any
-	 * pending debounced refetch on unmount.
-	 *
-	 * @spec openspec/specs/realtime-updates/spec.md
-	 * @return {void}
-	 */
-	beforeUnmount() {
-		this.releaseLiveSubscription()
 	},
 
 	methods: {

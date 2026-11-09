@@ -1,11 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import {
-	navigationStore,
-	objectStore,
-	registerStore,
-	schemaStore,
-} from '../../store/store.js'
+import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -196,7 +191,11 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
-import { liveCollectionMethods } from '../../composables/liveCollectionSubscription.js'
+import {
+	liveCollectionLifecycle,
+	liveCollectionMethods,
+} from '../../composables/liveCollectionSubscription.js'
+import { openAddObjectModal } from '../../composables/openAddObject.js'
 
 export default {
 	name: 'ObjectsList',
@@ -217,6 +216,8 @@ export default {
 		LockOutline,
 		LockOpenOutline,
 	},
+
+	mixins: [liveCollectionLifecycle],
 
 	data() {
 		return {
@@ -248,16 +249,6 @@ export default {
 	},
 
 	watch: {
-		/**
-		 * Re-scope the live collection subscription when the user switches
-		 * register/schema.
-		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 */
-		liveCollectionType() {
-			this.syncLiveSubscription()
-		},
-
 		/**
 		 * @param {number} newVal The new page number
 		 * @spec exclude list-view watcher; reloads the object list on page change (object-lifecycle contract)
@@ -296,16 +287,6 @@ export default {
 			return
 		}
 		this.reloadList(this.currentPage, this.search)
-	},
-
-	/**
-	 * Lifecycle hook: release the live collection subscription on unmount.
-	 *
-	 * @spec openspec/specs/realtime-updates/spec.md
-	 * @return {void}
-	 */
-	beforeUnmount() {
-		this.releaseLiveSubscription()
 	},
 
 	methods: {
@@ -362,16 +343,7 @@ export default {
 		 * @spec exclude list-view action; opens the add-object modal with register/schema context (object-lifecycle contract)
 		 */
 		addObject() {
-			// Clear any existing object and open the add object modal
-			objectStore.setObjectItem(null)
-			// Ensure register and schema are set for new object creation
-			if (registerStore.registerItem) {
-				registerStore.setRegisterItem(registerStore.registerItem)
-			}
-			if (schemaStore.schemaItem) {
-				schemaStore.setSchemaItem(schemaStore.schemaItem)
-			}
-			navigationStore.setModal('viewObject')
+			openAddObjectModal()
 		},
 	},
 }

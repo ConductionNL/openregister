@@ -171,3 +171,34 @@ export function liveCollectionMethods({ tag, currentType, onRelease }) {
 		},
 	}
 }
+
+/**
+ * The lifecycle of the live collection subscription: re-scope when the
+ * view's `liveCollectionType` computed changes, release on unmount. The view
+ * defines `liveCollectionType` and spreads liveCollectionMethods() into its
+ * methods.
+ *
+ * @spec openspec/specs/realtime-updates/spec.md
+ */
+export const liveCollectionLifecycle = {
+	watch: {
+		/**
+		 * Re-scope the live collection subscription when the scope changes.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		liveCollectionType() {
+			this.syncLiveSubscription()
+		},
+	},
+
+	/**
+	 * Lifecycle hook: release the live collection subscription on unmount.
+	 *
+	 * @spec openspec/specs/realtime-updates/spec.md
+	 * @return {void}
+	 */
+	beforeUnmount() {
+		this.releaseLiveSubscription()
+	},
+}
