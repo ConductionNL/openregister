@@ -36,8 +36,10 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FormLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
 use OCA\OpenRegister\Db\FormLink;
+use OCA\OpenRegister\Db\FormSubmissionRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\FormLinkScope;
 use OCA\OpenRegister\Service\FormLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -216,25 +218,15 @@ class FormLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	private function linkToObject(ObjectEntity $object, array $ids): FormLink {
-		$registerId = (int)$object->getRegister();
-		$schemaId = $this->linkSchemaId(object: $object);
+		$scope = (new FormLinkScope(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister()))
+			->inSchema(schemaId: $this->linkSchemaId(object: $object));
 
 		if ($ids['submissionId'] > 0) {
-			return $this->formLinkService->linkFormSubmission(
-				objectUuid: $object->getUuid(),
-				registerId: $registerId,
-				formId: $ids['formId'],
-				submissionId: $ids['submissionId'],
-				schemaId: $schemaId
-			);
+			$submission = new FormSubmissionRef(formId: $ids['formId'], submissionId: $ids['submissionId']);
+			return $this->formLinkService->linkSubmissionTo(scope: $scope, submission: $submission);
 		}
 
-		return $this->formLinkService->linkForm(
-			objectUuid: $object->getUuid(),
-			registerId: $registerId,
-			formId: $ids['formId'],
-			schemaId: $schemaId
-		);
+		return $this->formLinkService->linkFormTo(scope: $scope, formId: $ids['formId']);
 	}//end linkToObject()
 
 	/**
