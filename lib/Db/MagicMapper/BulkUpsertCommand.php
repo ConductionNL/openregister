@@ -54,6 +54,8 @@ final class BulkUpsertCommand {
 	 * @param int $chunkNumber The 1-based chunk number, for logging.
 	 *
 	 * @return MagicUpsertChunkRun The chunk run.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function chunkRun(int $chunkNumber): MagicUpsertChunkRun {
 		$run = new MagicUpsertChunkRun(tableName: $this->tableName, chunkNumber: $chunkNumber);
