@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\PortalTaskControllerServices;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Exception\PortalSubjectException;
@@ -126,16 +127,14 @@ class PortalTaskController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param PortalTaskControllerServices $services The portal task controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		PortalTaskControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->assertion = $services->domain->assertion;
 		$this->portal = $services->domain->portal;
 		$this->delivery = $services->domain->delivery;
