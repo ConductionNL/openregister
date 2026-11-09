@@ -102,7 +102,7 @@ class DeploymentPreviewService implements DeploymentPreviewServiceInterface {
 			$groups[self::groupOf(status: $verdict['status'])][] = $verdict;
 		}
 
-		return self::previewOf(set: $set, groups: $groups, fourEyesRequired: $this->drafts->requiresFourEyes());
+		return $this->previewOf(set: $set, groups: $groups);
 
 	}//end preview()
 
@@ -127,15 +127,16 @@ class DeploymentPreviewService implements DeploymentPreviewServiceInterface {
 	/**
 	 * The preview of a set: its verdicts by group, their counts, and whether it can deploy.
 	 *
-	 * @param ConfigurationDraftSet                                 $set              The set.
-	 * @param array{changes: array, unchanged: array, refusals: array} $groups        The verdicts by group.
-	 * @param bool                                                  $fourEyesRequired Whether a second approver is required.
+	 * Whether a second approver is required comes from the draft service.
+	 *
+	 * @param ConfigurationDraftSet                                   $set    The set.
+	 * @param array{changes: array, unchanged: array, refusals: array} $groups The verdicts by group.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	private static function previewOf(ConfigurationDraftSet $set, array $groups, bool $fourEyesRequired): array {
+	private function previewOf(ConfigurationDraftSet $set, array $groups): array {
 		['changes' => $changes, 'unchanged' => $unchanged, 'refusals' => $refusals] = $groups;
 		return [
 			'set' => $set->jsonSerialize(),
@@ -143,7 +144,7 @@ class DeploymentPreviewService implements DeploymentPreviewServiceInterface {
 			'unchanged' => $unchanged,
 			'refusals' => $refusals,
 			'counts' => ['toChange' => count($changes), 'unchanged' => count($unchanged), 'refused' => count($refusals)],
-			'fourEyesRequired' => $fourEyesRequired,
+			'fourEyesRequired' => $this->drafts->requiresFourEyes(),
 			'deployable' => ($refusals === [] && $changes !== []),
 		];
 
@@ -187,7 +188,7 @@ class DeploymentPreviewService implements DeploymentPreviewServiceInterface {
 			return array_merge($verdict, self::staleRefusal(configKey: $verdict['key']));
 		}
 
-		return array_merge($verdict, ['status' => $this->liveStatus(removes: $verdict['removes'], live: $live, proposed: $verdict['to'])]);
+		return array_merge($verdict, ['status' => $this->liveStatus(live: $live, verdict: $verdict)]);
 
 	}//end judge()
 
@@ -268,15 +269,15 @@ class DeploymentPreviewService implements DeploymentPreviewServiceInterface {
 	/**
 	 * What an allowed pending value does to the live value: create, change, remove, or nothing.
 	 *
-	 * @param bool                  $removes  Whether the draft removes the key.
-	 * @param ConfigurationSnapshot $live     The live value now.
-	 * @param mixed                 $proposed The proposed value.
+	 * @param ConfigurationSnapshot $live    The live value now.
+	 * @param array<string, mixed>  $verdict The pending value's verdict fields: `removes` and the proposed `to`.
 	 *
 	 * @return string `create`, `change`, `remove` or `unchanged`.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	private function liveStatus(bool $removes, ConfigurationSnapshot $live, mixed $proposed): string {
+	private function liveStatus(ConfigurationSnapshot $live, array $verdict): string {
+		$removes = (bool)$verdict['removes'];
 		if ($live->present === false) {
 			return match ($removes) {
 				true => 'unchanged',
@@ -288,7 +289,7 @@ class DeploymentPreviewService implements DeploymentPreviewServiceInterface {
 			return 'remove';
 		}
 
-		if ($this->sameValue(left: $live->value, right: $proposed) === true) {
+		if ($this->sameValue(left: $live->value, right: $verdict['to']) === true) {
 			return 'unchanged';
 		}
 
