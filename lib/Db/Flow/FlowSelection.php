@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Db\Flow;
 
 /**
  * Which flows a listing or count covers. A null or empty field does not restrict.
+ *
+ * @spec openspec/specs/flow-storage/spec.md
  */
 final class FlowSelection {
 
@@ -47,6 +49,8 @@ final class FlowSelection {
 	 * The non-empty column restrictions, in the order the queries apply them.
 	 *
 	 * @return array<string, string> Column to value.
+	 *
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function columnValues(): array {
 		$values = ['app' => $this->app, 'application_slug' => $this->applicationSlug, 'organisation' => $this->organisation];

@@ -131,7 +131,10 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 	 *
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
-	public function findAllFlows(?string $app = null, ?string $applicationSlug = null, ?string $organisation = null, ?bool $enabled = null, int $limit = 100, int $offset = 0): array {
+	public function findAllFlows(
+		?string $app = null, ?string $applicationSlug = null, ?string $organisation = null,
+		?bool $enabled = null, int $limit = 100, int $offset = 0,
+	): array {
 		$selection = new FlowSelection(app: $app, applicationSlug: $applicationSlug, organisation: $organisation, enabled: $enabled);
 		return $this->findSelected(selection: $selection, query: new ListQuery(limit: $limit, offset: $offset));
 	}//end findAllFlows()

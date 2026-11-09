@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Db\Flow;
 /**
  * A trigger and the subject it fired for. A null or empty register, schema or
  * organisation does not restrict.
+ *
+ * @spec openspec/specs/flow-storage/spec.md
  */
 final class TriggerLookup {
 
@@ -48,6 +50,8 @@ final class TriggerLookup {
 	 * The given subject restrictions, keyed by the flow column that holds them.
 	 *
 	 * @return array<string, string> Column to value.
+	 *
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function subjectColumns(): array {
 		$values = ['trigger_register' => $this->register, 'trigger_schema' => $this->schema];
