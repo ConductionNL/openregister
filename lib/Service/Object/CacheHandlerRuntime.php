@@ -22,25 +22,27 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
  * The platform services CacheHandler runs on: logging, the distributed cache
  * factory, and the container it loads the object mapper from lazily.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class CacheHandlerRuntime {
 
 	/**
 	 * @param LoggerInterface    $logger       Logger for performance monitoring
 	 * @param ICacheFactory|null $cacheFactory Cache factory for query result caching
-	 * @param IAppContainer|null $container    Container for lazy loading dependencies
+	 * @param ContainerInterface|null $container Container for lazy loading dependencies
 	 */
 	public function __construct(
 		public readonly LoggerInterface $logger,
 		public readonly ?ICacheFactory $cacheFactory = null,
-		public readonly ?IAppContainer $container = null,
+		public readonly ?ContainerInterface $container = null,
 	) {
 	}//end __construct()
 }//end class

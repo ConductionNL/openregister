@@ -30,6 +30,8 @@ use OCP\IDBConnection;
 /**
  * The stores CacheHandler reads names and objects from: the organisation
  * mapper, and the register/schema mappers plus connection for magic tables.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class CacheHandlerStores {
 

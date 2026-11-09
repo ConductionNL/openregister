@@ -30,6 +30,8 @@ use OCP\IUserSession;
  * The inputs CacheHandler's name scope is resolved from: the current user,
  * the admin-override group check and the multitenancy switches. Only inputs;
  * the scope decision itself stays in CacheHandler.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class CacheNameScopeSources {
 

@@ -34,13 +34,13 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
-use OCP\AppFramework\IAppContainer;
 use OCP\IAppConfig;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IMemcache;
 use OCP\IUserSession;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -232,9 +232,9 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	/**
 	 * Container for lazy loading dependencies to break circular dependency
 	 *
-	 * @var IAppContainer|null
+	 * @var ContainerInterface|null
 	 */
-	private ?IAppContainer $container = null;
+	private ?ContainerInterface $container = null;
 
 	/**
 	 * Lazily loaded MagicMapper to break circular dependency
