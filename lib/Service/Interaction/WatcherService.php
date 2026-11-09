@@ -154,16 +154,9 @@ class WatcherService implements WatcherServiceInterface {
 		?string $schema = null,
 		?bool $notify = null,
 	): Watcher {
-		$uid = $this->requireCaller();
-		$uuid = $this->requireUuid(object: $object);
+		$target = new AddressedObject(object: $object, register: $register, schema: $schema);
 
-		$this->forgetMemos();
-
-		$follow = self::follow(userId: $uid, objectUuid: $uuid);
-		$follow->setRegister($register);
-		$follow->setSchema($schema);
-
-		return $this->store->mapper->subscribe(watcher: $follow, notify: $notify);
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $this->requireCaller(), target: $target), notify: $notify);
 	}//end watch()
 
 	/**
@@ -185,22 +178,32 @@ class WatcherService implements WatcherServiceInterface {
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function followQuietly(ObjectEntity $object, ?string $register = null, ?string $schema = null): Watcher {
-		$uid = $this->requireCaller();
-		$uuid = $this->requireUuid(object: $object);
+		return $this->followQuietlyAt(target: new AddressedObject(object: $object, register: $register, schema: $schema));
+	}//end followQuietly()
 
-		$existing = $this->store->mapper->findOne(userId: $uid, objectUuid: $uuid);
+	/**
+	 * Follow without notifications, unless the caller already follows.
+	 *
+	 * The value-object form of followQuietly().
+	 *
+	 * @param AddressedObject $target The object and how the caller addressed it.
+	 *
+	 * @throws NotAuthorizedException When the caller is anonymous.
+	 *
+	 * @return Watcher The follow as it now stands.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 */
+	public function followQuietlyAt(AddressedObject $target): Watcher {
+		$uid = $this->requireCaller();
+
+		$existing = $this->store->mapper->findOne(userId: $uid, objectUuid: $this->requireUuid(object: $target->object));
 		if ($existing !== null) {
 			return $existing;
 		}
 
-		$this->forgetMemos();
-
-		$follow = self::follow(userId: $uid, objectUuid: $uuid);
-		$follow->setRegister($register);
-		$follow->setSchema($schema);
-
-		return $this->store->mapper->subscribe(watcher: $follow, notify: false);
-	}//end followQuietly()
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $uid, target: $target), notify: false);
+	}//end followQuietlyAt()
 
 	/**
 	 * Remove the calling user's own subscription.
@@ -255,14 +258,9 @@ class WatcherService implements WatcherServiceInterface {
 	 */
 	public function addWatcher(ObjectEntity $object, string $userId, ?string $register = null, ?string $schema = null): Watcher {
 		$this->requireManage(object: $object);
+		$target = new AddressedObject(object: $object, register: $register, schema: $schema);
 
-		$this->forgetMemos();
-
-		$follow = self::follow(userId: $userId, objectUuid: $this->requireUuid(object: $object));
-		$follow->setRegister($register);
-		$follow->setSchema($schema);
-
-		return $this->store->mapper->subscribe(watcher: $follow);
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $userId, target: $target));
 	}//end addWatcher()
 
 	/**
@@ -298,13 +296,9 @@ class WatcherService implements WatcherServiceInterface {
 		?string $register = null,
 		?string $schema = null,
 	): Watcher {
-		$this->forgetMemos();
+		$target = new AddressedObject(object: $object, register: $register, schema: $schema);
 
-		$follow = self::follow(userId: $userId, objectUuid: $this->requireUuid(object: $object));
-		$follow->setRegister($register);
-		$follow->setSchema($schema);
-
-		return $this->store->mapper->subscribe(watcher: $follow);
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $userId, target: $target));
 	}//end subscribeMentioned()
 
 	/**
@@ -335,13 +329,9 @@ class WatcherService implements WatcherServiceInterface {
 		?string $register = null,
 		?string $schema = null,
 	): Watcher {
-		$this->forgetMemos();
+		$target = new AddressedObject(object: $object, register: $register, schema: $schema);
 
-		$follow = self::follow(userId: $userId, objectUuid: $this->requireUuid(object: $object));
-		$follow->setRegister($register);
-		$follow->setSchema($schema);
-
-		return $this->store->mapper->subscribe(watcher: $follow, notify: true);
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $userId, target: $target), notify: true);
 	}//end followAssigned()
 
 	/**
@@ -661,6 +651,30 @@ class WatcherService implements WatcherServiceInterface {
 
 		return $uid;
 	}//end requireCaller()
+
+	/**
+	 * An unsaved follow of one user on the addressed object, carrying the
+	 * register and schema as addressed. Drops this request's memos, since a
+	 * subscribe follows.
+	 *
+	 * @param string          $userId The following user.
+	 * @param AddressedObject $target The object and how the caller addressed it.
+	 *
+	 * @throws NotAuthorizedException When the object carries no uuid.
+	 *
+	 * @return Watcher The follow, without a notify switch.
+	 */
+	private function newFollow(string $userId, AddressedObject $target): Watcher {
+		$uuid = $this->requireUuid(object: $target->object);
+
+		$this->forgetMemos();
+
+		$follow = self::follow(userId: $userId, objectUuid: $uuid);
+		$follow->setRegister($target->register);
+		$follow->setSchema($target->schema);
+
+		return $follow;
+	}//end newFollow()
 
 	/**
 	 * An unsaved follow of one user on one object, for the mapper to subscribe.

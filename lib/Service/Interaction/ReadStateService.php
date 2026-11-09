@@ -120,15 +120,33 @@ class ReadStateService implements ReadStateServiceInterface {
 		?string $schema = null,
 		?string $subResource = null
 	): ObjectReadState {
-		$uid = $this->requireCaller();
-		$uuid = $this->requireUuid(object: $object);
+		return $this->recordSighting(
+			target: new AddressedObject(object: $object, register: $register, schema: $schema),
+			subResource: $subResource
+		);
+
+	}//end markRead()
+
+	/**
+	 * Store the calling user's sighting of the addressed object.
+	 *
+	 * @param AddressedObject $target      The object and how the caller addressed it.
+	 * @param string|null     $subResource A sub-resource that was opened, when one was.
+	 *
+	 * @throws NotAuthorizedException When the caller is anonymous.
+	 *
+	 * @return ObjectReadState The stored read state.
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 */
+	private function recordSighting(AddressedObject $target, ?string $subResource): ObjectReadState {
 		$now = new DateTime();
 
 		$sighting = new ObjectReadState();
-		$sighting->setUserId($uid);
-		$sighting->setObjectUuid($uuid);
-		$sighting->setRegister($register);
-		$sighting->setSchema($schema);
+		$sighting->setUserId($this->requireCaller());
+		$sighting->setObjectUuid($this->requireUuid(object: $target->object));
+		$sighting->setRegister($target->register);
+		$sighting->setSchema($target->schema);
 		$sighting->setLastSeenAt($now);
 		if ($subResource !== null && $subResource !== '') {
 			$sighting->setSubSeen([$subResource => $now->format(DateTimeInterface::ATOM)]);
@@ -137,8 +155,7 @@ class ReadStateService implements ReadStateServiceInterface {
 		$this->forgetMemo();
 
 		return $this->mapper->markSeen(sighting: $sighting);
-
-	}//end markRead()
+	}//end recordSighting()
 
 	/**
 	 * Put an object back to unread for the calling user.
