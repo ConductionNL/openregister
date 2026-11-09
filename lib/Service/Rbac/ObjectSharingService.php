@@ -360,7 +360,10 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function grant(ObjectEntity $object, string $type, string $shareWith, int $permissions = 1): array {
-		return $this->grantWithTerms(object: $object, type: $type, shareWith: $shareWith, terms: new GrantTerms(permissions: $permissions));
+		return $this->grantWithTerms(
+			object: $object,
+			request: new GrantRequest(type: $type, shareWith: $shareWith, terms: new GrantTerms(permissions: $permissions))
+		);
 	}//end grant()
 
 	/**
@@ -371,10 +374,8 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 	 * record, which core stamps with the current time, so it is written after
 	 * creation.
 	 *
-	 * @param ObjectEntity $object The object to share.
-	 * @param string $type One of the GRANTABLE_TYPES keys.
-	 * @param string $shareWith The principal to grant.
-	 * @param GrantTerms $terms The permission mask, the verbs, the end and the share time.
+	 * @param ObjectEntity $object  The object to share.
+	 * @param GrantRequest $request The principal type (one of the GRANTABLE_TYPES keys), the principal and the terms.
 	 *
 	 * @throws NotAuthorizedException When the caller is neither owner nor admin.
 	 * @throws InvalidArgumentException On an unsupported type or unresolvable folder.
@@ -384,12 +385,13 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
-	public function grantWithTerms(ObjectEntity $object, string $type, string $shareWith, GrantTerms $terms): array {
-		$admittedAs = $this->requireMayManageGrants(object: $object, grantType: $type, grantee: trim($shareWith));
-		$this->assertGrantRequest(type: $type, shareWith: $shareWith);
+	public function grantWithTerms(ObjectEntity $object, GrantRequest $request): array {
+		$terms = $request->terms;
+		$admittedAs = $this->requireMayManageGrants(object: $object, grantee: $this->principalOf(request: $request));
+		$this->assertGrantRequest(request: $request);
 
-		$share = $this->shareOnFolder(object: $object, shareType: self::GRANTABLE_TYPES[$type]);
-		$share->setSharedWith(trim($shareWith));
+		$share = $this->shareOnFolder(object: $object, shareType: self::GRANTABLE_TYPES[$request->type]);
+		$share->setSharedWith(trim($request->shareWith));
 		$share->setPermissions($this->withoutReshare(permissions: $terms->permissions));
 		$this->applyVerbs(share: $share, verbs: $terms->verbs);
 		if ($terms->expiresAt !== null) {
@@ -401,7 +403,7 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 		// The caller may re-decide access within this same request.
 		$this->grantResolver->forget();
 
-		$grant = $this->grantRecord(created: $created, type: $type, verbs: $terms->verbs);
+		$grant = $this->grantRecord(created: $created, request: $request);
 
 		// Who let this principal in, and when, is the question the trail has
 		// to be able to answer, whoever the caller was admitted as.
@@ -416,21 +418,20 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 	/**
 	 * Refuse a grant of an unknown type, or to nobody.
 	 *
-	 * @param string $type      The grant type asked for.
-	 * @param string $shareWith The principal asked for.
+	 * @param GrantRequest $request The grant type and principal asked for.
 	 *
 	 * @throws InvalidArgumentException When the type is not grantable or the principal is blank.
 	 *
 	 * @return void
 	 */
-	private function assertGrantRequest(string $type, string $shareWith): void {
-		if (isset(self::GRANTABLE_TYPES[$type]) === false) {
+	private function assertGrantRequest(GrantRequest $request): void {
+		if (isset(self::GRANTABLE_TYPES[$request->type]) === false) {
 			throw new InvalidArgumentException(
 				'Grant type must be one of: ' . implode(', ', array_keys(self::GRANTABLE_TYPES))
 			);
 		}
 
-		if (trim($shareWith) === '') {
+		if (trim($request->shareWith) === '') {
 			throw new InvalidArgumentException('A grant needs a principal to grant to');
 		}
 	}//end assertGrantRequest()
@@ -456,19 +457,18 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 	/**
 	 * The grant as it is returned and recorded.
 	 *
-	 * @param IShare   $created The created share.
-	 * @param string   $type    The grant type.
-	 * @param string[] $verbs   The verbs asked for.
+	 * @param IShare       $created The created share.
+	 * @param GrantRequest $request The grant type and the verbs asked for.
 	 *
 	 * @return array<string, mixed> The grant.
 	 */
-	private function grantRecord(IShare $created, string $type, array $verbs): array {
+	private function grantRecord(IShare $created, GrantRequest $request): array {
 		return [
 			'id' => $created->getFullId(),
-			'type' => $type,
+			'type' => $request->type,
 			'sharedWith' => $created->getSharedWith(),
 			'permissions' => $created->getPermissions(),
-			'verbs' => array_values($verbs),
+			'verbs' => array_values($request->terms->verbs),
 		];
 	}//end grantRecord()
 
@@ -547,7 +547,7 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 			permissions: $permissions
 		);
 
-		$this->applyLinkOptions(share: $share, password: $password, expiration: $expiration);
+		(new LinkProtection(password: $password, expiration: $expiration))->applyTo(share: $share);
 
 		$created = $this->shareManager->createShare($share);
 
@@ -617,7 +617,7 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 			permissions: $permissions
 		);
 
-		$this->applyLinkOptions(share: $share, password: $password, expiration: $expiration);
+		(new LinkProtection(password: $password, expiration: $expiration))->applyTo(share: $share);
 
 		$created = $this->shareManager->createShare($share);
 
@@ -708,33 +708,6 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 
 		return $share;
 	}//end shareOnFolder()
-
-	/**
-	 * Apply the optional password and expiry to a link-style share.
-	 *
-	 * @param IShare $share The share being built.
-	 * @param string|null $password Optional password.
-	 * @param string|null $expiration Optional expiry.
-	 *
-	 * @throws InvalidArgumentException When the expiry cannot be parsed.
-	 *
-	 * @return void
-	 */
-	private function applyLinkOptions(IShare $share, ?string $password, ?string $expiration): void {
-		if ($password !== null && trim($password) !== '') {
-			$share->setPassword($password);
-		}
-
-		if ($expiration === null || trim($expiration) === '') {
-			return;
-		}
-
-		try {
-			$share->setExpirationDate(new DateTime($expiration));
-		} catch (Throwable $e) {
-			throw new InvalidArgumentException('Could not read that expiry date');
-		}
-	}//end applyLinkOptions()
 
 	/**
 	 * Revoke one grant.
@@ -868,9 +841,8 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 	 * a group it is in. Without that refusal the right would be a read by one
 	 * extra call.
 	 *
-	 * @param ObjectEntity $object The object.
-	 * @param string|null $grantType The principal type of a grant being added, or null.
-	 * @param string|null $grantee The principal of a grant being added, or null.
+	 * @param ObjectEntity          $object  The object.
+	 * @param GrantedPrincipal|null $grantee The principal of a grant being added, or null.
 	 *
 	 * @throws NotAuthorizedException When the caller may not.
 	 *
@@ -878,16 +850,9 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	private function requireMayManageGrants(
-		ObjectEntity $object,
-		?string $grantType = null,
-		?string $grantee = null,
-	): string {
+	private function requireMayManageGrants(ObjectEntity $object, ?GrantedPrincipal $grantee = null): string {
 		$uid = $this->callerUid();
-		$groups = [];
-		if ($uid !== null) {
-			$groups = $this->groupManager->getUserGroupIds($this->userSession->getUser());
-		}
+		$groups = $this->callerGroups(uid: $uid);
 
 		$admittedAs = $this->grantManage->admittedAs(userId: $uid, userGroups: $groups, object: $object);
 		if ($admittedAs === null) {
@@ -896,16 +861,11 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 			);
 		}
 
-		$principal = [(string)$grantType => $grantee];
 		if ($this->grantManage->letsItselfIn(
 			admittedAs: $admittedAs,
 			userId: $uid,
 			userGroups: $groups,
-			principal: new GrantedPrincipal(
-				user: ($principal['user'] ?? null),
-				group: ($principal['group'] ?? null),
-				remote: ($principal['remote'] ?? $principal['remote_group'] ?? null)
-			)
+			principal: ($grantee ?? new GrantedPrincipal())
 		) === true
 		) {
 			throw new NotAuthorizedException(
@@ -915,6 +875,38 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 
 		return $admittedAs;
 	}//end requireMayManageGrants()
+
+	/**
+	 * The principal a grant request lets in, by its type.
+	 *
+	 * @param GrantRequest $request The grant type and principal asked for.
+	 *
+	 * @return GrantedPrincipal The user, group or remote principal being let in.
+	 */
+	private function principalOf(GrantRequest $request): GrantedPrincipal {
+		$principal = [$request->type => trim($request->shareWith)];
+
+		return new GrantedPrincipal(
+			user: ($principal['user'] ?? null),
+			group: ($principal['group'] ?? null),
+			remote: ($principal['remote'] ?? $principal['remote_group'] ?? null)
+		);
+	}//end principalOf()
+
+	/**
+	 * The caller's group ids, or none when anonymous.
+	 *
+	 * @param string|null $uid The caller's uid.
+	 *
+	 * @return string[] The group ids.
+	 */
+	private function callerGroups(?string $uid): array {
+		if ($uid === null) {
+			return [];
+		}
+
+		return $this->groupManager->getUserGroupIds($this->userSession->getUser());
+	}//end callerGroups()
 
 	/**
 	 * Strip core's re-share bit from a requested permission mask.
