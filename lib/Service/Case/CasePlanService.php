@@ -259,15 +259,15 @@ class CasePlanService implements CasePlanServiceInterface {
 	 */
 	public function transition(string $itemUuid, string $to, ?string $uid, ?string $reason = null): CaseItem {
 		$item = $this->store->items->findByUuid(uuid: $itemUuid);
-		$tree = $this->treeFor(item: $item);
-		$this->authorizeOrRecord(verb: 'transition', item: $item, tree: $tree, uid: $uid, requested: $to);
+		$move = new CaseItemMove(item: $item, to: $to, tree: $this->treeFor(item: $item));
+		$this->authorizeOrRecord(verb: 'transition', move: $move, uid: $uid);
 
 		if (in_array($to, CaseItem::STATES, true) === false) {
 			throw new CaseValidationException(message: sprintf("'%s' is not a plan-item state.", $to));
 		}
 
 		$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $uid, reason: $reason);
-		$this->moveAndSettle(move: new CaseItemMove(item: $item, to: $to, tree: $tree), why: $why);
+		$this->moveAndSettle(move: $move, why: $why);
 
 		return $this->store->items->findByUuid(uuid: (string)$item->getUuid());
 	}//end transition()
@@ -292,11 +292,12 @@ class CasePlanService implements CasePlanServiceInterface {
 	public function enableDiscretionary(string $itemUuid, ?string $uid): CaseItem {
 		$item = $this->store->items->findByUuid(uuid: $itemUuid);
 		$tree = $this->treeFor(item: $item);
-		$this->authorizeOrRecord(verb: 'enable', item: $item, tree: $tree, uid: $uid, requested: CaseItem::STATE_ENABLED);
+		$move = new CaseItemMove(item: $item, to: CaseItem::STATE_ENABLED, tree: $tree);
+		$this->authorizeOrRecord(verb: 'enable', move: $move, uid: $uid);
 		$this->assertEnableable(item: $item, tree: $tree);
 
 		$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: 'enable', actor: $uid, reason: null);
-		$this->moveAndSettle(move: new CaseItemMove(item: $item, to: CaseItem::STATE_ENABLED, tree: $tree), why: $why);
+		$this->moveAndSettle(move: $move, why: $why);
 
 		return $this->store->items->findByUuid(uuid: $itemUuid);
 	}//end enableDiscretionary()
@@ -323,7 +324,7 @@ class CasePlanService implements CasePlanServiceInterface {
 		$rows = $this->rowsOf(objectUuid: $objectUuid, missing: 'Object %s has no case plan to attach to.');
 		$tree = new CasePlanTree(items: $rows);
 		$parent = $this->parentFor(data: $data, tree: $tree);
-		$this->authorizeOrRecord(verb: 'attach', item: $parent, tree: $tree, uid: $uid, requested: CaseItem::STATE_AVAILABLE);
+		$this->authorizeAttach(parent: $parent, tree: $tree, uid: $uid);
 
 		$node = $this->mechanics->definitions->validateAdHoc(node: $data);
 		$this->assertNewKey(key: (string)$node['key'], tree: $tree);
@@ -712,14 +713,11 @@ class CasePlanService implements CasePlanServiceInterface {
 	}//end parentFor()
 
 	/**
-	 * Authorize a verb on an item (or the root), and AUDIT a denial before
-	 * rethrowing it.
+	 * Authorize a verb on an item, and AUDIT a denial before rethrowing it.
 	 *
 	 * @param string $verb The verb.
-	 * @param CaseItem|null $item The item, or null for the root.
-	 * @param CasePlanTree $tree The plan.
+	 * @param CaseItemMove $move The item, the requested state (for the audit row) and the plan.
 	 * @param string|null $uid The acting identity.
-	 * @param string $requested The requested state, for the audit row.
 	 *
 	 * @return void
 	 *
@@ -727,16 +725,37 @@ class CasePlanService implements CasePlanServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	private function authorizeOrRecord(string $verb, ?CaseItem $item, CasePlanTree $tree, ?string $uid, string $requested): void {
+	private function authorizeOrRecord(string $verb, CaseItemMove $move, ?string $uid): void {
 		try {
-			$this->anchorAccess->authorization->assertMayAct(verb: $verb, item: $item, tree: $tree, uid: $uid);
+			$this->anchorAccess->authorization->assertMayAct(verb: $verb, item: $move->item, tree: $move->tree, uid: $uid);
 		} catch (CaseAccessDeniedException $denial) {
-			if ($item !== null) {
-				$this->mechanics->machine->recordDenial(item: $item, to: $requested, actor: $uid, reason: $denial->getMessage());
-			}
+			$this->mechanics->machine->recordDenial(item: $move->item, to: $move->to, actor: $uid, reason: $denial->getMessage());
 
 			throw $denial;
 		}
+	}//end authorizeOrRecord()
+
+	/**
+	 * Authorize attaching under a parent stage, auditing a denial on it; at the
+	 * root there is no item to audit the denial on, so it is only rethrown.
+	 *
+	 * @param CaseItem|null $parent The parent stage, or null for the root.
+	 * @param CasePlanTree $tree The plan.
+	 * @param string|null $uid The acting identity.
+	 *
+	 * @return void
+	 *
+	 * @throws CaseAccessDeniedException When denied.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	private function authorizeAttach(?CaseItem $parent, CasePlanTree $tree, ?string $uid): void {
+		if ($parent === null) {
+			$this->anchorAccess->authorization->assertMayAct(verb: 'attach', item: null, tree: $tree, uid: $uid);
+			return;
+		}
+
+		$this->authorizeOrRecord(verb: 'attach', move: new CaseItemMove(item: $parent, to: CaseItem::STATE_AVAILABLE, tree: $tree), uid: $uid);
 	}//end authorizeOrRecord()
 
 /**

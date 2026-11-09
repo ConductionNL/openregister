@@ -754,6 +754,9 @@ class CaseUnitsGoldenTest extends TestCase {
 				uid: 'mallory'
 			)
 		);
+		$out['attach denied at root'] = self::attempt(
+			static fn (): CaseItem => $service->attachAdHoc(objectUuid: $obj, data: ['key' => 'x8', 'type' => 'humanTask'], uid: 'mallory')
+		);
 		$out['attach invalid'] = self::attempt(
 			static fn (): CaseItem => $service->attachAdHoc(
 				objectUuid: $obj,
