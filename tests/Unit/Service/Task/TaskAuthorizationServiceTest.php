@@ -214,6 +214,43 @@ class TaskAuthorizationServiceTest extends TestCase {
 	}//end testPoolMembershipAdmitsAClaim()
 
 	/**
+	 * A typed `{type, id}` candidate-group entry is not read as a bare group name.
+	 *
+	 * The legacy group branch only knows bare group ids; a typed entry is the
+	 * typed-principal branch's to resolve. Without a principal resolver that
+	 * branch fails closed, so the caller is denied and the group backend is
+	 * never asked about a group the task does not name.
+	 *
+	 * @return void
+	 */
+	public function testATypedCandidateGroupEntryIsNotReadAsAGroupName(): void {
+		$asked   = [];
+		$manager = $this->createMock(IGroupManager::class);
+		$manager->method('isAdmin')->willReturn(false);
+		$manager->method('groupExists')->willReturn(true);
+		$manager->method('isInGroup')->willReturnCallback(
+			static function (string $uid, string $gid) use (&$asked): bool {
+				$asked[] = $gid;
+				return true;
+			}
+		);
+		$service = new TaskAuthorizationService(groupManager: $manager);
+
+		$task = new Task();
+		$task->setPerformerType(Task::PERFORMER_GROUP);
+		$task->setCandidateGroups([['type' => 'group', 'id' => 'reviewers']]);
+
+		try {
+			$service->assertMay(verb: 'claim', task: $task, uid: 'greta');
+			$this->fail('A typed entry must not admit through the bare-group branch.');
+		} catch (TaskAccessDeniedException $e) {
+			$this->assertStringContainsString('candidate pool', $e->getMessage());
+		}
+
+		$this->assertSame([], $asked);
+	}//end testATypedCandidateGroupEntryIsNotReadAsAGroupName()
+
+	/**
 	 * The requester cancels and reassigns; the assignee does not.
 	 *
 	 * @return void

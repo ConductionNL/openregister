@@ -83,14 +83,12 @@ interface ArchiveHandlerInterface {
 	): array;
 
 	/**
-	 * Freeze an object.
+	 * Freeze the object a request names.
 	 *
-	 * @param string $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason Why it is being frozen.
-	 * @param string|null $state The lifecycle state declaring the freeze, when one does.
-	 * @param string|null $register The register the url names, so an object in
-	 *                              another one is not reachable from this address.
-	 * @param string|null $schema The schema the url names, checked the same way.
+	 * @param ObjectStateRequest $request The object (id, uuid, slug or uri), the register and schema
+	 *                                    the url names (so an object in another one is not reachable
+	 *                                    from this address) and why it is being frozen.
+	 * @param string|null        $state   The lifecycle state declaring the freeze, when one does.
 	 *
 	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
@@ -100,13 +98,7 @@ interface ArchiveHandlerInterface {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function freeze(
-		string $identifier,
-		?string $reason = null,
-		?string $state = null,
-		?string $register = null,
-		?string $schema = null,
-	): array;
+	public function freeze(ObjectStateRequest $request, ?string $state = null): array;
 
 	/**
 	 * Unfreeze an object.

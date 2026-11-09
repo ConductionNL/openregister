@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\MatrixRowsRequestedEvent;
 use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\IDBConnection;
 use ReflectionMethod;
@@ -37,6 +38,7 @@ use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionCatalogue;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
@@ -239,7 +241,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$groups,
 			$schemas,
 			$this->createMock(MagicMapper::class),
-			new ConditionMatcher($session, $this->createMock(ContainerInterface::class), new OperatorEvaluator(new NullLogger()), new NullLogger()),
+			new ConditionMatcher(new ConditionUserResolvers($session), $this->createMock(ContainerInterface::class), new OperatorEvaluator(new NullLogger()), new NullLogger()),
 			$config,
 			new NullLogger(),
 			$this->createMock(ContainerInterface::class),
@@ -479,9 +481,8 @@ class ObjectActionSelfAssignTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 		$list = new ObjectActionList(
-			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
+			new ObjectActionCatalogue(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionInputs(new OasRequestValidator())),
 			new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
-			new ObjectActionInputs(new OasRequestValidator()),
 			$this->createMock(TransitionEngine::class),
 			$l10n
 		);
@@ -594,9 +595,8 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$l10n = $this->createMock(IL10N::class);
 			$l10n->method('t')->willReturnArgument(0);
 			$list = new ObjectActionList(
-				new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
+				new ObjectActionCatalogue(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionInputs(new OasRequestValidator())),
 				new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
-				new ObjectActionInputs(new OasRequestValidator()),
 				$this->createMock(TransitionEngine::class),
 				$l10n
 			);
@@ -877,9 +877,8 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$l10n = $this->createMock(IL10N::class);
 			$l10n->method('t')->willReturnArgument(0);
 			$list = new ObjectActionList(
-				new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
+				new ObjectActionCatalogue(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionInputs(new OasRequestValidator())),
 				new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
-				new ObjectActionInputs(new OasRequestValidator()),
 				$this->createMock(TransitionEngine::class),
 				$l10n
 			);

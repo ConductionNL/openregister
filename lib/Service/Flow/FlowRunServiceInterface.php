@@ -313,4 +313,18 @@ interface FlowRunServiceInterface {
 	 * them would add a dependency without removing any coupling.
 	 */
 	public function executeNode(FlowRun $run, array $flow, object $subject, array $config = []): FlowRun;
+
+	/**
+	 * The items a run starts from, read from a seed exactly as a caller sent it.
+	 *
+	 * A test run may be seeded by hand; what arrives is whatever the request
+	 * carried. Anything that is not an item list (or one item) yields none.
+	 *
+	 * @param mixed $value The seed as sent.
+	 *
+	 * @return array<int, array<string, mixed>> The well-formed items.
+	 *
+	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 */
+	public function seedItemsFrom(mixed $value): array;
 }//end interface

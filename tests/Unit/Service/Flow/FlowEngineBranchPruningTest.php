@@ -14,6 +14,7 @@ use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowEngineServices;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowTaskMootness;
 use PHPUnit\Framework\TestCase;
@@ -85,11 +86,7 @@ class FlowEngineBranchPruningTest extends TestCase {
 
 	private function walk(FlowEngine $engine, PruningDispatcher $dispatcher, array $context, array $flow): array {
 		return $engine->run(
-			flow: $flow,
-			store: new MethodMarkingStore(false, 'marking'),
-			subject: new PruningSubject(),
-			dispatcher: $dispatcher,
-			context: $context,
+			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new PruningSubject(), dispatcher: $dispatcher))->withContext(context: $context),
 			items: [FlowItems::item(json: ['n' => 42])]
 		);
 	}//end walk()

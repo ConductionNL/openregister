@@ -95,7 +95,7 @@ jobs:
       - name: A new migration moves the app version
         run: |
           set -euo pipefail
-          BASE="${{ github.event.pull_request.base.ref || 'development' }}"
+          BASE="${{ github.event.pull_request.base.ref || 'main' }}"
           git fetch --no-tags --prune origin "$BASE"
           MIGRATION_VERSION_BASE_REF="origin/$BASE" php scripts/check-migration-version-bump.php
 

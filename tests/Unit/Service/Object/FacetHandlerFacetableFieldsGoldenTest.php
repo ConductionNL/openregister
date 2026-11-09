@@ -16,6 +16,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\FacetHandler;
+use OCA\OpenRegister\Service\Object\FacetLookups;
 use OCA\OpenRegister\Service\Object\FacetResponseCache;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use PHPUnit\Framework\TestCase;
@@ -163,8 +164,7 @@ class FacetHandlerFacetableFieldsGoldenTest extends TestCase {
 		);
 
 		$handler = new FacetHandler(
-			unifiedObjectMapper: $this->createMock(MagicMapper::class),
-			schemaMapper: $this->createMock(SchemaMapperInterface::class),
+			lookups: new FacetLookups($this->createMock(MagicMapper::class), $this->createMock(SchemaMapperInterface::class)),
 			responseCache: $this->createMock(FacetResponseCache::class),
 			logger: $logger,
 			propertyRbac: $rbac

@@ -89,25 +89,45 @@ class CaseTokenService implements CaseTokenServiceInterface {
 	private const PUBLIC_TIMELINE_LIMIT = 50;
 
 	/**
+	 * Token persistence.
+	 *
+	 * @var CaseTokenMapperInterface
+	 */
+	private CaseTokenMapperInterface $mapper;
+
+	/**
+	 * NC secure RNG.
+	 *
+	 * @var ISecureRandom
+	 */
+	private ISecureRandom $secureRandom;
+
+	/**
+	 * Public URL builder.
+	 *
+	 * @var IURLGenerator
+	 */
+	private IURLGenerator $urlGenerator;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param CaseTokenMapperInterface $mapper Token persistence.
-	 * @param ISecureRandom $secureRandom NC secure RNG.
+	 * @param CaseTokenIssuance $issuance Token store, secure RNG and public URL builder.
 	 * @param IUserSession $userSession Current user (minter).
-	 * @param IURLGenerator $urlGenerator Public URL builder.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ContainerInterface $container App container the ObjectOperationsInterface is resolved from on demand.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private CaseTokenMapperInterface $mapper,
-		private ISecureRandom $secureRandom,
+		CaseTokenIssuance $issuance,
 		private IUserSession $userSession,
-		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,
 		private ContainerInterface $container,
 	) {
+		$this->mapper       = $issuance->mapper;
+		$this->secureRandom = $issuance->secureRandom;
+		$this->urlGenerator = $issuance->urlGenerator;
 	}//end __construct()
 
 	/**

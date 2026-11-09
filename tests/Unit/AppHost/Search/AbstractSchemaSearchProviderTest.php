@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Search;
 
+use OCA\OpenRegister\AppHost\SchemaScopeLookups;
 use OCA\OpenRegister\AppHost\Search\AbstractSchemaSearchProvider;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -142,9 +143,7 @@ class AbstractSchemaSearchProviderTest extends TestCase {
 		return new TestLeadSearchProvider(
 			$this->objectService,
 			$this->resultFormatter,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->createMock(LoggerInterface::class)
+			new SchemaScopeLookups($this->registerMapper, $this->schemaMapper, $this->createMock(LoggerInterface::class))
 		);
 	}//end buildProvider()
 
@@ -331,9 +330,7 @@ class AbstractSchemaSearchProviderTest extends TestCase {
 		$provider = new TestLeadSearchProvider(
 			$objectService,
 			$this->resultFormatter,
-			$this->registerMapper,
-			$schemaMapper,
-			$this->createMock(LoggerInterface::class)
+			new SchemaScopeLookups($this->registerMapper, $schemaMapper, $this->createMock(LoggerInterface::class))
 		);
 
 		$enabledResult = $provider->search($this->createMock(IUser::class), $this->mockQuery());
