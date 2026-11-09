@@ -34,6 +34,19 @@ use RuntimeException;
 interface OAuth2ConnectServiceInterface {
 
 	/**
+	 * The per-request values an authorization URL is built from.
+	 *
+	 * @param string $redirectUri The callback the provider must redirect to.
+	 * @param string $state The signed state.
+	 * @param string $challenge The PKCE code challenge.
+	 *
+	 * @return OAuth2AuthorizationRequest The request, to hand to {@see authorizationUrl()}.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+	 */
+	public function authorizationRequest(string $redirectUri, string $state, string $challenge): OAuth2AuthorizationRequest;
+
+	/**
 	 * Build the authorization URL a person is sent to.
 	 *
 	 * The OAuth2 client is resolved HERE rather than by the caller, so a controller
@@ -41,9 +54,7 @@ interface OAuth2ConnectServiceInterface {
 	 *
 	 * @param array<string, mixed> $provider The catalogue provider entry.
 	 * @param array<string, mixed> $claims The flow's claims (provider, scopes, host, client).
-	 * @param string $redirectUri The callback the provider must redirect to.
-	 * @param string $state The signed state.
-	 * @param string $challenge The PKCE code challenge.
+	 * @param OAuth2AuthorizationRequest $request The callback, signed state and PKCE challenge, from {@see authorizationRequest()}.
 	 *
 	 * @return string The absolute authorization URL.
 	 *
@@ -51,7 +62,7 @@ interface OAuth2ConnectServiceInterface {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
-	public function authorizationUrl(array $provider, array $claims, string $redirectUri, string $state, string $challenge): string;
+	public function authorizationUrl(array $provider, array $claims, OAuth2AuthorizationRequest $request): string;
 
 	/**
 	 * Exchange an authorization code and mint or overwrite the credential.

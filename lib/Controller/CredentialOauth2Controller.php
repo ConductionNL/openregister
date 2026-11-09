@@ -316,9 +316,11 @@ class CredentialOauth2Controller extends Controller {
 			$url = $this->connect->authorizationUrl(
 				provider: $provider,
 				claims: $claims,
-				redirectUri: $this->endpoints->callbackUrl(),
-				state: $issued['state'],
-				challenge: $issued['challenge']
+				request: $this->connect->authorizationRequest(
+					redirectUri: $this->endpoints->callbackUrl(),
+					state: $issued['state'],
+					challenge: $issued['challenge']
+				)
 			);
 		} catch (OAuth2ClientNotConfiguredException $notConfigured) {
 			$this->withdrawState(nonce: $nonce);

@@ -282,9 +282,7 @@ class EmlParser {
 		}
 
 		return new EmlAttachment(
-			filename: $filename,
-			mimeType: $mimeType,
-			content: $bytes,
+			file: new EmlAttachmentFile(filename: $filename, mimeType: $mimeType, content: $bytes),
 			isInline: strtolower(string: (string)$attachment->part->getContentDisposition(default: 'attachment')) === 'inline',
 			contentId: $this->stripAngleBrackets(raw: $attachment->part->getContentId()),
 			nestedEml: $nestedEml

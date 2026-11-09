@@ -26,6 +26,8 @@ declare(strict_types=1);
 namespace Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleWrite;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCP\IGroupManager;
 use OCP\IL10N;
@@ -109,13 +111,8 @@ class LifecycleConditionEvaluatorHoldsTest extends TestCase {
 	private function holds(mixed $rule, array $object = [], array $previous = []): bool {
 		return $this->evaluator->holds(
 			rule: $rule,
-			newData: $object,
-			oldData: $previous,
-			action: 'beslissen',
-			from: 'in-behandeling',
-			to: 'besloten',
-			schemaSlug: 'bezwaar',
-			field: 'status'
+			write: new LifecycleWrite(newData: $object, oldData: $previous, schemaSlug: 'bezwaar', field: 'status'),
+			move: new TransitionMove(action: 'beslissen', from: 'in-behandeling', to: 'besloten')
 		);
 	}//end holds()
 

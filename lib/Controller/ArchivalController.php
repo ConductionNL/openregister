@@ -378,9 +378,7 @@ class ArchivalController extends Controller {
 
 			$result = $this->destructionService->approveList(
 				destructionList: $destructionList,
-				action: $action,
-				excludedIds: $excludedIds,
-				exclusionReasons: $exclusionReasons,
+				choice: $this->destructionService->approvalChoice(action: $action, excludedIds: $excludedIds, exclusionReasons: $exclusionReasons),
 				requiresDual: $requiresDual,
 				listUuid: $id
 			);
@@ -1099,21 +1097,18 @@ class ArchivalController extends Controller {
 	 */
 	private function carryOutAnswer(ArchivalReviewEntry $target, ArchivalReviewAnswer $answer): array|JSONResponse {
 		try {
-			$transferRef = $this->outcomes->apply(
+			$given = $this->reviews->reviewerAnswer(
 				answer: $answer->answer,
-				entryUuid: $target->entryId,
 				reason: $answer->reason,
 				newDate: $answer->newDate,
 				reviewer: $answer->reviewer
 			);
+			$transferRef = $this->outcomes->apply(entryUuid: $target->entryId, given: $given);
 
 			return $this->reviews->recordAnswer(
 				listData: $target->listData,
 				entryUuid: $target->entryId,
-				answer: $answer->answer,
-				reviewer: $answer->reviewer,
-				reason: $answer->reason,
-				newDate: $answer->newDate,
+				given: $given,
 				transferRef: $transferRef
 			);
 		} catch (InvalidArgumentException $e) {

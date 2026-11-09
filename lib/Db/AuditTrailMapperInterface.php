@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -603,10 +604,7 @@ interface AuditTrailMapperInterface {
 	 * @param string $toolId Full namespaced tool id, e.g. `pipelinq.lead.search`.
 	 * @param string $paramsDigest SHA-256 hex digest of the invocation's canonical arguments (never raw values).
 	 * @param array $resultSummary Structured outcome summary (count/ids/isError/errorClass).
-	 * @param int|null $register Register id touched by the invocation, when known.
-	 * @param int|null $schema Schema id touched by the invocation, when known.
-	 * @param int|null $object Object id touched by the invocation, when known (writes / get).
-	 * @param string|null $objectUuid Object uuid touched by the invocation, when known (writes / get).
+	 * @param AuditedObject $about The register, schema and object the invocation touched, each when known.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
@@ -616,8 +614,7 @@ interface AuditTrailMapperInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 */
 	public function createToolInvocationEntry(
-		string $toolId, string $paramsDigest, array $resultSummary, ?int $register = null, ?int $schema = null, ?int $object = null,
-		?string $objectUuid = null
+		string $toolId, string $paramsDigest, array $resultSummary, AuditedObject $about = new AuditedObject()
 	): AuditTrail;
 
 	/**

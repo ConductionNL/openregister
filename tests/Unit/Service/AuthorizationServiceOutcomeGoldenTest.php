@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapper;
 use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Service\Audit\TokenContext;
+use OCA\OpenRegister\Service\Audit\NamedIdentifier;
 use OCA\OpenRegister\Service\Audit\TokenIdentity;
 use OCA\OpenRegister\Service\AuthorizationService;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
@@ -316,12 +317,9 @@ class AuthorizationServiceOutcomeGoldenTest extends TestCase {
 		$service = $this->service();
 		$identity = new TokenIdentity(
 			mechanism: 'apiKey',
-			reference: 'c0ffee00-0000-4000-8000-000000000002',
-			name: 'portaal',
-			ownerUid: 'api-user',
-			ownerName: null,
-			consumerUuid: 'c0ffee00-0000-4000-8000-000000000002',
-			consumerName: 'portaal'
+			token: new NamedIdentifier(id: 'c0ffee00-0000-4000-8000-000000000002', name: 'portaal'),
+			owner: new NamedIdentifier(id: 'api-user'),
+			consumer: new NamedIdentifier(id: 'c0ffee00-0000-4000-8000-000000000002', name: 'portaal')
 		);
 		$this->assertSame(
 			[

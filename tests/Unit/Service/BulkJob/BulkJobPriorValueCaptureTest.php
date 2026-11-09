@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutor;
+use OCA\OpenRegister\Service\BulkJob\BulkJobPass;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
@@ -212,11 +213,8 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 
 	public function testThePriorStatusIsOnEveryMemberOutcomeAfterTheRehearsal(): void {
 		$this->executor()->writePreviewMembers(
-			$this->job(),
-			['case-1', 'case-2'],
-			['case-1' => $this->object('case-1'), 'case-2' => $this->object('case-2')],
-			$this->reversibleAction(),
-			null
+			new BulkJobPass($this->job(), $this->reversibleAction(), null, ['case-1' => $this->object('case-1'), 'case-2' => $this->object('case-2')]),
+			['case-1', 'case-2']
 		);
 
 		$this->assertCount(2, $this->written);
@@ -227,11 +225,8 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 
 	public function testAnActionThatIsNotReversibleRecordsNothingToGoBackTo(): void {
 		$this->executor()->writePreviewMembers(
-			$this->job(BulkJob::STATE_PREVIEWED, null),
-			['case-1'],
-			['case-1' => $this->object('case-1')],
-			$this->plainAction(),
-			null
+			new BulkJobPass($this->job(BulkJob::STATE_PREVIEWED, null), $this->plainAction(), null, ['case-1' => $this->object('case-1')]),
+			['case-1']
 		);
 
 		$this->assertNull($this->written[0]['priorValues']);
@@ -374,11 +369,8 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 		);
 
 		$this->executor()->writePreviewMembers(
-			$this->job(),
-			['case-1'],
-			['case-1' => $this->object('case-1')],
-			$action,
-			$actor
+			new BulkJobPass($this->job(), $action, $actor, ['case-1' => $this->object('case-1')]),
+			['case-1']
 		);
 
 		$this->assertSame(['coordinator'], $seen);

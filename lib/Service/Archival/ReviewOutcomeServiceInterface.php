@@ -35,11 +35,10 @@ interface ReviewOutcomeServiceInterface {
 	/**
 	 * Carry out a review answer against the record it is about.
 	 *
-	 * @param string      $answer    One of DestructionReviewService::ANSWERS.
-	 * @param string      $entryUuid The uuid of the record.
-	 * @param string      $reason    Why the reviewer answered this way, recorded on the record too.
-	 * @param string|null $newDate   The new archiefactiedatum, for a retention.
-	 * @param string|null $reviewer  Who answered, written onto the record's own outcome for a transfer.
+	 * @param string         $entryUuid The uuid of the record.
+	 * @param ReviewerAnswer $given     The answer (one of DestructionReviewService::ANSWERS); the reason, recorded
+	 *                                  on the record too; the new archiefactiedatum, for a retention; and the
+	 *                                  reviewer, written onto the record's own outcome for a transfer.
 	 *
 	 * @return string|null The uuid of the transfer list a transfer created, null for the other answers.
 	 *
@@ -47,5 +46,5 @@ interface ReviewOutcomeServiceInterface {
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function apply(string $answer, string $entryUuid, string $reason, ?string $newDate = null, ?string $reviewer = null): ?string;
+	public function apply(string $entryUuid, ReviewerAnswer $given): ?string;
 }//end interface

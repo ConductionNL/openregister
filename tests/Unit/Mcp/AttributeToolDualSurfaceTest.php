@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCA\OpenRegister\Mcp\Listener\ToolRegistrationListener;
@@ -228,10 +229,7 @@ class AttributeToolDualSurfaceTest extends TestCase {
 				'pipelinq.createLead',
 				$this->matchesRegularExpression('/^[a-f0-9]{64}$/'),
 				$this->callback(fn ($summary) => $summary['isError'] === false),
-				null,
-				null,
-				null,
-				'lead-1'
+				new AuditedObject(null, null, null, 'lead-1')
 			);
 
 		$facade = $this->buildFacade();

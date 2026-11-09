@@ -29,14 +29,18 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListCreator;
 use OCA\OpenRegister\Service\Archival\DestructionListWriter;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
+use OCA\OpenRegister\Service\Archival\ApprovalChoice;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
+use OCA\OpenRegister\Service\Archival\ReviewerAnswer;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IUser;
@@ -247,9 +251,7 @@ class DestructionGoldenTest extends TestCase {
 		$result = $this->stripNow(
 			$this->destruction(extension: 'P2M')->approveList(
 				destructionList: $list,
-				action: 'approve_partial',
-				excludedIds: ['a', 'b', 'missing'],
-				exclusionReasons: ['a' => 'Nog in gebruik'],
+				choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['a', 'b', 'missing'], exclusionReasons: ['a' => 'Nog in gebruik']),
 				listUuid: 'given-uuid'
 			)
 		);
@@ -293,7 +295,7 @@ class DestructionGoldenTest extends TestCase {
 	public function testPartialActionWithoutExclusionsAndBadExcludedKeyBehaveAsBefore(): void {
 		$result = $this->destruction()->approveList(
 			destructionList: ['objects' => [['uuid' => 'x']], 'excludedObjects' => 'broken', 'approvals' => []],
-			action: 'approve_partial'
+			choice: new ApprovalChoice(action: 'approve_partial')
 		);
 
 		$this->assertSame([['uuid' => 'x']], $result['objects']);
@@ -304,8 +306,7 @@ class DestructionGoldenTest extends TestCase {
 		$this->object('y', ['archiefactiedatum' => '2021-01-01']);
 		$partial = $this->destruction()->approveList(
 			destructionList: ['objects' => [['uuid' => 'y']], 'excludedObjects' => 'broken', 'approvals' => []],
-			action: 'approve_partial',
-			excludedIds: ['y']
+			choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['y'])
 		);
 		$this->assertSame([], $partial['objects']);
 		$this->assertSame('2022-01-01', $this->updates[0]['retention']['archiefactiedatum']);
@@ -498,11 +499,13 @@ class DestructionGoldenTest extends TestCase {
 	}//end creator()
 
 	public function testRecordingAnAnswerWritesTheEntryAndTheHistory(): void {
-		$review = new DestructionReviewService();
-		$list = ['objects' => [['uuid' => 'e1', 'reviewer' => 'rev'], ['uuid' => 'e2', 'reviewer' => 'rev']], 'decisions' => 'junk'];
 		$at = new \DateTimeImmutable('2026-01-02T03:04:05+00:00');
+		$clock = $this->createMock(ITimeFactory::class);
+		$clock->method('now')->willReturn($at);
+		$review = new DestructionReviewService(clock: $clock);
+		$list = ['objects' => [['uuid' => 'e1', 'reviewer' => 'rev'], ['uuid' => 'e2', 'reviewer' => 'rev']], 'decisions' => 'junk'];
 
-		$retained = $review->recordAnswer($list, 'e1', 'retain', 'rev', 'nodig', '2030-01-01', 'ignored', $at);
+		$retained = $review->recordAnswer($list, 'e1', new ReviewerAnswer('retain', 'nodig', '2030-01-01', 'rev'), 'ignored');
 		$this->assertSame(
 			[
 				'objects' => [
@@ -516,13 +519,13 @@ class DestructionGoldenTest extends TestCase {
 			$retained
 		);
 
-		$moved = $review->recordAnswer($retained, 'e2', 'transfer', 'rev', 'e-Depot', '2031-01-01', 'tl-1', $at);
+		$moved = $review->recordAnswer($retained, 'e2', new ReviewerAnswer('transfer', 'e-Depot', '2031-01-01', 'rev'), 'tl-1');
 		$this->assertSame(
 			['entry' => 'e2', 'answer' => 'transfer', 'reviewer' => 'rev', 'decidedAt' => '2026-01-02T03:04:05+00:00', 'reason' => 'e-Depot', 'transferListUuid' => 'tl-1'],
 			$moved['decisions'][1]
 		);
 
-		$destroyed = $review->recordAnswer($list, 'e2', 'destroy', 'rev', 'weg', null, 'tl-2', $at);
+		$destroyed = $review->recordAnswer($list, 'e2', new ReviewerAnswer('destroy', 'weg', null, 'rev'), 'tl-2');
 		$this->assertSame(
 			[['entry' => 'e2', 'answer' => 'destroy', 'reviewer' => 'rev', 'decidedAt' => '2026-01-02T03:04:05+00:00', 'reason' => 'weg']],
 			$destroyed['decisions']
@@ -625,7 +628,9 @@ class DestructionGoldenTest extends TestCase {
 	public function testRecordingAnAnswerRefuses(array $list, array $arguments, string $message): void {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage($message);
-		(new DestructionReviewService())->recordAnswer($list, ...$arguments);
+		[$entry, $answer, $reviewer, $reason] = $arguments;
+		$given = new ReviewerAnswer($answer, $reason, ($arguments[4] ?? null), $reviewer);
+		(new DestructionReviewService())->recordAnswer($list, $entry, $given);
 	}//end testRecordingAnAnswerRefuses()
 
 	/**
@@ -644,8 +649,8 @@ class DestructionGoldenTest extends TestCase {
 
 	public function testRetainingKeepsTheOriginalDateOnceAndAppendsHistory(): void {
 		$this->object('r', ['archiefactiedatum' => '2025-01-01', 'retentionHistory' => 'bad']);
-		$this->assertNull($this->outcomes()->apply('retain', 'r', 'why', '2030-06-01', 'rev'));
-		$this->assertNull($this->outcomes()->apply('retain', 'r', 'again', '2031-06-01'));
+		$this->assertNull($this->outcomes()->apply('r', new ReviewerAnswer('retain', 'why', '2030-06-01', 'rev')));
+		$this->assertNull($this->outcomes()->apply('r', new ReviewerAnswer('retain', 'again', '2031-06-01')));
 
 		$this->assertSame(
 			[
@@ -659,7 +664,7 @@ class DestructionGoldenTest extends TestCase {
 			$this->stripNow($this->updates[1]['retention'])
 		);
 
-		$this->assertNull($this->outcomes()->apply('destroy', 'r', 'x'));
+		$this->assertNull($this->outcomes()->apply('r', new ReviewerAnswer('destroy', 'x')));
 		$this->assertCount(2, $this->updates);
 	}//end testRetainingKeepsTheOriginalDateOnceAndAppendsHistory()
 
@@ -668,7 +673,7 @@ class DestructionGoldenTest extends TestCase {
 		$transfers = $this->createMock(TransferListService::class);
 		$transfers->method('createTransferList')->willReturn(['uuid' => 'tl-9']);
 
-		$this->assertSame('tl-9', $this->outcomes(transfers: $transfers)->apply('transfer', 't', 'naar e-Depot', null, 'rev'));
+		$this->assertSame('tl-9', $this->outcomes(transfers: $transfers)->apply('t', new ReviewerAnswer('transfer', 'naar e-Depot', null, 'rev')));
 		$this->assertSame(
 			[
 				'archiefactiedatum' => '2025-01-01',
@@ -682,7 +687,7 @@ class DestructionGoldenTest extends TestCase {
 		$messages = [];
 		foreach (['retain', 'transfer'] as $answer) {
 			try {
-				$this->outcomes()->apply($answer, 'missing', 'r', '2030-01-01');
+				$this->outcomes()->apply('missing', new ReviewerAnswer($answer, 'r', '2030-01-01'));
 			} catch (RuntimeException $e) {
 				$messages[] = $e->getMessage();
 			}
@@ -695,7 +700,7 @@ class DestructionGoldenTest extends TestCase {
 		$blank->method('createTransferList')->willReturn(['uuid' => '']);
 		foreach ([$failing, $blank] as $transfers) {
 			try {
-				$this->outcomes(transfers: $transfers)->apply('transfer', 't', 'r');
+				$this->outcomes(transfers: $transfers)->apply('t', new ReviewerAnswer('transfer', 'r'));
 			} catch (RuntimeException $e) {
 				$messages[] = $e->getMessage();
 			}
@@ -727,7 +732,7 @@ class DestructionGoldenTest extends TestCase {
 		$messages = [];
 		foreach (['retain', 'transfer'] as $answer) {
 			try {
-				$service->apply($answer, 'w', 'r', '2030-01-01');
+				$service->apply('w', new ReviewerAnswer($answer, 'r', '2030-01-01'));
 			} catch (RuntimeException $e) {
 				$messages[] = $e->getMessage();
 			}
@@ -768,9 +773,7 @@ class DestructionGoldenTest extends TestCase {
 		$schemas->method('find')->willReturn(new Schema());
 
 		$repository = new DestructionListRepository(
-			objectMapper: $mapper,
-			registerMapper: $registers,
-			schemaMapper: $schemas,
+			mappers: new ArchivalRegisterMappers(registerMapper: $registers, schemaMapper: $schemas, objectMapper: $mapper),
 			settingsHandler: $handler,
 			logger: $this->createMock(LoggerInterface::class)
 		);

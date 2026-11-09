@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\TokenSetAddress;
 use OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
@@ -59,8 +60,7 @@ class OAuth2AccountIdentityTest extends TestCase {
 	public function testTheHandleIsReadThroughTheBrokerAndRecordedOnTheCredential(): void {
 		$this->makeIdentity()->record(
 			provider: $this->mastodon(),
-			credentialId: 'cred-1',
-			scope: 'personal',
+			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal'),
 			set: $this->tokenSet(),
 			owner: 'alice'
 		);
@@ -92,8 +92,7 @@ class OAuth2AccountIdentityTest extends TestCase {
 					'displayNameField' => 'data.name',
 				],
 			],
-			credentialId: 'cred-1',
-			scope: 'personal',
+			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal'),
 			set: $this->tokenSet(),
 			owner: 'alice'
 		);
@@ -107,8 +106,7 @@ class OAuth2AccountIdentityTest extends TestCase {
 	public function testAProviderThatDeclaresNoIdentityCallIsNotAsked(): void {
 		$this->makeIdentity()->record(
 			provider: ['identifier' => 'google-search-console'],
-			credentialId: 'cred-1',
-			scope: 'personal',
+			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal'),
 			set: $this->tokenSet(),
 			owner: 'alice'
 		);
@@ -122,8 +120,7 @@ class OAuth2AccountIdentityTest extends TestCase {
 
 		$identity->record(
 			provider: $this->mastodon(),
-			credentialId: 'cred-1',
-			scope: 'personal',
+			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal'),
 			set: $this->tokenSet(),
 			owner: 'alice'
 		);
@@ -136,8 +133,7 @@ class OAuth2AccountIdentityTest extends TestCase {
 
 		$identity->record(
 			provider: $this->mastodon(),
-			credentialId: 'cred-1',
-			scope: 'personal',
+			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal'),
 			set: $this->tokenSet(),
 			owner: 'alice'
 		);

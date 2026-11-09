@@ -75,9 +75,7 @@ class ActivityFeedService {
 	/**
 	 * One page of the merged feed.
 	 *
-	 * @param string                                       $register Register slug of the object.
-	 * @param string                                       $schema   Schema slug of the object.
-	 * @param string                                       $objectId The object's uuid.
+	 * @param ActivityFeedObject                           $object   The object: register slug, schema slug and uuid.
 	 * @param array<string,mixed>                          $options  `pageSize`, `includeReads`, `kinds`, `from`, `until`, `before`.
 	 * @param array<string,array<int,array<string,mixed>>> $handedIn Rows for sources this service does not own: `file`, `note`, `mail`.
 	 *
@@ -86,19 +84,12 @@ class ActivityFeedService {
 	 *
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
 	 */
-	public function page(
-		string $register,
-		string $schema,
-		string $objectId,
-		array $options = [],
-		array $handedIn = [],
-	): array {
+	public function page(ActivityFeedObject $object, array $options = [], array $handedIn = []): array {
 		$bound = $this->merge->boundPerSource(options: $options);
-		$path = ['register' => $register, 'schema' => $schema, 'id' => $objectId];
 
 		$sources = $this->handedInSources(handedIn: $handedIn);
-		$sources['audit'] = $this->auditSource(path: $path, bound: $bound);
-		$sources['activity'] = $this->activitySource(path: $path);
+		$sources['audit'] = $this->auditSource(object: $object, bound: $bound);
+		$sources['activity'] = $this->activitySource(object: $object);
 
 		$degraded = array_keys(array_filter($sources, static fn (?array $rows): bool => $rows === null));
 		$sources = array_map(static fn (?array $rows): array => ($rows ?? []), $sources);
@@ -138,18 +129,18 @@ class ActivityFeedService {
 	 * nothing. An empty audit list and an unreadable one render the same
 	 * way, and only one of them means the object has no history.
 	 *
-	 * @param array{register: string, schema: string, id: string} $path  The object's register, schema and uuid.
-	 * @param int                                                   $bound How many rows this source may contribute.
+	 * @param ActivityFeedObject $object The object's register, schema and uuid.
+	 * @param int                $bound  How many rows this source may contribute.
 	 *
 	 * @return array<int,array<string,mixed>>|null The rows, or null when unreadable.
 	 */
-	private function auditSource(array $path, int $bound): ?array {
+	private function auditSource(ActivityFeedObject $object, int $bound): ?array {
 		try {
-			return $this->auditRows(path: $path, bound: $bound);
+			return $this->auditRows(object: $object, bound: $bound);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[ActivityFeedService] the audit trail could not be read for the merged feed',
-				['objectId' => $path['id'], 'exception' => $e->getMessage()]
+				['objectId' => $object->id, 'exception' => $e->getMessage()]
 			);
 
 			return null;
@@ -159,22 +150,22 @@ class ActivityFeedService {
 	/**
 	 * The NC Activity source, or null when it could not be read.
 	 *
-	 * @param array{register: string, schema: string, id: string} $path The object's register, schema and uuid.
+	 * @param ActivityFeedObject $object The object's register, schema and uuid.
 	 *
 	 * @return array<int,array<string,mixed>>|null The rows, or null when unreadable.
 	 */
-	private function activitySource(array $path): ?array {
+	private function activitySource(ActivityFeedObject $object): ?array {
 		try {
 			return $this->activity->list(
-				register: $path['register'],
-				schema: $path['schema'],
-				objectId: $path['id'],
+				register: $object->register,
+				schema: $object->schema,
+				objectId: $object->id,
 				filters: []
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[ActivityFeedService] the Activity rows could not be read for the merged feed',
-				['objectId' => $path['id'], 'exception' => $e->getMessage()]
+				['objectId' => $object->id, 'exception' => $e->getMessage()]
 			);
 
 			return null;
@@ -189,8 +180,8 @@ class ActivityFeedService {
 	 * them at the query would make the toggle unable to bring them back
 	 * without a second, differently shaped read.
 	 *
-	 * @param array{register: string, schema: string, id: string} $path  The object's register, schema and uuid.
-	 * @param int                                                   $bound How many rows this source may contribute.
+	 * @param ActivityFeedObject $object The object's register, schema and uuid.
+	 * @param int                $bound  How many rows this source may contribute.
 	 *
 	 * @return array<int,array<string,mixed>> The rows, or none when the caller may not read the object.
 	 *
@@ -198,11 +189,11 @@ class ActivityFeedService {
 	 *
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
 	 */
-	private function auditRows(array $path, int $bound): array {
+	private function auditRows(ActivityFeedObject $object, int $bound): array {
 		$page = $this->history->page(
-			register: $path['register'],
-			schema: $path['schema'],
-			id: $path['id'],
+			register: $object->register,
+			schema: $object->schema,
+			id: $object->id,
 			params: ['limit' => $bound]
 		);
 		if ($page === null) {

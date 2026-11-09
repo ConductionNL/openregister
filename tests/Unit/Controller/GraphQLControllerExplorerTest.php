@@ -48,6 +48,7 @@ use OC\Security\CSP\ContentSecurityPolicyNonceManager;
 use OC\Security\CSRF\CsrfToken;
 use OC\Security\CSRF\CsrfTokenManager;
 use OCA\OpenRegister\Search\Controller\GraphQLController;
+use OCA\OpenRegister\Search\Controller\Support\GraphQLControllerServices;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\Response;
@@ -122,12 +123,9 @@ class GraphQLControllerExplorerTest extends TestCase {
 		$this->csrfManager->method('getToken')->willReturn($token);
 
 		$this->controller = new GraphQLController(
-			'openregister',
 			$this->request,
 			$this->graphQLService,
-			$this->urlGenerator,
-			$this->nonceManager,
-			$this->csrfManager
+			new GraphQLControllerServices($this->urlGenerator, $this->nonceManager, $this->csrfManager)
 		);
 	}
 

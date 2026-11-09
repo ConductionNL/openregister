@@ -26,6 +26,7 @@ use OCA\OpenRegister\Controller\Support\FlowRunMigrationControllerServices;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -269,10 +270,12 @@ class FlowRunMigrationController extends Controller {
 			$this->migrations->migrateRunsOfVersion(
 				flowId: $flow,
 				sourceVersion: (int)$this->request->getParam('sourceVersion', 0),
-				targetVersion: (int)$this->request->getParam('targetVersion', 0),
-				reason: $reason,
-				actor: $actor->getUID(),
-				mapping: $nodeMapping,
+				target: new FlowRunMigrationTarget(
+					targetVersion: (int)$this->request->getParam('targetVersion', 0),
+					reason: $reason,
+					actor: $actor->getUID(),
+					mapping: $nodeMapping
+				),
 			)
 		);
 	}//end migrateRuns()
@@ -294,26 +297,18 @@ class FlowRunMigrationController extends Controller {
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
 	private function outcomeFor(string $uuid, string $actorUid, array $mapping): array {
-		$targetVersion = (int)$this->request->getParam('targetVersion', 0);
-		$reason = (string)$this->request->getParam('reason', '');
+		$target = new FlowRunMigrationTarget(
+			targetVersion: (int)$this->request->getParam('targetVersion', 0),
+			reason: (string)$this->request->getParam('reason', ''),
+			actor: $actorUid,
+			mapping: $mapping
+		);
 
 		if ($this->request->getParam('dryRun', false) === true) {
-			return $this->migrations->preview(
-				runUuid: $uuid,
-				targetVersion: $targetVersion,
-				reason: $reason,
-				actor: $actorUid,
-				mapping: $mapping,
-			);
+			return $this->migrations->preview(runUuid: $uuid, target: $target);
 		}
 
-		return $this->migrations->migrate(
-			runUuid: $uuid,
-			targetVersion: $targetVersion,
-			reason: $reason,
-			actor: $actorUid,
-			mapping: $mapping,
-		);
+		return $this->migrations->migrate(runUuid: $uuid, target: $target);
 	}//end outcomeFor()
 
 }//end class

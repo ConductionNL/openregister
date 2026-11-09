@@ -75,6 +75,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
 use OCA\OpenRegister\Db\MagicMapper\MagicRelationSql;
@@ -110,7 +111,6 @@ use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowLookups;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
-use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Support\OrderParameter;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -131,6 +131,9 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugTargetInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 
 /**
  * Dynamic Schema-Based Table Management Service
@@ -515,40 +518,111 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private ?MagicDroppedProperties $droppedProperties = null;
 
 	/**
+	 * Database connection for table operations.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Mapper for schema operations.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Mapper for register operations.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Container for lazy loading services.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * User session for authentication context.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for RBAC operations.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * User manager for user operations.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Nextcloud config for settings.
+	 *
+	 * @var IConfig
+	 */
+	private readonly IConfig $config;
+
+	/**
+	 * App configuration for feature flags.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Event dispatcher for audit trail events.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Logger for debugging and monitoring.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for MagicMapper service.
 	 *
 	 * Initializes the service with required dependencies for database operations,
 	 * schema and register management, configuration handling, logging, and specialized handlers.
 	 *
-	 * @param IDBConnection $db Database connection for table operations
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations
-	 * @param RegisterMapperInterface $registerMapper Mapper for register operations
-	 * @param IConfig $config Nextcloud config for settings
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher for audit trail events
-	 * @param IUserSession $userSession User session for authentication context
-	 * @param IGroupManager $groupManager Group manager for RBAC operations
-	 * @param IUserManager $userManager User manager for user operations
-	 * @param IAppConfig $appConfig App configuration for feature flags
-	 * @param LoggerInterface $logger Logger for debugging and monitoring
-	 * @param AppSettingsInterface $settingsService Settings service for configuration
-	 * @param ContainerInterface $container Container for lazy loading services
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+	 * @param IDBConnection       $db       Database connection for table operations
+	 * @param MagicMapperLookups  $lookups  Schema and register mappers and the container for lazy loading
+	 * @param MagicMapperIdentity $identity User session, group manager and user manager for RBAC
+	 * @param MagicMapperRuntime  $runtime  System and app config, event dispatcher and logger
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly IConfig $config,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserManager $userManager,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-		private readonly AppSettingsInterface $settingsService,
-		private readonly ContainerInterface $container,
+		IDBConnection $db,
+		MagicMapperLookups $lookups,
+		MagicMapperIdentity $identity,
+		MagicMapperRuntime $runtime,
 	) {
+		$this->db              = $db;
+		$this->schemaMapper    = $lookups->schemaMapper;
+		$this->registerMapper  = $lookups->registerMapper;
+		$this->container       = $lookups->container;
+		$this->userSession     = $identity->userSession;
+		$this->groupManager    = $identity->groupManager;
+		$this->userManager     = $identity->userManager;
+		$this->config          = $runtime->config;
+		$this->appConfig       = $runtime->appConfig;
+		$this->eventDispatcher = $runtime->eventDispatcher;
+		$this->logger          = $runtime->logger;
+
 		// Initialize specialized handlers for modular functionality.
 		//
 		// The circular-construction guard that lived here previously (#1564)
@@ -4636,14 +4710,43 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			]
 		);
 
-		// Live (non-orphaned) magic tables, keyed by unprefixed table name.
-		$candidates = $this->getLiveMagicTables();
+		$template = new MagicCrossTableHit(identifier: $identifier);
+		$template->includeDeleted = $includeDeleted;
+		$template->rbac           = $_rbac;
+		$template->multitenancy   = $_multitenancy;
 
-		// A caller that named a register gets its tables ONLY. Scanning every
-		// register is both wrong (another register's object does not answer
-		// "is this one of mine?") and ruinous: one union branch per magic table
-		// cost ~3.4s to plan on an instance with 2,728 of them (measured
-		// 2026-07-29, ~1.9s of a ~3.0s object create).
+		// Two phases instead of one `SELECT *` per magic table (an N+1 of ~1,000
+		// queries on a live instance). LOCATE: one UNION ALL per chunk of
+		// MAGIC_TABLE_SCAN_CHUNK_SIZE tables selecting only (table, _id). FETCH:
+		// one `SELECT *` from the table that holds the row. The shared metadata
+		// columns are what make the union across heterogeneous tables well-typed.
+		$candidates = $this->liveMagicTablesInScope(registerIdScope: $registerIdScope);
+		foreach (array_chunk($candidates, self::MAGIC_TABLE_SCAN_CHUNK_SIZE, true) as $chunk) {
+			$found = $this->findInMagicTableChunk(chunk: $chunk, template: $template);
+			if ($found !== null) {
+				return $found;
+			}
+		}
+
+		// Not found in any magic table.
+		throw new DoesNotExistException("Object with identifier '$identifier' not found in any magic table");
+	}//end findAcrossAllMagicTables()
+
+	/**
+	 * The live (non-orphaned) magic tables, keyed by unprefixed table name, narrowed to one register when named.
+	 *
+	 * A caller that named a register gets its tables ONLY. Scanning every
+	 * register is both wrong (another register's object does not answer
+	 * "is this one of mine?") and ruinous: one union branch per magic table
+	 * cost ~3.4s to plan on an instance with 2,728 of them (measured
+	 * 2026-07-29, ~1.9s of a ~3.0s object create).
+	 *
+	 * @param int|null $registerIdScope The register to stay inside, or null for every register.
+	 *
+	 * @return array<string, array{registerId: int|string, schemaId: int|string}>
+	 */
+	private function liveMagicTablesInScope(?int $registerIdScope): array {
+		$candidates = $this->getLiveMagicTables();
 		if ($registerIdScope !== null) {
 			$candidates = array_filter(
 				$candidates,
@@ -4660,49 +4763,39 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			]
 		);
 
-		$probe = new MagicIdentifierProbe(identifier: (string)$identifier, includeDeleted: $includeDeleted);
+		return $candidates;
+	}//end liveMagicTablesInScope()
 
-		// Two phases instead of one `SELECT *` per magic table (an N+1 of ~1,000
-		// queries on a live instance). LOCATE: one UNION ALL per chunk of
-		// MAGIC_TABLE_SCAN_CHUNK_SIZE tables selecting only (table, _id). FETCH:
-		// one `SELECT *` from the table that holds the row. The shared metadata
-		// columns are what make the union across heterogeneous tables well-typed.
-		foreach (array_chunk($candidates, self::MAGIC_TABLE_SCAN_CHUNK_SIZE, true) as $chunk) {
-			$located = $this->locateIdentifierInMagicTables(tables: array_keys($chunk), probe: $probe);
-			if ($located === null) {
-				continue;
-			}
+	/**
+	 * Locate, fetch and resolve the identifier in one chunk of magic tables.
+	 *
+	 * @param array<string, array{registerId: int|string, schemaId: int|string}> $chunk    The tables, keyed by name
+	 * @param MagicCrossTableHit                                                 $template The identifier and flags of the lookup
+	 *
+	 * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}|null The answer, or null to keep scanning.
+	 */
+	private function findInMagicTableChunk(array $chunk, MagicCrossTableHit $template): ?array {
+		$probe   = new MagicIdentifierProbe(identifier: (string)$template->identifier, includeDeleted: $template->includeDeleted);
+		$located = $this->locateIdentifierInMagicTables(tables: array_keys($chunk), probe: $probe);
+		if ($located === null) {
+			return null;
+		}
 
-			$row = $this->fetchMagicRowById(
-				tableName: $located['table'],
-				id: $located['id'],
-				includeDeleted: $includeDeleted
-			);
-			if ($row === null) {
-				// Gone between locate and fetch (concurrent hard delete), or the
-				// table is unreadable. Keep scanning the other chunks.
-				continue;
-			}
+		$row = $this->fetchMagicRowById(tableName: $located['table'], id: $located['id'], includeDeleted: $template->includeDeleted);
+		if ($row === null) {
+			// Gone between locate and fetch (concurrent hard delete), or the
+			// table is unreadable. Keep scanning the other chunks.
+			return null;
+		}
 
-			$hit = new MagicCrossTableHit(identifier: $identifier);
-			$hit->tableName = $located['table'];
-			$hit->id = (int)$located['id'];
-			$hit->row = $row;
-			$hit->registerId = $chunk[$located['table']]['registerId'];
-			$hit->schemaId = $chunk[$located['table']]['schemaId'];
-			$hit->includeDeleted = $includeDeleted;
-			$hit->rbac = $_rbac;
-			$hit->multitenancy = $_multitenancy;
-
-			$found = $this->resolveCrossTableHit(hit: $hit);
-			if ($found !== null) {
-				return $found;
-			}
-		}//end foreach
-
-		// Not found in any magic table.
-		throw new DoesNotExistException("Object with identifier '$identifier' not found in any magic table");
-	}//end findAcrossAllMagicTables()
+		$hit = clone $template;
+		$hit->tableName  = $located['table'];
+		$hit->id         = (int)$located['id'];
+		$hit->row        = $row;
+		$hit->registerId = $chunk[$located['table']]['registerId'];
+		$hit->schemaId   = $chunk[$located['table']]['schemaId'];
+		return $this->resolveCrossTableHit(hit: $hit);
+	}//end findInMagicTableChunk()
 
 	/**
 	 * Turn a located row into the lookup's answer: load its register and
@@ -6560,49 +6653,73 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			]
 		);
 
+		$target = new MagicTableTarget(register: $register, schema: $schema);
+		$target->tableName = $tableName;
 		if ($hardDelete === true) {
-			// Hard delete - actually remove from table.
-			$qb = $this->db->getQueryBuilder();
-			$qb->delete($tableName)
-				->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)));
-			$qb->executeStatement();
-
-			$this->logger->debug(
-				message: '[MagicMapper] Hard deleted object from register+schema table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'tableName' => $tableName,
-				]
-			);
+			$this->hardDeleteRow(target: $target, uuid: $uuid);
 		}
 
 		if ($hardDelete === false) {
-			// Soft delete - set _deleted field.
-			if ($entity->getDeleted() === null || empty($entity->getDeleted()) === true) {
-				// Mark as deleted using entity method.
-				$entity->delete($this->userSession, 'Soft deleted via MagicMapper', 30);
-			}
-
-			// Update entity in table with deleted field set.
-			$this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
-
-			$this->logger->debug(
-				message: '[MagicMapper] Soft deleted object in register+schema table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'tableName' => $tableName,
-				]
-			);
+			$this->softDeleteRow(target: $target, entity: $entity);
 		}
 
 		// NOTE: Event dispatching is handled by the public insert/update/delete methods to avoid duplicate events.
 		// Do NOT dispatch ObjectDeletedEvent here.
 		return $entity;
 	}//end deleteObjectEntity()
+
+	/**
+	 * Hard delete: remove the row with this uuid from the table.
+	 *
+	 * @param MagicTableTarget $target The register, schema and table name.
+	 * @param string           $uuid   The object uuid.
+	 *
+	 * @return void
+	 */
+	private function hardDeleteRow(MagicTableTarget $target, string $uuid): void {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($target->tableName)
+			->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)));
+		$qb->executeStatement();
+
+		$this->logger->debug(
+			message: '[MagicMapper] Hard deleted object from register+schema table',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+				'tableName' => $target->tableName,
+			]
+		);
+	}//end hardDeleteRow()
+
+	/**
+	 * Soft delete: mark the entity deleted (unless it already is) and write it back to the table.
+	 *
+	 * @param MagicTableTarget $target The register, schema and table name.
+	 * @param ObjectEntity     $entity The object entity.
+	 *
+	 * @return void
+	 */
+	private function softDeleteRow(MagicTableTarget $target, ObjectEntity $entity): void {
+		if ($entity->getDeleted() === null || empty($entity->getDeleted()) === true) {
+			// Mark as deleted using entity method.
+			$entity->delete($this->userSession, 'Soft deleted via MagicMapper', 30);
+		}
+
+		// Update entity in table with deleted field set.
+		$this->updateObjectEntity(entity: $entity, register: $target->register, schema: $target->schema);
+
+		$this->logger->debug(
+			message: '[MagicMapper] Soft deleted object in register+schema table',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $entity->getUuid(),
+				'tableName' => $target->tableName,
+			]
+		);
+	}//end softDeleteRow()
 
 	/**
 	 * Soft-delete multiple pre-resolved objects with ONE UPDATE per magic table.
@@ -7208,58 +7325,83 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				needsPreUpdateState: $needsPreUpdateState
 			);
 		} catch (\Exception $e) {
-			// Check if this is a "table does not exist" error (PostgreSQL: 42P01, MySQL: 1146).
-			$message = $e->getMessage();
-			if (str_contains($message, '42P01') === true
-				|| str_contains($message, 'does not exist') === true
-				|| str_contains($message, "doesn't exist") === true
-				|| str_contains($message, '1146') === true
-			) {
-				$this->logger->warning(
-					message: '[MagicMapper] Table does not exist, creating and retrying bulkUpsert',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'register' => $register->getId(),
-						'schema' => $schema->getId(),
-						'table' => $tableName,
-						'error' => $message,
-					]
-				);
+			$target = new MagicTableTarget(register: $register, schema: $schema);
+			$target->tableName = $tableName;
+			$this->createMissingBulkTable(error: $e, target: $target);
 
-				// ONLY CREATE A TABLE THAT IS ACTUALLY MISSING. `force: true` makes
-				// ensureTableForRegisterSchema() DROP an existing table before
-				// recreating it, which destroys every row with no audit entry — and
-				// the message test above is wider than its name: PostgreSQL says
-				// `column "x" of relation "y" does not exist` for a missing COLUMN
-				// (42703) as well as for a missing table (42P01), so a schema whose
-				// magic table was merely out of sync could reach this recovery and
-				// come back empty. If the table is there, the failure was something
-				// else, so surface it instead of resolving it destructively.
-				//
-				// Asked of the connection rather than of tableExistsForRegisterSchema(),
-				// whose positive answers are cached for TABLE_CACHE_TIMEOUT: a stale
-				// "yes" here would turn a genuine missing-table recovery into an error.
-				if ($this->db->tableExists($tableName) === true) {
-					throw $e;
-				}
-
-				// Create the table.
-				$this->ensureTableForRegisterSchema(register: $register, schema: $schema, force: true);
-
-				// Retry the bulk upsert.
-				return $this->bulkHandler->bulkUpsert(
-					objects: $objects,
-					register: $register,
-					schema: $schema,
-					tableName: $tableName
-				);
-			}//end if
-
-			// Re-throw if it's not a table-not-found error.
-			throw $e;
+			// Retry the bulk upsert.
+			return $this->bulkHandler->bulkUpsert(
+				objects: $objects,
+				register: $register,
+				schema: $schema,
+				tableName: $tableName
+			);
 		}//end try
 	}//end bulkUpsert()
+
+	/**
+	 * Create the table a failed bulk upsert found missing, or rethrow the failure.
+	 *
+	 * ONLY CREATE A TABLE THAT IS ACTUALLY MISSING. `force: true` makes
+	 * ensureTableForRegisterSchema() DROP an existing table before
+	 * recreating it, which destroys every row with no audit entry — and
+	 * the message test is wider than its name: PostgreSQL says
+	 * `column "x" of relation "y" does not exist` for a missing COLUMN
+	 * (42703) as well as for a missing table (42P01), so a schema whose
+	 * magic table was merely out of sync could reach this recovery and
+	 * come back empty. If the table is there, the failure was something
+	 * else, so surface it instead of resolving it destructively.
+	 *
+	 * Asked of the connection rather than of tableExistsForRegisterSchema(),
+	 * whose positive answers are cached for TABLE_CACHE_TIMEOUT: a stale
+	 * "yes" here would turn a genuine missing-table recovery into an error.
+	 *
+	 * @param \Exception       $error  The bulk upsert failure.
+	 * @param MagicTableTarget $target The register, schema and table name of the upsert.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception The failure itself, unless it is a missing table that is now created.
+	 */
+	private function createMissingBulkTable(\Exception $error, MagicTableTarget $target): void {
+		$message = $error->getMessage();
+		if ($this->namesAMissingTable(message: $message) === false) {
+			// Re-throw if it's not a table-not-found error.
+			throw $error;
+		}
+
+		$this->logger->warning(
+			message: '[MagicMapper] Table does not exist, creating and retrying bulkUpsert',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'register' => $target->register->getId(),
+				'schema' => $target->schema->getId(),
+				'table' => $target->tableName,
+				'error' => $message,
+			]
+		);
+
+		if ($this->db->tableExists($target->tableName) === true) {
+			throw $error;
+		}
+
+		$this->ensureTableForRegisterSchema(register: $target->register, schema: $target->schema, force: true);
+	}//end createMissingBulkTable()
+
+	/**
+	 * Whether a database error message reads as "table does not exist" (PostgreSQL: 42P01, MySQL: 1146).
+	 *
+	 * @param string $message The error message.
+	 *
+	 * @return bool
+	 */
+	private function namesAMissingTable(string $message): bool {
+		return str_contains($message, '42P01') === true
+			|| str_contains($message, 'does not exist') === true
+			|| str_contains($message, "doesn't exist") === true
+			|| str_contains($message, '1146') === true;
+	}//end namesAMissingTable()
 
 	/**
 	 * Find objects that reference a specific UUID in any of their columns.

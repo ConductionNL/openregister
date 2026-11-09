@@ -37,7 +37,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<TenantUsage>
  */
-class TenantUsageMapper extends QBMapper {
+class TenantUsageMapper extends QBMapper implements TenantUsageMapperInterface {
 	/**
 	 * Constructor
 	 *
@@ -164,27 +164,17 @@ class TenantUsageMapper extends QBMapper {
 	/**
 	 * Upsert a usage record (insert or update on conflict).
 	 *
-	 * @param string $organisationUuid Organisation UUID
-	 * @param DateTime $period Hourly bucket
-	 * @param int $requestCount Requests to add
-	 * @param int $bandwidthBytes Bandwidth to add
-	 * @param int $storageBytes Current storage usage
+	 * @param string           $organisationUuid Organisation UUID
+	 * @param DateTime         $period           Hourly bucket
+	 * @param UsageMeasurement $measurement      The traffic to add and the current storage
 	 *
 	 * @return TenantUsage The upserted entity
 	 */
-	public function upsertUsage(
-		string $organisationUuid,
-		DateTime $period,
-		int $requestCount,
-		int $bandwidthBytes,
-		int $storageBytes,
-	): TenantUsage {
+	public function upsertUsage(string $organisationUuid, DateTime $period, UsageMeasurement $measurement): TenantUsage {
 		$existing = $this->findByOrgAndPeriod(organisationUuid: $organisationUuid, period: $period);
 
 		if ($existing !== null) {
-			$existing->setRequestCount($existing->getRequestCount() + $requestCount);
-			$existing->setBandwidthBytes($existing->getBandwidthBytes() + $bandwidthBytes);
-			$existing->setStorageBytes($storageBytes);
+			$measurement->addTo(row: $existing);
 			$existing->setUpdated(new DateTime());
 			return $this->update(entity: $existing);
 		}
@@ -192,9 +182,7 @@ class TenantUsageMapper extends QBMapper {
 		$entity = new TenantUsage();
 		$entity->setOrganisationUuid($organisationUuid);
 		$entity->setPeriod($period);
-		$entity->setRequestCount($requestCount);
-		$entity->setBandwidthBytes($bandwidthBytes);
-		$entity->setStorageBytes($storageBytes);
+		$measurement->writeTo(row: $entity);
 		$entity->setCreated(new DateTime());
 		$entity->setUpdated(new DateTime());
 

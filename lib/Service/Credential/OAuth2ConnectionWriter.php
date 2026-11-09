@@ -155,7 +155,12 @@ class OAuth2ConnectionWriter {
 			$this->refresh->persist(credentialId: $credentialId, scope: $scope, set: $tokenSet, extraMetadata: ['status' => 'active']);
 		}
 
-		$this->identities->record(provider: $provider, credentialId: $credentialId, scope: $scope, set: $tokenSet, owner: $owner);
+		$this->identities->record(
+			provider: $provider,
+			address: new TokenSetAddress(credentialId: $credentialId, scope: $scope),
+			set: $tokenSet,
+			owner: $owner
+		);
 
 		return $credentialId;
 	}//end store()

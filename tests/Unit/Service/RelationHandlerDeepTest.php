@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use OCA\OpenRegister\Service\Object\RelatedReadFilter;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -58,11 +59,9 @@ class RelationHandlerDeepTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 
 		$this->handler = new RelationHandler(
-			$this->objectMapper,
-			$this->schemaMapper,
+			new RelationHandlerStores($this->objectMapper, $this->schemaMapper, $this->registerMapper),
 			$this->rbacHandler,
-			$this->logger,
-			$this->registerMapper
+			$this->logger
 		);
 
 	}//end setUp()
@@ -360,7 +359,7 @@ class RelationHandlerDeepTest extends TestCase {
 		$obj->setOwner('admin');
 
 		// First call returns true (has permission), second returns false.
-		$this->rbacHandler->method('hasPermission')->willReturn(true);
+		$this->rbacHandler->method('hasRowPermission')->willReturn(true);
 
 		$result = $filter->admitted(objects: [$obj]);
 		$this->assertCount(1, $result);
@@ -386,7 +385,7 @@ class RelationHandlerDeepTest extends TestCase {
 		$obj->setOrganisation('org-1');
 		$obj->setOwner('admin');
 
-		$this->rbacHandler->method('hasPermission')->willReturn(false);
+		$this->rbacHandler->method('hasRowPermission')->willReturn(false);
 
 		$result = $filter->admitted(objects: [$obj]);
 		$this->assertCount(0, $result);

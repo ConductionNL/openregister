@@ -310,13 +310,13 @@ class AutoTransitionSelector implements AutoTransitionSelectorInterface {
 	private function ruleHolds(array $candidate, AutoTransitionContext $context): bool {
 		return $this->evaluator->holds(
 			rule: $candidate['spec']['autoWhen'],
-			newData: $context->objectData,
-			oldData: $context->previous,
-			action: $candidate['action'],
-			from: $context->current,
-			to: $candidate['to'],
-			schemaSlug: $context->schemaSlug,
-			field: $context->field
+			write: new LifecycleWrite(
+				newData: $context->objectData,
+				oldData: $context->previous,
+				schemaSlug: $context->schemaSlug,
+				field: $context->field
+			),
+			move: new TransitionMove(action: $candidate['action'], from: $context->current, to: $candidate['to'])
 		);
 	}//end ruleHolds()
 

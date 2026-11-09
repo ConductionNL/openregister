@@ -40,7 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ApiCaller;
 
 use DateTime;
-use OCA\OpenRegister\Db\ApiCallKey;
+use OCA\OpenRegister\Db\ApiCallKeys;
 use OCA\OpenRegister\Db\ApiCallRecordMapperInterface;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -138,9 +138,8 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 	}//end principal()
 
 	/**
-	 * Record one call.
+	 * Record one call against the caller making the current request.
 	 *
-	 * @param string $principal The caller.
 	 * @param string $path The request path.
 	 * @param string $method The HTTP method.
 	 * @param string $apiVersion The contract version that served it.
@@ -151,7 +150,6 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public function record(
-		string $principal,
 		string $path,
 		string $method,
 		string $apiVersion,
@@ -162,8 +160,8 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 		}
 
 		try {
-			$key = new ApiCallKey(
-				principal: $principal,
+			$key = ApiCallKeys::of(
+				principal: $this->principal(),
 				route: self::routeOf(path: $path),
 				method: strtoupper(substr($method, 0, 10)),
 				apiVersion: $apiVersion,
