@@ -115,9 +115,9 @@ final class ObjectHistoryPurposeVerdictTest extends TestCase {
 			$access,
 			new ObjectHistoryServices(
 				$this->createMock(AuditTrailMapper::class),
-				$redactor,
 				$registers
 			),
+			$redactor,
 			$guard,
 			$this->createMock(ReadEventVisibility::class)
 		);

@@ -293,9 +293,9 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 				$access,
 				new ObjectHistoryServices(
 					$trails,
-					new HistoryEntryRedactor($properties),
 					$registers
 				),
+				new HistoryEntryRedactor($properties),
 				$this->createMock(originalClassName: PurposeGuard::class),
 				$reads
 			),

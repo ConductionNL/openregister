@@ -148,9 +148,9 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 				$this->readAccess,
 				new ObjectHistoryServices(
 					$this->auditTrailMapper,
-					new HistoryEntryRedactor($properties),
 					$this->registerMapper
 				),
+				new HistoryEntryRedactor($properties),
 				$this->purposeGuard,
 				new ReadEventVisibility($appConfig, $this->groupManager, $this->userSession)
 			)

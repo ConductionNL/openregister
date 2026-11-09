@@ -89,9 +89,9 @@ final class ObjectHistoryAfterAMoveTest extends TestCase {
 			$access,
 			new ObjectHistoryServices(
 				$audit,
-				$redactor,
 				$registers
 			),
+			$redactor,
 			$this->createMock(PurposeGuard::class),
 			$this->createMock(ReadEventVisibility::class)
 		);

@@ -320,9 +320,9 @@ class ReadableAuditTrailListerTest extends TestCase {
 			$access,
 			new ObjectHistoryServices(
 				$this->createMock(AuditTrailMapper::class),
-				new HistoryEntryRedactor($properties),
 				$registerMapper
 			),
+			new HistoryEntryRedactor($properties),
 			$purposeGuard,
 			($reads ?? $this->readsShown())
 		);
@@ -447,9 +447,9 @@ class ReadableAuditTrailListerTest extends TestCase {
 			$access,
 			new ObjectHistoryServices(
 				$this->createMock(AuditTrailMapper::class),
-				$redactor,
 				$this->createMock(RegisterMapper::class)
 			),
+			$redactor,
 			$this->createMock(PurposeGuard::class),
 			$this->readsShown()
 		);
@@ -489,9 +489,9 @@ class ReadableAuditTrailListerTest extends TestCase {
 			$access,
 			new ObjectHistoryServices(
 				$auditMapper,
-				$redactor,
 				$registerMapper
 			),
+			$redactor,
 			$this->createMock(PurposeGuard::class),
 			$this->readsShown()
 		);
@@ -705,9 +705,9 @@ class ReadableAuditTrailListerTest extends TestCase {
 			$access,
 			new ObjectHistoryServices(
 				$auditMapper,
-				$this->createMock(HistoryEntryRedactor::class),
 				$this->createMock(RegisterMapper::class)
 			),
+			$this->createMock(HistoryEntryRedactor::class),
 			$this->createMock(PurposeGuard::class),
 			$this->readsShown()
 		);
@@ -1163,16 +1163,16 @@ class ReadableAuditTrailListerTest extends TestCase {
 			$access,
 			new ObjectHistoryServices(
 				$this->createMock(AuditTrailMapper::class),
-				new HistoryEntryRedactor(
-					new PropertyRbacHandler(
-						$session,
-						$groupManager,
-						$this->createMock(ConditionMatcher::class),
-						$this->createMock(LoggerInterface::class),
-						self::stateFieldRuleResolver($session, $groupManager)
-					)
-				),
 				$registerMapper
+			),
+			new HistoryEntryRedactor(
+				new PropertyRbacHandler(
+					$session,
+					$groupManager,
+					$this->createMock(ConditionMatcher::class),
+					$this->createMock(LoggerInterface::class),
+					self::stateFieldRuleResolver($session, $groupManager)
+				)
 			),
 			new PurposeGuard($registry, new PurposeContext($request), $trail, new NullLogger()),
 			$this->readsShown()

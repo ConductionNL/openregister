@@ -26,9 +26,9 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
- * The trail reader, the entry redactor and the register lookup of a reader's history.
+ * The trail reader and the register lookup of a reader's history.
  *
- * The guards (read access, doelbinding, read-event visibility) are not in here:
+ * The guards (read access, property redaction, doelbinding, read-event visibility) are not in here:
  * they stay direct constructor parameters of ObjectHistoryForReaders.
  *
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
@@ -39,12 +39,10 @@ final class ObjectHistoryServices {
 	 * Constructor.
 	 *
 	 * @param AuditTrailMapperInterface $auditTrailMapper Reads the object's entries.
-	 * @param HistoryEntryRedactor      $redactor         Removes what the reader may not see from each entry.
 	 * @param RegisterMapperInterface   $registerMapper   Resolves the register for the doelbinding guard.
 	 */
 	public function __construct(
 		public readonly AuditTrailMapperInterface $auditTrailMapper,
-		public readonly HistoryEntryRedactor $redactor,
 		public readonly RegisterMapperInterface $registerMapper,
 	) {
 	}//end __construct()

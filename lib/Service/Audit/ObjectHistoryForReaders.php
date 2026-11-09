@@ -81,13 +81,15 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 	 * Constructor.
 	 *
 	 * @param ObjectReadAccess      $access       Decides readability exactly as the object GET does.
-	 * @param ObjectHistoryServices $services     Reads, redacts and resolves the register of the entries.
+	 * @param ObjectHistoryServices $services     Reads the entries and resolves their register.
+	 * @param HistoryEntryRedactor  $redactor     Removes what the reader may not see from each entry.
 	 * @param PurposeGuard          $purposeGuard The doelbinding guard the object GET runs.
 	 * @param ReadEventVisibility   $readEvents   Whether this reader may see who read the object.
 	 */
 	public function __construct(
 		private readonly ObjectReadAccess $access,
 		private readonly ObjectHistoryServices $services,
+		private readonly HistoryEntryRedactor $redactor,
 		private readonly PurposeGuard $purposeGuard,
 		private readonly ReadEventVisibility $readEvents,
 	) {
@@ -138,7 +140,7 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 
 		$rows = $this->services->auditTrailMapper->findAll(filters: $filters, sort: $sort);
 
-		$entries = $this->services->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
+		$entries = $this->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
 
 		// Who read the object is shown only to the groups named for it, and
 		// dropped before paging so the totals count what the reader is given.
@@ -188,7 +190,7 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 			return null;
 		}
 
-		return $this->services->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
+		return $this->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
 	}//end readerEntries()
 
 	/**

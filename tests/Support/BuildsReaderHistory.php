@@ -156,9 +156,9 @@ trait BuildsReaderHistory {
 			$access,
 			new ObjectHistoryServices(
 				$mapper,
-				new HistoryEntryRedactor($this->readerProperties(groups: $groups)),
 				$registerMapper
 			),
+			new HistoryEntryRedactor($this->readerProperties(groups: $groups)),
 			$guard,
 			$reads
 		);
