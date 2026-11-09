@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Db\ContactLink;
+use OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\Integration\Providers\ContactsProvider;
 use OCP\App\IAppManager;
@@ -36,11 +37,7 @@ class ContactsProviderObjectScopeTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->contacts = $this->createMock(ContactService::class);
-		$this->provider = new ContactsProvider(
-			$this->contacts,
-			$this->createMock(IAppManager::class),
-			$this->createMock(IL10N::class)
-		);
+		$this->provider = new ContactsProvider(new AppProviderDescription($this->createMock(IAppManager::class), $this->createMock(IL10N::class)), $this->contacts);
 	}
 
 	public function testUpdatePassesTheObjectTheLinkMustBelongTo(): void {

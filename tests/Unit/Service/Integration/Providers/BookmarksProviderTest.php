@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use DateTime;
+use OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription;
 use OCA\OpenRegister\Db\BookmarkLink;
 use OCA\OpenRegister\Db\BookmarkLinkMapper;
 use OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider;
@@ -64,7 +65,7 @@ class BookmarksProviderTest extends TestCase {
 
 	public function testMetadataGetters(): void {
 		$mapper = $this->createMock(BookmarkLinkMapper::class);
-		$provider = new BookmarksProvider($mapper, $this->buildAppManager(true), $this->buildL10n());
+		$provider = new BookmarksProvider(new AppProviderDescription($this->buildAppManager(true), $this->buildL10n()), $mapper);
 
 		$this->assertSame('bookmarks', $provider->getId());
 		$this->assertSame('Bookmarks', $provider->getLabel());
@@ -79,7 +80,7 @@ class BookmarksProviderTest extends TestCase {
 		$mapper = $this->createMock(BookmarkLinkMapper::class);
 		$mapper->expects($this->never())->method('findByObjectUuid');
 
-		$provider = new BookmarksProvider($mapper, $this->buildAppManager(false), $this->buildL10n());
+		$provider = new BookmarksProvider(new AppProviderDescription($this->buildAppManager(false), $this->buildL10n()), $mapper);
 
 		$this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
 	}//end testListReturnsEmptyWhenBookmarksUninstalled()
@@ -88,7 +89,7 @@ class BookmarksProviderTest extends TestCase {
 		$mapper = $this->createMock(BookmarkLinkMapper::class);
 		$mapper->method('findByObjectUuid')->with('obj-uuid')->willReturn([]);
 
-		$provider = new BookmarksProvider($mapper, $this->buildAppManager(true), $this->buildL10n());
+		$provider = new BookmarksProvider(new AppProviderDescription($this->buildAppManager(true), $this->buildL10n()), $mapper);
 
 		$this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
 	}//end testListReturnsEmptyWhenNoLinks()
@@ -106,7 +107,7 @@ class BookmarksProviderTest extends TestCase {
 		$mapper = $this->createMock(BookmarkLinkMapper::class);
 		$mapper->method('findByObjectUuid')->with('obj-uuid')->willReturn([$link]);
 
-		$provider = new BookmarksProvider($mapper, $this->buildAppManager(true), $this->buildL10n());
+		$provider = new BookmarksProvider(new AppProviderDescription($this->buildAppManager(true), $this->buildL10n()), $mapper);
 
 		$rows = $provider->list('reg', 'sch', 'obj-uuid');
 
@@ -122,7 +123,7 @@ class BookmarksProviderTest extends TestCase {
 
 	public function testHealthReportsUnavailableWhenUninstalled(): void {
 		$mapper = $this->createMock(BookmarkLinkMapper::class);
-		$provider = new BookmarksProvider($mapper, $this->buildAppManager(false), $this->buildL10n());
+		$provider = new BookmarksProvider(new AppProviderDescription($this->buildAppManager(false), $this->buildL10n()), $mapper);
 
 		$health = $provider->health();
 

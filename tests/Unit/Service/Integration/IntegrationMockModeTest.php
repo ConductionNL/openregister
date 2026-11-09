@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion + local fixture helpers take positional args by convention; mirroring ExternalIntegrationRouterTest in this repo.
 
 use OCA\OpenRegister\Controller\CompanyLookupController;
+use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Controller\MessageDispatchController;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
@@ -127,10 +128,21 @@ class IntegrationMockModeTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
+		if (in_array($class, [KvkProvider::class, OpenCorporatesProvider::class], true) === false) {
+			return new $class(
+				router: $this->realMockRouter(mockResponse: $mockResponse, mockMeta: $mockMeta),
+				appManager: $appManager,
+				l10n: $l10n,
+				logger: new NullLogger(),
+			);
+		}
+
 		return new $class(
-			router: $this->realMockRouter(mockResponse: $mockResponse, mockMeta: $mockMeta),
-			appManager: $appManager,
-			l10n: $l10n,
+			routing: new ConnectorRouting(
+				router: $this->realMockRouter(mockResponse: $mockResponse, mockMeta: $mockMeta),
+				appManager: $appManager,
+				l10n: $l10n,
+			),
 			logger: new NullLogger(),
 		);
 	}//end provider()
