@@ -37,9 +37,9 @@ final class GeneratedIdentifierFreezeRun {
 	/**
 	 * The update being prepared; it carries a refusal.
 	 *
-	 * @var ObjectUpdatingEvent
+	 * @var ObjectUpdatingEvent|null
 	 */
-	public ObjectUpdatingEvent $event;
+	public ?ObjectUpdatingEvent $event = null;
 
 	/**
 	 * The data before the update.

@@ -40,9 +40,9 @@ final class GeneratedIdentifierIssueRun {
 	/**
 	 * The write being prepared; it carries a refusal.
 	 *
-	 * @var ObjectCreatingEvent|ObjectUpdatingEvent
+	 * @var ObjectCreatingEvent|ObjectUpdatingEvent|null
 	 */
-	public ObjectCreatingEvent|ObjectUpdatingEvent $event;
+	public ObjectCreatingEvent|ObjectUpdatingEvent|null $event = null;
 
 	/**
 	 * Property name to its declaration.
@@ -61,7 +61,7 @@ final class GeneratedIdentifierIssueRun {
 	/**
 	 * The moment every number is issued at.
 	 *
-	 * @var DateTimeImmutable
+	 * @var DateTimeImmutable|null
 	 */
-	public DateTimeImmutable $now;
+	public ?DateTimeImmutable $now = null;
 }//end class

@@ -39,9 +39,9 @@ final class NotifyPushRun {
 	/**
 	 * Resolved IQueue instance.
 	 *
-	 * @var object
+	 * @var object|null
 	 */
-	public object $queue;
+	public ?object $queue = null;
 
 	/**
 	 * Action verb (`create`, `update`, `delete`, `presence`).
@@ -53,9 +53,9 @@ final class NotifyPushRun {
 	/**
 	 * The affected object entity.
 	 *
-	 * @var ObjectEntity
+	 * @var ObjectEntity|null
 	 */
-	public ObjectEntity $object;
+	public ?ObjectEntity $object = null;
 
 	/**
 	 * The push body.
