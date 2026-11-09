@@ -160,7 +160,8 @@ class TenantLifecycleService implements TenantLifecycleServiceInterface {
 
 		try {
 			$groupIds = $this->provisionGroups(slug: $slug, adminUserId: $adminUserId);
-			$this->activateWithDefaultAccess(organisation: $organisation, groupIds: $groupIds, adminUserId: $adminUserId);
+			$this->activateWithDefaultAccess(organisation: $organisation, groupIds: $groupIds);
+			$organisation->addUser($adminUserId);
 			$result = $this->organisationMapper->update($organisation);
 
 			$this->logger->info('[TenantLifecycleService] Organisation provisioned and activated', ['uuid' => $organisation->getUuid(), 'slug' => $slug]);
@@ -260,23 +261,21 @@ class TenantLifecycleService implements TenantLifecycleServiceInterface {
 	}//end addAdminToGroups()
 
 	/**
-	 * Set the groups, the default authorization and the admin member, and mark the organisation active.
+	 * Set the groups and the default authorization, and mark the organisation active.
+	 *
+	 * The caller adds the admin member.
 	 *
 	 * @param Organisation                        $organisation The organisation.
 	 * @param array{admin: string, users: string} $groupIds     The group ids.
-	 * @param string                              $adminUserId  The admin user id.
 	 *
 	 * @return void
 	 */
-	private function activateWithDefaultAccess(Organisation $organisation, array $groupIds, string $adminUserId): void {
+	private function activateWithDefaultAccess(Organisation $organisation, array $groupIds): void {
 		// Set organisation groups.
 		$organisation->setGroups([$groupIds['admin'], $groupIds['users']]);
 
 		// Set default authorization RBAC rules.
 		$organisation->setAuthorization($this->defaultAuthorization(authorization: $organisation->getAuthorization(), groupIds: $groupIds));
-
-		// Add admin user to organisation.
-		$organisation->addUser($adminUserId);
 
 		// Transition to active.
 		$organisation->setStatus(self::STATUS_ACTIVE);
