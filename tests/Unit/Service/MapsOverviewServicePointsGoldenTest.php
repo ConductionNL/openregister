@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use InvalidArgumentException;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Search\Service\MapMarkerSource;
@@ -76,8 +77,7 @@ final class MapsOverviewServicePointsGoldenTest extends TestCase {
 
 		return new MapsOverviewService(
 			new MapsOverviewSources($objects, new GeoFeatureCollectionBuilder(), new IntegrationRegistry($this->createMock(LoggerInterface::class))),
-			$session,
-			$groups
+			new CallerContext($session, $groups)
 		);
 	}//end service()
 

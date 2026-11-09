@@ -52,8 +52,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Search\Service\Geo\FeatureShape;
 use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
-use OCP\IGroupManager;
-use OCP\IUserSession;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\AnalyticsSeriesServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
@@ -96,15 +95,13 @@ class MapsOverviewService {
 	 * Constructor.
 	 *
 	 * @param MapsOverviewSources $sources The object read facade, geometry builder and page-widget registry.
-	 * @param IUserSession $userSession Current user (RBAC / write guard).
-	 * @param IGroupManager $groupManager Admin check (RBAC bypass for admins).
+	 * @param CallerContext $caller The current user (write guard) and the group manager (admin RBAC bypass).
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly MapsOverviewSources $sources,
-		private IUserSession $userSession,
-		private IGroupManager $groupManager,
+		private readonly CallerContext $caller,
 	) {
 	}//end __construct()
 
@@ -122,7 +119,7 @@ class MapsOverviewService {
 	 * @spec openspec/specs/integration-maps-overview/spec.md
 	 */
 	public function ensureCanRegister(): void {
-		if ($this->userSession->getUser() === null) {
+		if ($this->caller->userSession->getUser() === null) {
 			throw new InvalidArgumentException('A logged-in user is required to register a map overview');
 		}
 	}//end ensureCanRegister()
@@ -545,11 +542,11 @@ class MapsOverviewService {
 	 * @return bool True when the logged-in user is in the `admin` group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}
 
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->caller->groupManager->isAdmin($user->getUID());
 	}//end isCurrentUserAdmin()
 }//end class
