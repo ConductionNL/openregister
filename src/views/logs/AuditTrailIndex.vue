@@ -505,18 +505,7 @@ export default {
 				const data = JSON.stringify(auditTrail, null, 2)
 				await navigator.clipboard.writeText(data)
 
-				// Set successful copy state
-				this.copyStates[auditTrail.id] = true
-
-				// Show success notification with enhanced styling
-				showSuccess(
-					t('openregister', 'Audit trail data copied to clipboard'),
-				)
-
-				// Reset copy state after 2 seconds
-				setTimeout(() => {
-					this.copyStates[auditTrail.id] = false
-				}, 2000)
+				this.markCopied(auditTrail)
 			} catch (error) {
 				console.error('Error copying to clipboard:', error)
 				// Fallback for older browsers or when clipboard API is not available
@@ -528,22 +517,32 @@ export default {
 					document.execCommand('copy')
 					document.body.removeChild(textArea)
 
-					// Set successful copy state for fallback method too
-					this.copyStates[auditTrail.id] = true
-
-					showSuccess(
-						t('openregister', 'Audit trail data copied to clipboard'),
-					)
-
-					// Reset copy state after 2 seconds
-					setTimeout(() => {
-						this.copyStates[auditTrail.id] = false
-					}, 2000)
+					// Same success state for the fallback method
+					this.markCopied(auditTrail)
 				} catch (fallbackError) {
 					console.error('Fallback copy failed:', fallbackError)
 					showError(t('openregister', 'Failed to copy data to clipboard'))
 				}
 			}
+		},
+
+		/**
+		 * Show a successful copy: flag the row's copy icon, tell the user, and
+		 * clear the flag again after 2 seconds.
+		 *
+		 * @param {object} auditTrail The audit trail that was copied
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 */
+		markCopied(auditTrail) {
+			this.copyStates[auditTrail.id] = true
+
+			showSuccess(t('openregister', 'Audit trail data copied to clipboard'))
+
+			setTimeout(() => {
+				this.copyStates[auditTrail.id] = false
+			}, 2000)
 		},
 
 		/**
