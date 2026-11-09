@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Repair\MigratedFlowOrigins;
 use OCA\OpenRegister\Repair\PurgePhantomMigratedFlows;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -85,8 +86,7 @@ class PurgePhantomMigratedFlowsTest extends TestCase {
 		$this->step = new PurgePhantomMigratedFlows(
 			$this->flowMapper,
 			$this->flowRunMapper,
-			$this->objectMapper,
-			$this->schemaMapper,
+			new MigratedFlowOrigins($this->objectMapper, $this->schemaMapper),
 			$this->createMock(LoggerInterface::class)
 		);
 	}
@@ -284,8 +284,7 @@ class PurgePhantomMigratedFlowsTest extends TestCase {
 		$step = new PurgePhantomMigratedFlows(
 			$this->flowMapper,
 			$run,
-			$this->objectMapper,
-			$this->schemaMapper,
+			new MigratedFlowOrigins($this->objectMapper, $this->schemaMapper),
 			$this->createMock(LoggerInterface::class)
 		);
 
