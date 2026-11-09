@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Delegation;
 use DateTime;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
+use OCA\OpenRegister\Service\Delegation\DelegationRequest;
 use OCA\OpenRegister\Service\Delegation\DelegationResolver;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
@@ -76,7 +77,7 @@ final class DelegationServiceAccessGoldenTest extends TestCase {
 		$now = new DateTime('2026-01-01T00:00:00+00:00');
 
 		$result = $this->service(DelegationVerdict::granted($grant))
-			->runAsDelegated('alice', 'mayor', $this->operation(), ['schema' => 'zaak'], $now);
+			->runAsDelegated(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: ['schema' => 'zaak'], now: $now), $this->operation());
 
 		$this->assertSame('done', $result);
 		$this->assertTrue($this->ran);
@@ -102,7 +103,7 @@ final class DelegationServiceAccessGoldenTest extends TestCase {
 	}
 
 	public function testAllowedSelfRunsWithoutSwitchOrLog(): void {
-		$result = $this->service(DelegationVerdict::self())->runAsDelegated('alice', 'alice', $this->operation());
+		$result = $this->service(DelegationVerdict::self())->runAsDelegated(new DelegationRequest(principal: 'alice', actingAs: 'alice', scope: [], now: new DateTime()), $this->operation());
 
 		$this->assertSame('done', $result);
 		$this->assertTrue($this->ran);
@@ -115,7 +116,7 @@ final class DelegationServiceAccessGoldenTest extends TestCase {
 	public function testRefusedNeverRunsAndLogsAWarning(): void {
 		try {
 			$this->service(DelegationVerdict::refused(DelegationVerdict::REASON_EXPIRED, 'the grant lapsed.'))
-				->runAsDelegated('alice', 'mayor', $this->operation(), ['schema' => 'zaak']);
+				->runAsDelegated(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: ['schema' => 'zaak'], now: new DateTime()), $this->operation());
 			$this->fail('a refused delegation must throw');
 		} catch (DelegationRefused $e) {
 			$this->assertSame(DelegationVerdict::REASON_EXPIRED, $e->getVerdict()->reason);
@@ -139,7 +140,7 @@ final class DelegationServiceAccessGoldenTest extends TestCase {
 	public function testRefusedWhenTheGrantedAccountDoesNotResolve(): void {
 		try {
 			$this->service(DelegationVerdict::granted($this->grant()), resolvable: false)
-				->runAsDelegated('alice', 'mayor', $this->operation());
+				->runAsDelegated(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: new DateTime()), $this->operation());
 			$this->fail('an unresolvable acted-as account must be refused');
 		} catch (DelegationRefused $e) {
 			$this->assertFalse($e->getVerdict()->permitted);
