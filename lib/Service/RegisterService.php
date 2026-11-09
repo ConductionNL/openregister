@@ -26,6 +26,7 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\Files\Node;
@@ -163,19 +164,38 @@ class RegisterService implements RegisterServiceInterface {
 		?array $_extend = [],
 		bool $_multitenancy = true,
 	): array {
-		// Find all registers with optional filtering, pagination, and extensions.
-		// NB: `_extend` is declared for signature compatibility only — the
-		// mapper layer ignores it; honored extensions live on findSerialized
-		// / findAllSerialized which delegate to RegisterSerializer.
+		$query = new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filters ?? []));
+		$search = new RegisterSearch(
+			query: $query,
+			searchConditions: ($searchConditions ?? []),
+			searchParams: ($searchParams ?? []),
+			extend: ($_extend ?? [])
+		);
+		return $this->searchRegisters(search: $search, _multitenancy: $_multitenancy);
+	}//end findAll()
+
+	/**
+	 * Find the registers one search selects.
+	 *
+	 * `extend` is not applied here; {@see searchRegistersSerialized()} applies it.
+	 *
+	 * @param RegisterSearch $search        The page, filters and raw search conditions.
+	 * @param bool           $_multitenancy Whether to apply multitenancy filtering.
+	 *
+	 * @return Register[] The registers.
+	 *
+	 * @spec openspec/specs/register-service-extensions/spec.md
+	 */
+	public function searchRegisters(RegisterSearch $search, bool $_multitenancy = true): array {
 		return $this->storage->registerMapper->findAll(
-			limit: $limit,
-			offset: $offset,
-			filters: $filters,
-			searchConditions: $searchConditions,
-			searchParams: $searchParams,
+			limit: $search->query->limitOrNull(),
+			offset: $search->query->offset,
+			filters: $search->query->filters,
+			searchConditions: $search->searchConditions,
+			searchParams: $search->searchParams,
 			_multitenancy: $_multitenancy
 		);
-	}//end findAll()
+	}//end searchRegisters()
 
 	/**
 	 * Find a register by ID and serialize it with `_extend` applied
@@ -268,17 +288,30 @@ class RegisterService implements RegisterServiceInterface {
 		array $_extend = [],
 		bool $_multitenancy = true,
 	): array {
-		$registers = $this->findAll(
-			limit: $limit,
-			offset: $offset,
-			filters: $filters,
-			searchConditions: $searchConditions,
-			searchParams: $searchParams,
-			_extend: $_extend,
-			_multitenancy: $_multitenancy
-		);
+		$query = new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filters ?? []));
+		$search = new RegisterSearch(query: $query, searchConditions: ($searchConditions ?? []), searchParams: ($searchParams ?? []), extend: $_extend);
+		return $this->searchRegistersSerialized(search: $search, _multitenancy: $_multitenancy);
+	}//end findAllSerialized()
 
-		return $this->registerSerializer->serializeMany($registers, $_extend, $this->statsByRegisterId(registers: $registers, _extend: $_extend));
+	/**
+	 * Find the registers one search selects and serialize each with its extensions applied.
+	 *
+	 * When `schemas` and `@self.stats` are both requested, per-register stats are
+	 * pre-computed and handed to the serializer.
+	 *
+	 * @param RegisterSearch $search        The page, filters, raw search conditions and extensions.
+	 * @param bool           $_multitenancy Whether to apply multitenancy filtering.
+	 *
+	 * @return array<int,array> Array of serialized register payloads.
+	 *
+	 * @spec openspec/specs/register-service-extensions/spec.md
+	 */
+	public function searchRegistersSerialized(RegisterSearch $search, bool $_multitenancy = true): array {
+		$registers = $this->searchRegisters(search: $search, _multitenancy: $_multitenancy);
+
+		$stats = $this->statsByRegisterId(registers: $registers, _extend: $search->extend);
+
+		return $this->registerSerializer->serializeMany($registers, $search->extend, $stats);
 	}//end findAllSerialized()
 
 	/**
