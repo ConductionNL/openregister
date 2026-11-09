@@ -24,11 +24,11 @@ jest.mock('../../services/groupSearch.js', () => ({ __esModule: true, searchGrou
 // components off the `vue` module; the stand-ins are exposed on both.
 jest.mock('@nextcloud/vue', () => ({ __esModule: true, ...mockNcStubs() }))
 jest.mock('vue', () => ({ ...jest.requireActual('vue'), ...mockNcStubs() }))
-jest.mock('vue-material-design-icons/Cog.vue', () => ({ __esModule: true, default: { template: '<i />' } }), { virtual: true })
-jest.mock('vue-material-design-icons/ContentSaveOutline.vue', () => ({ __esModule: true, default: { template: '<i />' } }), { virtual: true })
-jest.mock('vue-material-design-icons/Database.vue', () => ({ __esModule: true, default: { template: '<i />' } }), { virtual: true })
-jest.mock('vue-material-design-icons/Plus.vue', () => ({ __esModule: true, default: { template: '<i />' } }), { virtual: true })
-jest.mock('vue-material-design-icons/Shield.vue', () => ({ __esModule: true, default: { template: '<i />' } }), { virtual: true })
+jest.mock('vue-material-design-icons/Cog.vue', () => ({ __esModule: true, default: { template: '<i />' } }))
+jest.mock('vue-material-design-icons/ContentSaveOutline.vue', () => ({ __esModule: true, default: { template: '<i />' } }))
+jest.mock('vue-material-design-icons/Database.vue', () => ({ __esModule: true, default: { template: '<i />' } }))
+jest.mock('vue-material-design-icons/Plus.vue', () => ({ __esModule: true, default: { template: '<i />' } }))
+jest.mock('vue-material-design-icons/Shield.vue', () => ({ __esModule: true, default: { template: '<i />' } }))
 // The app's own child components have their own specs; stand-ins render their
 // slots and raise the events this modal listens to.
 jest.mock('../../components/RbacTable.vue', () => ({

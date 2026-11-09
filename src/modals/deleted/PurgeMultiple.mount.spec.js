@@ -17,7 +17,7 @@ jest.mock('../../store/store.js', () => {
 	}
 })
 jest.mock('../../eventBus.js', () => ({ __esModule: true, default: { emit: jest.fn() } }))
-jest.mock('vue-material-design-icons/TrashCanOutline.vue', () => ({ __esModule: true, default: { template: '<i class="trash" />' } }), { virtual: true })
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () => ({ __esModule: true, default: { template: '<i class="trash" />' } }))
 // The shared review dialog has its own specs; a stand-in exposes the props this
 // dialog passes and raises the events it listens to.
 jest.mock('./BulkSelectionDialog.vue', () => ({
