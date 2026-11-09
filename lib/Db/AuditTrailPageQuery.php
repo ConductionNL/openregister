@@ -88,7 +88,8 @@ class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from('openregister_audit_trails');
 
-		$this->applyFilters(qb: $qb, filters: $filters, search: $search);
+		$this->applyFilters(qb: $qb, filters: $filters);
+		$this->applySearch(qb: $qb, search: $search);
 		$this->applyCursor(qb: $qb, beforeId: $beforeId);
 
 		// One row more than the page, to know whether a next page exists
@@ -182,23 +183,21 @@ class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 	}//end collect()
 
 	/**
-	 * Apply the filters and the full-text term.
+	 * Apply the column filters and the period.
 	 *
 	 * @param IQueryBuilder        $qb      The query.
 	 * @param array<string, mixed> $filters The filters.
-	 * @param string|null          $search  The full-text term.
 	 *
 	 * @return void
 	 *
 	 * @throws \InvalidArgumentException When `from` or `to` is not a date.
 	 */
-	private function applyFilters(IQueryBuilder $qb, array $filters, ?string $search): void {
+	private function applyFilters(IQueryBuilder $qb, array $filters): void {
 		foreach (self::FILTER_COLUMNS as $key => $column) {
-			$this->applyListFilter(qb: $qb, column: $column, value: ($filters[$key] ?? null));
+			$this->applyListFilter(qb: $qb, term: new AuditTrailFilterTerm(field: $column, value: ($filters[$key] ?? null)));
 		}
 
 		$this->applyPeriod(qb: $qb, filters: $filters);
-		$this->applySearch(qb: $qb, search: $search);
 	}//end applyFilters()
 
 	/**
@@ -243,14 +242,14 @@ class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 	/**
 	 * One equality or list filter; an empty value is no filter.
 	 *
-	 * @param IQueryBuilder $qb     The query.
-	 * @param string        $column The column.
-	 * @param mixed         $value  A value, a comma-separated list, or an array.
+	 * @param IQueryBuilder        $qb   The query.
+	 * @param AuditTrailFilterTerm $term The column, and a value, a comma-separated list, or an array.
 	 *
 	 * @return void
 	 */
-	private function applyListFilter(IQueryBuilder $qb, string $column, mixed $value): void {
-		$values = $this->listValues(value: $value);
+	private function applyListFilter(IQueryBuilder $qb, AuditTrailFilterTerm $term): void {
+		$column = $term->field;
+		$values = $this->listValues(value: $term->value);
 		if ($values === []) {
 			return;
 		}
