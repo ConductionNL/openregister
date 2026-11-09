@@ -58,6 +58,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Service\Delegation\DelegationRequest;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
 use Psr\Log\LoggerInterface;
@@ -201,7 +202,9 @@ class FlowConsentParking implements FlowConsentSweepInterface {
 		}
 
 		try {
-			$verdict = $this->delegation->verdictFor(principal: $principal, actingAs: $actingAs, now: $wait->now);
+			$verdict = $this->delegation->verdictFor(
+				request: new DelegationRequest(principal: $principal, actingAs: $actingAs, scope: [], now: $wait->now)
+			);
 		} catch (Throwable $e) {
 			// Leave it PARKED. An unreadable store is not an answer, and failing
 			// on it would destroy work over an infrastructure blip — the opposite

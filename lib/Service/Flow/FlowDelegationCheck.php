@@ -43,8 +43,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
+use OCA\OpenRegister\Service\Delegation\DelegationRequest;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
 use Psr\Container\ContainerInterface;
@@ -124,7 +126,9 @@ class FlowDelegationCheck {
 
 		$delegation = $this->delegationService(flowId: $flowId, declaredBy: $declaredBy, runAs: $runAs);
 
-		$verdict = $delegation->verdictFor(principal: $declaredBy, actingAs: $runAs);
+		$verdict = $delegation->verdictFor(
+			request: new DelegationRequest(principal: $declaredBy, actingAs: $runAs, scope: [], now: new DateTime())
+		);
 		if ($verdict->permitted === true) {
 			return null;
 		}
