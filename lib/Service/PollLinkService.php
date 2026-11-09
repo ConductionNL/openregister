@@ -139,7 +139,7 @@ class PollLinkService implements PollLinkServiceInterface {
 		$pollRow = $this->fetchPollRow(pollId: $pollId) ?? throw new Exception('Poll not found', 404);
 		$stats   = $this->liveStats(pollId: $pollId, pollRow: $pollRow);
 		$title   = (string)($pollRow['title'] ?? '');
-		$link    = $this->newPollLink(pollId: $pollId, title: $title, type: (string)($pollRow['type'] ?? ''), stats: $stats);
+		$link    = $this->newPollLink(poll: new PollIdentity(id: $pollId, title: $title, type: (string)($pollRow['type'] ?? '')), stats: $stats);
 		$target->stamp(link: $link, linkedBy: $user->getUID());
 
 		return $this->pollLinkMapper->insert($link);
@@ -167,18 +167,16 @@ class PollLinkService implements PollLinkServiceInterface {
 	/**
 	 * Assemble an unsaved PollLink entity; the caller sets the object.
 	 *
-	 * @param int                 $pollId Polls poll id.
-	 * @param string              $title  Poll title.
-	 * @param string              $type   Poll type.
-	 * @param array<string,mixed> $stats  `{ deadline, closed, voterCount, optionCount }`.
+	 * @param PollIdentity        $poll  Polls poll id, title and type.
+	 * @param array<string,mixed> $stats `{ deadline, closed, voterCount, optionCount }`.
 	 *
 	 * @return PollLink The unsaved entity.
 	 */
-	private function newPollLink(int $pollId, string $title, string $type, array $stats): PollLink {
+	private function newPollLink(PollIdentity $poll, array $stats): PollLink {
 		$link = new PollLink();
-		$link->setPollId($pollId);
-		$link->setPollTitle($title);
-		$link->setPollType($type);
+		$link->setPollId($poll->id);
+		$link->setPollTitle($poll->title);
+		$link->setPollType($poll->type);
 		$link->setDeadline($stats['deadline']);
 		$link->setVoterCount($stats['voterCount']);
 		$link->setOptionCount($stats['optionCount']);
@@ -490,7 +488,7 @@ class PollLinkService implements PollLinkServiceInterface {
 	private function buildPollLink(PollDraft $draft, int $pollId): PollLink {
 		$stats = ['deadline' => $draft->deadlineDateTime(), 'closed' => false, 'voterCount' => 0, 'optionCount' => count($draft->options())];
 
-		return $this->newPollLink(pollId: $pollId, title: $draft->storedTitle(), type: $draft->pollType(), stats: $stats);
+		return $this->newPollLink(poll: new PollIdentity(id: $pollId, title: $draft->storedTitle(), type: $draft->pollType()), stats: $stats);
 	}//end buildPollLink()
 
 	/**
@@ -510,27 +508,24 @@ class PollLinkService implements PollLinkServiceInterface {
 			}
 
 			$order++;
-			$this->insertPollOption(pollId: $pollId, draft: $draft, option: ['text' => $text, 'order' => $order]);
+			$timestamp = $this->optionTimestamp(text: $text, draft: $draft);
+			$this->insertPollOption(option: new PollOptionRow(pollId: $pollId, text: $text, order: $order, timestamp: $timestamp), draft: $draft);
 		}
 	}//end insertPollOptions()
 
 	/**
 	 * Insert one poll option.
 	 *
-	 * @param int                          $pollId Created poll id.
-	 * @param PollDraft                    $draft  The poll, with owner and creation time.
-	 * @param array{text:string,order:int} $option The trimmed option text and its 1-based position.
+	 * @param PollOptionRow $option The option of the created poll.
+	 * @param PollDraft     $draft  The poll, with owner and creation time.
 	 *
 	 * @return void
 	 */
-	private function insertPollOption(int $pollId, PollDraft $draft, array $option): void {
-		$option['hash']      = substr(hash('sha256', $pollId . '-' . $option['text'] . '-' . $option['order']), 0, 32);
-		$option['timestamp'] = $this->optionTimestamp(text: $option['text'], draft: $draft);
-
+	private function insertPollOption(PollOptionRow $option, PollDraft $draft): void {
 		$qb = $this->db->getQueryBuilder();
 		$qb->insert('polls_options')->values(
 			array_merge(
-				$this->optionContentValues(qb: $qb, pollId: $pollId, option: $option),
+				$this->optionContentValues(qb: $qb, option: $option),
 				$this->optionMetaValues(qb: $qb, draft: $draft)
 			)
 		);
@@ -561,19 +556,18 @@ class PollLinkService implements PollLinkServiceInterface {
 	/**
 	 * The `polls_options` columns that describe the option itself.
 	 *
-	 * @param IQueryBuilder       $qb     The insert being built.
-	 * @param int                 $pollId Created poll id.
-	 * @param array<string,mixed> $option `{ text, order, hash, timestamp }`.
+	 * @param IQueryBuilder $qb     The insert being built.
+	 * @param PollOptionRow $option The option of the created poll.
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function optionContentValues(IQueryBuilder $qb, int $pollId, array $option): array {
+	private function optionContentValues(IQueryBuilder $qb, PollOptionRow $option): array {
 		return [
-			'poll_id' => $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT),
-			'poll_option_text' => $qb->createNamedParameter(mb_substr($option['text'], 0, 1024)),
-			'poll_option_hash' => $qb->createNamedParameter($option['hash']),
-			'order' => $qb->createNamedParameter($option['order'], IQueryBuilder::PARAM_INT),
-			'timestamp' => $qb->createNamedParameter($option['timestamp'], IQueryBuilder::PARAM_INT),
+			'poll_id' => $qb->createNamedParameter($option->pollId, IQueryBuilder::PARAM_INT),
+			'poll_option_text' => $qb->createNamedParameter(mb_substr($option->text, 0, 1024)),
+			'poll_option_hash' => $qb->createNamedParameter($option->hash()),
+			'order' => $qb->createNamedParameter($option->order, IQueryBuilder::PARAM_INT),
+			'timestamp' => $qb->createNamedParameter($option->timestamp, IQueryBuilder::PARAM_INT),
 		];
 	}//end optionContentValues()
 
