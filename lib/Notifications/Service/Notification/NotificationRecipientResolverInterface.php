@@ -71,7 +71,9 @@ interface NotificationRecipientResolverInterface {
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
 	 */
-	public function resolveWithDiagnostics(array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = [], array $roleGroups = []): array;
+	public function resolveWithDiagnostics(
+		array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = [], array $roleGroups = []
+	): array;
 
 	/**
 	 * Resolve a recipients spec against one source, and say which entries resolved to nobody.
