@@ -47,6 +47,8 @@ final class NativeAggregationStatement {
 	 * MySQL and SQLite compute it in a PHP post-pass instead.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public function windowedTotal(): bool {
 		return $this->cumulative === true && $this->query->isPostgres() === true;

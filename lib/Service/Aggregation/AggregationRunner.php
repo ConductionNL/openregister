@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Aggregation;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
@@ -270,21 +271,52 @@ class AggregationRunner implements AggregationRunnerInterface {
 		array $parentRow = [],
 		array $extraFilter = [],
 	): array {
-		// REGISTER-SCOPED RESOLUTION. The register is the boundary and is
-		// resolved FIRST; the schema ref is then matched only among the schemas
-		// that register carries. See loadSchemaInRegister().
-		$pair = $this->loadSchemaInRegister(schemaRef: $schemaRef, registerRef: $registerRef);
-		$run = new NamedAggregationRun(register: $pair['register'], schema: $pair['schema'], name: $name);
-		$run->schemaRef = $schemaRef;
-		$run->bypassRbac = $bypassRbac;
+		$run = $this->namedRun(ref: new RegisterSchemaRef(register: $registerRef, schema: $schemaRef), name: $name);
+		$run->bypassRbac  = $bypassRbac;
 		$run->extraFilter = $extraFilter;
+		return $this->runNamed(run: $run, parentRow: $parentRow);
+	}//end run()
+
+	/**
+	 * Start a named aggregation run on the schema the register carries.
+	 *
+	 * REGISTER-SCOPED RESOLUTION. The register is the boundary and is
+	 * resolved FIRST; the schema ref is then matched only among the schemas
+	 * that register carries. See loadSchemaInRegister().
+	 *
+	 * @param RegisterSchemaRef $ref  Register and schema slug/uuid/id.
+	 * @param string            $name Aggregation name (key in the annotation).
+	 *
+	 * @return NamedAggregationRun
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function namedRun(RegisterSchemaRef $ref, string $name): NamedAggregationRun {
+		$schemaRef = (string) $ref->schema;
+		$pair      = $this->loadSchemaInRegister(schemaRef: $schemaRef, registerRef: (string) $ref->register);
+		$run       = new NamedAggregationRun(register: $pair['register'], schema: $pair['schema'], name: $name);
+		$run->schemaRef = $schemaRef;
+		return $run;
+	}//end namedRun()
+
+	/**
+	 * Gate the run, then compute it intra-schema or, with a `from` key, cross-schema.
+	 *
+	 * @param NamedAggregationRun  $run       The run, with its bypassRbac and extra filter set.
+	 * @param array<string, mixed> $parentRow Parent object's field values for `@self.<field>` references.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function runNamed(NamedAggregationRun $run, array $parentRow): array {
 		$run->spec = $this->authorisedSpec(run: $run);
 		if ($run->getFromSchema() !== null) {
 			return $this->runNamedCrossSchema(run: $run, parentRow: $parentRow);
 		}
 
 		return $this->runIntraSchema(run: $run);
-	}//end run()
+	}//end runNamed()
 
 	/**
 	 * Gate the run behind READ on the schema, then return the declared spec.
@@ -2706,7 +2738,6 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 *
 	 * @return bool False when the organisation scope cannot be expressed in SQL
 	 *
-	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function buildNativeWhere(NativeAggregationQuery $query, NativeAggregationRequest $request): bool {
@@ -3103,7 +3134,6 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @param array                      $dateBucket The time-bucket spec ({field, start, end, gap})
 	 *
 	 * @return array{groups: array<int, array{key: string, value: int|float|null, cumulative?: int|float|null}>}
-	 *
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
