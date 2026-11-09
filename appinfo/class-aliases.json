@@ -1815,6 +1815,11 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Object\\BatchOperationStatusInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\BatchOperationStatusInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }

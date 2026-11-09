@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Dto;
 
-use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
+use OCA\OpenRegister\Kernel\Contracts\BatchOperationStatusInterface;
 
 /**
  * Each method hands its arguments, unchanged, to the BulkSaveOutcome named

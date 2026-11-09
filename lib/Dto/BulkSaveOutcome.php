@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Dto;
 
-use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
+use OCA\OpenRegister\Kernel\Contracts\BatchOperationStatusInterface;
 
 /**
  * Per-object failure summary for one bulk save call.
