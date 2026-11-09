@@ -465,3 +465,4 @@
 7481 1dab7a1611cf15dfa05c09e63e2215efd25187bf APPROVE job class string and argument key unchanged via interface constants; guard suites green merged with development a1fd993f81
 6966 d3904ee5a03c4fbb862b21d4a42099e05849789e BLOCK guard red on merge with development: C03MiscInterfaceBindingsTest KEPT_CALLERS stale (dev already retyped RuleRunMapper/SchemaMigrationService callers), fix: drop both KEPT_CALLERS entries and rebase onto dev's RuleRunMapperInterface
 7447 67f8f7d5d5bf5d34801915b4eefe481206869bf5 APPROVE vector row build moved with identical types and casts; job allowlist string pinned by golden on old code; bindings present; guard suites green merged with development a1fd993f81
+7488 6fffc72a71893ec7c7055285ad59c751eae12af0 APPROVE render-equivalent: NcDialog size default small, noClose blocks closing so closable guard is equivalent, props/emits/z-index unchanged; jest/eslint/stylelint/build ok; guards green merged with main 869b97c2
