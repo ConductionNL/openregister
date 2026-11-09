@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
+use OCA\OpenRegister\Mcp\ToolScanSubject;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AnnotationFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
@@ -78,7 +79,7 @@ class AttributeToolProviderTest extends TestCase {
 	 */
 	private function entriesFor(object $instance, string $appId = 'pipelinq'): array {
 		$scanner = new AttributeToolScanner();
-		$descriptors = $scanner->scanClass(appId: $appId, className: get_class($instance), logger: $this->logger);
+		$descriptors = $scanner->scanClass(subject: new ToolScanSubject(appId: $appId, className: get_class($instance), logger: $this->logger));
 
 		foreach ($descriptors as &$descriptor) {
 			$descriptor['instance'] = $instance;
