@@ -19,6 +19,7 @@ namespace Unit\Service\Oas;
 
 use OCA\OpenRegister\Service\Oas\ProblemDescription;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
+use OCA\OpenRegister\Service\Oas\ProblemStatement;
 use PHPUnit\Framework\TestCase;
 
 class ProblemDetailsBuilderTest extends TestCase {
@@ -32,7 +33,7 @@ class ProblemDetailsBuilderTest extends TestCase {
 	}//end setUp()
 
 	public function testMinimalProblemHasTypeTitleStatus(): void {
-		$problem = $this->builder->build(status: 400, title: 'Bad request');
+		$problem = $this->builder->build(statement: new ProblemStatement(status: 400, title: 'Bad request'));
 
 		$this->assertSame('about:blank', $problem['type']);
 		$this->assertSame('Bad request', $problem['title']);
@@ -44,12 +45,14 @@ class ProblemDetailsBuilderTest extends TestCase {
 
 	public function testProblemIncludesOptionalFields(): void {
 		$problem = $this->builder->build(
-			status: 422,
-			title: 'Validation failed',
-			description: new ProblemDescription(
-				detail: 'The "email" field MUST be a valid e-mail.',
-				type: 'https://or.example.nl/probs/validation',
-				instance: '/api/objects/zaken/abc-123'
+			statement: new ProblemStatement(
+				status: 422,
+				title: 'Validation failed',
+				description: new ProblemDescription(
+					detail: 'The "email" field MUST be a valid e-mail.',
+					type: 'https://or.example.nl/probs/validation',
+					instance: '/api/objects/zaken/abc-123'
+				)
 			)
 		);
 
@@ -61,15 +64,17 @@ class ProblemDetailsBuilderTest extends TestCase {
 
 	public function testExtensionsAreIncludedButCannotOverwriteStandardFields(): void {
 		$problem = $this->builder->build(
-			status: 400,
-			title: 'Bad request',
-			extensions: [
-				'code' => 'OR-INVALID-FILTER',
-				'errors' => [['path' => 'foo', 'message' => 'bar']],
-				// These MUST be ignored because the standard fields take priority.
-				'type' => 'malicious-override',
-				'status' => 200,
-			]
+			statement: new ProblemStatement(
+				status: 400,
+				title: 'Bad request',
+				extensions: [
+					'code' => 'OR-INVALID-FILTER',
+					'errors' => [['path' => 'foo', 'message' => 'bar']],
+					// These MUST be ignored because the standard fields take priority.
+					'type' => 'malicious-override',
+					'status' => 200,
+				]
+			)
 		);
 
 		$this->assertSame('OR-INVALID-FILTER', $problem['code']);
@@ -113,10 +118,12 @@ class ProblemDetailsBuilderTest extends TestCase {
 
 	public function testEmptyTypeFallsBackToAboutBlankAndReservedExtensionsAreDropped(): void {
 		$problem = $this->builder->build(
-			status: 409,
-			title: 'Conflict',
-			description: new ProblemDescription(detail: '', type: '', instance: ''),
-			extensions: ['title' => 'x', 'detail' => 'y', 'instance' => 'z', 'retryAfter' => 5]
+			statement: new ProblemStatement(
+				status: 409,
+				title: 'Conflict',
+				description: new ProblemDescription(detail: '', type: '', instance: ''),
+				extensions: ['title' => 'x', 'detail' => 'y', 'instance' => 'z', 'retryAfter' => 5]
+			)
 		);
 
 		$this->assertSame(
