@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Notifications\Controller\Support\TimelineEntriesControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -119,18 +120,16 @@ class TimelineEntriesController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                     $appName    App name.
 	 * @param IRequest                   $request    Request.
 	 * @param TimelineEntriesControllerServices $services The timeline entries controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		TimelineEntriesControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->objects = $services->domain->objects;
 		$this->entries = $services->domain->entries;
 		$this->writer = $services->domain->writer;

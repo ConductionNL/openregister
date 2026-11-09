@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Connection;
 use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
+use OCA\OpenRegister\Service\Connection\ConnectionStatusReport;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -137,6 +138,25 @@ class ConnectionReporterTest extends TestCase {
 		$this->assertSame(expected: 'error', actual: $event->status);
 		$this->assertSame(expected: 'Connection failed over sftp.', actual: $event->message);
 	}//end testAReportIsSentWithTheAppKeyStatusAndMessage()
+
+	/**
+	 * A report object reaches integriq the same way, and a bad key in one is refused.
+	 *
+	 * @return void
+	 */
+	public function testAReportObjectIsSentOrRefusedLikeTheLooseForm(): void {
+		$reporter = $this->reporter();
+
+		$this->assertTrue($reporter->reportStatus(new ConnectionStatusReport(key: 'kvk', status: 'limited')));
+		$this->assertCount(1, $this->sent);
+		$this->assertSame('kvk', $this->sent[0]->key);
+		$this->assertSame('limited', $this->sent[0]->status);
+		$this->assertSame('', $this->sent[0]->message);
+
+		$this->assertFalse($reporter->reportStatus(new ConnectionStatusReport(key: 'whatsapp', status: 'configured', message: 'x')));
+		$this->assertFalse($reporter->reportStatus(new ConnectionStatusReport(key: 'kvk', status: 'degraded')));
+		$this->assertCount(1, $this->sent);
+	}//end testAReportObjectIsSentOrRefusedLikeTheLooseForm()
 
 	/**
 	 * The event names are the ones the contract fixes, and they resolve here.

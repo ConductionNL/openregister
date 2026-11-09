@@ -146,7 +146,6 @@ class EmailsControllerGoldenTest extends TestCase
         );
 
         return new EmailsController(
-            'openregister',
             $request,
             new EmailsControllerServices(
                 new EmailsDomain($emailService, $links),

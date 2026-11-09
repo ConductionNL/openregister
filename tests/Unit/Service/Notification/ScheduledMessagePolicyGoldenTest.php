@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 use DateTimeImmutable;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessagePolicy;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Notifications\Service\Notification\ClaimAttempt;
 
 /**
  * Runs every public decision of the policy over a fixed table of rows at a
@@ -101,14 +102,14 @@ final class ScheduledMessagePolicyGoldenTest extends TestCase {
 				'expect' => ['id' => '42', 'state' => 'claimed', 'attempts' => 2],
 				'set' => ['state' => 'claimed', 'attempts' => 3, 'claimedBy' => 'worker-a', 'claimedAt' => '2026-05-01T12:00:00+00:00'],
 			],
-			$policy->claim(['id' => 42, 'state' => 'claimed', 'attempts' => '2'], 'worker-a', self::now())
+			$policy->claim(['id' => 42, 'state' => 'claimed', 'attempts' => '2'], new ClaimAttempt('worker-a', self::now()))
 		);
 		$this->assertSame(
 			[
 				'expect' => ['id' => '', 'state' => 'pending', 'attempts' => 0],
 				'set' => ['state' => 'claimed', 'attempts' => 1, 'claimedBy' => '', 'claimedAt' => '2026-05-01T12:00:00+00:00'],
 			],
-			$policy->claim([], '', self::now())
+			$policy->claim([], new ClaimAttempt('', self::now()))
 		);
 	}//end testClaim()
 
