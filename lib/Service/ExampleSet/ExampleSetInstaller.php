@@ -396,17 +396,18 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 				$files[$object['key']] = $this->heldFileIds(record: $record, name: $name);
 				$context = (['objects' => $objects, 'files' => $files] + $base);
-				$objects[$object['key']] = $this->rewriter->keep(
-					plan: $plan,
-					run: ['store' => $this->store, 'fragment' => $fragment, 'object' => $object, 'row' => $kept],
-					resolve: fn (): array => $this->resolve(object: $object, context: $context, planned: []),
-					references: function () use ($run, $object, $kept, $context, &$report, &$record): array {
-						$held = new ExampleSetKeptObject(object: $object, row: $kept, context: $context);
-						return $this->refreshReferences(run: $run, held: $held, report: $report, record: $record);
-					},
-					report: $report,
-					written: $written
-				);
+				$held    = new ExampleSetKeptObject(object: $object, row: $kept, context: $context);
+				if (($plan['refresh'] ?? false) !== true) {
+					$objects[$object['key']] = $this->refreshReferences(run: $run, held: $held, report: $report, record: $record);
+				} else {
+					$objects[$object['key']] = $this->rewriter->rewrite(
+						run: ['store' => $this->store, 'fragment' => $fragment, 'object' => $object, 'row' => $kept],
+						resolved: $this->resolve(object: $object, context: $context, planned: []),
+						report: $report,
+						written: $written
+					);
+				}
+
 				$this->rewriter->follow(record: $record, name: $name, written: $written, save: $save);
 
 				continue;
