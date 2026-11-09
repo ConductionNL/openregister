@@ -992,7 +992,12 @@ class SchemaMapper extends QBMapper {
 
 		$qb = $this->db->getQueryBuilder();
 		$conditions = $qb->expr()->orX(
-			$qb->expr()->eq('uuid', $qb->createNamedParameter(value: $identifier, type: IQueryBuilder::PARAM_STR)),
+			// The uuid case-insensitively too: an importer that lower-cases the
+			// identifier first must not hit a row this lookup misses.
+			$qb->expr()->eq(
+				$qb->func()->lower('uuid'),
+				$qb->createNamedParameter(value: strtolower($identifier), type: IQueryBuilder::PARAM_STR)
+			),
 			$qb->expr()->eq(
 				$qb->func()->lower('slug'),
 				$qb->createNamedParameter(value: strtolower($identifier), type: IQueryBuilder::PARAM_STR)

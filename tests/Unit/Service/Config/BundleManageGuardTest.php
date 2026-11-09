@@ -37,7 +37,7 @@ class BundleManageGuardTest extends TestCase {
 
 	public function testAnAdministratorMayOverwriteAnything(): void {
 		$this->gate->method('isAdministrator')->willReturn(true);
-		$this->registers->expects($this->never())->method('find');
+		$this->registers->expects($this->never())->method('findAllByIdentifier');
 
 		$this->guard->assertAllowed(['components' => ['registers' => ['publicatie' => ['slug' => 'publicatie']]]]);
 		$this->addToAssertionCount(1);
@@ -45,7 +45,7 @@ class BundleManageGuardTest extends TestCase {
 
 	public function testANewRegisterAndSchemaPass(): void {
 		$this->gate->method('isAdministrator')->willReturn(false);
-		$this->registers->method('find')->willThrowException(new DoesNotExistException('none'));
+		$this->registers->method('findAllByIdentifier')->willReturn([]);
 		$this->schemas->method('findAllByIdentifier')->willReturn([]);
 
 		$this->guard->assertAllowed(['components' => ['registers' => ['nieuw' => []], 'schemas' => ['nieuw-schema' => []]]]);
@@ -54,7 +54,7 @@ class BundleManageGuardTest extends TestCase {
 
 	public function testAnExistingRegisterTheCallerCannotManageIsRefused(): void {
 		$this->gate->method('isAdministrator')->willReturn(false);
-		$this->registers->method('find')->willReturn(new Register());
+		$this->registers->method('findAllByIdentifier')->willReturn([new Register()]);
 		$this->gate->method('mayManageRegister')->willReturn(false);
 
 		$this->expectException(NotAuthorizedException::class);
@@ -72,7 +72,7 @@ class BundleManageGuardTest extends TestCase {
 
 	public function testAFailedLookupFailsClosed(): void {
 		$this->gate->method('isAdministrator')->willReturn(false);
-		$this->registers->method('find')->willThrowException(new \RuntimeException('db down'));
+		$this->registers->method('findAllByIdentifier')->willThrowException(new \RuntimeException('db down'));
 
 		$this->expectException(NotAuthorizedException::class);
 		$this->guard->assertAllowed(['components' => ['registers' => ['publicatie' => []]]]);
@@ -80,7 +80,7 @@ class BundleManageGuardTest extends TestCase {
 
 	public function testAManagerMayOverwriteTheirRegister(): void {
 		$this->gate->method('isAdministrator')->willReturn(false);
-		$this->registers->method('find')->willReturn(new Register());
+		$this->registers->method('findAllByIdentifier')->willReturn([new Register()]);
 		$this->gate->method('mayManageRegister')->willReturn(true);
 
 		$this->guard->assertAllowed(['components' => ['registers' => ['publicatie' => []]]]);
@@ -114,7 +114,7 @@ class BundleManageGuardTest extends TestCase {
 
 	public function testSeedObjectsIntoASchemaTheCallerCannotManageAreRefused(): void {
 		$this->gate->method('isAdministrator')->willReturn(false);
-		$this->registers->method('find')->willReturn(new Register());
+		$this->registers->method('findAllByIdentifier')->willReturn([new Register()]);
 		$this->gate->method('mayManageRegister')->willReturn(true);
 		$this->schemas->method('findAllByIdentifier')->with('publication')->willReturn([new Schema()]);
 		$this->gate->method('mayManage')->willReturn(false);
@@ -125,7 +125,7 @@ class BundleManageGuardTest extends TestCase {
 
 	public function testTopLevelSeedObjectsIntoARegisterTheCallerCannotManageAreRefused(): void {
 		$this->gate->method('isAdministrator')->willReturn(false);
-		$this->registers->method('find')->willReturn(new Register());
+		$this->registers->method('findAllByIdentifier')->willReturn([new Register()]);
 		$this->gate->method('mayManageRegister')->willReturn(false);
 
 		$this->expectException(NotAuthorizedException::class);
@@ -134,7 +134,7 @@ class BundleManageGuardTest extends TestCase {
 
 	public function testSeedObjectsIntoTheBundlesOwnNewDefinitionsPass(): void {
 		$this->gate->method('isAdministrator')->willReturn(false);
-		$this->registers->method('find')->willThrowException(new DoesNotExistException('none'));
+		$this->registers->method('findAllByIdentifier')->willReturn([]);
 		$this->schemas->expects($this->once())->method('findAllByIdentifier')->with('nieuw-schema')->willReturn([]);
 
 		$this->guard->assertAllowed([
@@ -145,5 +145,42 @@ class BundleManageGuardTest extends TestCase {
 			],
 		]);
 		$this->addToAssertionCount(1);
+	}
+
+	/**
+	 * pp-f1: the importer lower-cases a register slug; an upper-cased uuid, a numeric id or a case variant is judged.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function registerIdentifiers(): array {
+		return [
+			'upper-case uuid' => ['5F1C9D0E-1111-4222-8333-944455556666'],
+			'numeric id'      => ['3'],
+			'case variant'    => ['Publicatie'],
+		];
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('registerIdentifiers')]
+	public function testAnyRegisterIdentifierTheImporterResolvesIsJudged(string $identifier): void {
+		$this->gate->method('isAdministrator')->willReturn(false);
+		$this->registers->expects($this->once())->method('findAllByIdentifier')
+			->with($identifier)
+			->willReturn([new Register()]);
+		$this->gate->method('mayManageRegister')->willReturn(false);
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->guard->assertAllowed(['components' => ['registers' => [['slug' => $identifier]]]]);
+	}
+
+	/**
+	 * pp-f2: x-openregister.seedData objects, keyed by schema slug, are judged too.
+	 */
+	public function testSeedDataObjectsIntoASchemaTheCallerCannotManageAreRefused(): void {
+		$this->gate->method('isAdministrator')->willReturn(false);
+		$this->schemas->method('findAllByIdentifier')->with('publication')->willReturn([new Schema()]);
+		$this->gate->method('mayManage')->willReturn(false);
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->guard->assertAllowed(['x-openregister' => ['seedData' => ['objects' => ['publication' => [['title' => 'x']]]]]]);
 	}
 }

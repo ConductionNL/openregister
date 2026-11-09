@@ -436,6 +436,51 @@ class RegisterMapper extends QBMapper {
 	}//end clearFindCache()
 
 	/**
+	 * Every register an identifier could resolve to, across all organisations.
+	 *
+	 * A superset of what ImportHandler's register lookups match
+	 * (`find()` with the slug as written or lower-cased: uuid, `LOWER(slug)`,
+	 * numeric id). The uuid is compared case-insensitively too, so an
+	 * upper-cased uuid cannot miss here and hit in the importer. No RBAC and no
+	 * organisation filter: the caller judges each row.
+	 *
+	 * @param string $identifier A uuid, slug (any case) or numeric id.
+	 * @param int    $limit      Maximum number of rows.
+	 *
+	 * @return list<Register> The matching registers.
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	public function findAllByIdentifier(string $identifier, int $limit = 100): array {
+		$lower = strtolower($identifier);
+		$qb = $this->db->getQueryBuilder();
+		$conditions = $qb->expr()->orX(
+			$qb->expr()->eq($qb->func()->lower('uuid'), $qb->createNamedParameter(value: $lower, type: IQueryBuilder::PARAM_STR)),
+			$qb->expr()->eq($qb->func()->lower('slug'), $qb->createNamedParameter(value: $lower, type: IQueryBuilder::PARAM_STR))
+		);
+		if (is_numeric($identifier) === true) {
+			$conditions->add(
+				$qb->expr()->eq('id', $qb->createNamedParameter(value: (int)$identifier, type: IQueryBuilder::PARAM_INT))
+			);
+		}
+
+		$qb->select('*')
+			->from('openregister_registers')
+			->where($conditions)
+			->setMaxResults($limit);
+
+		$result = $qb->executeQuery();
+		$registers = [];
+		while (($row = $result->fetch()) !== false) {
+			$registers[] = $this->mapRowToEntity(row: $row);
+		}
+
+		$result->closeCursor();
+
+		return $registers;
+	}//end findAllByIdentifier()
+
+	/**
 	 * Finds multiple registers by id
 	 *
 	 * @param array $ids The ids of the registers

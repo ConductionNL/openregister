@@ -46,10 +46,14 @@ class SchemaMapperFindAllByIdentifierTest extends TestCase {
 		$eq = [];
 		$where = 0;
 
-		$lower = $this->createMock(IQueryFunction::class);
-		$lower->method('__toString')->willReturn('LOWER(slug)');
 		$func = $this->createMock(IFunctionBuilder::class);
-		$func->method('lower')->willReturnCallback(fn (string $column) => $column === 'slug' ? $lower : null);
+		$func->method('lower')->willReturnCallback(
+			function (string $column): IQueryFunction {
+				$lower = $this->createMock(IQueryFunction::class);
+				$lower->method('__toString')->willReturn('LOWER(' . $column . ')');
+				return $lower;
+			}
+		);
 
 		$composite = $this->createMock(ICompositeExpression::class);
 		$expr = $this->createMock(IExpressionBuilder::class);
@@ -109,7 +113,7 @@ class SchemaMapperFindAllByIdentifierTest extends TestCase {
 	public function testASlugMatchesUuidAndLowerCasedSlug(): void {
 		$recorded = $this->record('Publication');
 
-		$this->assertSame([['uuid', 'Publication'], ['LOWER(slug)', 'publication']], $recorded['eq']);
+		$this->assertSame([['LOWER(uuid)', 'publication'], ['LOWER(slug)', 'publication']], $recorded['eq']);
 		$this->assertSame(1, $recorded['where']);
 	}
 

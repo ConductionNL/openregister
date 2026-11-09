@@ -30,7 +30,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
-use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
 
 /**
@@ -110,24 +109,25 @@ class BundleManageGuard {
 	 *
 	 * @param string $slug The register slug.
 	 *
-	 * @return bool False when it exists and the caller may not manage it, or the lookup fails.
+	 * @return bool False when one exists that the caller may not manage, or the lookup fails.
 	 */
 	private function mayOverwriteRegister(string $slug): bool {
 		try {
-			// The lookup sees every register the system write could reach; the manage gate judges it.
-			$register = $this->registerMapper->find(
-				id: $slug,
-				// phpcs:ignore Squiz.Commenting.InlineComment.NotCapital -- ADR-055 marker.
-				_rbac: false, // rbac-bypass: judged by the manage gate below.
-				_multitenancy: false
-			);
-		} catch (DoesNotExistException $e) {
-			return true;
+			// Every row the importer's register lookups could pick (uuid in any
+			// case, slug in any case, numeric id), across all organisations;
+			// the manage gate judges each one.
+			$registers = $this->registerMapper->findAllByIdentifier(identifier: $slug);
 		} catch (Throwable $e) {
 			return false;
 		}
 
-		return $this->manageGate->mayManageRegister(register: $register);
+		foreach ($registers as $register) {
+			if ($this->manageGate->mayManageRegister(register: $register) === false) {
+				return false;
+			}
+		}
+
+		return true;
 	}//end mayOverwriteRegister()
 
 	/**
@@ -160,8 +160,11 @@ class BundleManageGuard {
 	/**
 	 * The register and schema each seed object of the bundle targets.
 	 *
-	 * Seed objects sit under `components.objects` or a top-level `objects`
-	 * (ImportHandler reads both).
+	 * Every bucket ImportHandler seeds objects from:
+	 *  - `components.objects` and top-level `objects` (`@self.register` / `@self.schema`);
+	 *  - `x-openregister.seedData.objects`, keyed by schema slug, written into the
+	 *    bundle's first register (or the app configuration's register when the
+	 *    bundle has none, which this guard cannot see, so only the schema is judged).
 	 *
 	 * @param array<string, mixed> $bundle The bundle.
 	 *
@@ -184,6 +187,14 @@ class BundleManageGuard {
 					$this->identifier(value: ($self['register'] ?? null)),
 					$this->identifier(value: ($self['schema'] ?? null)),
 				];
+			}
+		}
+
+		$seedData = ($bundle['x-openregister']['seedData']['objects'] ?? null);
+		if (is_array($seedData) === true) {
+			$firstRegister = ($this->slugs(documents: ($bundle['components']['registers'] ?? []))[0] ?? '');
+			foreach (array_keys($seedData) as $schemaSlug) {
+				$targets[] = [$firstRegister, (string)$schemaSlug];
 			}
 		}
 
