@@ -6,7 +6,9 @@ exports[`FilesIndex table header renders the header and sorts from it 1`] = `
     <th scope="col" class="column-filename sortable">t:File Name
       <!--v-if-->
     </th>
-    <th scope="col" class="column-mimetype">t:Type</th>
+    <th scope="col" class="column-mimetype">t:Type
+      <!--v-if-->
+    </th>
     <th scope="col" class="column-size sortable">t:Size
       <!--v-if-->
     </th>
@@ -20,7 +22,9 @@ exports[`FilesIndex table header renders the header and sorts from it 1`] = `
       <!--v-if-->
     </th>
     <th scope="col" class="column-extracted sortable">t:Extracted At <span class="sort-indicator">▼</span></th>
-    <th scope="col" class="column-actions">t:Actions</th>
+    <th scope="col" class="column-actions">t:Actions
+      <!--v-if-->
+    </th>
   </tr>
 </thead>
 click 0: fileName DESC
@@ -34,7 +38,9 @@ click 7: extractedAt DESC
     <th scope="col" class="column-filename sortable">t:File Name
       <!--v-if-->
     </th>
-    <th scope="col" class="column-mimetype">t:Type</th>
+    <th scope="col" class="column-mimetype">t:Type
+      <!--v-if-->
+    </th>
     <th scope="col" class="column-size sortable">t:Size
       <!--v-if-->
     </th>
@@ -48,7 +54,9 @@ click 7: extractedAt DESC
       <!--v-if-->
     </th>
     <th scope="col" class="column-extracted sortable">t:Extracted At <span class="sort-indicator">▼</span></th>
-    <th scope="col" class="column-actions">t:Actions</th>
+    <th scope="col" class="column-actions">t:Actions
+      <!--v-if-->
+    </th>
   </tr>
 </thead>
 api calls: 5"

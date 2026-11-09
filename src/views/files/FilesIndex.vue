@@ -44,76 +44,17 @@
 					<thead>
 						<tr>
 							<th
+								v-for="column in headerColumns"
+								:key="column.key"
 								scope="col"
-								class="column-filename sortable"
-								@click="toggleSort('fileName')">
-								{{ t('openregister', 'File Name') }}
+								:class="['column-' + column.key, { sortable: column.sort }]"
+								@click="column.sort && toggleSort(column.sort)">
+								{{ column.label }}
 								<span
-									v-if="sortField === 'fileName'"
+									v-if="column.sort && sortField === column.sort"
 									class="sort-indicator"
 									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
 								>
-							</th>
-							<th scope="col" class="column-mimetype">
-								{{ t('openregister', 'Type') }}
-							</th>
-							<th
-								scope="col"
-								class="column-size sortable"
-								@click="toggleSort('fileSize')">
-								{{ t('openregister', 'Size') }}
-								<span
-									v-if="sortField === 'fileSize'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-chunks sortable"
-								@click="toggleSort('chunkCount')">
-								{{ t('openregister', 'Chunks') }}
-								<span
-									v-if="sortField === 'chunkCount'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-entities sortable"
-								@click="toggleSort('entityCount')">
-								{{ t('openregister', 'Entities') }}
-								<span
-									v-if="sortField === 'entityCount'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-risk sortable"
-								@click="toggleSort('riskLevel')">
-								{{ t('openregister', 'Risk Level') }}
-								<span
-									v-if="sortField === 'riskLevel'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-extracted sortable"
-								@click="toggleSort('extractedAt')">
-								{{ t('openregister', 'Extracted At') }}
-								<span
-									v-if="sortField === 'extractedAt'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th scope="col" class="column-actions">
-								{{ t('openregister', 'Actions') }}
 							</th>
 						</tr>
 					</thead>
@@ -236,7 +177,27 @@ export default {
 		}
 	},
 
-	computed: {},
+	computed: {
+		/**
+		 * The table's header cells, in column order; `sort` is the API field a
+		 * click sorts on, absent for a column that does not sort.
+		 *
+		 * @spec exclude UI plumbing — static table header list for display.
+		 * @return {Array<{key: string, label: string, sort?: string}>}
+		 */
+		headerColumns() {
+			return [
+				{ key: 'filename', label: t('openregister', 'File Name'), sort: 'fileName' },
+				{ key: 'mimetype', label: t('openregister', 'Type') },
+				{ key: 'size', label: t('openregister', 'Size'), sort: 'fileSize' },
+				{ key: 'chunks', label: t('openregister', 'Chunks'), sort: 'chunkCount' },
+				{ key: 'entities', label: t('openregister', 'Entities'), sort: 'entityCount' },
+				{ key: 'risk', label: t('openregister', 'Risk Level'), sort: 'riskLevel' },
+				{ key: 'extracted', label: t('openregister', 'Extracted At'), sort: 'extractedAt' },
+				{ key: 'actions', label: t('openregister', 'Actions') },
+			]
+		},
+	},
 
 	mounted() {
 		this.loadFiles()
