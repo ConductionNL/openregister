@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\Rbac\ShareTimeWriter;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCP\Files\Folder;
 use OCP\IGroupManager;
@@ -253,7 +254,9 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 			userId: 'esra.demir',
 			subjectType: 'object',
 			subjectId: $this->caseId(),
-			expiresAt: '+10 years'
+			terms: new AccessLinkTerms(
+				expiresAt: '+10 years'
+			)
 		);
 
 		$removed = $this->remover->remove(set: 'demo');
