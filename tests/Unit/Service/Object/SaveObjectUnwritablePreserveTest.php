@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
@@ -232,7 +233,8 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 		$schema = $this->orgPinnedSchema();
 		$bulk = (new ReflectionClass(SaveObjects::class))->newInstanceWithoutConstructor();
 		$rules = new BulkRowRules(propertyRbac: $this->rbac);
-		(fn () => $this->rowRules = $rules)->call($bulk);
+		$checks = new BulkRowChecks(rowRules: $rules);
+		(fn () => $this->checks = $checks)->call($bulk);
 		$apply = new ReflectionMethod(SaveObjects::class, 'applyPropertyAuthorization');
 		$apply->setAccessible(true);
 

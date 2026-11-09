@@ -63,13 +63,9 @@ namespace OCA\OpenRegister\Service\Object;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Exception\LockedException;
@@ -87,13 +83,9 @@ use OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\Object\SaveObjects\IdentifiedRow;
 use OCA\OpenRegister\Service\Object\SaveObjects\PersistedChunk;
-use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
 use OCP\IUser;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -222,101 +214,6 @@ class SaveObjects {
 	private ?BulkObjectSlugs $bulkSlugs = null;
 
 	/**
-	 * Mapper for object entity database operations
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private readonly MagicMapperInterface $objectEntityMapper;
-
-	/**
-	 * Mapper for schema operations
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Mapper for register operations
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Handler for individual object operations
-	 *
-	 * @var SaveObjectInterface
-	 */
-	private readonly SaveObjectInterface $saveHandler;
-
-	/**
-	 * User session for getting current user
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Service for organisation operations
-	 *
-	 * @var OrganisationServiceInterface
-	 */
-	private readonly OrganisationServiceInterface $organisationService;
-
-	/**
-	 * Logger for error and debug logging
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Group manager for admin-bypass detection; also backs the
-	 * wave-12 `_rbac` / `_validation` reserved-keys policy
-	 *
-	 * @var IGroupManager|null
-	 */
-	private readonly ?IGroupManager $groupManager;
-
-	/**
-	 * Permission handler for per-object RBAC enforcement;
-	 * wave-12 Fix 3 per-row RBAC + appendOnly gate
-	 *
-	 * @var PermissionHandlerInterface|null
-	 */
-	private readonly ?PermissionHandlerInterface $permissionHandler;
-
-	/**
-	 * Validation handler for per-object schema validation;
-	 * wave-12 Fix 3 per-row JSON-Schema validation
-	 *
-	 * @var ValidateObjectInterface|null
-	 */
-	private readonly ?ValidateObjectInterface $validateHandler;
-
-	/**
-	 * Event dispatcher for object lifecycle events
-	 *
-	 * @var IEventDispatcher|null
-	 */
-	private readonly ?IEventDispatcher $eventDispatcher;
-
-	/**
-	 * Audit trail mapper for logging bulk changes
-	 *
-	 * @var AuditTrailMapperInterface|null
-	 */
-	private readonly ?AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * The decision-table rules, property authorization and save events a
-	 * bulk row goes through. Null only in legacy fixtures.
-	 *
-	 * @var BulkRowRules|null
-	 */
-	private readonly ?BulkRowRules $rowRules;
-
-	/**
 	 * Constructor for SaveObjects handler
 	 *
 	 * @param BulkSaveStores    $stores    Reads the registers and schemas and writes the rows.
@@ -326,20 +223,12 @@ class SaveObjects {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function __construct(BulkSaveStores $stores, BulkSaveSession $session, BulkSaveReporting $reporting, BulkRowChecks $checks) {
-		$this->objectEntityMapper = $stores->objectEntityMapper;
-		$this->schemaMapper = $stores->schemaMapper;
-		$this->registerMapper = $stores->registerMapper;
-		$this->saveHandler = $stores->saveHandler;
-		$this->userSession = $session->userSession;
-		$this->organisationService = $session->organisationService;
-		$this->groupManager = $session->groupManager;
-		$this->logger = $reporting->logger;
-		$this->eventDispatcher = $reporting->eventDispatcher;
-		$this->auditTrailMapper = $reporting->auditTrailMapper;
-		$this->permissionHandler = $checks->permissionHandler;
-		$this->validateHandler = $checks->validateHandler;
-		$this->rowRules = $checks->rowRules;
+	public function __construct(
+		private readonly BulkSaveStores $stores,
+		private readonly BulkSaveSession $session,
+		private readonly BulkSaveReporting $reporting,
+		private readonly BulkRowChecks $checks,
+	) {
 	}//end __construct()
 
 	/**
@@ -359,7 +248,7 @@ class SaveObjects {
 		}
 
 		// Load from database and cache.
-		$schema = $this->schemaMapper->find($schemaId);
+		$schema = $this->stores->schemaMapper->find($schemaId);
 		self::$schemaCache[$schemaId] = $schema;
 
 		return $schema;
@@ -372,9 +261,9 @@ class SaveObjects {
 	 */
 	private function bulkSlugs(): BulkObjectSlugs {
 		$this->bulkSlugs ??= new BulkObjectSlugs(
-			slugHandler: $this->saveHandler->getSlugHandler(),
-			registerMapper: $this->registerMapper,
-			logger: $this->logger,
+			slugHandler: $this->stores->saveHandler->getSlugHandler(),
+			registerMapper: $this->stores->registerMapper,
+			logger: $this->reporting->logger,
 			schemaOf: fn (string $schemaId): Schema => $this->loadSchemaWithCache(schemaId: $schemaId)
 		);
 
@@ -426,7 +315,7 @@ class SaveObjects {
 		}
 
 		// Load from database and cache.
-		$register = $this->registerMapper->find($registerId);
+		$register = $this->stores->registerMapper->find($registerId);
 		self::$registerCache[$registerId] = $register;
 
 		return $register;
@@ -671,7 +560,7 @@ class SaveObjects {
 			$onType = 'mixed-schema';
 		}
 
-		$this->logger->debug($onLabel, ['totalObjects' => $count, 'operation' => $onType]);
+		$this->reporting->logger->debug($onLabel, ['totalObjects' => $count, 'operation' => $onType]);
 	}//end logBulkSaveStart()
 
 	/**
@@ -937,7 +826,7 @@ class SaveObjects {
 		array &$result,
 	): array {
 		// No-op when dependencies are not wired (legacy constructor signature).
-		if ($this->permissionHandler === null) {
+		if ($this->checks->permissionHandler === null) {
 			return $objects;
 		}
 
@@ -1004,7 +893,7 @@ class SaveObjects {
 	 * @return BulkSafeguardRun
 	 */
 	private function startBulkSafeguardRun(array $objects, BulkBatchDefaults $defaults, array $flags): BulkSafeguardRun {
-		$run             = new BulkSafeguardRun(currentUser: $this->userSession->getUser());
+		$run             = new BulkSafeguardRun(currentUser: $this->session->userSession->getUser());
 		$run->isAdmin    = $this->safeguardCallerIsAdmin(run: $run);
 		$run->rbac       = ($flags['rbac'] === true || $run->isAdmin === false);
 		$run->validation = $flags['validation'];
@@ -1023,12 +912,12 @@ class SaveObjects {
 	 * @return bool
 	 */
 	private function safeguardCallerIsAdmin(BulkSafeguardRun $run): bool {
-		if ($run->currentUser === null || $this->groupManager === null) {
+		if ($run->currentUser === null || $this->session->groupManager === null) {
 			return false;
 		}
 
 		try {
-			return $this->groupManager->isAdmin($run->currentUser->getUID());
+			return $this->session->groupManager->isAdmin($run->currentUser->getUID());
 		} catch (\Throwable $e) {
 			return false;
 		}
@@ -1266,7 +1155,7 @@ class SaveObjects {
 	 */
 	private function screenValidatedRow(array $row, BulkSafeguardRun $run): array {
 		$refusal = $this->validationRefusal(row: $row, run: $run);
-		$events  = $this->rowRules?->bulkWriteEvents;
+		$events  = $this->checks->rowRules?->bulkWriteEvents;
 		if ($refusal !== null || $events?->appliesTo(schema: $run->rowSchema, register: $run->rowRegister) !== true) {
 			return [$row, $refusal];
 		}
@@ -1373,7 +1262,7 @@ class SaveObjects {
 	 * @return bool
 	 */
 	private function callerMayOverwriteStoredRow(BulkSafeguardRun $run): bool {
-		return $this->objectEntityMapper->callerOrganisationsHold(row: $run->rowExisting) === true
+		return $this->stores->objectEntityMapper->callerOrganisationsHold(row: $run->rowExisting) === true
 			|| $this->callerReadsStoredRow(run: $run) === true;
 	}//end callerMayOverwriteStoredRow()
 
@@ -1390,7 +1279,7 @@ class SaveObjects {
 	private function callerReadsStoredRow(BulkSafeguardRun $run): bool {
 		$uuid = (string) $run->rowExisting->getUuid();
 		try {
-			$read = $this->objectEntityMapper->find(
+			$read = $this->stores->objectEntityMapper->find(
 				identifier: $uuid,
 				register: $run->rowRegister,
 				schema: $run->rowSchema
@@ -1442,7 +1331,7 @@ class SaveObjects {
 			return null;
 		}
 
-		if ($this->objectEntityMapper->callerOrganisationsHold(row: $run->rowDeleted) === true) {
+		if ($this->stores->objectEntityMapper->callerOrganisationsHold(row: $run->rowDeleted) === true) {
 			return null;
 		}
 
@@ -1487,7 +1376,7 @@ class SaveObjects {
 	 * @return bool
 	 */
 	private function grantsRowAction(BulkSafeguardRun $run): bool {
-		return $this->permissionHandler->hasPermission(
+		return $this->checks->permissionHandler->hasPermission(
 			schema: $run->rowSchema,
 			action: $run->rowAction,
 			userId: $run->userId(),
@@ -1514,7 +1403,7 @@ class SaveObjects {
 			return null;
 		}
 
-		$writingRun = $this->rowRules?->runContext?->currentRunUuid();
+		$writingRun = $this->checks->rowRules?->runContext?->currentRunUuid();
 		if ($stored->isLockedBySomeoneElse(userId: $run->userId(), runUuid: $writingRun) === true) {
 			return LockedException::forObject($stored)->getMessage();
 		}
@@ -1552,7 +1441,7 @@ class SaveObjects {
 	 * @return string|null
 	 */
 	private function validationRefusal(array $row, BulkSafeguardRun $run): ?string {
-		$validator = $this->validateHandler;
+		$validator = $this->checks->validateHandler;
 		if ($run->validation === false || $validator === null) {
 			return null;
 		}
@@ -1575,7 +1464,7 @@ class SaveObjects {
 	 * @return string|null
 	 */
 	private function validationFailure(array $row, Schema $schema): ?string {
-		$validator = $this->validateHandler;
+		$validator = $this->checks->validateHandler;
 		if ($validator === null) {
 			return null;
 		}
@@ -1613,7 +1502,7 @@ class SaveObjects {
 			return [$object, null];
 		}
 
-		$propertyRbac = $this->rowRules?->propertyRbac;
+		$propertyRbac = $this->checks->rowRules?->propertyRbac;
 		if ($propertyRbac === null) {
 			return [$object, self::unguardedPropertyRefusal(schema: $schema)];
 		}
@@ -1958,7 +1847,7 @@ class SaveObjects {
 	 * @throws \Throwable When no row, or no single row, is found.
 	 */
 	private function findStoredRow(string $uuid, BulkSafeguardRun $run): ObjectEntity {
-		return $this->objectEntityMapper->find(
+		return $this->stores->objectEntityMapper->find(
 			identifier: $uuid,
 			register: $run->rowRegister,
 			schema: self::boundedSchema(run: $run),
@@ -2094,7 +1983,7 @@ class SaveObjects {
 		try {
 			return $this->findGroupRows(group: $group);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->reporting->logger->warning(
 				message: '[SaveObjects] Batch existence prefetch failed; falling back to per-row lookup',
 				context: ['group' => $groupKey, 'uuids' => count($group['uuids']), 'error' => $e->getMessage()]
 			);
@@ -2110,7 +1999,7 @@ class SaveObjects {
 	 * @return array<string, ObjectEntity>
 	 */
 	private function findGroupRows(array $group): array {
-		return $this->objectEntityMapper->findObjectsByUuidsInRegisterSchema(
+		return $this->stores->objectEntityMapper->findObjectsByUuidsInRegisterSchema(
 			register: $group['register'],
 			schema: $group['schema'],
 			uuids: $group['uuids'],
@@ -2153,7 +2042,7 @@ class SaveObjects {
 	 * @return void
 	 */
 	private function logSafeguardRejection(string $reason, ?int $index): void {
-		$this->logger->info(
+		$this->reporting->logger->info(
 			message: '[SaveObjects] Wave-12 bulk safeguard rejected row',
 			context: [
 				'file' => __FILE__,
@@ -2409,8 +2298,8 @@ class SaveObjects {
 	 */
 	private function singleSchemaDefaults(array $context): BulkObjectDefaults {
 		$ownership = new BulkObjectOwnership(
-			owner: $this->userSession->getUser()?->getUID(),
-			organisation: $this->organisationService->getOrganisationForNewEntity()
+			owner: $this->session->userSession->getUser()?->getUID(),
+			organisation: $this->session->organisationService->getOrganisationForNewEntity()
 		);
 
 		return new BulkObjectDefaults(registerId: $context[0], schemaId: $context[2], schema: $context[3], ownership: $ownership);
@@ -2432,7 +2321,7 @@ class SaveObjects {
 			return;
 		}
 
-		$this->logger->debug(
+		$this->reporting->logger->debug(
 			'Single-schema preparation completed',
 			[
 				'objectsProcessed' => count($preparedObjects),
@@ -2628,7 +2517,7 @@ class SaveObjects {
 			$tempEntity->hydrate($object['@self']);
 		}
 
-		$this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
+		$this->stores->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
 
 		return $tempEntity;
 	}//end hydratedBulkEntity()
@@ -2646,7 +2535,7 @@ class SaveObjects {
 			$selfKeys = array_keys($object['@self']);
 		}
 
-		$this->logger->debug(
+		$this->reporting->logger->debug(
 			'[SaveObjects] DEBUG - Single schema object structure',
 			[
 				'available_keys' => array_keys($object),
@@ -2666,7 +2555,7 @@ class SaveObjects {
 	 * @return void
 	 */
 	private function logBulkRelationScan(array $selfData, array $businessData): void {
-		$this->logger->debug(
+		$this->reporting->logger->debug(
 			'[SaveObjects] Relations scanned in preparation (single schema)',
 			[
 				'uuid' => $selfData['uuid'] ?? 'unknown',
@@ -2865,14 +2754,14 @@ class SaveObjects {
 	 * @spec openspec/changes/bulk-writes-fire-save-events/specs/object-lifecycle/spec.md#requirement-a-bulk-write-with-events-on-runs-each-rows-pre-save-event-and-refuses-only-the-stopped-row
 	 */
 	private function bulkEventTargets(array $transformedObjects, array $context): array {
-		if ($this->rowRules?->bulkWriteEvents === null || $context['events'] === true) {
+		if ($this->checks->rowRules?->bulkWriteEvents === null || $context['events'] === true) {
 			return [];
 		}
 
 		$context = $this->withCallEntities(context: $context);
 		$targets = [];
 		foreach ($this->eventCandidates(rows: $transformedObjects, context: $context) as $key => $candidate) {
-			if ($this->rowRules->bulkWriteEvents->appliesTo(schema: $candidate->schema, register: $candidate->register) === true) {
+			if ($this->checks->rowRules->bulkWriteEvents->appliesTo(schema: $candidate->schema, register: $candidate->register) === true) {
 				$targets[$key] = true;
 			}
 		}
@@ -3070,7 +2959,7 @@ class SaveObjects {
 			return [$transformedObjects, []];
 		}
 
-		$run->userId = $this->userSession->getUser()?->getUID();
+		$run->userId = $this->session->userSession->getUser()?->getUID();
 
 		return $this->screenChunkRows(run: $run, rows: $transformedObjects);
 	}//end enforceChunkGuards()
@@ -3158,7 +3047,7 @@ class SaveObjects {
 	 */
 	private function chunkPermissionRefusal(BulkSaveRun $run, array $objData): ?array {
 		$schema  = $this->guardSchema(run: $run, objData: $objData);
-		$handler = $this->permissionHandler;
+		$handler = $this->checks->permissionHandler;
 		if ($run->rbac === false || $handler === null || $schema === null) {
 			return null;
 		}
@@ -3226,7 +3115,7 @@ class SaveObjects {
 	 */
 	private function chunkValidationRefusal(BulkSaveRun $run, array $objData): ?array {
 		$schema    = $this->guardSchema(run: $run, objData: $objData);
-		$validator = $this->validateHandler;
+		$validator = $this->checks->validateHandler;
 		if ($run->validation === false || $validator === null || $schema === null) {
 			return null;
 		}
@@ -3245,7 +3134,7 @@ class SaveObjects {
 	 * @return array{error: string, type: string}|null The refusal.
 	 */
 	private function chunkSchemaRefusal(Schema $schema, array $data): ?array {
-		$validator = $this->validateHandler;
+		$validator = $this->checks->validateHandler;
 		if ($validator === null) {
 			return null;
 		}
@@ -3336,7 +3225,7 @@ class SaveObjects {
 	 * @return bool
 	 */
 	private function writesChunkAudit(bool $audit): bool {
-		return $this->auditTrailMapper !== null && $audit === true;
+		return $this->reporting->auditTrailMapper !== null && $audit === true;
 	}//end writesChunkAudit()
 
 	/**
@@ -3350,7 +3239,7 @@ class SaveObjects {
 	 * @return bool
 	 */
 	private function dispatchesChunkEvents(bool $events): bool {
-		return $events === true && $this->eventDispatcher !== null && SystemOperationContext::isActive() === false;
+		return $events === true && $this->reporting->eventDispatcher !== null && SystemOperationContext::isActive() === false;
 	}//end dispatchesChunkEvents()
 
 	/**
@@ -3393,9 +3282,9 @@ class SaveObjects {
 		while ($auditEntries !== []) {
 			$slice = array_splice($auditEntries, 0, self::AUDIT_INSERT_CHUNK_SIZE);
 			try {
-				$this->auditTrailMapper->insertAuditTrails(entries: $slice);
+				$this->reporting->auditTrailMapper->insertAuditTrails(entries: $slice);
 			} catch (\Throwable $e) {
-				$this->logger->warning(
+				$this->reporting->logger->warning(
 					message: '[SaveObjects] Failed to write batched audit trail for bulk chunk',
 					context: ['error' => $e->getMessage(), 'entries' => count($slice)]
 				);
@@ -3413,9 +3302,9 @@ class SaveObjects {
 	private function dispatchCreatedEvents(array $createdEntities): void {
 		foreach ($createdEntities as $entity) {
 			try {
-				(new ObjectEventGate(events: $this->eventDispatcher))->created(object: $entity);
+				(new ObjectEventGate(events: $this->reporting->eventDispatcher))->created(object: $entity);
 			} catch (\Throwable $e) {
-				$this->logger->warning(
+				$this->reporting->logger->warning(
 					message: '[SaveObjects] Failed to dispatch ObjectCreatedEvent for bulk object',
 					context: ['error' => $e->getMessage(), 'uuid' => $entity->getUuid()]
 				);
@@ -3435,9 +3324,9 @@ class SaveObjects {
 		foreach ($updatedEntities as $pair) {
 			$entity = $pair['new'];
 			try {
-				(new ObjectEventGate(events: $this->eventDispatcher))->updated(new: $entity, old: ($pair['old'] ?? $entity));
+				(new ObjectEventGate(events: $this->reporting->eventDispatcher))->updated(new: $entity, old: ($pair['old'] ?? $entity));
 			} catch (\Throwable $e) {
-				$this->logger->warning(
+				$this->reporting->logger->warning(
 					message: '[SaveObjects] Failed to dispatch ObjectUpdatedEvent for bulk object',
 					context: ['error' => $e->getMessage(), 'uuid' => $entity->getUuid()]
 				);
@@ -3463,7 +3352,7 @@ class SaveObjects {
 		}
 
 		try {
-			return $this->objectEntityMapper->convertRowToObjectEntity(
+			return $this->stores->objectEntityMapper->convertRowToObjectEntity(
 				row: $row,
 				_register: $this->loadRegisterWithCache(registerId: $row['_register']),
 				_schema: $this->loadSchemaWithCache(schemaId: $row['_schema'])
@@ -3483,7 +3372,7 @@ class SaveObjects {
 	 * @return void
 	 */
 	private function logRowConversionFailure(array $row, \Throwable $error): void {
-		$this->logger->warning(
+		$this->reporting->logger->warning(
 			message: '[SaveObjects] Failed to convert bulk result row to entity',
 			context: [
 				'error' => $error->getMessage(),
@@ -3550,7 +3439,7 @@ class SaveObjects {
 		$this->logBulkPersist(count: count($transformedObjects));
 
 		// MAXIMUM PERFORMANCE: Always use ultra-fast bulk operations for large imports.
-		return $this->objectEntityMapper->ultraFastBulkSave(
+		return $this->stores->objectEntityMapper->ultraFastBulkSave(
 			insertObjects: $transformedObjects,
 			updateObjects: [],
 			register: $this->persistRegister(register: $register),
@@ -3567,7 +3456,7 @@ class SaveObjects {
 	 * @return void
 	 */
 	private function logBulkPersist(int $count): void {
-		$this->logger->debug(
+		$this->reporting->logger->debug(
 			'[SaveObjects] Using single-call bulk processing (no pre-lookup needed)',
 			[
 				'objects_to_process' => $count,
@@ -3592,9 +3481,9 @@ class SaveObjects {
 		}
 
 		try {
-			return $this->registerMapper->find($register);
+			return $this->stores->registerMapper->find($register);
 		} catch (Exception $e) {
-			$this->logger->warning(
+			$this->reporting->logger->warning(
 				message: '[SaveObjects] Failed to resolve register for bulk save',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $register]
 			);
@@ -3615,9 +3504,9 @@ class SaveObjects {
 		}
 
 		try {
-			return $this->schemaMapper->find($schema);
+			return $this->stores->schemaMapper->find($schema);
 		} catch (Exception $e) {
-			$this->logger->warning(
+			$this->reporting->logger->warning(
 				message: '[SaveObjects] Failed to resolve schema for bulk save',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $schema]
 			);
@@ -3670,7 +3559,7 @@ class SaveObjects {
 	 * @return array The (empty) side effects.
 	 */
 	private function unexpectedChunkResults(array $transformedObjects, array &$result): array {
-		$this->logger->warning('[SaveObjects] Unexpected bulk result format, using fallback');
+		$this->reporting->logger->warning('[SaveObjects] Unexpected bulk result format, using fallback');
 		foreach ($transformedObjects as $objData) {
 			$result['saved'][] = $objData;
 			$result['statistics']['saved']++;
@@ -3691,7 +3580,7 @@ class SaveObjects {
 	 * @return array The (empty) side effects.
 	 */
 	private function legacyChunkResults(PersistedChunk $persisted, array &$result): array {
-		$this->logger->warning(
+		$this->reporting->logger->warning(
 			message: '[SaveObjects] Legacy uuid-array bulk result — audit trail and lifecycle events are skipped for this chunk',
 			context: ['objects' => count($persisted->returned)]
 		);
@@ -3715,7 +3604,7 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function classifyDatabaseComputedResults(array $bulkResult, array &$result): array {
-		$this->logger->debug('[SaveObjects] Processing complete objects with database-computed classification');
+		$this->reporting->logger->debug('[SaveObjects] Processing complete objects with database-computed classification');
 
 		$sideEffects = ['created' => [], 'updated' => []];
 		$counts      = ['created' => 0, 'updated' => 0, 'unchanged' => 0];
@@ -3755,7 +3644,7 @@ class SaveObjects {
 	 * @return void
 	 */
 	private function logClassification(int $total, array $counts): void {
-		$this->logger->debug(
+		$this->reporting->logger->debug(
 			'[SaveObjects] Database-computed classification completed',
 			[
 				'total_processed' => $total,
@@ -3810,7 +3699,7 @@ class SaveObjects {
 			return $objectStatus;
 		}
 
-		$this->logger->warning(
+		$this->reporting->logger->warning(
 			"Unexpected object status: {$objectStatus}",
 			[
 				'uuid' => ($row['row']['_uuid'] ?? $row['row']['uuid'] ?? 'unknown'),
@@ -3874,7 +3763,7 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function classifyLegacyResults(PersistedChunk $persisted, array &$result): void {
-		$this->logger->debug('[SaveObjects] Processing UUID array (legacy mode)');
+		$this->reporting->logger->debug('[SaveObjects] Processing UUID array (legacy mode)');
 
 		// Fallback: Use traditional object reconstruction.
 		$savedObjects = $this->reconstructSavedObjects(insertObjects: $persisted->rows, savedObjectIds: $persisted->returned);
@@ -3884,7 +3773,7 @@ class SaveObjects {
 			$result['statistics']['saved']++;
 		}
 
-		$this->logger->debug('[SaveObjects] Using fallback object reconstruction');
+		$this->reporting->logger->debug('[SaveObjects] Using fallback object reconstruction');
 	}//end classifyLegacyResults()
 
 	/**
@@ -4028,7 +3917,7 @@ class SaveObjects {
 	 * @return void
 	 */
 	private function logMixedSchemaRow(array $object): void {
-		$this->logger->debug(
+		$this->reporting->logger->debug(
 			'[SaveObjects] DEBUG - Mixed schema object structure',
 			['available_keys' => array_keys($object), 'has_object_property' => isset($object['object'])]
 		);
@@ -4060,7 +3949,7 @@ class SaveObjects {
 	 * @return void
 	 */
 	private function logRelationCount(string $message, array $selfData): void {
-		$this->logger->debug($message, ['uuid' => $selfData['uuid'] ?? 'unknown', 'relationCount' => count($selfData['relations'])]);
+		$this->reporting->logger->debug($message, ['uuid' => $selfData['uuid'] ?? 'unknown', 'relationCount' => count($selfData['relations'])]);
 	}//end logRelationCount()
 
 	/**
@@ -4144,7 +4033,7 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function hydrateObjectMetadataFields(array $selfData): array {
-		$currentUser = $this->userSession->getUser();
+		$currentUser = $this->session->userSession->getUser();
 		$selfData['owner'] = self::stampedOwner(selfData: $selfData, currentUser: $currentUser);
 
 		// SECURITY (BUG-OBJ-15): a client-supplied @self.organisation is only honoured when the
@@ -4153,7 +4042,7 @@ class SaveObjects {
 		// cross-tenant data injection through the bulk endpoint.
 		if ($this->callerMayClaimOrganisation(requested: ($selfData['organisation'] ?? null), currentUser: $currentUser) === false) {
 			// NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
-			$selfData['organisation'] = $this->organisationService->getOrganisationForNewEntity();
+			$selfData['organisation'] = $this->session->organisationService->getOrganisationForNewEntity();
 		}
 
 		return $selfData;
@@ -4199,7 +4088,7 @@ class SaveObjects {
 		}
 
 		return $this->sessionUserIsAdmin(currentUser: $currentUser) === true
-			|| $this->organisationService->hasAccessToOrganisation((string) $requested) === true;
+			|| $this->session->organisationService->hasAccessToOrganisation((string) $requested) === true;
 	}//end callerMayClaimOrganisation()
 
 	/**
@@ -4211,8 +4100,8 @@ class SaveObjects {
 	 */
 	private function sessionUserIsAdmin(?IUser $currentUser): bool {
 		return $currentUser !== null
-			&& $this->groupManager !== null
-			&& $this->groupManager->isAdmin($currentUser->getUID()) === true;
+			&& $this->session->groupManager !== null
+			&& $this->session->groupManager->isAdmin($currentUser->getUID()) === true;
 	}//end sessionUserIsAdmin()
 
 	/**
@@ -4238,7 +4127,7 @@ class SaveObjects {
 	private function extractBusinessData(array $object, mixed $schema = null): array {
 		if (isset($object['object']) === true && is_array($object['object']) === true) {
 			// NEW STRUCTURE: object property contains business data.
-			$this->logger->debug('[SaveObjects] Using object property for business data (mixed)');
+			$this->reporting->logger->debug('[SaveObjects] Using object property for business data (mixed)');
 			return $object['object'];
 		}
 
@@ -4315,7 +4204,7 @@ class SaveObjects {
 	 * @return void
 	 */
 	private function logMetadataRemoval(array $object, array $kept): void {
-		$this->logger->debug(
+		$this->reporting->logger->debug(
 			'[SaveObjects] Metadata removal applied (mixed)',
 			[
 				'removed_fields' => array_values(array_diff(array_intersect(self::metadataFields(), array_keys($object)), $kept)),
@@ -4404,7 +4293,7 @@ class SaveObjects {
 	 * @return void
 	 */
 	private function logMissingUuid(array $objData): void {
-		$this->logger->error(
+		$this->reporting->logger->error(
 			'Object reconstruction failed: Missing UUID after bulk save operation',
 			[
 				'objectKeys' => array_keys($objData),
@@ -4434,7 +4323,7 @@ class SaveObjects {
 		Schema|string|int|null $schema,
 		array &$result
 	): array {
-		$refusals = ($this->rowRules?->decisionTables?->refusals(objects: $objects, register: $register, schema: $schema) ?? []);
+		$refusals = ($this->checks->rowRules?->decisionTables?->refusals(objects: $objects, register: $register, schema: $schema) ?? []);
 		foreach ($refusals as $position => $reason) {
 			$this->recordSafeguardRejection(object: $objects[$position], reason: $reason, result: $result, index: self::positionIndex(position: $position));
 			unset($objects[$position]);
