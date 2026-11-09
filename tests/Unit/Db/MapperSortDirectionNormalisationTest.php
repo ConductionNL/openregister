@@ -19,6 +19,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\AgentMapperPlatform;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -70,11 +71,10 @@ class MapperSortDirectionNormalisationTest extends TestCase {
 	#[DataProvider('directions')]
 	public function testAgentMapperNormalisesTheDirection(mixed $direction, string $expected): void {
 		$mapper = new AgentMapper(
-			$this->createMock(IDBConnection::class),
+			new AgentMapperPlatform($this->createMock(IDBConnection::class), $this->createMock(IEventDispatcher::class)),
 			$this->createMock(OrganisationMapper::class),
 			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IEventDispatcher::class)
+			$this->createMock(IGroupManager::class)
 		);
 
 		$this->assertSame($expected, $this->normalise(mapper: $mapper, direction: $direction));
