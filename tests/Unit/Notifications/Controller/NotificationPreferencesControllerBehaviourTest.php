@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Controller;
 
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCA\OpenRegister\Notifications\Controller\NotificationPreferencesController;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationPreferencesControllerServices;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -56,7 +57,7 @@ class NotificationPreferencesControllerBehaviourTest extends TestCase {
 		}
 
 		$session->method('getUser')->willReturn($user);
-		return new NotificationPreferencesController('openregister', $request, $this->prefs, $session);
+		return new NotificationPreferencesController($request, new NotificationPreferencesControllerServices($this->prefs, $session));
 	}
 
 	public function testIndexAnonymousIs401(): void {
