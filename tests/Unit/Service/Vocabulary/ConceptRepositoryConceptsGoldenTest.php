@@ -34,6 +34,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueRules;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
 use PHPUnit\Framework\TestCase;
 
@@ -85,13 +87,24 @@ final class ConceptRepositoryConceptsGoldenTest extends TestCase {
 		$repository = $this->repository();
 		$a = ['id' => 'c-1', 'uri' => 'urn:a', 'notation' => 'A', '@uuid' => 'c-1'];
 
-		$this->assertSame($a, $repository->resolve(value: 'urn:a', schemeUri: self::SCHEME));
-		$this->assertSame($a, $repository->resolve(value: 'urn:a', schemeUri: self::SCHEME, store: 'uri'));
-		$this->assertNull($repository->resolve(value: 'A', schemeUri: self::SCHEME, store: 'uri'));
-		$this->assertSame($a, $repository->resolve(value: 'A', schemeUri: self::SCHEME, store: 'notation'));
-		$this->assertNull($repository->resolve(value: 'urn:a', schemeUri: self::SCHEME, store: 'notation'));
-		$this->assertNull($repository->resolve(value: 'urn:none', schemeUri: self::SCHEME));
+		$this->assertSame($a, $repository->resolve(value: 'urn:a', declaration: new CodedPropertyDeclaration(scheme: self::SCHEME)));
+		$this->assertSame($a, $repository->resolve(value: 'urn:a', declaration: self::declaration(store: 'uri')));
+		$this->assertNull($repository->resolve(value: 'A', declaration: self::declaration(store: 'uri')));
+		$this->assertSame($a, $repository->resolve(value: 'A', declaration: self::declaration(store: 'notation')));
+		$this->assertNull($repository->resolve(value: 'urn:a', declaration: self::declaration(store: 'notation')));
+		$this->assertNull($repository->resolve(value: 'urn:none', declaration: new CodedPropertyDeclaration(scheme: self::SCHEME)));
 	}//end testResolveInEitherStorageForm()
+
+	/**
+	 * A declaration on the scheme with the given storage form.
+	 *
+	 * @param string $store The storage form.
+	 *
+	 * @return CodedPropertyDeclaration
+	 */
+	private static function declaration(string $store): CodedPropertyDeclaration {
+		return new CodedPropertyDeclaration(scheme: self::SCHEME, rules: new CodedValueRules(store: $store));
+	}//end declaration()
 
 	/**
 	 * A repository over register 7 (scheme schema 8, concept schema 9) holding one scheme.

@@ -74,7 +74,9 @@ class CodedValueGuardGoldenTest extends TestCase {
 			fn (string $schemeUri): array => ($schemeUri === 'urn:s1' ? $this->scheme : [])
 		);
 		$concepts->method('resolve')->willReturnCallback(
-			function (string $value, string $schemeUri, string $store = 'uri'): ?array {
+			function (string $value, CodedPropertyDeclaration $declaration): ?array {
+				$schemeUri = $declaration->scheme;
+				$store = $declaration->store;
 				if ($schemeUri !== 'urn:s1') {
 					return null;
 				}
@@ -142,7 +144,7 @@ class CodedValueGuardGoldenTest extends TestCase {
 		$at = new DateTimeImmutable('2026-09-14T12:00:00+00:00');
 		$actual = [];
 		foreach (self::objects() as $name => $object) {
-			$violations = $this->guard->collectViolations($object, self::schema(), $at);
+			$violations = $this->guard->collectViolations(new \OCA\OpenRegister\Service\Vocabulary\CodedValueWrite($object, self::schema(), $at));
 			try {
 				$this->guard->enforce($object, self::schema(), $at);
 				$thrown = null;
@@ -153,7 +155,7 @@ class CodedValueGuardGoldenTest extends TestCase {
 			$actual[$name] = [$violations, $thrown];
 		}
 
-		$actual['schema without coded properties'] = $this->guard->collectViolations(['resultaat' => 'urn:ing'], new Schema(), $at);
+		$actual['schema without coded properties'] = $this->guard->collectViolations(new \OCA\OpenRegister\Service\Vocabulary\CodedValueWrite(['resultaat' => 'urn:ing'], new Schema(), $at));
 
 		$this->assertSame(self::expectedViolations(), $actual);
 	}//end testCollectViolationsAndEnforce()

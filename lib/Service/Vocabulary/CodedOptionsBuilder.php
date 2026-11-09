@@ -144,10 +144,8 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 	 */
 	private function subtree(CodedOptionQuery $query, string $uri): array {
 		return $this->scheme->hierarchy->tree(
-			rootUri: $uri,
-			conceptsByUri: $query->conceptsByUri,
-			reading: $query->reading,
-			maxDepth: $query->declaration->maxDepth
+			branch: new ConceptBranch(rootUri: $uri, conceptsByUri: $query->conceptsByUri, maxDepth: $query->declaration->maxDepth),
+			reading: $query->reading
 		);
 	}//end subtree()
 
@@ -188,9 +186,7 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 		}
 
 		return $this->scheme->hierarchy->branchUris(
-			rootUri: $branch,
-			conceptsByUri: $query->conceptsByUri,
-			maxDepth: $query->declaration->maxDepth
+			branch: new ConceptBranch(rootUri: $branch, conceptsByUri: $query->conceptsByUri, maxDepth: $query->declaration->maxDepth)
 		);
 	}//end candidateUris()
 
