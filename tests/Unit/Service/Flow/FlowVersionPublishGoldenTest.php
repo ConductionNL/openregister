@@ -38,6 +38,8 @@ use OCA\OpenRegister\Service\Flow\FlowLifecycleGuard;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowSemanticVersion;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndex;
+use OCA\OpenRegister\Service\Flow\FlowVersionGraphs;
+use OCA\OpenRegister\Service\Flow\FlowVersionRows;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -162,14 +164,8 @@ final class FlowVersionPublishGoldenTest extends TestCase {
 		$db->method('rollBack')->willReturnCallback(function (): void { $this->tx[] = 'rollBack'; });
 
 		return new FlowVersionService(
-			$versions,
-			$this->flows,
-			new FlowDefinitionPin($this->definitions, $this->createMock(LoggerInterface::class)),
-			$this->createMock(FlowLifecycleGuard::class),
-			$triggers,
-			new FlowSemanticVersion(),
-			$db,
-			$this->logger
+			new FlowVersionRows($versions, $this->flows, $db, $this->logger),
+			new FlowVersionGraphs(new FlowDefinitionPin($this->definitions, $this->createMock(LoggerInterface::class)), $this->createMock(FlowLifecycleGuard::class), $triggers, new FlowSemanticVersion())
 		);
 	}
 
