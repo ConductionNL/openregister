@@ -1156,7 +1156,9 @@ export default {
 	color: var(--color-text-light);
 }
 
-.sheetSummaryTable {
+.sheetSummaryTable,
+.errorDetailsTable,
+.errorTable {
 	width: 100%;
 	border-collapse: collapse;
 	border-radius: var(--border-radius);
@@ -1165,13 +1167,16 @@ export default {
 }
 
 .sheetSummaryTable th,
-.sheetSummaryTable td {
+.sheetSummaryTable td,
+.errorTable th,
+.errorTable td {
 	padding: 0.75rem 1rem;
 	text-align: left;
 	border-bottom: 1px solid var(--color-border);
 }
 
-.sheetSummaryTable th {
+.sheetSummaryTable th,
+.errorTable th {
 	background: var(--color-background-dark);
 	font-weight: 600;
 	color: var(--color-text-light);
@@ -1180,11 +1185,13 @@ export default {
 	letter-spacing: 0.5px;
 }
 
-.sheetSummaryTable tbody tr:hover {
+.sheetSummaryTable tbody tr:hover,
+.errorTable tbody tr:hover {
 	background: var(--color-background-hover);
 }
 
-.sheetSummaryTable tbody tr:last-child td {
+.sheetSummaryTable tbody tr:last-child td,
+.errorTable tbody tr:last-child td {
 	border-bottom: none;
 }
 
@@ -1456,46 +1463,6 @@ export default {
 
 .errorDetailsCell {
 	padding: 0.75rem 1rem;
-}
-
-.errorDetailsTable {
-	width: 100%;
-	border-collapse: collapse;
-	border-radius: var(--border-radius);
-	overflow: hidden;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.errorTable {
-	width: 100%;
-	border-collapse: collapse;
-	border-radius: var(--border-radius);
-	overflow: hidden;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.errorTable th,
-.errorTable td {
-	padding: 0.75rem 1rem;
-	text-align: left;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.errorTable th {
-	background: var(--color-background-dark);
-	font-weight: 600;
-	color: var(--color-text-light);
-	font-size: 0.9rem;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-}
-
-.errorTable tbody tr:hover {
-	background: var(--color-background-hover);
-}
-
-.errorTable tbody tr:last-child td {
-	border-bottom: none;
 }
 
 .errorRowNumber {
