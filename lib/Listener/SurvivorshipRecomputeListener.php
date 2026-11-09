@@ -290,9 +290,9 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	private function sourcesOf(SurvivorshipRecomputeRun $run): array {
 		return $this->sourceRecordResolver->resolveSources(
 			masterData: $run->data,
-			masterUuid: (string)$run->object->getUuid(),
+			masterUuid: (string)$run->object?->getUuid(),
 			config: $run->config,
-			masterRegister: (string)$run->object->getRegister()
+			masterRegister: (string)$run->object?->getRegister()
 		);
 	}//end sourcesOf()
 
@@ -308,7 +308,7 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.3
 	 */
 	private function resolve(SurvivorshipRecomputeRun $run, array $sourceRecords): array {
-		$entityType = (string)($run->config['entityType'] ?? ($run->schema->getSlug() ?? ''));
+		$entityType = (string)($run->config['entityType'] ?? ($run->schema?->getSlug() ?? ''));
 		$trustRows = $this->loadTrustRows(entityType: $entityType);
 		$overridesField = self::fieldName(config: $run->config, key: 'overridesField');
 
@@ -347,7 +347,7 @@ class SurvivorshipRecomputeListener implements IEventListener {
 		}
 
 		if ($changed === true) {
-			$run->object->setObject($data);
+			$run->object?->setObject($data);
 		}
 	}//end materialise()
 

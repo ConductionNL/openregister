@@ -38,16 +38,16 @@ final class SurvivorshipRecomputeRun {
 	/**
 	 * The master object being created or updated.
 	 *
-	 * @var ObjectEntity
+	 * @var ObjectEntity|null
 	 */
-	public ObjectEntity $object;
+	public ?ObjectEntity $object = null;
 
 	/**
 	 * The master's schema.
 	 *
-	 * @var Schema
+	 * @var Schema|null
 	 */
-	public Schema $schema;
+	public ?Schema $schema = null;
 
 	/**
 	 * The schema's survivorship annotation.
