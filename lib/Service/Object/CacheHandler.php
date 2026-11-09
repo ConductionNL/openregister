@@ -150,6 +150,13 @@ class CacheHandler implements ObjectNameCacheInterface {
 	private array $readabilityMemo = [];
 
 	/**
+	 * The read postures of the renders in progress, innermost last.
+	 *
+	 * @var list<array{0: bool, 1: bool}>
+	 */
+	private array $readPostures = [];
+
+	/**
 	 * Memoised name-visibility scope for the current request (SEC-CTRL-2 step 2)
 	 *
 	 * `null` combined with $nameScopeResolved === true means UNRESTRICTED (multi
@@ -378,8 +385,59 @@ class CacheHandler implements ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function buildObjectCacheKey(string $rawKey): string {
-		return $this->getActiveOrganisationCacheScope() . '|' . $rawKey;
+		// An object cached by a render with a wider posture (`_rbac` or
+		// `_multitenancy` off) is kept apart, so a later default render in the
+		// same request never answers from it.
+		[$rbac, $multitenancy] = $this->readPosture();
+		$posture = '';
+		if ($rbac === false || $multitenancy === false) {
+			$posture = 'r' . (int)$rbac . 'm' . (int)$multitenancy . '|';
+		}
+
+		return $posture . $this->getActiveOrganisationCacheScope() . '|' . $rawKey;
 	}//end buildObjectCacheKey()
+
+	/**
+	 * Start a render under the given read posture.
+	 *
+	 * Related objects are cut (readableOnly()) to what the caller may read
+	 * under the posture of the render that loads them, not always RBAC plus
+	 * multitenancy. Pair every push with popReadPosture() in a finally block.
+	 *
+	 * @param bool $_rbac         Whether the render applies row RBAC.
+	 * @param bool $_multitenancy Whether the render applies the organisation filter.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function pushReadPosture(bool $_rbac, bool $_multitenancy): void {
+		$this->readPostures[] = [$_rbac, $_multitenancy];
+	}//end pushReadPosture()
+
+	/**
+	 * End the render started by the last pushReadPosture().
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function popReadPosture(): void {
+		array_pop($this->readPostures);
+	}//end popReadPosture()
+
+	/**
+	 * The posture of the render in progress; RBAC and multitenancy on outside a render.
+	 *
+	 * @return array{0: bool, 1: bool} Row RBAC and the organisation filter.
+	 */
+	private function readPosture(): array {
+		if ($this->readPostures === []) {
+			return [true, true];
+		}
+
+		return $this->readPostures[array_key_last($this->readPostures)];
+	}//end readPosture()
 
 	/**
 	 * Resolve the active-organisation discriminator for object-cache keys (BUG-OBJ-6).
@@ -858,6 +916,15 @@ class CacheHandler implements ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function readableOnly(array $objects): array {
+		[$rbac, $multitenancy] = $this->readPosture();
+		if ($rbac === false && $multitenancy === false) {
+			// phpcs:ignore Squiz.Commenting.InlineComment.NotCapital -- ADR-055 marker.
+			// rbac-bypass: the render was asked for with `_rbac: false` and
+			// `_multitenancy: false` (an administrator's read, or trusted
+			// internal code); the related objects get the same posture.
+			return array_values($objects);
+		}
+
 		$uuidsByTable = [];
 		foreach ($objects as $object) {
 			$uuid = (string)$object->getUuid();
@@ -876,7 +943,13 @@ class CacheHandler implements ObjectNameCacheInterface {
 
 			$readableHere = [];
 			try {
-				$readableHere = $this->getObjectMapper()->filterReadableUuids(registerId: $registerId, schemaId: $schemaId, uuids: $uuids);
+				$readableHere = $this->getObjectMapper()->filterReadableUuids(
+					registerId: $registerId,
+					schemaId: $schemaId,
+					uuids: $uuids,
+					_rbac: $rbac,
+					_multitenancy: $multitenancy
+				);
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					message: '[CacheHandler] Read access for related objects could not be established; disclosing none',

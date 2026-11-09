@@ -363,4 +363,52 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 
 		$this->assertInstanceOf(CacheHandler::class, $handler);
 	}
+
+	/**
+	 * obj-f5: a render asked for with `_multitenancy: false` cuts related objects by RBAC only.
+	 */
+	public function testReadableOnlyHonoursTheRenderPostureForMultitenancy(): void {
+		$crossOrg = $this->createObjectMock(1, 'uuid-1', '3', '4');
+		$this->objectMapper->expects($this->once())->method('filterReadableUuids')
+			->with(3, 4, ['uuid-1'], true, false)
+			->willReturn(['uuid-1']);
+
+		$this->handler->pushReadPosture(_rbac: true, _multitenancy: false);
+		try {
+			$this->assertSame([$crossOrg], $this->handler->readableOnly([$crossOrg]));
+		} finally {
+			$this->handler->popReadPosture();
+		}
+	}
+
+	/**
+	 * obj-f5: a render with RBAC and multitenancy off keeps every related object.
+	 */
+	public function testReadableOnlySkipsTheFilterForAnUnrestrictedRender(): void {
+		$related = $this->createObjectMock(1, 'uuid-1', '3', '4');
+		$this->objectMapper->expects($this->never())->method('filterReadableUuids');
+
+		$this->handler->pushReadPosture(_rbac: false, _multitenancy: false);
+		try {
+			$this->assertSame([$related], $this->handler->readableOnly([$related]));
+		} finally {
+			$this->handler->popReadPosture();
+		}
+	}
+
+	/**
+	 * obj-f5: outside a render, and after one ends, RBAC and multitenancy both apply.
+	 */
+	public function testReadableOnlyDefaultsToTheFullFilter(): void {
+		$related = $this->createObjectMock(1, 'uuid-1', '3', '4');
+		$this->objectMapper->expects($this->exactly(2))->method('filterReadableUuids')
+			->with(3, 4, ['uuid-1'], true, true)
+			->willReturn([]);
+
+		$this->assertSame([], $this->handler->readableOnly([$related]));
+
+		$this->handler->pushReadPosture(_rbac: false, _multitenancy: false);
+		$this->handler->popReadPosture();
+		$this->assertSame([], $this->handler->readableOnly([$related]));
+	}
 }
