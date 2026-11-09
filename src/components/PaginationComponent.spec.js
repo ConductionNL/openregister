@@ -82,6 +82,7 @@ describe('PaginationComponent', () => {
 		[1, 5, ['1', '2', '3', '4', '5']],
 		[2, 10, ['1', '2', '3', '4', '5', '...', '10']],
 		[8, 10, ['1', '...', '6', '7', '8', '9', '10']],
+		[7, 10, ['1', '...', '6', '7', '8', '9', '10']],
 		[5, 10, ['1', '...', '4', '5', '6', '...', '10']],
 	])('page %i of %i shows %j', (currentPage, totalPages, expected) => {
 		const wrapper = mountPager({ currentPage, totalPages })
