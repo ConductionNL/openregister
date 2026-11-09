@@ -99,7 +99,8 @@ describe('mail tabs props', () => {
 		['EntitiesTab', EntitiesTab],
 		['ObjectsTab', ObjectsTab],
 	])('%s takes a nullable numeric account and message id', (_name, tab) => {
-		expect(tab.props).toEqual({
+		const wrapper = mount(tab)
+		expect(wrapper.vm.$options.props).toEqual({
 			accountId: { type: Number, default: null },
 			messageId: { type: Number, default: null },
 		})
