@@ -39,7 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
+use OCA\OpenRegister\Kernel\Contracts\ActionAuthInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -53,12 +53,12 @@ class FlowAccess implements FlowAccessInterface {
 	 *
 	 * @param IUserSession $userSession Resolves the calling user.
 	 * @param IGroupManager $groupManager Answers whether that user is an administrator.
-	 * @param OpenRegisterActionAuthService $actionAuth The flow action-rights matrix.
+	 * @param ActionAuthInterface $actionAuth The flow action-rights matrix.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly OpenRegisterActionAuthService $actionAuth,
+		private readonly ActionAuthInterface $actionAuth,
 	) {
 
 	}//end __construct()

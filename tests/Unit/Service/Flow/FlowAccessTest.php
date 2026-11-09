@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowAccess;
-use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
+use OCA\OpenRegister\Kernel\Contracts\ActionAuthInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -62,9 +62,9 @@ class FlowAccessTest extends TestCase {
 	/**
 	 * The rights matrix, mocked.
 	 *
-	 * @var OpenRegisterActionAuthService&MockObject
+	 * @var ActionAuthInterface&MockObject
 	 */
-	private OpenRegisterActionAuthService&MockObject $actionAuth;
+	private ActionAuthInterface&MockObject $actionAuth;
 
 	/**
 	 * The service under test.
@@ -83,7 +83,7 @@ class FlowAccessTest extends TestCase {
 
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
-		$this->actionAuth = $this->createMock(OpenRegisterActionAuthService::class);
+		$this->actionAuth = $this->createMock(ActionAuthInterface::class);
 
 		$this->access = new FlowAccess(
 			userSession: $this->userSession,

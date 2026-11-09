@@ -28,13 +28,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
+use OCA\OpenRegister\Kernel\Contracts\ActionAuthInterface;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 
 /**
  * The action matrix, bound to the `openregister` app id.
  */
-class OpenRegisterActionAuthService extends GenericActionAuthService {
+class OpenRegisterActionAuthService extends GenericActionAuthService implements ActionAuthInterface {
 	/**
 	 * Constructor.
 	 *

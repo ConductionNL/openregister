@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\ActionAuthInterface;
 use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -46,7 +47,7 @@ use OCP\IUser;
  *
  * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.2
  */
-class GenericActionAuthService {
+class GenericActionAuthService implements ActionAuthInterface {
 	/**
 	 * IAppConfig key holding the JSON-encoded matrix.
 	 */

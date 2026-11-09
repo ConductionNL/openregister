@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
+use OCA\OpenRegister\Kernel\Contracts\ActionAuthInterface;
+use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -42,5 +44,6 @@ final class MiddlewareRegistrar {
 	 */
 	public static function register(IRegistrationContext $context): void {
 		MiddlewareWiring::register(context: $context);
+		$context->registerServiceAlias(ActionAuthInterface::class, OpenRegisterActionAuthService::class);
 	}//end register()
 }//end class
