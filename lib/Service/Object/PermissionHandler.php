@@ -443,21 +443,36 @@ class PermissionHandler implements PermissionHandlerInterface {
 		?ObjectEntity $object = null,
 		?string $register = null,
 	): bool {
-		// RBAC disabled bypasses all permission checks. Explicitly-scoped system
-		// operations (config imports at app boot, repair steps, webcron jobs run via
-		// ObjectService::runAsSystem()) are trusted the same way CLI cron already is:
-		// these run without a user session, and the anonymous fail-closed policy
-		// (#1955) would otherwise deny the app maintaining its own objects on every boot.
+		$ask = (new PermissionAsk(schema: $schema, action: $action))
+			->askedBy(userId: $userId, objectOwner: $objectOwner)
+			->about(object: $object, register: $register);
+
+		return $this->permits(ask: $ask, _rbac: $_rbac);
+	}//end hasPermission()
+
+	/**
+	 * Whether a permission question is answered yes, or RBAC is bypassed for it.
+	 *
+	 * RBAC disabled bypasses all permission checks. Explicitly-scoped system
+	 * operations (config imports at app boot, repair steps, webcron jobs run via
+	 * ObjectService::runAsSystem()) are trusted the same way CLI cron already is:
+	 * these run without a user session, and the anonymous fail-closed policy
+	 * (#1955) would otherwise deny the app maintaining its own objects on every boot.
+	 *
+	 * @param PermissionAsk $ask   The schema, action, caller, owner, object and register asked about.
+	 * @param bool          $_rbac Whether RBAC applies (false bypasses the check).
+	 *
+	 * @return bool True when permitted
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function permits(PermissionAsk $ask, bool $_rbac): bool {
 		if ($_rbac === false || SystemOperationContext::isActive() === true) {
 			return true;
 		}
 
-		return $this->answer(
-			ask: (new PermissionAsk(schema: $schema, action: $action))
-				->askedBy(userId: $userId, objectOwner: $objectOwner)
-				->about(object: $object, register: $register)
-		);
-	}//end hasPermission()
+		return $this->answer(ask: $ask);
+	}//end permits()
 
 	/**
 	 * The answer to a question: the draft rule, then the cache, then the rule chain.
@@ -1250,29 +1265,15 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return null;
 		}
 
-		$denial = $this->denialFor(
-			authorization: $authorization,
-			action: $action,
-			userId: $userId,
-			object: $object
-		);
-		if ($denial === null) {
-			return null;
-		}
-
-		if ($mode->enforces() === true) {
+		$denial = $this->denialFor(authorization: $authorization, action: $action, userId: $userId, object: $object);
+		if ($denial === null || $mode->enforces() === true) {
 			return $denial;
 		}
 
 		// `staging`. The denial is real, and it is recorded, and it changes
 		// nothing. Returning null here rather than skipping the resolution above
 		// is the whole difference between a dry run and a disabled feature.
-		$mode->record(
-			denial: $denial,
-			action: $action,
-			userId: $this->callerId(userId: $userId),
-			context: $context
-		);
+		$mode->record(denial: $denial, action: $action, userId: $this->callerId(userId: $userId), context: $context);
 
 		return null;
 	}//end enforcedDenialFor()
@@ -1307,21 +1308,13 @@ class PermissionHandler implements PermissionHandlerInterface {
 		?ObjectEntity $object = null,
 		?string $userId = null,
 	): array {
-		$permitted = [];
-		foreach ($this->rowVerbs() as $verb) {
-			$granted = $this->hasPermission(
-				schema: $schema,
-				action: $verb,
-				userId: $userId,
-				objectOwner: $object?->getOwner(),
-				object: $object
-			);
-			if ($granted === true) {
-				$permitted[] = $verb;
-			}
-		}
+		$asks = static fn (string $verb): PermissionAsk => (new PermissionAsk(schema: $schema, action: $verb))
+			->askedBy(userId: $userId, objectOwner: $object?->getOwner())
+			->about(object: $object, register: null);
 
-		return $permitted;
+		return array_values(
+			array_filter($this->rowVerbs(), fn (string $verb): bool => $this->permits(ask: $asks($verb), _rbac: true))
+		);
 	}//end permittedActionsFor()
 
 	/**
@@ -1367,29 +1360,42 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function provenanceFor(Schema $schema, array $actions, ?string $userId = null, ?ObjectEntity $object = null): array {
-		$userId = $this->callerId(userId: $userId);
+		return $this->provenance(request: new ProvenanceRequest(schema: $schema, actions: $actions, userId: $userId, object: $object));
+	}//end provenanceFor()
+
+	/**
+	 * Where the caller's answer for each requested action comes from (see provenanceFor()).
+	 *
+	 * @param ProvenanceRequest $request The schema, the actions, the caller and the optional object.
+	 *
+	 * @return array<string, array<string, mixed>> One provenance record per action.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function provenance(ProvenanceRequest $request): array {
+		$userId = $this->callerId(userId: $request->userId);
 		$principals = $this->denyResolver()->principalsFor(userId: $userId, userGroups: $this->groupsOf(userId: $userId));
 
 		try {
-			$cascaded = $this->resolveAuthorization(schema: $schema, object: $object);
+			$cascaded = $this->resolveAuthorization(schema: $request->schema, object: $request->object);
 		} catch (\Throwable $e) {
 			// An unresolvable cascade is reported as unresolvable rather than as
 			// an absence. "Nobody granted you this" and "the rules could not be
 			// read" send an administrator to two different screens.
-			return array_fill_keys($actions, ['source' => 'unresolvable', 'granted' => false]);
+			return array_fill_keys($request->actions, ['source' => 'unresolvable', 'granted' => false]);
 		}
 
-		$blocks = $this->provenanceBlocks(schema: $schema, object: $object);
+		$blocks = $this->provenanceBlocks(schema: $request->schema, object: $request->object);
 		$denials = [];
-		foreach ($actions as $action) {
-			$denials[$action] = $this->denialFor(authorization: $cascaded, action: $action, userId: $userId, object: $object);
+		foreach ($request->actions as $action) {
+			$denials[$action] = $this->denialFor(authorization: $cascaded, action: $action, userId: $userId, object: $request->object);
 		}
 
 		$resolver = new ProvenanceResolver(denyResolver: $this->denyResolver(), principals: $principals);
 		$enforced = $this->denyEnforcementMode()->enforces();
 
-		return $resolver->forActions(actions: $actions, blocks: $blocks, denials: $denials, enforced: $enforced);
-	}//end provenanceFor()
+		return $resolver->forActions(actions: $request->actions, blocks: $blocks, denials: $denials, enforced: $enforced);
+	}//end provenance()
 
 	/**
 	 * The blocks provenance reads: object, schema, register and the register's role definitions.
@@ -1885,32 +1891,38 @@ class PermissionHandler implements PermissionHandlerInterface {
 		?ObjectEntity $object = null,
 		?string $register = null,
 	): void {
-		if ($this->hasPermission(
-			schema: $schema,
-			action: $action,
-			userId: $userId,
-			objectOwner: $objectOwner,
-			_rbac: $_rbac,
-			object: $object,
-			register: $register
-		) === false
-		) {
-			$user = $this->caller->userSession->getUser();
-			$userName = 'Anonymous';
-			if ($user !== null) {
-				$userName = $user->getDisplayName();
-			}
-
-			// Use NotAuthorizedException (HTTP 403) rather than a generic
-			// Exception so controllers map an RBAC denial to a 403 Forbidden
-			// response instead of leaking a 500 Internal Server Error. The
-			// class extends \Exception, so any existing `catch (Exception)`
-			// call sites remain backward-compatible.
-			throw new NotAuthorizedException(
-				message: "User '{$userName}' does not have permission to '{$action}' objects in schema '{$schema->getTitle()}'"
-			);
+		$ask = (new PermissionAsk(schema: $schema, action: $action))
+			->askedBy(userId: $userId, objectOwner: $objectOwner)
+			->about(object: $object, register: $register);
+		if ($this->permits(ask: $ask, _rbac: $_rbac) === false) {
+			throw $this->notAuthorized(ask: $ask);
 		}
 	}//end checkPermission()
+
+	/**
+	 * The refusal of a permission question, naming the session user (or Anonymous), the action and the schema.
+	 *
+	 * NotAuthorizedException (HTTP 403) rather than a generic Exception, so controllers map an RBAC
+	 * denial to a 403 Forbidden response instead of leaking a 500 Internal Server Error. The class
+	 * extends \Exception, so any existing `catch (Exception)` call sites remain backward-compatible.
+	 *
+	 * @param PermissionAsk $ask The question that was refused.
+	 *
+	 * @return NotAuthorizedException
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function notAuthorized(PermissionAsk $ask): NotAuthorizedException {
+		$user = $this->caller->userSession->getUser();
+		$userName = 'Anonymous';
+		if ($user !== null) {
+			$userName = $user->getDisplayName();
+		}
+
+		return new NotAuthorizedException(
+			message: "User '{$userName}' does not have permission to '{$ask->action}' objects in schema '{$ask->schema->getTitle()}'"
+		);
+	}//end notAuthorized()
 
 	/*
 	 * NOTE: there is deliberately no object-level read filter here.
@@ -1962,11 +1974,22 @@ class PermissionHandler implements PermissionHandlerInterface {
 		// UUIDs through findMultipleAcrossAllMagicTables() a few lines later.
 		// Soft-deleted rows are included: bulk-deleting an already-trashed object
 		// is how it is destroyed for good.
-		$objects = $this->data->objectEntityMapper->findMultipleAcrossAllMagicTables(
-			uuids: $uuids,
-			includeDeleted: true
-		);
+		$objects = $this->data->objectEntityMapper->findMultipleAcrossAllMagicTables(uuids: $uuids, includeDeleted: true);
 
+		return $this->keptUuids(caller: $caller, objects: $objects);
+	}//end filterUuidsForPermissions()
+
+	/**
+	 * The uuids of the objects a bulk caller may act on, in order; an object without a uuid is left out.
+	 *
+	 * @param BulkCaller          $caller  The bulk caller and its RBAC / multitenancy switches.
+	 * @param array<ObjectEntity> $objects The objects found.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function keptUuids(BulkCaller $caller, array $objects): array {
 		$filteredUuids = [];
 		foreach ($objects as $object) {
 			if ($this->bulkKeeps(caller: $caller, object: $object) === true && $object->getUuid() !== null) {
@@ -1975,7 +1998,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		return $filteredUuids;
-	}//end filterUuidsForPermissions()
+	}//end keptUuids()
 
 	/**
 	 * The session caller of a bulk filter.
@@ -3702,11 +3725,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		// Admin bypass — consistent with every other verdict in this handler.
-		if (in_array(needle: 'admin', haystack: $userGroups, strict: true) === true) {
-			return true;
-		}
-
 		$run = new TransitionAuthorizationRun(userGroupSet: array_flip($userGroups), schema: $schema);
 
 		return $this->transitionListAdmits(run: $run, authorizationList: $authorizationList);
@@ -3723,6 +3741,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
 	 */
 	private function transitionListAdmits(TransitionAuthorizationRun $run, array $authorizationList): bool {
+		// Admin bypass — consistent with every other verdict in this handler.
+		if (isset($run->userGroupSet['admin']) === true) {
+			return true;
+		}
+
 		foreach ($authorizationList as $entry) {
 			if ($this->transitionEntryAdmits(run: $run, entry: $entry) === true) {
 				return true;
