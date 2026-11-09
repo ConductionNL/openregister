@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -60,44 +60,44 @@ class AdministeredValidationRunLog {
 	/**
 	 * Record a validation that fired as a warning.
 	 *
-	 * @param ObjectEntity         $object The object being saved.
-	 * @param Schema               $schema Its schema.
-	 * @param array<string, mixed> $entry  The outcome.
+	 * @param ObjectEntityInterface $object The object being saved.
+	 * @param Schema                $schema Its schema.
+	 * @param array<string, mixed>  $entry  The outcome.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
-	public function recordWarning(ObjectEntity $object, Schema $schema, array $entry): void {
+	public function recordWarning(ObjectEntityInterface $object, Schema $schema, array $entry): void {
 		$this->record(object: $object, schema: $schema, entry: $entry, verdict: RuleVocabulary::VERDICT_FIRED);
 	}//end recordWarning()
 
 	/**
 	 * Record a validation that refused the save.
 	 *
-	 * @param ObjectEntity         $object The object being saved.
-	 * @param Schema               $schema Its schema.
-	 * @param array<string, mixed> $entry  The outcome.
+	 * @param ObjectEntityInterface $object The object being saved.
+	 * @param Schema                $schema Its schema.
+	 * @param array<string, mixed>  $entry  The outcome.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
-	public function recordRefusal(ObjectEntity $object, Schema $schema, array $entry): void {
+	public function recordRefusal(ObjectEntityInterface $object, Schema $schema, array $entry): void {
 		$this->record(object: $object, schema: $schema, entry: $entry, verdict: RuleVocabulary::VERDICT_REFUSED);
 	}//end recordRefusal()
 
 	/**
 	 * Record one validation outcome on the rule run log.
 	 *
-	 * @param ObjectEntity         $object  The object.
-	 * @param Schema               $schema  Its schema.
-	 * @param array<string, mixed> $entry   The outcome.
-	 * @param string               $verdict The verdict to record.
+	 * @param ObjectEntityInterface $object  The object.
+	 * @param Schema                $schema  Its schema.
+	 * @param array<string, mixed>  $entry   The outcome.
+	 * @param string                $verdict The verdict to record.
 	 *
 	 * @return void
 	 */
-	private function record(ObjectEntity $object, Schema $schema, array $entry, string $verdict): void {
+	private function record(ObjectEntityInterface $object, Schema $schema, array $entry, string $verdict): void {
 		$slug = (string)($schema->getSlug() ?? '');
 		if ($slug === '' || (string)($entry['validation'] ?? '') === '') {
 			return;
@@ -115,14 +115,14 @@ class AdministeredValidationRunLog {
 	/**
 	 * Write one validation outcome to the rule run log.
 	 *
-	 * @param ObjectEntity         $object  The object.
-	 * @param string               $slug    Its schema's slug.
-	 * @param array<string, mixed> $entry   The outcome, naming its validation.
-	 * @param string               $verdict The verdict to record.
+	 * @param ObjectEntityInterface $object  The object.
+	 * @param string                $slug    Its schema's slug.
+	 * @param array<string, mixed>  $entry   The outcome, naming its validation.
+	 * @param string                $verdict The verdict to record.
 	 *
 	 * @return void
 	 */
-	private function write(ObjectEntity $object, string $slug, array $entry, string $verdict): void {
+	private function write(ObjectEntityInterface $object, string $slug, array $entry, string $verdict): void {
 		$this->ruleRuns->record(
 			subject: new RuleRunSubject(
 				ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_ADMINISTERED_VALIDATION, schemaSlug: $slug, key: (string)$entry['validation']),

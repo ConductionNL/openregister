@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Rules;
 use DateTime;
 use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 
 /**
@@ -84,13 +85,13 @@ final class RuleInventoryService implements RuleInventoryServiceInterface {
 	/**
 	 * Every rule declared on a schema, in evaluation order.
 	 *
-	 * @param Schema $schema The schema to read.
+	 * @param SchemaInterface $schema The schema to read.
 	 *
 	 * @return array<int, RuleDescriptor> The descriptors, in the order the pipeline evaluates them.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function describe(Schema $schema): array {
+	public function describe(SchemaInterface $schema): array {
 		$slug = (string)($schema->getSlug() ?? '');
 		$configuration = ($schema->getConfiguration() ?? []);
 		$lifecycle = ($configuration['x-openregister-lifecycle'] ?? []);
@@ -159,14 +160,14 @@ final class RuleInventoryService implements RuleInventoryServiceInterface {
 	/**
 	 * One rule of a schema, by its derived id.
 	 *
-	 * @param Schema $schema The schema to read.
+	 * @param SchemaInterface $schema The schema to read.
 	 * @param string $ruleId The derived rule id.
 	 *
 	 * @return RuleDescriptor|null The descriptor, or null when the schema declares no such rule.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function find(Schema $schema, string $ruleId): ?RuleDescriptor {
+	public function find(SchemaInterface $schema, string $ruleId): ?RuleDescriptor {
 		foreach ($this->describe(schema: $schema) as $descriptor) {
 			if ($descriptor->getId() === $ruleId) {
 				return $descriptor;

@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 
 /**
@@ -36,12 +36,12 @@ final readonly class RuleReplaySelection {
 	/**
 	 * One selection.
 	 *
-	 * @param Schema               $schema     The schema the rule is declared on.
+	 * @param SchemaInterface      $schema     The schema the rule is declared on.
 	 * @param integer|null         $registerId The register the selection lives in.
 	 * @param array<string, mixed> $criteria   Either `{"ids": [...]}` or `{"query": {...}}`.
 	 */
 	public function __construct(
-		public Schema $schema,
+		public SchemaInterface $schema,
 		public ?int $registerId,
 		public array $criteria,
 	) {

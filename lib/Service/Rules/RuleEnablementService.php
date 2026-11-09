@@ -26,8 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use Throwable;
@@ -82,7 +82,7 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 	/**
 	 * Switch one rule of a schema.
 	 *
-	 * @param Schema $schema The schema the rule is declared on.
+	 * @param SchemaInterface $schema The schema the rule is declared on.
 	 * @param string $ruleId The derived rule id.
 	 * @param bool $enabled What to switch it to.
 	 *
@@ -90,7 +90,7 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function setEnabled(Schema $schema, string $ruleId, bool $enabled): array {
+	public function setEnabled(SchemaInterface $schema, string $ruleId, bool $enabled): array {
 		$rule = $this->inventory->find(schema: $schema, ruleId: $ruleId);
 		if ($rule === null) {
 			$message = sprintf('Schema "%s" declares no rule "%s".', (string)($schema->getSlug() ?? ''), $ruleId);
@@ -112,15 +112,15 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 	/**
 	 * Write the switch into whichever declaration owns the rule.
 	 *
-	 * @param Schema $schema The schema the rule is declared on.
+	 * @param SchemaInterface $schema The schema the rule is declared on.
 	 * @param RuleDescriptor $rule The rule as declared.
 	 * @param bool $enabled What to switch it to.
 	 *
-	 * @return Schema The schema as it now stands.
+	 * @return SchemaInterface The schema as it now stands.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function write(Schema $schema, RuleDescriptor $rule, bool $enabled): Schema {
+	private function write(SchemaInterface $schema, RuleDescriptor $rule, bool $enabled): SchemaInterface {
 		if ($rule->getKind() === RuleVocabulary::KIND_FLOW) {
 			// A flow's enabled flag lives on the flow and is denormalised onto
 			// every one of its trigger rows. Going through the flow's own save
@@ -139,13 +139,13 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 	/**
 	 * The schema's configuration and properties with the switch written into the rule's declaration.
 	 *
-	 * @param Schema $schema The schema the rule is declared on.
+	 * @param SchemaInterface $schema The schema the rule is declared on.
 	 * @param RuleDescriptor $rule The rule as declared; not a flow.
 	 * @param bool $enabled What to switch it to.
 	 *
 	 * @return array{configuration: array<string, mixed>, properties: array<string, mixed>} The declarations to save.
 	 */
-	private function switched(Schema $schema, RuleDescriptor $rule, bool $enabled): array {
+	private function switched(SchemaInterface $schema, RuleDescriptor $rule, bool $enabled): array {
 		$declarations = ['configuration' => ($schema->getConfiguration() ?? []), 'properties' => ($schema->getProperties() ?? [])];
 
 		return $this->withFlag(tree: $declarations, path: $this->switchPath(declarations: $declarations, rule: $rule), enabled: $enabled);

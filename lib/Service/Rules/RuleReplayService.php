@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rules;
 
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
@@ -107,7 +107,7 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 * state with a per-object outcome, which the operator then commits through
 	 * the bulk job surface, or does not.
 	 *
-	 * @param Schema $schema The schema the rule is declared on.
+	 * @param SchemaInterface $schema The schema the rule is declared on.
 	 * @param string $ruleId The derived rule id.
 	 * @param array<string, mixed> $selection Either `{"ids": [...]}` or `{"query": {...}}`.
 	 * @param string $actorUid The actor's uid.
@@ -120,7 +120,7 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function preview(Schema $schema, string $ruleId, array $selection, string $actorUid,
+	public function preview(SchemaInterface $schema, string $ruleId, array $selection, string $actorUid,
 		?string $justification = null, ?int $registerId = null): array {
 		$rule = $this->inventory->find(schema: $schema, ruleId: $ruleId);
 		if ($rule === null) {
@@ -135,12 +135,12 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	/**
 	 * The refusal for a rule the schema does not declare.
 	 *
-	 * @param Schema $schema The schema the rule was looked up on.
+	 * @param SchemaInterface $schema The schema the rule was looked up on.
 	 * @param string $ruleId The derived rule id asked for.
 	 *
 	 * @return array<string, mixed> The refusal.
 	 */
-	private function unknownRule(Schema $schema, string $ruleId): array {
+	private function unknownRule(SchemaInterface $schema, string $ruleId): array {
 		return $this->refusal(
 			code: self::CODE_UNKNOWN_RULE,
 			message: sprintf('Schema "%s" declares no rule "%s".', (string)($schema->getSlug() ?? ''), $ruleId)

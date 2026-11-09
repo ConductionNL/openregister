@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Rules;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 
 /**
  * Run a schema's administered validations over a write and answer whether it is refused.
@@ -35,12 +35,12 @@ interface AdministeredValidationEnforcerInterface {
 	/**
 	 * Run the schema's validations over a write, and say whether it is refused.
 	 *
-	 * @param ObjectEntity      $newObject The object as it would be saved.
-	 * @param ObjectEntity|null $oldObject The object as stored, null on a create.
+	 * @param ObjectEntityInterface      $newObject The object as it would be saved.
+	 * @param ObjectEntityInterface|null $oldObject The object as stored, null on a create.
 	 *
 	 * @return array<string, mixed>|null The refusal to put on the event, or null when the write may proceed.
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
-	public function refusalFor(ObjectEntity $newObject, ?ObjectEntity $oldObject): ?array;
+	public function refusalFor(ObjectEntityInterface $newObject, ?ObjectEntityInterface $oldObject): ?array;
 }//end interface

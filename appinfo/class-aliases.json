@@ -1815,6 +1815,21 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Rules\\AdministeredValidationEnforcerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AdministeredValidationEnforcerInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Rules\\RuleEnablementServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RuleEnablementServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Rules\\RuleReplayServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RuleReplayServiceInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }

@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rules\Support\AdministeredValidationChecks;
@@ -65,14 +65,14 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	 * without dispatching one, and it keeps the decision in a class that
 	 * knows nothing about Nextcloud's event bus.
 	 *
-	 * @param ObjectEntity      $newObject The object as it would be saved.
-	 * @param ObjectEntity|null $oldObject The object as stored, null on a create.
+	 * @param ObjectEntityInterface      $newObject The object as it would be saved.
+	 * @param ObjectEntityInterface|null $oldObject The object as stored, null on a create.
 	 *
 	 * @return array<string, mixed>|null The refusal to put on the event, or null when the write may proceed.
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
-	public function refusalFor(ObjectEntity $newObject, ?ObjectEntity $oldObject): ?array {
+	public function refusalFor(ObjectEntityInterface $newObject, ?ObjectEntityInterface $oldObject): ?array {
 		$schema = $this->schemaOf(object: $newObject);
 		$declared = $this->declaredOn(schema: $schema);
 		if ($schema === null || $declared === null) {
@@ -114,12 +114,12 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	 * set" with the same `$before`/`$after` vocabulary a rule uses.
 	 * Composition, rather than a second document shape for validations only.
 	 *
-	 * @param ObjectEntity      $newObject The object as it would be saved.
-	 * @param ObjectEntity|null $oldObject The object as stored, null on a create.
+	 * @param ObjectEntityInterface      $newObject The object as it would be saved.
+	 * @param ObjectEntityInterface|null $oldObject The object as stored, null on a create.
 	 *
 	 * @return array<string, mixed> The document.
 	 */
-	private function documentOf(ObjectEntity $newObject, ?ObjectEntity $oldObject): array {
+	private function documentOf(ObjectEntityInterface $newObject, ?ObjectEntityInterface $oldObject): array {
 		$before = null;
 		if ($oldObject !== null) {
 			$before = ($oldObject->getObject() ?? []);
@@ -154,12 +154,12 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	 * Put every warning and the first refusal on the run log.
 	 *
 	 * @param array{refusals: array<int, array<string, mixed>>, warnings: array<int, array<string, mixed>>} $outcome The outcome.
-	 * @param ObjectEntity $object The object being saved.
-	 * @param Schema       $schema Its schema.
+	 * @param ObjectEntityInterface $object The object being saved.
+	 * @param Schema                $schema Its schema.
 	 *
 	 * @return void
 	 */
-	private function recordOutcome(array $outcome, ObjectEntity $object, Schema $schema): void {
+	private function recordOutcome(array $outcome, ObjectEntityInterface $object, Schema $schema): void {
 		foreach ($outcome['warnings'] as $warning) {
 			// 🔑 RECORDED, NOT RETURNED — and that is a gap, not a decision.
 			// The spec says a warning saves AND returns its message, and the
@@ -205,11 +205,11 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	/**
 	 * The schema an object refers to, or null when it cannot be resolved.
 	 *
-	 * @param ObjectEntity $object The object.
+	 * @param ObjectEntityInterface $object The object.
 	 *
 	 * @return Schema|null The schema.
 	 */
-	private function schemaOf(ObjectEntity $object): ?Schema {
+	private function schemaOf(ObjectEntityInterface $object): ?Schema {
 		$schemaRef = $object->getSchema();
 		if ($schemaRef === null || $schemaRef === '') {
 			return null;

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Rules;
 
 use DateTime;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 
 /**
  * The rule inventory of a schema, as the rules controller and the apply-rule
@@ -61,10 +62,10 @@ interface RuleInventoryServiceInterface {
 	/**
 	 * One rule of a schema by its derived id.
 	 *
-	 * @param Schema $schema The schema to read.
+	 * @param SchemaInterface $schema The schema to read.
 	 * @param string $ruleId The derived rule id.
 	 *
 	 * @return RuleDescriptor|null The descriptor, or null when the schema declares no such rule.
 	 */
-	public function find(Schema $schema, string $ruleId): ?RuleDescriptor;
+	public function find(SchemaInterface $schema, string $ruleId): ?RuleDescriptor;
 }//end interface
