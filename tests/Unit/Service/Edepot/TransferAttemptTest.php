@@ -34,8 +34,9 @@ class TransferAttemptTest extends TestCase {
 		$transport = $this->createMock(TransportInterface::class);
 		$transport->method('getName')->willReturn('sftp');
 		$attempt = new TransferAttempt(number: 2, transport: $transport);
+		$attempt->transferList = ['attempts' => [['attempt' => 1]]];
 
-		$list = $attempt->appendTo(transferList: ['attempts' => [['attempt' => 1]]], outcome: 'failed', error: 'down');
+		$list = $attempt->recordOutcome(outcome: 'failed', error: 'down');
 
 		$this->assertCount(2, $list['attempts']);
 		$this->assertSame(['attempt' => 1], $list['attempts'][0]);
@@ -50,7 +51,10 @@ class TransferAttemptTest extends TestCase {
 		$transport = $this->createMock(TransportInterface::class);
 		$transport->method('getName')->willReturn('rest');
 
-		$list = (new TransferAttempt(number: 1, transport: $transport))->appendTo(transferList: ['attempts' => 'x'], outcome: 'completed', error: null);
+		$attempt = new TransferAttempt(number: 1, transport: $transport);
+		$attempt->transferList = ['attempts' => 'x'];
+
+		$list = $attempt->recordOutcome(outcome: 'completed', error: null);
 
 		$this->assertCount(1, $list['attempts']);
 		$this->assertNull($list['attempts'][0]['error']);
