@@ -315,7 +315,7 @@ class ExportProfilesController extends Controller {
 		// straight to the caller, so there is no file for a sweep to delete
 		// and the retention is null: the row is the record, and it is the
 		// register handing the copy over, which is what the count counts.
-		$this->recordRun(profile: $profile, actorUid: $userId, written: $written);
+		$this->recordRun(profile: $profile, written: $written);
 
 		$contentType = 'text/csv';
 		if (($profile->getFormat() ?? 'csv') === 'json') {
@@ -349,20 +349,21 @@ class ExportProfilesController extends Controller {
 	 * of one, because the bytes went straight out rather than into a file. A
 	 * download served from the register is exactly what the count counts.
 	 *
-	 * @param mixed  $profile  The export profile.
-	 * @param string $actorUid Who asked for it.
-	 * @param array  $written  The rendered export.
+	 * The actor is the signed-in caller, who asked for it.
+	 *
+	 * @param mixed $profile The export profile.
+	 * @param array $written The rendered export.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
 	 */
-	private function recordRun($profile, string $actorUid, array $written): void {
+	private function recordRun($profile, array $written): void {
 		try {
 			$this->exportRuns->record(
 				origin: new ExportRunOrigin(
 					source: 'export-profile',
-					actor: $actorUid,
+					actor: (string)$this->resolveUserId(),
 					profile: (string)($written['metadata']['profileUuid'] ?? ''),
 					status: \OCA\OpenRegister\Db\ExportRun::STATUS_SERVED
 				),
