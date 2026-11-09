@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use Exception;
 use InvalidArgumentException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -161,13 +162,25 @@ class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-the-filtered-audit-list-exports-with-its-hash-chain
 	 */
 	public function collect(array $filters, ?string $search, int $ceiling): array {
+		return $this->collectUpTo(criteria: new AuditTrailCriteria(filters: $filters, search: $search), ceiling: $ceiling);
+	}//end collect()
+
+	/**
+	 * Walk the pages of the criteria until the ceiling is passed or the rows run out.
+	 *
+	 * @param AuditTrailCriteria $criteria The filters and the search term.
+	 * @param int                $ceiling  The most rows to return.
+	 *
+	 * @return array{results: AuditTrail[], truncated: bool} The rows, and whether more matched than the ceiling.
+	 */
+	private function collectUpTo(AuditTrailCriteria $criteria, int $ceiling): array {
 		$rows = [];
 		$cursor = null;
 		$held = 0;
 		do {
 			$page = $this->page(
-				filters: $filters,
-				search: $search,
+				filters: $criteria->filters,
+				search: $criteria->search,
 				limit: min(self::MAX_LIMIT, ($ceiling - $held + 1)),
 				beforeId: $cursor
 			);
@@ -176,10 +189,8 @@ class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 			$cursor = $page['nextCursor'];
 		} while ($cursor !== null && $held <= $ceiling);
 
-		$truncated = count($rows) > $ceiling;
-
-		return ['results' => array_slice($rows, 0, $ceiling), 'truncated' => $truncated];
-	}//end collect()
+		return ['results' => array_slice($rows, 0, $ceiling), 'truncated' => (count($rows) > $ceiling)];
+	}//end collectUpTo()
 
 	/**
 	 * Apply the filters and the full-text term.
