@@ -1369,6 +1369,22 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return int Count of matching objects.
 	 */
 	public function countObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): int {
+		return $this->countIn(table: new RegisterSchema(register: $register, schema: $schema), query: $query);
+	}//end countObjectsInRegisterSchemaTable()
+
+	/**
+	 * Count the objects of a register+schema table that match a query, 0 when the count fails (see countObjectsInRegisterSchemaTable()).
+	 *
+	 * @param RegisterSchema $table The register and schema whose table to count in.
+	 * @param array          $query Search parameters for filtering (excluding pagination).
+	 *
+	 * @return int Count of matching objects.
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function countIn(RegisterSchema $table, array $query): int {
+		$register = $table->register;
+		$schema   = $table->schema;
+
 		$target = $this->resolveCountTable(register: $register, schema: $schema);
 		if ($target === null) {
 			return 0;
@@ -1415,7 +1431,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			// Return 0 on error instead of throwing.
 			return 0;
 		}//end try
-	}//end countObjectsInRegisterSchemaTable()
+	}//end countIn()
 
 	/**
 	 * Count objects in a register+schema table, throwing when the count cannot be made.
@@ -1437,6 +1453,23 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
 	public function countObjectsOrFail(array $query, Register $register, Schema $schema): int {
+		return $this->countOrFailIn(table: new RegisterSchema(register: $register, schema: $schema), query: $query);
+	}//end countObjectsOrFail()
+
+	/**
+	 * Count the objects of a register+schema table that match a query, refusing when no number comes back (see countObjectsOrFail()).
+	 *
+	 * @param RegisterSchema $table The register and schema whose table to count in.
+	 * @param array          $query Search parameters for filtering (excluding pagination).
+	 *
+	 * @return int Count of matching objects.
+	 * @throws RuntimeException When the count query did not answer with a number.
+	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
+	 */
+	public function countOrFailIn(RegisterSchema $table, array $query): int {
+		$register = $table->register;
+		$schema   = $table->schema;
+
 		$target = $this->resolveCountTable(register: $register, schema: $schema);
 		if ($target === null) {
 			return 0;
@@ -1450,7 +1483,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}
 
 		return $result;
-	}//end countObjectsOrFail()
+	}//end countOrFailIn()
 
 	/**
 	 * The table a register+schema count runs in, creating it when magic mapping is on.
