@@ -123,16 +123,15 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	 */
 	public function register(string $appId, string $registerSlug, string $schemaSlug, string $urlTemplate, string $icon = '',
 		?string $displayName = null): void {
-		$link = new DeepLinkRegistration(appId: $appId, registerSlug: $registerSlug, schemaSlug: $schemaSlug, urlTemplate: $urlTemplate,
-			icon: $this->effectiveIcon(appId: $appId, icon: $icon), displayName: $displayName);
-		$this->add(registration: $link);
+		$this->add(registration: new DeepLinkRegistration(appId: $appId, registerSlug: $registerSlug, schemaSlug: $schemaSlug,
+			urlTemplate: $urlTemplate, icon: $icon, displayName: $displayName));
 	}//end register()
 
 	/**
 	 * Add a deep link registration for its (register, schema) combination.
 	 *
 	 * The first registration for a combination wins; a later one is ignored.
-	 * The registration's icon is stored as given.
+	 * A registration without an icon gets `icon-{appId}`.
 	 *
 	 * @param DeepLinkRegistration $registration The app, slugs, URL template, icon and label.
 	 *
@@ -141,8 +140,30 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	public function add(DeepLinkRegistration $registration): void {
-		$this->store(registration: $registration);
+		$this->store(registration: $this->withEffectiveIcon(registration: $registration));
 	}//end add()
+
+	/**
+	 * The registration, with `icon-{appId}` as its icon when it names none.
+	 *
+	 * @param DeepLinkRegistration $registration The registration as the app gave it.
+	 *
+	 * @return DeepLinkRegistration The registration to store.
+	 */
+	private function withEffectiveIcon(DeepLinkRegistration $registration): DeepLinkRegistration {
+		if ($registration->icon !== '') {
+			return $registration;
+		}
+
+		return new DeepLinkRegistration(
+			appId: $registration->appId,
+			registerSlug: $registration->registerSlug,
+			schemaSlug: $registration->schemaSlug,
+			urlTemplate: $registration->urlTemplate,
+			icon: $this->effectiveIcon(appId: $registration->appId, icon: ''),
+			displayName: $registration->displayName
+		);
+	}//end withEffectiveIcon()
 
 	/**
 	 * Keep a registration unless its (register, schema) pair is claimed already: first registration wins.
