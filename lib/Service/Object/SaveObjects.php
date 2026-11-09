@@ -716,11 +716,7 @@ class SaveObjects {
 			return $this->prepareObjectsForBulkSave(objects: $objects);
 		}
 
-		return $this->prepareSingleSchemaObjectsOptimized(
-			objects: $objects,
-			register: $run->register,
-			schema: $run->schema
-		);
+		return $this->prepareSingleSchemaObjectsOptimized(objects: $objects, run: $run);
 	}//end prepareByPath()
 
 	/**
@@ -1562,7 +1558,7 @@ class SaveObjects {
 		}
 
 		try {
-			return self::validationFailure(validator: $validator, row: $row, schema: $run->rowSchema);
+			return $this->validationFailure(row: $row, schema: $run->rowSchema);
 		} catch (\Throwable $e) {
 			return 'Schema validation threw: ' . $e->getMessage();
 		}
@@ -1571,13 +1567,19 @@ class SaveObjects {
 	/**
 	 * The validation failure of a row's business data, or null when it is valid.
 	 *
-	 * @param ValidateObjectInterface $validator The validator
-	 * @param array                   $row       The row
-	 * @param Schema                  $schema    The row's schema
+	 * Reached only once validationRefusal() saw a validator; without one nothing is refused.
+	 *
+	 * @param array  $row    The row
+	 * @param Schema $schema The row's schema
 	 *
 	 * @return string|null
 	 */
-	private static function validationFailure(ValidateObjectInterface $validator, array $row, Schema $schema): ?string {
+	private function validationFailure(array $row, Schema $schema): ?string {
+		$validator = $this->validateHandler;
+		if ($validator === null) {
+			return null;
+		}
+
 		unset($row['@self']);
 		$validationResult = $validator->validateObject(object: $row, schema: $schema);
 		if ($validationResult->isValid() === true) {
@@ -2313,7 +2315,7 @@ class SaveObjects {
 		$schema = $this->cachedPreparationSchema(schemaId: $schemaId, schemaCache: $schemaCache);
 		$object = $this->withGeneratedSelfId(object: $object);
 		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
-		$selfData = $this->applyHydratedMetadata(selfData: ($object['@self'] ?? []), object: $object, tempEntity: $tempEntity);
+		$selfData = $this->applyHydratedMetadata(object: $object, tempEntity: $tempEntity);
 		$selfData['relations'] = (new BulkRelationScanner())->scan(data: $tempEntity->getObject(), run: new BulkRelationRun(schema: $schema));
 		$object['@self'] = $selfData;
 
@@ -2366,9 +2368,8 @@ class SaveObjects {
 	 * SaveObject::hydrateObjectMetadata() to extract name, description, summary, etc.
 	 * from object data based on schema configuration.
 	 *
-	 * @param array $objects Array of objects in serialized format
-	 * @param Register|string|int $register Register context
-	 * @param Schema|string|int $schema Schema context
+	 * @param array       $objects Array of objects in serialized format
+	 * @param BulkSaveRun $run     The bulk save call; its register and schema are the context
 	 *
 	 * @return array Array containing [prepared objects, schema cache, invalid objects]
 	 *
@@ -2377,11 +2378,11 @@ class SaveObjects {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function prepareSingleSchemaObjectsOptimized(array $objects, Register|string|int $register, Schema|string|int $schema): array {
+	private function prepareSingleSchemaObjectsOptimized(array $objects, BulkSaveRun $run): array {
 		$startTime = microtime(true);
 
 		// PERFORMANCE OPTIMIZATION: Load and validate schema context once, pre-calculate metadata once.
-		$context  = $this->loadAndValidateSchemaContext(register: $register, schema: $schema);
+		$context  = $this->loadAndValidateSchemaContext(register: $run->register, schema: $run->schema);
 		$defaults = $this->singleSchemaDefaults(context: $context);
 
 		// PERFORMANCE OPTIMIZATION: Process all objects with pre-calculated values.
@@ -2392,7 +2393,7 @@ class SaveObjects {
 
 		// INVERSE RELATIONS PROCESSING - Handle bulk inverse relations.
 		$this->handleBulkInverseRelationsWithAnalysis(preparedObjects: $preparedObjects, schemaAnalysis: $context[5]);
-		$this->logSingleSchemaPreparation(objectCount: count($objects), preparedObjects: $preparedObjects, startTime: $startTime);
+		$this->logSingleSchemaPreparation(preparedObjects: $preparedObjects, startTime: $startTime);
 
 		return [$preparedObjects, $context[4], []];
 	}//end prepareSingleSchemaObjectsOptimized()
@@ -2418,15 +2419,16 @@ class SaveObjects {
 	/**
 	 * Debug-log a large single-schema preparation; smaller ones are not logged, for performance.
 	 *
-	 * @param int   $objectCount     The number of rows passed.
+	 * Every passed row yields one prepared row, so the prepared count is the passed count.
+	 *
 	 * @param array $preparedObjects The prepared rows.
 	 * @param float $startTime       When the preparation started.
 	 *
 	 * @return void
 	 */
-	private function logSingleSchemaPreparation(int $objectCount, array $preparedObjects, float $startTime): void {
+	private function logSingleSchemaPreparation(array $preparedObjects, float $startTime): void {
 		$elapsed = microtime(true) - $startTime;
-		if ($objectCount <= 10000) {
+		if (count($preparedObjects) <= 10000) {
 			return;
 		}
 
@@ -2607,7 +2609,7 @@ class SaveObjects {
 	private function hydrateBulkMetadata(array $object, Schema $schema): array {
 		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
 
-		return $this->applyHydratedMetadata(selfData: $object['@self'], object: $object, tempEntity: $tempEntity);
+		return $this->applyHydratedMetadata(object: $object, tempEntity: $tempEntity);
 	}//end hydrateBulkMetadata()
 
 	/**
@@ -2675,20 +2677,20 @@ class SaveObjects {
 	}//end logBulkRelationScan()
 
 	/**
-	 * Apply hydrated metadata from a temporary entity back to selfData and object arrays
+	 * Apply hydrated metadata from a temporary entity back to the @self data and object array
 	 *
 	 * Extracts name, description, summary, image, and slug from the hydrated entity
-	 * and sets them in both the @self data and top-level object (for bulk SQL).
+	 * and sets them in both the object's @self data and its top level (for bulk SQL).
 	 *
-	 * @param array $selfData The @self metadata array
-	 * @param array $object The full object data (modified in-place for top-level)
+	 * @param array        $object     The full object data with its @self metadata (modified in-place for top-level)
 	 * @param ObjectEntity $tempEntity The hydrated temporary entity
 	 *
-	 * @return array Updated selfData with metadata fields
+	 * @return array The object's @self data with metadata fields
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function applyHydratedMetadata(array $selfData, array &$object, ObjectEntity $tempEntity): array {
+	private function applyHydratedMetadata(array &$object, ObjectEntity $tempEntity): array {
+		$selfData = ($object['@self'] ?? []);
 		foreach (self::HYDRATED_METADATA_GETTERS as $field => $getter) {
 			$value = $tempEntity->$getter();
 			if ($value !== null) {
@@ -3231,19 +3233,25 @@ class SaveObjects {
 			return null;
 		}
 
-		return self::chunkSchemaRefusal(validator: $validator, schema: $schema, data: ($objData['object'] ?? []));
+		return $this->chunkSchemaRefusal(schema: $schema, data: ($objData['object'] ?? []));
 	}//end chunkValidationRefusal()
 
 	/**
 	 * The refusal of business data that fails its schema, or null.
 	 *
-	 * @param ValidateObjectInterface $validator The validator.
-	 * @param Schema                  $schema    The row's schema.
-	 * @param array                   $data      The row's business data.
+	 * Reached only once chunkValidationRefusal() saw a validator; without one nothing is refused.
+	 *
+	 * @param Schema $schema The row's schema.
+	 * @param array  $data   The row's business data.
 	 *
 	 * @return array{error: string, type: string}|null The refusal.
 	 */
-	private static function chunkSchemaRefusal(ValidateObjectInterface $validator, Schema $schema, array $data): ?array {
+	private function chunkSchemaRefusal(Schema $schema, array $data): ?array {
+		$validator = $this->validateHandler;
+		if ($validator === null) {
+			return null;
+		}
+
 		$validationResult = $validator->validateObject(object: $data, schema: $schema);
 		if ($validationResult->isValid() === true) {
 			return null;
@@ -4230,7 +4238,7 @@ class SaveObjects {
 		// LEGACY STRUCTURE: Remove metadata fields to isolate business data.
 		$kept         = self::declaredMetadataFields(schema: $schema);
 		$businessData = self::withoutMetadataFields(object: $object, kept: $kept);
-		$this->logMetadataRemoval(object: $object, kept: $kept, businessData: $businessData);
+		$this->logMetadataRemoval(object: $object, kept: $kept);
 
 		return $businessData;
 	}//end extractBusinessData()
@@ -4294,19 +4302,18 @@ class SaveObjects {
 	/**
 	 * Debug-log which metadata fields were removed, which were kept as schema properties, and what remains.
 	 *
-	 * @param array    $object       The object.
-	 * @param string[] $kept         The metadata names kept.
-	 * @param array    $businessData The business data that remains.
+	 * @param array    $object The object.
+	 * @param string[] $kept   The metadata names kept.
 	 *
 	 * @return void
 	 */
-	private function logMetadataRemoval(array $object, array $kept, array $businessData): void {
+	private function logMetadataRemoval(array $object, array $kept): void {
 		$this->logger->debug(
 			'[SaveObjects] Metadata removal applied (mixed)',
 			[
 				'removed_fields' => array_values(array_diff(array_intersect(self::metadataFields(), array_keys($object)), $kept)),
 				'kept_as_schema_properties' => array_values(array_intersect($kept, array_keys($object))),
-				'remaining_keys' => array_keys($businessData),
+				'remaining_keys' => array_keys(self::withoutMetadataFields(object: $object, kept: $kept)),
 			]
 		);
 	}//end logMetadataRemoval()
