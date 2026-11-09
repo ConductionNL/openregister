@@ -440,19 +440,10 @@
 							</NcButton>
 						</li>
 					</ul>
-					<p
+					<OpenAnonymiserHint
 						v-if="openAnonymiserHint"
-						class="setting-description backend-hint"
-						role="status">
-						{{ openAnonymiserHint }}
-						<a
-							:href="openAnonymiserInstallLink"
-							target="_blank"
-							rel="noopener noreferrer"
-							class="backend-install-link">
-							{{ t('openregister', 'Install OpenAnonymiser') }}
-						</a>
-					</p>
+						:hint="openAnonymiserHint"
+						:installLink="openAnonymiserInstallLink" />
 				</div>
 
 				<!-- Presidio API Configuration -->
@@ -531,19 +522,10 @@
 									)
 								}}
 							</p>
-							<p
+							<OpenAnonymiserHint
 								v-if="openAnonymiserHint"
-								class="setting-description backend-hint"
-								role="status">
-								{{ openAnonymiserHint }}
-								<a
-									:href="openAnonymiserInstallLink"
-									target="_blank"
-									rel="noopener noreferrer"
-									class="backend-install-link">
-									{{ t('openregister', 'Install OpenAnonymiser') }}
-								</a>
-							</p>
+								:hint="openAnonymiserHint"
+								:installLink="openAnonymiserInstallLink" />
 							<NcButton
 								variant="secondary"
 								:disabled="testingBackendMethod === 'openanonymiser'"
@@ -824,6 +806,7 @@ import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import ConnectionTestIcon from './ConnectionTestIcon.vue'
 import LabeledSelect from './LabeledSelect.vue'
+import OpenAnonymiserHint from './OpenAnonymiserHint.vue'
 import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
 
@@ -858,6 +841,15 @@ const OPEN_ANONYMISER_HINTS = new Map([
 			),
 	],
 ])
+
+// The display name of each entity recognition backend, by its id.
+const BACKEND_LABELS = {
+	regex: 'Regex',
+	presidio: 'Presidio',
+	openanonymiser: 'OpenAnonymiser',
+	llm: 'LLM',
+	hybrid: 'Hybrid',
+}
 
 // The select fields of the file settings: the option list each picks from,
 // and the option it falls back to when the stored id is not in the list.
@@ -1257,6 +1249,7 @@ export default {
 		ConnectionTestIcon,
 		DotsVertical,
 		LabeledSelect,
+		OpenAnonymiserHint,
 	},
 
 	data() {
@@ -1310,13 +1303,7 @@ export default {
 			if (!this.backendState || !this.backendState.backends) {
 				return []
 			}
-			const labels = {
-				regex: 'Regex',
-				presidio: 'Presidio',
-				openanonymiser: 'OpenAnonymiser',
-				llm: 'LLM',
-				hybrid: 'Hybrid',
-			}
+			const labels = BACKEND_LABELS
 			return Object.values(this.backendState.backends).map((backend) => ({
 				name: backend.name,
 				label: labels[backend.name] || backend.name,
@@ -1355,14 +1342,7 @@ export default {
 		 * @return {object} Map of method id to label.
 		 */
 		methodLabels() {
-			return {
-				auto: 'Auto',
-				regex: 'Regex',
-				presidio: 'Presidio',
-				openanonymiser: 'OpenAnonymiser',
-				llm: 'LLM',
-				hybrid: 'Hybrid',
-			}
+			return { auto: 'Auto', ...BACKEND_LABELS }
 		},
 
 		/**
@@ -2384,11 +2364,6 @@ export default {
 
 .backend-hint {
 	margin-top: 8px;
-}
-
-.backend-install-link {
-	color: var(--color-primary-element);
-	text-decoration: underline;
 }
 
 @media (prefers-reduced-motion: reduce) {
