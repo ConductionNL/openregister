@@ -62,6 +62,7 @@ c = c.replace('"configDir": "."', f'"configDir": "{out}"')
 c = c.replace('"customPath": "vendor/bin/phpunit"', f'"customPath": "{root}/vendor/bin/phpunit"')
 c = c.replace('            "lib"\n', f'            "{root}/lib"\n')
 c = c.replace('"$schema": "vendor-bin', f'"$schema": "{root}/vendor-bin')
+c = c.replace("vendor-bin/infection/vendor/run/", f"{out}/")
 open(f"{out}/infection.json5", "w").write(c)
 PY
 	CFG="$OUT/infection.json5"
