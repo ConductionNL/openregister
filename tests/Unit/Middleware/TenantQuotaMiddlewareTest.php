@@ -3,10 +3,13 @@
 namespace Unit\Middleware;
 
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Middleware\InboundCall;
 use OCA\OpenRegister\Middleware\TenantQuotaMiddleware;
 use OCA\OpenRegister\Middleware\TenantStatusException;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCP\AppFramework\Utility\IControllerMethodReflector;
 use OCP\IGroupManager;
+use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -36,9 +39,8 @@ class TenantQuotaMiddlewareTest extends TestCase {
 
 		$this->middleware = new TenantQuotaMiddleware(
 			$this->organisationService,
-			$this->userSession,
-			$this->groupManager,
-			$this->logger
+			new InboundCall($this->createMock(IRequest::class), $this->userSession, $this->createMock(IControllerMethodReflector::class), $this->logger),
+			$this->groupManager
 		);
 	}
 
