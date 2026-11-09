@@ -155,21 +155,11 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IURLGenerator',
 			'Psr\Log\LoggerInterface',
 		],
-		'OCA\OpenRegister\Controller\CaseTokenController' => [
-			'OCP\IRequest',
-			'OCA\OpenRegister\Service\CaseTokenService',
-			'OCP\Security\Bruteforce\IThrottler',
-			'Psr\Log\LoggerInterface',
-		],
 		'OCA\OpenRegister\Service\AnalyticsSeriesService' => [
 			'OCA\OpenRegister\Db\AnalyticsSeriesMapperInterface',
 			'OCA\OpenRegister\Service\Integration\IntegrationRegistry',
 			'OCP\IUserSession',
 			'OCP\IGroupManager',
-		],
-		'OCA\OpenRegister\Controller\AnalyticsSeriesController' => [
-			'OCP\IRequest',
-			'OCA\OpenRegister\Service\AnalyticsSeriesService',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider' => [
 			'OCA\OpenRegister\Db\BookmarkLinkMapperInterface',
