@@ -18,6 +18,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Survivorship;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -78,12 +79,9 @@ final class SurvivorshipResolverCandidatesGoldenTest extends TestCase {
 		];
 
 		$result = (new SurvivorshipResolver())->resolveGoldenRecord(
-			'person',
 			$sources,
 			$config,
-			[],
-			$this->failingOn(attribute: 'city'),
-			new DateTimeImmutable('2026-06-01T00:00:00+00:00')
+			new SurvivorshipTrustLookup('person', [], $this->failingOn(attribute: 'city'), new DateTimeImmutable('2026-06-01T00:00:00+00:00'))
 		);
 
 		$this->assertSame(['name' => 'A'], $result['goldenRecord']);
@@ -112,12 +110,9 @@ final class SurvivorshipResolverCandidatesGoldenTest extends TestCase {
 		];
 
 		$result = (new SurvivorshipResolver())->resolveGoldenRecord(
-			'person',
 			$sources,
 			$config,
-			[],
-			$this->failingOn(attribute: 'none'),
-			new DateTimeImmutable('2026-06-01T00:00:00+00:00')
+			new SurvivorshipTrustLookup('person', [], $this->failingOn(attribute: 'none'), new DateTimeImmutable('2026-06-01T00:00:00+00:00'))
 		);
 
 		$this->assertSame(['city' => 'Y', 'zip' => '2'], $result['goldenRecord']);

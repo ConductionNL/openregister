@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Survivorship;
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -50,12 +51,9 @@ final class SurvivorshipBranchesGoldenTest extends TestCase {
 	 */
 	private function resolve(array $sources, array $config=[], array $trustRows=[], mixed $overrides=null): array {
 		return (new SurvivorshipResolver())->resolveGoldenRecord(
-			'org',
 			$sources,
 			$config,
-			$trustRows,
-			new TrustTierResolver(),
-			$this->asOf(),
+			new SurvivorshipTrustLookup('org', $trustRows, new TrustTierResolver(), $this->asOf()),
 			$overrides
 		);
 	}//end resolve()
