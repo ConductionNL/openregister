@@ -22,12 +22,13 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ConfigurationControllerServices;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
@@ -166,16 +167,14 @@ class ConfigurationController extends Controller {
 	/**
 	 * Constructor
 	 *
-	 * @param string $appName The app name
 	 * @param IRequest $request The request object
 	 * @param ConfigurationControllerServices $services The configuration controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ConfigurationControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->session = $services->session;
 
 		$this->configurationMapper = $services->mappers->configurationMapper;
