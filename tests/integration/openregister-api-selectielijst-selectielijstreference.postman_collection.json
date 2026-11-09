@@ -6086,7 +6086,8 @@
 											"pm.test('status 200', () => pm.response.to.have.status(200))",
 											"const b = pm.response.json()",
 											"pm.test('suspended run of flow M', () => { pm.expect(b.status).to.eql('suspended'); pm.expect(b.flowId).to.eql(pm.collectionVariables.get('t32_frm_flow')) })",
-											"pm.collectionVariables.set('t32_frm_from', JSON.stringify(b.flowVersion))"
+											"pm.collectionVariables.set('t32_frm_from', JSON.stringify(b.flowVersion))",
+											"pm.collectionVariables.set('t32_frm_marking', JSON.stringify(b.marking))"
 										]
 									}
 								}
@@ -6159,7 +6160,7 @@
 											"pm.test('status 200', () => pm.response.to.have.status(200))",
 											"const b = pm.response.json()",
 											"pm.test('a preview, not a migration', () => { pm.expect(b.dryRun).to.eql(true); pm.expect(b.migrated).to.eql(false) })",
-											"pm.test('names run and target, marking lands on wait', () => { pm.expect(b.run).to.eql(pm.collectionVariables.get('t32_frm_run')); pm.expect(b.to).to.eql(Number(pm.collectionVariables.get('t32_frm_ver'))); pm.expect(Object.keys(b.marking)).to.include('wait'); pm.expect(b.unmapped).to.eql([]) })"
+											"pm.test('names run and target, marking carried over as recorded', () => { pm.expect(b.run).to.eql(pm.collectionVariables.get('t32_frm_run')); pm.expect(b.to).to.eql(Number(pm.collectionVariables.get('t32_frm_ver'))); pm.expect(b.marking).to.eql(JSON.parse(pm.collectionVariables.get('t32_frm_marking'))); pm.expect(b.unmapped).to.eql([]) })"
 										]
 									}
 								}
