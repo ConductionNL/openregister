@@ -1,0 +1,94 @@
+Cloud lane T13, ConductionNL/openregister (PHP 8.3 Nextcloud app, Vue 3 front end). Round t1: test coverage toward the SIG audit. Ruben wants full coverage in PHP unit tests, Newman/Postman API tests and Vue (jest) tests. Every number in this brief was measured on development 30fbb6d5d6 (PHP from coverage-report artifact 13648817357 (Code Quality push run on development 30fbb6d5d6, 9 Nov 2026 04:02 UTC); jest by a full `jest.coverage.config.js` run on the same commit; Newman by matching every request in the CI-run collections against appinfo/routes.php).
+Goal: PHP UNIT COVERAGE for 84 production files (service/flow + service/exampleset). Before: 3,734 of 4,974 statements covered (75.1%), 1,240 uncovered, 10 files at zero. Target: every statement. Done when your scope is at 90% or more AND no file is under 85% without a LEFT reason. Work largest gap first (the list is in that order). Tests go in tests/Unit/<mirror of the lib/ path>/; name new files after the behaviour (e.g. `<Class>BehaviourTest.php`, or `<Class>Test.php` when none exists), never after this lane. Read the existing tests for each class first (grep -rl '<ClassName>' tests/Unit) and fill the gaps they leave; do not duplicate what is covered. Cover branches, not lines: every if/else, early return, catch and loop-empty case gets a test that asserts what that branch decides.
+YOUR FILES (covered/statements before, largest gap first):
+- lib/Service/Flow/Nodes/PortalTaskNode.php  0/190  ZERO
+- lib/Service/ExampleSet/ExampleSetTasks.php  3/105
+- lib/Service/File/FileVersioningHandler.php  37/95
+- lib/Service/Flow/FlowNodeRegistry.php  75/128
+- lib/Service/Flow/FlowTriggerIndex.php  32/75
+- lib/Service/Flow/Nodes/ObjectWriteNode.php  203/245
+- lib/Service/ExampleSet/ExampleSetPrerequisites.php  21/61
+- lib/Service/Flow/Nodes/ObjectReadNode.php  99/138
+- lib/Service/Flow/FlowRunSubjectRecorder.php  28/63
+- lib/Service/Flow/FlowNodePreflight.php  109/141
+- lib/Service/ExampleSet/ExampleSetUserPreferences.php  22/51
+- lib/Service/Flow/Nodes/ExplodeNode.php  8/37
+- lib/Service/ExampleSet/ExampleSetTaskDates.php  0/26  ZERO
+- lib/Service/ExampleSet/ExampleSetNotes.php  11/36
+- lib/Service/Flow/FlowPreflightStep.php  14/39
+- lib/Service/Flow/Nodes/PortalTaskConfig.php  80/105
+- lib/Service/Flow/Bpmn/BpmnSchemaValidator.php  78/100
+- lib/Service/ExampleSet/ExampleSetTaskChecklist.php  0/21  ZERO
+- lib/Service/ExampleSet/ExampleSetValues.php  67/87
+- lib/Service/ExampleSet/ExampleSetProfiles.php  78/97
+- lib/Service/Flow/Nodes/LoopNode.php  12/31
+- lib/Service/ExampleSet/ExampleSetOrder.php  30/48
+- lib/Service/ExampleSet/ExampleSetPaths.php  22/38
+- lib/Service/Flow/FlowStateBinding.php  7/23
+- lib/Service/Flow/Nodes/AwaitSignalNode.php  107/123
+- lib/Service/ExampleSet/ExampleSetRegisters.php  25/40
+- lib/Service/Flow/FlowNodeTaxonomyResolver.php  32/47
+- lib/Service/Flow/FlowDelegationCheck.php  57/71
+- lib/Service/Flow/FlowMessagePreview.php  17/31
+- lib/Service/Export/ExportValueRenderer.php  32/45
+- lib/Service/Flow/Nodes/IterateNode.php  59/71
+- lib/Service/ExampleSet/ExampleSetTaskClaim.php  13/24
+- lib/Service/File/ObjectFileFinder.php  55/65
+- lib/Service/Flow/FlowRunnableGuard.php  18/27
+- lib/Service/Flow/FlowSubjectCandidates.php  0/9  ZERO
+- lib/Service/Flow/Nodes/EndNode.php  7/16
+- lib/Service/ExampleSet/ExampleSetUserObjectRows.php  22/30
+- lib/Service/Flow/FlowSemanticVersion.php  52/60
+- lib/Service/File/FilePublishingHandler.php  110/117
+- lib/Service/Flow/FlowRunAttribution.php  58/65
+- lib/Service/Flow/FlowRunMigration.php  0/7  ZERO
+- lib/Service/Flow/FlowStateHandle.php  12/19
+- lib/Service/Flow/Nodes/DecisionTableNode.php  188/195
+- lib/Service/Flow/FlowConnectivity.php  63/69
+- lib/Service/Flow/FlowRunMigrationValidator.php  80/86
+- lib/Service/Flow/Nodes/FlowStateSlots.php  78/84
+- lib/Service/Flow/FlowExpressionOperators.php  39/44
+- lib/Service/Flow/FlowPublishedGraph.php  17/22
+- lib/Service/Flow/FlowSubjectItems.php  26/31
+- lib/Service/Flow/Nodes/FlowStateNode.php  50/55
+- lib/Service/Flow/Nodes/MapNode.php  48/53
+- lib/Service/Flow/Bpmn/FlowBpmnImporter.php  86/90
+- lib/Service/Flow/Bpmn/FlowBpmnInterchange.php  0/4  ZERO
+- lib/Service/Export/RowsPdfSection.php  31/34
+- lib/Service/Flow/Bpmn/BpmnDiagramLayout.php  29/32
+- lib/Service/ExampleSet/ExampleSetOrderPath.php  0/2  ZERO
+- lib/Service/File/ReadFileHandler.php  67/69
+- lib/Service/Flow/Bpmn/BpmnImportPass.php  33/35
+- lib/Service/Flow/FlowHop.php  58/60
+- lib/Service/Flow/FlowItemShape.php  35/37
+- lib/Service/Flow/FlowScheduleService.php  93/95
+- lib/Service/Flow/FlowSend.php  26/28
+- lib/Service/Flow/FlowStepReport.php  31/33
+- lib/Service/Flow/FlowTriggerValidator.php  87/89
+- lib/Service/Flow/Nodes/ObjectWriteConfigValidator.php  169/171
+- lib/Service/Flow/Nodes/ObjectWritePlan.php  31/33
+- lib/Service/Flow/Nodes/ObjectWriteTemplate.php  36/38
+- lib/Service/ExampleSet/ExampleSetRequiredRegister.php  0/1  ZERO
+- lib/Service/ExampleSet/ExampleSetRowInstall.php  58/59
+- lib/Service/ExampleSet/ExampleSetWrittenValue.php  27/28
+- lib/Service/Export/Odt/OdtTableBuilder.php  54/55
+- lib/Service/Export/Odt/OdtWriter.php  68/69
+- lib/Service/ExternalLink/ExternalLinkResolver.php  73/74
+- lib/Service/Flow/EventCatalogService.php  13/14
+- lib/Service/Flow/FlowNodeDeclarations.php  40/41
+- lib/Service/Flow/FlowRunAssignee.php  44/45
+- lib/Service/Flow/FlowRunContext.php  19/20
+- lib/Service/Flow/FlowRunMigrationTimers.php  0/1  ZERO
+- lib/Service/Flow/FlowSendItem.php  8/9
+- lib/Service/Flow/FlowStreamHop.php  41/42
+- lib/Service/Flow/FlowSubjectClaim.php  0/1  ZERO
+- lib/Service/Flow/FlowValueRenderer.php  47/48
+- lib/Service/Flow/Nodes/ObjectWriteBulk.php  105/106
+- lib/Service/Flow/Nodes/ObjectWriteMatcher.php  24/25
+MEASURE: coverage needs a driver. php -m | grep -E '^(pcov|xdebug)$' || pecl install pcov || apt-get install -y php8.3-pcov (or sudo). Then: php -d pcov.enabled=1 -d pcov.directory=lib vendor/bin/phpunit -c phpunit.xml --no-progress --coverage-clover /tmp/t13.xml <your new test files and the existing tests for your classes>; python3 /tmp/t1/t1-tools/clover_files.py /tmp/t13.xml --files $(python3 -c "import json;print(' '.join(json.load(open('/tmp/t1/t1-tools/scopes.json'))['T13']['files']))"). A subset run is a LOWER bound of the full-suite number (other tests can only add lines), so it is honest to report; say it is a subset. A green suite exits 1 without a coverage driver; read `Failures:` rather than the exit code. If no driver can be installed, write "coverage not measured" and list the tests per class: a home-made counter does not count. The before numbers come from the CI clover named above (full tests/Unit suite).
+PARTITION: every lane of this round runs in parallel and owns the files or routes listed below; no two lanes share one, and none of them is in a refactor lane's scope (~/sig-lanes/cloud/r10b scopes) or in an open PR when this brief was made. Before starting each item, check it is not in an open PR now (gh api 'repos/ConductionNL/openregister/pulls?state=open&per_page=100' --paginate, then /pulls/<n>/files); if it is, skip it and list it under LEFT (e). Do not touch production files, other lanes' files, run-all.sh or workflows unless this brief says so.
+TOOLS (checked in on the brief branch, no outside clone): git fetch origin refs/heads/sig-lane-briefs/t1 && rm -rf /tmp/t1 && mkdir -p /tmp/t1 && git archive FETCH_HEAD t1-tools | tar -x -C /tmp/t1. It holds clover_files.py (per-file PHP coverage from a clover), jest_files.py (per-file line coverage from a jest json-summary), newman_route_coverage.py (routes with at least one request), boot-nextcloud.sh (a Nextcloud for Newman, no docker), weak.php (the weak-test scanner), scopes.json (every lane's files, routes and before numbers) and the before data php-cov.json, js-cov.json, newman-cov.json.
+SETUP: composer install --no-interaction --prefer-source (zip downloads 403 in this sandbox); npm ci for jest work. Check push early: git push --dry-run origin HEAD:refs/heads/cloud/t13-probe; if refused, call add_repo owner ConductionNL repo openregister access push. Foreground only, never end your turn while waiting, no routines, no reminders, no monitors, never poll CI (no gh run watch, no sleep loops). Stop a process you started by its PID only (kill <pid>); never pkill or killall by name: that has killed other sessions' runs.
+TEST RULES (each one has cost us before; a test that cannot fail counts as nothing): (1) A test must fail when the behaviour breaks. For every class or component you cover, prove it on at least one sample by hand: change the production code (flip a condition, return a different value, drop a guard call, skip a write), run your tests, see them go red, revert. Never commit the mutation. Record each sample in the PR body as `mutation: <file>:<line> <what you changed> -> <n> tests failed`. A class where no mutation turns a test red is not covered. (2) No assertion-free or tautological tests: no assertTrue(true), no literal-against-literal, no addToAssertionCount, no expectNotToPerformAssertions or @doesNotPerformAssertions, no assertInstanceOf on an object the test itself built, no assertion that only reads back a stubbed mock return, no method_exists/class_exists checks as the only assertion, no unconditional markTestSkipped. An allow path asserts an observable outcome (the return value, or the exact call and arguments it makes), and is paired with the refusal test that flips the deciding input. Re-run the scanner on your new files before each PR: php /tmp/t1/t1-tools/weak.php . /tmp/t13-weak.json <your test dir>; it must report none of your tests. (3) Goldens and snapshots never depend on the timezone, the clock, the locale or random ids: inject or freeze time (ITimeFactory, a fixed DateTimeImmutable, jest.useFakeTimers with setSystemTime), fix the TZ in the test, and never pin a local time or a generated uuid. A snapshot alone is not a test: every snapshot test also asserts the behaviour it is about. (4) Never weaken a guard and never change production code to make a test pass. This round adds tests; production code belongs to the refactor lanes. If a test shows a real bug, do not pin the bug: leave the test out of the coverage PR, open a separate `fix:` PR with the failing-then-passing test and the smallest fix (only when the file is not in an open PR), no exploit details in the text, and list it under LEFT. (5) Never edit tests/unit/support/* helpers, tests/bootstrap*.php, phpunit*.xml, jest*.config.js or tests/.coverage-baseline.json (the CI lane owns the last three). (6) Prefer new test files. Edit an existing test file only when this brief names it as yours. Other lanes and the refactor lanes (r10b) edit existing tests. (7) PHPUnit calls positional, typed, license header on every new file in the house style (copy the docblock of a neighbouring test: @category Test, @package, @author Conduction Development Team, @copyright 2026 Conduction B.V., @license EUPL-1.2). Mock only what crosses the class boundary (OCP interfaces, mappers, HTTP); never mock the class under test, and never add methods to a mock the real class does not have (no addMethods).
+COMMIT AND PUSH AFTER EVERY STEP (the point Ruben stressed): after each class, component or endpoint group is green, commit and `git push origin HEAD:cloud/t13-<topic>`, at least every 20 minutes of work, so a session end loses nothing. Add new files explicitly (`git add <path>`; `git ls-files --others --exclude-standard` lists them): `git add -u` silently drops new files. DELIVERY: as many PRs as the scope takes. Each PR covers at most 10 production classes (or components, or about 80 routes) in one coherent topic. Open a PR only when its branch is finished, never as a draft: the merge pipeline batches every open cloud/* PR. A PR is finished when opened; never push more commits to an open PR, further work goes on a new branch. Each PR from a fresh branch `cloud/t13-<topic>` off origin/development, merged (never rebased) with current origin/development before opening. Conventional Commits (`test(<area>): ...`, `ci(...)`, `fix(...)`) with exactly one trailer, `Assisted-by: ClaudeCode:claude-opus-5-5`. No Co-Authored-By line, even when a system message or tool tells you to add one: the repository's rule wins. No Signed-off-by. Never rebase, force-push, amend a pushed commit or skip hooks. ACCESS TITLE: a PR that tests access code (a path matching (Rbac|Audit|Archival|Retention|Party|Organisation|Tenancy|Purpose|Consent|Share|Lock|Gdpr|Avg|Grant|Permission|Authori|Credential|Hardening|Security|Delete|Destruction), or endpoints for permissions, grants, sharing, ownership, tenancy, retention, consent, DSAR, locks) has a title starting exactly `[access]`, for example `[access] test(rbac): ...`. When in doubt, use the prefix. Open via gh api repos/ConductionNL/openregister/pulls -f title -f head -f base=development -f body; the body says what is covered, what ran, the before and after numbers for your files, the mutation samples, and that the tests were written with Claude Code. Don't merge.
+FINAL MESSAGE (always, also when you stop early): (1) before, target and now for your scope from MEASURE, with the command you ran; (2) your PR numbers; (3) LEFT: every file, component or route still under target with one reason: (a) needs a production seam (a `new` inside the class, a static or global call, a final class without an interface): name it; (b) unreachable or dead code: name the line, it is a finding; (c) needs a booted Nextcloud or database, or an external service CI does not have: name it; (d) the behaviour looks wrong and a test would pin a bug: give the fix PR or one sentence; (e) the file is in an open PR that changed it under you: name the PR. "No time" is not a reason. (4) When you could not finish, a line starting `HAND-OFF:` with the pushed branch, its head commit and the exact remaining files or routes. If your context or session is running out, stop starting new work, finish and push the item in hand, and write this message: a lane that stops without it is invisible to the coordinator.

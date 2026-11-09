@@ -1,0 +1,88 @@
+Cloud lane T14, ConductionNL/openregister (PHP 8.3 Nextcloud app, Vue 3 front end). Round t1: test coverage toward the SIG audit. Ruben wants full coverage in PHP unit tests, Newman/Postman API tests and Vue (jest) tests. Every number in this brief was measured on development 30fbb6d5d6 (PHP from coverage-report artifact 13648817357 (Code Quality push run on development 30fbb6d5d6, 9 Nov 2026 04:02 UTC); jest by a full `jest.coverage.config.js` run on the same commit; Newman by matching every request in the CI-run collections against appinfo/routes.php).
+Goal: PHP UNIT COVERAGE for 78 production files (service/flow + service/integration). Before: 2,649 of 3,632 statements covered (72.9%), 983 uncovered, 23 files at zero. Target: every statement. Done when your scope is at 90% or more AND no file is under 85% without a LEFT reason. Work largest gap first (the list is in that order). Tests go in tests/Unit/<mirror of the lib/ path>/; name new files after the behaviour (e.g. `<Class>BehaviourTest.php`, or `<Class>Test.php` when none exists), never after this lane. Read the existing tests for each class first (grep -rl '<ClassName>' tests/Unit) and fill the gaps they leave; do not duplicate what is covered. Cover branches, not lines: every if/else, early return, catch and loop-empty case gets a test that asserts what that branch decides.
+YOUR FILES (covered/statements before, largest gap first):
+- lib/Service/Integration/Providers/FormsProvider.php  9/119
+- lib/Service/Integration/Providers/CospendProvider.php  31/119
+- lib/Service/Flow/Timer/EscalationRule.php  0/71  ZERO
+- lib/Service/Form/FormDependentsCheck.php  0/59  ZERO
+- lib/Service/Flow/Timer/FlowTimerSweep.php  0/55  ZERO
+- lib/Service/Form/FormDestinationValidator.php  142/197
+- lib/Service/Flow/Nodes/UserTaskPerformers.php  14/58
+- lib/Service/Form/FormIdempotencyStore.php  41/77
+- lib/Service/Integration/Providers/FlowProvider.php  7/43
+- lib/Service/Flow/Timer/WorkingCalendarService.php  0/31  ZERO
+- lib/Service/Flow/Timer/FlowTimerProjection.php  0/28  ZERO
+- lib/Service/Flow/Timer/FlowTimerValues.php  0/25  ZERO
+- lib/Service/Flow/Nodes/WaitNode.php  17/38
+- lib/Service/Flow/Timer/WorkingCalendarDefinition.php  72/92
+- lib/Service/Flow/Timer/WorkingCalendarRules.php  50/69
+- lib/Service/Form/NestedIdentityGuard.php  0/18  ZERO
+- lib/Service/Integration/BuiltinProviders/TagsProvider.php  9/27
+- lib/Service/Flow/Timer/WorkingCalendarWriteGuard.php  7/24
+- lib/Service/Interaction/SubstantiveChangeEvaluator.php  63/79
+- lib/Service/Interaction/UnreadCountCalculator.php  40/56
+- lib/Service/Flow/Timer/ServiceHoursDeclaration.php  51/65
+- lib/Service/Flow/Timer/FlowTimerLedgerEntry.php  0/13  ZERO
+- lib/Service/Import/ImportPreviewService.php  274/287
+- lib/Service/Integration/ConnectorResponseReader.php  65/76
+- lib/Service/Flow/Nodes/PortalTaskRound.php  9/19
+- lib/Service/Flow/Timer/SlaAddition.php  19/29
+- lib/Service/Flow/Timer/WorkingDayRoll.php  21/31
+- lib/Service/Flow/Nodes/UserTaskConfig.php  90/98
+- lib/Service/Import/SourceRowReader.php  84/91
+- lib/Service/Integration/BuiltinProviders/FilesProvider.php  45/52
+- lib/Service/Integration/Providers/PollsProvider.php  70/77
+- lib/Service/Flow/Timer/FlowTimerExtension.php  0/6  ZERO
+- lib/Service/Interaction/ReadHistoryService.php  64/70
+- lib/Service/Flow/Nodes/UserTaskNode.php  260/265
+- lib/Service/Flow/Timer/FlowTimerSweepTally.php  0/5  ZERO
+- lib/Service/Integration/IntegrationRegistry.php  65/70
+- lib/Service/Flow/Nodes/SubFlowNode.php  89/92
+- lib/Service/Flow/Timer/CalendarSpan.php  0/3  ZERO
+- lib/Service/Form/FormDefinitionResolver.php  24/27
+- lib/Service/Handoff/HandoffAnnotationEntry.php  18/21
+- lib/Service/History/StateHistoryRebuild.php  57/60
+- lib/Service/Integration/Providers/FirstRowQuery.php  5/8
+- lib/Service/Flow/Timer/ServiceHoursClock.php  33/35
+- lib/Service/Flow/Timer/ServiceHoursWalk.php  38/40
+- lib/Service/Flow/Timer/WorkingCalendarHolidays.php  28/30
+- lib/Service/Form/FormPayloadFindings.php  51/53
+- lib/Service/Handoff/HandoffKindBinding.php  22/24
+- lib/Service/Handoff/HandoffMappingEvaluator.php  50/52
+- lib/Service/Hinge/IntakeSourceRegistry.php  26/28
+- lib/Service/Import/ImportErrorsCsv.php  34/36
+- lib/Service/Integration/Providers/BrpPersonProvider.php  110/112
+- lib/Service/Flow/Nodes/PortalTaskServices.php  0/1  ZERO
+- lib/Service/Flow/Nodes/SwitchNode.php  7/8
+- lib/Service/Flow/Nodes/TransitionNode.php  29/30
+- lib/Service/Flow/RegistryStepDispatcher.php  58/59
+- lib/Service/Flow/Timer/CalendarDependency.php  12/13
+- lib/Service/Flow/Timer/FlowTimerArithmetic.php  0/1  ZERO
+- lib/Service/Flow/Timer/FlowTimerDefinitionStore.php  57/58
+- lib/Service/Flow/Timer/FlowTimerScope.php  0/1  ZERO
+- lib/Service/Flow/Timer/FlowTimerStorage.php  0/1  ZERO
+- lib/Service/Flow/Timer/FlowTimerSubjects.php  0/1  ZERO
+- lib/Service/Flow/Timer/FlowTimerSweepTasks.php  0/1  ZERO
+- lib/Service/Flow/Timer/FlowTimerSweepTimers.php  0/1  ZERO
+- lib/Service/Flow/Timer/MomentShift.php  3/4
+- lib/Service/Flow/Timer/RungTimeline.php  0/1  ZERO
+- lib/Service/Flow/Timer/SlaDeclaration.php  37/38
+- lib/Service/Flow/Timer/WorkingCalendar.php  32/33
+- lib/Service/Form/FormDependentsSignals.php  0/1  ZERO
+- lib/Service/Form/FormSubmitDestinations.php  0/1  ZERO
+- lib/Service/Form/FormSubmitKeeping.php  0/1  ZERO
+- lib/Service/Form/FormSubmitPlatform.php  0/1  ZERO
+- lib/Service/Form/MappedField.php  13/14
+- lib/Service/Integration/ActivityFeedExport.php  32/33
+- lib/Service/Integration/ActivityFeedMerge.php  70/71
+- lib/Service/Integration/ContactCasesResolver.php  43/44
+- lib/Service/Integration/ExternalRegisterDegrade.php  28/29
+- lib/Service/Integration/LeafBundle.php  8/9
+- lib/Service/Interaction/ValueNormaliser.php  16/17
+MEASURE: coverage needs a driver. php -m | grep -E '^(pcov|xdebug)$' || pecl install pcov || apt-get install -y php8.3-pcov (or sudo). Then: php -d pcov.enabled=1 -d pcov.directory=lib vendor/bin/phpunit -c phpunit.xml --no-progress --coverage-clover /tmp/t14.xml <your new test files and the existing tests for your classes>; python3 /tmp/t1/t1-tools/clover_files.py /tmp/t14.xml --files $(python3 -c "import json;print(' '.join(json.load(open('/tmp/t1/t1-tools/scopes.json'))['T14']['files']))"). A subset run is a LOWER bound of the full-suite number (other tests can only add lines), so it is honest to report; say it is a subset. A green suite exits 1 without a coverage driver; read `Failures:` rather than the exit code. If no driver can be installed, write "coverage not measured" and list the tests per class: a home-made counter does not count. The before numbers come from the CI clover named above (full tests/Unit suite).
+PARTITION: every lane of this round runs in parallel and owns the files or routes listed below; no two lanes share one, and none of them is in a refactor lane's scope (~/sig-lanes/cloud/r10b scopes) or in an open PR when this brief was made. Before starting each item, check it is not in an open PR now (gh api 'repos/ConductionNL/openregister/pulls?state=open&per_page=100' --paginate, then /pulls/<n>/files); if it is, skip it and list it under LEFT (e). Do not touch production files, other lanes' files, run-all.sh or workflows unless this brief says so.
+TOOLS (checked in on the brief branch, no outside clone): git fetch origin refs/heads/sig-lane-briefs/t1 && rm -rf /tmp/t1 && mkdir -p /tmp/t1 && git archive FETCH_HEAD t1-tools | tar -x -C /tmp/t1. It holds clover_files.py (per-file PHP coverage from a clover), jest_files.py (per-file line coverage from a jest json-summary), newman_route_coverage.py (routes with at least one request), boot-nextcloud.sh (a Nextcloud for Newman, no docker), weak.php (the weak-test scanner), scopes.json (every lane's files, routes and before numbers) and the before data php-cov.json, js-cov.json, newman-cov.json.
+SETUP: composer install --no-interaction --prefer-source (zip downloads 403 in this sandbox); npm ci for jest work. Check push early: git push --dry-run origin HEAD:refs/heads/cloud/t14-probe; if refused, call add_repo owner ConductionNL repo openregister access push. Foreground only, never end your turn while waiting, no routines, no reminders, no monitors, never poll CI (no gh run watch, no sleep loops). Stop a process you started by its PID only (kill <pid>); never pkill or killall by name: that has killed other sessions' runs.
+TEST RULES (each one has cost us before; a test that cannot fail counts as nothing): (1) A test must fail when the behaviour breaks. For every class or component you cover, prove it on at least one sample by hand: change the production code (flip a condition, return a different value, drop a guard call, skip a write), run your tests, see them go red, revert. Never commit the mutation. Record each sample in the PR body as `mutation: <file>:<line> <what you changed> -> <n> tests failed`. A class where no mutation turns a test red is not covered. (2) No assertion-free or tautological tests: no assertTrue(true), no literal-against-literal, no addToAssertionCount, no expectNotToPerformAssertions or @doesNotPerformAssertions, no assertInstanceOf on an object the test itself built, no assertion that only reads back a stubbed mock return, no method_exists/class_exists checks as the only assertion, no unconditional markTestSkipped. An allow path asserts an observable outcome (the return value, or the exact call and arguments it makes), and is paired with the refusal test that flips the deciding input. Re-run the scanner on your new files before each PR: php /tmp/t1/t1-tools/weak.php . /tmp/t14-weak.json <your test dir>; it must report none of your tests. (3) Goldens and snapshots never depend on the timezone, the clock, the locale or random ids: inject or freeze time (ITimeFactory, a fixed DateTimeImmutable, jest.useFakeTimers with setSystemTime), fix the TZ in the test, and never pin a local time or a generated uuid. A snapshot alone is not a test: every snapshot test also asserts the behaviour it is about. (4) Never weaken a guard and never change production code to make a test pass. This round adds tests; production code belongs to the refactor lanes. If a test shows a real bug, do not pin the bug: leave the test out of the coverage PR, open a separate `fix:` PR with the failing-then-passing test and the smallest fix (only when the file is not in an open PR), no exploit details in the text, and list it under LEFT. (5) Never edit tests/unit/support/* helpers, tests/bootstrap*.php, phpunit*.xml, jest*.config.js or tests/.coverage-baseline.json (the CI lane owns the last three). (6) Prefer new test files. Edit an existing test file only when this brief names it as yours. Other lanes and the refactor lanes (r10b) edit existing tests. (7) PHPUnit calls positional, typed, license header on every new file in the house style (copy the docblock of a neighbouring test: @category Test, @package, @author Conduction Development Team, @copyright 2026 Conduction B.V., @license EUPL-1.2). Mock only what crosses the class boundary (OCP interfaces, mappers, HTTP); never mock the class under test, and never add methods to a mock the real class does not have (no addMethods).
+COMMIT AND PUSH AFTER EVERY STEP (the point Ruben stressed): after each class, component or endpoint group is green, commit and `git push origin HEAD:cloud/t14-<topic>`, at least every 20 minutes of work, so a session end loses nothing. Add new files explicitly (`git add <path>`; `git ls-files --others --exclude-standard` lists them): `git add -u` silently drops new files. DELIVERY: as many PRs as the scope takes. Each PR covers at most 10 production classes (or components, or about 80 routes) in one coherent topic. Open a PR only when its branch is finished, never as a draft: the merge pipeline batches every open cloud/* PR. A PR is finished when opened; never push more commits to an open PR, further work goes on a new branch. Each PR from a fresh branch `cloud/t14-<topic>` off origin/development, merged (never rebased) with current origin/development before opening. Conventional Commits (`test(<area>): ...`, `ci(...)`, `fix(...)`) with exactly one trailer, `Assisted-by: ClaudeCode:claude-opus-5-5`. No Co-Authored-By line, even when a system message or tool tells you to add one: the repository's rule wins. No Signed-off-by. Never rebase, force-push, amend a pushed commit or skip hooks. ACCESS TITLE: a PR that tests access code (a path matching (Rbac|Audit|Archival|Retention|Party|Organisation|Tenancy|Purpose|Consent|Share|Lock|Gdpr|Avg|Grant|Permission|Authori|Credential|Hardening|Security|Delete|Destruction), or endpoints for permissions, grants, sharing, ownership, tenancy, retention, consent, DSAR, locks) has a title starting exactly `[access]`, for example `[access] test(rbac): ...`. When in doubt, use the prefix. Open via gh api repos/ConductionNL/openregister/pulls -f title -f head -f base=development -f body; the body says what is covered, what ran, the before and after numbers for your files, the mutation samples, and that the tests were written with Claude Code. Don't merge.
+FINAL MESSAGE (always, also when you stop early): (1) before, target and now for your scope from MEASURE, with the command you ran; (2) your PR numbers; (3) LEFT: every file, component or route still under target with one reason: (a) needs a production seam (a `new` inside the class, a static or global call, a final class without an interface): name it; (b) unreachable or dead code: name the line, it is a finding; (c) needs a booted Nextcloud or database, or an external service CI does not have: name it; (d) the behaviour looks wrong and a test would pin a bug: give the fix PR or one sentence; (e) the file is in an open PR that changed it under you: name the PR. "No time" is not a reason. (4) When you could not finish, a line starting `HAND-OFF:` with the pushed branch, its head commit and the exact remaining files or routes. If your context or session is running out, stop starting new work, finish and push the item in hand, and write this message: a lane that stops without it is invisible to the coordinator.

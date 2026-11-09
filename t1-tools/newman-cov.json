@@ -1,0 +1,7729 @@
+{
+ "routes": 1087,
+ "covered": 156,
+ "pct": 14.4,
+ "requests_seen": 775,
+ "ci_only": true,
+ "uncovered": [
+  {
+   "name": "sources#index",
+   "verb": "GET",
+   "url": "/api/sources",
+   "by": []
+  },
+  {
+   "name": "sources#show",
+   "verb": "GET",
+   "url": "/api/sources/{id}",
+   "by": []
+  },
+  {
+   "name": "applications#index",
+   "verb": "GET",
+   "url": "/api/applications",
+   "by": []
+  },
+  {
+   "name": "applications#show",
+   "verb": "GET",
+   "url": "/api/applications/{id}",
+   "by": []
+  },
+  {
+   "name": "agents#index",
+   "verb": "GET",
+   "url": "/api/agents",
+   "by": []
+  },
+  {
+   "name": "endpoints#index",
+   "verb": "GET",
+   "url": "/api/endpoints",
+   "by": []
+  },
+  {
+   "name": "endpoints#show",
+   "verb": "GET",
+   "url": "/api/endpoints/{id}",
+   "by": []
+  },
+  {
+   "name": "endpoints#create",
+   "verb": "POST",
+   "url": "/api/endpoints",
+   "by": []
+  },
+  {
+   "name": "endpoints#update",
+   "verb": "PUT",
+   "url": "/api/endpoints/{id}",
+   "by": []
+  },
+  {
+   "name": "endpoints#destroy",
+   "verb": "DELETE",
+   "url": "/api/endpoints/{id}",
+   "by": []
+  },
+  {
+   "name": "mappings#index",
+   "verb": "GET",
+   "url": "/api/mappings",
+   "by": []
+  },
+  {
+   "name": "mappings#update",
+   "verb": "PUT",
+   "url": "/api/mappings/{id}",
+   "by": []
+  },
+  {
+   "name": "consumers#index",
+   "verb": "GET",
+   "url": "/api/consumers",
+   "by": []
+  },
+  {
+   "name": "consumers#show",
+   "verb": "GET",
+   "url": "/api/consumers/{id}",
+   "by": []
+  },
+  {
+   "name": "consumers#create",
+   "verb": "POST",
+   "url": "/api/consumers",
+   "by": []
+  },
+  {
+   "name": "consumers#update",
+   "verb": "PUT",
+   "url": "/api/consumers/{id}",
+   "by": []
+  },
+  {
+   "name": "consumers#destroy",
+   "verb": "DELETE",
+   "url": "/api/consumers/{id}",
+   "by": []
+  },
+  {
+   "name": "setup#status",
+   "verb": "GET",
+   "url": "/api/setup/status",
+   "by": []
+  },
+  {
+   "name": "setup#runAction",
+   "verb": "POST",
+   "url": "/api/setup/action/{actionId}",
+   "by": []
+  },
+  {
+   "name": "setup#saveConfig",
+   "verb": "POST",
+   "url": "/api/setup/config",
+   "by": []
+  },
+  {
+   "name": "federation#objects",
+   "verb": "GET",
+   "url": "/api/federation/{shareToken}/objects",
+   "by": []
+  },
+  {
+   "name": "federation#object",
+   "verb": "GET",
+   "url": "/api/federation/{shareToken}/objects/{id}",
+   "by": []
+  },
+  {
+   "name": "federation#meta",
+   "verb": "GET",
+   "url": "/api/federation/{shareToken}/meta",
+   "by": []
+  },
+  {
+   "name": "federation#createObject",
+   "verb": "POST",
+   "url": "/api/federation/{shareToken}/objects",
+   "by": []
+  },
+  {
+   "name": "federation#updateObject",
+   "verb": "PUT",
+   "url": "/api/federation/{shareToken}/objects/{id}",
+   "by": []
+  },
+  {
+   "name": "federation#deleteObject",
+   "verb": "DELETE",
+   "url": "/api/federation/{shareToken}/objects/{id}",
+   "by": []
+  },
+  {
+   "name": "federation#shares",
+   "verb": "GET",
+   "url": "/api/federation/shares",
+   "by": []
+  },
+  {
+   "name": "federation#createShare",
+   "verb": "POST",
+   "url": "/api/federation/shares",
+   "by": []
+  },
+  {
+   "name": "federation#revokeShare",
+   "verb": "DELETE",
+   "url": "/api/federation/shares/{id}",
+   "by": []
+  },
+  {
+   "name": "credential#index",
+   "verb": "GET",
+   "url": "/api/credentials",
+   "by": []
+  },
+  {
+   "name": "credential#providers",
+   "verb": "GET",
+   "url": "/api/credentials/providers",
+   "by": []
+  },
+  {
+   "name": "credential#sharedWithMe",
+   "verb": "GET",
+   "url": "/api/credentials/shared-with-me",
+   "by": []
+  },
+  {
+   "name": "credential#shares",
+   "verb": "GET",
+   "url": "/api/credentials/{id}/shares",
+   "by": []
+  },
+  {
+   "name": "credential#updateShares",
+   "verb": "PUT",
+   "url": "/api/credentials/{id}/shares",
+   "by": []
+  },
+  {
+   "name": "credential#create",
+   "verb": "POST",
+   "url": "/api/credentials",
+   "by": []
+  },
+  {
+   "name": "credential#update",
+   "verb": "PUT",
+   "url": "/api/credentials/{id}",
+   "by": []
+  },
+  {
+   "name": "credential#destroy",
+   "verb": "DELETE",
+   "url": "/api/credentials/{id}",
+   "by": []
+  },
+  {
+   "name": "credential#registerApp",
+   "verb": "POST",
+   "url": "/api/credentials/apps/{appId}/register",
+   "by": []
+  },
+  {
+   "name": "credential#brokerRequest",
+   "verb": "POST",
+   "url": "/api/credentials/{id}/request",
+   "by": []
+  },
+  {
+   "name": "credential#sessionBrokerRequest",
+   "verb": "POST",
+   "url": "/api/credentials/{id}/session-request",
+   "by": []
+  },
+  {
+   "name": "credentialOauth2#start",
+   "verb": "POST",
+   "url": "/api/credentials/oauth2/start",
+   "by": []
+  },
+  {
+   "name": "credentialOauth2#disconnect",
+   "verb": "DELETE",
+   "url": "/api/credentials/oauth2/{id}",
+   "by": []
+  },
+  {
+   "name": "credentialOauth2#callback",
+   "verb": "GET",
+   "url": "/oauth2/callback",
+   "by": []
+  },
+  {
+   "name": "credentialOauth2#clientMetadata",
+   "verb": "GET",
+   "url": "/oauth2/client-metadata.json",
+   "by": []
+  },
+  {
+   "name": "webPush#vapidPublicKey",
+   "verb": "GET",
+   "url": "/webpush/vapid-public-key",
+   "by": []
+  },
+  {
+   "name": "webPush#subscribe",
+   "verb": "POST",
+   "url": "/webpush/subscription",
+   "by": []
+  },
+  {
+   "name": "webPush#unsubscribe",
+   "verb": "DELETE",
+   "url": "/webpush/subscription",
+   "by": []
+  },
+  {
+   "name": "webPush#hexIcon",
+   "verb": "GET",
+   "url": "/webpush/icon/{app}",
+   "by": []
+  },
+  {
+   "name": "webPush#hexBadge",
+   "verb": "GET",
+   "url": "/webpush/badge/{app}",
+   "by": []
+  },
+  {
+   "name": "integrations#index",
+   "verb": "GET",
+   "url": "/api/integrations",
+   "by": []
+  },
+  {
+   "name": "integrations#show",
+   "verb": "GET",
+   "url": "/api/integrations/{id}",
+   "by": []
+  },
+  {
+   "name": "objectActions#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/actions",
+   "by": []
+  },
+  {
+   "name": "objectActions#history",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/actions/history",
+   "by": []
+  },
+  {
+   "name": "objectActions#invoke",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/actions/{action}",
+   "by": []
+  },
+  {
+   "name": "objectActions#invokeOnSelection",
+   "verb": "POST",
+   "url": "/api/object-actions/{register}/{schema}/{action}",
+   "by": []
+  },
+  {
+   "name": "objectActions#selection",
+   "verb": "GET",
+   "url": "/api/object-actions/{register}/{schema}",
+   "by": []
+  },
+  {
+   "name": "objectIntegrations#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/integrations/{integrationId}",
+   "by": []
+  },
+  {
+   "name": "objectIntegrations#show",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}",
+   "by": []
+  },
+  {
+   "name": "objectIntegrations#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/integrations/{integrationId}",
+   "by": []
+  },
+  {
+   "name": "objectIntegrations#update",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}",
+   "by": []
+  },
+  {
+   "name": "objectIntegrations#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}",
+   "by": []
+  },
+  {
+   "name": "objectSharing#scope",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/scope",
+   "by": []
+  },
+  {
+   "name": "objectSharing#setScope",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/scope",
+   "by": []
+  },
+  {
+   "name": "objectSharing#shares",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/shares",
+   "by": []
+  },
+  {
+   "name": "objectSharing#createShare",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/shares",
+   "by": []
+  },
+  {
+   "name": "objectSharing#destroyShare",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/shares/{shareId}",
+   "by": []
+  },
+  {
+   "name": "objectSharing#createLink",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/links",
+   "by": []
+  },
+  {
+   "name": "objectSharing#inviteByEmail",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/invitations",
+   "by": []
+  },
+  {
+   "name": "objectOwnership#show",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/ownership",
+   "by": []
+  },
+  {
+   "name": "objectOwnership#claim",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/ownership/claim",
+   "by": []
+  },
+  {
+   "name": "objectOwnership#assign",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/ownership",
+   "by": []
+  },
+  {
+   "name": "objectOwnership#setOwnerGroup",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/ownership/group",
+   "by": []
+  },
+  {
+   "name": "objectOwnership#reassign",
+   "verb": "POST",
+   "url": "/api/ownership/reassign",
+   "by": []
+  },
+  {
+   "name": "objectPermissions#history",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/permissions/history",
+   "by": []
+  },
+  {
+   "name": "objectPermissions#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/permissions",
+   "by": []
+  },
+  {
+   "name": "objectGrants#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/grants",
+   "by": []
+  },
+  {
+   "name": "objectFavourite#star",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/favourite",
+   "by": []
+  },
+  {
+   "name": "objectFavourite#unstar",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/favourite",
+   "by": []
+  },
+  {
+   "name": "objectReadState#show",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/read-state",
+   "by": []
+  },
+  {
+   "name": "objectReadState#markRead",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/read-state",
+   "by": []
+  },
+  {
+   "name": "objectReadState#markUnread",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/read-state",
+   "by": []
+  },
+  {
+   "name": "objectShareLink#show",
+   "verb": "GET",
+   "url": "/api/shared/{token}",
+   "by": []
+  },
+  {
+   "name": "schemas#patch",
+   "verb": "PATCH",
+   "url": "/api/schemas/{id}",
+   "by": []
+  },
+  {
+   "name": "sources#patch",
+   "verb": "PATCH",
+   "url": "/api/sources/{id}",
+   "by": []
+  },
+  {
+   "name": "icon#mdi",
+   "verb": "GET",
+   "url": "/api/icon/mdi/{name}",
+   "by": []
+  },
+  {
+   "name": "sources#syncNow",
+   "verb": "POST",
+   "url": "/api/sources/{id}/sync",
+   "by": []
+  },
+  {
+   "name": "sources#syncStatus",
+   "verb": "GET",
+   "url": "/api/sources/{id}/sync-status",
+   "by": []
+  },
+  {
+   "name": "sources#testConnection",
+   "verb": "POST",
+   "url": "/api/sources/{id}/test-connection",
+   "by": []
+  },
+  {
+   "name": "sources#introspect",
+   "verb": "POST",
+   "url": "/api/sources/{id}/introspect",
+   "by": []
+  },
+  {
+   "name": "configurations#patch",
+   "verb": "PATCH",
+   "url": "/api/configurations/{id}",
+   "by": []
+  },
+  {
+   "name": "applications#patch",
+   "verb": "PATCH",
+   "url": "/api/applications/{id}",
+   "by": []
+  },
+  {
+   "name": "agents#patch",
+   "verb": "PATCH",
+   "url": "/api/agents/{id}",
+   "by": []
+  },
+  {
+   "name": "endpoints#patch",
+   "verb": "PATCH",
+   "url": "/api/endpoints/{id}",
+   "by": []
+  },
+  {
+   "name": "mappings#patch",
+   "verb": "PATCH",
+   "url": "/api/mappings/{id}",
+   "by": []
+  },
+  {
+   "name": "consumers#patch",
+   "verb": "PATCH",
+   "url": "/api/consumers/{id}",
+   "by": []
+  },
+  {
+   "name": "mappings#test",
+   "verb": "POST",
+   "url": "/api/mappings/test",
+   "by": []
+  },
+  {
+   "name": "endpoints#test",
+   "verb": "POST",
+   "url": "/api/endpoints/{id}/test",
+   "by": []
+  },
+  {
+   "name": "endpoints#logs",
+   "verb": "GET",
+   "url": "/api/endpoints/{id}/logs",
+   "by": []
+  },
+  {
+   "name": "endpoints#logStats",
+   "verb": "GET",
+   "url": "/api/endpoints/{id}/logs/stats",
+   "by": []
+  },
+  {
+   "name": "endpoints#allLogs",
+   "verb": "GET",
+   "url": "/api/endpoints/logs",
+   "by": []
+  },
+  {
+   "name": "flowTimerDiagnostic#explain",
+   "verb": "POST",
+   "url": "/api/flow-timers/diagnostic",
+   "by": []
+  },
+  {
+   "name": "settings#rebase",
+   "verb": "POST",
+   "url": "/api/settings/rebase",
+   "by": []
+  },
+  {
+   "name": "preferences#getPreference",
+   "verb": "GET",
+   "url": "/api/preferences/{key}",
+   "by": []
+  },
+  {
+   "name": "preferences#setPreference",
+   "verb": "PUT",
+   "url": "/api/preferences/{key}",
+   "by": []
+  },
+  {
+   "name": "settings#stats",
+   "verb": "GET",
+   "url": "/api/settings/stats",
+   "by": []
+  },
+  {
+   "name": "migration#status",
+   "verb": "GET",
+   "url": "/api/migration/status/{register}/{schema}",
+   "by": []
+  },
+  {
+   "name": "migration#migrate",
+   "verb": "POST",
+   "url": "/api/migration/migrate",
+   "by": []
+  },
+  {
+   "name": "settings#getSearchBackend",
+   "verb": "GET",
+   "url": "/api/settings/search-backend",
+   "by": []
+  },
+  {
+   "name": "settings#getSearchIndexStatus",
+   "verb": "GET",
+   "url": "/api/settings/search-index",
+   "by": []
+  },
+  {
+   "name": "tables#sync",
+   "verb": "POST",
+   "url": "/api/tables/sync/{registerId}/{schemaId}",
+   "by": []
+  },
+  {
+   "name": "tables#syncAll",
+   "verb": "POST",
+   "url": "/api/tables/sync",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#updateRbacSettings",
+   "verb": "PUT",
+   "url": "/api/settings/rbac",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#updateMultitenancySettings",
+   "verb": "PUT",
+   "url": "/api/settings/multitenancy",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#getOrganisationSettings",
+   "verb": "GET",
+   "url": "/api/settings/organisation",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#updateOrganisationSettings",
+   "verb": "PATCH",
+   "url": "/api/settings/organisation",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#updateOrganisationSettings",
+   "verb": "PUT",
+   "url": "/api/settings/organisation",
+   "by": []
+  },
+  {
+   "name": "Settings\\LlmSettings#getLLMSettings",
+   "verb": "GET",
+   "url": "/api/settings/llm",
+   "by": []
+  },
+  {
+   "name": "settings#getDatabaseInfo",
+   "verb": "GET",
+   "url": "/api/settings/database",
+   "by": []
+  },
+  {
+   "name": "settings#refreshDatabaseInfo",
+   "verb": "POST",
+   "url": "/api/settings/database/refresh",
+   "by": []
+  },
+  {
+   "name": "Settings\\LlmSettings#updateLLMSettings",
+   "verb": "POST",
+   "url": "/api/settings/llm",
+   "by": []
+  },
+  {
+   "name": "Settings\\LlmSettings#patchLLMSettings",
+   "verb": "PATCH",
+   "url": "/api/settings/llm",
+   "by": []
+  },
+  {
+   "name": "Settings\\LlmSettings#updateLLMSettings",
+   "verb": "PUT",
+   "url": "/api/settings/llm",
+   "by": []
+  },
+  {
+   "name": "Settings\\LlmSettings#testEmbedding",
+   "verb": "POST",
+   "url": "/api/vectors/test-embedding",
+   "by": []
+  },
+  {
+   "name": "Settings\\LlmSettings#testChat",
+   "verb": "POST",
+   "url": "/api/llm/test-chat",
+   "by": []
+  },
+  {
+   "name": "Settings\\LlmSettings#getOllamaModels",
+   "verb": "GET",
+   "url": "/api/llm/ollama-models",
+   "by": []
+  },
+  {
+   "name": "Settings\\LlmSettings#checkEmbeddingModelMismatch",
+   "verb": "GET",
+   "url": "/api/vectors/check-model-mismatch",
+   "by": []
+  },
+  {
+   "name": "Settings\\LlmSettings#clearAllEmbeddings",
+   "verb": "DELETE",
+   "url": "/api/vectors/clear-all",
+   "by": []
+  },
+  {
+   "name": "Settings\\LlmSettings#getVectorStats",
+   "verb": "GET",
+   "url": "/api/vectors/stats",
+   "by": []
+  },
+  {
+   "name": "Settings\\FileSettings#getFileSettings",
+   "verb": "GET",
+   "url": "/api/settings/files",
+   "by": []
+  },
+  {
+   "name": "Settings\\FileSettings#updateFileSettings",
+   "verb": "PATCH",
+   "url": "/api/settings/files",
+   "by": []
+  },
+  {
+   "name": "Settings\\FileSettings#updateFileSettings",
+   "verb": "PUT",
+   "url": "/api/settings/files",
+   "by": []
+  },
+  {
+   "name": "Settings\\FileSettings#getFileExtractionStats",
+   "verb": "GET",
+   "url": "/api/settings/files/stats",
+   "by": []
+  },
+  {
+   "name": "Settings\\FileSettings#testDolphinConnection",
+   "verb": "POST",
+   "url": "/api/settings/files/test-dolphin",
+   "by": []
+  },
+  {
+   "name": "Settings\\FileSettings#testPresidioConnection",
+   "verb": "POST",
+   "url": "/api/settings/files/test-presidio",
+   "by": []
+  },
+  {
+   "name": "Settings\\FileSettings#testOpenAnonymiserConnection",
+   "verb": "POST",
+   "url": "/api/settings/files/test-openanonymiser",
+   "by": []
+  },
+  {
+   "name": "anonymisationBackend#getBackendState",
+   "verb": "GET",
+   "url": "/api/admin/anonymisation/backend-state",
+   "by": []
+  },
+  {
+   "name": "anonymisationBackend#testConnection",
+   "verb": "POST",
+   "url": "/api/admin/anonymisation/test-connection",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#getObjectSettings",
+   "verb": "GET",
+   "url": "/api/settings/objects/vectorize",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#getObjectSettings",
+   "verb": "GET",
+   "url": "/api/settings/objects",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#updateObjectSettings",
+   "verb": "POST",
+   "url": "/api/settings/objects/vectorize",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#patchObjectSettings",
+   "verb": "PATCH",
+   "url": "/api/settings/objects/vectorize",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#updateObjectSettings",
+   "verb": "PUT",
+   "url": "/api/settings/objects/vectorize",
+   "by": []
+  },
+  {
+   "name": "objects#vectorizeBatch",
+   "verb": "POST",
+   "url": "/api/objects/vectorize/batch",
+   "by": []
+  },
+  {
+   "name": "objects#getObjectVectorizationStats",
+   "verb": "GET",
+   "url": "/api/objects/vectorize/stats",
+   "by": []
+  },
+  {
+   "name": "objects#validate",
+   "verb": "POST",
+   "url": "/api/objects/validate",
+   "by": []
+  },
+  {
+   "name": "objects#counts",
+   "verb": "POST",
+   "url": "/api/objects/counts",
+   "by": []
+  },
+  {
+   "name": "fileExtraction#index",
+   "verb": "GET",
+   "url": "/api/files",
+   "by": []
+  },
+  {
+   "name": "fileExtraction#stats",
+   "verb": "GET",
+   "url": "/api/files/stats",
+   "by": []
+  },
+  {
+   "name": "fileExtraction#fileTypes",
+   "verb": "GET",
+   "url": "/api/files/types",
+   "by": []
+  },
+  {
+   "name": "fileExtraction#vectorizeBatch",
+   "verb": "POST",
+   "url": "/api/files/vectorize/batch",
+   "by": []
+  },
+  {
+   "name": "fileExtraction#discover",
+   "verb": "POST",
+   "url": "/api/files/discover",
+   "by": []
+  },
+  {
+   "name": "fileExtraction#extractAll",
+   "verb": "POST",
+   "url": "/api/files/extract",
+   "by": []
+  },
+  {
+   "name": "fileExtraction#retryFailed",
+   "verb": "POST",
+   "url": "/api/files/retry-failed",
+   "by": []
+  },
+  {
+   "name": "fileExtraction#cleanup",
+   "verb": "POST",
+   "url": "/api/files/cleanup",
+   "by": []
+  },
+  {
+   "name": "fileExtraction#show",
+   "verb": "GET",
+   "url": "/api/files/{id}",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#getRetentionSettings",
+   "verb": "GET",
+   "url": "/api/settings/retention",
+   "by": []
+  },
+  {
+   "name": "Settings\\AuditSettings#getAggregationSettings",
+   "verb": "GET",
+   "url": "/api/settings/audit-aggregation",
+   "by": []
+  },
+  {
+   "name": "Settings\\AuditSettings#updateAggregationSettings",
+   "verb": "PATCH",
+   "url": "/api/settings/audit-aggregation",
+   "by": []
+  },
+  {
+   "name": "Settings\\AuditSettings#updateAggregationSettings",
+   "verb": "PUT",
+   "url": "/api/settings/audit-aggregation",
+   "by": []
+  },
+  {
+   "name": "settings#load",
+   "verb": "GET",
+   "url": "/api/settings/load",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#updateRetentionSettings",
+   "verb": "PATCH",
+   "url": "/api/settings/retention",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#updateRetentionSettings",
+   "verb": "PUT",
+   "url": "/api/settings/retention",
+   "by": []
+  },
+  {
+   "name": "settings#getVersionInfo",
+   "verb": "GET",
+   "url": "/api/settings/version",
+   "by": []
+  },
+  {
+   "name": "Settings\\ApiTokenSettings#getApiTokens",
+   "verb": "GET",
+   "url": "/api/settings/api-tokens",
+   "by": []
+  },
+  {
+   "name": "Settings\\ApiTokenSettings#saveApiTokens",
+   "verb": "POST",
+   "url": "/api/settings/api-tokens",
+   "by": []
+  },
+  {
+   "name": "Settings\\ApiTokenSettings#testGitHubToken",
+   "verb": "POST",
+   "url": "/api/settings/api-tokens/test/github",
+   "by": []
+  },
+  {
+   "name": "Settings\\ApiTokenSettings#testGitLabToken",
+   "verb": "POST",
+   "url": "/api/settings/api-tokens/test/gitlab",
+   "by": []
+  },
+  {
+   "name": "settings#getStatistics",
+   "verb": "GET",
+   "url": "/api/settings/statistics",
+   "by": []
+  },
+  {
+   "name": "Settings\\CacheSettings#getCacheStats",
+   "verb": "GET",
+   "url": "/api/settings/cache",
+   "by": []
+  },
+  {
+   "name": "Settings\\CacheSettings#clearCache",
+   "verb": "DELETE",
+   "url": "/api/settings/cache",
+   "by": []
+  },
+  {
+   "name": "Settings\\CacheSettings#warmupNamesCache",
+   "verb": "POST",
+   "url": "/api/settings/cache/warmup-names",
+   "by": []
+  },
+  {
+   "name": "Settings\\CacheSettings#getWarmupInterval",
+   "verb": "GET",
+   "url": "/api/settings/cache/warmup-interval",
+   "by": []
+  },
+  {
+   "name": "Settings\\CacheSettings#setWarmupInterval",
+   "verb": "PUT",
+   "url": "/api/settings/cache/warmup-interval",
+   "by": []
+  },
+  {
+   "name": "Settings\\CacheSettings#clearAppStoreCache",
+   "verb": "DELETE",
+   "url": "/api/settings/cache/appstore",
+   "by": []
+  },
+  {
+   "name": "Settings\\SecuritySettings#clearIpRateLimits",
+   "verb": "POST",
+   "url": "/api/settings/security/unblock-ip",
+   "by": []
+  },
+  {
+   "name": "Settings\\SecuritySettings#clearUserRateLimits",
+   "verb": "POST",
+   "url": "/api/settings/security/unblock-user",
+   "by": []
+  },
+  {
+   "name": "Settings\\SecuritySettings#clearAllRateLimits",
+   "verb": "POST",
+   "url": "/api/settings/security/unblock",
+   "by": []
+  },
+  {
+   "name": "hardening#report",
+   "verb": "GET",
+   "url": "/api/hardening/report",
+   "by": []
+  },
+  {
+   "name": "hardening#floors",
+   "verb": "GET",
+   "url": "/api/hardening/floors",
+   "by": []
+  },
+  {
+   "name": "hardening#updateControls",
+   "verb": "PUT",
+   "url": "/api/hardening/controls",
+   "by": []
+  },
+  {
+   "name": "hardening#updateFloors",
+   "verb": "PUT",
+   "url": "/api/hardening/floors",
+   "by": []
+  },
+  {
+   "name": "hardening#elevate",
+   "verb": "POST",
+   "url": "/api/hardening/elevation",
+   "by": []
+  },
+  {
+   "name": "hardeningStatement#statement",
+   "verb": "GET",
+   "url": "/api/hardening/statement",
+   "by": []
+  },
+  {
+   "name": "hardeningStatement#acceptStatement",
+   "verb": "POST",
+   "url": "/api/hardening/statement/acceptance",
+   "by": []
+  },
+  {
+   "name": "hardeningStatement#publishStatement",
+   "verb": "PUT",
+   "url": "/api/hardening/statement",
+   "by": []
+  },
+  {
+   "name": "hardeningStatement#withdrawStatement",
+   "verb": "DELETE",
+   "url": "/api/hardening/statement",
+   "by": []
+  },
+  {
+   "name": "Settings\\ValidationSettings#validateAllObjects",
+   "verb": "POST",
+   "url": "/api/settings/validate-all-objects",
+   "by": []
+  },
+  {
+   "name": "Settings\\ValidationSettings#massValidateObjects",
+   "verb": "POST",
+   "url": "/api/settings/mass-validate",
+   "by": []
+  },
+  {
+   "name": "Settings\\ValidationSettings#predictMassValidationMemory",
+   "verb": "POST",
+   "url": "/api/settings/mass-validate/memory-prediction",
+   "by": []
+  },
+  {
+   "name": "manifest#index",
+   "verb": "GET",
+   "url": "/api/manifest/{appId}",
+   "by": []
+  },
+  {
+   "name": "heartbeat#heartbeat",
+   "verb": "GET",
+   "url": "/api/heartbeat",
+   "by": []
+  },
+  {
+   "name": "AppHost\\Controller\\GenericMetrics#index",
+   "verb": "GET",
+   "url": "/api/metrics",
+   "by": []
+  },
+  {
+   "name": "AppHost\\Controller\\GenericHealth#index",
+   "verb": "GET",
+   "url": "/api/health",
+   "by": []
+  },
+  {
+   "name": "urn#resolve",
+   "verb": "GET",
+   "url": "/api/urn/resolve",
+   "by": []
+  },
+  {
+   "name": "urn#lookup",
+   "verb": "GET",
+   "url": "/api/urn/lookup",
+   "by": []
+  },
+  {
+   "name": "urn#bulk",
+   "verb": "POST",
+   "url": "/api/urn/bulk",
+   "by": []
+  },
+  {
+   "name": "scopes#index",
+   "verb": "GET",
+   "url": "/api/scopes",
+   "by": []
+  },
+  {
+   "name": "permissions#index",
+   "verb": "GET",
+   "url": "/api/permissions",
+   "by": []
+  },
+  {
+   "name": "permissionsAudit#denyPreview",
+   "verb": "GET",
+   "url": "/api/permissions/deny-preview",
+   "by": []
+  },
+  {
+   "name": "permissionsAudit#compareRoles",
+   "verb": "GET",
+   "url": "/api/permissions/compare-roles",
+   "by": []
+  },
+  {
+   "name": "permissionsAudit#scopeAudit",
+   "verb": "GET",
+   "url": "/api/permissions/scope-audit",
+   "by": []
+  },
+  {
+   "name": "derivedGrants#reapply",
+   "verb": "POST",
+   "url": "/api/permissions/derived-grants/reapply",
+   "by": []
+  },
+  {
+   "name": "verwerkingsactiviteiten#index",
+   "verb": "GET",
+   "url": "/api/avg/processing-activities",
+   "by": []
+  },
+  {
+   "name": "verwerkingsactiviteiten#show",
+   "verb": "GET",
+   "url": "/api/avg/processing-activities/{id}",
+   "by": []
+  },
+  {
+   "name": "verwerkingsactiviteiten#create",
+   "verb": "POST",
+   "url": "/api/avg/processing-activities",
+   "by": []
+  },
+  {
+   "name": "verwerkingsactiviteiten#update",
+   "verb": "PUT",
+   "url": "/api/avg/processing-activities/{id}",
+   "by": []
+  },
+  {
+   "name": "verwerkingsactiviteiten#destroy",
+   "verb": "DELETE",
+   "url": "/api/avg/processing-activities/{id}",
+   "by": []
+  },
+  {
+   "name": "verwerkingsactiviteiten#accountability",
+   "verb": "GET",
+   "url": "/api/avg/accountability",
+   "by": []
+  },
+  {
+   "name": "processingPurpose#index",
+   "verb": "GET",
+   "url": "/api/avg/purposes",
+   "by": []
+  },
+  {
+   "name": "processingPurpose#report",
+   "verb": "GET",
+   "url": "/api/avg/purposes/report",
+   "by": []
+  },
+  {
+   "name": "processingPurpose#show",
+   "verb": "GET",
+   "url": "/api/avg/purposes/{id}",
+   "by": []
+  },
+  {
+   "name": "processingPurpose#create",
+   "verb": "POST",
+   "url": "/api/avg/purposes",
+   "by": []
+  },
+  {
+   "name": "processingPurpose#update",
+   "verb": "PUT",
+   "url": "/api/avg/purposes/{id}",
+   "by": []
+  },
+  {
+   "name": "processingPurpose#destroy",
+   "verb": "DELETE",
+   "url": "/api/avg/purposes/{id}",
+   "by": []
+  },
+  {
+   "name": "auditSink#show",
+   "verb": "GET",
+   "url": "/api/audit/sink",
+   "by": []
+  },
+  {
+   "name": "auditSink#acknowledge",
+   "verb": "POST",
+   "url": "/api/audit/sink/acknowledge",
+   "by": []
+  },
+  {
+   "name": "contentReport#index",
+   "verb": "GET",
+   "url": "/api/content-reports",
+   "by": []
+  },
+  {
+   "name": "contentReport#create",
+   "verb": "POST",
+   "url": "/api/content-reports",
+   "by": []
+  },
+  {
+   "name": "contentReport#copy",
+   "verb": "GET",
+   "url": "/api/content-reports/{id}/copy",
+   "by": []
+  },
+  {
+   "name": "contentReport#show",
+   "verb": "GET",
+   "url": "/api/content-reports/{id}",
+   "by": []
+  },
+  {
+   "name": "contentReport#update",
+   "verb": "PUT",
+   "url": "/api/content-reports/{id}",
+   "by": []
+  },
+  {
+   "name": "dsar#access",
+   "verb": "GET",
+   "url": "/api/avg/access",
+   "by": []
+  },
+  {
+   "name": "dsar#portability",
+   "verb": "GET",
+   "url": "/api/avg/portability",
+   "by": []
+  },
+  {
+   "name": "dsar#erasure",
+   "verb": "POST",
+   "url": "/api/avg/erasure",
+   "by": []
+  },
+  {
+   "name": "dsar#rectification",
+   "verb": "POST",
+   "url": "/api/avg/rectification",
+   "by": []
+  },
+  {
+   "name": "dsar#compliance",
+   "verb": "GET",
+   "url": "/api/avg/compliance",
+   "by": []
+  },
+  {
+   "name": "dataSubjectRequest#subjectData",
+   "verb": "GET",
+   "url": "/api/gdpr/subject-data",
+   "by": []
+  },
+  {
+   "name": "dataSubjectRequest#accessExport",
+   "verb": "GET",
+   "url": "/api/gdpr/access-export",
+   "by": []
+  },
+  {
+   "name": "dataSubjectRequest#rectify",
+   "verb": "POST",
+   "url": "/api/gdpr/rectify",
+   "by": []
+  },
+  {
+   "name": "dataSubjectRequest#erase",
+   "verb": "POST",
+   "url": "/api/gdpr/erase",
+   "by": []
+  },
+  {
+   "name": "dataSubjectRequest#restrict",
+   "verb": "POST",
+   "url": "/api/gdpr/restrict",
+   "by": []
+  },
+  {
+   "name": "dataSubjectRequest#objection",
+   "verb": "POST",
+   "url": "/api/gdpr/object",
+   "by": []
+  },
+  {
+   "name": "erasurePreview#create",
+   "verb": "POST",
+   "url": "/api/gdpr/erasure-previews",
+   "by": []
+  },
+  {
+   "name": "erasurePreview#show",
+   "verb": "GET",
+   "url": "/api/gdpr/erasure-previews/{id}",
+   "by": []
+  },
+  {
+   "name": "erasurePreview#approve",
+   "verb": "POST",
+   "url": "/api/gdpr/erasure-previews/{id}/approve",
+   "by": []
+  },
+  {
+   "name": "erasurePreview#run",
+   "verb": "POST",
+   "url": "/api/gdpr/erasure-previews/{id}/run",
+   "by": []
+  },
+  {
+   "name": "principalReach#show",
+   "verb": "GET",
+   "url": "/api/rbac/reach/{principal}",
+   "by": []
+  },
+  {
+   "name": "principalReach#revoke",
+   "verb": "POST",
+   "url": "/api/rbac/reach/{principal}/revoke",
+   "by": []
+  },
+  {
+   "name": "subjectExport#create",
+   "verb": "POST",
+   "url": "/api/gdpr/subject-exports",
+   "by": []
+  },
+  {
+   "name": "subjectExport#show",
+   "verb": "GET",
+   "url": "/api/gdpr/subject-exports/{id}",
+   "by": []
+  },
+  {
+   "name": "subjectExport#download",
+   "verb": "GET",
+   "url": "/api/gdpr/subject-exports/{id}/download",
+   "by": []
+  },
+  {
+   "name": "configurationDeployment#index",
+   "verb": "GET",
+   "url": "/api/configuration/draft-sets",
+   "by": []
+  },
+  {
+   "name": "configurationDeployment#create",
+   "verb": "POST",
+   "url": "/api/configuration/draft-sets",
+   "by": []
+  },
+  {
+   "name": "configurationDeployment#show",
+   "verb": "GET",
+   "url": "/api/configuration/draft-sets/{id}",
+   "by": []
+  },
+  {
+   "name": "configurationDeployment#discard",
+   "verb": "DELETE",
+   "url": "/api/configuration/draft-sets/{id}",
+   "by": []
+  },
+  {
+   "name": "configurationDeployment#draftValue",
+   "verb": "POST",
+   "url": "/api/configuration/draft-sets/{id}/values",
+   "by": []
+  },
+  {
+   "name": "configurationDeployment#preview",
+   "verb": "GET",
+   "url": "/api/configuration/draft-sets/{id}/preview",
+   "by": []
+  },
+  {
+   "name": "configurationDeployment#approve",
+   "verb": "POST",
+   "url": "/api/configuration/draft-sets/{id}/approve",
+   "by": []
+  },
+  {
+   "name": "configurationDeployment#deploy",
+   "verb": "POST",
+   "url": "/api/configuration/draft-sets/{id}/deploy",
+   "by": []
+  },
+  {
+   "name": "configurationDeployment#deployments",
+   "verb": "GET",
+   "url": "/api/configuration/deployments",
+   "by": []
+  },
+  {
+   "name": "configurationDeployment#deployment",
+   "verb": "GET",
+   "url": "/api/configuration/deployments/{id}",
+   "by": []
+  },
+  {
+   "name": "configurationDeployment#rollback",
+   "verb": "POST",
+   "url": "/api/configuration/deployments/{id}/rollback",
+   "by": []
+  },
+  {
+   "name": "configurationDeployment#effective",
+   "verb": "GET",
+   "url": "/api/configuration/effective",
+   "by": []
+  },
+  {
+   "name": "dsarCase#create",
+   "verb": "POST",
+   "url": "/api/gdpr/cases",
+   "by": []
+  },
+  {
+   "name": "dsarCase#transition",
+   "verb": "POST",
+   "url": "/api/gdpr/cases/{id}/transition",
+   "by": []
+  },
+  {
+   "name": "dsarCase#evidence",
+   "verb": "POST",
+   "url": "/api/gdpr/cases/{id}/evidence",
+   "by": []
+  },
+  {
+   "name": "dsarCase#redact",
+   "verb": "POST",
+   "url": "/api/gdpr/cases/{id}/redactions",
+   "by": []
+  },
+  {
+   "name": "dsarCase#generateBundle",
+   "verb": "POST",
+   "url": "/api/gdpr/cases/{id}/bundle",
+   "by": []
+  },
+  {
+   "name": "dsarCase#downloadBundle",
+   "verb": "GET",
+   "url": "/api/gdpr/cases/{id}/bundle/download",
+   "by": []
+  },
+  {
+   "name": "dsarCase#dossier",
+   "verb": "GET",
+   "url": "/api/gdpr/cases/{id}/dossier",
+   "by": []
+  },
+  {
+   "name": "dsarCase#identityVerify",
+   "verb": "POST",
+   "url": "/api/gdpr/cases/{id}/verify-identity",
+   "by": []
+  },
+  {
+   "name": "dsarCase#escalate",
+   "verb": "POST",
+   "url": "/api/gdpr/cases/{id}/escalate",
+   "by": []
+  },
+  {
+   "name": "processingLog#index",
+   "verb": "GET",
+   "url": "/api/avg/verwerkingen",
+   "by": []
+  },
+  {
+   "name": "processingLog#involvedParty",
+   "verb": "GET",
+   "url": "/api/avg/verwerkingen/betrokkene",
+   "by": []
+  },
+  {
+   "name": "translation#setStatus",
+   "verb": "POST",
+   "url": "/api/translations/object/{uuid}/{property}/{language}/status",
+   "by": []
+  },
+  {
+   "name": "translation#bulkTranslate",
+   "verb": "POST",
+   "url": "/api/translations/object/{uuid}/bulk-translate",
+   "by": []
+  },
+  {
+   "name": "names#index",
+   "verb": "GET",
+   "url": "/api/names",
+   "by": []
+  },
+  {
+   "name": "names#create",
+   "verb": "POST",
+   "url": "/api/names",
+   "by": []
+  },
+  {
+   "name": "dashboard#index",
+   "verb": "GET",
+   "url": "/api/dashboard",
+   "by": []
+  },
+  {
+   "name": "dashboard#calculate",
+   "verb": "POST",
+   "url": "/api/dashboard/calculate/{registerId}",
+   "by": []
+  },
+  {
+   "name": "dashboard#getAuditTrailActionChart",
+   "verb": "GET",
+   "url": "/api/dashboard/charts/audit-trail-actions",
+   "by": []
+  },
+  {
+   "name": "dashboard#getObjectsByRegisterChart",
+   "verb": "GET",
+   "url": "/api/dashboard/charts/objects-by-register",
+   "by": []
+  },
+  {
+   "name": "dashboard#getObjectsBySchemaChart",
+   "verb": "GET",
+   "url": "/api/dashboard/charts/objects-by-schema",
+   "by": []
+  },
+  {
+   "name": "dashboard#getObjectsBySizeChart",
+   "verb": "GET",
+   "url": "/api/dashboard/charts/objects-by-size",
+   "by": []
+  },
+  {
+   "name": "dashboard#getAuditTrailStatistics",
+   "verb": "GET",
+   "url": "/api/dashboard/statistics/audit-trail",
+   "by": []
+  },
+  {
+   "name": "dashboard#getAuditTrailActionDistribution",
+   "verb": "GET",
+   "url": "/api/dashboard/statistics/audit-trail-distribution",
+   "by": []
+  },
+  {
+   "name": "dashboard#getMostActiveObjects",
+   "verb": "GET",
+   "url": "/api/dashboard/statistics/most-active-objects",
+   "by": []
+  },
+  {
+   "name": "linked_entity#addObjectLink",
+   "verb": "POST",
+   "url": "/api/objects/{uuid}/_linked/{type}",
+   "by": []
+  },
+  {
+   "name": "linked_entity#removeObjectLink",
+   "verb": "DELETE",
+   "url": "/api/objects/{uuid}/_linked/{type}/{entityId}",
+   "by": []
+  },
+  {
+   "name": "linked_entity#addRegisterLink",
+   "verb": "POST",
+   "url": "/api/registers/{uuid}/_linked/{type}",
+   "by": []
+  },
+  {
+   "name": "linked_entity#addSchemaLink",
+   "verb": "POST",
+   "url": "/api/schemas/{uuid}/_linked/{type}",
+   "by": []
+  },
+  {
+   "name": "linked_entity#reverseLookup",
+   "verb": "GET",
+   "url": "/api/linked/{type}/{entityId}",
+   "by": []
+  },
+  {
+   "name": "aggregation#timeseries",
+   "verb": "GET",
+   "url": "/api/objects/aggregations/{register}/{schema}/timeseries",
+   "by": []
+  },
+  {
+   "name": "aggregation#value",
+   "verb": "GET",
+   "url": "/api/objects/aggregations/{register}/{schema}/value",
+   "by": []
+  },
+  {
+   "name": "aggregation#grouped",
+   "verb": "GET",
+   "url": "/api/objects/aggregations/{register}/{schema}/grouped",
+   "by": []
+  },
+  {
+   "name": "quality#stats",
+   "verb": "GET",
+   "url": "/api/objects/quality/{register}/{schema}/stats",
+   "by": []
+  },
+  {
+   "name": "quality#index",
+   "verb": "GET",
+   "url": "/api/objects/quality/{register}/{schema}",
+   "by": []
+  },
+  {
+   "name": "merge#reverse",
+   "verb": "POST",
+   "url": "/api/objects/merge/{id}/reverse",
+   "by": []
+  },
+  {
+   "name": "survivorship#override",
+   "verb": "POST",
+   "url": "/api/objects/survivorship/{id}/override",
+   "by": []
+  },
+  {
+   "name": "survivorship#sources",
+   "verb": "GET",
+   "url": "/api/objects/survivorship/{id}/sources",
+   "by": []
+  },
+  {
+   "name": "contactSearch#search",
+   "verb": "GET",
+   "url": "/api/integrations/contacts/search",
+   "by": []
+  },
+  {
+   "name": "emails#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/emails/list",
+   "by": []
+  },
+  {
+   "name": "emails#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/emails/send",
+   "by": []
+  },
+  {
+   "name": "emails#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/emails/direct/{emailId}",
+   "by": []
+  },
+  {
+   "name": "emails#search",
+   "verb": "GET",
+   "url": "/api/emails/search",
+   "by": []
+  },
+  {
+   "name": "emails#resolve",
+   "verb": "POST",
+   "url": "/api/emails/resolve",
+   "by": []
+  },
+  {
+   "name": "emailLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/emails",
+   "by": []
+  },
+  {
+   "name": "emailLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/emails",
+   "by": []
+  },
+  {
+   "name": "emailLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/emails/{linkId}",
+   "by": []
+  },
+  {
+   "name": "emailLinks#accounts",
+   "verb": "GET",
+   "url": "/api/integrations/email/accounts",
+   "by": []
+  },
+  {
+   "name": "emailLinks#mailboxes",
+   "verb": "GET",
+   "url": "/api/integrations/email/accounts/{accountId}/mailboxes",
+   "by": []
+  },
+  {
+   "name": "emailLinks#messages",
+   "verb": "GET",
+   "url": "/api/integrations/email/accounts/{accountId}/messages",
+   "by": []
+  },
+  {
+   "name": "contacts#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/contacts",
+   "by": []
+  },
+  {
+   "name": "contacts#createNew",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/contacts/new",
+   "by": []
+  },
+  {
+   "name": "contacts#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/contacts",
+   "by": []
+  },
+  {
+   "name": "contacts#update",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/contacts/{contactUid}",
+   "by": []
+  },
+  {
+   "name": "contacts#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/contacts/{contactUid}",
+   "by": []
+  },
+  {
+   "name": "contacts#objects",
+   "verb": "GET",
+   "url": "/api/contacts/{contactUid}/objects",
+   "by": []
+  },
+  {
+   "name": "party#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/parties",
+   "by": []
+  },
+  {
+   "name": "party#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/parties",
+   "by": []
+  },
+  {
+   "name": "party#replacePrimary",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/parties/primary",
+   "by": []
+  },
+  {
+   "name": "party#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/parties/{partyUuid}",
+   "by": []
+  },
+  {
+   "name": "party#search",
+   "verb": "GET",
+   "url": "/api/parties/search",
+   "by": []
+  },
+  {
+   "name": "party#resolve",
+   "verb": "GET",
+   "url": "/api/parties/resolve",
+   "by": []
+  },
+  {
+   "name": "party#show",
+   "verb": "GET",
+   "url": "/api/parties/{partyUuid}",
+   "by": []
+  },
+  {
+   "name": "calendarEvents#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/events",
+   "by": []
+  },
+  {
+   "name": "calendarEvents#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/events",
+   "by": []
+  },
+  {
+   "name": "calendarEvents#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/events/link",
+   "by": []
+  },
+  {
+   "name": "calendarEvents#unlink",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/events/{eventUid}/link",
+   "by": []
+  },
+  {
+   "name": "calendarEvents#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/events/{eventId}",
+   "by": []
+  },
+  {
+   "name": "calendarEvents#listCalendars",
+   "verb": "GET",
+   "url": "/api/integrations/calendar/calendars",
+   "by": []
+  },
+  {
+   "name": "calendarEvents#listCalendarEvents",
+   "verb": "GET",
+   "url": "/api/integrations/calendar/calendars/{calendarUri}/events",
+   "by": []
+  },
+  {
+   "name": "deckLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/deck",
+   "by": []
+  },
+  {
+   "name": "deckLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/deck",
+   "by": []
+  },
+  {
+   "name": "deckLinks#createNew",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/deck/new",
+   "by": []
+  },
+  {
+   "name": "deckLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/deck/{cardId}",
+   "by": []
+  },
+  {
+   "name": "deckLinks#boards",
+   "verb": "GET",
+   "url": "/api/integrations/deck/boards",
+   "by": []
+  },
+  {
+   "name": "deckLinks#stacks",
+   "verb": "GET",
+   "url": "/api/integrations/deck/boards/{boardId}/stacks",
+   "by": []
+  },
+  {
+   "name": "deckLinks#getDefault",
+   "verb": "GET",
+   "url": "/api/integrations/deck/default/{schema}",
+   "by": []
+  },
+  {
+   "name": "deckLinks#setDefault",
+   "verb": "PUT",
+   "url": "/api/integrations/deck/default/{schema}",
+   "by": []
+  },
+  {
+   "name": "deck#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/deck/cards",
+   "by": []
+  },
+  {
+   "name": "deck#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/deck/cards",
+   "by": []
+  },
+  {
+   "name": "deck#objects",
+   "verb": "GET",
+   "url": "/api/deck/boards/{boardId}/objects",
+   "by": []
+  },
+  {
+   "name": "talkLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/talk",
+   "by": []
+  },
+  {
+   "name": "talkLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/talk",
+   "by": []
+  },
+  {
+   "name": "talkLinks#createNew",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/talk/new",
+   "by": []
+  },
+  {
+   "name": "talkLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/talk/{roomToken}",
+   "by": []
+  },
+  {
+   "name": "talkLinks#rooms",
+   "verb": "GET",
+   "url": "/api/integrations/talk/rooms",
+   "by": []
+  },
+  {
+   "name": "pollLinks#available",
+   "verb": "GET",
+   "url": "/api/integrations/polls/available",
+   "by": []
+  },
+  {
+   "name": "pollLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/polls",
+   "by": []
+  },
+  {
+   "name": "pollLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/polls",
+   "by": []
+  },
+  {
+   "name": "pollLinks#createNew",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/polls/new",
+   "by": []
+  },
+  {
+   "name": "pollLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/polls/{pollId}",
+   "by": []
+  },
+  {
+   "name": "bookmarkLinks#available",
+   "verb": "GET",
+   "url": "/api/integrations/bookmarks/available",
+   "by": []
+  },
+  {
+   "name": "bookmarkLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/bookmarks",
+   "by": []
+  },
+  {
+   "name": "bookmarkLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/bookmarks",
+   "by": []
+  },
+  {
+   "name": "bookmarkLinks#createNew",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/bookmarks/new",
+   "by": []
+  },
+  {
+   "name": "bookmarkLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/bookmarks/{bookmarkId}",
+   "by": []
+  },
+  {
+   "name": "shareLinks#files",
+   "verb": "GET",
+   "url": "/api/integrations/shares/files/{register}/{schema}/{id}",
+   "by": []
+  },
+  {
+   "name": "shareLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/file-shares",
+   "by": []
+  },
+  {
+   "name": "shareLinks#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/file-shares",
+   "by": []
+  },
+  {
+   "name": "shareLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/file-shares/{shareId}",
+   "by": []
+  },
+  {
+   "name": "flow#eventCatalog",
+   "verb": "GET",
+   "url": "/api/flow/event-catalog",
+   "by": []
+  },
+  {
+   "name": "flow#nodeCatalog",
+   "verb": "GET",
+   "url": "/api/flow/node-catalog",
+   "by": []
+  },
+  {
+   "name": "flowPrincipal#types",
+   "verb": "GET",
+   "url": "/api/flow/principal-types",
+   "by": []
+  },
+  {
+   "name": "flow#logActions",
+   "verb": "POST",
+   "url": "/api/flow/log-actions",
+   "by": []
+  },
+  {
+   "name": "flow#validate",
+   "verb": "POST",
+   "url": "/api/flow/validate",
+   "by": []
+  },
+  {
+   "name": "flow#state",
+   "verb": "GET",
+   "url": "/api/flow/{flowId}/state",
+   "by": []
+  },
+  {
+   "name": "flowDryRun#dryRun",
+   "verb": "POST",
+   "url": "/api/flows/{id}/dry-run",
+   "by": []
+  },
+  {
+   "name": "flow#exportBpmn",
+   "verb": "GET",
+   "url": "/api/flows/{id}/bpmn",
+   "by": []
+  },
+  {
+   "name": "flow#importBpmn",
+   "verb": "POST",
+   "url": "/api/flows/import/bpmn",
+   "by": []
+  },
+  {
+   "name": "flowNodeRun#form",
+   "verb": "GET",
+   "url": "/api/flows/{id}/nodes/{nodeId}/run",
+   "by": []
+  },
+  {
+   "name": "flowNodeRun#run",
+   "verb": "POST",
+   "url": "/api/flows/{id}/nodes/{nodeId}/run",
+   "by": []
+  },
+  {
+   "name": "flow#adopt",
+   "verb": "POST",
+   "url": "/api/flows/{id}/adopt",
+   "by": []
+  },
+  {
+   "name": "flow#versions",
+   "verb": "GET",
+   "url": "/api/flows/{id}/versions",
+   "by": []
+  },
+  {
+   "name": "flow#version",
+   "verb": "GET",
+   "url": "/api/flows/{id}/versions/{version}",
+   "by": []
+  },
+  {
+   "name": "flow#publish",
+   "verb": "POST",
+   "url": "/api/flows/{id}/publish",
+   "by": []
+  },
+  {
+   "name": "flow#versionPreview",
+   "verb": "GET",
+   "url": "/api/flows/{id}/version-preview",
+   "by": []
+  },
+  {
+   "name": "flow#draft",
+   "verb": "POST",
+   "url": "/api/flows/{id}/draft",
+   "by": []
+  },
+  {
+   "name": "flow#deprecate",
+   "verb": "POST",
+   "url": "/api/flows/{id}/deprecate",
+   "by": []
+  },
+  {
+   "name": "flow#show",
+   "verb": "GET",
+   "url": "/api/flows/{id}",
+   "by": []
+  },
+  {
+   "name": "flow#update",
+   "verb": "PUT",
+   "url": "/api/flows/{id}",
+   "by": []
+  },
+  {
+   "name": "flowLinks#available",
+   "verb": "GET",
+   "url": "/api/integrations/flow/operations",
+   "by": []
+  },
+  {
+   "name": "flowLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/flow",
+   "by": []
+  },
+  {
+   "name": "flowLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/flow",
+   "by": []
+  },
+  {
+   "name": "flowLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/flow/{operationId}",
+   "by": []
+  },
+  {
+   "name": "photoLinks#available",
+   "verb": "GET",
+   "url": "/api/integrations/photos/available",
+   "by": []
+  },
+  {
+   "name": "photoLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/photos",
+   "by": []
+  },
+  {
+   "name": "photoLinks#createAndLink",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/photos/new",
+   "by": []
+  },
+  {
+   "name": "photoLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/photos",
+   "by": []
+  },
+  {
+   "name": "photoLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/photos/{albumId}",
+   "by": []
+  },
+  {
+   "name": "collectiveLinks#available",
+   "verb": "GET",
+   "url": "/api/integrations/collectives/available",
+   "by": []
+  },
+  {
+   "name": "collectiveLinks#collectives",
+   "verb": "GET",
+   "url": "/api/integrations/collectives/list",
+   "by": []
+  },
+  {
+   "name": "collectiveLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/collectives",
+   "by": []
+  },
+  {
+   "name": "collectiveLinks#createAndLink",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/collectives/new",
+   "by": []
+  },
+  {
+   "name": "collectiveLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/collectives",
+   "by": []
+  },
+  {
+   "name": "collectiveLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/collectives/{pageId}",
+   "by": []
+  },
+  {
+   "name": "xwikiLinks#available",
+   "verb": "GET",
+   "url": "/api/integrations/xwiki/available",
+   "by": []
+  },
+  {
+   "name": "xwikiLinks#search",
+   "verb": "GET",
+   "url": "/api/integrations/xwiki/search",
+   "by": []
+  },
+  {
+   "name": "xwikiLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/xwiki",
+   "by": []
+  },
+  {
+   "name": "xwikiLinks#createAndLink",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/xwiki/new",
+   "by": []
+  },
+  {
+   "name": "xwikiLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/xwiki",
+   "by": []
+  },
+  {
+   "name": "xwikiLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/xwiki/{pageRef}",
+   "by": []
+  },
+  {
+   "name": "companyLookup#kvkCompany",
+   "verb": "GET",
+   "url": "/api/integrations/kvk/company",
+   "by": []
+  },
+  {
+   "name": "companyLookup#kvkSearch",
+   "verb": "GET",
+   "url": "/api/integrations/kvk/search",
+   "by": []
+  },
+  {
+   "name": "companyLookup#openCorporatesSearch",
+   "verb": "GET",
+   "url": "/api/integrations/opencorporates/search",
+   "by": []
+  },
+  {
+   "name": "personLookup#brpPerson",
+   "verb": "GET",
+   "url": "/api/integrations/brp/person",
+   "by": []
+  },
+  {
+   "name": "messageDispatch#smsSend",
+   "verb": "POST",
+   "url": "/api/integrations/sms/send",
+   "by": []
+  },
+  {
+   "name": "messageDispatch#whatsappSend",
+   "verb": "POST",
+   "url": "/api/integrations/whatsapp/send",
+   "by": []
+  },
+  {
+   "name": "cospendLinks#available",
+   "verb": "GET",
+   "url": "/api/integrations/cospend/available",
+   "by": []
+  },
+  {
+   "name": "cospendLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/cospend",
+   "by": []
+  },
+  {
+   "name": "cospendLinks#createAndLink",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/cospend/new",
+   "by": []
+  },
+  {
+   "name": "cospendLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/cospend",
+   "by": []
+  },
+  {
+   "name": "cospendLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/cospend/{entryId}",
+   "by": []
+  },
+  {
+   "name": "openProjectLinks#available",
+   "verb": "GET",
+   "url": "/api/integrations/openproject/available",
+   "by": []
+  },
+  {
+   "name": "openProjectLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/openproject",
+   "by": []
+  },
+  {
+   "name": "openProjectLinks#createAndLink",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/openproject/new",
+   "by": []
+  },
+  {
+   "name": "openProjectLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/openproject",
+   "by": []
+  },
+  {
+   "name": "openProjectLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/openproject/{wpId}",
+   "by": []
+  },
+  {
+   "name": "mapLinks#available",
+   "verb": "GET",
+   "url": "/api/integrations/maps/available",
+   "by": []
+  },
+  {
+   "name": "mapLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/maps",
+   "by": []
+  },
+  {
+   "name": "mapLinks#createAndLink",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/maps/new",
+   "by": []
+  },
+  {
+   "name": "mapLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/maps",
+   "by": []
+  },
+  {
+   "name": "mapLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/maps/{favoriteId}",
+   "by": []
+  },
+  {
+   "name": "timeTrackerLinks#available",
+   "verb": "GET",
+   "url": "/api/integrations/time-tracker/available",
+   "by": []
+  },
+  {
+   "name": "timeTrackerLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/time-tracker",
+   "by": []
+  },
+  {
+   "name": "timeTrackerLinks#createAndLink",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/time-tracker/new",
+   "by": []
+  },
+  {
+   "name": "timeTrackerLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/time-tracker",
+   "by": []
+  },
+  {
+   "name": "timeTrackerLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/time-tracker/{entryId}",
+   "by": []
+  },
+  {
+   "name": "analyticsLinks#available",
+   "verb": "GET",
+   "url": "/api/integrations/analytics/available",
+   "by": []
+  },
+  {
+   "name": "analyticsLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/analytics",
+   "by": []
+  },
+  {
+   "name": "analyticsLinks#createAndLink",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/analytics/new",
+   "by": []
+  },
+  {
+   "name": "analyticsLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/analytics",
+   "by": []
+  },
+  {
+   "name": "analyticsLinks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/analytics/{reportId}",
+   "by": []
+  },
+  {
+   "name": "analyticsSeries#register",
+   "verb": "POST",
+   "url": "/api/integrations/analytics/series",
+   "by": []
+  },
+  {
+   "name": "analyticsSeries#fetch",
+   "verb": "GET",
+   "url": "/api/integrations/analytics/series/{seriesKey}",
+   "by": []
+  },
+  {
+   "name": "mapsOverview#register",
+   "verb": "POST",
+   "url": "/api/integrations/maps/overviews",
+   "by": []
+  },
+  {
+   "name": "mapsOverview#points",
+   "verb": "GET",
+   "url": "/api/integrations/maps/overviews/{register}/{schema}/points",
+   "by": []
+  },
+  {
+   "name": "caseToken#resolve",
+   "verb": "GET",
+   "url": "/api/public/case-tokens/{token}",
+   "by": []
+  },
+  {
+   "name": "calendarFeed#feed",
+   "verb": "GET",
+   "url": "/api/public/calendar-feeds/{token}.ics",
+   "by": []
+  },
+  {
+   "name": "calendarFeed#index",
+   "verb": "GET",
+   "url": "/api/calendar-feeds",
+   "by": []
+  },
+  {
+   "name": "calendarFeed#mint",
+   "verb": "POST",
+   "url": "/api/calendar-feeds",
+   "by": []
+  },
+  {
+   "name": "calendarFeed#revoke",
+   "verb": "DELETE",
+   "url": "/api/calendar-feeds/{id}",
+   "by": []
+  },
+  {
+   "name": "calendarFeed#attendeeResponses",
+   "verb": "GET",
+   "url": "/api/objects/{id}/attendee-responses",
+   "by": []
+  },
+  {
+   "name": "calendarFeed#recordAttendeeResponse",
+   "verb": "POST",
+   "url": "/api/objects/{id}/attendee-responses",
+   "by": []
+  },
+  {
+   "name": "accessLink#open",
+   "verb": "GET",
+   "url": "/api/public/links/{anchor}",
+   "by": []
+  },
+  {
+   "name": "accessLink#comment",
+   "verb": "POST",
+   "url": "/api/public/links/{anchor}/comments",
+   "by": []
+  },
+  {
+   "name": "accessLink#upload",
+   "verb": "POST",
+   "url": "/api/public/links/{anchor}/files",
+   "by": []
+  },
+  {
+   "name": "accessLinkPage#show",
+   "verb": "GET",
+   "url": "/links/{anchor}",
+   "by": []
+  },
+  {
+   "name": "accessLink#index",
+   "verb": "GET",
+   "url": "/api/access-links",
+   "by": []
+  },
+  {
+   "name": "accessLink#mint",
+   "verb": "POST",
+   "url": "/api/access-links",
+   "by": []
+  },
+  {
+   "name": "accessLink#update",
+   "verb": "PUT",
+   "url": "/api/access-links/{id}",
+   "by": []
+  },
+  {
+   "name": "accessLink#revoke",
+   "verb": "DELETE",
+   "url": "/api/access-links/{id}",
+   "by": []
+  },
+  {
+   "name": "vocabulary#resolveByUri",
+   "verb": "GET",
+   "url": "/api/vocabulary/concept",
+   "by": []
+  },
+  {
+   "name": "vocabulary#resolveByNotation",
+   "verb": "GET",
+   "url": "/api/vocabulary/concept/notation",
+   "by": []
+  },
+  {
+   "name": "vocabulary#listConcepts",
+   "verb": "GET",
+   "url": "/api/vocabulary/concepts",
+   "by": []
+  },
+  {
+   "name": "vocabulary#propertyOptions",
+   "verb": "GET",
+   "url": "/api/vocabulary/options",
+   "by": []
+  },
+  {
+   "name": "activityLinks#types",
+   "verb": "GET",
+   "url": "/api/integrations/activity/types",
+   "by": []
+  },
+  {
+   "name": "activityLinks#actors",
+   "verb": "GET",
+   "url": "/api/integrations/activity/actors",
+   "by": []
+  },
+  {
+   "name": "activityLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/activity",
+   "by": []
+  },
+  {
+   "name": "formLinks#available",
+   "verb": "GET",
+   "url": "/api/integrations/forms/available",
+   "by": []
+  },
+  {
+   "name": "formLinks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/forms",
+   "by": []
+  },
+  {
+   "name": "formLinks#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/forms/new",
+   "by": []
+  },
+  {
+   "name": "formLinks#link",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/forms",
+   "by": []
+  },
+  {
+   "name": "formLinks#destroySubmission",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/forms/{formId}/submissions/{submissionId}",
+   "by": []
+  },
+  {
+   "name": "formLinks#destroyForm",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/forms/{formId}",
+   "by": []
+  },
+  {
+   "name": "relations#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/relations",
+   "by": []
+  },
+  {
+   "name": "linkedEntity#addObjectLink",
+   "verb": "POST",
+   "url": "/api/objects/{uuid}/_{type}",
+   "by": []
+  },
+  {
+   "name": "linkedEntity#removeObjectLink",
+   "verb": "DELETE",
+   "url": "/api/objects/{uuid}/_{type}/{entityId}",
+   "by": []
+  },
+  {
+   "name": "linkedEntity#addRegisterLink",
+   "verb": "POST",
+   "url": "/api/registers/{uuid}/_{type}",
+   "by": []
+  },
+  {
+   "name": "linkedEntity#addSchemaLink",
+   "verb": "POST",
+   "url": "/api/schemas/{uuid}/_{type}",
+   "by": []
+  },
+  {
+   "name": "linkedEntity#reverseLookup",
+   "verb": "GET",
+   "url": "/api/linked/_{type}/{entityId}",
+   "by": []
+  },
+  {
+   "name": "tmlo#exportSingle",
+   "verb": "GET",
+   "url": "/api/tmlo/{register}/{schema}/{id}/export",
+   "by": []
+  },
+  {
+   "name": "tmlo#exportBatch",
+   "verb": "GET",
+   "url": "/api/tmlo/{register}/{schema}/export",
+   "by": []
+  },
+  {
+   "name": "objects#geoJson",
+   "verb": "GET",
+   "url": "/api/geo/{register}/{schema}/geojson",
+   "by": []
+  },
+  {
+   "name": "objects#wfs",
+   "verb": "GET",
+   "url": "/api/geo/{register}/{schema}/wfs",
+   "by": []
+  },
+  {
+   "name": "objects#geocode",
+   "verb": "GET",
+   "url": "/api/geo/geocode",
+   "by": []
+  },
+  {
+   "name": "forms#validate",
+   "verb": "POST",
+   "url": "/api/forms/validate",
+   "by": []
+  },
+  {
+   "name": "forms#submit",
+   "verb": "POST",
+   "url": "/api/forms/{formId}/submit",
+   "by": []
+  },
+  {
+   "name": "forms#upload",
+   "verb": "POST",
+   "url": "/api/forms/{formId}/uploads",
+   "by": []
+  },
+  {
+   "name": "forms#draft",
+   "verb": "POST",
+   "url": "/api/forms/{formId}/draft",
+   "by": []
+  },
+  {
+   "name": "objects#export",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/export",
+   "by": []
+  },
+  {
+   "name": "objects#referenceOptions",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/reference-options",
+   "by": []
+  },
+  {
+   "name": "objects#merge",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/merge",
+   "by": []
+  },
+  {
+   "name": "objects#migrate",
+   "verb": "POST",
+   "url": "/api/migrate",
+   "by": []
+  },
+  {
+   "name": "objects#contracts",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/contracts",
+   "by": []
+  },
+  {
+   "name": "objects#referencedBy",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/referenced-by",
+   "by": []
+  },
+  {
+   "name": "objects#geoFeatures",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/geo-features",
+   "by": []
+  },
+  {
+   "name": "objects#logs",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/logs",
+   "by": []
+  },
+  {
+   "name": "objectRelations#affected",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/affected",
+   "by": []
+  },
+  {
+   "name": "objectRelations#tree",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/tree",
+   "by": []
+  },
+  {
+   "name": "objects#exists",
+   "verb": "POST",
+   "url": "/api/objects/exists",
+   "by": []
+  },
+  {
+   "name": "objects#presenceBeat",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/presence",
+   "by": []
+  },
+  {
+   "name": "objects#presenceDepart",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/presence",
+   "by": []
+  },
+  {
+   "name": "objects#presenceDepartByBeacon",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/presence",
+   "by": []
+  },
+  {
+   "name": "objects#presenceList",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/presence",
+   "by": []
+  },
+  {
+   "name": "objects#move",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/move",
+   "by": []
+  },
+  {
+   "name": "objects#unlock",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/lock",
+   "by": []
+  },
+  {
+   "name": "objectState#archive",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/archive",
+   "by": []
+  },
+  {
+   "name": "objectState#unarchive",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/archive",
+   "by": []
+  },
+  {
+   "name": "corrections#correct",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/correct",
+   "by": []
+  },
+  {
+   "name": "registrySubscription#subscribe",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/registry-subscription",
+   "by": []
+  },
+  {
+   "name": "registrySubscription#unsubscribe",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/registry-subscription",
+   "by": []
+  },
+  {
+   "name": "registryUpdates#update",
+   "verb": "POST",
+   "url": "/api/registry/{registry}/updates",
+   "by": []
+  },
+  {
+   "name": "bulk#deleteSchema",
+   "verb": "POST",
+   "url": "/api/bulk/{register}/{schema}/delete-schema",
+   "by": []
+  },
+  {
+   "name": "bulk#deleteSchemaObjects",
+   "verb": "POST",
+   "url": "/api/bulk/{register}/{schema}/delete-objects",
+   "by": []
+  },
+  {
+   "name": "bulk#deleteRegister",
+   "verb": "POST",
+   "url": "/api/bulk/{register}/delete-register",
+   "by": []
+  },
+  {
+   "name": "bulkJobs#actions",
+   "verb": "GET",
+   "url": "/api/bulk-actions",
+   "by": []
+  },
+  {
+   "name": "bulkJobs#index",
+   "verb": "GET",
+   "url": "/api/bulk-jobs",
+   "by": []
+  },
+  {
+   "name": "bulkJobs#create",
+   "verb": "POST",
+   "url": "/api/bulk-jobs",
+   "by": []
+  },
+  {
+   "name": "bulkJobs#show",
+   "verb": "GET",
+   "url": "/api/bulk-jobs/{id}",
+   "by": []
+  },
+  {
+   "name": "bulkJobs#members",
+   "verb": "GET",
+   "url": "/api/bulk-jobs/{id}/members",
+   "by": []
+  },
+  {
+   "name": "bulkJobs#download",
+   "verb": "GET",
+   "url": "/api/bulk-jobs/{id}/download",
+   "by": []
+  },
+  {
+   "name": "bulkJobs#commit",
+   "verb": "POST",
+   "url": "/api/bulk-jobs/{id}/commit",
+   "by": []
+  },
+  {
+   "name": "bulkJobs#cancel",
+   "verb": "POST",
+   "url": "/api/bulk-jobs/{id}/cancel",
+   "by": []
+  },
+  {
+   "name": "bulkJobs#retry",
+   "verb": "POST",
+   "url": "/api/bulk-jobs/{id}/retry",
+   "by": []
+  },
+  {
+   "name": "bulkJobs#reverse",
+   "verb": "POST",
+   "url": "/api/bulk-jobs/{id}/reverse",
+   "by": []
+  },
+  {
+   "name": "bulkJobs#pause",
+   "verb": "POST",
+   "url": "/api/bulk-jobs/{id}/pause",
+   "by": []
+  },
+  {
+   "name": "bulkJobs#resume",
+   "verb": "POST",
+   "url": "/api/bulk-jobs/{id}/resume",
+   "by": []
+  },
+  {
+   "name": "operationsConsole#index",
+   "verb": "GET",
+   "url": "/api/operations/console",
+   "by": []
+  },
+  {
+   "name": "operationsConsole#jobs",
+   "verb": "GET",
+   "url": "/api/operations/jobs",
+   "by": []
+  },
+  {
+   "name": "operationsConsole#ruleRuns",
+   "verb": "GET",
+   "url": "/api/operations/rule-runs",
+   "by": []
+  },
+  {
+   "name": "operationsConsole#runs",
+   "verb": "GET",
+   "url": "/api/operations/runs",
+   "by": []
+  },
+  {
+   "name": "operationsConsole#runNow",
+   "verb": "POST",
+   "url": "/api/operations/run-now",
+   "by": []
+  },
+  {
+   "name": "operationsConsole#schedule",
+   "verb": "GET",
+   "url": "/api/operations/schedule",
+   "by": []
+  },
+  {
+   "name": "operationsConsole#schedule",
+   "verb": "PUT",
+   "url": "/api/operations/schedule",
+   "by": []
+  },
+  {
+   "name": "operationsConsole#alerts",
+   "verb": "GET",
+   "url": "/api/operations/alerts",
+   "by": []
+  },
+  {
+   "name": "operationsConsole#administerAlerts",
+   "verb": "PUT",
+   "url": "/api/operations/alerts",
+   "by": []
+  },
+  {
+   "name": "operationsConsistency#consistency",
+   "verb": "GET",
+   "url": "/api/operations/consistency",
+   "by": []
+  },
+  {
+   "name": "operationsConsistency#repairPlan",
+   "verb": "GET",
+   "url": "/api/operations/repair-plan",
+   "by": []
+  },
+  {
+   "name": "operationsConsistency#repair",
+   "verb": "POST",
+   "url": "/api/operations/repair",
+   "by": []
+  },
+  {
+   "name": "operationsMaintenance#maintenance",
+   "verb": "GET",
+   "url": "/api/operations/maintenance",
+   "by": []
+  },
+  {
+   "name": "operationsMaintenance#maintenance",
+   "verb": "POST",
+   "url": "/api/operations/maintenance",
+   "by": []
+  },
+  {
+   "name": "operationsMaintenance#maintenance",
+   "verb": "DELETE",
+   "url": "/api/operations/maintenance",
+   "by": []
+  },
+  {
+   "name": "operationsMaintenance#supportBundle",
+   "verb": "GET",
+   "url": "/api/operations/support-bundle",
+   "by": []
+  },
+  {
+   "name": "operationsMaintenance#facts",
+   "verb": "GET",
+   "url": "/api/operations/facts",
+   "by": []
+  },
+  {
+   "name": "importPreview#policies",
+   "verb": "GET",
+   "url": "/api/import-previews/policies",
+   "by": []
+  },
+  {
+   "name": "importPreview#index",
+   "verb": "GET",
+   "url": "/api/import-previews",
+   "by": []
+  },
+  {
+   "name": "importPreview#create",
+   "verb": "POST",
+   "url": "/api/import-previews",
+   "by": []
+  },
+  {
+   "name": "importPreview#show",
+   "verb": "GET",
+   "url": "/api/import-previews/{id}",
+   "by": []
+  },
+  {
+   "name": "importPreview#rows",
+   "verb": "GET",
+   "url": "/api/import-previews/{id}/rows",
+   "by": []
+  },
+  {
+   "name": "importPreview#commit",
+   "verb": "POST",
+   "url": "/api/import-previews/{id}/commit",
+   "by": []
+  },
+  {
+   "name": "auditTrail#readable",
+   "verb": "GET",
+   "url": "/api/audit-trails/readable",
+   "by": []
+  },
+  {
+   "name": "auditTrail#statistics",
+   "verb": "GET",
+   "url": "/api/audit-trails/statistics",
+   "by": []
+  },
+  {
+   "name": "auditTrail#export",
+   "verb": "GET",
+   "url": "/api/audit-trails/export",
+   "by": []
+  },
+  {
+   "name": "auditTrail#verify",
+   "verb": "GET",
+   "url": "/api/audit-trails/verify",
+   "by": []
+  },
+  {
+   "name": "auditTrail#integrity",
+   "verb": "GET",
+   "url": "/api/audit-trails/integrity",
+   "by": []
+  },
+  {
+   "name": "auditTrail#processingActivities",
+   "verb": "GET",
+   "url": "/api/audit-trails/processing-activities",
+   "by": []
+  },
+  {
+   "name": "auditTrail#subjectAuditTrail",
+   "verb": "GET",
+   "url": "/api/audit-trails/subject-lookup",
+   "by": []
+  },
+  {
+   "name": "auditTrail#clearAll",
+   "verb": "DELETE",
+   "url": "/api/audit-trails/clear-all",
+   "by": []
+  },
+  {
+   "name": "auditTrail#show",
+   "verb": "GET",
+   "url": "/api/audit-trails/{id}",
+   "by": []
+  },
+  {
+   "name": "auditTrail#update",
+   "verb": "PUT",
+   "url": "/api/audit-trails/{id}",
+   "by": []
+  },
+  {
+   "name": "auditTrail#destroy",
+   "verb": "DELETE",
+   "url": "/api/audit-trails/{id}",
+   "by": []
+  },
+  {
+   "name": "auditTrail#destroyMultiple",
+   "verb": "DELETE",
+   "url": "/api/audit-trails",
+   "by": []
+  },
+  {
+   "name": "auditQuery#export",
+   "verb": "GET",
+   "url": "/api/v2/audit/export",
+   "by": []
+  },
+  {
+   "name": "auditQuery#query",
+   "verb": "GET",
+   "url": "/api/v2/audit",
+   "by": []
+  },
+  {
+   "name": "notificationHistory#index",
+   "verb": "GET",
+   "url": "/api/notification-history",
+   "by": []
+  },
+  {
+   "name": "notificationHistory#snooze",
+   "verb": "PUT",
+   "url": "/api/notification-history/{id}/snooze",
+   "by": []
+  },
+  {
+   "name": "notificationHistory#archive",
+   "verb": "PUT",
+   "url": "/api/notification-history/{id}/archive",
+   "by": []
+  },
+  {
+   "name": "notificationHistory#markThreadRead",
+   "verb": "PUT",
+   "url": "/api/notification-history/thread/read",
+   "by": []
+  },
+  {
+   "name": "notificationSubscriptions#index",
+   "verb": "GET",
+   "url": "/api/notification-subscriptions",
+   "by": []
+  },
+  {
+   "name": "notificationSubscriptions#create",
+   "verb": "POST",
+   "url": "/api/notification-subscriptions",
+   "by": []
+  },
+  {
+   "name": "notificationSubscriptions#destroy",
+   "verb": "DELETE",
+   "url": "/api/notification-subscriptions",
+   "by": []
+  },
+  {
+   "name": "notificationPreferences#index",
+   "verb": "GET",
+   "url": "/api/notification-preferences",
+   "by": []
+  },
+  {
+   "name": "notificationPreferences#update",
+   "verb": "PUT",
+   "url": "/api/notification-preferences",
+   "by": []
+  },
+  {
+   "name": "notificationTemplates#index",
+   "verb": "GET",
+   "url": "/api/notification-templates",
+   "by": []
+  },
+  {
+   "name": "notificationTemplates#gaps",
+   "verb": "GET",
+   "url": "/api/notification-templates/gaps",
+   "by": []
+  },
+  {
+   "name": "notificationTemplates#update",
+   "verb": "PUT",
+   "url": "/api/notification-templates/{event}",
+   "by": []
+  },
+  {
+   "name": "notificationBroadcast#index",
+   "verb": "GET",
+   "url": "/api/notification-broadcasts",
+   "by": []
+  },
+  {
+   "name": "notificationBroadcast#create",
+   "verb": "POST",
+   "url": "/api/notification-broadcasts",
+   "by": []
+  },
+  {
+   "name": "notificationBroadcast#active",
+   "verb": "GET",
+   "url": "/api/notification-broadcasts/active",
+   "by": []
+  },
+  {
+   "name": "notificationBroadcast#acknowledge",
+   "verb": "POST",
+   "url": "/api/notification-broadcasts/{uuid}/acknowledge",
+   "by": []
+  },
+  {
+   "name": "notificationBroadcast#destroy",
+   "verb": "DELETE",
+   "url": "/api/notification-broadcasts/{uuid}",
+   "by": []
+  },
+  {
+   "name": "notificationGroupPreferences#index",
+   "verb": "GET",
+   "url": "/api/notification-group-preferences",
+   "by": []
+  },
+  {
+   "name": "notificationGroupPreferences#update",
+   "verb": "PUT",
+   "url": "/api/notification-group-preferences",
+   "by": []
+  },
+  {
+   "name": "notificationDeliveryWindow#index",
+   "verb": "GET",
+   "url": "/api/notification-delivery-window",
+   "by": []
+  },
+  {
+   "name": "notificationDeliveryWindow#update",
+   "verb": "PUT",
+   "url": "/api/notification-delivery-window",
+   "by": []
+  },
+  {
+   "name": "searchTrail#index",
+   "verb": "GET",
+   "url": "/api/search-trails",
+   "by": []
+  },
+  {
+   "name": "searchTrail#statistics",
+   "verb": "GET",
+   "url": "/api/search-trails/statistics",
+   "by": []
+  },
+  {
+   "name": "searchTrail#popularTerms",
+   "verb": "GET",
+   "url": "/api/search-trails/popular-terms",
+   "by": []
+  },
+  {
+   "name": "searchTrail#activity",
+   "verb": "GET",
+   "url": "/api/search-trails/activity",
+   "by": []
+  },
+  {
+   "name": "searchTrail#registerSchemaStats",
+   "verb": "GET",
+   "url": "/api/search-trails/register-schema-stats",
+   "by": []
+  },
+  {
+   "name": "searchTrail#userAgentStats",
+   "verb": "GET",
+   "url": "/api/search-trails/user-agent-stats",
+   "by": []
+  },
+  {
+   "name": "searchTrail#export",
+   "verb": "GET",
+   "url": "/api/search-trails/export",
+   "by": []
+  },
+  {
+   "name": "searchTrail#cleanup",
+   "verb": "POST",
+   "url": "/api/search-trails/cleanup",
+   "by": []
+  },
+  {
+   "name": "searchTrail#destroyMultiple",
+   "verb": "DELETE",
+   "url": "/api/search-trails",
+   "by": []
+  },
+  {
+   "name": "searchTrail#clearAll",
+   "verb": "DELETE",
+   "url": "/api/search-trails/clear-all",
+   "by": []
+  },
+  {
+   "name": "searchTrail#show",
+   "verb": "GET",
+   "url": "/api/search-trails/{id}",
+   "by": []
+  },
+  {
+   "name": "searchTrail#destroy",
+   "verb": "DELETE",
+   "url": "/api/search-trails/{id}",
+   "by": []
+  },
+  {
+   "name": "deleted#statistics",
+   "verb": "GET",
+   "url": "/api/deleted/statistics",
+   "by": []
+  },
+  {
+   "name": "deleted#topDeleters",
+   "verb": "GET",
+   "url": "/api/deleted/top-deleters",
+   "by": []
+  },
+  {
+   "name": "deleted#restoreMultiple",
+   "verb": "POST",
+   "url": "/api/deleted/restore",
+   "by": []
+  },
+  {
+   "name": "deleted#destructionPreview",
+   "verb": "GET",
+   "url": "/api/deleted/{id}/destruction-preview",
+   "by": []
+  },
+  {
+   "name": "deleted#destructionRecord",
+   "verb": "GET",
+   "url": "/api/deleted/{id}/destruction",
+   "by": []
+  },
+  {
+   "name": "deleted#destroy",
+   "verb": "DELETE",
+   "url": "/api/deleted/{id}",
+   "by": []
+  },
+  {
+   "name": "deleted#destroyMultiple",
+   "verb": "DELETE",
+   "url": "/api/deleted",
+   "by": []
+  },
+  {
+   "name": "revert#revert",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/revert",
+   "by": []
+  },
+  {
+   "name": "files#save",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/files/save",
+   "by": []
+  },
+  {
+   "name": "files#attach",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/files/attach",
+   "by": []
+  },
+  {
+   "name": "files#saveChat",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/files/chat",
+   "by": []
+  },
+  {
+   "name": "objects#downloadFiles",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/files/download",
+   "by": []
+  },
+  {
+   "name": "files#createMultipart",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/filesMultipart",
+   "by": []
+  },
+  {
+   "name": "files#rename",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}/rename",
+   "by": []
+  },
+  {
+   "name": "files#copy",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}/copy",
+   "by": []
+  },
+  {
+   "name": "files#move",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}/move",
+   "by": []
+  },
+  {
+   "name": "files#listVersions",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}/versions",
+   "by": []
+  },
+  {
+   "name": "files#restoreVersion",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}/versions/{versionId}/restore",
+   "by": []
+  },
+  {
+   "name": "files#lock",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}/lock",
+   "by": []
+  },
+  {
+   "name": "files#unlock",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}/unlock",
+   "by": []
+  },
+  {
+   "name": "files#batch",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/files/batch",
+   "by": []
+  },
+  {
+   "name": "files#updateLabels",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}/labels",
+   "by": []
+  },
+  {
+   "name": "files#updateMetadata",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}/metadata",
+   "by": []
+  },
+  {
+   "name": "files#saveMetadataForm",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/files/metadata",
+   "by": []
+  },
+  {
+   "name": "files#office",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}/office",
+   "by": []
+  },
+  {
+   "name": "files#officePage",
+   "verb": "GET",
+   "url": "/office/{register}/{schema}/{id}/{fileId}",
+   "by": []
+  },
+  {
+   "name": "objectFolder#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/folder",
+   "by": []
+  },
+  {
+   "name": "objectFolder#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/folder",
+   "by": []
+  },
+  {
+   "name": "objectFolder#upload",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/folder/upload",
+   "by": []
+  },
+  {
+   "name": "objectFolder#rename",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/folder/{nodeId}",
+   "by": []
+  },
+  {
+   "name": "objectFolder#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/folder/{nodeId}",
+   "by": []
+  },
+  {
+   "name": "tasks#allUserTasks",
+   "verb": "GET",
+   "url": "/api/tasks",
+   "by": []
+  },
+  {
+   "name": "tasks#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/tasks",
+   "by": []
+  },
+  {
+   "name": "tasks#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/tasks",
+   "by": []
+  },
+  {
+   "name": "tasks#update",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/tasks/{taskId}",
+   "by": []
+  },
+  {
+   "name": "tasks#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/tasks/{taskId}",
+   "by": []
+  },
+  {
+   "name": "notes#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/notes",
+   "by": []
+  },
+  {
+   "name": "notes#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/notes",
+   "by": []
+  },
+  {
+   "name": "notes#update",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/notes/{noteId}",
+   "by": []
+  },
+  {
+   "name": "notes#patch",
+   "verb": "PATCH",
+   "url": "/api/objects/{register}/{schema}/{id}/notes/{noteId}",
+   "by": []
+  },
+  {
+   "name": "notes#versions",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/notes/{noteId}/versions",
+   "by": []
+  },
+  {
+   "name": "notes#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/notes/{noteId}",
+   "by": []
+  },
+  {
+   "name": "timelineEntries#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/timeline",
+   "by": []
+  },
+  {
+   "name": "timelineEntries#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/timeline",
+   "by": []
+  },
+  {
+   "name": "timelineEntries#show",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/timeline/{entryId}",
+   "by": []
+  },
+  {
+   "name": "timelineEntries#update",
+   "verb": "PATCH",
+   "url": "/api/objects/{register}/{schema}/{id}/timeline/{entryId}",
+   "by": []
+  },
+  {
+   "name": "timelineEntries#source",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/timeline/{entryId}/source",
+   "by": []
+  },
+  {
+   "name": "timelineEntries#searchEntries",
+   "verb": "GET",
+   "url": "/api/timeline/search",
+   "by": []
+  },
+  {
+   "name": "timelineAdmin#kinds",
+   "verb": "GET",
+   "url": "/api/timeline/kinds",
+   "by": []
+  },
+  {
+   "name": "timelineAdmin#declareKind",
+   "verb": "POST",
+   "url": "/api/timeline/kinds",
+   "by": []
+  },
+  {
+   "name": "timelineAdmin#withdrawKind",
+   "verb": "DELETE",
+   "url": "/api/timeline/kinds/{slug}",
+   "by": []
+  },
+  {
+   "name": "timelineAdmin#patterns",
+   "verb": "GET",
+   "url": "/api/timeline/reference-patterns",
+   "by": []
+  },
+  {
+   "name": "timelineAdmin#declarePattern",
+   "verb": "POST",
+   "url": "/api/timeline/reference-patterns",
+   "by": []
+  },
+  {
+   "name": "timelineAdmin#withdrawPattern",
+   "verb": "DELETE",
+   "url": "/api/timeline/reference-patterns/{slug}",
+   "by": []
+  },
+  {
+   "name": "timelineAdmin#textBlocks",
+   "verb": "GET",
+   "url": "/api/timeline/text-blocks",
+   "by": []
+  },
+  {
+   "name": "timelineAdmin#declareTextBlock",
+   "verb": "POST",
+   "url": "/api/timeline/text-blocks",
+   "by": []
+  },
+  {
+   "name": "timelineAdmin#withdrawTextBlock",
+   "verb": "DELETE",
+   "url": "/api/timeline/text-blocks/{slug}",
+   "by": []
+  },
+  {
+   "name": "schemas#resolveByImplements",
+   "verb": "GET",
+   "url": "/api/schemas/resolve-by-implements",
+   "by": []
+  },
+  {
+   "name": "calculations#operators",
+   "verb": "GET",
+   "url": "/api/schemas/calculation-operators",
+   "by": []
+  },
+  {
+   "name": "calculations#evaluate",
+   "verb": "POST",
+   "url": "/api/schemas/calculation-evaluate",
+   "by": []
+  },
+  {
+   "name": "rules#vocabulary",
+   "verb": "GET",
+   "url": "/api/rules/vocabulary",
+   "by": []
+  },
+  {
+   "name": "rules#runs",
+   "verb": "GET",
+   "url": "/api/rules/{ruleId}/runs",
+   "by": []
+  },
+  {
+   "name": "rules#index",
+   "verb": "GET",
+   "url": "/api/schemas/{schema}/rules",
+   "by": []
+  },
+  {
+   "name": "rules#setEnabled",
+   "verb": "PATCH",
+   "url": "/api/schemas/{schema}/rules/{ruleId}",
+   "by": []
+  },
+  {
+   "name": "rules#evaluate",
+   "verb": "POST",
+   "url": "/api/schemas/{schema}/rules/{ruleId}/evaluate",
+   "by": []
+  },
+  {
+   "name": "rules#replay",
+   "verb": "POST",
+   "url": "/api/schemas/{schema}/rules/{ruleId}/replay",
+   "by": []
+  },
+  {
+   "name": "propertyVocabulary#index",
+   "verb": "GET",
+   "url": "/api/schemas/property-vocabulary",
+   "by": []
+  },
+  {
+   "name": "propertyVocabulary#extendingForms",
+   "verb": "GET",
+   "url": "/api/schemas/extending-forms",
+   "by": []
+  },
+  {
+   "name": "schemas#uploadUpdate",
+   "verb": "PUT",
+   "url": "/api/schemas/{id}/upload",
+   "by": []
+  },
+  {
+   "name": "schemas#publishDraft",
+   "verb": "POST",
+   "url": "/api/schemas/{id}/draft/publish",
+   "by": []
+  },
+  {
+   "name": "schemas#discardDraft",
+   "verb": "DELETE",
+   "url": "/api/schemas/{id}/draft",
+   "by": []
+  },
+  {
+   "name": "schemas#download",
+   "verb": "GET",
+   "url": "/api/schemas/{id}/download",
+   "by": []
+  },
+  {
+   "name": "schemas#related",
+   "verb": "GET",
+   "url": "/api/schemas/{id}/related",
+   "by": []
+  },
+  {
+   "name": "schemas#listPresentation",
+   "verb": "GET",
+   "url": "/api/schemas/{id}/list-presentation",
+   "by": []
+  },
+  {
+   "name": "schemas#stats",
+   "verb": "GET",
+   "url": "/api/schemas/{id}/stats",
+   "by": []
+  },
+  {
+   "name": "schemas#explore",
+   "verb": "GET",
+   "url": "/api/schemas/{id}/explore",
+   "by": []
+  },
+  {
+   "name": "schemas#updateFromExploration",
+   "verb": "POST",
+   "url": "/api/schemas/{id}/update-from-exploration",
+   "by": []
+  },
+  {
+   "name": "schemaMigration#run",
+   "verb": "GET",
+   "url": "/api/schemas/{id}/runs/{run}",
+   "by": []
+  },
+  {
+   "name": "schemaMigration#migrate",
+   "verb": "POST",
+   "url": "/api/schemas/{id}/migrations",
+   "by": []
+  },
+  {
+   "name": "shippedBaseline#preview",
+   "verb": "GET",
+   "url": "/api/schemas/{id}/shipped-baseline/reset",
+   "by": []
+  },
+  {
+   "name": "shippedBaseline#reset",
+   "verb": "POST",
+   "url": "/api/schemas/{id}/shipped-baseline/reset",
+   "by": []
+  },
+  {
+   "name": "schemaMigration#rollback",
+   "verb": "POST",
+   "url": "/api/schemas/{id}/runs/{run}/rollback",
+   "by": []
+  },
+  {
+   "name": "schemaMigration#conversions",
+   "verb": "GET",
+   "url": "/api/schemas/property-conversions",
+   "by": []
+  },
+  {
+   "name": "schemaMigration#previewConversion",
+   "verb": "POST",
+   "url": "/api/schemas/{id}/conversions/preview",
+   "by": []
+  },
+  {
+   "name": "schemaImport#snapshot",
+   "verb": "GET",
+   "url": "/api/schema-import/{dialect}/snapshot",
+   "by": []
+  },
+  {
+   "name": "registers#export",
+   "verb": "GET",
+   "url": "/api/registers/{id}/export",
+   "by": []
+  },
+  {
+   "name": "registers#rollbackImport",
+   "verb": "POST",
+   "url": "/api/registers/import/rollback",
+   "by": []
+  },
+  {
+   "name": "registers#importTemplate",
+   "verb": "GET",
+   "url": "/api/registers/{id}/schemas/{schema}/import-template",
+   "by": []
+  },
+  {
+   "name": "registers#publishToGitHub",
+   "verb": "POST",
+   "url": "/api/registers/{id}/publish/github",
+   "by": []
+  },
+  {
+   "name": "registers#schemas",
+   "verb": "GET",
+   "url": "/api/registers/{id}/schemas",
+   "by": []
+  },
+  {
+   "name": "registers#stats",
+   "verb": "GET",
+   "url": "/api/registers/{id}/stats",
+   "by": []
+  },
+  {
+   "name": "oas#generate",
+   "verb": "GET",
+   "url": "/api/registers/{id}/oas",
+   "by": []
+  },
+  {
+   "name": "apiSurface#capabilities",
+   "verb": "GET",
+   "url": "/api/capabilities",
+   "by": []
+  },
+  {
+   "name": "apiSurface#versions",
+   "verb": "GET",
+   "url": "/api/versions",
+   "by": []
+  },
+  {
+   "name": "apiSurface#contract",
+   "verb": "GET",
+   "url": "/api/versions/{version}/oas",
+   "by": []
+  },
+  {
+   "name": "apiCallers#index",
+   "verb": "GET",
+   "url": "/api/callers",
+   "by": []
+  },
+  {
+   "name": "apiCallers#readDeclaration",
+   "verb": "GET",
+   "url": "/api/settings/api-versions",
+   "by": []
+  },
+  {
+   "name": "apiCallers#writeDeclaration",
+   "verb": "PUT",
+   "url": "/api/settings/api-versions",
+   "by": []
+  },
+  {
+   "name": "wellKnown#index",
+   "verb": "GET",
+   "url": "/.well-known",
+   "by": []
+  },
+  {
+   "name": "wellKnown#securityTxt",
+   "verb": "GET",
+   "url": "/.well-known/security.txt",
+   "by": []
+  },
+  {
+   "name": "configuration#index",
+   "verb": "GET",
+   "url": "/api/configuration",
+   "by": []
+  },
+  {
+   "name": "configuration#show",
+   "verb": "GET",
+   "url": "/api/configuration/{id}",
+   "by": []
+  },
+  {
+   "name": "configuration#create",
+   "verb": "POST",
+   "url": "/api/configuration",
+   "by": []
+  },
+  {
+   "name": "configuration#update",
+   "verb": "PUT",
+   "url": "/api/configuration/{id}",
+   "by": []
+  },
+  {
+   "name": "configuration#destroy",
+   "verb": "DELETE",
+   "url": "/api/configuration/{id}",
+   "by": []
+  },
+  {
+   "name": "configuration#versionStatus",
+   "verb": "POST",
+   "url": "/api/configurations/{id}/check-version",
+   "by": []
+  },
+  {
+   "name": "configuration#preview",
+   "verb": "GET",
+   "url": "/api/configurations/{id}/preview",
+   "by": []
+  },
+  {
+   "name": "configuration#import",
+   "verb": "POST",
+   "url": "/api/configurations/{id}/import",
+   "by": []
+  },
+  {
+   "name": "configuration#export",
+   "verb": "GET",
+   "url": "/api/configurations/{id}/export",
+   "by": []
+  },
+  {
+   "name": "configuration#discover",
+   "verb": "GET",
+   "url": "/api/configurations/discover",
+   "by": []
+  },
+  {
+   "name": "configuration#enrichDetails",
+   "verb": "GET",
+   "url": "/api/configurations/enrich",
+   "by": []
+  },
+  {
+   "name": "configuration#getGitHubBranches",
+   "verb": "GET",
+   "url": "/api/configurations/github/branches",
+   "by": []
+  },
+  {
+   "name": "configuration#getGitHubRepositories",
+   "verb": "GET",
+   "url": "/api/configurations/github/repositories",
+   "by": []
+  },
+  {
+   "name": "configuration#getGitHubConfigurations",
+   "verb": "GET",
+   "url": "/api/configurations/github/files",
+   "by": []
+  },
+  {
+   "name": "configuration#getGitLabBranches",
+   "verb": "GET",
+   "url": "/api/configurations/gitlab/branches",
+   "by": []
+  },
+  {
+   "name": "configuration#getGitLabConfigurations",
+   "verb": "GET",
+   "url": "/api/configurations/gitlab/files",
+   "by": []
+  },
+  {
+   "name": "configurations#import",
+   "verb": "POST",
+   "url": "/api/configurations/import",
+   "by": []
+  },
+  {
+   "name": "configuration#importFromGitHub",
+   "verb": "POST",
+   "url": "/api/configurations/import/github",
+   "by": []
+  },
+  {
+   "name": "configuration#importFromGitLab",
+   "verb": "POST",
+   "url": "/api/configurations/import/gitlab",
+   "by": []
+  },
+  {
+   "name": "configuration#importFromUrl",
+   "verb": "POST",
+   "url": "/api/configurations/import/url",
+   "by": []
+  },
+  {
+   "name": "configuration#publishToGitHub",
+   "verb": "POST",
+   "url": "/api/configurations/{id}/publish/github",
+   "by": []
+  },
+  {
+   "name": "userSettings#getGitHubTokenStatus",
+   "verb": "GET",
+   "url": "/api/user-settings/github/status",
+   "by": []
+  },
+  {
+   "name": "userSettings#setGitHubToken",
+   "verb": "POST",
+   "url": "/api/user-settings/github/token",
+   "by": []
+  },
+  {
+   "name": "userSettings#removeGitHubToken",
+   "verb": "DELETE",
+   "url": "/api/user-settings/github/token",
+   "by": []
+  },
+  {
+   "name": "applications#page",
+   "verb": "GET",
+   "url": "/applications",
+   "by": []
+  },
+  {
+   "name": "ui#applicationDetails",
+   "verb": "GET",
+   "url": "/applications/{id}",
+   "by": []
+  },
+  {
+   "name": "agents#stats",
+   "verb": "GET",
+   "url": "/api/agents/stats",
+   "by": []
+  },
+  {
+   "name": "agents#tools",
+   "verb": "GET",
+   "url": "/api/agents/tools",
+   "by": []
+  },
+  {
+   "name": "search#search",
+   "verb": "GET",
+   "url": "/api/search",
+   "by": []
+  },
+  {
+   "name": "organisation#index",
+   "verb": "GET",
+   "url": "/api/organisations",
+   "by": []
+  },
+  {
+   "name": "organisation#search",
+   "verb": "GET",
+   "url": "/api/organisations/search",
+   "by": []
+  },
+  {
+   "name": "organisation#stats",
+   "verb": "GET",
+   "url": "/api/organisations/stats",
+   "by": []
+  },
+  {
+   "name": "organisation#stats",
+   "verb": "GET",
+   "url": "/api/organisations/statistics",
+   "by": []
+  },
+  {
+   "name": "organisation#clearCache",
+   "verb": "POST",
+   "url": "/api/organisations/clear-cache",
+   "by": []
+  },
+  {
+   "name": "organisationHalt#index",
+   "verb": "GET",
+   "url": "/api/organisations/{uuid}/halts",
+   "by": []
+  },
+  {
+   "name": "organisationHalt#create",
+   "verb": "POST",
+   "url": "/api/organisations/{uuid}/halts",
+   "by": []
+  },
+  {
+   "name": "organisationHalt#destroy",
+   "verb": "DELETE",
+   "url": "/api/organisation-halts/{id}",
+   "by": []
+  },
+  {
+   "name": "organisation#update",
+   "verb": "PUT",
+   "url": "/api/organisations/{uuid}",
+   "by": []
+  },
+  {
+   "name": "organisation#patch",
+   "verb": "PATCH",
+   "url": "/api/organisations/{uuid}",
+   "by": []
+  },
+  {
+   "name": "organisation#join",
+   "verb": "POST",
+   "url": "/api/organisations/{uuid}/join",
+   "by": []
+  },
+  {
+   "name": "organisation#suspend",
+   "verb": "PUT",
+   "url": "/api/organisations/{uuid}/suspend",
+   "by": []
+  },
+  {
+   "name": "organisation#activate",
+   "verb": "PUT",
+   "url": "/api/organisations/{uuid}/activate",
+   "by": []
+  },
+  {
+   "name": "organisation#deprovision",
+   "verb": "PUT",
+   "url": "/api/organisations/{uuid}/deprovision",
+   "by": []
+  },
+  {
+   "name": "organisation#retain",
+   "verb": "PUT",
+   "url": "/api/organisations/{uuid}/retain",
+   "by": []
+  },
+  {
+   "name": "organisation#usage",
+   "verb": "GET",
+   "url": "/api/organisations/{uuid}/usage",
+   "by": []
+  },
+  {
+   "name": "organisation#isolationVerify",
+   "verb": "POST",
+   "url": "/api/admin/isolation-verify",
+   "by": []
+  },
+  {
+   "name": "organisation#isolationMetrics",
+   "verb": "GET",
+   "url": "/api/admin/isolation-metrics",
+   "by": []
+  },
+  {
+   "name": "tags#getAllTags",
+   "verb": "GET",
+   "url": "/api/tags",
+   "by": []
+  },
+  {
+   "name": "tags#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/tags",
+   "by": []
+  },
+  {
+   "name": "tags#add",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/tags",
+   "by": []
+  },
+  {
+   "name": "tags#remove",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/tags/{tag}",
+   "by": []
+  },
+  {
+   "name": "views#index",
+   "verb": "GET",
+   "url": "/api/views",
+   "by": []
+  },
+  {
+   "name": "views#show",
+   "verb": "GET",
+   "url": "/api/views/{id}",
+   "by": []
+  },
+  {
+   "name": "views#create",
+   "verb": "POST",
+   "url": "/api/views",
+   "by": []
+  },
+  {
+   "name": "views#update",
+   "verb": "PUT",
+   "url": "/api/views/{id}",
+   "by": []
+  },
+  {
+   "name": "views#patch",
+   "verb": "PATCH",
+   "url": "/api/views/{id}",
+   "by": []
+  },
+  {
+   "name": "views#destroy",
+   "verb": "DELETE",
+   "url": "/api/views/{id}",
+   "by": []
+  },
+  {
+   "name": "recordTemplates#index",
+   "verb": "GET",
+   "url": "/api/record-templates",
+   "by": []
+  },
+  {
+   "name": "recordTemplates#show",
+   "verb": "GET",
+   "url": "/api/record-templates/{id}",
+   "by": []
+  },
+  {
+   "name": "recordTemplates#create",
+   "verb": "POST",
+   "url": "/api/record-templates",
+   "by": []
+  },
+  {
+   "name": "recordTemplates#update",
+   "verb": "PUT",
+   "url": "/api/record-templates/{id}",
+   "by": []
+  },
+  {
+   "name": "recordTemplates#patch",
+   "verb": "PATCH",
+   "url": "/api/record-templates/{id}",
+   "by": []
+  },
+  {
+   "name": "recordTemplates#destroy",
+   "verb": "DELETE",
+   "url": "/api/record-templates/{id}",
+   "by": []
+  },
+  {
+   "name": "views#kanban",
+   "verb": "GET",
+   "url": "/api/views/{id}/kanban",
+   "by": []
+  },
+  {
+   "name": "views#calendar",
+   "verb": "GET",
+   "url": "/api/views/{id}/calendar",
+   "by": []
+  },
+  {
+   "name": "chat#getHistory",
+   "verb": "GET",
+   "url": "/api/chat/history",
+   "by": []
+  },
+  {
+   "name": "chat#clearHistory",
+   "verb": "DELETE",
+   "url": "/api/chat/history",
+   "by": []
+  },
+  {
+   "name": "chat#getChatStats",
+   "verb": "GET",
+   "url": "/api/chat/stats",
+   "by": []
+  },
+  {
+   "name": "chat#sendFeedback",
+   "verb": "POST",
+   "url": "/api/conversations/{conversationUuid}/messages/{messageId}/feedback",
+   "by": []
+  },
+  {
+   "name": "conversation#index",
+   "verb": "GET",
+   "url": "/api/conversations",
+   "by": []
+  },
+  {
+   "name": "conversation#show",
+   "verb": "GET",
+   "url": "/api/conversations/{uuid}",
+   "by": []
+  },
+  {
+   "name": "conversation#messages",
+   "verb": "GET",
+   "url": "/api/conversations/{uuid}/messages",
+   "by": []
+  },
+  {
+   "name": "conversation#update",
+   "verb": "PATCH",
+   "url": "/api/conversations/{uuid}",
+   "by": []
+  },
+  {
+   "name": "conversation#restore",
+   "verb": "POST",
+   "url": "/api/conversations/{uuid}/restore",
+   "by": []
+  },
+  {
+   "name": "conversation#destroyPermanent",
+   "verb": "DELETE",
+   "url": "/api/conversations/{uuid}/permanent",
+   "by": []
+  },
+  {
+   "name": "fileText#bulkExtract",
+   "verb": "POST",
+   "url": "/api/files/extract/bulk",
+   "by": []
+  },
+  {
+   "name": "fileText#deleteFileText",
+   "verb": "DELETE",
+   "url": "/api/files/{fileId}/text",
+   "by": []
+  },
+  {
+   "name": "entityRelations#update",
+   "verb": "PATCH",
+   "url": "/api/entity-relations/{id}",
+   "by": []
+  },
+  {
+   "name": "gdprEntities#index",
+   "verb": "GET",
+   "url": "/api/entities",
+   "by": []
+  },
+  {
+   "name": "gdprEntities#show",
+   "verb": "GET",
+   "url": "/api/entities/{id}",
+   "by": []
+  },
+  {
+   "name": "gdprEntities#destroy",
+   "verb": "DELETE",
+   "url": "/api/entities/{id}",
+   "by": []
+  },
+  {
+   "name": "gdprEntities#getTypes",
+   "verb": "GET",
+   "url": "/api/entities/types",
+   "by": []
+  },
+  {
+   "name": "gdprEntities#getCategories",
+   "verb": "GET",
+   "url": "/api/entities/categories",
+   "by": []
+  },
+  {
+   "name": "gdprEntities#getStats",
+   "verb": "GET",
+   "url": "/api/entities/stats",
+   "by": []
+  },
+  {
+   "name": "fileSearch#semanticSearch",
+   "verb": "POST",
+   "url": "/api/search/files/semantic",
+   "by": []
+  },
+  {
+   "name": "fileSearch#hybridSearch",
+   "verb": "POST",
+   "url": "/api/search/files/hybrid",
+   "by": []
+  },
+  {
+   "name": "dashboard#page",
+   "verb": "GET",
+   "url": "/",
+   "by": []
+  },
+  {
+   "name": "ui#registers",
+   "verb": "GET",
+   "url": "/registers",
+   "by": []
+  },
+  {
+   "name": "ui#registersDetails",
+   "verb": "GET",
+   "url": "/registers/{id}",
+   "by": []
+  },
+  {
+   "name": "ui#schemas",
+   "verb": "GET",
+   "url": "/schemas",
+   "by": []
+  },
+  {
+   "name": "ui#schemasDetails",
+   "verb": "GET",
+   "url": "/schemas/{id}",
+   "by": []
+  },
+  {
+   "name": "ui#sources",
+   "verb": "GET",
+   "url": "/sources",
+   "by": []
+  },
+  {
+   "name": "ui#organisation",
+   "verb": "GET",
+   "url": "/organisation",
+   "by": []
+  },
+  {
+   "name": "ui#objects",
+   "verb": "GET",
+   "url": "/objects",
+   "by": []
+  },
+  {
+   "name": "ui#objectDetail",
+   "verb": "GET",
+   "url": "/objects/{register}/{schema}/{id}",
+   "by": []
+  },
+  {
+   "name": "ui#integrationsView",
+   "verb": "GET",
+   "url": "/integrations/{register}/{schema}/{objectId}",
+   "by": []
+  },
+  {
+   "name": "ui#tables",
+   "verb": "GET",
+   "url": "/tables",
+   "by": []
+  },
+  {
+   "name": "ui#configurations",
+   "verb": "GET",
+   "url": "/configurations",
+   "by": []
+  },
+  {
+   "name": "ui#deleted",
+   "verb": "GET",
+   "url": "/deleted",
+   "by": []
+  },
+  {
+   "name": "ui#auditTrail",
+   "verb": "GET",
+   "url": "/audit-trails",
+   "by": []
+  },
+  {
+   "name": "ui#searchTrail",
+   "verb": "GET",
+   "url": "/search-trails",
+   "by": []
+  },
+  {
+   "name": "ui#webhooks",
+   "verb": "GET",
+   "url": "/webhooks",
+   "by": []
+  },
+  {
+   "name": "ui#webhooksLogs",
+   "verb": "GET",
+   "url": "/webhooks/logs",
+   "by": []
+  },
+  {
+   "name": "ui#endpoints",
+   "verb": "GET",
+   "url": "/endpoints",
+   "by": []
+  },
+  {
+   "name": "ui#endpointLogs",
+   "verb": "GET",
+   "url": "/endpoints/logs",
+   "by": []
+  },
+  {
+   "name": "ui#entities",
+   "verb": "GET",
+   "url": "/entities",
+   "by": []
+  },
+  {
+   "name": "ui#entitiesDetails",
+   "verb": "GET",
+   "url": "/entities/{id}",
+   "by": []
+  },
+  {
+   "name": "ui#avg",
+   "verb": "GET",
+   "url": "/avg",
+   "by": []
+  },
+  {
+   "name": "ui#reports",
+   "verb": "GET",
+   "url": "/reports",
+   "by": []
+  },
+  {
+   "name": "ui#reportView",
+   "verb": "GET",
+   "url": "/reports/{id}",
+   "by": []
+  },
+  {
+   "name": "reports#render",
+   "verb": "POST",
+   "url": "/api/reports/{id}/render",
+   "by": []
+  },
+  {
+   "name": "reports#preview",
+   "verb": "GET",
+   "url": "/api/reports/{id}/preview",
+   "by": []
+  },
+  {
+   "name": "ui#templates",
+   "verb": "GET",
+   "url": "/templates",
+   "by": []
+  },
+  {
+   "name": "ui#featuresRoadmap",
+   "verb": "GET",
+   "url": "/features-roadmap",
+   "by": []
+  },
+  {
+   "name": "ui#myAccount",
+   "verb": "GET",
+   "url": "/mijn-account",
+   "by": []
+  },
+  {
+   "name": "files#page",
+   "verb": "GET",
+   "url": "/files",
+   "by": []
+  },
+  {
+   "name": "user#updateMe",
+   "verb": "PUT",
+   "url": "/api/user/me",
+   "by": []
+  },
+  {
+   "name": "user#login",
+   "verb": "POST",
+   "url": "/api/user/login",
+   "by": []
+  },
+  {
+   "name": "user#logout",
+   "verb": "POST",
+   "url": "/api/user/logout",
+   "by": []
+  },
+  {
+   "name": "user#changePassword",
+   "verb": "PUT",
+   "url": "/api/user/me/password",
+   "by": []
+  },
+  {
+   "name": "user#uploadAvatar",
+   "verb": "POST",
+   "url": "/api/user/me/avatar",
+   "by": []
+  },
+  {
+   "name": "user#deleteAvatar",
+   "verb": "DELETE",
+   "url": "/api/user/me/avatar",
+   "by": []
+  },
+  {
+   "name": "user#exportData",
+   "verb": "GET",
+   "url": "/api/user/me/export",
+   "by": []
+  },
+  {
+   "name": "user#revokeToken",
+   "verb": "DELETE",
+   "url": "/api/user/me/tokens/{id}",
+   "by": []
+  },
+  {
+   "name": "user#requestDeactivation",
+   "verb": "POST",
+   "url": "/api/user/me/deactivate",
+   "by": []
+  },
+  {
+   "name": "user#cancelDeactivation",
+   "verb": "DELETE",
+   "url": "/api/user/me/deactivate",
+   "by": []
+  },
+  {
+   "name": "webhooks#index",
+   "verb": "GET",
+   "url": "/api/webhooks",
+   "by": []
+  },
+  {
+   "name": "webhooks#show",
+   "verb": "GET",
+   "url": "/api/webhooks/{id}",
+   "by": []
+  },
+  {
+   "name": "webhooks#create",
+   "verb": "POST",
+   "url": "/api/webhooks",
+   "by": []
+  },
+  {
+   "name": "webhooks#update",
+   "verb": "PUT",
+   "url": "/api/webhooks/{id}",
+   "by": []
+  },
+  {
+   "name": "webhooks#destroy",
+   "verb": "DELETE",
+   "url": "/api/webhooks/{id}",
+   "by": []
+  },
+  {
+   "name": "webhooks#test",
+   "verb": "POST",
+   "url": "/api/webhooks/{id}/test",
+   "by": []
+  },
+  {
+   "name": "webhooks#events",
+   "verb": "GET",
+   "url": "/api/webhooks/events",
+   "by": []
+  },
+  {
+   "name": "webhooks#preview",
+   "verb": "POST",
+   "url": "/api/webhooks/preview",
+   "by": []
+  },
+  {
+   "name": "webhooks#logs",
+   "verb": "GET",
+   "url": "/api/webhooks/{id}/logs",
+   "by": []
+  },
+  {
+   "name": "webhooks#logStats",
+   "verb": "GET",
+   "url": "/api/webhooks/{id}/logs/stats",
+   "by": []
+  },
+  {
+   "name": "webhooks#allLogs",
+   "verb": "GET",
+   "url": "/api/webhooks/logs",
+   "by": []
+  },
+  {
+   "name": "webhooks#retry",
+   "verb": "POST",
+   "url": "/api/webhooks/logs/{logId}/retry",
+   "by": []
+  },
+  {
+   "name": "exportRuns#index",
+   "verb": "GET",
+   "url": "/api/exports",
+   "by": []
+  },
+  {
+   "name": "exportProfiles#index",
+   "verb": "GET",
+   "url": "/api/export-profiles",
+   "by": []
+  },
+  {
+   "name": "exportProfiles#contract",
+   "verb": "GET",
+   "url": "/api/export-profiles/contract",
+   "by": []
+  },
+  {
+   "name": "exportProfiles#create",
+   "verb": "POST",
+   "url": "/api/export-profiles",
+   "by": []
+  },
+  {
+   "name": "exportProfiles#show",
+   "verb": "GET",
+   "url": "/api/export-profiles/{id}",
+   "by": []
+  },
+  {
+   "name": "exportProfiles#update",
+   "verb": "PUT",
+   "url": "/api/export-profiles/{id}",
+   "by": []
+  },
+  {
+   "name": "exportProfiles#destroy",
+   "verb": "DELETE",
+   "url": "/api/export-profiles/{id}",
+   "by": []
+  },
+  {
+   "name": "exportProfiles#run",
+   "verb": "GET",
+   "url": "/api/export-profiles/{id}/run",
+   "by": []
+  },
+  {
+   "name": "scheduledReports#index",
+   "verb": "GET",
+   "url": "/api/scheduled-reports",
+   "by": []
+  },
+  {
+   "name": "scheduledReports#show",
+   "verb": "GET",
+   "url": "/api/scheduled-reports/{id}",
+   "by": []
+  },
+  {
+   "name": "scheduledReports#create",
+   "verb": "POST",
+   "url": "/api/scheduled-reports",
+   "by": []
+  },
+  {
+   "name": "scheduledReports#update",
+   "verb": "PUT",
+   "url": "/api/scheduled-reports/{id}",
+   "by": []
+  },
+  {
+   "name": "scheduledReports#destroy",
+   "verb": "DELETE",
+   "url": "/api/scheduled-reports/{id}",
+   "by": []
+  },
+  {
+   "name": "scheduledReports#runNow",
+   "verb": "POST",
+   "url": "/api/scheduled-reports/{id}/run-now",
+   "by": []
+  },
+  {
+   "name": "migrationPacks#index",
+   "verb": "GET",
+   "url": "/api/migration-packs",
+   "by": []
+  },
+  {
+   "name": "migrationPacks#create",
+   "verb": "POST",
+   "url": "/api/migration-packs",
+   "by": []
+  },
+  {
+   "name": "migrationPacks#import",
+   "verb": "POST",
+   "url": "/api/migration-packs/import",
+   "by": []
+  },
+  {
+   "name": "migrationPacks#preview",
+   "verb": "POST",
+   "url": "/api/migration-packs/preview",
+   "by": []
+  },
+  {
+   "name": "migrationPacks#show",
+   "verb": "GET",
+   "url": "/api/migration-packs/{id}",
+   "by": []
+  },
+  {
+   "name": "migrationPacks#update",
+   "verb": "PUT",
+   "url": "/api/migration-packs/{id}",
+   "by": []
+  },
+  {
+   "name": "migrationPacks#destroy",
+   "verb": "DELETE",
+   "url": "/api/migration-packs/{id}",
+   "by": []
+  },
+  {
+   "name": "migrationPacks#export",
+   "verb": "GET",
+   "url": "/api/migration-packs/{id}/export",
+   "by": []
+  },
+  {
+   "name": "mcp#discover",
+   "verb": "GET",
+   "url": "/api/mcp/v1/discover",
+   "by": []
+  },
+  {
+   "name": "mcp#grantableRights",
+   "verb": "GET",
+   "url": "/api/mcp/v1/grantable-rights",
+   "by": []
+  },
+  {
+   "name": "mcp#discoverCapability",
+   "verb": "GET",
+   "url": "/api/mcp/v1/discover/{capability}",
+   "by": []
+  },
+  {
+   "name": "mcpServer#handle",
+   "verb": "POST",
+   "url": "/api/mcp",
+   "by": []
+  },
+  {
+   "name": "graphQL#explorer",
+   "verb": "GET",
+   "url": "/api/graphql/explorer",
+   "by": []
+  },
+  {
+   "name": "graphQLSubscription#subscribe",
+   "verb": "GET",
+   "url": "/api/graphql/subscribe",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#getArchivalSettings",
+   "verb": "GET",
+   "url": "/api/settings/archival",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#updateArchivalSettings",
+   "verb": "PUT",
+   "url": "/api/settings/archival",
+   "by": []
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#updateArchivalSettings",
+   "verb": "PATCH",
+   "url": "/api/settings/archival",
+   "by": []
+  },
+  {
+   "name": "retention#approveDestructionList",
+   "verb": "POST",
+   "url": "/api/retention/destruction-lists/{id}/approve",
+   "by": []
+  },
+  {
+   "name": "retention#rejectDestructionList",
+   "verb": "POST",
+   "url": "/api/retention/destruction-lists/{id}/reject",
+   "by": []
+  },
+  {
+   "name": "retention#placeLegalHold",
+   "verb": "POST",
+   "url": "/api/retention/legal-holds",
+   "by": []
+  },
+  {
+   "name": "retention#releaseLegalHold",
+   "verb": "DELETE",
+   "url": "/api/retention/legal-holds/{id}",
+   "by": []
+  },
+  {
+   "name": "retention#placeBulkLegalHold",
+   "verb": "POST",
+   "url": "/api/retention/legal-holds/bulk",
+   "by": []
+  },
+  {
+   "name": "archival#createDestructionList",
+   "verb": "POST",
+   "url": "/api/archival/destruction-lists",
+   "by": []
+  },
+  {
+   "name": "archival#getDestructionList",
+   "verb": "GET",
+   "url": "/api/archival/destruction-lists/{id}",
+   "by": []
+  },
+  {
+   "name": "archival#approveDestructionList",
+   "verb": "POST",
+   "url": "/api/archival/destruction-lists/{id}/approve",
+   "by": []
+  },
+  {
+   "name": "archival#rejectDestructionList",
+   "verb": "POST",
+   "url": "/api/archival/destruction-lists/{id}/reject",
+   "by": []
+  },
+  {
+   "name": "archival#createLegalHold",
+   "verb": "POST",
+   "url": "/api/archival/legal-holds",
+   "by": []
+  },
+  {
+   "name": "archival#releaseLegalHold",
+   "verb": "DELETE",
+   "url": "/api/archival/legal-holds/{id}",
+   "by": []
+  },
+  {
+   "name": "archival#assignReviewer",
+   "verb": "PUT",
+   "url": "/api/archival/destruction-lists/{id}/entries/{entryId}/reviewer",
+   "by": []
+  },
+  {
+   "name": "archival#decideEntry",
+   "verb": "POST",
+   "url": "/api/archival/destruction-lists/{id}/entries/{entryId}/decision",
+   "by": []
+  },
+  {
+   "name": "archival#myPendingReviews",
+   "verb": "GET",
+   "url": "/api/archival/reviews/pending",
+   "by": []
+  },
+  {
+   "name": "archival#recomputeNomination",
+   "verb": "POST",
+   "url": "/api/archival/objects/{id}/nomination/recompute",
+   "by": []
+  },
+  {
+   "name": "selectielijst#import",
+   "verb": "POST",
+   "url": "/api/archival/selectielijst/import",
+   "by": []
+  },
+  {
+   "name": "selectielijst#versions",
+   "verb": "GET",
+   "url": "/api/archival/selectielijst/versions",
+   "by": []
+  },
+  {
+   "name": "selectielijst#diff",
+   "verb": "GET",
+   "url": "/api/archival/selectielijst/diff",
+   "by": []
+  },
+  {
+   "name": "selectielijstReference#resolve",
+   "verb": "GET",
+   "url": "/api/archival/selectielijst/resolve",
+   "by": []
+  },
+  {
+   "name": "Settings\\EdepotSettings#getEdepotSettings",
+   "verb": "GET",
+   "url": "/api/settings/edepot",
+   "by": []
+  },
+  {
+   "name": "Settings\\EdepotSettings#updateEdepotSettings",
+   "verb": "PUT",
+   "url": "/api/settings/edepot",
+   "by": []
+  },
+  {
+   "name": "Settings\\EdepotSettings#updateEdepotSettings",
+   "verb": "PATCH",
+   "url": "/api/settings/edepot",
+   "by": []
+  },
+  {
+   "name": "Settings\\EdepotSettings#testEdepotConnection",
+   "verb": "POST",
+   "url": "/api/settings/edepot/test",
+   "by": []
+  },
+  {
+   "name": "transfer#approve",
+   "verb": "POST",
+   "url": "/api/transfers/{id}/approve",
+   "by": []
+  },
+  {
+   "name": "transfer#reject",
+   "verb": "POST",
+   "url": "/api/transfers/{id}/reject",
+   "by": []
+  },
+  {
+   "name": "gitHubIssues#index",
+   "verb": "GET",
+   "url": "/api/github/issues",
+   "by": []
+  },
+  {
+   "name": "gitHubIssues#create",
+   "verb": "POST",
+   "url": "/api/github/issues",
+   "by": []
+  },
+  {
+   "name": "flowRun#active",
+   "verb": "GET",
+   "url": "/api/flow-runs/active",
+   "by": []
+  },
+  {
+   "name": "flowRun#completedForSubject",
+   "verb": "GET",
+   "url": "/api/flow-runs/completed",
+   "by": []
+  },
+  {
+   "name": "flowRun#summary",
+   "verb": "GET",
+   "url": "/api/flow-runs/summary",
+   "by": []
+  },
+  {
+   "name": "flowRun#retry",
+   "verb": "POST",
+   "url": "/api/flow-runs/{uuid}/retry",
+   "by": []
+  },
+  {
+   "name": "flowRun#resume",
+   "verb": "POST",
+   "url": "/api/flow-runs/{uuid}/resume",
+   "by": []
+  },
+  {
+   "name": "flowRunMigration#migrate",
+   "verb": "POST",
+   "url": "/api/flow-runs/{uuid}/migrate",
+   "by": []
+  },
+  {
+   "name": "flowRunMigration#migrateRuns",
+   "verb": "POST",
+   "url": "/api/flows/{flow}/migrate-runs",
+   "by": []
+  },
+  {
+   "name": "task#open",
+   "verb": "GET",
+   "url": "/flow-tasks/{uuid}",
+   "by": []
+  },
+  {
+   "name": "task#create",
+   "verb": "POST",
+   "url": "/api/flow-tasks",
+   "by": []
+  },
+  {
+   "name": "task#show",
+   "verb": "GET",
+   "url": "/api/flow-tasks/{uuid}",
+   "by": []
+  },
+  {
+   "name": "task#edit",
+   "verb": "PATCH",
+   "url": "/api/flow-tasks/{uuid}",
+   "by": []
+  },
+  {
+   "name": "task#audit",
+   "verb": "GET",
+   "url": "/api/flow-tasks/{uuid}/audit",
+   "by": []
+  },
+  {
+   "name": "task#offer",
+   "verb": "POST",
+   "url": "/api/flow-tasks/{uuid}/offer",
+   "by": []
+  },
+  {
+   "name": "task#claim",
+   "verb": "POST",
+   "url": "/api/flow-tasks/{uuid}/claim",
+   "by": []
+  },
+  {
+   "name": "task#unclaim",
+   "verb": "POST",
+   "url": "/api/flow-tasks/{uuid}/unclaim",
+   "by": []
+  },
+  {
+   "name": "task#assign",
+   "verb": "POST",
+   "url": "/api/flow-tasks/{uuid}/assign",
+   "by": []
+  },
+  {
+   "name": "task#reassign",
+   "verb": "POST",
+   "url": "/api/flow-tasks/{uuid}/reassign",
+   "by": []
+  },
+  {
+   "name": "task#delegate",
+   "verb": "POST",
+   "url": "/api/flow-tasks/{uuid}/delegate",
+   "by": []
+  },
+  {
+   "name": "task#resolve",
+   "verb": "POST",
+   "url": "/api/flow-tasks/{uuid}/resolve",
+   "by": []
+  },
+  {
+   "name": "task#cancel",
+   "verb": "POST",
+   "url": "/api/flow-tasks/{uuid}/cancel",
+   "by": []
+  },
+  {
+   "name": "task#checkItem",
+   "verb": "PATCH",
+   "url": "/api/flow-tasks/{uuid}/checklist/{itemId}",
+   "by": []
+  },
+  {
+   "name": "taskNotes#index",
+   "verb": "GET",
+   "url": "/api/flow-tasks/{uuid}/notes",
+   "by": []
+  },
+  {
+   "name": "taskNotes#create",
+   "verb": "POST",
+   "url": "/api/flow-tasks/{uuid}/notes",
+   "by": []
+  },
+  {
+   "name": "taskNotes#update",
+   "verb": "PUT",
+   "url": "/api/flow-tasks/{uuid}/notes/{noteId}",
+   "by": []
+  },
+  {
+   "name": "taskNotes#destroy",
+   "verb": "DELETE",
+   "url": "/api/flow-tasks/{uuid}/notes/{noteId}",
+   "by": []
+  },
+  {
+   "name": "taskEvents#index",
+   "verb": "GET",
+   "url": "/api/flow-tasks/{uuid}/events",
+   "by": []
+  },
+  {
+   "name": "taskEvents#create",
+   "verb": "POST",
+   "url": "/api/flow-tasks/{uuid}/events",
+   "by": []
+  },
+  {
+   "name": "taskEvents#link",
+   "verb": "POST",
+   "url": "/api/flow-tasks/{uuid}/events/link",
+   "by": []
+  },
+  {
+   "name": "taskEvents#unlink",
+   "verb": "DELETE",
+   "url": "/api/flow-tasks/{uuid}/events/{eventUid}/link",
+   "by": []
+  },
+  {
+   "name": "taskEvents#destroy",
+   "verb": "DELETE",
+   "url": "/api/flow-tasks/{uuid}/events/{eventId}",
+   "by": []
+  },
+  {
+   "name": "portalTask#index",
+   "verb": "GET",
+   "url": "/api/portal-tasks",
+   "by": []
+  },
+  {
+   "name": "portalTask#deliveries",
+   "verb": "GET",
+   "url": "/api/portal-tasks/deliveries",
+   "by": []
+  },
+  {
+   "name": "portalTask#deliveryDelivered",
+   "verb": "POST",
+   "url": "/api/portal-tasks/deliveries/{uuid}/delivered",
+   "by": []
+  },
+  {
+   "name": "portalTask#deliveryFailed",
+   "verb": "POST",
+   "url": "/api/portal-tasks/deliveries/{uuid}/failed",
+   "by": []
+  },
+  {
+   "name": "portalTask#show",
+   "verb": "GET",
+   "url": "/api/portal-tasks/{uuid}",
+   "by": []
+  },
+  {
+   "name": "portalTask#complete",
+   "verb": "POST",
+   "url": "/api/portal-tasks/{uuid}/complete",
+   "by": []
+  },
+  {
+   "name": "case#items",
+   "verb": "GET",
+   "url": "/api/cases/items",
+   "by": []
+  },
+  {
+   "name": "case#skeletonFromZaaktype",
+   "verb": "POST",
+   "url": "/api/cases/skeleton-from-zaaktype",
+   "by": []
+  },
+  {
+   "name": "case#transition",
+   "verb": "POST",
+   "url": "/api/cases/items/{uuid}/transition",
+   "by": []
+  },
+  {
+   "name": "case#enable",
+   "verb": "POST",
+   "url": "/api/cases/items/{uuid}/enable",
+   "by": []
+  },
+  {
+   "name": "case#show",
+   "verb": "GET",
+   "url": "/api/cases/{objectUuid}",
+   "by": []
+  },
+  {
+   "name": "case#create",
+   "verb": "POST",
+   "url": "/api/cases/{objectUuid}",
+   "by": []
+  },
+  {
+   "name": "case#destroy",
+   "verb": "DELETE",
+   "url": "/api/cases/{objectUuid}",
+   "by": []
+  },
+  {
+   "name": "case#evaluate",
+   "verb": "POST",
+   "url": "/api/cases/{objectUuid}/evaluate",
+   "by": []
+  },
+  {
+   "name": "case#enableable",
+   "verb": "GET",
+   "url": "/api/cases/{objectUuid}/enableable",
+   "by": []
+  },
+  {
+   "name": "case#attach",
+   "verb": "POST",
+   "url": "/api/cases/{objectUuid}/items",
+   "by": []
+  },
+  {
+   "name": "case#complete",
+   "verb": "POST",
+   "url": "/api/cases/{objectUuid}/complete",
+   "by": []
+  },
+  {
+   "name": "federatedConfig#types",
+   "verb": "GET",
+   "url": "/api/federated-config/types",
+   "by": []
+  },
+  {
+   "name": "federatedConfig#bundle",
+   "verb": "POST",
+   "url": "/api/federated-config/bundle",
+   "by": []
+  },
+  {
+   "name": "federatedConfig#install",
+   "verb": "POST",
+   "url": "/api/federated-config/install",
+   "by": []
+  },
+  {
+   "name": "federatedConfig#publish",
+   "verb": "POST",
+   "url": "/api/federated-config/publish",
+   "by": []
+  },
+  {
+   "name": "federatedConfig#discover",
+   "verb": "GET",
+   "url": "/api/federated-config/discover",
+   "by": []
+  },
+  {
+   "name": "federatedConfig#fetch",
+   "verb": "GET",
+   "url": "/api/federated-config/fetch",
+   "by": []
+  },
+  {
+   "name": "federatedConfig#publicKey",
+   "verb": "GET",
+   "url": "/api/federated-config/public-key",
+   "by": []
+  },
+  {
+   "name": "federatedConfig#trust",
+   "verb": "GET",
+   "url": "/api/federated-config/trust",
+   "by": []
+  },
+  {
+   "name": "federatedConfig#setTrust",
+   "verb": "PUT",
+   "url": "/api/federated-config/trust",
+   "by": []
+  }
+ ],
+ "covered_list": [
+  {
+   "name": "registers#index",
+   "verb": "GET",
+   "url": "/api/registers",
+   "by": [
+    "tests/integration/openregister-auth-matrix.postman_collection.json",
+    "tests/integration/openregister-files-domain.postman_collection.json",
+    "tests/integration/openregister-jsonld.postman_collection.json"
+   ]
+  },
+  {
+   "name": "registers#show",
+   "verb": "GET",
+   "url": "/api/registers/{id}",
+   "by": [
+    "tests/integration/openregister-auth-matrix.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-register-resolver.postman_collection.json"
+   ]
+  },
+  {
+   "name": "registers#create",
+   "verb": "POST",
+   "url": "/api/registers",
+   "by": [
+    "tests/integration/magic-mapper-import.postman_collection.json",
+    "tests/integration/openregister-crud-tests.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "registers#update",
+   "verb": "PUT",
+   "url": "/api/registers/{id}",
+   "by": [
+    "tests/integration/openregister-crud-tests.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-dates-follow.postman_collection.json"
+   ]
+  },
+  {
+   "name": "registers#destroy",
+   "verb": "DELETE",
+   "url": "/api/registers/{id}",
+   "by": [
+    "tests/integration/magic-mapper-import.postman_collection.json",
+    "tests/integration/openregister-crud-tests.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "schemas#index",
+   "verb": "GET",
+   "url": "/api/schemas",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-register-resolver.postman_collection.json"
+   ]
+  },
+  {
+   "name": "schemas#show",
+   "verb": "GET",
+   "url": "/api/schemas/{id}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-draft-activation.postman_collection.json",
+    "tests/integration/openregister.postman_collection.json"
+   ]
+  },
+  {
+   "name": "schemas#create",
+   "verb": "POST",
+   "url": "/api/schemas",
+   "by": [
+    "tests/integration/magic-mapper-import.postman_collection.json",
+    "tests/integration/openregister-crud-tests.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "schemas#update",
+   "verb": "PUT",
+   "url": "/api/schemas/{id}",
+   "by": [
+    "tests/integration/openregister-crud-tests.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-schema-migration.postman_collection.json"
+   ]
+  },
+  {
+   "name": "schemas#destroy",
+   "verb": "DELETE",
+   "url": "/api/schemas/{id}",
+   "by": [
+    "tests/integration/magic-mapper-import.postman_collection.json",
+    "tests/integration/openregister-crud-tests.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "sources#create",
+   "verb": "POST",
+   "url": "/api/sources",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "sources#update",
+   "verb": "PUT",
+   "url": "/api/sources/{id}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "sources#destroy",
+   "verb": "DELETE",
+   "url": "/api/sources/{id}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "configurations#index",
+   "verb": "GET",
+   "url": "/api/configurations",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "configurations#show",
+   "verb": "GET",
+   "url": "/api/configurations/{id}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "configurations#create",
+   "verb": "POST",
+   "url": "/api/configurations",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "configurations#update",
+   "verb": "PUT",
+   "url": "/api/configurations/{id}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "configurations#destroy",
+   "verb": "DELETE",
+   "url": "/api/configurations/{id}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "applications#create",
+   "verb": "POST",
+   "url": "/api/applications",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "applications#update",
+   "verb": "PUT",
+   "url": "/api/applications/{id}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "applications#destroy",
+   "verb": "DELETE",
+   "url": "/api/applications/{id}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "agents#show",
+   "verb": "GET",
+   "url": "/api/agents/{id}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "agents#create",
+   "verb": "POST",
+   "url": "/api/agents",
+   "by": [
+    "tests/integration/openregister-chat-streaming.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-flow-engine.postman_collection.json"
+   ]
+  },
+  {
+   "name": "agents#update",
+   "verb": "PUT",
+   "url": "/api/agents/{id}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "agents#destroy",
+   "verb": "DELETE",
+   "url": "/api/agents/{id}",
+   "by": [
+    "tests/integration/openregister-chat-streaming.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-flow-engine.postman_collection.json"
+   ]
+  },
+  {
+   "name": "mappings#show",
+   "verb": "GET",
+   "url": "/api/mappings/{id}",
+   "by": [
+    "tests/integration/openregister-flow-engine.postman_collection.json"
+   ]
+  },
+  {
+   "name": "mappings#create",
+   "verb": "POST",
+   "url": "/api/mappings",
+   "by": [
+    "tests/integration/openregister-flow-engine.postman_collection.json"
+   ]
+  },
+  {
+   "name": "mappings#destroy",
+   "verb": "DELETE",
+   "url": "/api/mappings/{id}",
+   "by": [
+    "tests/integration/openregister-flow-engine.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectDraft#activate",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/activate",
+   "by": [
+    "tests/integration/openregister-draft-activation.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectWatchers#watch",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/watch",
+   "by": [
+    "tests/integration/openregister-object-watchers.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectWatchers#unwatch",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/watch",
+   "by": [
+    "tests/integration/openregister-object-watchers.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectWatchers#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/watchers",
+   "by": [
+    "tests/integration/openregister-object-watchers.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectWatchers#add",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/watchers/{userId}",
+   "by": [
+    "tests/integration/openregister-object-watchers.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectWatchers#remove",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/watchers/{userId}",
+   "by": [
+    "tests/integration/openregister-object-watchers.postman_collection.json"
+   ]
+  },
+  {
+   "name": "registers#patch",
+   "verb": "PATCH",
+   "url": "/api/registers/{id}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/rbac.postman_collection.json"
+   ]
+  },
+  {
+   "name": "registerDescriptor#index",
+   "verb": "GET",
+   "url": "/api/register-descriptors",
+   "by": [
+    "tests/integration/openregister-register-descriptors.postman_collection.json"
+   ]
+  },
+  {
+   "name": "registerDescriptor#import",
+   "verb": "POST",
+   "url": "/api/register-descriptors/{appId}/{slug}/import",
+   "by": [
+    "tests/integration/openregister-register-descriptors.postman_collection.json"
+   ]
+  },
+  {
+   "name": "workingCalendar#preview",
+   "verb": "POST",
+   "url": "/api/flow-timers/calendars/preview",
+   "by": [
+    "tests/integration/openregister-working-calendars.postman_collection.json"
+   ]
+  },
+  {
+   "name": "settings#index",
+   "verb": "GET",
+   "url": "/api/settings",
+   "by": [
+    "tests/integration/rbac.postman_collection.json"
+   ]
+  },
+  {
+   "name": "settings#update",
+   "verb": "PUT",
+   "url": "/api/settings",
+   "by": [
+    "tests/integration/rbac.postman_collection.json"
+   ]
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#getRbacSettings",
+   "verb": "GET",
+   "url": "/api/settings/rbac",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#updateRbacSettings",
+   "verb": "PATCH",
+   "url": "/api/settings/rbac",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#getMultitenancySettings",
+   "verb": "GET",
+   "url": "/api/settings/multitenancy",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "Settings\\ConfigurationSettings#updateMultitenancySettings",
+   "verb": "PATCH",
+   "url": "/api/settings/multitenancy",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "fileExtraction#extract",
+   "verb": "POST",
+   "url": "/api/files/{id}/extract",
+   "by": [
+    "tests/integration/openregister-anonymisation-tests.postman_collection.json"
+   ]
+  },
+  {
+   "name": "contexts#register",
+   "verb": "GET",
+   "url": "/api/contexts/{register}",
+   "by": [
+    "tests/integration/openregister-jsonld.postman_collection.json"
+   ]
+  },
+  {
+   "name": "contexts#schema",
+   "verb": "GET",
+   "url": "/api/contexts/{register}/{schema}",
+   "by": [
+    "tests/integration/openregister-jsonld.postman_collection.json"
+   ]
+  },
+  {
+   "name": "translation#search",
+   "verb": "GET",
+   "url": "/api/translations/search",
+   "by": [
+    "tests/integration/openregister-i18n-source-of-truth.postman_collection.json"
+   ]
+  },
+  {
+   "name": "translation#showByObject",
+   "verb": "GET",
+   "url": "/api/translations/object/{uuid}",
+   "by": [
+    "tests/integration/openregister-i18n-source-of-truth.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#objects",
+   "verb": "GET",
+   "url": "/api/objects",
+   "by": [
+    "tests/integration/magic-mapper-import.postman_collection.json"
+   ]
+  },
+  {
+   "name": "transition#transition",
+   "verb": "POST",
+   "url": "/api/objects/{id}/transition",
+   "by": [
+    "tests/integration/openregister-platform-annotations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "transition#availableActions",
+   "verb": "GET",
+   "url": "/api/objects/{id}/available-actions",
+   "by": [
+    "tests/integration/openregister-platform-annotations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "aggregation#aggregate",
+   "verb": "GET",
+   "url": "/api/objects/aggregations/{register}/{schema}/{name}",
+   "by": [
+    "tests/integration/openregister-platform-annotations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "duplicate#index",
+   "verb": "GET",
+   "url": "/api/objects/duplicates/{register}/{schema}",
+   "by": [
+    "tests/integration/openregister-duplicate-merge.postman_collection.json"
+   ]
+  },
+  {
+   "name": "duplicate#check",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/dedup-check",
+   "by": [
+    "tests/integration/openregister-dedup-check.postman_collection.json"
+   ]
+  },
+  {
+   "name": "duplicate#dismiss",
+   "verb": "POST",
+   "url": "/api/objects/duplicates/{register}/{schema}/dismiss",
+   "by": [
+    "tests/integration/openregister-duplicate-merge.postman_collection.json"
+   ]
+  },
+  {
+   "name": "duplicate#undismiss",
+   "verb": "POST",
+   "url": "/api/objects/duplicates/{register}/{schema}/undismiss",
+   "by": [
+    "tests/integration/openregister-duplicate-merge.postman_collection.json"
+   ]
+  },
+  {
+   "name": "merge#preview",
+   "verb": "POST",
+   "url": "/api/objects/merge/preview",
+   "by": [
+    "tests/integration/openregister-duplicate-merge.postman_collection.json"
+   ]
+  },
+  {
+   "name": "merge#execute",
+   "verb": "POST",
+   "url": "/api/objects/merge/execute",
+   "by": [
+    "tests/integration/openregister-duplicate-merge.postman_collection.json"
+   ]
+  },
+  {
+   "name": "contacts#match",
+   "verb": "GET",
+   "url": "/api/contacts/match",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json",
+    "tests/integration/openregister-platform-annotations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "emails#bySender",
+   "verb": "GET",
+   "url": "/api/emails/by-sender",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json",
+    "tests/integration/openregister-platform-annotations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "flow#run",
+   "verb": "POST",
+   "url": "/api/flows/{id}/run",
+   "by": [
+    "tests/integration/openregister-flow-engine.postman_collection.json"
+   ]
+  },
+  {
+   "name": "flow#index",
+   "verb": "GET",
+   "url": "/api/flows",
+   "by": [
+    "tests/integration/openregister-flow-engine.postman_collection.json",
+    "tests/integration/openregister-platform-annotations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "flow#create",
+   "verb": "POST",
+   "url": "/api/flows",
+   "by": [
+    "tests/integration/openregister-flow-engine.postman_collection.json",
+    "tests/integration/openregister-flow-subjects.postman_collection.json"
+   ]
+  },
+  {
+   "name": "flow#destroy",
+   "verb": "DELETE",
+   "url": "/api/flows/{id}",
+   "by": [
+    "tests/integration/openregister-flow-engine.postman_collection.json",
+    "tests/integration/openregister-flow-subjects.postman_collection.json"
+   ]
+  },
+  {
+   "name": "tmlo#summary",
+   "verb": "GET",
+   "url": "/api/tmlo/{register}/{schema}/summary",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "fileSidebar#getObjectsForFile",
+   "verb": "GET",
+   "url": "/api/files/{fileId}/objects",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "fileSidebar#getExtractionStatus",
+   "verb": "GET",
+   "url": "/api/files/{fileId}/extraction-status",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}",
+   "by": [
+    "tests/integration/openregister-crud-tests.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-dedup-check.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#geoSearch",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/geo-search",
+   "by": [
+    "tests/integration/openregister-error-matrix.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}",
+   "by": [
+    "tests/integration/openregister-crud-tests.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-dates-follow.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#show",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}",
+   "by": [
+    "tests/integration/openregister-crud-tests.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-dates-follow.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#update",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}",
+   "by": [
+    "tests/integration/openregister-crud-tests.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-draft-activation.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#patch",
+   "verb": "PATCH",
+   "url": "/api/objects/{register}/{schema}/{id}",
+   "by": [
+    "tests/integration/openregister-dates-follow.postman_collection.json",
+    "tests/integration/openregister-draft-activation.postman_collection.json",
+    "tests/integration/openregister-i18n-api-language-negotiation.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#postPatch",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-dedup-check.postman_collection.json",
+    "tests/integration/openregister-draft-activation.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#destroy",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}",
+   "by": [
+    "tests/integration/openregister-crud-tests.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-dates-follow.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#canDelete",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/can-delete",
+   "by": [
+    "tests/integration/openregister-referential-integrity.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#uses",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/uses",
+   "by": [
+    "tests/integration/openregister-relation-types.postman_collection.json",
+    "tests/integration/openregister-relations-tests.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#used",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/used",
+   "by": [
+    "tests/integration/openregister-relation-types.postman_collection.json",
+    "tests/integration/openregister-relations-tests.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectRelations#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/relation-rows",
+   "by": [
+    "tests/integration/openregister-relation-types.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectRelations#addLink",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/relation-rows",
+   "by": [
+    "tests/integration/openregister-relation-types.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectRelations#removeLink",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/relation-rows/{relationId}",
+   "by": [
+    "tests/integration/openregister-relation-types.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectRelations#removeReferences",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/relation-references/{anchor}",
+   "by": [
+    "tests/integration/openregister-relation-types.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectRelations#derive",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/derive",
+   "by": [
+    "tests/integration/openregister-relation-types.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectRelations#graph",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/graph",
+   "by": [
+    "tests/integration/openregister-relation-types.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectRelations#exportGraph",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/graph/export",
+   "by": [
+    "tests/integration/openregister-relation-types.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#lock",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/lock",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objects#unlock",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/unlock",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectState#freeze",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/freeze",
+   "by": [
+    "tests/integration/openregister-frozen-delete.postman_collection.json",
+    "tests/integration/openregister-frozen-files.postman_collection.json"
+   ]
+  },
+  {
+   "name": "objectState#unfreeze",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/freeze",
+   "by": [
+    "tests/integration/openregister-frozen-delete.postman_collection.json",
+    "tests/integration/openregister-frozen-files.postman_collection.json"
+   ]
+  },
+  {
+   "name": "bulk#save",
+   "verb": "POST",
+   "url": "/api/bulk/{register}/{schema}/save",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "bulk#delete",
+   "verb": "POST",
+   "url": "/api/bulk/{register}/{schema}/delete",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "bulk#runSchemaValidation",
+   "verb": "POST",
+   "url": "/api/bulk/schema/{schema}/validate",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "auditTrail#objects",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/audit-trails",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-dedup-check.postman_collection.json"
+   ]
+  },
+  {
+   "name": "auditTrail#index",
+   "verb": "GET",
+   "url": "/api/audit-trails",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "deleted#index",
+   "verb": "GET",
+   "url": "/api/deleted",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "deleted#restore",
+   "verb": "POST",
+   "url": "/api/deleted/{id}/restore",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "files#create",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/files",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-frozen-files.postman_collection.json"
+   ]
+  },
+  {
+   "name": "files#index",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/files",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/openregister-frozen-files.postman_collection.json"
+   ]
+  },
+  {
+   "name": "files#show",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "files#update",
+   "verb": "PUT",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "files#delete",
+   "verb": "DELETE",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "files#preview",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/files/{fileId}/preview",
+   "by": [
+    "tests/integration/openregister-files-domain.postman_collection.json"
+   ]
+  },
+  {
+   "name": "files#downloadById",
+   "verb": "GET",
+   "url": "/api/files/{fileId}/download",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "handoff#availability",
+   "verb": "GET",
+   "url": "/api/objects/{register}/{schema}/{id}/handoffs",
+   "by": [
+    "tests/integration/openregister-handoff.postman_collection.json"
+   ]
+  },
+  {
+   "name": "handoff#execute",
+   "verb": "POST",
+   "url": "/api/objects/{register}/{schema}/{id}/handoffs/{handoffId}",
+   "by": [
+    "tests/integration/openregister-handoff.postman_collection.json"
+   ]
+  },
+  {
+   "name": "schemas#upload",
+   "verb": "POST",
+   "url": "/api/schemas/upload",
+   "by": [
+    "tests/integration/openregister-schema-import.postman_collection.json"
+   ]
+  },
+  {
+   "name": "schemaMigration#changelog",
+   "verb": "GET",
+   "url": "/api/schemas/{id}/changelog",
+   "by": [
+    "tests/integration/openregister-schema-migration.postman_collection.json"
+   ]
+  },
+  {
+   "name": "schemaMigration#revalidate",
+   "verb": "POST",
+   "url": "/api/schemas/{id}/revalidate",
+   "by": [
+    "tests/integration/openregister-schema-migration.postman_collection.json"
+   ]
+  },
+  {
+   "name": "schemaMigration#runs",
+   "verb": "GET",
+   "url": "/api/schemas/{id}/runs",
+   "by": [
+    "tests/integration/openregister-schema-migration.postman_collection.json"
+   ]
+  },
+  {
+   "name": "schemaMigration#previewMigration",
+   "verb": "POST",
+   "url": "/api/schemas/{id}/migrations/preview",
+   "by": [
+    "tests/integration/openregister-schema-migration.postman_collection.json"
+   ]
+  },
+  {
+   "name": "schemaImport#types",
+   "verb": "GET",
+   "url": "/api/schema-import/{dialect}/types",
+   "by": [
+    "tests/integration/openregister-schema-import.postman_collection.json"
+   ]
+  },
+  {
+   "name": "schemaImport#import",
+   "verb": "POST",
+   "url": "/api/schema-import/{dialect}",
+   "by": [
+    "tests/integration/openregister-schema-import.postman_collection.json"
+   ]
+  },
+  {
+   "name": "schemaImport#reimport",
+   "verb": "POST",
+   "url": "/api/schemas/{id}/reimport",
+   "by": [
+    "tests/integration/openregister-schema-import.postman_collection.json"
+   ]
+  },
+  {
+   "name": "registers#import",
+   "verb": "POST",
+   "url": "/api/registers/{id}/import",
+   "by": [
+    "tests/integration/magic-mapper-import.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "oas#generateAll",
+   "verb": "GET",
+   "url": "/api/registers/oas",
+   "by": [
+    "tests/integration/openregister-auth-matrix.postman_collection.json"
+   ]
+  },
+  {
+   "name": "organisation#create",
+   "verb": "POST",
+   "url": "/api/organisations",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/rbac.postman_collection.json"
+   ]
+  },
+  {
+   "name": "organisation#getActive",
+   "verb": "GET",
+   "url": "/api/organisations/active",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/rbac.postman_collection.json"
+   ]
+  },
+  {
+   "name": "organisation#show",
+   "verb": "GET",
+   "url": "/api/organisations/{uuid}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/rbac.postman_collection.json"
+   ]
+  },
+  {
+   "name": "organisation#setActive",
+   "verb": "POST",
+   "url": "/api/organisations/{uuid}/set-active",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json",
+    "tests/integration/rbac.postman_collection.json"
+   ]
+  },
+  {
+   "name": "organisation#leave",
+   "verb": "POST",
+   "url": "/api/organisations/{uuid}/leave",
+   "by": [
+    "tests/integration/rbac.postman_collection.json"
+   ]
+  },
+  {
+   "name": "chat#sendMessage",
+   "verb": "POST",
+   "url": "/api/chat/send",
+   "by": [
+    "tests/integration/openregister-chat-streaming.postman_collection.json",
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "chatHealth#health",
+   "verb": "GET",
+   "url": "/api/chat/health",
+   "by": [
+    "tests/integration/openregister-chat-streaming.postman_collection.json"
+   ]
+  },
+  {
+   "name": "chatStream#stream",
+   "verb": "POST",
+   "url": "/api/chat/stream",
+   "by": [
+    "tests/integration/openregister-chat-streaming.postman_collection.json"
+   ]
+  },
+  {
+   "name": "conversation#create",
+   "verb": "POST",
+   "url": "/api/conversations",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "conversation#destroy",
+   "verb": "DELETE",
+   "url": "/api/conversations/{uuid}",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "fileText#getFileText",
+   "verb": "GET",
+   "url": "/api/files/{fileId}/text",
+   "by": [
+    "tests/integration/openregister-anonymisation-tests.postman_collection.json"
+   ]
+  },
+  {
+   "name": "fileText#getStats",
+   "verb": "GET",
+   "url": "/api/files/extraction/stats",
+   "by": [
+    "tests/integration/openregister-crud.postman_collection.json"
+   ]
+  },
+  {
+   "name": "fileText#anonymizeFile",
+   "verb": "POST",
+   "url": "/api/files/{fileId}/anonymize",
+   "by": [
+    "tests/integration/openregister-anonymisation-tests.postman_collection.json"
+   ]
+  },
+  {
+   "name": "fileText#addManualEntity",
+   "verb": "POST",
+   "url": "/api/files/{fileId}/manual-entities",
+   "by": [
+    "tests/integration/openregister-anonymisation-tests.postman_collection.json"
+   ]
+  },
+  {
+   "name": "user#me",
+   "verb": "GET",
+   "url": "/api/user/me",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "user#getNotificationPreferences",
+   "verb": "GET",
+   "url": "/api/user/me/notifications",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "user#updateNotificationPreferences",
+   "verb": "PUT",
+   "url": "/api/user/me/notifications",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "user#getActivity",
+   "verb": "GET",
+   "url": "/api/user/me/activity",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "user#listTokens",
+   "verb": "GET",
+   "url": "/api/user/me/tokens",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "user#createToken",
+   "verb": "POST",
+   "url": "/api/user/me/tokens",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "user#getDeactivationStatus",
+   "verb": "GET",
+   "url": "/api/user/me/deactivation-status",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "graphQL#execute",
+   "verb": "POST",
+   "url": "/api/graphql",
+   "by": [
+    "tests/integration/openregister-graphql-tests.postman_collection.json"
+   ]
+  },
+  {
+   "name": "archival#listDestructionLists",
+   "verb": "GET",
+   "url": "/api/archival/destruction-lists",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "archival#listLegalHolds",
+   "verb": "GET",
+   "url": "/api/archival/legal-holds",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "archival#listCertificates",
+   "verb": "GET",
+   "url": "/api/archival/certificates",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "transfer#index",
+   "verb": "GET",
+   "url": "/api/transfers",
+   "by": [
+    "tests/integration/openregister-transfer.postman_collection.json"
+   ]
+  },
+  {
+   "name": "transfer#show",
+   "verb": "GET",
+   "url": "/api/transfers/{id}",
+   "by": [
+    "tests/integration/openregister-transfer.postman_collection.json"
+   ]
+  },
+  {
+   "name": "transfer#create",
+   "verb": "POST",
+   "url": "/api/transfers",
+   "by": [
+    "tests/integration/openregister-transfer.postman_collection.json"
+   ]
+  },
+  {
+   "name": "flowRun#index",
+   "verb": "GET",
+   "url": "/api/flow-runs",
+   "by": [
+    "tests/integration/openregister-flow-engine.postman_collection.json"
+   ]
+  },
+  {
+   "name": "flowRun#show",
+   "verb": "GET",
+   "url": "/api/flow-runs/{uuid}",
+   "by": [
+    "tests/integration/openregister-flow-subjects.postman_collection.json"
+   ]
+  },
+  {
+   "name": "flowRun#objects",
+   "verb": "GET",
+   "url": "/api/flow-runs/{uuid}/objects",
+   "by": [
+    "tests/integration/openregister-flow-subjects.postman_collection.json"
+   ]
+  },
+  {
+   "name": "flowRun#signalByKey",
+   "verb": "POST",
+   "url": "/api/flow-run-signals/{key}",
+   "by": [
+    "tests/integration/openregister-integrations.postman_collection.json"
+   ]
+  },
+  {
+   "name": "flowTestRun#test",
+   "verb": "POST",
+   "url": "/api/flow-runs/test",
+   "by": [
+    "tests/integration/openregister-flow-subjects.postman_collection.json"
+   ]
+  },
+  {
+   "name": "task#index",
+   "verb": "GET",
+   "url": "/api/flow-tasks",
+   "by": [
+    "tests/integration/openregister-flow-subjects.postman_collection.json"
+   ]
+  },
+  {
+   "name": "task#complete",
+   "verb": "POST",
+   "url": "/api/flow-tasks/{uuid}/complete",
+   "by": [
+    "tests/integration/openregister-flow-subjects.postman_collection.json"
+   ]
+  },
+  {
+   "name": "delegation#index",
+   "verb": "GET",
+   "url": "/api/delegations",
+   "by": [
+    "tests/integration/openregister-delegation.postman_collection.json"
+   ]
+  },
+  {
+   "name": "delegation#request",
+   "verb": "POST",
+   "url": "/api/delegations",
+   "by": [
+    "tests/integration/openregister-delegation.postman_collection.json"
+   ]
+  },
+  {
+   "name": "delegation#answer",
+   "verb": "POST",
+   "url": "/api/delegations/{uuid}/answer",
+   "by": [
+    "tests/integration/openregister-delegation.postman_collection.json"
+   ]
+  },
+  {
+   "name": "delegation#revoke",
+   "verb": "POST",
+   "url": "/api/delegations/{uuid}/revoke",
+   "by": [
+    "tests/integration/openregister-delegation.postman_collection.json"
+   ]
+  },
+  {
+   "name": "dashboard#catchAll",
+   "verb": "GET",
+   "url": "/{path}",
+   "by": [
+    "tests/integration/apphost-observability.postman_collection.json",
+    "tests/integration/magic-mapper-import.postman_collection.json",
+    "tests/integration/openregister-anonymisation-tests.postman_collection.json"
+   ]
+  }
+ ],
+ "by_controller": {
+  "AppHost\\Controller\\GenericHealth": {
+   "routes": 1,
+   "covered": 0
+  },
+  "AppHost\\Controller\\GenericMetrics": {
+   "routes": 1,
+   "covered": 0
+  },
+  "Settings\\ApiTokenSettings": {
+   "routes": 4,
+   "covered": 0
+  },
+  "Settings\\AuditSettings": {
+   "routes": 3,
+   "covered": 0
+  },
+  "Settings\\CacheSettings": {
+   "routes": 6,
+   "covered": 0
+  },
+  "Settings\\ConfigurationSettings": {
+   "routes": 20,
+   "covered": 4
+  },
+  "Settings\\EdepotSettings": {
+   "routes": 4,
+   "covered": 0
+  },
+  "Settings\\FileSettings": {
+   "routes": 7,
+   "covered": 0
+  },
+  "Settings\\LlmSettings": {
+   "routes": 10,
+   "covered": 0
+  },
+  "Settings\\SecuritySettings": {
+   "routes": 3,
+   "covered": 0
+  },
+  "Settings\\ValidationSettings": {
+   "routes": 3,
+   "covered": 0
+  },
+  "accessLink": {
+   "routes": 7,
+   "covered": 0
+  },
+  "accessLinkPage": {
+   "routes": 1,
+   "covered": 0
+  },
+  "activityLinks": {
+   "routes": 3,
+   "covered": 0
+  },
+  "agents": {
+   "routes": 8,
+   "covered": 4
+  },
+  "aggregation": {
+   "routes": 4,
+   "covered": 1
+  },
+  "analyticsLinks": {
+   "routes": 5,
+   "covered": 0
+  },
+  "analyticsSeries": {
+   "routes": 2,
+   "covered": 0
+  },
+  "anonymisationBackend": {
+   "routes": 2,
+   "covered": 0
+  },
+  "apiCallers": {
+   "routes": 3,
+   "covered": 0
+  },
+  "apiSurface": {
+   "routes": 3,
+   "covered": 0
+  },
+  "applications": {
+   "routes": 7,
+   "covered": 3
+  },
+  "archival": {
+   "routes": 13,
+   "covered": 3
+  },
+  "auditQuery": {
+   "routes": 2,
+   "covered": 0
+  },
+  "auditSink": {
+   "routes": 2,
+   "covered": 0
+  },
+  "auditTrail": {
+   "routes": 14,
+   "covered": 2
+  },
+  "bookmarkLinks": {
+   "routes": 5,
+   "covered": 0
+  },
+  "bulk": {
+   "routes": 6,
+   "covered": 3
+  },
+  "bulkJobs": {
+   "routes": 12,
+   "covered": 0
+  },
+  "calculations": {
+   "routes": 2,
+   "covered": 0
+  },
+  "calendarEvents": {
+   "routes": 7,
+   "covered": 0
+  },
+  "calendarFeed": {
+   "routes": 6,
+   "covered": 0
+  },
+  "case": {
+   "routes": 11,
+   "covered": 0
+  },
+  "caseToken": {
+   "routes": 1,
+   "covered": 0
+  },
+  "chat": {
+   "routes": 5,
+   "covered": 1
+  },
+  "chatHealth": {
+   "routes": 1,
+   "covered": 1
+  },
+  "chatStream": {
+   "routes": 1,
+   "covered": 1
+  },
+  "collectiveLinks": {
+   "routes": 6,
+   "covered": 0
+  },
+  "companyLookup": {
+   "routes": 3,
+   "covered": 0
+  },
+  "configuration": {
+   "routes": 20,
+   "covered": 0
+  },
+  "configurationDeployment": {
+   "routes": 12,
+   "covered": 0
+  },
+  "configurations": {
+   "routes": 7,
+   "covered": 5
+  },
+  "consumers": {
+   "routes": 6,
+   "covered": 0
+  },
+  "contactSearch": {
+   "routes": 1,
+   "covered": 0
+  },
+  "contacts": {
+   "routes": 7,
+   "covered": 1
+  },
+  "contentReport": {
+   "routes": 5,
+   "covered": 0
+  },
+  "contexts": {
+   "routes": 2,
+   "covered": 2
+  },
+  "conversation": {
+   "routes": 8,
+   "covered": 2
+  },
+  "corrections": {
+   "routes": 1,
+   "covered": 0
+  },
+  "cospendLinks": {
+   "routes": 5,
+   "covered": 0
+  },
+  "credential": {
+   "routes": 11,
+   "covered": 0
+  },
+  "credentialOauth2": {
+   "routes": 4,
+   "covered": 0
+  },
+  "dashboard": {
+   "routes": 11,
+   "covered": 1
+  },
+  "dataSubjectRequest": {
+   "routes": 6,
+   "covered": 0
+  },
+  "deck": {
+   "routes": 3,
+   "covered": 0
+  },
+  "deckLinks": {
+   "routes": 8,
+   "covered": 0
+  },
+  "delegation": {
+   "routes": 4,
+   "covered": 4
+  },
+  "deleted": {
+   "routes": 9,
+   "covered": 2
+  },
+  "derivedGrants": {
+   "routes": 1,
+   "covered": 0
+  },
+  "dsar": {
+   "routes": 5,
+   "covered": 0
+  },
+  "dsarCase": {
+   "routes": 9,
+   "covered": 0
+  },
+  "duplicate": {
+   "routes": 4,
+   "covered": 4
+  },
+  "emailLinks": {
+   "routes": 6,
+   "covered": 0
+  },
+  "emails": {
+   "routes": 6,
+   "covered": 1
+  },
+  "endpoints": {
+   "routes": 10,
+   "covered": 0
+  },
+  "entityRelations": {
+   "routes": 1,
+   "covered": 0
+  },
+  "erasurePreview": {
+   "routes": 4,
+   "covered": 0
+  },
+  "exportProfiles": {
+   "routes": 7,
+   "covered": 0
+  },
+  "exportRuns": {
+   "routes": 1,
+   "covered": 0
+  },
+  "federatedConfig": {
+   "routes": 9,
+   "covered": 0
+  },
+  "federation": {
+   "routes": 9,
+   "covered": 0
+  },
+  "fileExtraction": {
+   "routes": 10,
+   "covered": 1
+  },
+  "fileSearch": {
+   "routes": 2,
+   "covered": 0
+  },
+  "fileSidebar": {
+   "routes": 2,
+   "covered": 2
+  },
+  "fileText": {
+   "routes": 6,
+   "covered": 4
+  },
+  "files": {
+   "routes": 25,
+   "covered": 7
+  },
+  "flow": {
+   "routes": 20,
+   "covered": 4
+  },
+  "flowDryRun": {
+   "routes": 1,
+   "covered": 0
+  },
+  "flowLinks": {
+   "routes": 4,
+   "covered": 0
+  },
+  "flowNodeRun": {
+   "routes": 2,
+   "covered": 0
+  },
+  "flowPrincipal": {
+   "routes": 1,
+   "covered": 0
+  },
+  "flowRun": {
+   "routes": 9,
+   "covered": 4
+  },
+  "flowRunMigration": {
+   "routes": 2,
+   "covered": 0
+  },
+  "flowTestRun": {
+   "routes": 1,
+   "covered": 1
+  },
+  "flowTimerDiagnostic": {
+   "routes": 1,
+   "covered": 0
+  },
+  "formLinks": {
+   "routes": 6,
+   "covered": 0
+  },
+  "forms": {
+   "routes": 4,
+   "covered": 0
+  },
+  "gdprEntities": {
+   "routes": 6,
+   "covered": 0
+  },
+  "gitHubIssues": {
+   "routes": 2,
+   "covered": 0
+  },
+  "graphQL": {
+   "routes": 2,
+   "covered": 1
+  },
+  "graphQLSubscription": {
+   "routes": 1,
+   "covered": 0
+  },
+  "handoff": {
+   "routes": 2,
+   "covered": 2
+  },
+  "hardening": {
+   "routes": 5,
+   "covered": 0
+  },
+  "hardeningStatement": {
+   "routes": 4,
+   "covered": 0
+  },
+  "heartbeat": {
+   "routes": 1,
+   "covered": 0
+  },
+  "icon": {
+   "routes": 1,
+   "covered": 0
+  },
+  "importPreview": {
+   "routes": 6,
+   "covered": 0
+  },
+  "integrations": {
+   "routes": 2,
+   "covered": 0
+  },
+  "linkedEntity": {
+   "routes": 5,
+   "covered": 0
+  },
+  "linked_entity": {
+   "routes": 5,
+   "covered": 0
+  },
+  "manifest": {
+   "routes": 1,
+   "covered": 0
+  },
+  "mapLinks": {
+   "routes": 5,
+   "covered": 0
+  },
+  "mappings": {
+   "routes": 7,
+   "covered": 3
+  },
+  "mapsOverview": {
+   "routes": 2,
+   "covered": 0
+  },
+  "mcp": {
+   "routes": 3,
+   "covered": 0
+  },
+  "mcpServer": {
+   "routes": 1,
+   "covered": 0
+  },
+  "merge": {
+   "routes": 3,
+   "covered": 2
+  },
+  "messageDispatch": {
+   "routes": 2,
+   "covered": 0
+  },
+  "migration": {
+   "routes": 2,
+   "covered": 0
+  },
+  "migrationPacks": {
+   "routes": 8,
+   "covered": 0
+  },
+  "names": {
+   "routes": 2,
+   "covered": 0
+  },
+  "notes": {
+   "routes": 6,
+   "covered": 0
+  },
+  "notificationBroadcast": {
+   "routes": 5,
+   "covered": 0
+  },
+  "notificationDeliveryWindow": {
+   "routes": 2,
+   "covered": 0
+  },
+  "notificationGroupPreferences": {
+   "routes": 2,
+   "covered": 0
+  },
+  "notificationHistory": {
+   "routes": 4,
+   "covered": 0
+  },
+  "notificationPreferences": {
+   "routes": 2,
+   "covered": 0
+  },
+  "notificationSubscriptions": {
+   "routes": 3,
+   "covered": 0
+  },
+  "notificationTemplates": {
+   "routes": 3,
+   "covered": 0
+  },
+  "oas": {
+   "routes": 2,
+   "covered": 1
+  },
+  "objectActions": {
+   "routes": 5,
+   "covered": 0
+  },
+  "objectDraft": {
+   "routes": 1,
+   "covered": 1
+  },
+  "objectFavourite": {
+   "routes": 2,
+   "covered": 0
+  },
+  "objectFolder": {
+   "routes": 5,
+   "covered": 0
+  },
+  "objectGrants": {
+   "routes": 1,
+   "covered": 0
+  },
+  "objectIntegrations": {
+   "routes": 5,
+   "covered": 0
+  },
+  "objectOwnership": {
+   "routes": 5,
+   "covered": 0
+  },
+  "objectPermissions": {
+   "routes": 2,
+   "covered": 0
+  },
+  "objectReadState": {
+   "routes": 3,
+   "covered": 0
+  },
+  "objectRelations": {
+   "routes": 9,
+   "covered": 7
+  },
+  "objectShareLink": {
+   "routes": 1,
+   "covered": 0
+  },
+  "objectSharing": {
+   "routes": 7,
+   "covered": 0
+  },
+  "objectState": {
+   "routes": 4,
+   "covered": 2
+  },
+  "objectWatchers": {
+   "routes": 5,
+   "covered": 5
+  },
+  "objects": {
+   "routes": 37,
+   "covered": 14
+  },
+  "openProjectLinks": {
+   "routes": 5,
+   "covered": 0
+  },
+  "operationsConsistency": {
+   "routes": 3,
+   "covered": 0
+  },
+  "operationsConsole": {
+   "routes": 9,
+   "covered": 0
+  },
+  "operationsMaintenance": {
+   "routes": 5,
+   "covered": 0
+  },
+  "organisation": {
+   "routes": 20,
+   "covered": 5
+  },
+  "organisationHalt": {
+   "routes": 3,
+   "covered": 0
+  },
+  "party": {
+   "routes": 7,
+   "covered": 0
+  },
+  "permissions": {
+   "routes": 1,
+   "covered": 0
+  },
+  "permissionsAudit": {
+   "routes": 3,
+   "covered": 0
+  },
+  "personLookup": {
+   "routes": 1,
+   "covered": 0
+  },
+  "photoLinks": {
+   "routes": 5,
+   "covered": 0
+  },
+  "pollLinks": {
+   "routes": 5,
+   "covered": 0
+  },
+  "portalTask": {
+   "routes": 6,
+   "covered": 0
+  },
+  "preferences": {
+   "routes": 2,
+   "covered": 0
+  },
+  "principalReach": {
+   "routes": 2,
+   "covered": 0
+  },
+  "processingLog": {
+   "routes": 2,
+   "covered": 0
+  },
+  "processingPurpose": {
+   "routes": 6,
+   "covered": 0
+  },
+  "propertyVocabulary": {
+   "routes": 2,
+   "covered": 0
+  },
+  "quality": {
+   "routes": 2,
+   "covered": 0
+  },
+  "recordTemplates": {
+   "routes": 6,
+   "covered": 0
+  },
+  "registerDescriptor": {
+   "routes": 2,
+   "covered": 2
+  },
+  "registers": {
+   "routes": 13,
+   "covered": 7
+  },
+  "registrySubscription": {
+   "routes": 2,
+   "covered": 0
+  },
+  "registryUpdates": {
+   "routes": 1,
+   "covered": 0
+  },
+  "relations": {
+   "routes": 1,
+   "covered": 0
+  },
+  "reports": {
+   "routes": 2,
+   "covered": 0
+  },
+  "retention": {
+   "routes": 5,
+   "covered": 0
+  },
+  "revert": {
+   "routes": 1,
+   "covered": 0
+  },
+  "rules": {
+   "routes": 6,
+   "covered": 0
+  },
+  "scheduledReports": {
+   "routes": 6,
+   "covered": 0
+  },
+  "schemaImport": {
+   "routes": 4,
+   "covered": 3
+  },
+  "schemaMigration": {
+   "routes": 9,
+   "covered": 4
+  },
+  "schemas": {
+   "routes": 17,
+   "covered": 6
+  },
+  "scopes": {
+   "routes": 1,
+   "covered": 0
+  },
+  "search": {
+   "routes": 1,
+   "covered": 0
+  },
+  "searchTrail": {
+   "routes": 12,
+   "covered": 0
+  },
+  "selectielijst": {
+   "routes": 3,
+   "covered": 0
+  },
+  "selectielijstReference": {
+   "routes": 1,
+   "covered": 0
+  },
+  "settings": {
+   "routes": 11,
+   "covered": 2
+  },
+  "setup": {
+   "routes": 3,
+   "covered": 0
+  },
+  "shareLinks": {
+   "routes": 4,
+   "covered": 0
+  },
+  "shippedBaseline": {
+   "routes": 2,
+   "covered": 0
+  },
+  "sources": {
+   "routes": 10,
+   "covered": 3
+  },
+  "subjectExport": {
+   "routes": 3,
+   "covered": 0
+  },
+  "survivorship": {
+   "routes": 2,
+   "covered": 0
+  },
+  "tables": {
+   "routes": 2,
+   "covered": 0
+  },
+  "tags": {
+   "routes": 4,
+   "covered": 0
+  },
+  "talkLinks": {
+   "routes": 5,
+   "covered": 0
+  },
+  "task": {
+   "routes": 16,
+   "covered": 2
+  },
+  "taskEvents": {
+   "routes": 5,
+   "covered": 0
+  },
+  "taskNotes": {
+   "routes": 4,
+   "covered": 0
+  },
+  "tasks": {
+   "routes": 5,
+   "covered": 0
+  },
+  "timeTrackerLinks": {
+   "routes": 5,
+   "covered": 0
+  },
+  "timelineAdmin": {
+   "routes": 9,
+   "covered": 0
+  },
+  "timelineEntries": {
+   "routes": 6,
+   "covered": 0
+  },
+  "tmlo": {
+   "routes": 3,
+   "covered": 1
+  },
+  "transfer": {
+   "routes": 5,
+   "covered": 3
+  },
+  "transition": {
+   "routes": 2,
+   "covered": 2
+  },
+  "translation": {
+   "routes": 4,
+   "covered": 2
+  },
+  "ui": {
+   "routes": 27,
+   "covered": 0
+  },
+  "urn": {
+   "routes": 3,
+   "covered": 0
+  },
+  "user": {
+   "routes": 17,
+   "covered": 7
+  },
+  "userSettings": {
+   "routes": 3,
+   "covered": 0
+  },
+  "verwerkingsactiviteiten": {
+   "routes": 6,
+   "covered": 0
+  },
+  "views": {
+   "routes": 8,
+   "covered": 0
+  },
+  "vocabulary": {
+   "routes": 4,
+   "covered": 0
+  },
+  "webPush": {
+   "routes": 5,
+   "covered": 0
+  },
+  "webhooks": {
+   "routes": 12,
+   "covered": 0
+  },
+  "wellKnown": {
+   "routes": 2,
+   "covered": 0
+  },
+  "workingCalendar": {
+   "routes": 1,
+   "covered": 1
+  },
+  "xwikiLinks": {
+   "routes": 6,
+   "covered": 0
+  }
+ }
+}
