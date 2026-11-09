@@ -347,7 +347,11 @@ class MagicStatisticsHandler {
 	 * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int}
 	 *
 	 */
-	public function getStatistics(int|array|null $registerId = null, int|array|null $schemaId = null, array $exclude = []): array {
+	public function getStatistics(
+		int|array|null $registerId = null,
+		int|array|null $schemaId = null,
+		array $exclude = [],
+	): array {
 		return $this->pairStatistics(filter: new StatisticsPairFilter(wanted: ['register' => $registerId, 'schema' => $schemaId], exclude: $exclude));
 	}//end getStatistics()
 
