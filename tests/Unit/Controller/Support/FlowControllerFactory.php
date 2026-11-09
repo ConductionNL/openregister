@@ -48,8 +48,10 @@ final class FlowControllerFactory {
 				catalogue: new \OCA\OpenRegister\Controller\Support\FlowCatalogue(
 					flowState: $flowState,
 					eventCatalog: $eventCatalog,
-					nodes: $nodes,
-					preflight: $preflight,
+					nodeTypes: new \OCA\OpenRegister\Controller\Support\FlowNodeTypes(
+						nodes: $nodes,
+						preflight: $preflight,
+					),
 					bpmn: new \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchange(),
 				),
 				definitions: new \OCA\OpenRegister\Controller\Support\FlowDefinitions(
