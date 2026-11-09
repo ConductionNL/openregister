@@ -1819,7 +1819,7 @@
 		"OCA\\OpenRegister\\Service\\Object\\BatchOperationStatusInterface": {
 			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\BatchOperationStatusInterface",
 			"eager": false,
-			"service": false
+			"service": true
 		}
 	}
 }
