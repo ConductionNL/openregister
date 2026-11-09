@@ -43,19 +43,23 @@
 				<table v-else class="filesTable">
 					<thead>
 						<tr>
-							<th
-								v-for="column in headerColumns"
-								:key="column.key"
-								scope="col"
-								:class="['column-' + column.key, { sortable: column.sort }]"
-								@click="column.sort && toggleSort(column.sort)">
-								{{ column.label }}
-								<span
-									v-if="column.sort && sortField === column.sort"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
+							<template v-for="column in headerColumns" :key="column.key">
+								<th
+									v-if="column.sort"
+									scope="col"
+									:class="'column-' + column.key + ' sortable'"
+									@click="toggleSort(column.sort)">
+									{{ column.label }}
+									<span
+										v-if="sortField === column.sort"
+										class="sort-indicator"
+										>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+									>
+								</th>
+								<th v-else scope="col" :class="'column-' + column.key">
+									{{ column.label }}
+								</th>
+							</template>
 						</tr>
 					</thead>
 					<tbody>
