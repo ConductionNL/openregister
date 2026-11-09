@@ -71,48 +71,6 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	private const NOT_FOUND = 'No action "%s" runs on this object.';
 
 	/**
-	 * The schema's actions, inherited ones included.
-	 *
-	 * @var ObjectActionDefinitions
-	 */
-	private readonly ObjectActionDefinitions $definitions;
-
-	/**
-	 * The right and the precondition.
-	 *
-	 * @var ObjectActionGate
-	 */
-	private readonly ObjectActionGate $gate;
-
-	/**
-	 * Defaults, validation and digest.
-	 *
-	 * @var ObjectActionInputs
-	 */
-	private readonly ObjectActionInputs $inputs;
-
-	/**
-	 * Runs a transition or a self-assign body.
-	 *
-	 * @var ObjectActionWriters
-	 */
-	private readonly ObjectActionWriters $writers;
-
-	/**
-	 * Writes the `action.run` entry.
-	 *
-	 * @var ObjectActionRunRecorder
-	 */
-	private readonly ObjectActionRunRecorder $recorder;
-
-	/**
-	 * Runs a flow or steps body.
-	 *
-	 * @var ObjectActionFlowRun
-	 */
-	private readonly ObjectActionFlowRun $flowRun;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ObjectActionRunnerChecks $checks   Definitions, gate and inputs: what is asked before a body runs.
@@ -121,17 +79,11 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 * @param ObjectActionFlowRun      $flowRun  Runs a flow or steps body.
 	 */
 	public function __construct(
-		ObjectActionRunnerChecks $checks,
-		ObjectActionWriters $writers,
-		ObjectActionRunRecorder $recorder,
-		ObjectActionFlowRun $flowRun,
+		private readonly ObjectActionRunnerChecks $checks,
+		private readonly ObjectActionWriters $writers,
+		private readonly ObjectActionRunRecorder $recorder,
+		private readonly ObjectActionFlowRun $flowRun,
 	) {
-		$this->definitions = $checks->definitions;
-		$this->gate        = $checks->gate;
-		$this->inputs      = $checks->inputs;
-		$this->writers     = $writers;
-		$this->recorder    = $recorder;
-		$this->flowRun     = $flowRun;
 	}//end __construct()
 
 	/**
@@ -144,7 +96,7 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
 	public function resolve(ObjectActionCall $call): ?ObjectActionDefinition {
-		$declared = $this->definitions->find(schema: $call->schema, key: $call->key, register: $call->object->getRegister());
+		$declared = $this->checks->definitions->find(schema: $call->schema, key: $call->key, register: $call->object->getRegister());
 		if ($declared !== null) {
 			if ($declared->isRunnable() === false) {
 				return null;
@@ -213,7 +165,7 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 
 		// Opened only now: the person's right on the subject and `when` have
 		// passed, so the elevation covers the body and nothing before it.
-		return $this->gate->elevated(definition: $definition, operation: $execute);
+		return $this->checks->gate->elevated(definition: $definition, operation: $execute);
 	}//end runChecked()
 
 	/**
@@ -276,9 +228,9 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 * @return ObjectActionInvocation The action and its inputs, defaults resolved.
 	 */
 	private function withDefaults(ObjectActionCall $call, ObjectActionInvocation $asked): ObjectActionInvocation {
-		$scope = new DefaultScope(object: $call->object, userId: $this->gate->userId());
+		$scope = new DefaultScope(object: $call->object, userId: $this->checks->gate->userId());
 
-		return new ObjectActionInvocation(definition: $asked->definition, inputs: $this->inputs->withDefaults(invocation: $asked, scope: $scope));
+		return new ObjectActionInvocation(definition: $asked->definition, inputs: $this->checks->inputs->withDefaults(invocation: $asked, scope: $scope));
 	}//end withDefaults()
 
 	/**
@@ -294,15 +246,15 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 */
 	private function rightRefusal(ObjectActionCall $call, ObjectActionDefinition $definition): ?array {
 		$right = $call->key;
-		if ($this->definitions->find(schema: $call->schema, key: $call->key, register: $call->object->getRegister()) === null) {
+		if ($this->checks->definitions->find(schema: $call->schema, key: $call->key, register: $call->object->getRegister()) === null) {
 			$right = 'update';
 		}
 
-		if ($this->gate->mayRun(check: new RightCheck(schema: $call->schema, right: $right, object: $call->object), definition: $definition) === false) {
+		if ($this->checks->gate->mayRun(check: new RightCheck(schema: $call->schema, right: $right, object: $call->object), definition: $definition) === false) {
 			return $this->answer(status: Http::STATUS_FORBIDDEN, body: ['error' => sprintf('You may not perform "%s" on this object.', $call->key)]);
 		}
 
-		if ($this->gate->selfAssignOpen(definition: $definition, object: $call->object) === false) {
+		if ($this->checks->gate->selfAssignOpen(definition: $definition, object: $call->object) === false) {
 			return $this->unmet(message: 'This object is already assigned.', key: $call->key);
 		}
 
@@ -319,8 +271,8 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 */
 	private function inputRefusal(ObjectActionCall $call, ObjectActionInvocation $invocation): ?array {
 		$definition = $invocation->definition;
-		if ($this->gate->whenHolds(invocation: $invocation, object: $call->object) === false) {
-			return $this->unmet(message: $this->gate->reason(definition: $definition), key: $call->key);
+		if ($this->checks->gate->whenHolds(invocation: $invocation, object: $call->object) === false) {
+			return $this->unmet(message: $this->checks->gate->reason(definition: $definition), key: $call->key);
 		}
 
 		$errors = $this->inputErrors(definition: $definition, inputs: $invocation->inputs);
@@ -361,7 +313,7 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 			return [];
 		}
 
-		return $this->inputs->errors(schema: $definition->inputs, inputs: $inputs);
+		return $this->checks->inputs->errors(schema: $definition->inputs, inputs: $inputs);
 	}//end inputErrors()
 
 	/**
