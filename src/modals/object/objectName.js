@@ -7,7 +7,7 @@
  * @copyright 2026 Conduction B.V.
  *
  * @param {object|null} item The object
- * @return {*} The name, or the last candidate when none is set
+ * @return {string|number|undefined} The name, or the last candidate when none is set
  */
 export function objectName(item) {
 	return (

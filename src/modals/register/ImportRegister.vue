@@ -512,7 +512,8 @@ import {
 
 		<template v-if="!success && !importResults" #actions>
 			<CloseCancelButton label="Cancel" @click="closeModal" />
-			<NcButton
+			<BusyButton
+				:busy="loading"
 				:disabled="
 					loading
 					|| !selectedFile
@@ -522,11 +523,10 @@ import {
 				variant="primary"
 				@click="importRegister">
 				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Import v-else :size="20" />
+					<Import :size="20" />
 				</template>
 				Import
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
@@ -539,13 +539,13 @@ import {
 	NcButton,
 	NcCheckboxRadioSwitch,
 	NcDialog,
-	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import Import from 'vue-material-design-icons/Import.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { freshState } from '../../services/initialState.js'
 import {
@@ -612,11 +612,11 @@ export default {
 	components: {
 		NcDialog,
 		NcButton,
-		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		NcSelect,
 		// Icons
+		BusyButton,
 		CloseCancelButton,
 		Import,
 		Upload,

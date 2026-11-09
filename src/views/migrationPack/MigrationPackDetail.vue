@@ -1271,8 +1271,8 @@ export default {
 		 * Write the edited definition, unless it does not parse, while showing
 		 * the save as busy.
 		 *
-		 * @param {Function} write Sends the definition; receives it.
-		 * @param {Function} fail Handles an error the write threw.
+		 * @param {function(object): Promise<void>} write Sends the definition; receives it.
+		 * @param {function(Error): void} fail Handles an error the write threw.
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-create-and-update-must-accept-a-definition-envelope-and-keep-the-route-id
