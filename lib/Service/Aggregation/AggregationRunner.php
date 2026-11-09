@@ -2527,7 +2527,6 @@ class AggregationRunner implements AggregationRunnerInterface {
 	private function tryNativeSingleMetric(NativeAggregationRequest $request): ?array {
 		$spec         = $request->spec;
 		$platformName = $this->detectDatabasePlatform();
-		$groupFields  = $this->resolveGroupFields(groupBy: $spec['groupBy']);
 		if ($this->nativeRequestSupported(request: $request, platform: $platformName) === false) {
 			return null;
 		}
@@ -2537,12 +2536,12 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return null;
 		}
 
-		return $this->runNativeQuery(
+		$statement = new NativeAggregationStatement(
 			query: $query,
 			aggSql: $this->nativeAggregateSql(query: $query, field: $spec['field']),
-			groupFields: $groupFields,
-			bucket: ['dateBucket' => $spec['dateBucket'], 'cumulative' => $spec['cumulative']]
+			cumulative: $spec['cumulative']
 		);
+		return $this->runNativeQuery(statement: $statement, spec: $spec);
 	}//end tryNativeSingleMetric()
 
 	/**
@@ -2571,7 +2570,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 			tableName: $tableName,
 			metric: $spec['metric']
 		);
-		if ($this->buildNativeWhere(query: $query, register: $request->register, schema: $request->schema, rowRbac: $spec['rowRbac']) === false) {
+		if ($this->buildNativeWhere(query: $query, request: $request) === false) {
 			return null;
 		}
 
@@ -2590,9 +2589,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function nativeRequestSupported(NativeAggregationRequest $request, string $platform): bool {
-		$spec        = $request->spec;
-		$groupFields = $this->resolveGroupFields(groupBy: $spec['groupBy']);
-		return self::nativeShapeSupported(platform: $platform, dateBucket: $spec['dateBucket'], groupFields: $groupFields) === true
+		$spec = $request->spec;
+		return $this->nativeShapeSupported(platform: $platform, spec: $spec) === true
 			&& self::nativeMetricSupported(metric: $spec['metric'], field: $spec['field']) === true
 			&& self::nativeFilterSupported(filter: $spec['filter'], schema: $request->schema) === true;
 	}//end nativeRequestSupported()
@@ -2634,20 +2632,19 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * grouped shapes; the ungrouped scalar shape depends on the Postgres numeric
 	 * cast and falls through to the PHP path.
 	 *
-	 * @param string     $platform    The platform short name
-	 * @param array|null $dateBucket  The time-bucket spec
-	 * @param array      $groupFields The categorical group fields
+	 * @param string               $platform The platform short name
+	 * @param array<string, mixed> $spec     The native request's spec (its `dateBucket` and `groupBy`)
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private static function nativeShapeSupported(string $platform, ?array $dateBucket, array $groupFields): bool {
+	private function nativeShapeSupported(string $platform, array $spec): bool {
 		if ($platform === 'unknown') {
 			return false;
 		}
 
-		return $platform === 'postgres' || $dateBucket !== null || count($groupFields) > 0;
+		return $platform === 'postgres' || $spec['dateBucket'] !== null || count($this->resolveGroupFields(groupBy: $spec['groupBy'])) > 0;
 	}//end nativeShapeSupported()
 
 	/**
@@ -2714,27 +2711,24 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * rules: the soft-delete and archive defaults, the draft lens, the
 	 * organisation boundary and the row-level read rule.
 	 *
-	 * @param NativeAggregationQuery $query    The query being built
-	 * @param Register               $register The register
-	 * @param Schema                 $schema   The schema
-	 * @param bool                   $rowRbac  Whether the caller's read rule applies
+	 * @param NativeAggregationQuery   $query   The query being built
+	 * @param NativeAggregationRequest $request The register, the schema and whether the caller's read rule applies (`rowRbac`)
 	 *
 	 * @return bool False when the organisation scope cannot be expressed in SQL
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) rowRbac threads the bypassRbac decision down to the SQL
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function buildNativeWhere(NativeAggregationQuery $query, Register $register, Schema $schema, bool $rowRbac): bool {
-		$this->addLifecyclePredicates(query: $query, schema: $schema);
+	private function buildNativeWhere(NativeAggregationQuery $query, NativeAggregationRequest $request): bool {
+		$this->addLifecyclePredicates(query: $query, schema: $request->schema);
 
-		$orgScope = $this->nativeOrganisationScope(register: $register, schema: $schema, rowRbac: $rowRbac);
+		$orgScope = $this->nativeOrganisationScope(request: $request);
 		if (self::addOrganisationPredicate(query: $query, orgScope: $orgScope) === false) {
 			return false;
 		}
 
-		if ($rowRbac === true) {
-			$rowPredicate = $this->magicMapper->rbacRowPredicateSql(schema: $schema, action: 'read', register: $register);
+		if ($request->spec['rowRbac'] === true) {
+			$rowPredicate = $this->magicMapper->rbacRowPredicateSql(schema: $request->schema, action: 'read', register: $request->register);
 			if ($rowPredicate !== null) {
 				$query->where(predicate: $rowPredicate);
 			}
@@ -2822,23 +2816,21 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * by the org-less rows for a grant from the register cascade; both only
 	 * together with the row predicate.
 	 *
-	 * @param Register $register The register
-	 * @param Schema   $schema   The schema
-	 * @param bool     $rowRbac  Whether the caller's read rule applies
+	 * @param NativeAggregationRequest $request The register, the schema and whether the caller's read rule applies (`rowRbac`)
 	 *
 	 * @return array{mode: string, uuids: array<int, string>}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) rowRbac threads the bypassRbac decision down to the SQL
 	 * @SuppressWarnings(PHPMD.StaticAccess)        admitOrganisationless is a pure scope transformation
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function nativeOrganisationScope(Register $register, Schema $schema, bool $rowRbac): array {
+	private function nativeOrganisationScope(NativeAggregationRequest $request): array {
+		$schema   = $request->schema;
 		$orgScope = $this->organizationHandler->resolveOrganizationScope(
-			registerId: $register->getId(),
+			registerId: $request->register->getId(),
 			schemaId: $schema->getId()
 		);
-		if ($rowRbac === false) {
+		if ($request->spec['rowRbac'] === false) {
 			return $orgScope;
 		}
 
@@ -2935,62 +2927,86 @@ class AggregationRunner implements AggregationRunnerInterface {
 				continue;
 			}
 
+			$target = new NativeFilterColumn(query: $query, column: $column);
 			if (array_is_list($value) === true) {
-				$this->addListPredicate(query: $query, column: $column, list: $value, negate: false);
+				$this->addInPredicate(target: $target, list: $value);
 				continue;
 			}
 
-			$this->addOperatorPredicates(query: $query, column: $column, operators: $value);
+			$this->addOperatorPredicates(target: $target, operators: $value);
 		}
 	}//end addNativeFilterPredicates()
 
 	/**
-	 * Add an `IN` or `NOT IN` predicate over a list.
+	 * Add an `IN` predicate over a list; an empty list matches nothing.
 	 *
-	 * An empty `IN` matches nothing and an empty `NOT IN` excludes nothing.
-	 *
-	 * @param NativeAggregationQuery $query  The query being built
-	 * @param string                 $column The quoted column
-	 * @param array                  $list   The values
-	 * @param bool                   $negate True for `NOT IN`
+	 * @param NativeFilterColumn $target The query being built and the quoted column
+	 * @param array              $list   The values
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Selects IN or NOT IN
-	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function addListPredicate(NativeAggregationQuery $query, string $column, array $list, bool $negate): void {
-		$operator = 'IN';
-		$noValues = '1 = 0';
-		if ($negate === true) {
-			$operator = 'NOT IN';
-			$noValues = '1 = 1';
-		}
-
+	private function addInPredicate(NativeFilterColumn $target, array $list): void {
 		if (count($list) === 0) {
-			$query->where(predicate: $noValues);
+			$target->query->where(predicate: '1 = 0');
 			return;
 		}
 
-		$query->where(
-			predicate: $column.' '.$operator.' ('.self::placeholders(count: count($list)).')',
-			bindings: array_map(fn (mixed $item): string => $this->bindValue(value: $item), array_values($list))
+		$target->query->where(
+			predicate: $target->column.' IN ('.self::placeholders(count: count($list)).')',
+			bindings: $this->listBindings(list: $list)
 		);
-	}//end addListPredicate()
+	}//end addInPredicate()
+
+	/**
+	 * Add a `NOT IN` predicate over a list; an empty list excludes nothing.
+	 *
+	 * @param NativeFilterColumn $target The query being built and the quoted column
+	 * @param array              $list   The values
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function addNotInPredicate(NativeFilterColumn $target, array $list): void {
+		if (count($list) === 0) {
+			$target->query->where(predicate: '1 = 1');
+			return;
+		}
+
+		$target->query->where(
+			predicate: $target->column.' NOT IN ('.self::placeholders(count: count($list)).')',
+			bindings: $this->listBindings(list: $list)
+		);
+	}//end addNotInPredicate()
+
+	/**
+	 * The bindings of a list predicate, in list order.
+	 *
+	 * @param array $list The values
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function listBindings(array $list): array {
+		return array_map(fn (mixed $item): string => $this->bindValue(value: $item), array_values($list));
+	}//end listBindings()
 
 	/**
 	 * Add the predicates of an operator map such as `{gte: 1, lt: 5}`, in map order.
 	 *
-	 * @param NativeAggregationQuery $query     The query being built
-	 * @param string                 $column    The quoted column
-	 * @param array                  $operators The operator map
+	 * @param NativeFilterColumn $target    The query being built and the quoted column
+	 * @param array              $operators The operator map
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function addOperatorPredicates(NativeAggregationQuery $query, string $column, array $operators): void {
+	private function addOperatorPredicates(NativeFilterColumn $target, array $operators): void {
+		$query       = $target->query;
+		$column      = $target->column;
 		$comparisons = ['gt' => '>', 'gte' => '>=', 'lt' => '<', 'lte' => '<=', 'ne' => '<>'];
 		foreach ($operators as $op => $operand) {
 			$op = (string) $op;
@@ -3000,7 +3016,12 @@ class AggregationRunner implements AggregationRunnerInterface {
 					$list = $operand;
 				}
 
-				$this->addListPredicate(query: $query, column: $column, list: $list, negate: $op === 'notIn');
+				if ($op === 'notIn') {
+					$this->addNotInPredicate(target: $target, list: $list);
+					continue;
+				}
+
+				$this->addInPredicate(target: $target, list: $list);
 				continue;
 			}
 
@@ -3055,31 +3076,25 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * A failing statement (missing table or column) answers null, which sends
 	 * the caller to the PHP path.
 	 *
-	 * @param NativeAggregationQuery $query       The built query
-	 * @param string                 $aggSql      The aggregate expression
-	 * @param array                  $groupFields The categorical group fields
-	 * @param array                  $bucket      The `dateBucket` spec (or null) and the `cumulative` flag
+	 * @param NativeAggregationStatement $statement The built query, its aggregate expression and the running-total flag
+	 * @param array<string, mixed>       $spec      The native request's spec (its `dateBucket` and `groupBy`)
 	 *
 	 * @return array|null
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function runNativeQuery(NativeAggregationQuery $query, string $aggSql, array $groupFields, array $bucket): ?array {
+	private function runNativeQuery(NativeAggregationStatement $statement, array $spec): ?array {
 		try {
-			if ($bucket['dateBucket'] !== null) {
-				return $this->runNativeBucketQuery(
-					query: $query,
-					aggSql: $aggSql,
-					dateBucket: $bucket['dateBucket'],
-					cumulative: $bucket['cumulative']
-				);
+			if ($spec['dateBucket'] !== null) {
+				return $this->runNativeBucketQuery(statement: $statement, dateBucket: $spec['dateBucket']);
 			}
 
+			$groupFields = $this->resolveGroupFields(groupBy: $spec['groupBy']);
 			if (count($groupFields) > 0) {
-				return $this->runNativeGroupedQuery(query: $query, aggSql: $aggSql, groupFields: $groupFields);
+				return $this->runNativeGroupedQuery(statement: $statement, groupFields: $groupFields);
 			}
 
-			return $this->runNativeScalarQuery(query: $query, aggSql: $aggSql);
+			return $this->runNativeScalarQuery(statement: $statement);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -3094,27 +3109,28 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * addCumulativeColumn() PHP post-pass, and the two must agree bucket for
 	 * bucket (design D3, pinned by AggregationRunnerCumulativeTest).
 	 *
-	 * @param NativeAggregationQuery $query      The built query
-	 * @param string                 $aggSql     The aggregate expression
-	 * @param array                  $dateBucket The time-bucket spec ({field, start, end, gap})
-	 * @param bool                   $cumulative Whether to add a running total
+	 * @param NativeAggregationStatement $statement  The built query, its aggregate expression and the running-total flag
+	 * @param array                      $dateBucket The time-bucket spec ({field, start, end, gap})
 	 *
 	 * @return array{groups: array<int, array{key: string, value: int|float|null, cumulative?: int|float|null}>}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Running-total flag (REQ-AGG-103)
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function runNativeBucketQuery(NativeAggregationQuery $query, string $aggSql, array $dateBucket, bool $cumulative): array {
+	private function runNativeBucketQuery(NativeAggregationStatement $statement, array $dateBucket): array {
+		$query     = $statement->query;
+		$aggSql    = $statement->aggSql;
 		$bucketCol = $query->quoted(column: $this->sanitizeColumnName(name: (string) $dateBucket['field']));
-		$gap       = (string) $dateBucket['gap'];
 
 		$cumulativeSelect = '';
-		if ($query->isPostgres() === true && $cumulative === true) {
+		if ($statement->windowedTotal() === true) {
 			$cumulativeSelect = ", SUM({$aggSql}) OVER (ORDER BY bucket) AS cumulative_agg";
 		}
 
-		$bucketExpr   = $this->nativeBucketExpression(query: $query, column: $bucketCol, gap: $gap);
+		$bucketExpr   = $this->nativeBucketExpression(
+			column: new NativeFilterColumn(query: $query, column: $bucketCol),
+			gap: (string) $dateBucket['gap']
+		);
 		$boundedWhere = $query->whereSql().' AND '.$bucketCol.' >= ? AND '.$bucketCol.' < ?';
 		$stmt         = $this->db->prepare(
 			"SELECT {$bucketExpr} AS bucket, {$aggSql} AS agg{$cumulativeSelect}
@@ -3127,10 +3143,10 @@ class AggregationRunner implements AggregationRunnerInterface {
 
 		$groups = [];
 		while (($row = $stmt->fetch()) !== false) {
-			$groups[] = $this->nativeBucketRow(row: $row, metric: $query->metric, withCumulative: $cumulativeSelect !== '');
+			$groups[] = $this->nativeBucketRow(row: $row, statement: $statement);
 		}
 
-		if ($cumulative === true && $query->isPostgres() === false) {
+		if ($statement->cumulative === true && $query->isPostgres() === false) {
 			$groups = $this->addCumulativeColumn(groups: $groups);
 		}
 
@@ -3164,22 +3180,20 @@ class AggregationRunner implements AggregationRunnerInterface {
 	/**
 	 * One bucket of a time-bucketed series.
 	 *
-	 * @param array  $row            The fetched row
-	 * @param string $metric         The metric
-	 * @param bool   $withCumulative Whether the row carries a native running total
+	 * @param array                      $row       The fetched row
+	 * @param NativeAggregationStatement $statement The statement; its metric, and whether the row carries a native running total
 	 *
 	 * @return array{key: string, value: int|float|null, cumulative?: int|float|null}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the SQL selected the window column
-	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function nativeBucketRow(array $row, string $metric, bool $withCumulative): array {
-		$group = [
+	private function nativeBucketRow(array $row, NativeAggregationStatement $statement): array {
+		$metric = $statement->query->metric;
+		$group  = [
 			'key'   => $this->coerceBucketKey(raw: $row['bucket']),
 			'value' => $this->coerceAggregateValue(raw: $row['agg'], metric: $metric),
 		];
-		if ($withCumulative === true) {
+		if ($statement->windowedTotal() === true) {
 			$group['cumulative'] = $this->coerceAggregateValue(raw: ($row['cumulative_agg'] ?? null), metric: $metric);
 		}
 
@@ -3192,38 +3206,37 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * Postgres binds the gap into `date_trunc`; MySQL and SQLite emit literal
 	 * format strings from the closed gap vocabulary AggregationQuery::create() validates.
 	 *
-	 * @param NativeAggregationQuery $query  The built query
-	 * @param string                 $column The quoted bucket column
-	 * @param string                 $gap    The bucket gap
+	 * @param NativeFilterColumn $column The built query and the quoted bucket column
+	 * @param string             $gap    The bucket gap
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function nativeBucketExpression(NativeAggregationQuery $query, string $column, string $gap): string {
-		if ($query->isPostgres() === true) {
-			return 'date_trunc(?, '.$column.')::text';
+	private function nativeBucketExpression(NativeFilterColumn $column, string $gap): string {
+		if ($column->query->isPostgres() === true) {
+			return 'date_trunc(?, '.$column->column.')::text';
 		}
 
-		if ($query->platform === 'mysql') {
-			return $this->mysqlBucketExpression(column: $column, gap: $gap);
+		if ($column->query->platform === 'mysql') {
+			return $this->mysqlBucketExpression(column: $column->column, gap: $gap);
 		}
 
-		return $this->sqliteBucketExpression(column: $column, gap: $gap);
+		return $this->sqliteBucketExpression(column: $column->column, gap: $gap);
 	}//end nativeBucketExpression()
 
 	/**
 	 * Run a categorical grouped aggregate, single-field or multi-field.
 	 *
-	 * @param NativeAggregationQuery $query       The built query
-	 * @param string                 $aggSql      The aggregate expression
-	 * @param array                  $groupFields The ordered group fields
+	 * @param NativeAggregationStatement $statement   The built query and its aggregate expression
+	 * @param array                      $groupFields The ordered group fields
 	 *
 	 * @return array{groups: array<int, array<string, mixed>>}
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function runNativeGroupedQuery(NativeAggregationQuery $query, string $aggSql, array $groupFields): array {
+	private function runNativeGroupedQuery(NativeAggregationStatement $statement, array $groupFields): array {
+		$query       = $statement->query;
 		$selectParts = [];
 		$groupCols   = [];
 		foreach ($groupFields as $index => $groupField) {
@@ -3235,7 +3248,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 		$selectSql = implode(', ', $selectParts);
 		$groupSql  = implode(', ', $groupCols);
 		$stmt      = $this->db->prepare(
-			"SELECT {$selectSql}, {$aggSql} AS agg
+			"SELECT {$selectSql}, {$statement->aggSql} AS agg
                              FROM {$query->table()}
                              WHERE {$query->whereSql()}
                              GROUP BY {$groupSql}"
@@ -3244,33 +3257,26 @@ class AggregationRunner implements AggregationRunnerInterface {
 
 		$groups = [];
 		while (($row = $stmt->fetch()) !== false) {
-			$groups[] = self::nativeGroupRow(row: $row, groupFields: $groupFields, metric: $query->metric);
+			$groups[] = self::nativeGroupKeys(row: $row, groupFields: $groupFields)
+				+ ['value' => self::nativeGroupValue(raw: $row['agg'], metric: $query->metric)];
 		}
 
 		return ['groups' => $groups];
 	}//end runNativeGroupedQuery()
 
 	/**
-	 * One group of a grouped aggregate: `{key, value}`, or `{keys, value}` for several group fields.
+	 * The key of one group of a grouped aggregate: `{key}`, or `{keys}` for several group fields.
 	 *
-	 * @param array  $row         The fetched row
-	 * @param array  $groupFields The ordered group fields
-	 * @param string $metric      The metric
+	 * @param array $row         The fetched row
+	 * @param array $groupFields The ordered group fields
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private static function nativeGroupRow(array $row, array $groupFields, string $metric): array {
-		$value = $row['agg'];
-		if ($metric !== 'count' && is_string($value) === true) {
-			$value = (float) $value;
-		} elseif ($value !== null) {
-			$value = (int) $value;
-		}
-
+	private static function nativeGroupKeys(array $row, array $groupFields): array {
 		if (count($groupFields) === 1) {
-			return ['key' => ($row['g0'] ?? null), 'value' => $value];
+			return ['key' => ($row['g0'] ?? null)];
 		}
 
 		$keys = [];
@@ -3278,21 +3284,43 @@ class AggregationRunner implements AggregationRunnerInterface {
 			$keys[$groupField] = ($row['g'.$index] ?? null);
 		}
 
-		return ['keys' => $keys, 'value' => $value];
-	}//end nativeGroupRow()
+		return ['keys' => $keys];
+	}//end nativeGroupKeys()
+
+	/**
+	 * The value of one group of a grouped aggregate.
+	 *
+	 * @param mixed  $raw    The fetched aggregate
+	 * @param string $metric The metric
+	 *
+	 * @return int|float|null
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function nativeGroupValue(mixed $raw, string $metric): int|float|null {
+		if ($metric !== 'count' && is_string($raw) === true) {
+			return (float) $raw;
+		}
+
+		if ($raw !== null) {
+			return (int) $raw;
+		}
+
+		return null;
+	}//end nativeGroupValue()
 
 	/**
 	 * Run an ungrouped aggregate.
 	 *
-	 * @param NativeAggregationQuery $query  The built query
-	 * @param string                 $aggSql The aggregate expression
+	 * @param NativeAggregationStatement $statement The built query and its aggregate expression
 	 *
 	 * @return array{value: int|float|string|null}
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function runNativeScalarQuery(NativeAggregationQuery $query, string $aggSql): array {
-		$stmt = $this->db->prepare("SELECT {$aggSql} AS agg FROM {$query->table()} WHERE {$query->whereSql()}");
+	private function runNativeScalarQuery(NativeAggregationStatement $statement): array {
+		$query = $statement->query;
+		$stmt  = $this->db->prepare("SELECT {$statement->aggSql} AS agg FROM {$query->table()} WHERE {$query->whereSql()}");
 		$stmt->execute($query->bindings());
 		$row   = $stmt->fetch();
 		$value = null;
