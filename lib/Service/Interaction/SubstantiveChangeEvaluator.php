@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Interaction;
 
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -97,14 +98,14 @@ class SubstantiveChangeEvaluator implements SubstantiveChangeEvaluatorInterface 
 	 * definition: nobody has seen it, and there is no read state to invalidate
 	 * anyway.
 	 *
-	 * @param ObjectEntity $new The object as it now stands.
-	 * @param ObjectEntity|null $old The object as it stood before, when known.
+	 * @param ObjectEntityInterface $new The object as it now stands.
+	 * @param ObjectEntityInterface|null $old The object as it stood before, when known.
 	 *
 	 * @return boolean True when the change should make the object unread again.
 	 *
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
-	public function isSubstantive(ObjectEntity $new, ?ObjectEntity $old = null): bool {
+	public function isSubstantive(ObjectEntityInterface $new, ?ObjectEntityInterface $old = null): bool {
 		if ($old === null) {
 			return true;
 		}
@@ -189,12 +190,12 @@ class SubstantiveChangeEvaluator implements SubstantiveChangeEvaluatorInterface 
 	 *
 	 * Compared by meaning rather than by storage: see ValueNormaliser.
 	 *
-	 * @param ObjectEntity $new The object as it now stands.
-	 * @param ObjectEntity $old The object as it stood before.
+	 * @param ObjectEntityInterface $new The object as it now stands.
+	 * @param ObjectEntityInterface $old The object as it stood before.
 	 *
 	 * @return array<int, string> The changed property names.
 	 */
-	private function changedProperties(ObjectEntity $new, ObjectEntity $old): array {
+	private function changedProperties(ObjectEntityInterface $new, ObjectEntityInterface $old): array {
 		$newBody = $this->body(object: $new);
 		$oldBody = $this->body(object: $old);
 
@@ -218,11 +219,11 @@ class SubstantiveChangeEvaluator implements SubstantiveChangeEvaluatorInterface 
 	/**
 	 * One object's decoded body.
 	 *
-	 * @param ObjectEntity $object The object.
+	 * @param ObjectEntityInterface $object The object.
 	 *
 	 * @return array<string, mixed> The body, or an empty array.
 	 */
-	private function body(ObjectEntity $object): array {
+	private function body(ObjectEntityInterface $object): array {
 		$body = $object->getObject();
 
 		if (is_array($body) === true) {
@@ -316,11 +317,11 @@ class SubstantiveChangeEvaluator implements SubstantiveChangeEvaluatorInterface 
 	 * which is the eager direction. An object whose schema has gone missing is
 	 * a bigger problem than an over-eager badge.
 	 *
-	 * @param ObjectEntity $object The object.
+	 * @param ObjectEntityInterface $object The object.
 	 *
 	 * @return Schema|null The schema, or null.
 	 */
-	private function resolveSchema(ObjectEntity $object): ?Schema {
+	private function resolveSchema(ObjectEntityInterface $object): ?Schema {
 		$schemaId = $object->getSchema();
 		if ($schemaId === null || (string)$schemaId === '') {
 			return null;

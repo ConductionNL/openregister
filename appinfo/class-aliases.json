@@ -1815,6 +1815,126 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\FlowRunStepMapperInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowRunStepMapperInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Db\\TaskRelationMapperInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TaskRelationMapperInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\CaseTokenServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\CaseTokenServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\OperationsConsoleServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\OperationsConsoleServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\SequenceServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SequenceServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\BulkJob\\ReversibilityAnnotationValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ReversibilityAnnotationValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Calculation\\CalculationAnnotationValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\CalculationAnnotationValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Calculation\\OperatorCatalogueInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\OperatorCatalogueInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Calculation\\ReferenceResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ReferenceResolverInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Case\\CasePlanAuthorizationServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\CasePlanAuthorizationServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Dmn\\DecisionTableValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DecisionTableValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowAccessInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowAccessInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowLocatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowLocatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflightInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowNodePreflightInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowRunAuthorizationInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowRunAuthorizationInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowRunnableGuardInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowRunnableGuardInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowScheduleServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowScheduleServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowTriggerServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowTriggerServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\Timer\\WorkingCalendarInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\WorkingCalendarInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Lifecycle\\LifecycleConditionEvaluatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\LifecycleConditionEvaluatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Rules\\DependentValueValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DependentValueValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Task\\TaskSubjectLocatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TaskSubjectLocatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\Timer\\WorkingCalendarWriteGuardInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\WorkingCalendarWriteGuardInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Interaction\\SubstantiveChangeEvaluatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SubstantiveChangeEvaluatorInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }

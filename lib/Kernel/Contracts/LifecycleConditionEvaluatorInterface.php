@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Lifecycle;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Judge the conditions on a lifecycle transition.

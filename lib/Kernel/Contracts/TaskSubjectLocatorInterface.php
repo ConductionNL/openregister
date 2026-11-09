@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Task;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Locating task subjects by uuid, as the subject-location backfill uses it.

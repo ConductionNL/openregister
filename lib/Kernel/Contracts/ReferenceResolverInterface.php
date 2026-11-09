@@ -20,9 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Calculation;
-
-use OCA\OpenRegister\Db\Register;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Resolve the references a calculation reads into its payload.
@@ -41,7 +39,7 @@ interface ReferenceResolverInterface {
 	 *
 	 * @param array<string, mixed> $payload Object data WITH `@self` already injected.
 	 * @param array<string, mixed> $references The `x-openregister-references` map.
-	 * @param Register|string|int|null $register Saving object's register context.
+	 * @param RegisterInterface|string|int|null $register Saving object's register context.
 	 * @param string|null $organisation Saving object's organisation UUID (the tenant boundary).
 	 *
 	 * @return array<string, mixed> Map of reference name to resolved data (or null).
@@ -62,7 +60,7 @@ interface ReferenceResolverInterface {
 	 *
 	 * @param array<string, mixed> $payload Object data WITH `@self` already injected.
 	 * @param array<string, mixed> $references The `x-openregister-references` map.
-	 * @param Register|string|int|null $register Saving object's register context.
+	 * @param RegisterInterface|string|int|null $register Saving object's register context.
 	 * @param string|null $organisation Saving object's organisation UUID (the tenant boundary).
 	 *
 	 * @return array{refs: array<string, mixed>, unresolved: list<string>} The map and the unresolved names.

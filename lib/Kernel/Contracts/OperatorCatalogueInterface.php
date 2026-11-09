@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Calculation;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The operator catalogue an expression builder is generated from.

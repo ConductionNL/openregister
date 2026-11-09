@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Dmn;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The decision-table validator, typed for callers outside the Service component.

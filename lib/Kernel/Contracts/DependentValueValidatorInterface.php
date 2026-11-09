@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Rules;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Declares only what callers outside the component use of DependentValueValidator; the rest

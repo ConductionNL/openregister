@@ -34,8 +34,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Throwable;
 
@@ -75,13 +75,13 @@ class WorkingCalendarWriteGuard implements WorkingCalendarWriteGuardInterface {
 	 * calendar saved with every property missing still is one — which is
 	 * exactly the write this guard has to refuse.
 	 *
-	 * @param ObjectEntity $object The object being written.
+	 * @param ObjectEntityInterface $object The object being written.
 	 *
 	 * @return boolean True when the object's schema is `working-calendar`.
 	 *
 	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-every-write-of-a-working-calendar-is-validated-the-same-way
 	 */
-	public function isWorkingCalendar(ObjectEntity $object): bool {
+	public function isWorkingCalendar(ObjectEntityInterface $object): bool {
 		$reference = $object->getSchema();
 		if ($reference === null || $reference === '') {
 			return false;

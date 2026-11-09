@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Interaction;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 
 /**
  * Whether a save changed an object substantively.
@@ -39,12 +39,12 @@ interface SubstantiveChangeEvaluatorInterface {
 	 * definition: nobody has seen it, and there is no read state to invalidate
 	 * anyway.
 	 *
-	 * @param ObjectEntity $new The object as it now stands.
-	 * @param ObjectEntity|null $old The object as it stood before, when known.
+	 * @param ObjectEntityInterface $new The object as it now stands.
+	 * @param ObjectEntityInterface|null $old The object as it stood before, when known.
 	 *
 	 * @return boolean True when the change should make the object unread again.
 	 *
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
-	public function isSubstantive(ObjectEntity $new, ?ObjectEntity $old = null): bool;
+	public function isSubstantive(ObjectEntityInterface $new, ?ObjectEntityInterface $old = null): bool;
 }//end interface
