@@ -752,7 +752,8 @@ class CasePlanService implements CasePlanServiceInterface {
 	 */
 	private function insertNodes(array $nodes, ?int $parentId, CasePlanInsertion $insertion): void {
 		foreach ($nodes as $position => $node) {
-			$row = $this->rowFor(node: $node, insertion: $insertion, parentId: $parentId, position: (int)$position);
+			$placed = new CasePlanPlacement(node: $node, parentId: $parentId, position: (int)$position);
+			$row = $this->mechanics->definitions->rowFrom(placed: $placed, insertion: $insertion);
 			$persisted = $this->store->items->insert($row);
 			$this->mechanics->machine->recordCreation(
 				item: $persisted,
@@ -764,34 +765,6 @@ class CasePlanService implements CasePlanServiceInterface {
 			$this->insertNodes(nodes: ($node['children'] ?? []), parentId: (int)$persisted->getId(), insertion: $insertion);
 		}
 	}//end insertNodes()
-
-	/**
-	 * The unsaved row of one definition node, compiled by the one compiler.
-	 *
-	 * @param array<string, mixed> $node The node.
-	 * @param CasePlanInsertion $insertion The anchor, settings, creating identity and provenance.
-	 * @param int|null $parentId The containing stage's row id.
-	 * @param int $position Its order among its siblings.
-	 *
-	 * @return CaseItem The unsaved row.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
-	 */
-	private function rowFor(array $node, CasePlanInsertion $insertion, ?int $parentId, int $position): CaseItem {
-		return $this->mechanics->definitions->rowFrom(
-			node: $node,
-			objectUuid: $insertion->anchor->objectUuid,
-			registerId: $insertion->anchor->registerId,
-			schemaId: $insertion->anchor->schemaId,
-			parentId: $parentId,
-			position: $position,
-			settings: $insertion->settings,
-			origin: ($insertion->provenance->origin ?? $this->mechanics->definitions->originOf(node: $node)),
-			actor: $insertion->actor,
-			flowUuid: $insertion->provenance->flowUuid,
-			flowVersion: $insertion->provenance->flowVersion
-		);
-	}//end rowFor()
 
 	/**
 	 * What an ad-hoc row shares with its plan: the anchor of the plan's first
@@ -828,7 +801,8 @@ class CasePlanService implements CasePlanServiceInterface {
 	 */
 	private function insertAdHoc(array $node, CasePlanInsertion $insertion, ?CaseItem $parent, CasePlanTree $tree): CaseItem {
 		$parentId = $parent?->getId();
-		$row = $this->rowFor(node: $node, insertion: $insertion, parentId: $parentId, position: count($tree->children(parentId: $parentId)));
+		$placed = new CasePlanPlacement(node: $node, parentId: $parentId, position: count($tree->children(parentId: $parentId)));
+		$row = $this->mechanics->definitions->rowFrom(placed: $placed, insertion: $insertion);
 		$persisted = $this->store->items->insert($row);
 		$this->mechanics->machine->recordCreation(item: $persisted, cause: CaseItemAudit::CAUSE_USER, causeRef: 'attach', actor: $insertion->actor);
 

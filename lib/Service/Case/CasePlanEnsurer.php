@@ -34,7 +34,6 @@ namespace OCA\OpenRegister\Service\Case;
 
 use DateTime;
 use OCA\OpenRegister\Db\CaseItem;
-use OCA\OpenRegister\Db\CaseItemAudit;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use Throwable;
 
@@ -90,7 +89,7 @@ class CasePlanEnsurer {
 		$context = ['object' => $objectUuid, 'register' => $registerId, 'schema' => $schemaId];
 		$context['settings'] = $normalised['settings'];
 		$context['actor'] = $actor;
-		$context['history'] = $this->checkHistory(history: $history, types: $types);
+		$context['history'] = new CaseEnsuredHistory(history: $history, types: $types);
 		$context['existing'] = $this->existingRows(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, types: $types);
 
 		$outcome = $this->write(nodes: $normalised['items'], context: $context);
@@ -304,123 +303,6 @@ class CasePlanEnsurer {
 	}//end reachable()
 
 	/**
-	 * Validate history and group it by item key.
-	 *
-	 * @param array<int, mixed> $history The entries.
-	 * @param array<string, string> $types The definition's key => type.
-	 *
-	 * @return array<string, array<int, array{from: string, to: string, at: DateTime, actor: string|null, reason: string|null}>>
-	 *
-	 * @throws CaseValidationException On an entry that is not usable.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private function checkHistory(array $history, array $types): array {
-		$byKey = [];
-		foreach ($history as $index => $entry) {
-			$label = sprintf('history[%d]', (int)$index);
-			$key = $this->historyKey(label: $label, entry: $entry, types: $types);
-			$byKey[$key][] = $this->historyRecord(label: $label, entry: $entry);
-		}
-
-		return $byKey;
-	}//end checkHistory()
-
-	/**
-	 * The item a history entry names, which the definition must declare.
-	 *
-	 * @param string $label The entry, for messages.
-	 * @param mixed $entry The entry as submitted.
-	 * @param array<string, string> $types The definition's key => type.
-	 *
-	 * @return string The trimmed item key.
-	 *
-	 * @throws CaseValidationException When the entry is not an object or names an undeclared item.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private function historyKey(string $label, mixed $entry, array $types): string {
-		if (is_array($entry) === false) {
-			throw new CaseValidationException(message: sprintf('%s must be an object.', $label));
-		}
-
-		$key = trim((string)($entry['item'] ?? ''));
-		if (isset($types[$key]) === false) {
-			throw new CaseValidationException(message: sprintf("%s names item '%s', which the definition does not declare.", $label, $key));
-		}
-
-		return $key;
-	}//end historyKey()
-
-	/**
-	 * One history entry as it is imported: both states real, the moment readable.
-	 *
-	 * @param string $label The entry, for messages.
-	 * @param array<string, mixed> $entry The entry as submitted.
-	 *
-	 * @return array{from: string, to: string, at: DateTime, actor: string|null, reason: string|null} The entry.
-	 *
-	 * @throws CaseValidationException On a state that is not one, or an unreadable moment.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private function historyRecord(string $label, array $entry): array {
-		$from = trim((string)($entry['from'] ?? ''));
-		$to = trim((string)($entry['to'] ?? ''));
-		self::checkHistoryStates(label: $label, from: $from, to: $to);
-
-		return [
-			'from' => $from,
-			'to' => $to,
-			'at' => $this->historyMoment(label: $label, value: ($entry['at'] ?? null)),
-			'actor' => $this->stringOrNull(value: ($entry['actor'] ?? null)),
-			'reason' => $this->stringOrNull(value: ($entry['reason'] ?? null)),
-		];
-	}//end historyRecord()
-
-	/**
-	 * A history entry's to-state, and its from-state when given, must be plan-item states.
-	 *
-	 * @param string $label The entry, for messages.
-	 * @param string $from The trimmed from-state, or ''.
-	 * @param string $to The trimmed to-state.
-	 *
-	 * @return void
-	 *
-	 * @throws CaseValidationException When either is not a state.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private static function checkHistoryStates(string $label, string $from, string $to): void {
-		if (in_array($to, CaseItem::STATES, true) === false || ($from !== '' && in_array($from, CaseItem::STATES, true) === false)) {
-			throw new CaseValidationException(
-				message: sprintf("%s has from-state '%s' and to-state '%s'; both must be plan-item states.", $label, $from, $to)
-			);
-		}
-	}//end checkHistoryStates()
-
-	/**
-	 * The moment of a history entry.
-	 *
-	 * @param string $label The entry, for messages.
-	 * @param mixed $value Its `at`.
-	 *
-	 * @return DateTime The moment.
-	 *
-	 * @throws CaseValidationException When it is not an ISO 8601 date-time.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private function historyMoment(string $label, mixed $value): DateTime {
-		$moment = $this->moment(value: $value);
-		if ($moment === null) {
-			throw new CaseValidationException(message: sprintf('%s has an unreadable moment; `at` must be an ISO 8601 date-time.', $label));
-		}
-
-		return $moment;
-	}//end historyMoment()
-
-	/**
 	 * A plan is anchored to ONE object: an existing row that names another
 	 * register or schema refuses the call.
 	 *
@@ -468,7 +350,8 @@ class CasePlanEnsurer {
 			$row = ($context['existing'][$key] ?? null);
 			$bucket = 'kept';
 			if ($row instanceof CaseItem === false) {
-				$row = $this->insert(node: $node, parentId: $parentId, position: (int)$position, context: $context);
+				$placed = new CasePlanPlacement(node: $node, parentId: $parentId, position: (int)$position);
+				$row = $this->insert(placed: $placed, context: $context);
 				$bucket = 'created';
 			}
 
@@ -481,22 +364,21 @@ class CasePlanEnsurer {
 	 * Insert one missing item with its recorded state, its creation audit and
 	 * its imported history.
 	 *
-	 * @param array<string, mixed> $node The validated node.
-	 * @param int|null $parentId The containing stage's row id.
-	 * @param int $position Its position among its siblings.
+	 * @param CasePlanPlacement $placed The validated node, its containing stage's row id and its position.
 	 * @param array<string, mixed> $context See {@see ensureLevel()}.
 	 *
 	 * @return CaseItem The inserted row.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	private function insert(array $node, ?int $parentId, int $position, array $context): CaseItem {
+	private function insert(CasePlanPlacement $placed, array $context): CaseItem {
 		$actor = (string)$context['actor'];
-		$row = $this->rowFor(node: $node, parentId: $parentId, position: $position, context: $context);
-		$state = self::carryState(row: $row, node: $node);
+		$row = $this->rowFor(placed: $placed, context: $context);
+		self::carryState(row: $row, node: $placed->node);
 		$persisted = $this->store->items->insert($row);
-		$this->auditCreation(item: $persisted, state: $state, actor: $actor);
-		$this->importHistory(item: $persisted, entries: ($context['history'][(string)$node['key']] ?? []), actor: $actor);
+		foreach ($context['history']->auditsFor(item: $persisted, actor: $actor) as $audit) {
+			$this->store->audits->insert($audit);
+		}
 
 		return $persisted;
 	}//end insert()
@@ -504,26 +386,19 @@ class CasePlanEnsurer {
 	/**
 	 * The unsaved row of one missing item, compiled by the one definition compiler.
 	 *
-	 * @param array<string, mixed> $node The validated node.
-	 * @param int|null $parentId The containing stage's row id.
-	 * @param int $position Its position among its siblings.
+	 * @param CasePlanPlacement $placed The validated node, its containing stage's row id and its position.
 	 * @param array<string, mixed> $context See {@see ensureLevel()}.
 	 *
 	 * @return CaseItem The unsaved row, in `available`.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	private function rowFor(array $node, ?int $parentId, int $position, array $context): CaseItem {
+	private function rowFor(CasePlanPlacement $placed, array $context): CaseItem {
+		$anchor = new CaseAnchor(objectUuid: (string)$context['object'], registerId: $context['register'], schemaId: $context['schema']);
+
 		return $this->definitions->rowFrom(
-			node: $node,
-			objectUuid: (string)$context['object'],
-			registerId: $context['register'],
-			schemaId: $context['schema'],
-			parentId: $parentId,
-			position: $position,
-			settings: $context['settings'],
-			origin: $this->definitions->originOf(node: $node),
-			actor: (string)$context['actor']
+			placed: $placed,
+			insertion: new CasePlanInsertion(anchor: $anchor, settings: $context['settings'], actor: (string)$context['actor'])
 		);
 	}//end rowFor()
 
@@ -534,109 +409,17 @@ class CasePlanEnsurer {
 	 * @param CaseItem $row The unsaved row.
 	 * @param array<string, mixed> $node The validated node.
 	 *
-	 * @return string The state.
+	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	private static function carryState(CaseItem $row, array $node): string {
+	private static function carryState(CaseItem $row, array $node): void {
 		$state = (string)($node['state'] ?? CaseItem::STATE_AVAILABLE);
 		$row->setState($state);
 		$row->setIsTerminal(in_array($state, CaseItem::TERMINAL_STATES, true));
 		if ($state !== CaseItem::STATE_AVAILABLE) {
 			$row->setEnteredAt(new DateTime());
 		}
-
-		return $state;
 	}//end carryState()
 
-	/**
-	 * Audit an ensured row's creation, by the importer.
-	 *
-	 * @param CaseItem $item The inserted row.
-	 * @param string $state The state it was inserted in.
-	 * @param string $actor The importing identity.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private function auditCreation(CaseItem $item, string $state, string $actor): void {
-		$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_IMPORT, causeRef: 'ensure:' . $actor, actor: $actor, reason: null);
-		$entry = $why->auditFor(item: $item, fromState: '', toState: $state);
-		$entry->setImported(false);
-		$this->store->audits->insert($entry);
-	}//end auditCreation()
-
-	/**
-	 * Append an ensured row's brought-over history, flagged as imported, with
-	 * the original moments and actors.
-	 *
-	 * @param CaseItem $item The inserted row.
-	 * @param array<int, array{from: string, to: string, at: DateTime, actor: string|null, reason: string|null}> $entries Its history.
-	 * @param string $actor The importer, recorded as the cause reference and as the actor of an entry that names none.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private function importHistory(CaseItem $item, array $entries, string $actor): void {
-		foreach ($entries as $entry) {
-			$why = new CaseTransitionCause(
-				cause: CaseItemAudit::CAUSE_IMPORT,
-				causeRef: 'ensure:' . $actor,
-				actor: ($entry['actor'] ?? $actor),
-				reason: $entry['reason']
-			);
-			$audit = $why->auditFor(item: $item, fromState: $entry['from'], toState: $entry['to']);
-			$audit->setImported(true);
-			$audit->setCreated($entry['at']);
-			$this->store->audits->insert($audit);
-		}
-	}//end importHistory()
-
-	/**
-	 * Parse an ISO 8601 moment.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return DateTime|null The moment, or null when unreadable.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private function moment(mixed $value): ?DateTime {
-		if (is_string($value) === false) {
-			return null;
-		}
-
-		// Only a full ISO 8601 date-time with an offset: relative phrases that
-		// DateTime would happily accept ("yesterday") are not a moment. An
-		// empty value does not match either.
-		$pattern = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/';
-		if (preg_match($pattern, trim($value)) !== 1) {
-			return null;
-		}
-
-		try {
-			return new DateTime(trim($value));
-		} catch (Throwable) {
-			return null;
-		}
-	}//end moment()
-
-	/**
-	 * A trimmed non-empty string, or null.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string|null The string.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private function stringOrNull(mixed $value): ?string {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		return trim($value);
-	}//end stringOrNull()
 }//end class
