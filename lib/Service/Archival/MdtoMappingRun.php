@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Service\Archival;
 /**
  * One check of an MDTO mapping: what the catalogue knows and what the schema
  * declares. Built by ElementMappingValidator::validate() and never leaves it.
+ *
+ * @spec openspec/specs/retention-management/spec.md
  */
 final class MdtoMappingRun {
 	/**

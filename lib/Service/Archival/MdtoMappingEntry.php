@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Service\Archival;
 
 /**
  * One entry of an MDTO mapping: the element and what was written against it.
+ *
+ * @spec openspec/specs/retention-management/spec.md
  */
 final class MdtoMappingEntry {
 	/**

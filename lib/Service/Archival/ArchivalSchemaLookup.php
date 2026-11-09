@@ -28,6 +28,8 @@ use Psr\Log\LoggerInterface;
 /**
  * Reads the schema behind an object for its archival declarations, and
  * reports a schema that cannot be read.
+ *
+ * @spec openspec/specs/retention-management/spec.md
  */
 final class ArchivalSchemaLookup {
 	/**
