@@ -350,26 +350,41 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	/**
 	 * Hold what following a held change or preference made of its entry, and report a write or a failure.
 	 *
-	 * @param string                                                         $set    The set id.
-	 * @param string                                                         $part   `changes` or `userPreferences`.
-	 * @param string                                                         $name   The record key.
-	 * @param array{error: string, entry: array<string, mixed>, wrote: bool} $made   What follow() made.
-	 * @param array<string, mixed>                                           $report The report so far.
-	 * @param array<string, mixed>                                           $record The record; written when the entry changed.
+	 * @param string                  $set      The set id.
+	 * @param ExampleSetFollowedEntry $followed The entry's part and record key, and what follow() made.
+	 * @param array<string, mixed>    $report   The report so far.
+	 * @param array<string, mixed>    $record   The record; written when the entry changed.
 	 *
 	 * @return array<string, mixed> The report.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
 	 */
-	public function hold(string $set, string $part, string $name, array $made, array $report, array &$record): array {
+	public function hold(string $set, ExampleSetFollowedEntry $followed, array $report, array &$record): array {
+		$part = $followed->part;
+		$name = $followed->name;
+		if ($followed->made['entry'] !== $record[$part][$name]) {
+			$record[$part][$name] = $followed->made['entry'];
+			$this->write(set: $set, record: $record);
+		}
+
+		return self::reported(followed: $followed, report: $report);
+	}//end hold()
+
+	/**
+	 * The report with a followed entry's failure and write.
+	 *
+	 * @param ExampleSetFollowedEntry $followed The entry's part and record key, and what follow() made.
+	 * @param array<string, mixed>    $report   The report so far.
+	 *
+	 * @return array<string, mixed> The report.
+	 */
+	private static function reported(ExampleSetFollowedEntry $followed, array $report): array {
+		$part = $followed->part;
+		$name = $followed->name;
+		$made = $followed->made;
 		if ($made['error'] !== '') {
 			$report['dropped'][]  = $part.' '.$name.': not refreshed: '.$made['error'];
 			$report[$part][$name] = 'failed';
-		}
-
-		if ($made['entry'] !== $record[$part][$name]) {
-			$record[$part][$name] = $made['entry'];
-			$this->write(set: $set, record: $record);
 		}
 
 		if ($made['wrote'] === true) {
@@ -377,7 +392,7 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 		}
 
 		return $report;
-	}//end hold()
+	}//end reported()
 
 	/**
 	 * The stored record as JSON text, '' when there is none.

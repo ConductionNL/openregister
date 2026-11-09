@@ -339,7 +339,12 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		$set    = (string) $plan['set'];
 		$record = $this->record->read(set: $set);
-		$report = $this->people->install(plan: $plan, adopt: $adopt, password: $password, report: $report, record: $record);
+		$report = $this->people->install(
+			plan: $plan,
+			terms: new ExampleSetAccountTerms(set: (string) $plan['set'], adopt: $adopt, password: $password),
+			report: $report,
+			record: $record
+		);
 
 		$base    = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
 		// A grant goes only to a group this set created (ExampleSetGrants).
@@ -686,7 +691,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$report['changes'][$name] = 'kept';
 			if (isset($record['changes'][$name]) === true) {
 				$made   = $this->changes->follow(change: $change, entry: $record['changes'][$name], context: $context, refresh: $refresh);
-				$report = $this->record->hold(set: (string) $plan['set'], part: 'changes', name: $name, made: $made, report: $report, record: $record);
+				$followed = new ExampleSetFollowedEntry(part: 'changes', name: $name, made: $made);
+				$report   = $this->record->hold(set: (string) $plan['set'], followed: $followed, report: $report, record: $record);
 				continue;
 			}
 
@@ -1194,7 +1200,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$report['userPreferences'][$name] = 'kept';
 			if (isset($record['userPreferences'][$name]) === true) {
 				$made   = $this->userPreferences->follow(entry: $record['userPreferences'][$name], value: $value, refresh: $refresh && $gaps === []);
-				$report = $this->record->hold(set: (string) $plan['set'], part: 'userPreferences', name: $name, made: $made, report: $report, record: $record);
+				$followed = new ExampleSetFollowedEntry(part: 'userPreferences', name: $name, made: $made);
+				$report   = $this->record->hold(set: (string) $plan['set'], followed: $followed, report: $report, record: $record);
 				continue;
 			}
 
