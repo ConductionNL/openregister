@@ -60,6 +60,8 @@ final class BrokeredPublishTarget {
 	 * The repo owner and name, each '' when the `owner/repo` lacks it.
 	 *
 	 * @return array{0: string, 1: string}
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	public function ownerAndName(): array {
 		return array_pad(explode('/', $this->target->repo, 2), 2, '');
@@ -69,6 +71,8 @@ final class BrokeredPublishTarget {
 	 * The JSON body of a repo-create call for this target.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	public function createBody(): string {
 		return (string) json_encode(['name' => $this->ownerAndName()[1], 'private' => $this->target->private, 'auto_init' => true]);
