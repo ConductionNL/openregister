@@ -170,19 +170,20 @@ class SchemaDeclarationsGoldenTest extends TestCase {
 			property: [
 				ReferenceFilterDeclaration::ANNOTATION => [['field' => 'org', 'from' => 'own'], ['field' => 'kind', 'from' => 'k', 'op' => 'in']],
 				'$ref' => 's',
-			]
+			],
+			path: 'p'
 		);
 
 		$messages = [];
 		foreach ([[['k' => 1], ['org' => 1, 'kind' => 1]], [['own' => 1, 'k' => 1], ['org' => 1]]] as [$own, $far]) {
 			try {
-				$filter->assertOperandsExist(ownProperties: $own, farProperties: $far, path: 'p');
+				$filter->assertOperandsExist(ownProperties: $own, farProperties: $far);
 			} catch (ReferenceFilterException $e) {
 				$messages[] = $e->getMessage();
 			}
 		}
 
-		$filter->assertOperandsExist(ownProperties: ['own' => 1, 'k' => 1], farProperties: [], path: 'p');
+		$filter->assertOperandsExist(ownProperties: ['own' => 1, 'k' => 1], farProperties: []);
 		$this->assertSame(
 			[
 				"The filter at 'p' reads 'own' off this record, and this schema does not declare it.",
