@@ -82,6 +82,22 @@ class RedactionWriteService implements RedactionWriteServiceInterface {
 	 * @spec openspec/specs/dsar-redaction-write/spec.md
 	 */
 	public function applyRedaction(string $caseUuid, string $field, string $after, string $ground): array {
+		return $this->redact(caseUuid: $caseUuid, redaction: new FieldRedaction(field: $field, after: $after, ground: $ground));
+	}//end applyRedaction()
+
+	/**
+	 * Apply one field redaction to a case, recording the redaction entry.
+	 *
+	 * @param string         $caseUuid  The case object uuid.
+	 * @param FieldRedaction $redaction The field, its replacement value and the ground.
+	 *
+	 * @return array{caseUuid: string, field: string, before: string, after: string, ground: string, recordType: string}
+	 *
+	 * @throws RuntimeException When the case cannot be loaded (absent or unauthorised).
+	 *
+	 * @spec openspec/specs/dsar-redaction-write/spec.md
+	 */
+	private function redact(string $caseUuid, FieldRedaction $redaction): array {
 		$case = CasePayload::loaded(case: $this->accessor->load(caseUuid: $caseUuid), caseUuid: $caseUuid);
 		$data = $case->getObject();
 
@@ -89,21 +105,21 @@ class RedactionWriteService implements RedactionWriteServiceInterface {
 		// field-level capture on the case object — NOT the statutory erase
 		// pseudonymise across the subject's objects.
 		$entry = [
-			'field' => $field,
-			'before' => $this->scalarOf(data: $data, field: $field),
-			'after' => $after,
-			'ground' => $ground,
+			'field' => $redaction->field,
+			'before' => $this->scalarOf(data: $data, field: $redaction->field),
+			'after' => $redaction->after,
+			'ground' => $redaction->ground,
 			'recordType' => self::RECORD_TYPE,
 		];
 
 		// Apply the redacted value to the case field, and record it.
-		$data[$field] = $after;
+		$data[$redaction->field] = $redaction->after;
 		$data['redactions'] = [...CasePayload::listField(data: $data, key: 'redactions'), $entry];
 
 		$this->accessor->save(case: $case, data: $data);
 
 		return ['caseUuid' => $caseUuid] + $entry;
-	}//end applyRedaction()
+	}//end redact()
 
 	/**
 	 * A field's current scalar value as a string; '' when absent or non-scalar.
