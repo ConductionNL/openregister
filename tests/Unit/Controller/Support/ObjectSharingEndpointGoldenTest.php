@@ -107,7 +107,10 @@ class ObjectSharingEndpointGoldenTest extends TestCase {
 
 	public function testRunLogsARejectedInputAsUnexpectedWhenTheOperationDoesNotValidate(): void {
 		$this->logger->expects($this->once())->method('error')
-			->with('[FooController] ctx: Bad owner', $this->callback(static fn (array $context): bool => $context['file'] === '/app/lib/Controller/FooController.php'));
+			->with(
+				'[FooController] ctx: Bad owner',
+				$this->callback(static fn (array $context): bool => $context['file'] === '/app/lib/Controller/FooController.php')
+			);
 
 		$result = $this->endpoint()->run(static fn () => throw new InvalidArgumentException('Bad owner'), 'ctx');
 
