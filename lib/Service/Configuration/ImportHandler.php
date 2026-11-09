@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -3605,7 +3606,7 @@ class ImportHandler {
 			return null;
 		}
 
-		$uuid = $this->findExistingSeedUuid(register: $registerObject, schema: $schemaObject, slug: $targetData['@self']['slug']);
+		$uuid = $this->findExistingSeedUuid(table: new RegisterSchema(register: $registerObject, schema: $schemaObject), slug: $targetData['@self']['slug']);
 		if (empty($uuid) === false) {
 			return $uuid;
 		}
@@ -3696,17 +3697,16 @@ class ImportHandler {
 	 * Look up the UUID of an already-imported object with the given
 	 * register + schema + slug, so re-imports reuse the same identity.
 	 *
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
-	 * @param string $slug The seed object slug.
+	 * @param RegisterSchema $table The resolved register and schema.
+	 * @param string         $slug  The seed object slug.
 	 *
 	 * @return string|null The existing object UUID, or null when none exists.
 	 */
-	private function findExistingSeedUuid(Register $register, Schema $schema, string $slug): ?string {
+	private function findExistingSeedUuid(RegisterSchema $table, string $slug): ?string {
 		$search = [
 			'@self' => [
-				'register' => (int)$register->getId(),
-				'schema' => (int)$schema->getId(),
+				'register' => (int)$table->register->getId(),
+				'schema' => (int)$table->schema->getId(),
 				'slug' => $slug,
 			],
 			'_limit' => 1,
@@ -4562,19 +4562,17 @@ class ImportHandler {
 	/**
 	 * The object a seed already exists as: the one found by uuid or slug, else a suffixed copy.
 	 *
-	 * @param ObjectEntity|null $found      What the uuid or slug lookup found.
-	 * @param array             $objectData The seed object.
-	 * @param Schema            $schema     The schema the seed is imported into.
-	 * @param Register|null     $register   The register it is imported into.
+	 * @param ObjectEntity|null $found  What the uuid or slug lookup found.
+	 * @param SeedDataObject    $object The seed object, with the schema and register it is imported into.
 	 *
 	 * @return ObjectEntity|null The existing object, or null when the seed is new.
 	 */
-	private function orSuffixedSeed(?ObjectEntity $found, array $objectData, Schema $schema, ?Register $register): ?ObjectEntity {
-		if ($found !== null || isset($objectData['uuid']) === true || $register === null) {
+	private function orSuffixedSeed(?ObjectEntity $found, SeedDataObject $object): ?ObjectEntity {
+		if ($found !== null || isset($object->data['uuid']) === true || $object->register === null) {
 			return $found;
 		}
 
-		return $this->findSuffixedSeed(objectData: $objectData, schema: $schema, register: $register);
+		return $this->findSuffixedSeed(object: $object, register: $object->register);
 	}//end orSuffixedSeed()
 
 	/**
@@ -4584,20 +4582,18 @@ class ImportHandler {
 	 * cannot take a slug another live object holds; without the handler the seed slug
 	 * is set as before.
 	 *
-	 * @param ObjectEntity $entity     The object being seeded.
-	 * @param Schema       $schema     Its schema.
-	 * @param array        $objectData The seed object.
-	 * @param mixed        $objectSlug The slug the seed data carries.
+	 * @param ObjectEntity   $entity The object being seeded.
+	 * @param SeedDataObject $object The seed object: its data, schema and the slug it carries.
 	 *
 	 * @return void
 	 */
-	private function applySeedSlug(ObjectEntity $entity, Schema $schema, array $objectData, mixed $objectSlug): void {
+	private function applySeedSlug(ObjectEntity $entity, SeedDataObject $object): void {
 		if ($this->slugHandler === null) {
-			$entity->setSlug($objectSlug);
+			$entity->setSlug($object->slug);
 			return;
 		}
 
-		$this->slugHandler->applyOnSeed(entity: $entity, schema: $schema, clientSlug: $this->seedClientSlug(objectData: $objectData));
+		$this->slugHandler->applyOnSeed(entity: $entity, schema: $object->schema, clientSlug: $this->seedClientSlug(objectData: $object->data));
 	}//end applySeedSlug()
 
 	/**
@@ -4607,13 +4603,14 @@ class ImportHandler {
 	 * stored the seed under the suffixed slug; the plain slug lookup does not find it, and
 	 * the next import would copy it again.
 	 *
-	 * @param array    $objectData The seed object.
-	 * @param Schema   $schema     The schema the seed is imported into.
-	 * @param Register $register   The register it is imported into.
+	 * @param SeedDataObject $object   The seed object, with the schema it is imported into.
+	 * @param Register       $register The register it is imported into.
 	 *
 	 * @return ObjectEntity|null The object, or null when none is stored under a suffixed variant.
 	 */
-	private function findSuffixedSeed(array $objectData, Schema $schema, Register $register): ?ObjectEntity {
+	private function findSuffixedSeed(SeedDataObject $object, Register $register): ?ObjectEntity {
+		$objectData = $object->data;
+		$schema = $object->schema;
 		$suffixOn = ((($schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true);
 		$managed = ($this->slugHandler !== null && $this->slugHandler->isManaged(schema: $schema) === true);
 		if ($managed === false || $this->routingMapper === null || $suffixOn === false) {
@@ -4661,21 +4658,20 @@ class ImportHandler {
 	 * on the previous import; the lookup uses the same candidate the save does:
 	 * an explicit seed `slug`, else the schema's configured slug source.
 	 *
-	 * @param array  $objectData The seed object.
-	 * @param string $slug       The seed's slug, else its title.
-	 * @param Schema $schema     The schema the seed is imported into.
+	 * @param SeedDataObject $object The seed object: its data, its slug (else its title) and its schema.
 	 *
 	 * @return string The slug to look up.
 	 */
-	private function seedLookupSlug(array $objectData, string $slug, Schema $schema): string {
-		if ($this->slugHandler === null || $this->slugHandler->isManaged(schema: $schema) === false) {
+	private function seedLookupSlug(SeedDataObject $object): string {
+		$slug = (string)$object->slug;
+		if ($this->slugHandler === null || $this->slugHandler->isManaged(schema: $object->schema) === false) {
 			return $slug;
 		}
 
 		$candidate = $this->slugHandler->candidate(
-			objectData: $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schema),
-			schema: $schema,
-			clientSlug: $this->seedClientSlug(objectData: $objectData)
+			objectData: $this->withoutSeedMetadataKeys(objectData: $object->data, schema: $object->schema),
+			schema: $object->schema,
+			clientSlug: $this->seedClientSlug(objectData: $object->data)
 		);
 
 		return ($candidate ?? $slug);
@@ -5181,13 +5177,13 @@ class ImportHandler {
 	 */
 	private function storeSeedObject(SeedImport $seed, SeedDataObject $object): void {
 		$object->identifier = ($object->data['uuid']
-			?? $this->seedLookupSlug(objectData: $object->data, slug: (string)$object->slug, schema: $object->schema));
+			?? $this->seedLookupSlug(object: $object));
 		$existingObject = $this->findStoredSeedObject(seed: $seed, object: $object);
 		if ($object->ambiguous === true) {
 			return;
 		}
 
-		$existingObject = $this->orSuffixedSeed(found: $existingObject, objectData: $object->data, schema: $object->schema, register: $object->register);
+		$existingObject = $this->orSuffixedSeed(found: $existingObject, object: $object);
 		if ($existingObject !== null) {
 			$this->logger->debug(
 				message: '[ImportHandler] Seed object already exists - skipping',
@@ -5309,7 +5305,7 @@ class ImportHandler {
 		$objectEntity->setSchema($object->schema->getId());
 		$objectEntity->setRegister($object->registerId);
 		$objectEntity->setObject($this->withoutSeedMetadataKeys(objectData: $object->data, schema: $object->schema));
-		$this->applySeedSlug(entity: $objectEntity, schema: $object->schema, objectData: $object->data, objectSlug: $object->slug);
+		$this->applySeedSlug(entity: $objectEntity, object: $object);
 		$now = new DateTime();
 		$objectEntity->setCreated($now);
 		$objectEntity->setUpdated($now);
