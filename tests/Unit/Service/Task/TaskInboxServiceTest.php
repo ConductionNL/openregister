@@ -356,7 +356,7 @@ class TaskInboxServiceTest extends TestCase {
 			temporal: new TaskTemporalProjection(),
 			logger: new NullLogger(),
 			objects: $objects,
-			locator: new \OCA\OpenRegister\Service\Task\TaskSubjectLocator($objects, $registers, $schemas, new NullLogger())
+			locator: new \OCA\OpenRegister\Service\Task\TaskSubjectLocator(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $objects), new NullLogger())
 		);
 
 		$first = new Task();
