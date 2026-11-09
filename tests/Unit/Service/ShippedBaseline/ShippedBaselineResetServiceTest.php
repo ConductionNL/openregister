@@ -275,4 +275,60 @@ class ShippedBaselineResetServiceTest extends TestCase {
 		$this->assertStringContainsString('already matches', $result['reason']);
 		$this->assertSame([], $this->written);
 	}//end testAPartThatAlreadyMatchesIsRefused()
+	/**
+	 * Golden: the exact preview shape, for a refused part and for an applicable one.
+	 *
+	 * @return void
+	 */
+	public function testThePreviewShapeIsPinned(): void {
+		$service = $this->service(schema: $this->storedSchema(), actor: $this->admin());
+
+		$this->assertSame(
+			[
+				'applicable' => false,
+				'reason' => '"title" is not a part the shipped baseline keeps; it starts with one of: properties, required, authorization',
+				'schema' => 'learner-profile',
+				'schemaId' => 329,
+				'path' => 'title',
+				'from' => null,
+				'to' => null,
+			],
+			$service->preview(schema: 'learner-profile', path: 'title')
+		);
+		$this->assertSame(
+			[
+				'applicable' => true,
+				'reason' => '',
+				'schema' => 'learner-profile',
+				'schemaId' => 329,
+				'path' => 'properties.level.title',
+				'from' => 'Local title',
+				'to' => 'Level',
+			],
+			$service->preview(schema: 'learner-profile', path: ' properties.level.title ')
+		);
+	}//end testThePreviewShapeIsPinned()
+
+	/**
+	 * Golden: a part added locally and never shipped is removed, siblings kept; `required` and `properties` are written to their own field.
+	 *
+	 * @return void
+	 */
+	public function testALocallyAddedPartIsRemovedAndEachTopLevelPartIsWrittenToItsField(): void {
+		$schema = $this->storedSchema();
+		$schema->setProperties(['level' => ['type' => 'string', 'enum' => ['senior', 'junior', 'medior'], 'title' => 'Local title', 'local' => 'x']]);
+		$schema->setRequired(['level', 'extra']);
+		$service = $this->service(schema: $schema, actor: $this->admin());
+
+		$removed = $service->reset(schema: 'learner-profile', path: 'properties.level.local');
+		$this->assertTrue($removed['applied'], $removed['reason']);
+		$this->assertSame(['type' => 'string', 'enum' => ['senior', 'junior', 'medior'], 'title' => 'Local title'], $schema->getProperties()['level']);
+
+		$required = $service->reset(schema: 'learner-profile', path: 'required');
+		$this->assertTrue($required['applied'], $required['reason']);
+		$this->assertSame(['level'], $schema->getRequired());
+		$this->assertSame(['read' => ['compliance-officers', 'hr', 'instructors'], 'update' => ['hr']], $schema->getAuthorization());
+		$this->assertCount(2, $this->written);
+		$this->assertSame(['schema' => 'learner-profile', 'path' => 'properties.level.local', 'from' => 'x', 'to' => null], $this->rows[0]->getChanged());
+	}//end testALocallyAddedPartIsRemovedAndEachTopLevelPartIsWrittenToItsField()
 }//end class
