@@ -40,30 +40,26 @@ class RowsPdfSection {
 	/**
 	 * Build one PDF section from caller-supplied rows
 	 *
-	 * @param string                           $title   The heading.
-	 * @param array<int|string, string>        $columns Column keys to labels, or a list of keys.
-	 * @param array<int, array<string, mixed>> $rows    The rows.
+	 * @param RowsTable $table The heading, the columns and the rows.
 	 *
 	 * @return string The section HTML, every value escaped.
 	 *
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
-	public function build(string $title, array $columns, array $rows): string {
-		if (array_is_list($columns) === true) {
-			$columns = array_combine(array_map('strval', $columns), array_map('strval', $columns));
-		}
+	public function build(RowsTable $table): string {
+		$columns = $table->labels();
 
 		$html = '<div class="pdf-section">';
-		$html .= '<h1>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</h1>';
+		$html .= '<h1>' . htmlspecialchars($table->title, ENT_QUOTES, 'UTF-8') . '</h1>';
 		$html .= '<p class="meta">Exported: ' . htmlspecialchars((new DateTime())->format('Y-m-d H:i:s'), ENT_QUOTES, 'UTF-8')
-			. ' &middot; Rows: ' . count($rows) . '</p>';
+			. ' &middot; Rows: ' . count($table->rows) . '</p>';
 		$html .= '<table><thead><tr>';
 		foreach ($columns as $label) {
 			$html .= '<th>' . htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8') . '</th>';
 		}
 
 		$html .= '</tr></thead><tbody>';
-		foreach ($rows as $row) {
+		foreach ($table->rows as $row) {
 			$html .= '<tr>';
 			foreach (array_keys($columns) as $key) {
 				$cell = $this->cellText(value: $this->cellOf(row: $row, key: $key));
