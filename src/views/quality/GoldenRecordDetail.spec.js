@@ -102,6 +102,11 @@ describe('GoldenRecordDetail', () => {
 		expect(wrapper.find('.stub-CnDataTable').exists()).toBe(true)
 	})
 
+	it('treats only override === true as a manual override', () => {
+		const wrapper = mountWith({ id: 'm', attributeProvenance: { name: { override: 'yes', source: 'crm' } } })
+		expect(wrapper.vm.provenanceEntries[0].source).toBe('crm')
+	})
+
 	it('shows the empty provenance state for a missing or non-object map', () => {
 		expect(mountWith({ id: 'm', attributeProvenance: 'x' }).vm.provenanceEntries).toEqual([])
 		const wrapper = mountWith({ id: 'm' })
@@ -158,6 +163,10 @@ describe('GoldenRecordDetail', () => {
 		const wrapper = mountWith({ id: 'm1' })
 		await wrapper.vm.handleConflictsResolved()
 		await wrapper.setProps({ object: { register: 'r', schema: 's' } })
+		await wrapper.vm.handleConflictsResolved()
+		await wrapper.setProps({ object: { id: 'm4', register: 'r' } })
+		await wrapper.vm.handleConflictsResolved()
+		await wrapper.setProps({ object: { id: 'm5', schema: 's' } })
 		await wrapper.vm.handleConflictsResolved()
 		expect(qualityStore.fetchGoldenRecord).not.toHaveBeenCalled()
 	})
