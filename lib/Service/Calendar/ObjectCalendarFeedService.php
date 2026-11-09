@@ -202,12 +202,10 @@ class ObjectCalendarFeedService {
 		$events = $this->collectEvents(objects: $objects, timeZone: $timeZone);
 
 		return $this->writer->calendar(
-			contents: new CalendarContents(
-				calendarName: $scope['name'],
-				timeZone: $timeZone,
-				componentLines: $events['lines'],
-				years: new CalendarYearSpan(fromYear: min($events['years']), toYear: max($events['years']))
-			)
+			calendarName: $scope['name'],
+			timeZone: $timeZone,
+			componentLines: $events['lines'],
+			years: new CalendarYearSpan(fromYear: min($events['years']), toYear: max($events['years']))
 		);
 	}//end renderAsCurrentUser()
 
