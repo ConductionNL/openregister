@@ -77,7 +77,6 @@ class ChatControllerAccessGoldenTest extends TestCase {
 		$l10n->method('t')->willReturnCallback(fn (string $text): string => 'T:'.$text);
 
 		$this->controller = ChatControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->chatService,
 			$this->conversationMapper,
