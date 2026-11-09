@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IParameter;
@@ -75,9 +76,7 @@ class WebhookMapperInterceptionInvalidationTest extends TestCase {
 
 		$this->mapper = new WebhookMapper(
 			$this->db,
-			$this->organisationMapper,
-			$this->userSession,
-			$this->groupManager,
+			new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
 			$this->appConfig,
 			$this->interceptionCache
 		);
@@ -169,9 +168,7 @@ class WebhookMapperInterceptionInvalidationTest extends TestCase {
 	public function testInsertWorksWithoutCacheBackend(): void {
 		$mapper = new WebhookMapper(
 			$this->db,
-			$this->organisationMapper,
-			$this->userSession,
-			$this->groupManager,
+			new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
 			$this->appConfig
 		);
 
