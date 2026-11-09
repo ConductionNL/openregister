@@ -44,8 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -62,16 +61,13 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 	 * The mappers memoise `find()` per request, so resolving the same
 	 * register/schema for several triggers in one dispatch costs one read.
 	 *
-	 * @param RegisterMapperInterface $registers Resolves a register by id, uuid or slug.
-	 * @param SchemaMapperInterface $schemas Resolves a schema by id, uuid or slug.
-	 * @param LoggerInterface $logger Records identifiers that resolve to nothing.
+	 * @param SchemaCatalogInterface $catalog Resolves a register or schema by id, uuid or slug.
+	 * @param LoggerInterface        $logger  Records identifiers that resolve to nothing.
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -94,7 +90,7 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 		}
 
 		try {
-			$slug = trim((string)$this->registers->find(id: $identifier, _rbac: false, _multitenancy: false)->getSlug());
+			$slug = trim((string)$this->catalog->registers()->find(id: $identifier, _rbac: false, _multitenancy: false)->getSlug());
 		} catch (Throwable $e) {
 			$this->reportUnresolved(kind: 'register', identifier: $identifier, error: $e);
 
@@ -129,7 +125,7 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 		}
 
 		try {
-			$slug = trim((string)$this->schemas->find(id: $identifier, _rbac: false, _multitenancy: false)->getSlug());
+			$slug = trim((string)$this->catalog->schemas()->find(id: $identifier, _rbac: false, _multitenancy: false)->getSlug());
 		} catch (Throwable $e) {
 			$this->reportUnresolved(kind: 'schema', identifier: $identifier, error: $e);
 
