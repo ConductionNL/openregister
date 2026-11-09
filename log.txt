@@ -80,3 +80,4 @@
 2026-11-09T11:05:33Z fixer-F3-20261109T104024-64386ead UNPARK #7502 2fc20496269f
 2026-11-09T11:05:33Z fixer-F3-20261109T104024-64386ead FIXED #7502 2fc20496269f merged main; FilesIndex header cells split v-if/v-else so non-sortable cells carry no v-if placeholder (DOM identical to main, listPages.dom.golden green), PR's own FilesIndex snapshot re-recorded; full jest + guard suites green
 2026-11-09T11:08:03Z integrator-20261109T092732-73c42b8a GREEN tree f28ba0bc68 on dev 4949ac2580 prs 1 front=skip: Tests: 51021, Assertions: 167062, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
+2026-11-09T11:08:20Z integrator-20261109T092732-73c42b8a MERGED-TREE f28ba0bc68: 1 PRs, main now 2fcf249074 = tested tree
