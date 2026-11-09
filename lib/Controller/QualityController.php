@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Quality\QualityListingWindow;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
@@ -45,16 +46,14 @@ class QualityController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                            $appName    The application name.
 	 * @param IRequest                          $request    The current request.
 	 * @param QualityStatisticsServiceInterface $statistics Quality statistics/query service.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly QualityStatisticsServiceInterface $statistics,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
