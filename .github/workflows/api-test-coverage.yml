@@ -33,12 +33,17 @@ on:
         description: "Space-separated domain subset (default: all 8). Examples: 'crud relations', 'auth-matrix'."
         required: false
         type: string
+      measure_dark:
+        description: "Run each dark-suite file (tests/Db, tests/Service, tests/Api) on its own and print a per-file table."
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   newman-suite:
     name: Newman API Test Suite
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     permissions:
       contents: read
 
@@ -253,6 +258,44 @@ jobs:
           # is registered in run-all.sh.
           COLLECTIONS: ${{ inputs.collections || 'crud graphql relations auth-matrix error-matrix referential-integrity flow-subjects' }}
         run: bash tests/newman/run-all.sh
+
+      - name: Dark PHPUnit suites (Db, Service, Api; in-container)
+        # tests/Db, tests/Service and tests/Api need the booted Nextcloud and
+        # its database, so before this step they ran in NO workflow: composer
+        # test:db / test:service skip without ../../lib/base.php, and the unit
+        # step above runs tests/Unit only. They counted toward the test-code
+        # ratio but could not catch a regression.
+        #
+        # Runs in the same /tmp/ortest copy the unit step built (dev deps,
+        # autoloader suffix). `!cancelled()` so a red unit or Newman step does
+        # not hide this one: a step added after a failing step never runs.
+        # Placed after Newman so dark-suite fixtures cannot skew the API run.
+        #
+        # Red files are quarantined in phpunit-dark.xml, each entry naming its
+        # failure class. MEASURE=1 (workflow_dispatch) runs every file on its
+        # own instead, so a fatal in one file cannot hide the rest, and prints
+        # a per-file table: that is how the quarantine list is produced.
+        if: ${{ !cancelled() }}
+        env:
+          MEASURE: ${{ inputs.measure_dark && '1' || '0' }}
+        run: |
+          docker exec -e MEASURE="${MEASURE}" -u www-data nextcloud bash -lc '
+            set -e
+            cd /tmp/ortest
+            test -x vendor/bin/phpunit || { echo "::error::/tmp/ortest has no vendor/bin/phpunit; the unit step did not install dev deps"; exit 1; }
+            if [ "${MEASURE}" = "1" ]; then
+              rc=0
+              for f in $(find tests/Db tests/Service tests/Api -name "*Test.php" | sort); do
+                out=$(OPENREGISTER_TEST_NC_ROOT=/var/www/html timeout 600 php vendor/bin/phpunit -c phpunit-dark.xml --no-coverage --colors=never "$f" 2>&1) && st=0 || st=$?
+                summary=$(printf "%s\n" "$out" | grep -E "^(OK|Tests:|FAILURES|ERRORS|No tests)" | tail -1)
+                first=$(printf "%s\n" "$out" | grep -m1 -E "(Error|Exception|Failed asserting|Fatal|Cannot|not found|Call to)" | cut -c1-220)
+                echo "DARK|$st|$f|$summary|$first"
+                [ "$st" = 0 ] || rc=1
+              done
+              exit $rc
+            fi
+            OPENREGISTER_TEST_NC_ROOT=/var/www/html php vendor/bin/phpunit -c phpunit-dark.xml --no-coverage --colors=never
+          '
 
       - name: Upload Newman reports
         if: always()
