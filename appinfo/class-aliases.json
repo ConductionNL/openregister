@@ -1815,6 +1815,16 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\Principal\\PrincipalKindsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PrincipalKindsInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Party\\PartySearchInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PartySearchInterface",
+			"eager": false,
+			"service": true
 		}
 	}
 }

@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Service\Bindings;
 
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceHost;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceHostInterface;
-use OCA\OpenRegister\Service\Party\PartySearchInterface;
+use OCA\OpenRegister\Kernel\Contracts\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;

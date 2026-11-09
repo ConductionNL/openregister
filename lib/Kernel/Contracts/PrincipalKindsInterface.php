@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Flow\Principal;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Answers which registered principal kinds a stored, untyped name resolves under.

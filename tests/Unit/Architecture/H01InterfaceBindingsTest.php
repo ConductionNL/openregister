@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
-use OCA\OpenRegister\Service\Party\PartySearchInterface;
+use OCA\OpenRegister\Kernel\Contracts\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;

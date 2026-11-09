@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\Bindings\FlowBindings;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
-use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
+use OCA\OpenRegister\Kernel\Contracts\PrincipalKindsInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

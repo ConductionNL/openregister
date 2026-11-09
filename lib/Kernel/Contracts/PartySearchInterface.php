@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Party;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use Exception;
 
