@@ -23,6 +23,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Decision\DecisionOwnership;
+use OCA\OpenRegister\Service\Decision\DecisionVisibilityPlatform;
+use OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners;
 use OCA\OpenRegister\Service\Decision\DecisionService;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
@@ -202,8 +204,7 @@ class DecisionOwnershipTest extends TestCase {
 			policies: new ReviewPolicyResolver(
 				schemaMapper: $schemas,
 				fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
-				rootFolder: $this->createMock(IRootFolder::class),
-				owners: $this->createMock(ManagedFileOwnerLookup::class),
+				fileOwners: new ReviewPolicyFileOwners($this->createMock(IRootFolder::class), $this->createMock(ManagedFileOwnerLookup::class)),
 				logger: $logger
 			),
 			db: $this->createMock(IDBConnection::class)
@@ -226,14 +227,12 @@ class DecisionOwnershipTest extends TestCase {
 				resolver: new ReviewPolicyResolver(
 					schemaMapper: $schemas,
 					fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
-					rootFolder: $this->createMock(IRootFolder::class),
-					owners: $this->createMock(ManagedFileOwnerLookup::class),
+					fileOwners: new ReviewPolicyFileOwners($this->createMock(IRootFolder::class), $this->createMock(ManagedFileOwnerLookup::class)),
 					logger: $logger
 				),
 				decisions: new DecisionService(decisionMapper: $decisionMapper),
 				groupManager: $groups,
-				eventDispatcher: $this->createMock(IEventDispatcher::class),
-				logger: $logger
+				platform: new DecisionVisibilityPlatform($this->createMock(IEventDispatcher::class), $logger)
 			)
 		);
 	}//end controllerAs()

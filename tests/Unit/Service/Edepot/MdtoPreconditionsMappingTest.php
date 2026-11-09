@@ -27,6 +27,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\MdtoMappingResolver;
 use OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator;
+use OCA\OpenRegister\Service\Edepot\MdtoInputReaders;
 use OCA\OpenRegister\Service\Edepot\MdtoPreconditions;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
 use OCP\IAppConfig;
@@ -59,9 +60,7 @@ class MdtoPreconditionsMappingTest extends TestCase {
 		$this->preconditions = new MdtoPreconditions(
 			$this->createMock(IAppConfig::class),
 			$this->createMock(LoggerInterface::class),
-			$this->sourceReader,
-			$this->createMock(MdtoBestandGenerator::class),
-			$this->mappingResolver
+			new MdtoInputReaders($this->sourceReader, $this->createMock(MdtoBestandGenerator::class), $this->mappingResolver)
 		);
 	}
 

@@ -50,16 +50,14 @@ class ObjectActionList implements ObjectActionListInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectActionDefinitions $definitions The schema's actions, inherited ones included.
-	 * @param ObjectActionGate        $gate        The right and the precondition.
-	 * @param ObjectActionInputs      $inputs      Defaults and the transition input translation.
-	 * @param TransitionEngine        $transitions The lifecycle's available moves.
-	 * @param IL10N                   $l10n        Reasons.
+	 * @param ObjectActionCatalogue $catalogue   The declared actions and their inputs.
+	 * @param ObjectActionGate      $gate        The right and the precondition.
+	 * @param TransitionEngine      $transitions The lifecycle's available moves.
+	 * @param IL10N                 $l10n        Reasons.
 	 */
 	public function __construct(
-		private readonly ObjectActionDefinitions $definitions,
+		private readonly ObjectActionCatalogue $catalogue,
 		private readonly ObjectActionGate $gate,
-		private readonly ObjectActionInputs $inputs,
 		private readonly TransitionEngine $transitions,
 		private readonly IL10N $l10n,
 	) {
@@ -107,7 +105,7 @@ class ObjectActionList implements ObjectActionListInterface {
 	private function declaredEntries(Schema $schema, ObjectEntity $object, array $available): array {
 		$entries = [];
 		$named   = [];
-		foreach ($this->definitions->forSchema(schema: $schema, register: $object->getRegister()) as $definition) {
+		foreach ($this->catalogue->definitions->forSchema(schema: $schema, register: $object->getRegister()) as $definition) {
 			if ($this->mayRun(schema: $schema, definition: $definition, object: $object) === false) {
 				continue;
 			}
@@ -154,7 +152,7 @@ class ObjectActionList implements ObjectActionListInterface {
 	 */
 	public function canRun(ObjectEntity $object, Schema $schema): array {
 		$can = [];
-		foreach ($this->definitions->forSchema(schema: $schema, register: $object->getRegister()) as $definition) {
+		foreach ($this->catalogue->definitions->forSchema(schema: $schema, register: $object->getRegister()) as $definition) {
 			if ($definition->isRunnable() === false) {
 				continue;
 			}
@@ -190,7 +188,7 @@ class ObjectActionList implements ObjectActionListInterface {
 	 * @return bool True when the precondition holds.
 	 */
 	private function preconditionHolds(ObjectActionDefinition $definition, ObjectEntity $object): bool {
-		$inputs = $this->inputs->withDefaults(schema: $definition->inputs, given: [], object: $object, userId: $this->gate->userId());
+		$inputs = $this->catalogue->inputs->withDefaults(schema: $definition->inputs, given: [], object: $object, userId: $this->gate->userId());
 
 		return $this->gate->whenHolds(definition: $definition, object: $object, inputs: $inputs);
 	}//end preconditionHolds()
@@ -210,7 +208,7 @@ class ObjectActionList implements ObjectActionListInterface {
 	 */
 	public function forSelection(Schema $schema, int|string|null $register): array {
 		$entries = [];
-		foreach ($this->definitions->forSchema(schema: $schema, register: $register) as $definition) {
+		foreach ($this->catalogue->definitions->forSchema(schema: $schema, register: $register) as $definition) {
 			if ($definition->isRunnable() === false || $definition->offersBulk() === false
 				|| $this->gate->mayRun(schema: $schema, right: $definition->key, definition: $definition, object: null) === false
 			) {
@@ -243,7 +241,7 @@ class ObjectActionList implements ObjectActionListInterface {
 		}
 
 		if ($definition->inputs === null && is_array($move) === true) {
-			$entry['inputs'] = $this->inputs->fromTransitionInputs(inputs: (array)($move['inputs'] ?? []));
+			$entry['inputs'] = $this->catalogue->inputs->fromTransitionInputs(inputs: (array)($move['inputs'] ?? []));
 		}
 
 		return $entry;
@@ -310,7 +308,7 @@ class ObjectActionList implements ObjectActionListInterface {
 			'icon' => null,
 			'surfaces' => ObjectActionDefinition::DEFAULT_SURFACES,
 			'available' => (($move['blocked'] ?? false) !== true),
-			'inputs' => $this->inputs->fromTransitionInputs(inputs: (array)($move['inputs'] ?? [])),
+			'inputs' => $this->catalogue->inputs->fromTransitionInputs(inputs: (array)($move['inputs'] ?? [])),
 		];
 	}//end moveFields()
 

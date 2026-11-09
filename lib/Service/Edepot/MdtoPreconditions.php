@@ -29,7 +29,6 @@ namespace OCA\OpenRegister\Service\Edepot;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Archival\MdtoMappingResolver;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -52,16 +51,12 @@ class MdtoPreconditions {
 	 *
 	 * @param IAppConfig $appConfig The app configuration for organisation settings.
 	 * @param LoggerInterface $logger Logger for error and warning messages.
-	 * @param MdtoSourceReader $sourceReader Resolver for the declared archival values.
-	 * @param MdtoBestandGenerator $bestandGenerator Owner of the per-file input rules.
-	 * @param MdtoMappingResolver $mappingResolver Reads the schema's administered element mapping.
+	 * @param MdtoInputReaders $readers The readers of what an object can supply.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
-		private readonly MdtoSourceReader $sourceReader,
-		private readonly MdtoBestandGenerator $bestandGenerator,
-		private readonly MdtoMappingResolver $mappingResolver,
+		private readonly MdtoInputReaders $readers,
 	) {
 	}//end __construct()
 
@@ -88,7 +83,7 @@ class MdtoPreconditions {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-mdto-generator-must-report-the-limits-of-its-own-validation
 	 */
 	public function assertTransferPreconditions(ObjectEntity $object): void {
-		if ($this->sourceReader->coreFacts(object: $object)['retentionPeriod'] === null) {
+		if ($this->readers->sourceReader->coreFacts(object: $object)['retentionPeriod'] === null) {
 			throw new InvalidArgumentException(
 				'Cannot transfer object ' . $object->getUuid()
 				. ' to an e-Depot: it has no retention period. MDTO allows the element to be absent;'
@@ -101,7 +96,7 @@ class MdtoPreconditions {
 		// has a rejection to interpret. Here the message says which element and
 		// which schema, before any bytes move. A schema that declares no
 		// mapping keeps today's behaviour; see MdtoMappingResolver.
-		$unfilled = $this->mappingResolver->unfilledMandatoryElements(object: $object);
+		$unfilled = $this->readers->mappingResolver->unfilledMandatoryElements(object: $object);
 		if ($unfilled !== []) {
 			throw new InvalidArgumentException(self::unmappedRefusal(object: $object, unfilled: $unfilled));
 		}
@@ -125,7 +120,7 @@ class MdtoPreconditions {
 	public function collectMdtoRequiredElementGaps(ObjectEntity $object): array {
 		$gaps = [];
 
-		if ($this->sourceReader->useRestriction(object: $object) === null) {
+		if ($this->readers->sourceReader->useRestriction(object: $object) === null) {
 			$gaps[] = 'beperkingGebruik: MDTO-XML1.0.1 declares minOccurs="1", and this object declares no '
 				. 'use restriction and carries no active legal hold, so it is emitted as "'
 				. MdtoXmlGenerator::USE_RESTRICTION_UNRECORDED . '"';
@@ -170,7 +165,7 @@ class MdtoPreconditions {
 	public function assertGeneratorPreconditions(ObjectEntity $object, array $files): void {
 		$missing = array_merge(
 			$this->missingObjectInputs(object: $object),
-			$this->bestandGenerator->missingInputs(files: $files)
+			$this->readers->bestandGenerator->missingInputs(files: $files)
 		);
 		if (empty($missing) === false) {
 			$this->refuseGeneration(object: $object, missing: $missing);
@@ -261,11 +256,11 @@ class MdtoPreconditions {
 			$missing[] = 'uuid';
 		}
 
-		if ($this->sourceReader->name(object: $object) === '') {
+		if ($this->readers->sourceReader->name(object: $object) === '') {
 			$missing[] = 'naam';
 		}
 
-		$missing = array_merge($missing, self::missingFacts(facts: $this->sourceReader->coreFacts(object: $object)));
+		$missing = array_merge($missing, self::missingFacts(facts: $this->readers->sourceReader->coreFacts(object: $object)));
 		if ($this->appConfig->getValueString('openregister', 'organisation_identifier', '') === '') {
 			$missing[] = 'app_setting:organisation_identifier';
 		}
