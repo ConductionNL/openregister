@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Bindings;
 
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidatorInterface;
 
@@ -41,6 +43,7 @@ final class SchemasBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		ConfigurationDraftsInterface::class => ConfigurationDraftService::class,
 		SchemaRevalidatorInterface::class => SchemaRevalidationService::class,
 	];
 }//end class

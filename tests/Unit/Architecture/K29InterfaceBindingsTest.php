@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftsInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidatorInterface;
@@ -37,6 +39,7 @@ final class K29InterfaceBindingsTest extends TestCase {
 	 */
 	public static function bindings(): array {
 		return [
+			'configuration drafts' => [ConfigurationDraftsInterface::class, ConfigurationDraftService::class],
 			'schema revalidator' => [SchemaRevalidatorInterface::class, SchemaRevalidationService::class],
 		];
 	}//end bindings()
