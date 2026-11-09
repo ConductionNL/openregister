@@ -231,14 +231,10 @@ class CasePlanService implements CasePlanServiceInterface {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	public function ensureItems(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, array $history, string $app): array {
-		$actor = $this->systemActor(app: $app);
+		$anchor = new CaseAnchor(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId);
+		$request = new CaseItemsEnsureRequest(anchor: $anchor, definition: $definition, history: $history, actor: $this->systemActor(app: $app));
 
-		return $this->ensurer()->ensure(
-			anchor: new CaseAnchor(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId),
-			definition: $definition,
-			history: $history,
-			actor: $actor
-		);
+		return $this->ensurer()->ensure(request: $request);
 	}//end ensureItems()
 
 	/**
