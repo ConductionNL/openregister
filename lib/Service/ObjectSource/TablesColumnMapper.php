@@ -133,7 +133,8 @@ class TablesColumnMapper {
 				continue;
 			}
 
-			$data[$projection->columnMap[$columnId]] = $this->coerceCell(cell: new TablesCell(value: ($cell['value'] ?? null), column: ($byId[$columnId] ?? [])), projection: $projection);
+			$value = new TablesCell(value: ($cell['value'] ?? null), column: ($byId[$columnId] ?? []));
+			$data[$projection->columnMap[$columnId]] = $this->coerceCell(cell: $value, projection: $projection);
 		}
 
 		return $data;
