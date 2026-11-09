@@ -233,13 +233,9 @@ class BulkJobService implements BulkJobServiceInterface {
 		$action->validateParameters(parameters: $request->call->parameters);
 		$this->guards()->assertScope(registerId: $request->selection->registerId, schemaId: $request->selection->schemaId);
 
-		$selectionType = $this->selectionTypeOf(selection: $request->selection->criteria);
-		$ceiling = $this->getCeiling();
-
-		$uuids = match ($selectionType) {
-			BulkJob::SELECTION_IDS => $this->actions->resolver->idsOf(criteria: $request->selection->criteria),
-			default => $this->actions->resolver->queryUuids(selection: $request->selection, ceiling: $ceiling),
-		};
+		$ceiling  = $this->getCeiling();
+		$resolved = $this->resolve(selection: $request->selection, ceiling: $ceiling);
+		$uuids    = $resolved->uuids;
 
 		$this->guards()->assertCeiling(count: count($uuids), ceiling: $ceiling);
 
@@ -249,7 +245,7 @@ class BulkJobService implements BulkJobServiceInterface {
 
 		$job = $this->store->jobMapper->createFromArray(
 			array_merge(
-				$this->previewRow(request: $request, selectionType: $selectionType, uuids: $uuids),
+				$this->previewRow(request: $request, resolved: $resolved),
 				$this->reversalFields(action: $action)
 			)
 		);
@@ -272,26 +268,45 @@ class BulkJobService implements BulkJobServiceInterface {
 	}//end preview()
 
 	/**
+	 * Which kind a selection is and the uuids it stands for.
+	 *
+	 * @param BulkJobSelection $selection The caller's selection.
+	 * @param int              $ceiling   The largest selection a job may carry.
+	 *
+	 * @return ResolvedSelection The resolved selection.
+	 *
+	 * @throws InvalidArgumentException When the selection is neither an id list nor a query.
+	 */
+	private function resolve(BulkJobSelection $selection, int $ceiling): ResolvedSelection {
+		$kind  = $this->selectionTypeOf(selection: $selection->criteria);
+		$uuids = match ($kind) {
+			BulkJob::SELECTION_IDS => $this->actions->resolver->idsOf(criteria: $selection->criteria),
+			default => $this->actions->resolver->queryUuids(selection: $selection, ceiling: $ceiling),
+		};
+
+		return new ResolvedSelection(selection: $selection, kind: $kind, uuids: $uuids);
+	}//end resolve()
+
+	/**
 	 * The previewed job row, up to its reversal fields.
 	 *
-	 * @param BulkJobRequest     $request       What the operator asked for.
-	 * @param string             $selectionType The selection kind.
-	 * @param array<int, string> $uuids         The resolved uuids.
+	 * @param BulkJobRequest    $request  What the operator asked for.
+	 * @param ResolvedSelection $resolved The selection's kind and uuids.
 	 *
 	 * @return array<string, mixed> The row.
 	 */
-	private function previewRow(BulkJobRequest $request, string $selectionType, array $uuids): array {
+	private function previewRow(BulkJobRequest $request, ResolvedSelection $resolved): array {
 		return [
 			'action' => $request->call->actionId,
 			'parameters' => $request->call->parameters,
-			'selectionType' => $selectionType,
-			'selection' => $this->normaliseSelection(selection: $request->selection->criteria, selectionType: $selectionType, uuids: $uuids),
+			'selectionType' => $resolved->kind,
+			'selection' => $resolved->stored(),
 			'registerId' => $request->selection->registerId,
 			'schemaId' => $request->selection->schemaId,
 			'justification' => $request->justification,
 			'state' => BulkJob::STATE_PREVIEWED,
-			'total' => count($uuids),
-			'report' => ['selection' => ['kind' => $selectionType, 'countAtCreation' => count($uuids)]],
+			'total' => count($resolved->uuids),
+			'report' => ['selection' => ['kind' => $resolved->kind, 'countAtCreation' => count($resolved->uuids)]],
 			'startedBy' => $request->actorUid,
 		];
 	}//end previewRow()
@@ -624,22 +639,6 @@ class BulkJobService implements BulkJobServiceInterface {
 		);
 	}//end selectionTypeOf()
 
-	/**
-	 * The selection as the job stores it.
-	 *
-	 * @param array<string, mixed> $selection The caller's selection.
-	 * @param string $selectionType The selection kind.
-	 * @param array<int, string> $uuids The resolved uuids.
-	 *
-	 * @return array<string, mixed> The stored selection.
-	 */
-	private function normaliseSelection(array $selection, string $selectionType, array $uuids): array {
-		if ($selectionType === BulkJob::SELECTION_QUERY) {
-			return ['query' => ($selection['query'] ?? [])];
-		}
-
-		return ['ids' => $uuids];
-	}//end normaliseSelection()
 	/**
 	 * The refusals a job has to get past, built with this instance's ceiling.
 	 *

@@ -90,7 +90,9 @@ class BulkJobReversal implements BulkJobReversalInterface {
 			justification: $justification
 		);
 
-		return $this->link(original: $original, reversal: $this->nameOriginal(reversal: $reversal, reverses: $this->reversesEntry(job: $original, written: count($uuids))));
+		$reverses = $this->reversesEntry(job: $original, written: count($uuids));
+
+		return $this->link(original: $original, reversal: $this->nameOriginal(reversal: $reversal, reverses: $reverses));
 	}//end reverse()
 
 	/**
