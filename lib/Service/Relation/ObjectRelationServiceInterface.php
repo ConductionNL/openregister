@@ -79,21 +79,15 @@ interface ObjectRelationServiceInterface {
 	 * Idempotent per anchor and target: saving the same note twice does not
 	 * write the mention twice.
 	 *
-	 * @param RelationEndpoint $source The object the text belongs to, in its register and schema.
-	 * @param RelationEndpoint $target The object the text names, in its register and schema.
-	 * @param string $anchor What identifies the text, so it can be withdrawn.
-	 * @param string|null $relationType The vocabulary key, when there is one.
+	 * @param ProseMention $mention The object the text belongs to and the one it names, each in its
+	 *                              register and schema; the anchor that identifies the text so it can
+	 *                              be withdrawn; and the vocabulary key, when there is one.
 	 *
 	 * @return array<int, ObjectRelation> The rows written, one per direction.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function recordProseReference(
-		RelationEndpoint $source,
-		RelationEndpoint $target,
-		string $anchor,
-		?string $relationType = null,
-	): array;
+	public function recordProseReference(ProseMention $mention): array;
 
 	/**
 	 * Withdraw every row one piece of text wrote, on both sides.
