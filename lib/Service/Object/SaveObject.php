@@ -84,6 +84,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LifecycleSeed;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanner;
@@ -1210,27 +1211,22 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
 	 *
-	 * @param ObjectEntity $objectEntity The parent object entity
-	 * @param Schema $schema The schema of the parent object
-	 * @param array $data The object data to process
-	 * @param array $stored The parent's stored data when its schema opted into orphan cleanup, else empty
+	 * @param CascadeRun $run    The cascade pass: the parent object entity, the object data to
+	 *                           process and the parent's stored data when its schema opted into
+	 *                           orphan cleanup, else empty.
+	 * @param Schema     $schema The schema of the parent object
 	 *
 	 * @return array The processed data with cascaded objects removed
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data, array $stored): array {
+	private function cascadeObjects(CascadeRun $run, Schema $schema): array {
 		try {
 			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
 			$properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
 		} catch (Exception $e) {
-			return $data;
+			return $run->data;
 		}
-
-		$run = new CascadeRun();
-		$run->parent = $objectEntity;
-		$run->data = $data;
-		$run->stored = $stored;
 
 		// Single object properties first, then array properties, as each pass rewrites the data.
 		$objectProperties = array_filter($properties, fn (array $property) => CascadeRules::isObjectProperty(property: $property));
@@ -1284,8 +1280,7 @@ class SaveObject implements SaveObjectInterface {
 
 		try {
 			$createdUuid = $this->cascadeSingleObject(
-				objectEntity: $run->parent,
-				definition: $run->definition,
+				target: new NestedObjectTarget(parent: $run->parent, definition: $run->definition),
 				object: $objectData
 			);
 			CascadeRules::applySingleResult(run: $run, createdUuid: $createdUuid);
@@ -1323,8 +1318,7 @@ class SaveObject implements SaveObjectInterface {
 
 		try {
 			$createdUuids = $this->cascadeMultipleObjects(
-				objectEntity: $run->parent,
-				property: $run->definition,
+				target: new NestedObjectTarget(parent: $run->parent, definition: $run->definition),
 				propData: $run->data[$run->property]
 			);
 
@@ -1396,9 +1390,8 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Cascade multiple objects from an array of objects in the data.
 	 *
-	 * @param ObjectEntity $objectEntity The parent object.
-	 * @param array $property The property to add the objects to.
-	 * @param array $propData The data in the property.
+	 * @param NestedObjectTarget $target   The parent object and the definition of the property to add the objects to.
+	 * @param array              $propData The data in the property.
 	 *
 	 * @return string[] Array of UUIDs of created objects
 	 *
@@ -1412,7 +1405,7 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array {
+	private function cascadeMultipleObjects(NestedObjectTarget $target, array $propData): array {
 		if (array_is_list($propData) === false) {
 			return [];
 		}
@@ -1422,7 +1415,7 @@ class SaveObject implements SaveObjectInterface {
 			return [];
 		}
 
-		$definition = CascadeRules::itemsDefinition(property: $property);
+		$definition = CascadeRules::itemsDefinition(property: $target->definition);
 		if ($definition === null) {
 			return [];
 		}
@@ -1442,8 +1435,7 @@ class SaveObject implements SaveObjectInterface {
 		foreach ($objectsToCreate as $object) {
 			try {
 				$uuid = $this->cascadeSingleObject(
-					objectEntity: $objectEntity,
-					definition: $definition,
+					target: new NestedObjectTarget(parent: $target->parent, definition: $definition),
 					object: $object
 				);
 				if ($uuid !== null) {
@@ -1497,9 +1489,8 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Cascade a single object form an object in the source data
 	 *
-	 * @param ObjectEntity $objectEntity The parent object
-	 * @param array $definition The definition of the property the cascaded object is found in
-	 * @param array $object The object to cascade
+	 * @param NestedObjectTarget $target The parent object and the definition of the property the cascaded object is found in
+	 * @param array              $object The object to cascade
 	 *
 	 * @return string|null The UUID of the created object, or null if no object was created
 	 *
@@ -1510,7 +1501,9 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): ?string {
+	private function cascadeSingleObject(NestedObjectTarget $target, array $object): ?string {
+		$objectEntity = $target->parent;
+		$definition   = $target->definition;
 		// Validate that we have the necessary configuration.
 		if (isset($definition['$ref']) === false) {
 			return null;
@@ -3933,6 +3926,9 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Prepares object data by applying all necessary transformations.
 	 *
+	 * Kept for the create and update preparation, which pass the three values;
+	 * the work is in prepareCascadeData().
+	 *
 	 * @param ObjectEntity $objectEntity The object entity.
 	 * @param Schema $schema The schema of the object.
 	 * @param array $data The object data.
@@ -3944,6 +3940,27 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function prepareObjectData(ObjectEntity $objectEntity, Schema $schema, array $data): array {
+		$run = new CascadeRun();
+		$run->parent = $objectEntity;
+		$run->data = $data;
+		return $this->prepareCascadeData(run: $run, schema: $schema);
+	}//end prepareObjectData()
+
+	/**
+	 * Prepares the run's object data by applying all necessary transformations.
+	 *
+	 * @param CascadeRun $run    The pass: the object entity as parent, and the object data.
+	 * @param Schema     $schema The schema of the object.
+	 *
+	 * @return array The prepared object data.
+	 *
+	 * @throws Exception If there is an error during preparation.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function prepareCascadeData(CascadeRun $run, Schema $schema): array {
+		$objectEntity = $run->parent;
+		$data = $run->data;
 		// Sanitize empty strings after validation but before cascading operations.
 		// This prevents empty values from causing issues in downstream processing.
 		try {
@@ -3958,9 +3975,9 @@ class SaveObject implements SaveObjectInterface {
 
 		// Removed references are only cleaned up when the schema opts in. Read before
 		// the pre-cache below overwrites the entity's data with the incoming data.
-		$stored = [];
+		$run->data = $data;
 		if (($schema->getConfiguration()['orphanCleanup'] ?? false) === true) {
-			$stored = ($objectEntity->getObject() ?? []);
+			$run->stored = ($objectEntity->getObject() ?? []);
 		}
 
 		// Pre-populate the name cache with the parent object's name before cascading.
@@ -3968,10 +3985,10 @@ class SaveObject implements SaveObjectInterface {
 		// (e.g., {{ moduleA }}) via the name template, they can find the parent's name
 		// in the cache even though the parent hasn't been persisted to the database yet.
 		// Without this, cascaded sub-objects fall back to showing the raw UUID as the name.
-		$this->preCacheParentName(objectEntity: $objectEntity, schema: $schema, data: $data);
+		$this->preCacheParentName(run: $run, schema: $schema);
 
 		// Apply cascading operations.
-		$data = $this->cascadeObjects(objectEntity: $objectEntity, schema: $schema, data: $data, stored: $stored);
+		$data = $this->cascadeObjects(run: $run, schema: $schema);
 		$writeBack = new CascadeRun();
 		$writeBack->parent = $objectEntity;
 		$writeBack->data = $data;
@@ -4005,7 +4022,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		return $data;
-	}//end prepareObjectData()
+	}//end prepareCascadeData()
 
 	/**
 	 * Pre-populate the name cache with the parent object's name before cascading.
@@ -4020,15 +4037,16 @@ class SaveObject implements SaveObjectInterface {
 	 * This method computes the parent's name from its data and schema configuration,
 	 * then stores it in the cache so sub-objects can resolve it during cascading.
 	 *
-	 * @param ObjectEntity $objectEntity The parent object entity (with UUID already set).
-	 * @param Schema $schema The parent object's schema.
-	 * @param array $data The parent object's data.
+	 * @param CascadeRun $run    The pass: the parent object entity (with UUID already set) and its data.
+	 * @param Schema     $schema The parent object's schema.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function preCacheParentName(ObjectEntity $objectEntity, Schema $schema, array $data): void {
+	private function preCacheParentName(CascadeRun $run, Schema $schema): void {
+		$objectEntity = $run->parent;
+		$data = $run->data;
 		$uuid = $objectEntity->getUuid();
 		if ($uuid === null) {
 			return;
