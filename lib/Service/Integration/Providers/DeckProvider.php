@@ -108,12 +108,23 @@ class DeckProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-deck/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->cardsOf(objectId: $objectId);
+	}//end list()
+
+	/**
+	 * The Deck cards linked to an object; none when they cannot be read.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function cardsOf(string $objectId): array {
 		try {
 			return $this->deckLinkService->getLinkedCards($objectId);
 		} catch (Throwable $e) {
 			return [];
 		}
-	}//end list()
+	}//end cardsOf()
 
 	/**
 	 * Create or link a Deck card.
