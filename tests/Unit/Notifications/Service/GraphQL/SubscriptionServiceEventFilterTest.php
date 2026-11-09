@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Service\GraphQL;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Notifications\Service\GraphQL\EventStreamFilter;
 use OCA\OpenRegister\Notifications\Service\GraphQL\SubscriptionService;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use PHPUnit\Framework\TestCase;
@@ -80,7 +81,7 @@ final class SubscriptionServiceEventFilterTest extends TestCase {
 	 */
 	private function kept(?string $last, ?int $schema, ?int $register): array {
 		$method = new ReflectionMethod(SubscriptionService::class, 'filterEventStream');
-		$events = $method->invoke($this->service(), $this->buffer(), $last, $schema, $register);
+		$events = $method->invoke($this->service(), $this->buffer(), new EventStreamFilter($last, $schema, $register));
 		return array_column($events, 'id');
 	}//end kept()
 
