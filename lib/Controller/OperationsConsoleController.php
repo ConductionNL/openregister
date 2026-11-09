@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 use OCA\OpenRegister\Service\OperationsConsoleServiceInterface;
 use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
@@ -190,8 +191,10 @@ class OperationsConsoleController extends Controller {
 					outcome: $this->acting->stringParam(name: 'outcome'),
 					windowHours: $windowHours
 				),
-				limit: $this->acting->intParam(name: 'limit', fallback: 50),
-				offset: $this->acting->intParam(name: 'offset', fallback: 0)
+				page: new ListQuery(
+					limit: $this->acting->intParam(name: 'limit', fallback: 50),
+					offset: $this->acting->intParam(name: 'offset', fallback: 0)
+				)
 			)
 		);
 	}//end runs()

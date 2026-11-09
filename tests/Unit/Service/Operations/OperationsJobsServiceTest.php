@@ -250,7 +250,7 @@ final class OperationsJobsServiceTest extends TestCase {
 		$this->runs->expects($this->once())->method('findRecent')->with($this->anything(), 5, 10);
 		$this->runs->method('countRecent')->willReturn(11);
 
-		$answer = $this->service()->runs(new JobRunFilter(), 5, 10);
+		$answer = $this->service()->runs(new JobRunFilter(), new \OCA\OpenRegister\Db\ListQuery(limit: 5, offset: 10));
 
 		$this->assertSame(11, $answer['total']);
 		$this->assertCount(1, $answer['results']);
