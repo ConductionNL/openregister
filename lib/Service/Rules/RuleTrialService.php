@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -168,7 +169,7 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	 */
 	private function storedObject(Schema $schema, ObjectRef $ref): ?ObjectEntity {
 		try {
-			return $this->targets->catalog->tables()->findInRegisterSchemaTable(
+			return $this->rows()->findInRegisterSchemaTable(
 				identifier: $ref->id,
 				register: $this->targets->catalog->registers()->find($ref->register),
 				schema: $schema
@@ -177,6 +178,15 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 			return null;
 		}
 	}//end storedObject()
+
+	/**
+	 * The row reader a stored object is read through: the magic table mapper, in its row-reader role.
+	 *
+	 * @return MagicTableRowReaderInterface The reader.
+	 */
+	private function rows(): MagicTableRowReaderInterface {
+		return $this->targets->catalog->tables();
+	}//end rows()
 
 	/**
 	 * The rule to try: the declared one, or the unsaved one the caller supplied.

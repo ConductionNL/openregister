@@ -37,12 +37,12 @@ final class RuleTargets {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param RuleInventoryService      $rules   The rules declared on a schema.
+	 * @param RuleInventoryServiceInterface $rules The rules declared on a schema.
 	 * @param SchemaCatalogInterface    $catalog The register, schema and magic table mappers.
 	 * @param ObjectOperationsInterface $objects The stored objects a rule is applied to.
 	 */
 	public function __construct(
-		public readonly RuleInventoryService $rules,
+		public readonly RuleInventoryServiceInterface $rules,
 		public readonly SchemaCatalogInterface $catalog,
 		public readonly ObjectOperationsInterface $objects,
 	) {
