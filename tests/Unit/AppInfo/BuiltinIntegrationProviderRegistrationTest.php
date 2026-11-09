@@ -151,8 +151,8 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		'OCA\OpenRegister\Service\CaseTokenService' => [
 			'OCA\OpenRegister\Db\CaseTokenMapperInterface',
 			'OCP\Security\ISecureRandom',
-			'OCP\IUserSession',
 			'OCP\IURLGenerator',
+			'OCP\IUserSession',
 			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\AnalyticsSeriesService' => [

@@ -201,12 +201,17 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-leaf-foundation/spec.md
 		\OCA\OpenRegister\Service\CaseTokenService::class => [
-			'mapper'       => \OCA\OpenRegister\Db\CaseTokenMapperInterface::class,
-			'secureRandom' => \OCP\Security\ISecureRandom::class,
-			'userSession'  => \OCP\IUserSession::class,
-			'urlGenerator' => \OCP\IURLGenerator::class,
-			'logger'       => \Psr\Log\LoggerInterface::class,
-			'container'    => self::CONTAINER,
+			'issuance'    => [
+				\OCA\OpenRegister\Service\CaseTokenIssuance::class,
+				[
+					'mapper'       => \OCA\OpenRegister\Db\CaseTokenMapperInterface::class,
+					'secureRandom' => \OCP\Security\ISecureRandom::class,
+					'urlGenerator' => \OCP\IURLGenerator::class,
+				],
+			],
+			'userSession' => \OCP\IUserSession::class,
+			'logger'      => \Psr\Log\LoggerInterface::class,
+			'container'   => self::CONTAINER,
 		],
 		// @spec openspec/specs/integration-leaf-foundation/spec.md
 		\OCA\OpenRegister\Service\AnalyticsSeriesService::class => [
@@ -265,12 +270,17 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-flow/spec.md
 		\OCA\OpenRegister\Service\FlowLinkService::class => [
-			'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapperInterface::class,
-			'db'             => \OCP\IDBConnection::class,
-			'appManager'     => \OCP\App\IAppManager::class,
-			'userSession'    => \OCP\IUserSession::class,
-			'groupManager'   => \OCP\IGroupManager::class,
-			'logger'         => \Psr\Log\LoggerInterface::class,
+			'platform'     => [
+				\OCA\OpenRegister\Service\FlowLinkPlatform::class,
+				[
+					'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapperInterface::class,
+					'db'             => \OCP\IDBConnection::class,
+					'appManager'     => \OCP\App\IAppManager::class,
+				],
+			],
+			'userSession'  => \OCP\IUserSession::class,
+			'groupManager' => \OCP\IGroupManager::class,
+			'logger'       => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-maps/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class => [
