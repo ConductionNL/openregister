@@ -79,6 +79,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\TaskAuditEntry;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -542,10 +543,12 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 		);
 
 		$this->bridge->record(
-			uuid: (string)$task->getUuid(),
-			action: 'match',
-			actor: $actor,
-			reason: sprintf("Matched party role '%s' on case '%s' to '%s' (cycle %d).", $role, $caseUuid, $round->partyReference(), $round->cycle())
+			entry: new TaskAuditEntry(
+				uuid: (string)$task->getUuid(),
+				action: 'match',
+				actor: $actor,
+				reason: sprintf("Matched party role '%s' on case '%s' to '%s' (cycle %d).", $role, $caseUuid, $round->partyReference(), $round->cycle())
+			)
 		);
 
 		$this->deliver(round: $round, task: $task);
