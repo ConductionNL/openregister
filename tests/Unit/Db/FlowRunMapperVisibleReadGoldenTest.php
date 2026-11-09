@@ -27,8 +27,12 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
 use DateTimeZone;
+use OCA\OpenRegister\Db\FlowActivityWindow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunQueueExpiry;
+use OCA\OpenRegister\Db\FlowRunSubjectScope;
+use OCA\OpenRegister\Db\FlowRunViewer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -137,7 +141,7 @@ final class FlowRunMapperVisibleReadGoldenTest extends TestCase {
 
 		$outcome = [];
 		try {
-			$outcome['result'] = $this->render(value: $mapper->$method(...$args));
+			$outcome['result'] = $this->render(value: $mapper->$method(...$this->valueObjectArgs(method: $method, args: $args)));
 		} catch (\Throwable $e) {
 			$outcome['thrown'] = get_class($e) . ': ' . $e->getMessage();
 		}
@@ -145,6 +149,30 @@ final class FlowRunMapperVisibleReadGoldenTest extends TestCase {
 		$outcome['queries'] = $this->queryLog;
 		return $outcome;
 	}//end outcome()
+
+	/**
+	 * The case tables keep the flat argument names the golden was recorded
+	 * with; the mapper now takes them as value objects. Building those here
+	 * leaves the case names and the recorded fixture untouched, so an
+	 * unchanged fixture proves the queries and the allowed and refused
+	 * outcomes did not change.
+	 *
+	 * @param string               $method The method.
+	 * @param array<string, mixed> $args   Flat named arguments.
+	 *
+	 * @return array<string, mixed> The arguments the mapper takes.
+	 */
+	private function valueObjectArgs(string $method, array $args): array {
+		$viewer = new FlowRunViewer(requesterUid: ($args['requesterUid'] ?? null), ownedFlowIds: ($args['ownedFlowIds'] ?? []));
+		$scope = new FlowRunSubjectScope(organisation: ($args['organisation'] ?? null), subject: ($args['subject'] ?? null));
+		return match ($method) {
+			'findByUuidVisibleTo' => ['uuid' => $args['uuid'], 'viewer' => $viewer],
+			'countSinceByFlow' => ['window' => new FlowActivityWindow(flowIds: $args['flowIds'], since: $args['since']), 'viewer' => $viewer],
+			'latestRunsByFlow' => ['flowIds' => $args['flowIds'], 'viewer' => $viewer],
+			'findActive', 'findCompletedForSubject' => ['scope' => $scope, 'limit' => ($args['limit'] ?? 25)],
+			'expireQueuedBefore' => ['expiry' => new FlowRunQueueExpiry(before: $args['before'], reason: $args['reason'], limit: ($args['limit'] ?? 500))],
+		};
+	}//end valueObjectArgs()
 
 	/**
 	 * A result as plain data.
