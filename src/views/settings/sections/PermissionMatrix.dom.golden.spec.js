@@ -1,4 +1,4 @@
-import { mount, flushPromises } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 /**
  * Golden record of the permission matrix: its rendered rows and the group
  * helpers the cells, tooltips and bulk selects read.
