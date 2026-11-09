@@ -22,6 +22,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\DeckControllerServices;
 use OCA\OpenRegister\Service\DeckCardServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
@@ -54,23 +56,16 @@ class DeckController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name
-	 * @param IRequest $request HTTP request
-	 * @param DeckCardServiceInterface $deckCardService Deck card service
-	 * @param ObjectOperationsInterface $objectService Object service
-	 *
-	 * @return void
+	 * @param IRequest $request HTTP request.
+	 * @param DeckControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		DeckCardServiceInterface $deckCardService,
-		ObjectOperationsInterface $objectService,
+		DeckControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
-		$this->deckCardService = $deckCardService;
-		$this->objectService = $objectService;
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->deckCardService = $services->deckCardService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
