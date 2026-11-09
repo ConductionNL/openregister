@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use Exception;
 use OCA\OpenRegister\Controller\Support\EmailLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
@@ -82,16 +83,14 @@ class EmailLinksController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
 	 * @param EmailLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		EmailLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->emailLinkService = $services->emailLinkService;
 		$this->objectService = $services->objectService;
 		$this->permissions = $services->permissions;
