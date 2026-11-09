@@ -36,6 +36,9 @@ final class BulkUpsertCommand {
 	 * @param bool           $needsPreUpdateState Whether anything downstream reads the pre-update
 	 *                                            rows (audit changeset or update event); false
 	 *                                            narrows the existence read to the uuid.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) See MagicBulkHandler::bulkUpsert(): a fact about
+	 * the caller, carried to the one statement that varies on it.
 	 */
 	public function __construct(
 		public readonly array $objects,

@@ -285,7 +285,10 @@ class MagicBulkHandler {
 		$prepared['_description'] = $selfData['description'] ?? $object['description'] ?? null;
 		$prepared['_summary'] = $selfData['summary'] ?? $object['summary'] ?? null;
 		$prepared['_image'] = $selfData['image'] ?? $object['image'] ?? null;
-		$prepared['_slug'] = match ($managedSlug) { true => MagicBulkUpsertSql::managedRowSlug(selfData: $selfData, object: $object), false => MagicBulkUpsertSql::rowSlug(selfData: $selfData, object: $object) };
+		$prepared['_slug'] = match ($managedSlug) {
+			true => MagicBulkUpsertSql::managedRowSlug(selfData: $selfData, object: $object),
+			false => MagicBulkUpsertSql::rowSlug(selfData: $selfData, object: $object),
+		};
 		$prepared['_uri'] = $selfData['uri'] ?? $object['uri'] ?? null;
 
 		return $prepared;
@@ -448,6 +451,8 @@ class MagicBulkHandler {
 	 * reads only the uuid, and this is how that reaches the query. Inverting it
 	 * into two methods would duplicate the whole chunk path to vary one column
 	 * list.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function bulkUpsert(
 		array $objects,
@@ -457,7 +462,8 @@ class MagicBulkHandler {
 		bool $needsPreUpdateState = true,
 	): array {
 		$table = new RegisterSchema(register: $register, schema: $schema);
-		return $this->upsert(command: new BulkUpsertCommand(objects: $objects, table: $table, tableName: $tableName, needsPreUpdateState: $needsPreUpdateState));
+		$command = new BulkUpsertCommand(objects: $objects, table: $table, tableName: $tableName, needsPreUpdateState: $needsPreUpdateState);
+		return $this->upsert(command: $command);
 	}//end bulkUpsert()
 
 	/**
