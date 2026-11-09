@@ -97,3 +97,4 @@
 2026-11-09T11:28:42Z integrator-20261109T092732-73c42b8a MERGED-TREE 57b2553563: 20 PRs, main now 34eb2d6c6c = tested tree
 2026-11-09T11:29:01Z fixer-F3-20261109T104024-64386ead UNPARK #7694 1696410596f3
 2026-11-09T11:29:01Z fixer-F3-20261109T104024-64386ead FIXED #7694 1696410596f3 merged main; ExampleSetConfigStoreBehaviourTest builds ExampleSetConfigValue from main's ExampleSetConfigKey; phpstan offset nit in CastShape test; ExampleSet suite (1041) + guard suites + phpstan green
+2026-11-09T11:29:21Z integrator-20261109T092732-73c42b8a CONFLICT-DEV #7701 aadd9d43
