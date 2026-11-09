@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\PortalTaskDeliveryMapper;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
-use OCA\OpenRegister\Db\TaskBlockerMapper;
+use OCA\OpenRegister\Db\TaskBlockerMapperInterface;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use Psr\Log\LoggerInterface;
@@ -84,7 +84,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 *                                         hand-built test services;
 	 *                                         absent, every subject is
 	 *                                         resolved by the cross-table search.
-	 * @param TaskBlockerMapper|null $blockers Answers which blockers are still
+	 * @param TaskBlockerMapperInterface|null $blockers Answers which blockers are still
 	 *                                         open, for the derived `blocked`
 	 *                                         flag. Absent, no row is blocked.
 	 */
@@ -95,7 +95,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 		private readonly ?MagicMapperInterface $objects = null,
 		private readonly ?PortalTaskDeliveryMapper $deliveries = null,
 		private readonly ?TaskSubjectLocator $locator = null,
-		private readonly ?TaskBlockerMapper $blockers = null,
+		private readonly ?TaskBlockerMapperInterface $blockers = null,
 	) {
 
 	}//end __construct()

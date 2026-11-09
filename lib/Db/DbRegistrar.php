@@ -168,6 +168,7 @@ final class DbRegistrar {
 		SyncRecordMapperInterface::class => SyncRecordMapper::class,
 		TalkLinkMapperInterface::class => TalkLinkMapper::class,
 		TaskAuditMapperInterface::class => TaskAuditMapper::class,
+		TaskBlockerMapperInterface::class => TaskBlockerMapper::class,
 		TaskCandidateMapperInterface::class => TaskCandidateMapper::class,
 		TaskProjectionStateMapperInterface::class => TaskProjectionStateMapper::class,
 		TaskRelationMapperInterface::class => TaskRelationMapper::class,
