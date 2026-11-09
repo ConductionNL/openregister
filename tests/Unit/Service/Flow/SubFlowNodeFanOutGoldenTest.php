@@ -81,7 +81,7 @@ class SubFlowNodeFanOutGoldenTest extends TestCase {
 				return $run;
 			}
 		);
-		$this->node = new SubFlowNode($resolvers, $this->runs, $l10n, $this->createMock(IURLGenerator::class));
+		$this->node = new SubFlowNode(new \OCA\OpenRegister\Service\Flow\FlowExecution($resolvers, $this->runs, new \Psr\Log\NullLogger()), new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class)));
 
 	}//end setUp()
 

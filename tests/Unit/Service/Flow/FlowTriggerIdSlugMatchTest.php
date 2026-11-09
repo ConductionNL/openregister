@@ -177,7 +177,7 @@ class FlowTriggerIdSlugMatchTest extends TestCase {
 		$session->method('getUser')->willReturn(null);
 
 		return new FlowTriggerListener(
-			new FlowTriggerService($locator, $runner, new NullLogger()),
+			new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new NullLogger())),
 			$session,
 			new FlowTriggerSlugs($registers, $schemas, new NullLogger())
 		);

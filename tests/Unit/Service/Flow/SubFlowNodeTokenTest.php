@@ -62,10 +62,8 @@ class SubFlowNodeTokenTest extends TestCase {
 		$this->runs = $this->createMock(FlowRunService::class);
 
 		$this->node = new SubFlowNode(
-			$this->resolvers,
-			$this->runs,
-			$l,
-			$this->createMock(IURLGenerator::class)
+			new \OCA\OpenRegister\Service\Flow\FlowExecution($this->resolvers, $this->runs, new \Psr\Log\NullLogger()),
+			new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($l, $this->createMock(IURLGenerator::class))
 		);
 
 	}//end setUp()
