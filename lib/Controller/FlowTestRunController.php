@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowTestRunControllerServices;
 use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
@@ -79,16 +80,14 @@ class FlowTestRunController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string            $appName     The app id.
 	 * @param IRequest          $request     The request.
 	 * @param FlowTestRunControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FlowTestRunControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->runner = $services->runner;
 		$this->resolvers = $services->resolvers;
 		$this->userSession = $services->userSession;
