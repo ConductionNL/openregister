@@ -101,3 +101,4 @@
 2026-11-09T11:29:20Z fixer-F3-20261109T104024-64386ead FIXED #7694 5ed9318c6cc3 supersedes the line above: string-offset nit reverted (phpstan normalises it); one tests-only phpstan note on a deliberate int key remains, outside CI phpstan scope (lib/ only)
 2026-11-09T11:29:34Z integrator-20261109T092732-73c42b8a CONFLICT-DEV #7721 06e07913
 2026-11-09T11:29:49Z fixer-F3-20261109T104024-64386ead FIXED #7694 62cd94556de3 is the pushed head (5ed9318c6 in the line above was never pushed); tree identical to 07f901cd8: ConfigKey fix only
+2026-11-09T11:29:56Z fixer-F3-20261109T104024-64386ead UNPARK #7694 62cd94556de3
