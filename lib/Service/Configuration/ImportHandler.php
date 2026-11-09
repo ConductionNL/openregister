@@ -1166,28 +1166,22 @@ class ImportHandler {
 	 * from {@see importSchema()} as three guard-clause helpers (no branch
 	 * falls through to another) so each strategy stays independently readable.
 	 *
-	 * @param array $data The schema data (MUST carry a non-empty `slug`).
-	 * @param array|null $registerSchemaIds Pre-import schema ids of the target register(s), or null.
-	 * @param string|null $appId The importing application id, or null.
-	 * @param string|null $version The configuration version (for duplicate-error reporting).
+	 * @param ImportedSchemaLookup $lookup The schema data, the target registers' schema ids and the importing
+	 *                                     app id and version (the version for duplicate-error reporting).
 	 *
 	 * @return Schema|null The resolved existing schema, or null when none matches.
 	 */
-	private function resolveExistingSchemaForImport(
-		array $data,
-		?array $registerSchemaIds,
-		?string $appId,
-		?string $version,
-	): ?Schema {
-		if ($registerSchemaIds !== null) {
-			return $this->resolveSchemaWithinRegisterScope(data: $data, registerSchemaIds: $registerSchemaIds, appId: $appId);
+	private function resolveExistingSchemaForImport(ImportedSchemaLookup $lookup): ?Schema {
+		if ($lookup->registerSchemaIds !== null) {
+			return $this->resolveSchemaWithinRegisterScope(lookup: $lookup, registerSchemaIds: $lookup->registerSchemaIds);
 		}
 
+		$appId = $lookup->options->appId;
 		if ($appId !== null && $appId !== '') {
-			return $this->resolveSchemaByApplication(data: $data, appId: $appId);
+			return $this->resolveSchemaByApplication(data: $lookup->data, appId: $appId);
 		}
 
-		return $this->resolveSchemaGlobally(data: $data, appId: $appId, version: $version);
+		return $this->resolveSchemaGlobally(data: $lookup->data, options: $lookup->options);
 	}//end resolveExistingSchemaForImport()
 
 	/**
@@ -1202,13 +1196,14 @@ class ImportHandler {
 	 * and scoping to the register's list alone made every later import create
 	 * a twin (dossiq, 29 Sep: 17 slugs twice).
 	 *
-	 * @param array       $data              The schema data (MUST carry a non-empty `slug`).
-	 * @param array       $registerSchemaIds Pre-import schema ids of the target register(s).
-	 * @param string|null $appId             The importing application id, or null.
+	 * @param ImportedSchemaLookup $lookup            The schema data and the importing application id.
+	 * @param array                $registerSchemaIds Pre-import schema ids of the target register(s).
 	 *
 	 * @return Schema|null The schema already in scope, or null (create a new one).
 	 */
-	private function resolveSchemaWithinRegisterScope(array $data, array $registerSchemaIds, ?string $appId=null): ?Schema {
+	private function resolveSchemaWithinRegisterScope(ImportedSchemaLookup $lookup, array $registerSchemaIds): ?Schema {
+		$data = $lookup->data;
+		$appId = $lookup->options->appId;
 		$existingSchema = $this->schemaMapper->findBySlugInIds(slug: $data['slug'], schemaIds: $registerSchemaIds);
 		if ($existingSchema !== null) {
 			return $existingSchema;
@@ -1332,13 +1327,12 @@ class ImportHandler {
 	 * {@see resolveExistingSchemaForImport()}) — manual/UI-driven single
 	 * imports, preserved for backward compatibility.
 	 *
-	 * @param array $data The schema data (MUST carry a non-empty `slug`).
-	 * @param string|null $appId The importing application id, for duplicate-error reporting.
-	 * @param string|null $version The configuration version, for duplicate-error reporting.
+	 * @param array               $data    The schema data (MUST carry a non-empty `slug`).
+	 * @param SchemaImportOptions $options The importing application id and version, for duplicate-error reporting.
 	 *
 	 * @return Schema|null The globally-resolved schema, or null (create a new one).
 	 */
-	private function resolveSchemaGlobally(array $data, ?string $appId, ?string $version): ?Schema {
+	private function resolveSchemaGlobally(array $data, SchemaImportOptions $options): ?Schema {
 		try {
 			return $this->schemaMapper->find($data['slug'], _multitenancy: false);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -1348,7 +1342,7 @@ class ImportHandler {
 			$msg = "Schema '{$data['slug']}' not found (ValidationException), will create new one";
 			$this->logger->debug(message: '[ImportHandler] ' . $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			$this->duplicates->refuseSchema(slug: $data['slug'], source: ImportDuplicates::source(appId: $appId, version: $version));
+			$this->duplicates->refuseSchema(slug: $data['slug'], source: ImportDuplicates::source(appId: $options->appId, version: $options->version));
 		}
 
 		return null;
@@ -1404,7 +1398,7 @@ class ImportHandler {
 			// A slug is resolved within the target register(s) when the caller
 			// knows them (per-register-schema-slug-uniqueness), so an app never
 			// reuses another register's schema that merely shares the slug.
-			$existingSchema = $this->resolveExistingSchemaForImport(data: $data, registerSchemaIds: $registerSchemaIds, appId: $appId, version: $version);
+			$existingSchema = $this->resolveExistingSchemaForImport(lookup: new ImportedSchemaLookup(data: $data, registerSchemaIds: $registerSchemaIds, options: $options));
 
 			if ($existingSchema !== null) {
 				$update = new ImportedSchemaUpdate(data: $data, existing: $existingSchema);
