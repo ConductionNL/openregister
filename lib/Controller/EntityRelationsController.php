@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AuthDenialWarning;
 use OCA\OpenRegister\Controller\Support\EntityRelationPatch;
 use OCA\OpenRegister\Controller\Support\EntityRelationsControllerServices;
@@ -154,16 +155,14 @@ class EntityRelationsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Nextcloud app name.
 	 * @param IRequest $request Current request.
 	 * @param EntityRelationsControllerServices $services The entity relations controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		EntityRelationsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
 		$this->userSession = $services->platform->userSession;
 		$this->rootFolder = $services->platform->rootFolder;

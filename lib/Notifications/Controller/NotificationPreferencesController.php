@@ -44,6 +44,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Controller;
 
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationPreferencesControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -54,20 +56,33 @@ class NotificationPreferencesController extends Controller {
 	use NotificationRequestTrait;
 
 	/**
+	 * The three-layer preference resolver.
+	 *
+	 * @var NotificationPreferencesInterface
+	 */
+	private readonly NotificationPreferencesInterface $preferenceService;
+
+	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
-	 * @param NotificationPreferencesInterface $preferenceService Override-only preference resolver.
-	 * @param IUserSession $userSession Current-user session.
+	 * @param IRequest                                   $request  Request.
+	 * @param NotificationPreferencesControllerServices $services The preference resolver and the session.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly NotificationPreferencesInterface $preferenceService,
-		private readonly IUserSession $userSession,
+		NotificationPreferencesControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+
+		$this->preferenceService = $services->preferenceService;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**
