@@ -140,11 +140,11 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	private array $notInheritable = [];
 
 	/**
-	 * Reads what a share declares about a grant.
+	 * Reads what a share declares about a grant; stateless, made on first use.
 	 *
-	 * @var ShareGrantAttributes
+	 * @var ShareGrantAttributes|null
 	 */
-	private ShareGrantAttributes $shareAttributes;
+	private ?ShareGrantAttributes $shareAttributes = null;
 
 	/**
 	 * Constructor.
@@ -160,8 +160,16 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 		private readonly ContainerInterface $container,
 		private readonly ?HierarchyGrantExpander $hierarchy = null,
 	) {
-		$this->shareAttributes = new ShareGrantAttributes();
 	}//end __construct()
+
+	/**
+	 * The reader of what a share declares about a grant.
+	 *
+	 * @return ShareGrantAttributes The reader.
+	 */
+	private function shareAttributes(): ShareGrantAttributes {
+		return $this->shareAttributes ??= new ShareGrantAttributes();
+	}//end shareAttributes()
 
 	/**
 	 * The object UUIDs granted to a caller, mapped to the permission bitmask.
@@ -353,15 +361,20 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	 * @return bool True when a grant exists that carries the action's permission.
 	 */
 	public function isGranted(?string $userId, ?string $objectUuid, string $action = 'read'): bool {
-		if ($objectUuid === null || $objectUuid === '') {
-			return false;
-		}
-
-		return array_key_exists(
-			$objectUuid,
-			$this->grantedObjectUuidsFor(userId: $userId, action: $action)
-		);
+		return $this->namesAnObject(objectUuid: $objectUuid) === true
+			&& array_key_exists((string)$objectUuid, $this->grantedObjectUuidsFor(userId: $userId, action: $action));
 	}//end isGranted()
+
+	/**
+	 * Whether a uuid names an object at all; no grant answers for a missing one.
+	 *
+	 * @param string|null $objectUuid The object.
+	 *
+	 * @return bool False for null and for the empty string.
+	 */
+	private function namesAnObject(?string $objectUuid): bool {
+		return $objectUuid !== null && $objectUuid !== '';
+	}//end namesAnObject()
 
 	/**
 	 * Forget the memoised grants.
@@ -473,7 +486,7 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	 * @return void
 	 */
 	private function absorbShare(IShare $share, ShareGrantRun $run): void {
-		$uuid = $this->shareAttributes->objectUuidOf(share: $share);
+		$uuid = $this->shareAttributes()->objectUuidOf(share: $share);
 		if ($uuid === null) {
 			return;
 		}
@@ -488,7 +501,7 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 		// in the permission integer, because core's bitmask has no room
 		// for a verb it does not define. Unioned across overlapping
 		// grants for the same reason the bitmask is.
-		$verbs = $this->shareAttributes->verbsOf(share: $share);
+		$verbs = $this->shareAttributes()->verbsOf(share: $share);
 		if (empty($verbs) === false) {
 			$this->verbs[$uuid] = array_values(
 				array_unique(array_merge(($this->verbs[$uuid] ?? []), $verbs))
@@ -506,7 +519,7 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 		// nothing: the two together are an administrator who wrote
 		// "not below here" once, and the widest-wins rule that composes
 		// the BITMASK must not quietly overrule that.
-		if ($this->shareAttributes->inheritableOf(share: $share) === false) {
+		if ($this->shareAttributes()->inheritableOf(share: $share) === false) {
 			$this->notInheritable[$uuid] = true;
 		}
 	}//end absorbShare()
@@ -531,11 +544,8 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	 * @return bool True when a grant to this caller carries that verb.
 	 */
 	public function grantCarriesVerb(?string $userId, ?string $objectUuid, string $verb): bool {
-		if ($objectUuid === null || $objectUuid === '') {
-			return false;
-		}
-
-		return in_array($verb, $this->verbsHeldOn(userId: $userId, objectUuid: $objectUuid), true);
+		return $this->namesAnObject(objectUuid: $objectUuid) === true
+			&& in_array($verb, $this->verbsHeldOn(userId: $userId, objectUuid: (string)$objectUuid), true);
 	}//end grantCarriesVerb()
 
 	/**
