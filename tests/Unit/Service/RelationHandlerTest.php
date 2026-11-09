@@ -133,12 +133,13 @@ class RelationHandlerTest extends TestCase {
 		}
 
 		$this->objectMapper
+			->expects($this->exactly(4))
 			->method('findAll')
 			->willReturn([]);
 
 		// Should not throw, just cap.
 		$result = $this->handler->bulkLoadRelationshipsBatched($ids);
-		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 	}
 
 	/**
