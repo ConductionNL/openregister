@@ -121,7 +121,7 @@ class AvgRetentionService implements AvgRetentionPassInterface {
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function runRetentionPass(bool $dryRun = false): array {
-		$now = new DateTime();
+		$pass = new RetentionPass(now: new DateTime(), dryRun: $dryRun);
 		$summary = [
 			'evaluatedActivities' => 0,
 			'skippedActivities' => 0,
@@ -137,11 +137,7 @@ class AvgRetentionService implements AvgRetentionPassInterface {
 
 		$activities = $this->vrwMapper->findAll(status: 'published');
 		foreach ($activities as $activity) {
-			$perActivity = $this->processActivity(
-				activity: $activity,
-				now: $now,
-				dryRun: $dryRun
-			);
+			$perActivity = $this->processActivity(activity: $activity, pass: $pass);
 			if ($perActivity === null) {
 				$summary['skippedActivities']++;
 				continue;
@@ -162,20 +158,19 @@ class AvgRetentionService implements AvgRetentionPassInterface {
 	 * is unset or unparseable (caller increments `skippedActivities`).
 	 *
 	 * @param Verwerkingsactiviteit $activity Catalog entry.
-	 * @param DateTime $now Reference timestamp.
-	 * @param bool $dryRun Pass-through dry-run flag.
+	 * @param RetentionPass         $pass     Reference timestamp and dry-run flag.
 	 *
 	 * @return array<string, mixed>|null Per-activity result or null skip.
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
-	private function processActivity(Verwerkingsactiviteit $activity, DateTime $now, bool $dryRun): ?array {
+	private function processActivity(Verwerkingsactiviteit $activity, RetentionPass $pass): ?array {
 		$retentionPeriod = (string)($activity->getRetentionPeriod() ?? '');
 		if ($retentionPeriod === '') {
 			return null;
 		}
 
-		$cutoff = $this->computeCutoff(now: $now, duration: $retentionPeriod);
+		$cutoff = $this->computeCutoff(now: $pass->now, duration: $retentionPeriod);
 		if ($cutoff === null) {
 			$this->logger->warning(
 				message: '[AVG retention] Unparseable retentionPeriod — skipping activity',
@@ -194,7 +189,7 @@ class AvgRetentionService implements AvgRetentionPassInterface {
 
 		$erased = 0;
 		$withheld = [];
-		if ($dryRun === false && $candidates !== []) {
+		if ($pass->dryRun === false && $candidates !== []) {
 			$outcome = $this->erasePastRetention(
 				candidates: $candidates,
 				activity: $activity
