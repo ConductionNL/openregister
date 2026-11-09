@@ -205,7 +205,8 @@ def main(argv: list[str]) -> int:
         print(f"stale row (no such file under lib/; remove the row when convenient): {path[4:]}", file=sys.stderr)
     if missing:
         for path in missing:
-            print(f"no component for {path}: add a row `{path[4:]}` with its component to scripts/component-map.csv", file=sys.stderr)
+            top = path[4:].split("/")[0]
+            print(f"no component for {path}: add the row `{path[4:]},,{top},,,,,<component>` to scripts/component-map.csv", file=sys.stderr)
         return 1
     if "--check" in argv:
         current = OUT_FILE.read_text(encoding="utf-8") if OUT_FILE.exists() else ""
