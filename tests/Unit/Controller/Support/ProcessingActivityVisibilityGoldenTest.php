@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 
+use OCA\OpenRegister\Controller\Support\ProcessingActivityViewer;
 use OCA\OpenRegister\Controller\Support\ProcessingActivityVisibility;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
@@ -84,5 +85,22 @@ class ProcessingActivityVisibilityGoldenTest extends TestCase {
 
 		$this->assertSame([$a1, $a2], $visibility->filter([$a1, $b, $n, $a2], ['org-a'], false));
 		$this->assertSame([$a1, $b, $n, $a2], $visibility->filter([$a1, $b, $n, $a2], [], true));
+	}
+
+	public function testVisibleToKeepsWhatTheViewerSees(): void {
+		$visibility = $this->visibility('org-a');
+		$a = $this->activity('org-a');
+		$b = $this->activity('org-b');
+		$this->assertSame([$a], $visibility->visibleTo([$b, $a], new ProcessingActivityViewer(false, ['org-a'])));
+		$this->assertSame([$b, $a], $visibility->visibleTo([$b, $a], new ProcessingActivityViewer(true, [])));
+	}
+
+	public function testTheViewerOfACallerCarriesItsScope(): void {
+		$visibility = $this->visibility('org-a');
+		$this->assertTrue($visibility->viewer(true)->sees($this->activity(null)));
+		$this->assertSame(['org-a'], $visibility->viewer(false)->accessibleOrgs);
+		$this->assertTrue($visibility->viewer(false)->sees($this->activity('org-a')));
+		$this->assertFalse($visibility->viewer(false)->sees($this->activity('org-b')));
+		$this->assertFalse($this->visibility(null)->viewer(false)->sees($this->activity('org-a')));
 	}
 }//end class
