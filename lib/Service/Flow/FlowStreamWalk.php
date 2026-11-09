@@ -319,11 +319,8 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
 	 */
 	public function claim(string $id, string $transition, array $places): ?array {
-		$claimed = $this->parts->claims->claim(
-			firing: new FiringClaim(runUuid: (string)$this->run->getUuid(), streamId: $id, transition: $transition, places: $places),
-			pass: new ClaimPass(owner: $this->limits->owner, runCap: $this->limits->runCap)
-		);
-
+		$firing  = new FiringClaim(runUuid: (string)$this->run->getUuid(), streamId: $id, transition: $transition, places: $places);
+		$claimed = $this->parts->claims->claim(firing: $firing, pass: new ClaimPass(owner: $this->limits->owner, runCap: $this->limits->runCap));
 		if ($claimed === null) {
 			$this->visits->refuse(id: $id);
 		}
