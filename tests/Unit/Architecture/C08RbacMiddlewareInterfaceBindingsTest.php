@@ -22,11 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\AnonymousEnvelopeInterface;
 use OCA\OpenRegister\Service\Chat\ChatProxyHandler;
 use OCA\OpenRegister\Service\Chat\ChatProxyHandlerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
-use OCA\OpenRegister\Service\Rbac\AnonymousEnvelopeInterface;
 use OCA\OpenRegister\Service\Rbac\RevealFlusher;
 use OCA\OpenRegister\Service\Rbac\RevealFlusherInterface;
 use PHPUnit\Framework\Attributes\DataProvider;

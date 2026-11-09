@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\SurvivorshipAnnotationValidatorInterface;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidatorInterface;
@@ -31,14 +32,13 @@ use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
-use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\SearchAnnotationValidators;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
 use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
-use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

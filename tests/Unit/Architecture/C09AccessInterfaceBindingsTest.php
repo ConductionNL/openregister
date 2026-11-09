@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\TenantKeyRotationInterface;
 use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryInterface;
 use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryService;
 use OCA\OpenRegister\Service\Capability\ToolReachLevels;
@@ -36,7 +37,6 @@ use OCA\OpenRegister\Service\Federation\ShareGrantor;
 use OCA\OpenRegister\Service\Federation\ShareGrantorInterface;
 use OCA\OpenRegister\Service\Rbac\MatrixRowKeys;
 use OCA\OpenRegister\Service\Rbac\MatrixRowWhere;
-use OCA\OpenRegister\Service\TenantKeyRotationInterface;
 use OCA\OpenRegister\Service\TenantKeyService;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

@@ -11,8 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\MasterRecomputeInterface;
 use OCA\OpenRegister\Service\ContractBindings;
-use OCA\OpenRegister\Service\Merge\MasterRecomputeInterface;
 use OCA\OpenRegister\Service\Merge\MasterRecomputeService;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

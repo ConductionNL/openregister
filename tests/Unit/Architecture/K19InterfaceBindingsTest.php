@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\ApiVersionInterface;
+use OCA\OpenRegister\Kernel\Contracts\ApiVersionNegotiationInterface;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionInterface;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiation;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiationInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

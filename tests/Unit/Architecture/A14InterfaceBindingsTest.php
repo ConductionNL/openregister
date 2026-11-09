@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\TablesSchemaReconcilerInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
@@ -35,7 +36,6 @@ use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesSearchInterface;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
 use OCA\OpenRegister\Service\ObjectSource\TablesCatalogueInterface;
-use OCA\OpenRegister\Service\ObjectSource\TablesSchemaReconcilerInterface;
 use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
 use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;

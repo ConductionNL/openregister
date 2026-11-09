@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameWriterInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -29,7 +30,6 @@ use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidationInterface;
 use OCA\OpenRegister\Service\Object\ObjectCacheMaintenanceInterface;
 use OCA\OpenRegister\Service\Object\ObjectEntityCacheInterface;
-use OCA\OpenRegister\Service\Object\ObjectNameWriterInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadersInterface;
 use OCA\OpenRegister\Service\Object\ObjectValidatorInterface;
 use OCA\OpenRegister\Service\Object\PermissionCacheInterface;

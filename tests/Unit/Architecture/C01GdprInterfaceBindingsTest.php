@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\AvgComplianceServiceInterface;
 use OCA\OpenRegister\Service\AvgComplianceService;
-use OCA\OpenRegister\Service\AvgComplianceServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\DsarServiceInterface;

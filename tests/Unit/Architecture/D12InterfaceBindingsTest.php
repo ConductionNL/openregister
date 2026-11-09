@@ -23,6 +23,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\FacetResultCacheClearerInterface;
+use OCA\OpenRegister\Kernel\Contracts\PropertyVocabularyInterface;
+use OCA\OpenRegister\Kernel\Contracts\SemanticRoleHandlerInterface;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimersInterface;
 use OCA\OpenRegister\Service\Case\CasePlanService;
@@ -95,13 +98,10 @@ use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclarationInterface;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
-use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabulary;
-use OCA\OpenRegister\Service\Schemas\PropertyVocabularyInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
-use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;

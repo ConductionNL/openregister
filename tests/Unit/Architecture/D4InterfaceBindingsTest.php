@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\ManifestServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
@@ -30,7 +31,6 @@ use OCA\OpenRegister\Service\FormLinkServiceInterface;
 use OCA\OpenRegister\Service\LinkedEntityService;
 use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
 use OCA\OpenRegister\Service\ManifestService;
-use OCA\OpenRegister\Service\ManifestServiceInterface;
 use OCA\OpenRegister\Service\MapLinkService;
 use OCA\OpenRegister\Service\MapLinkServiceInterface;
 use OCA\OpenRegister\Service\MappingService;

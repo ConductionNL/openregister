@@ -24,11 +24,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkSubjectInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Flow\FlowTenantMembership;
 use OCA\OpenRegister\Service\Flow\FlowTenantMembershipInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
-use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

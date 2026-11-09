@@ -13,6 +13,7 @@
 
 declare(strict_types=1);
 
+use OCA\OpenRegister\Kernel\Contracts;
 use OCA\OpenRegister\Service\Aggregation;
 use OCA\OpenRegister\Service\Archival;
 use OCA\OpenRegister\Service\BulkJob;
@@ -28,7 +29,7 @@ use OCA\OpenRegister\Service\Rules;
 
 return [
 	'classes' => [
-		Aggregation\WidgetAnnotationValidator::class => Aggregation\WidgetAnnotationValidatorInterface::class,
+		Aggregation\WidgetAnnotationValidator::class => Contracts\WidgetAnnotationValidatorInterface::class,
 		Archival\ArchivalAnnotationValidator::class => Archival\ArchivalAnnotationValidatorInterface::class,
 		Archival\ElementMappingValidator::class => Archival\ElementMappingValidatorInterface::class,
 		Archival\MdtoElementCatalogue::class => null,
@@ -42,7 +43,7 @@ return [
 		Handoff\HandoffAnnotationValidator::class => Handoff\HandoffAnnotationValidatorInterface::class,
 		Handoff\HandoffContractBindingValidator::class => Handoff\HandoffContractBindingValidatorInterface::class,
 		Lifecycle\LifecycleAnnotationValidator::class => Lifecycle\LifecycleAnnotationValidatorInterface::class,
-		Registry\RegistryAnnotationValidator::class => Registry\RegistryAnnotationValidatorInterface::class,
+		Registry\RegistryAnnotationValidator::class => Contracts\RegistryAnnotationValidatorInterface::class,
 		Relation\LinkExposure::class => Relation\LinkExposureInterface::class,
 		Relation\RelationAnnotationValidator::class => Relation\RelationAnnotationValidatorInterface::class,
 		Relation\RelationTypeResolver::class => Relation\RelationTypeResolverInterface::class,

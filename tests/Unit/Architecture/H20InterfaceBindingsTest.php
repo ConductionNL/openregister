@@ -21,9 +21,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\BulkAction\BulkActionOutcomeInterface;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
 use OCA\OpenRegister\Db\BulkJobMember;
+use OCA\OpenRegister\Kernel\Contracts\BulkActionOutcomeInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobRefusal;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

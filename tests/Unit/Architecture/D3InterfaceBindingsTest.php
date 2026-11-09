@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\DemoDataServiceInterface;
 use OCA\OpenRegister\Service\ActivityFilterService;
 use OCA\OpenRegister\Service\ActivityFilterServiceInterface;
 use OCA\OpenRegister\Service\AnalyticsLinkService;
@@ -45,7 +46,6 @@ use OCA\OpenRegister\Service\DeckCardServiceInterface;
 use OCA\OpenRegister\Service\DeckLinkService;
 use OCA\OpenRegister\Service\DeckLinkServiceInterface;
 use OCA\OpenRegister\Service\DemoDataService;
-use OCA\OpenRegister\Service\DemoDataServiceInterface;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\EmailLinkServiceInterface;
 use OCA\OpenRegister\Service\EndpointService;

@@ -25,13 +25,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\ExplicitRevealTrailMaskerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuardInterface;
 use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
 use OCA\OpenRegister\Service\Rbac\MetadataConditionFindingsInterface;
-use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
 use OCA\OpenRegister\Service\Rbac\RbacChecks;

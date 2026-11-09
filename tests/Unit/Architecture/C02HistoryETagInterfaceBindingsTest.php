@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\OasETagComputerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Oas\OasETagComputer;
-use OCA\OpenRegister\Service\Oas\OasETagComputerInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistoryInterface;
 use PHPUnit\Framework\Attributes\DataProvider;

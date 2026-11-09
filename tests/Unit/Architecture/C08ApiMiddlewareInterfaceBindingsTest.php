@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\OasRequestValidatorInterface;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorderInterface;
 use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
@@ -32,7 +33,6 @@ use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiatorInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
-use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
 use PHPUnit\Framework\Attributes\DataProvider;

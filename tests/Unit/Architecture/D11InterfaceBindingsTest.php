@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterDescriptorServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterResolverServiceInterface;
 use OCA\OpenRegister\Service\ApplicationService;
 use OCA\OpenRegister\Service\ApplicationServiceInterface;
 use OCA\OpenRegister\Service\BulkActionRegistry;
@@ -36,9 +38,7 @@ use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\LanguageServiceInterface;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
-use OCA\OpenRegister\Service\RegisterDescriptorServiceInterface;
 use OCA\OpenRegister\Service\RegisterResolverService;
-use OCA\OpenRegister\Service\RegisterResolverServiceInterface;
 use OCA\OpenRegister\Service\UrnService;
 use OCA\OpenRegister\Service\UrnServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
