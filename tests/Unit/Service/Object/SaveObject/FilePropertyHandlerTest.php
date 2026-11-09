@@ -834,6 +834,8 @@ class FilePropertyHandlerTest extends TestCase {
 	// =========================================================================
 
 	public function testValidateFileAgainstConfigPassesForValidFile(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'content' => 'test',
 			'mimeType' => 'image/png',
@@ -849,7 +851,6 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// Should not throw.
 		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'avatar', $fileConfig, null));
-		$this->assertTrue(true);
 	}
 
 	public function testValidateFileAgainstConfigRejectsInvalidMimeType(): void {
@@ -910,6 +911,8 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	public function testValidateFileAgainstConfigPassesWithNoRestrictions(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'content' => 'anything',
 			'mimeType' => 'application/octet-stream',
@@ -921,7 +924,6 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// Should not throw - no restrictions.
 		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'upload', $fileConfig, null));
-		$this->assertTrue(true);
 	}
 
 	public function testValidateFileAgainstConfigCallsBlockExecutableFiles(): void {
@@ -941,6 +943,8 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	public function testValidateFileAgainstConfigAllowExecutablesFlag(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'content' => 'MZ' . str_repeat("\x00", 100),
 			'mimeType' => 'application/octet-stream',
@@ -955,10 +959,11 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// Should not throw because allowExecutables is true.
 		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'upload', $fileConfig, null));
-		$this->assertTrue(true);
 	}
 
 	public function testValidateFileAgainstConfigWithEmptyAllowedTypes(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'content' => 'test',
 			'mimeType' => 'text/plain',
@@ -973,10 +978,11 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// Empty allowedTypes means no restriction.
 		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'doc', $fileConfig, null));
-		$this->assertTrue(true);
 	}
 
 	public function testValidateFileAgainstConfigMaxSizeZero(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'content' => str_repeat('x', 5000),
 			'mimeType' => 'text/plain',
@@ -991,7 +997,6 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// maxSize of 0 means no restriction.
 		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'doc', $fileConfig, null));
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -1050,6 +1055,8 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	public function testValidateFileAgainstConfigEditorMaxSizeIsNotBytes(): void {
+		$this->expectNotToPerformAssertions();
+
 		// 10 MB in the editor must not become a 10 byte limit.
 		$fileData = [
 			'content' => 'pdf',
@@ -1067,7 +1074,6 @@ class FilePropertyHandlerTest extends TestCase {
 		];
 
 		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'attachment', $fileConfig, null));
-		$this->assertTrue(true);
 	}
 
 	public function testValidateFileAgainstConfigTopLevelKeysWinOverEditorShape(): void {
@@ -1312,6 +1318,8 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	public function testBlockExecutableFilesAllowsSafeFiles(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'filename' => 'report.pdf',
 			'mimeType' => 'application/pdf',
@@ -1320,10 +1328,11 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// Should not throw.
 		$this->handler->blockExecutableFiles($fileData, 'File at document');
-		$this->assertTrue(true);
 	}
 
 	public function testBlockExecutableFilesAllowsImages(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'filename' => 'photo.jpg',
 			'mimeType' => 'image/jpeg',
@@ -1332,7 +1341,6 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// Should not throw.
 		$this->handler->blockExecutableFiles($fileData, 'File at image');
-		$this->assertTrue(true);
 	}
 
 	public function testBlockExecutableFilesBlocksPhpExtension(): void {
@@ -1584,6 +1592,8 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	public function testBlockExecutableFilesNoFilenameNoContent(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'mimeType' => 'text/plain',
 			'content' => '',
@@ -1591,17 +1601,17 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// No filename, empty content, safe MIME => should pass.
 		$this->handler->blockExecutableFiles($fileData, 'File at upload');
-		$this->assertTrue(true);
 	}
 
 	public function testBlockExecutableFilesNullMimeType(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'content' => 'safe text content',
 		];
 
 		// No mimeType key at all => should pass.
 		$this->handler->blockExecutableFiles($fileData, 'File at upload');
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -2403,10 +2413,10 @@ class FilePropertyHandlerTest extends TestCase {
 	// =========================================================================
 
 	public function testDetectExecutableMagicBytesSafeContent(): void {
+		$this->expectNotToPerformAssertions();
+
 		// Regular text content should not trigger.
 		$this->handler->blockExecutableFiles(['content' => 'This is perfectly safe text content.'], 'File at test');
-
-		$this->assertTrue(true);
 	}
 
 	public function testDetectExecutableMagicBytesWindowsExe(): void {
@@ -2459,10 +2469,10 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	public function testDetectExecutableMagicBytesZipSignatureSkipped(): void {
+		$this->expectNotToPerformAssertions();
+
 		// PK\x03\x04 is ZIP which has description = false, so it should be skipped.
 		$this->handler->blockExecutableFiles(['content' => "PK\x03\x04" . str_repeat("\x00", 100)], 'File at test');
-
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
