@@ -693,6 +693,19 @@ class AuditTrailController extends Controller {
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
 	public function objects(string $register, string $schema, string $id): JSONResponse {
+		return $this->objectLogs(object: new AuditObjectRef(register: $register, schema: $schema, id: $id));
+	}//end objects()
+
+	/**
+	 * The trail of one object: everything for an administrator, the readable part for anyone else signed in.
+	 *
+	 * @param AuditObjectRef $object The object the route names.
+	 *
+	 * @return JSONResponse The logs, or 401 without a session user.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	private function objectLogs(AuditObjectRef $object): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(
@@ -702,17 +715,11 @@ class AuditTrailController extends Controller {
 		}
 
 		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return $this->objectsForReader(object: new AuditObjectRef(register: $register, schema: $schema, id: $id));
+			return $this->objectsForReader(object: $object);
 		}
 
-		// Extract common parameters.
-		$params = $this->extractRequestParameters();
-
-		return $this->adminObjectLogs(
-			object: new AuditObjectRef(register: $register, schema: $schema, id: $id),
-			params: $params
-		);
-	}//end objects()
+		return $this->adminObjectLogs(object: $object, params: $this->extractRequestParameters());
+	}//end objectLogs()
 
 	/**
 	 * An administrator's read of one object's audit trail, read events included.
