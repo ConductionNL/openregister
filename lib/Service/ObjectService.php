@@ -5731,7 +5731,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         ?string $runUuid=null,
         ?string $nodeId=null
     ): array {
-        return $this->lock(request: new LockRequest(identifier: $identifier, process: $process, duration: $duration, runStep: new LockRunStep(runUuid: $runUuid, nodeId: $nodeId)), advisory: $advisory);
+        $step = new LockRunStep(runUuid: $runUuid, nodeId: $nodeId);
+        $request = new LockRequest(identifier: $identifier, process: $process, duration: $duration, runStep: $step);
+        return $this->lock(request: $request, advisory: $advisory);
     }//end lockObject()
 
     /**
