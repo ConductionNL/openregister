@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Search;
 
 use OCA\OpenRegister\AppHost\Search\AbstractSchemaSearchProvider;
+use OCA\OpenRegister\AppHost\SchemaScopeLookups;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -84,7 +85,7 @@ class SchemaSearchPageTest extends TestCase {
 			)
 		);
 
-		$provider = new class($objects, $formatter, $registers, $schemas, $this->createMock(LoggerInterface::class)) extends AbstractSchemaSearchProvider {
+		$provider = new class($objects, $formatter, new SchemaScopeLookups($registers, $schemas, $this->createMock(LoggerInterface::class))) extends AbstractSchemaSearchProvider {
 			public function getRegisterSlug(): string {
 				return 'pipelinq';
 			}//end getRegisterSlug()

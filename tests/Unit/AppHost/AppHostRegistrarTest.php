@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
+use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\AppHostRegistrar;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
@@ -26,6 +27,9 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusalReportInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusals;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
+use OCA\OpenRegister\Twig\MappingTwigInstaller;
+use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 
@@ -37,7 +41,7 @@ class AppHostRegistrarTest extends TestCase {
 	public function testRegisterAliasesEveryContractToItsServiceInOrder(): void {
 		$calls = [];
 		$context = $this->createMock(IRegistrationContext::class);
-		$context->expects($this->exactly(4))
+		$context->expects($this->exactly(6))
 			->method('registerServiceAlias')
 			->willReturnCallback(
 				static function (string $alias, string $target) use (&$calls): void {
@@ -54,6 +58,8 @@ class AppHostRegistrarTest extends TestCase {
 				[ScheduleManifestLoaderInterface::class, ScheduleManifestLoader::class],
 				[ScheduleRefusalReportInterface::class, ScheduleRefusals::class],
 				[RegisterDocumentLoaderInterface::class, RegisterDocumentLoader::class],
+				[AppContainerFinderInterface::class, AppContainerLocator::class],
+				[MappingTwigInstallerInterface::class, MappingTwigInstaller::class],
 			],
 			$calls
 		);
