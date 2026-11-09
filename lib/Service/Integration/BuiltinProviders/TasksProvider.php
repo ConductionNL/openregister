@@ -171,6 +171,17 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->tasksOf(objectId: $objectId);
+	}//end list()
+
+	/**
+	 * The tasks linked to an object.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function tasksOf(string $objectId): array {
 		try {
 			return $this->taskService->getTasksForObject(objectUuid: $objectId);
 		} catch (NoVtodoCalendarException $e) {
@@ -180,7 +191,7 @@ class TasksProvider extends AbstractIntegrationProvider {
 			// the UI fall back to the "no tasks yet" empty state.
 			return [];
 		}
-	}//end list()
+	}//end tasksOf()
 
 	/**
 	 * Create a VTODO task linked to the given OR object.
