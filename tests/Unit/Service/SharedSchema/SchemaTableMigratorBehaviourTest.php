@@ -338,4 +338,47 @@ class SchemaTableMigratorBehaviourTest extends TestCase {
 		$this->assertStringContainsString('Could not rewrite _uri on oc_openregister_table_3_8: no _uri column', $warnings[0]);
 		$this->assertStringContainsString('1 unmapped column(s): legacy', $warnings[1]);
 	}//end testMigrateToleratesUriRewriteFailure()
+
+	/**
+	 * A completed split copies the mapped columns, then repoints `_schema` and
+	 * the register-bounded `_uri` segment from the old schema id to the new one.
+	 *
+	 * @return void
+	 */
+	public function testMigrateRestampsSchemaAndUriWithBoundParameters(): void {
+		$this->config->method('getSystemValue')->willReturn('oc_');
+		$this->tableProbe(answer: 1);
+		$this->db->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
+		$this->magic->method('getTableNameForRegisterSchema')->willReturn('openregister_table_3_8');
+		$this->magic->method('getExistingTableColumns')->willReturn(['_id' => [], '_uuid' => []]);
+
+		$executed = [];
+		$this->db->method('executeStatement')->willReturnCallback(
+			static function (string $sql, array $params=[]) use (&$executed): int {
+				$executed[] = [$sql, $params];
+				return 4;
+			}
+		);
+
+		$register = new Register();
+		$register->setId(3);
+		$schema = new Schema();
+		$schema->setId(8);
+
+		$result = $this->migrator()->migrate(register: $register, schema: $schema, oldId: 2);
+
+		$this->assertSame(4, $result['rows']);
+		$this->assertSame(
+			[
+				['INSERT INTO "oc_openregister_table_3_8" ("_uuid") SELECT "_uuid" FROM "oc_openregister_table_3_2"', []],
+				['UPDATE "oc_openregister_table_3_8" SET _schema = :new WHERE _schema = :old', ['new' => '8', 'old' => '2']],
+				[
+					'UPDATE "oc_openregister_table_3_8" SET _uri = REPLACE(_uri, :old, :new) WHERE _uri LIKE :match',
+					['old' => '/3/2/', 'new' => '/3/8/', 'match' => '%/3/2/%'],
+				],
+				['ALTER TABLE "oc_openregister_table_3_2" RENAME TO "oc_openregister_table_3_2_predupe"', []],
+			],
+			$executed
+		);
+	}//end testMigrateRestampsSchemaAndUriWithBoundParameters()
 }//end class
