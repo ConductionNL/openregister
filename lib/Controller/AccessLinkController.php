@@ -379,10 +379,12 @@ class AccessLinkController extends Controller {
 				userId: $user->getUID(),
 				subjectType: $subjectType,
 				subjectId: $subjectId,
-				capabilities: $this->capabilitiesParam(),
-				expiresAt: $this->stringParam(name: 'expiresAt'),
-				password: $this->stringParam(name: 'password'),
-				label: $this->stringParam(name: 'label')
+				terms: $this->links->terms(
+					capabilities: $this->capabilitiesParam(),
+					expiresAt: $this->stringParam(name: 'expiresAt'),
+					password: $this->stringParam(name: 'password'),
+					label: $this->stringParam(name: 'label')
+				)
 			);
 		} catch (InvalidArgumentException $refused) {
 			return new JSONResponse(['message' => $refused->getMessage()], Http::STATUS_BAD_REQUEST);

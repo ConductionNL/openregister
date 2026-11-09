@@ -141,7 +141,7 @@ final class TaskAreaListenersBehaviourTest extends TestCase {
 		$schemas->method('find')->willReturn($schema);
 		$projector = $this->createMock(StateHistoryProjector::class);
 		$projector->expects(self::once())->method('record')
-			->with('uuid-1', $schema, '3', 'closed', self::anything())
+			->with(self::callback(static fn (ObjectTransitionedEvent $move): bool => $move->getObject()->getUuid() === 'uuid-1' && $move->getRegister() === '3' && $move->getTo() === 'closed'), $schema, self::anything())
 			->willReturn(true);
 		$listener = new StateHistoryProjectionListener($projector, $schemas, new NullLogger());
 
@@ -160,7 +160,7 @@ final class TaskAreaListenersBehaviourTest extends TestCase {
 		$schemas->method('find')->willThrowException(new \RuntimeException('no schema'));
 		$projector = $this->createMock(StateHistoryProjector::class);
 		$projector->expects(self::once())->method('record')
-			->with('uuid-1', null, '3', 'closed', self::anything())
+			->with(self::callback(static fn (ObjectTransitionedEvent $move): bool => $move->getObject()->getUuid() === 'uuid-1' && $move->getRegister() === '3' && $move->getTo() === 'closed'), null, self::anything())
 			->willThrowException(new \RuntimeException('db gone'));
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects(self::once())->method('warning');

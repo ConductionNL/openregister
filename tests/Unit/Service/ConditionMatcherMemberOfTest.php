@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
 use OCA\OpenRegister\Service\Rbac\SchemaRegisterLookup;
@@ -111,12 +112,10 @@ class ConditionMatcherMemberOfTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		return new ConditionMatcher(
-			$session,
+			new ConditionUserResolvers($session, null, $this->resolver(userId: (string)$userId, set: $set)),
 			$this->createMock(ContainerInterface::class),
 			new OperatorEvaluator(new NullLogger()),
-			new NullLogger(),
-			null,
-			$this->resolver(userId: (string)$userId, set: $set)
+			new NullLogger()
 		);
 	}//end matcher()
 
@@ -227,7 +226,7 @@ class ConditionMatcherMemberOfTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$matcher = new ConditionMatcher(
-			$session,
+			new ConditionUserResolvers($session),
 			$this->createMock(ContainerInterface::class),
 			new OperatorEvaluator(new NullLogger()),
 			new NullLogger()

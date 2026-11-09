@@ -37,6 +37,7 @@ use OCA\OpenRegister\Listener\StateFieldRuleListener;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldLists;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
@@ -274,8 +275,8 @@ final class A29SaveGuardsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testStateFieldRuleOutcomes(): void {
-		$open = new StateFieldRules(state: 'open', hidden: ['secret'], readOnly: ['ref'], required: ['name'], messages: ['ref' => 'Ref is fixed.']);
-		$rules = ['open' => $open, 'done' => new StateFieldRules(state: 'done', required: ['outcome'])];
+		$open = new StateFieldRules(state: 'open', fields: new StateFieldLists(hidden: ['secret'], readOnly: ['ref'], required: ['name']), messages: ['ref' => 'Ref is fixed.']);
+		$rules = ['open' => $open, 'done' => new StateFieldRules(state: 'done', fields: new StateFieldLists(required: ['outcome']))];
 
 		$this->assertSame(
 			[true, ['code' => 'state-field-read-only', 'field' => 'ref', 'state' => 'open', 'message' => 'Ref is fixed.']],

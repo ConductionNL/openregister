@@ -475,13 +475,14 @@ class ObjectActionsController extends Controller {
 	 * @return array<string, mixed> The run's status and body.
 	 */
 	private function runOn(array $subject, ObjectActionsSelection $run): array {
-		return $this->runner->run(
+		$target = $this->runner->target(
 			object: $subject['object'],
 			schema: $subject['schema'],
-			key: $run->action,
-			given: $run->inputs,
-			subject: ['uuid' => (string)$subject['object']->getUuid(), 'register' => $run->route['register'], 'schema' => $run->route['schema']]
+			register: $run->route['register'],
+			schemaRef: $run->route['schema']
 		);
+
+		return $this->runner->run(target: $target, key: $run->action, given: $run->inputs);
 	}//end runOn()
 
 	/**

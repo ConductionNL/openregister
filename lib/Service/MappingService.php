@@ -29,8 +29,7 @@ use Adbar\Dot;
 use Exception;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapperInterface;
-use OCA\OpenRegister\Twig\MappingExtension;
-use OCA\OpenRegister\Twig\MappingRuntimeLoader;
+use OCA\OpenRegister\Twig\MappingTwigInstaller;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -171,14 +170,13 @@ class MappingService implements MappingServiceInterface {
 	 */
 	private function createTwig(): Environment {
 		$twig = new Environment(new ArrayLoader([]), ['autoescape' => false]);
-		$twig->addExtension(new MappingExtension());
+		(new MappingTwigInstaller(mappingService: $this, mappingMapper: $this->mappingMapper))->installOn(twig: $twig);
 
 		$contributed = $this->contributedFunctions();
 		foreach ($contributed['functions'] as $function) {
 			$twig->addFunction($function);
 		}
 
-		$twig->addRuntimeLoader(new MappingRuntimeLoader(mappingService: $this, mappingMapper: $this->mappingMapper));
 		$twig->addExtension((new MappingTwigSandbox())->extension(contributedNames: $contributed['names']));
 
 		return $twig;

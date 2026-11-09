@@ -32,6 +32,7 @@ use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\CorrectionService;
 use OCA\OpenRegister\Service\Object\CorrectionTarget;
+use OCA\OpenRegister\Service\Object\CorrectionTargets;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -86,9 +87,9 @@ final class CorrectionsControllerTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		return new CorrectionsController(
-			appName: 'openregister',
 			request: $this->request,
 			corrections: $this->corrections,
+			targets: new CorrectionTargets(),
 			userSession: $session
 		);
 	}//end controller()

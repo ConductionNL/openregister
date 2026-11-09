@@ -29,8 +29,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
-use OCA\OpenRegister\Twig\MappingExtension;
-use OCA\OpenRegister\Twig\MappingRuntimeLoader;
+use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
 use Psr\Log\LoggerInterface;
 use Twig\Environment;
 use Twig\Extension\SandboxExtension;
@@ -149,8 +148,7 @@ class ComputedFieldHandler {
 	 * Constructor for ComputedFieldHandler.
 	 *
 	 * @param MagicObjectFinderInterface $objectMapper Mapper for fetching referenced objects.
-	 * @param MappingExtension $mappingExtension Twig extension with custom filters and functions.
-	 * @param MappingRuntimeLoader $mappingRuntimeLoader Twig runtime loader for mapping functions.
+	 * @param MappingTwigInstallerInterface $mappingTwig Adds the mapping filters, functions and their runtime.
 	 * @param LoggerInterface $logger Logger for error and debug messages.
 	 * @param CodedValueGuard|null $codedValues Rolls concept weights up into the declared score property.
 	 *
@@ -158,8 +156,7 @@ class ComputedFieldHandler {
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objectMapper,
-		private readonly MappingExtension $mappingExtension,
-		private readonly MappingRuntimeLoader $mappingRuntimeLoader,
+		private readonly MappingTwigInstallerInterface $mappingTwig,
 		private readonly LoggerInterface $logger,
 		// The rolled-up concept score. Nullable with a null default so the
 		// unit tests that build this handler positionally keep working; the
@@ -196,8 +193,7 @@ class ComputedFieldHandler {
 		$this->twig = new Environment(new ArrayLoader(), ['autoescape' => false]);
 
 		// Add the mapping extension for custom filters and functions.
-		$this->twig->addExtension($this->mappingExtension);
-		$this->twig->addRuntimeLoader($this->mappingRuntimeLoader);
+		$this->mappingTwig->installOn(twig: $this->twig);
 
 		// Configure sandbox for security.
 		$this->twig->addExtension($this->sandbox());

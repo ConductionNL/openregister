@@ -24,7 +24,7 @@
 namespace OCA\OpenRegister\Service\Configuration;
 
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\ISession;
 
@@ -70,9 +70,9 @@ class CacheHandler {
 	 *
 	 * Used to fetch configurations from database on cache miss.
 	 *
-	 * @var ConfigurationMapper Configuration mapper instance
+	 * @var ConfigurationMapperInterface Configuration mapper instance
 	 */
-	private readonly ConfigurationMapper $configurationMapper;
+	private readonly ConfigurationMapperInterface $configurationMapper;
 
 	/**
 	 * Organisation service for getting active organisation
@@ -87,12 +87,12 @@ class CacheHandler {
 	 * CacheHandler constructor
 	 *
 	 * @param ISession $session Session for caching
-	 * @param ConfigurationMapper $configurationMapper Mapper for configurations
+	 * @param ConfigurationMapperInterface $configurationMapper Mapper for configurations
 	 * @param OrganisationServiceInterface $organisationService Organisation service
 	 */
 	public function __construct(
 		ISession $session,
-		ConfigurationMapper $configurationMapper,
+		ConfigurationMapperInterface $configurationMapper,
 		OrganisationServiceInterface $organisationService,
 	) {
 		$this->session = $session;

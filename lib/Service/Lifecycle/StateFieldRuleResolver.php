@@ -348,9 +348,11 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface {
 
 		return new StateFieldRules(
 			state: $state,
-			hidden: array_values($resolved['hidden']),
-			readOnly: array_values($resolved['readOnly']),
-			required: array_values($resolved['required']),
+			fields: new StateFieldLists(
+				hidden: array_values($resolved['hidden']),
+				readOnly: array_values($resolved['readOnly']),
+				required: array_values($resolved['required'])
+			),
 			messages: $messages
 		);
 	}//end rulesFromBlock()

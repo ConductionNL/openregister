@@ -12,6 +12,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ExportService;
@@ -172,9 +173,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			false,
-			[],
-			[],
-			[],
+			new DeletionEffects([], [], []),
 			[['uuid' => 'blocker-1', 'reason' => 'RESTRICT']],
 			[]
 		);
@@ -698,7 +697,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('find')->willReturn($objectEntity);
 
-		$analysis = new DeletionAnalysis(true, [], [], [], [], []);
+		$analysis = new DeletionAnalysis(true, new DeletionEffects([], [], []), [], []);
 		$deleteHandler = $this->createMock(\OCA\OpenRegister\Service\Object\DeleteObject::class);
 		$deleteHandler->method('canDelete')->willReturn($analysis);
 		$this->objectService->method('getDeleteHandler')->willReturn($deleteHandler);
@@ -2368,9 +2367,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$analysis = new \OCA\OpenRegister\Dto\DeletionAnalysis(
 			false,
-			[],
-			[],
-			[],
+			new \OCA\OpenRegister\Dto\DeletionEffects([], [], []),
 			[['uuid' => 'blocker', 'reason' => 'RESTRICT']],
 			[]
 		);
@@ -3798,9 +3795,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			false,
-			[],
-			[],
-			[],
+			new DeletionEffects([], [], []),
 			[['uuid' => 'blocker-1', 'reason' => 'RESTRICT']],
 			[]
 		);
