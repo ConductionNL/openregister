@@ -161,6 +161,11 @@ phase_select() {
 			printf '%s\t%s\t%s\t0\n' "$n" "$head" "$ref" >> "$W/cand.tsv"
 		fi
 	done 3< <(sort -n <<<"$prs")
+	# PRs that passed a pre-check at their current head go first, so a tree is mostly pre-tested.
+	if [ -s "$ST/queue/prechecked.txt" ] && [ -s "$W/cand.tsv" ]; then
+		awk 'NR==FNR { if ($3 == "GREEN") ok[$1 " " $2] = 1; next } { print (($1 " " $2) in ok ? 0 : 1) "\t" $0 }' \
+			"$ST/queue/prechecked.txt" FS='\t' "$W/cand.tsv" | sort -s -t $'\t' -k1,1n | cut -f2- > "$W/cand.sorted" && mv "$W/cand.sorted" "$W/cand.tsv"
+	fi
 	if ! diff -q <(grep -v '^#' "$q") <(grep -v '^#' "$ST/queue/needs-review.tsv" 2>/dev/null) >/dev/null; then
 		st_put queue/needs-review.tsv "$q" >/dev/null
 	fi
