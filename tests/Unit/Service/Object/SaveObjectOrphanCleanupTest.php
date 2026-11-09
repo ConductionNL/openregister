@@ -46,6 +46,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
@@ -593,9 +594,9 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$row = [['objectUuid' => 'x']];
 
 		return [
-			'cascade' => [new DeletionAnalysis(deletable: true, cascadeTargets: $row)],
-			'nullify' => [new DeletionAnalysis(deletable: true, nullifyTargets: $row)],
-			'default' => [new DeletionAnalysis(deletable: true, defaultTargets: $row)],
+			'cascade' => [new DeletionAnalysis(deletable: true, effects: new DeletionEffects(cascadeTargets: $row))],
+			'nullify' => [new DeletionAnalysis(deletable: true, effects: new DeletionEffects(nullifyTargets: $row))],
+			'default' => [new DeletionAnalysis(deletable: true, effects: new DeletionEffects(defaultTargets: $row))],
 		];
 	}//end dependants()
 
