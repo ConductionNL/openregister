@@ -170,11 +170,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 		$this->l10n       = $presentation->l10n;
 		$this->urls       = $presentation->urls;
 		$this->config     = new UserTaskConfig(l10n: $this->l10n, forms: $services->forms);
-		$this->performers = new UserTaskPerformers(
-			config: $this->config,
-			principals: $hooks->principals,
-			events: $hooks->events
-		);
+		$this->performers = new UserTaskPerformers(config: $this->config, hooks: $hooks);
 
 	}//end __construct()
 

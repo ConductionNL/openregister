@@ -155,15 +155,32 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 			return $items;
 		}
 
-		$resumeAt = $this->resolve(config: $config);
+		$this->suspendUntil(context: $context, resumeAt: $this->resolve(config: $config));
+
+		return $items;
+	}//end execute()
+
+	/**
+	 * Suspend the run until the resolved moment; a step with no moment passes through.
+	 *
+	 * @param array         $context  The run context.
+	 * @param DateTime|null $resumeAt When to resume, or null when the step does not wait.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowSuspension When the run must wait.
+	 *
+	 * @spec openspec/changes/or-flow-wait-node/specs/flow-wait-node/spec.md
+	 */
+	private function suspendUntil(array $context, ?DateTime $resumeAt): void {
 		if ($resumeAt === null) {
-			return $items;
+			return;
 		}
 
 		$this->markWaiting(context: $context, resumeAt: $resumeAt);
 
 		throw new FlowSuspension(resumeAt: $resumeAt, reason: sprintf('waiting until %s', $resumeAt->format('c')));
-	}//end execute()
+	}//end suspendUntil()
 
 	/**
 	 * Whether this run is re-entering THIS wait after it has ended.
