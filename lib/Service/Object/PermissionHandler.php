@@ -1532,12 +1532,28 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function denialFor(?array $authorization, string $action, ?string $userId = null, ?ObjectEntity $object = null): ?array {
+		$question = (new DenialQuestion(authorization: $authorization, action: $action))->about(principals: [], object: $object);
+
+		return $this->denialAsked(question: $question, userId: $userId);
+	}//end denialFor()
+
+	/**
+	 * The deny that refuses a caller an action under an authorization block, or null (see denialFor()).
+	 *
+	 * @param DenialQuestion $question The block, the action and the object; its principals are filled in here.
+	 * @param string|null    $userId   The caller, or null for the session user.
+	 *
+	 * @return array<string, mixed>|null The denial, or null when nothing denies.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function denialAsked(DenialQuestion $question, ?string $userId): ?array {
 		$resolver = $this->denyResolver();
 
 		// The cheap exit, and the backwards-compatibility promise made
 		// structural: a block with no `deny` key costs one array lookup and
 		// resolves exactly as it did before this capability existed.
-		if ($resolver->declaresAnyDeny(authorization: $authorization) === false) {
+		if ($resolver->declaresAnyDeny(authorization: $question->authorization) === false) {
 			return null;
 		}
 
@@ -1549,10 +1565,8 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		$principals = $resolver->principalsFor(userId: $userId, userGroups: $userGroups);
 
-		$question = new DenialQuestion(authorization: $authorization, action: $action);
-
-		return $this->denialAnswer(question: $question->about(principals: $principals, object: $object));
-	}//end denialFor()
+		return $this->denialAnswer(question: $question->about(principals: $principals, object: $question->object));
+	}//end denialAsked()
 
 	/**
 	 * The unconditional denial of the question, else the first conditional one that selects its object.
