@@ -204,7 +204,10 @@ class ExampleSetDeckStore {
 			return ['id' => $found, 'created' => false];
 		}
 
-		$id = $this->insert(table: 'deck_labels', values: ['title' => $label->title, 'color' => $color, 'board_id' => $label->parent, 'last_modified' => time()]);
+		$id = $this->insert(
+			table: 'deck_labels',
+			values: ['title' => $label->title, 'color' => $color, 'board_id' => $label->parent, 'last_modified' => time()]
+		);
 
 		return ['id' => $id, 'created' => true];
 	}//end labelOn()
