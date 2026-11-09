@@ -238,13 +238,13 @@ class UpdateFileHandler {
 	 * @param Node              $file   The file found for the update.
 	 * @param FileContentChange $change The new content and tags.
 	 *
-	 * @return File The updated file.
+	 * @return Node The updated file.
 	 *
 	 * @throws Exception If file operations fail.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	private function applyChange(Node $file, FileContentChange $change): File {
+	private function applyChange(Node $file, FileContentChange $change): Node {
 		if ($change->content !== null && $file instanceof File) {
 			$this->writeContentIfChanged(file: $file, content: $change->content);
 		}

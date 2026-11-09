@@ -288,9 +288,7 @@ class CreateFileHandler {
 	/**
 	 * Refuse a nameless file and, by its magic bytes, an executable one.
 	 *
-	 * @param ObjectEntity|string $objectEntity The object the file is for.
-	 * @param string              $fileName     The file name.
-	 * @param string|resource     $content      The content.
+	 * @param FileUploadRun $run The run: the object, the file name and the decoded content.
 	 *
 	 * @return void
 	 *
@@ -338,9 +336,8 @@ class CreateFileHandler {
 	 * folder linked from outside it). Re-owning to the openregister user is only
 	 * a fallback when the session lacks write rights.
 	 *
-	 * @param Folder|null     $folder   The object folder.
-	 * @param string          $fileName The file name.
-	 * @param string|resource $content  The content.
+	 * @param FileUploadRun $run    The run: the file name and the decoded content.
+	 * @param Folder|null   $folder The object folder.
 	 *
 	 * @return File The written file.
 	 *
@@ -373,9 +370,8 @@ class CreateFileHandler {
 	 *
 	 * $allTags always contains at least the object tag, so it is never empty.
 	 *
-	 * @param File                $file         The file.
-	 * @param ObjectEntity|string $objectEntity The object.
-	 * @param array<int, string>  $tags         The caller's tags.
+	 * @param FileUploadRun $run  The run: the object and the caller's tags.
+	 * @param File          $file The file.
 	 *
 	 * @return void
 	 */
@@ -387,9 +383,8 @@ class CreateFileHandler {
 	/**
 	 * Log an upsert's decision.
 	 *
-	 * @param string          $fileName The file name.
-	 * @param int|string|null $objectId The object id.
-	 * @param bool            $exists   Whether the file already exists.
+	 * @param FileUploadRun $run    The run: the file name and the object.
+	 * @param bool          $exists Whether the file already exists.
 	 *
 	 * @return void
 	 */
@@ -409,9 +404,8 @@ class CreateFileHandler {
 	 *
 	 * A permission refusal stays a NotPermittedException; anything else is a plain Exception.
 	 *
-	 * @param Exception $error    The failure.
-	 * @param string    $action   `create` or `save`.
-	 * @param string    $fileName The file name.
+	 * @param Exception     $error The failure.
+	 * @param FileUploadRun $run   The run: its action (`create` or `save`) and file name.
 	 *
 	 * @return Exception The exception to throw.
 	 */
