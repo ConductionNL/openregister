@@ -203,8 +203,8 @@ class ShippedConfigurationGuard {
 		$upgrade = $run->upgrade;
 		// While an administrator's re-import is in effect, the merge takes
 		// every authorization block from the file (REQ-LCA-003).
-		$incoming = $upgrade->incoming->definition;
-		$result = $this->merge->merge(baseline: $baseline, live: $upgrade->live, incoming: $incoming, decisions: $run->options->decisions);
+		$revisions = new DescriptorRevisions(baseline: $baseline, live: $upgrade->live, incoming: $upgrade->incoming->definition);
+		$result = $this->merge->mergeRevisions(revisions: $revisions, decisions: $run->options->decisions);
 		$this->recordReplaced(upgrade: $upgrade, roots: $result['replacedLocal']);
 		$this->recordAppliedAuthorization(run: $run, result: $result);
 		$this->recordBaseline(run: $run, definition: $result['baseline']);
