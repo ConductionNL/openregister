@@ -30,7 +30,7 @@ use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkActionRegistryInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Service\LanguageService;

@@ -28,7 +28,7 @@ use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\ConfigurationTransferInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;

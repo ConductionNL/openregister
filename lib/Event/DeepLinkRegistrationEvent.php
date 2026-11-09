@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\DeepLinkRegistryServiceInterface;
 use OCP\EventDispatcher\Event;
 
 /**

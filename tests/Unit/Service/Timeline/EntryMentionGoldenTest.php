@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
-use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IURLGenerator;

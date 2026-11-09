@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost\Listener;
 
 use OCA\OpenRegister\AppHost\Listener\GenericDeepLinkRegistrationListener;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
-use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\DeepLinkRegistryServiceInterface;
 use OCP\App\AppPathNotFoundException;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\Event;
