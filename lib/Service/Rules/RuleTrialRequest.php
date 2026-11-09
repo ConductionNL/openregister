@@ -48,6 +48,8 @@ final class RuleTrialRequest {
 	 * The schema's slug, empty when it has none.
 	 *
 	 * @return string The slug.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function schemaSlug(): string {
 		return (string)($this->schema->getSlug() ?? '');

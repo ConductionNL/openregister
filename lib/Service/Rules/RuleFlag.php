@@ -44,6 +44,8 @@ final class RuleFlag {
 	 * The first key of the path.
 	 *
 	 * @return string The key.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function key(): string {
 		return (string)($this->path[0] ?? '');
@@ -53,6 +55,8 @@ final class RuleFlag {
 	 * Whether the first key is the last one.
 	 *
 	 * @return bool True when the flag is written at this key.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function isLast(): bool {
 		return count($this->path) <= 1;
@@ -62,6 +66,8 @@ final class RuleFlag {
 	 * The same flag one level deeper.
 	 *
 	 * @return self The flag with the first key dropped.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function rest(): self {
 		return new self(path: array_slice($this->path, 1), enabled: $this->enabled);
