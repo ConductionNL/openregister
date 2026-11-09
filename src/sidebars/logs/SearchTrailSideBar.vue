@@ -17,104 +17,91 @@ import {
 		:subname="t('openregister', 'View search analytics and manage search logs')"
 		:open="navigationStore.sidebarState.searchTrail"
 		@update:open="(e) => navigationStore.setSidebarState('searchTrail', e)">
-		<FiltersSidebarTab>
-			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openregister', 'Filter Search Trails') }}</h3>
-				<ScopeFilterFields
-					@registerChange="handleRegisterChange"
-					@schemaChange="handleSchemaChange" />
-				<div class="filterGroup">
-					<label for="successSelect">{{
-						t('openregister', 'Success Status')
-					}}</label>
-					<NcSelect
-						id="successSelect"
-						v-model="selectedSuccessStatus"
-						:options="successOptions"
-						:placeholder="t('openregister', 'All searches')"
-						:inputLabel="t('openregister', 'Success Status')"
-						:clearable="true"
-						@update:modelValue="applyFilters">
-						<template #option="{ label, value }">
-							<div class="statusOption" :class="value">
-								{{ label }}
-							</div>
-						</template>
-					</NcSelect>
-				</div>
-				<TrailUserDateFields
-					v-model:users="selectedUsers"
-					v-model:dateFrom="dateFrom"
-					v-model:dateTo="dateTo"
-					:userOptions="userOptions"
-					@change="applyFilters" />
-				<div class="filterGroup">
-					<label for="searchTermFilter">{{
-						t('openregister', 'Search Term')
-					}}</label>
+		<ScopeFiltersTab
+			:title="t('openregister', 'Filter Search Trails')"
+			:hint="
+				t(
+					'openregister',
+					'Use filters to narrow down search trail entries by register, schema, success status, user, date range, search terms, or performance metrics.',
+				)
+			"
+			clearable
+			@registerChange="handleRegisterChange"
+			@schemaChange="handleSchemaChange"
+			@clear="clearFilters">
+			<SidebarFilterSelect
+				id="successSelect"
+				v-model="selectedSuccessStatus"
+				:options="successOptions"
+				:placeholder="t('openregister', 'All searches')"
+				:label="t('openregister', 'Success Status')"
+				@update:modelValue="applyFilters">
+				<template #option="{ label, value }">
+					<div class="statusOption" :class="value">
+						{{ label }}
+					</div>
+				</template>
+			</SidebarFilterSelect>
+			<TrailUserDateFields
+				v-model:users="selectedUsers"
+				v-model:dateFrom="dateFrom"
+				v-model:dateTo="dateTo"
+				:userOptions="userOptions"
+				@change="applyFilters" />
+			<div class="filterGroup">
+				<label for="searchTermFilter">{{
+					t('openregister', 'Search Term')
+				}}</label>
+				<NcTextField
+					id="searchTermFilter"
+					v-model="searchTermFilter"
+					:label="t('openregister', 'Filter by search term')"
+					:placeholder="t('openregister', 'Enter search term')"
+					@update:modelValue="handleSearchTermFilterChange" />
+			</div>
+			<div class="filterGroup">
+				<label for="executionTimeFilter">{{
+					t('openregister', 'Execution Time Range')
+				}}</label>
+				<div class="rangeFilter">
 					<NcTextField
-						id="searchTermFilter"
-						v-model="searchTermFilter"
-						:label="t('openregister', 'Filter by search term')"
-						:placeholder="t('openregister', 'Enter search term')"
-						@update:modelValue="handleSearchTermFilterChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="executionTimeFilter">{{
-						t('openregister', 'Execution Time Range')
-					}}</label>
-					<div class="rangeFilter">
-						<NcTextField
-							id="executionTimeFrom"
-							v-model="executionTimeFrom"
-							:label="t('openregister', 'Min execution time (ms)')"
-							:placeholder="t('openregister', 'Min ms')"
-							type="number"
-							@update:modelValue="handleExecutionTimeChange" />
-						<NcTextField
-							id="executionTimeTo"
-							v-model="executionTimeTo"
-							:label="t('openregister', 'Max execution time (ms)')"
-							:placeholder="t('openregister', 'Max ms')"
-							type="number"
-							@update:modelValue="handleExecutionTimeChange" />
-					</div>
-				</div>
-				<div class="filterGroup">
-					<label for="resultCountFilter">{{
-						t('openregister', 'Result Count Range')
-					}}</label>
-					<div class="rangeFilter">
-						<NcTextField
-							id="resultCountFrom"
-							v-model="resultCountFrom"
-							:label="t('openregister', 'Min result count')"
-							:placeholder="t('openregister', 'Min results')"
-							type="number"
-							@update:modelValue="handleResultCountChange" />
-						<NcTextField
-							id="resultCountTo"
-							v-model="resultCountTo"
-							:label="t('openregister', 'Max result count')"
-							:placeholder="t('openregister', 'Max results')"
-							type="number"
-							@update:modelValue="handleResultCountChange" />
-					</div>
+						id="executionTimeFrom"
+						v-model="executionTimeFrom"
+						:label="t('openregister', 'Min execution time (ms)')"
+						:placeholder="t('openregister', 'Min ms')"
+						type="number"
+						@update:modelValue="handleExecutionTimeChange" />
+					<NcTextField
+						id="executionTimeTo"
+						v-model="executionTimeTo"
+						:label="t('openregister', 'Max execution time (ms)')"
+						:placeholder="t('openregister', 'Max ms')"
+						type="number"
+						@update:modelValue="handleExecutionTimeChange" />
 				</div>
 			</div>
-
-			<ClearFiltersButton @clear="clearFilters" />
-
-			<NcNoteCard type="info" class="filter-hint">
-				{{
-					t(
-						'openregister',
-						'Use filters to narrow down search trail entries by register, schema, success status, user, date range, search terms, or performance metrics.',
-					)
-				}}
-			</NcNoteCard>
-		</FiltersSidebarTab>
+			<div class="filterGroup">
+				<label for="resultCountFilter">{{
+					t('openregister', 'Result Count Range')
+				}}</label>
+				<div class="rangeFilter">
+					<NcTextField
+						id="resultCountFrom"
+						v-model="resultCountFrom"
+						:label="t('openregister', 'Min result count')"
+						:placeholder="t('openregister', 'Min results')"
+						type="number"
+						@update:modelValue="handleResultCountChange" />
+					<NcTextField
+						id="resultCountTo"
+						v-model="resultCountTo"
+						:label="t('openregister', 'Max result count')"
+						:placeholder="t('openregister', 'Max results')"
+						type="number"
+						@update:modelValue="handleResultCountChange" />
+				</div>
+			</div>
+		</ScopeFiltersTab>
 
 		<StatisticsSidebarTab>
 			<!-- Statistics Section -->
@@ -292,7 +279,6 @@ import {
 	NcAppSidebar,
 	NcAppSidebarTab,
 	NcLoadingIcon,
-	NcNoteCard,
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
@@ -300,12 +286,11 @@ import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Monitor from 'vue-material-design-icons/Monitor.vue'
 import TrendingUp from 'vue-material-design-icons/TrendingUp.vue'
-import ClearFiltersButton from '../../components/shared/ClearFiltersButton.vue'
 import CountListItem from '../../components/shared/CountListItem.vue'
-import FiltersSidebarTab from '../../components/shared/FiltersSidebarTab.vue'
 import SidebarStatCard from '../../components/shared/SidebarStatCard.vue'
 import StatisticsSidebarTab from '../../components/shared/StatisticsSidebarTab.vue'
-import ScopeFilterFields from '../ScopeFilterFields.vue'
+import ScopeFiltersTab from '../ScopeFiltersTab.vue'
+import SidebarFilterSelect from '../SidebarFilterSelect.vue'
 import TrailUserDateFields from './TrailUserDateFields.vue'
 import eventBus from '../../eventBus.js'
 import {
@@ -400,17 +385,15 @@ const RANGE_FILTERS = Object.keys(ROUTE_FIELDS)
 export default {
 	name: 'SearchTrailSideBar',
 	components: {
-		ClearFiltersButton,
 		CountListItem,
-		FiltersSidebarTab,
+		ScopeFiltersTab,
+		SidebarFilterSelect,
 		SidebarStatCard,
 		StatisticsSidebarTab,
 		TrailUserDateFields,
-		ScopeFilterFields,
 		NcAppSidebar,
 		NcAppSidebarTab,
 		NcSelect,
-		NcNoteCard,
 		NcTextField,
 		NcLoadingIcon,
 		TrendingUp,

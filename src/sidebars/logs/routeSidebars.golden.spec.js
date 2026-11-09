@@ -115,7 +115,9 @@ function stores(state) {
  * @return {object} The computeds
  */
 function computedOf(component) {
-	const fields = component.components?.ScopeFilterFields
+	const fields =
+		component.components?.ScopeFilterFields
+		|| component.components?.ScopeFiltersTab?.components?.ScopeFilterFields
 	const mixed = [...(component.mixins || []), ...(fields?.mixins || [])].map(
 		(mixin) => mixin.computed,
 	)
