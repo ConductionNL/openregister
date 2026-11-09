@@ -53,6 +53,27 @@ composer_deps() {
 	# The sandbox token is rejected by the GitHub API; plain git through the proxy works, and the root-only
 	# post-install script fails after vendor is complete, so success is judged by the installed autoloader.
 	env -u GH_TOKEN -u GITHUB_TOKEN COMPOSER_ALLOW_SUPERUSER=1 composer config --global use-github-api false
+	# Packages locked without a git source (phpstan) only have an api.github.com zipball, which the proxy refuses:
+	# build that zip from git and put it in composer's file cache under the key composer derives from the URL.
+	python3 - <<'PY'
+import hashlib, json, os, re, subprocess, tempfile
+lock = json.load(open('composer.lock'))
+for p in lock.get('packages', []) + lock.get('packages-dev', []):
+    if p.get('source') or not p.get('dist'):
+        continue
+    m = re.match(r'https://api\.github\.com/repos/([^/]+/[^/]+)/zipball/([0-9a-f]{40})$', p['dist'].get('url', ''))
+    if not m:
+        continue
+    d = os.path.expanduser('~/.cache/composer/files/' + p['name'])
+    out = os.path.join(d, hashlib.sha1(p['dist']['url'].encode()).hexdigest() + '.zip')
+    if os.path.exists(out):
+        continue
+    os.makedirs(d, exist_ok=True)
+    t = tempfile.mkdtemp()
+    subprocess.run(['git', 'init', '-q', t], check=True)
+    subprocess.run(['git', '-C', t, 'fetch', '-q', '--depth', '1', 'https://github.com/' + m.group(1), m.group(2)], check=True)
+    subprocess.run(['git', '-C', t, 'archive', '--format=zip', '-o', out, m.group(2)], check=True)
+PY
 	env -u GH_TOKEN -u GITHUB_TOKEN COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_PROCESS_TIMEOUT=0 \
 		composer install --no-interaction --no-progress --prefer-source
 	[ -f vendor/autoload.php ] && [ -x vendor/bin/phpunit ] || return 1
@@ -104,9 +125,18 @@ needs_review() {
 phase_select() {
 	need_state; st_sync
 	local prs refs q n head ref title v prev
-	prs=$(gh api "repos/$R/pulls?state=open&base=main&per_page=100" --paginate \
-		-q '.[]|select(.head.ref|startswith("cloud/"))|select(.head.repo.full_name=="'"$R"'")|select(.draft|not)|[.number,.head.sha,.head.ref,.title]|@tsv' 2>&1) \
-		|| { say "SELECT-APIERR ${prs:0:120}"; exit 6; }
+	# Pages by number: the sandbox proxy refuses the repositories/{id} URLs that --paginate follows.
+	local page=1 chunk
+	prs=""
+	while :; do
+		chunk=$(gh api "repos/$R/pulls?state=open&base=main&per_page=100&page=$page" \
+			-q '.[]|select(.head.ref|startswith("cloud/"))|select(.head.repo.full_name=="'"$R"'")|select(.draft|not)|[.number,.head.sha,.head.ref,.title]|@tsv' 2>&1) \
+			|| { say "SELECT-APIERR ${chunk:0:120}"; exit 6; }
+		[ "$(gh api "repos/$R/pulls?state=open&base=main&per_page=100&page=$page" -q length 2>/dev/null)" = 0 ] && break
+		[ -n "$chunk" ] && prs+="$chunk"$'\n'
+		page=$((page + 1)); [ "$page" -gt 10 ] && break
+	done
+	prs=$(sed '/^$/d' <<<"$prs")
 	grep -qE $'^[0-9]+\t[0-9a-f]{40}\t' <<<"$prs" || { [ -z "$prs" ] && { say "SELECT-NONE no open cloud PRs"; : > "$W/cand.tsv"; exit 1; }; say "SELECT-APIERR ${prs:0:120}"; exit 6; }
 	refs=$(awk -F'\t' '{printf "pull/%s/head:refs/remotes/pr/%s ", $1, $1}' <<<"$prs")
 	git -C "$C" fetch -q origin main $refs || { say "SELECT-FETCHERR"; exit 6; }
