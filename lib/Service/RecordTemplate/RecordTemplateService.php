@@ -104,14 +104,9 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function listFor(ViewerReach $reach, ?string $register=null, ?string $schema=null): array {
-		$usable = [];
-		foreach ($this->store->mapper->findCandidates(userId: $reach->userId, register: $register, schema: $schema) as $template) {
-			if ($this->resolveUse(template: $template, reach: $reach) === true) {
-				$usable[] = $template;
-			}
-		}
+		$candidates = $this->store->mapper->findCandidates(userId: $reach->userId, register: $register, schema: $schema);
 
-		return $usable;
+		return array_values(array_filter($candidates, fn (RecordTemplate $template): bool => $this->resolveUse(template: $template, reach: $reach)));
 	}//end listFor()
 
 	/**
