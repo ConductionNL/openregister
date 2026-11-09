@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\WellKnownController;
+use OCA\OpenRegister\Controller\Support\WellKnownControllerServices;
 use OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilder;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDisplayResponse;
@@ -52,10 +53,11 @@ class WellKnownControllerTest extends TestCase {
 		);
 
 		return new WellKnownController(
-			'openregister',
 			$this->createMock(IRequest::class),
-			new SecurityTxtBuilder($appConfig),
-			$urlGenerator,
+			new WellKnownControllerServices(
+				new SecurityTxtBuilder($appConfig),
+				$urlGenerator
+			)
 		);
 	}//end controller()
 
