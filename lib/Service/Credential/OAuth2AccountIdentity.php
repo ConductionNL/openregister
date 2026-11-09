@@ -72,51 +72,51 @@ class OAuth2AccountIdentity {
 	/**
 	 * Ask who the connection belongs to, and record the answer on the credential.
 	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param TokenSetAddress $address The credential just minted or repaired, and its scope.
-	 * @param OAuth2TokenSet $set The token set just stored.
-	 * @param string $owner The credential's owner, asserted for this sessionless call.
+	 * The call is made as the connection's owner, asserted for this sessionless call.
+	 *
+	 * @param RedeemedConnection $connection The provider and the token set just stored.
+	 * @param TokenSetAddress    $address    The credential just minted or repaired, and its scope.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
 	 */
-	public function record(array $provider, TokenSetAddress $address, OAuth2TokenSet $set, string $owner): void {
-		$credentialId = $address->credentialId;
-		$identity = ($provider['identity'] ?? null);
+	public function record(RedeemedConnection $connection, TokenSetAddress $address): void {
+		$identity = ($connection->provider['identity'] ?? null);
 		if (is_array($identity) === false || trim((string)($identity['path'] ?? '')) === '') {
 			return;
 		}
 
 		try {
-			$decoded = $this->answer(identity: $identity, credentialId: $credentialId, owner: $owner);
+			$decoded = $this->answer(connection: $connection, credentialId: $address->credentialId);
 			if ($decoded !== null) {
-				$withAccount = $this->withAccount(set: $set, identity: $identity, decoded: $decoded);
-				$this->refresh->persist(credentialId: $credentialId, scope: $address->scope, set: $withAccount);
+				$this->refresh->persist(address: $address, set: $this->withAccount(connection: $connection, decoded: $decoded));
 			}
 		} catch (Throwable $failure) {
-			$this->logger->warning('[OAuth2AccountIdentity] could not read the connected account for ' . $credentialId . ': ' . $failure->getMessage());
+			$this->logger->warning(
+				'[OAuth2AccountIdentity] could not read the connected account for ' . $address->credentialId . ': ' . $failure->getMessage()
+			);
 		}
 	}//end record()
 
 	/**
 	 * Make the one bounded identity call and decode its answer.
 	 *
-	 * @param array<string, mixed> $identity The provider's identity block, with a non-empty path.
-	 * @param string $credentialId The credential to call as.
-	 * @param string $owner The credential's owner, asserted for this sessionless call.
+	 * @param RedeemedConnection $connection   The connection, whose provider declares an identity path.
+	 * @param string             $credentialId The credential to call as.
 	 *
 	 * @return array<mixed>|null The decoded answer, or null when it is not JSON.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
 	 */
-	private function answer(array $identity, string $credentialId, string $owner): ?array {
+	private function answer(RedeemedConnection $connection, string $credentialId): ?array {
+		$identity = (array)$connection->provider['identity'];
 		$response = $this->broker->request(
 			credentialId: $credentialId,
 			appId: self::BROKER_APP_ID,
 			method: (string)($identity['method'] ?? 'GET'),
 			path: (string)$identity['path'],
-			actingUserId: $owner
+			actingUserId: $connection->owner()
 		);
 
 		$decoded = json_decode($response['body'], true);
@@ -130,16 +130,17 @@ class OAuth2AccountIdentity {
 	/**
 	 * The token set carrying the account the answer names.
 	 *
-	 * @param OAuth2TokenSet $set The token set just stored.
-	 * @param array<string, mixed> $identity The provider's identity block.
-	 * @param array<mixed> $decoded The decoded identity answer.
+	 * @param RedeemedConnection $connection The token set just stored and the provider's identity block.
+	 * @param array<mixed>       $decoded    The decoded identity answer.
 	 *
 	 * @return OAuth2TokenSet The set with its account filled in.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
 	 */
-	private function withAccount(OAuth2TokenSet $set, array $identity, array $decoded): OAuth2TokenSet {
-		return $set->withAccount(
+	private function withAccount(RedeemedConnection $connection, array $decoded): OAuth2TokenSet {
+		$identity = (array)$connection->provider['identity'];
+
+		return $connection->tokenSet->withAccount(
 			id: $this->fieldAt(payload: $decoded, path: (string)($identity['idField'] ?? '')),
 			handle: $this->fieldAt(payload: $decoded, path: (string)($identity['handleField'] ?? '')),
 			displayName: $this->fieldAt(payload: $decoded, path: (string)($identity['displayNameField'] ?? ''))
