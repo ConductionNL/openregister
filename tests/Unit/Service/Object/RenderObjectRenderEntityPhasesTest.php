@@ -111,29 +111,41 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		?LensResolver $lens = null
 	): RenderObject {
 		return new RenderObject(
-			$this->createMock(FileMapper::class),
-			$this->createMock(MagicMapper::class),
-			$this->registers,
-			$this->schemaMapper,
-			$this->createMock(ISystemTagManager::class),
-			$this->createMock(ISystemTagObjectMapper::class),
-			$this->createMock(CacheHandler::class),
-			$this->createMock(PropertyRbacHandler::class),
-			$this->logger,
-			$this->createMock(FileService::class),
-			$this->createMock(ComputedFieldHandler::class),
-			$this->translationHandler,
-			$this->enricher,
-			$this->evaluator,
-			$this->urnService,
-			$this->translationStatus,
-			$this->createMock(TranslationMapper::class),
-			$this->createMock(LanguageService::class),
-			$request,
-			null,
-			null,
-			$container,
-			$lens
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->createMock(MagicMapper::class),
+					registerMapper: $this->registers,
+					schemaMapper: $this->schemaMapper,
+					objectCacheService: $this->createMock(CacheHandler::class)
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->createMock(FileMapper::class),
+					fileService: $this->createMock(FileService::class),
+					systemTagManager: $this->createMock(ISystemTagManager::class),
+					systemTagMapper: $this->createMock(ISystemTagObjectMapper::class)
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->translationHandler,
+					translationStatusService: $this->translationStatus,
+					translationMapper: $this->createMock(TranslationMapper::class),
+					languageService: $this->createMock(LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
+					calculationEvaluator: $this->evaluator,
+					linkedEntityEnricher: $this->enricher,
+					urnService: $this->urnService
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(objectSourceRegistry: null, fieldEncryptionHandler: null, lensResolver: $lens),
+				request: $request,
+				container: $container
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class)
 		);
 	}//end render()
 

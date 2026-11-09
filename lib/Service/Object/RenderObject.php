@@ -30,43 +30,24 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Adbar\Dot;
 use Exception;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
-use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
-use OCA\OpenRegister\Service\FieldEncryptionHandler;
-use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
-use OCA\OpenRegister\Service\FileReaderInterface;
-use OCA\OpenRegister\Service\LanguageService;
-use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
-use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
-use OCA\OpenRegister\Service\TranslationStatusService;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
 use OCA\OpenRegister\Service\Relation\LinkExposure;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
-use Psr\Container\ContainerInterface;
-use OCA\OpenRegister\Service\UrnService;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
-use OCP\IRequest;
-use OCP\SystemTag\ISystemTagManager;
-use OCP\SystemTag\ISystemTagObjectMapper;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use WeakMap;
 
@@ -224,67 +205,19 @@ class RenderObject implements RenderObjectInterface {
 	/**
 	 * Constructor for RenderObject handler.
 	 *
-	 * @param FileMapperInterface $fileMapper File mapper for database operations.
-	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper for database operations.
-	 * @param RegisterMapperInterface $registerMapper Register mapper for database operations.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations.
-	 * @param ISystemTagManager $systemTagManager System tag manager for file tags.
-	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper for file tags.
-	 * @param CacheHandlerInterface $objectCacheService Object cache service for optimized loading.
-	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler.
-	 * @param LoggerInterface $logger Logger for performance monitoring.
-	 * @param FileReaderInterface $fileService File service for file operations.
-	 * @param ComputedFieldHandler $computedFieldHandler Handler for computed field evaluation.
-	 * @param TranslationHandler $translationHandler Handler for translatable property resolution.
-	 * @param LinkedEntityEnricher $linkedEntityEnricher Enricher for linked entity metadata.
-	 * @param CalculationEvaluatorInterface $calculationEvaluator Evaluator for derived/computed properties.
-	 * @param UrnService $urnService URN resolver for register/schema/object identifiers.
-	 * @param TranslationStatusService $translationStatusService Service exposing per-object translation status metadata.
-	 * @param TranslationMapperInterface $translationMapper Translation mapper for database operations.
-	 * @param LanguageService $languageService Language service for source-language resolution.
-	 * @param IRequest|null $request Current request, used to read `?recurrenceOccurrences=N`.
-	 * @param ObjectSourceRegistry|null $objectSourceRegistry Resolves object-source providers for `$ref` extends into virtual schemas.
-	 * @param FieldEncryptionHandler|null $fieldEncryptionHandler Field-level encryption handler (x-openregister-encrypted).
-	 * @param ContainerInterface|null $container Lazily resolves RegistrySubscriptionService
-	 *        (registry-subscriptions) — NOT constructor-injected directly: that dependency
-	 *        chains ObjectService -> RenderObject -> RegistrySubscriptionService -> ObjectService,
-	 *        a cycle Nextcloud's container refuses to construct eagerly. Same lazy-resolution
-	 *        pattern PermissionHandlerInterface already uses for the same reason.
-	 * @param LensResolver|null $lensResolver Resolves a schema's declared lenses at read time
-	 *        (objects-as-the-hinge-between-cases). Nullable-with-a-default because this class is
-	 *        constructed by hand in several tests, where a new required argument is a fatal; a
-	 *        null resolver leaves the data exactly as it was, which is what a schema declaring
-	 *        no lens gets anyway.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
+	 * @param RenderStores        $stores              Where stored registers, schemas, objects and files are read.
+	 * @param RenderEnrichers     $enrichers           Translations and derived values added to the stored data.
+	 * @param RenderRuntime       $runtime             The logger, request, lazy container and read extensions.
+	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler (the access guard stays direct).
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
 	 */
 	public function __construct(
-		private readonly FileMapperInterface $fileMapper,
-		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ISystemTagManager $systemTagManager,
-		private readonly ISystemTagObjectMapper $systemTagMapper,
-		private readonly CacheHandlerInterface $objectCacheService,
+		private readonly RenderStores $stores,
+		private readonly RenderEnrichers $enrichers,
+		private readonly RenderRuntime $runtime,
 		private readonly PropertyRbacHandler $propertyRbacHandler,
-		private readonly LoggerInterface $logger,
-		private readonly FileReaderInterface $fileService,
-		private readonly ComputedFieldHandler $computedFieldHandler,
-		private readonly TranslationHandler $translationHandler,
-		private readonly LinkedEntityEnricher $linkedEntityEnricher,
-		private readonly CalculationEvaluatorInterface $calculationEvaluator,
-		private readonly UrnService $urnService,
-		private readonly TranslationStatusService $translationStatusService,
-		private readonly TranslationMapperInterface $translationMapper,
-		private readonly LanguageService $languageService,
-		private readonly ?IRequest $request = null,
-		private readonly ?ObjectSourceRegistry $objectSourceRegistry = null,
-		private readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
-		private readonly ?ContainerInterface $container = null,
-		private readonly ?LensResolver $lensResolver = null,
 	) {
 	}//end __construct()
 
@@ -304,7 +237,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		try {
-			$register = $this->registerMapper->find($id);
+			$register = $this->stores->mappers->registerMapper->find($id);
 			// Cache the result.
 			$this->registersCache[$id] = $register;
 			return $register;
@@ -331,7 +264,7 @@ class RenderObject implements RenderObjectInterface {
 		try {
 			// Bypass multi-tenancy for internal schema resolution — schemas must always
 			// be accessible when resolving references, regardless of the current user's organization.
-			$schema = $this->schemaMapper->find($id, _multitenancy: false);
+			$schema = $this->stores->mappers->schemaMapper->find($id, _multitenancy: false);
 			// Cache the result.
 			$this->schemasCache[$id] = $schema;
 			return $schema;
@@ -457,7 +390,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		// Use cache service for optimized loading (only if not in ultra cache).
-		$object = $this->objectCacheService->getObject($id);
+		$object = $this->stores->mappers->objectCacheService->getObject($id);
 		if ($object === null) {
 			return null;
 		}
@@ -612,7 +545,7 @@ class RenderObject implements RenderObjectInterface {
 			return [];
 		}
 
-		return $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects($uniqueUuids));
+		return $this->readableFileIds(idsByUuid: $this->stores->files->fileMapper->getFileIdsForObjects($uniqueUuids));
 	}//end readableFileIdsOf()
 
 	/**
@@ -649,7 +582,7 @@ class RenderObject implements RenderObjectInterface {
 		// Fast global skip: when `?_translations=all` is requested, no projection
 		// happens at all — resolveTranslationsForRender early-returns per row, but
 		// we short-circuit here to avoid resolving schemas/registers needlessly.
-		if ($this->languageService->shouldReturnAllTranslations() === true) {
+		if ($this->enrichers->translations->languageService->shouldReturnAllTranslations() === true) {
 			return;
 		}
 
@@ -707,7 +640,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		$row->setObject(
-			$this->translationHandler->resolveTranslationsForRender(objectData: $row->getObject(), schema: $schema, register: $register)
+			$this->enrichers->translations->translationHandler->resolveTranslationsForRender(objectData: $row->getObject(), schema: $schema, register: $register)
 		);
 	}//end translateEntityRow()
 
@@ -726,7 +659,7 @@ class RenderObject implements RenderObjectInterface {
 			return $row;
 		}
 
-		return $this->translationHandler->resolveTranslationsForRender(
+		return $this->enrichers->translations->translationHandler->resolveTranslationsForRender(
 			objectData: $row,
 			schema: $schema,
 			register: $this->arrayRowRegister(row: $row)
@@ -787,7 +720,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/object-lenses/spec.md
 	 */
 	public function applyLensesToRows(array &$rows, bool $_rbac=true): void {
-		if ($this->lensResolver === null) {
+		if ($this->runtime->extensions->lensResolver === null) {
 			return;
 		}
 
@@ -931,10 +864,10 @@ class RenderObject implements RenderObjectInterface {
 	 */
 	private function decryptRedactedRow(RowRedaction $pass, array $data): array {
 		if ($pass->doGated === true
-			&& $this->fieldEncryptionHandler !== null
+			&& $this->runtime->extensions->fieldEncryptionHandler !== null
 			&& $pass->schema->hasEncryptedProperties() === true
 		) {
-			return $this->fieldEncryptionHandler->decryptProperties(data: $data, schema: $pass->schema);
+			return $this->runtime->extensions->fieldEncryptionHandler->decryptProperties(data: $data, schema: $pass->schema);
 		}
 
 		return $data;
@@ -1108,8 +1041,8 @@ class RenderObject implements RenderObjectInterface {
 	 * @return ExplicitRevealMasker|null
 	 */
 	private function revealMasker(): ?ExplicitRevealMasker {
-		if ($this->revealMasker === null && $this->container !== null) {
-			$this->revealMasker = $this->container->get(ExplicitRevealMasker::class);
+		if ($this->revealMasker === null && $this->runtime->container !== null) {
+			$this->revealMasker = $this->runtime->container->get(ExplicitRevealMasker::class);
 		}
 
 		return $this->revealMasker;
@@ -1461,7 +1394,7 @@ class RenderObject implements RenderObjectInterface {
 			return $entity;
 		}
 
-		$idsByUuid = $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects([$uuid]));
+		$idsByUuid = $this->readableFileIds(idsByUuid: $this->stores->files->fileMapper->getFileIdsForObjects([$uuid]));
 		$entity->setFiles($idsByUuid[$uuid] ?? []);
 		return $entity;
 	}//end setLightweightFileIds()
@@ -1484,7 +1417,7 @@ class RenderObject implements RenderObjectInterface {
 	 */
 	private function renderFiles(ObjectEntity $object): ObjectEntity {
 		// Use FileMapper to get files for the object (handles folder property and UUID fallback).
-		$fileRecords = $this->withoutRestrictedFiles(fileRecords: $this->fileMapper->getFilesForObject($object));
+		$fileRecords = $this->withoutRestrictedFiles(fileRecords: $this->stores->files->fileMapper->getFilesForObject($object));
 
 		// If no files found, set empty array and return.
 		if (empty($fileRecords) === true) {
@@ -1517,7 +1450,7 @@ class RenderObject implements RenderObjectInterface {
 		// finds the row stored under 123.
 		// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- PHPStan only reads @var from a /** */ block.
 		/** @var array<int|string, list<string>> $tagIdsPerFile */
-		$tagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(objIds: $fileIds, objectType: 'files');
+		$tagIdsPerFile = $this->stores->files->systemTagMapper->getTagIdsForObjects(objIds: $fileIds, objectType: 'files');
 		$tagNames = $this->visibleTagNames(tagIdsPerFile: $tagIdsPerFile);
 
 		$labels = [];
@@ -1550,7 +1483,7 @@ class RenderObject implements RenderObjectInterface {
 			return $this->fileTagsCache[$fileId];
 		}
 
-		$tagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: 'files');
+		$tagIds = $this->stores->files->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: 'files');
 
 		// PERF-1: back-fill the request cache.
 		$this->fileTagsCache[$fileId] = $this->fileTagNames(tagIds: ($tagIds[$fileId] ?? []));
@@ -1569,7 +1502,7 @@ class RenderObject implements RenderObjectInterface {
 			return [];
 		}
 
-		$tags = $this->systemTagManager->getTagsByIds(tagIds: $tagIds);
+		$tags = $this->stores->files->systemTagManager->getTagsByIds(tagIds: $tagIds);
 		$names = array_map(static fn ($tag) => $tag->getName(), $tags);
 
 		return array_values(array_filter($names, static fn ($name) => !str_starts_with($name, 'object:')));
@@ -1843,7 +1776,7 @@ class RenderObject implements RenderObjectInterface {
 			return null;
 		}
 
-		return $this->fileService->getFileById($fileId);
+		return $this->stores->files->fileService->getFileById($fileId);
 	}//end readableFile()
 
 	/**
@@ -1865,7 +1798,7 @@ class RenderObject implements RenderObjectInterface {
 			return false;
 		}
 
-		$this->logger->warning(
+		$this->runtime->logger->warning(
 			message: '[RenderObject] Refusing to base64-embed oversized file',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'size' => $fileSize, 'cap' => self::MAX_BASE64_BYTES]
 		);
@@ -1883,7 +1816,7 @@ class RenderObject implements RenderObjectInterface {
 		try {
 			return (int)$file->getSize();
 		} catch (\Throwable $sizeError) {
-			$this->logger->debug(
+			$this->runtime->logger->debug(
 				'[RenderObject] Could not determine file size for base64 cap: ' . $sizeError->getMessage()
 			);
 			return 0;
@@ -2030,7 +1963,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @return array|null The file object, or null when there is no such file.
 	 */
 	private function loadFileObject(string $fileId): ?array {
-		$fileRecord = $this->fileMapper->getFile((int)$fileId);
+		$fileRecord = $this->stores->files->fileMapper->getFile((int)$fileId);
 		if (empty($fileRecord) === true) {
 			return null;
 		}
@@ -2050,11 +1983,11 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
 	 */
 	private function withoutRestrictedFiles(array $fileRecords): array {
-		if ($this->container === null || $fileRecords === []) {
+		if ($this->runtime->container === null || $fileRecords === []) {
 			return $fileRecords;
 		}
 
-		$verdicts = $this->container->get(FileRestrictionGuardInterface::class)->readable(
+		$verdicts = $this->runtime->container->get(FileRestrictionGuardInterface::class)->readable(
 			fileIds: array_map(static fn (array $record): int => (int)($record['fileid'] ?? 0), $fileRecords)
 		);
 
@@ -2629,7 +2562,7 @@ class RenderObject implements RenderObjectInterface {
 	 */
 	private function extendReads(): ExtendTargetReads {
 		$this->extendTargetReads ??= new ExtendTargetReads(
-			mapper: $this->objectEntityMapper,
+			mapper: $this->stores->mappers->objectEntityMapper,
 			mayRead: fn (ObjectEntity $object): bool => $this->mayReadInverse(object: $object)
 		);
 
@@ -2650,7 +2583,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function readableExtendTargets(array $objects): array {
-		if ($this->container === null || $this->extendReads()->checked() === false || SystemOperationContext::isActive() === true) {
+		if ($this->runtime->container === null || $this->extendReads()->checked() === false || SystemOperationContext::isActive() === true) {
 			return $objects;
 		}
 
@@ -2694,7 +2627,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function readableInverseObjects(array $objects): array {
-		if ($this->container === null || $this->extendReads()->checked() === false) {
+		if ($this->runtime->container === null || $this->extendReads()->checked() === false) {
 			return $objects;
 		}
 
@@ -2722,7 +2655,7 @@ class RenderObject implements RenderObjectInterface {
 				$owner = null;
 			}
 
-			return $this->container->get(PermissionHandlerInterface::class)->hasPermission(
+			return $this->runtime->container->get(PermissionHandlerInterface::class)->hasPermission(
 				schema: $schema,
 				action: 'read',
 				objectOwner: $owner,
@@ -2887,7 +2820,7 @@ class RenderObject implements RenderObjectInterface {
 			return;
 		}
 
-		$enriched = $this->linkedEntityEnricher->enrich($entity->jsonSerialize(), $linkedExtend);
+		$enriched = $this->enrichers->derivations->linkedEntityEnricher->enrich($entity->jsonSerialize(), $linkedExtend);
 		foreach (array_keys($linkedExtend) as $key) {
 			if (isset($enriched[$key]) === true) {
 				$setter = 'set'.ucfirst(ltrim($key, '_'));
@@ -2916,8 +2849,8 @@ class RenderObject implements RenderObjectInterface {
 			return $objectData;
 		}
 
-		if ($this->computedFieldHandler->hasComputedProperties($schema) === true) {
-			$objectData = $this->computedFieldHandler->evaluateComputedFields(
+		if ($this->enrichers->derivations->computedFieldHandler->hasComputedProperties($schema) === true) {
+			$objectData = $this->enrichers->derivations->computedFieldHandler->evaluateComputedFields(
 				data: $objectData,
 				schema: $schema,
 				evaluateOn: 'read'
@@ -2925,7 +2858,7 @@ class RenderObject implements RenderObjectInterface {
 			$entity->setObject($objectData);
 		}
 
-		$objectData = (new RecurrenceOccurrences(request: $this->request))->enrich(objectData: $objectData, schema: $schema);
+		$objectData = (new RecurrenceOccurrences(request: $this->runtime->request))->enrich(objectData: $objectData, schema: $schema);
 		$entity->setObject($objectData);
 
 		return $objectData;
@@ -3066,11 +2999,11 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function decryptRenderedProperties(?Schema $schema, array $objectData): array {
-		if ($this->fieldEncryptionHandler === null || $schema === null || $schema->hasEncryptedProperties() === false) {
+		if ($this->runtime->extensions->fieldEncryptionHandler === null || $schema === null || $schema->hasEncryptedProperties() === false) {
 			return $objectData;
 		}
 
-		return $this->fieldEncryptionHandler->decryptProperties(data: $objectData, schema: $schema);
+		return $this->runtime->extensions->fieldEncryptionHandler->decryptProperties(data: $objectData, schema: $schema);
 	}//end decryptRenderedProperties()
 
 	/**
@@ -3095,7 +3028,7 @@ class RenderObject implements RenderObjectInterface {
 			return $objectData;
 		}
 
-		$objectData = $this->translationHandler->resolveTranslationsForRender(
+		$objectData = $this->enrichers->translations->translationHandler->resolveTranslationsForRender(
 			objectData: $objectData,
 			schema: $schema,
 			register: $register
@@ -3150,7 +3083,7 @@ class RenderObject implements RenderObjectInterface {
 			return $objectData;
 		}
 
-		$calculations = new VirtualCalculations(evaluator: $this->calculationEvaluator, logger: $this->logger);
+		$calculations = new VirtualCalculations(evaluator: $this->enrichers->derivations->calculationEvaluator, logger: $this->runtime->logger);
 
 		return array_replace(
 			$objectData,
@@ -3179,11 +3112,11 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function applyLens(?Schema $schema, array $objectData, bool $rbac): array {
-		if ($this->lensResolver === null) {
+		if ($this->runtime->extensions->lensResolver === null) {
 			return $objectData;
 		}
 
-		return $this->lensResolver->apply(schema: $schema, data: $objectData, _rbac: $rbac);
+		return $this->runtime->extensions->lensResolver->apply(schema: $schema, data: $objectData, _rbac: $rbac);
 	}//end applyLens()
 
 	/**
@@ -3208,7 +3141,7 @@ class RenderObject implements RenderObjectInterface {
 		$this->applyWatcherMarkers(entity: $entity);
 		$this->applyReadStateMarkers(entity: $entity);
 		$this->applyUpdateRightMarker(entity: $entity, schema: $schema, extend: $extend);
-		$annotations = new RecordAnnotations(logger: $this->logger);
+		$annotations = new RecordAnnotations(logger: $this->runtime->logger);
 		$annotations->attachRetention(entity: $entity, schema: $schema);
 		$annotations->attachDecision(entity: $entity);
 		$this->applyRetentionClocks(entity: $entity);
@@ -3226,7 +3159,7 @@ class RenderObject implements RenderObjectInterface {
 	 */
 	private function applyUrn(ObjectEntity $entity): void {
 		try {
-			$entity->setUrn($this->urnService->buildForObject($entity));
+			$entity->setUrn($this->enrichers->derivations->urnService->buildForObject($entity));
 		} catch (\Throwable $e) {
 			$this->logRenderFailure(failure: 'URN derivation failed for object', entity: $entity, error: $e);
 		}
@@ -3265,7 +3198,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function setTranslationCompleteness(ObjectEntity $entity, Schema $schema): void {
-		$completeness = $this->translationStatusService->completenessForObject((string) $entity->getUuid(), $schema);
+		$completeness = $this->enrichers->translations->translationStatusService->completenessForObject((string) $entity->getUuid(), $schema);
 		if (count($completeness) > 0) {
 			$entity->setTranslationCompleteness($completeness);
 		}
@@ -3304,11 +3237,11 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function setRegistryState(ObjectEntity $entity, Schema $schema): void {
-		if ($this->container === null) {
+		if ($this->runtime->container === null) {
 			return;
 		}
 
-		$registrySubscriptions = $this->container->get(RegistrySubscriptionService::class);
+		$registrySubscriptions = $this->runtime->container->get(RegistrySubscriptionService::class);
 		if ($registrySubscriptions->annotationFor(schema: $schema) === null) {
 			return;
 		}
@@ -3331,7 +3264,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function logRenderFailure(string $failure, ObjectEntity $entity, \Throwable $error): void {
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			sprintf('[RenderObject] %s %s: %s', $failure, (string) $entity->getUuid(), $error->getMessage())
 		);
 	}//end logRenderFailure()
@@ -3368,7 +3301,7 @@ class RenderObject implements RenderObjectInterface {
 		} catch (\Throwable $e) {
 			// The hint is a courtesy on a read. Losing it must never cost the
 			// object, and the save path refuses the same write either way.
-			$this->logger->debug(
+			$this->runtime->logger->debug(
 				sprintf(
 					'[RenderObject] field rules could not be resolved for %s: %s',
 					(string)$entity->getUuid(),
@@ -3406,7 +3339,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	private function applyRetentionClocks(ObjectEntity $entity): void {
-		if ($this->container === null) {
+		if ($this->runtime->container === null) {
 			return;
 		}
 
@@ -3417,10 +3350,10 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		try {
-			$clocks = $this->container->get(RetentionClockService::class);
+			$clocks = $this->runtime->container->get(RetentionClockService::class);
 			$entity->setRetentionClocks($clocks->clocksFor(object: $entity));
 		} catch (\Throwable $e) {
-			$this->logger->debug(
+			$this->runtime->logger->debug(
 				sprintf(
 					'[RenderObject] retention clocks skipped for %s: %s',
 					(string)$entity->getUuid(),
@@ -3453,7 +3386,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	private function applyWatcherMarkers(ObjectEntity $entity): void {
-		if ($this->container === null) {
+		if ($this->runtime->container === null) {
 			return;
 		}
 
@@ -3466,7 +3399,7 @@ class RenderObject implements RenderObjectInterface {
 			$this->setWatcherMarkers(entity: $entity, uuid: $uuid);
 		} catch (\Throwable $e) {
 			// A subscription lookup must never take out object rendering.
-			$this->logger->debug(
+			$this->runtime->logger->debug(
 				sprintf('[RenderObject] watcher markers skipped for %s: %s', $uuid, $e->getMessage())
 			);
 		}
@@ -3483,7 +3416,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	private function setWatcherMarkers(ObjectEntity $entity, string $uuid): void {
-		$watchers = $this->container->get(WatcherService::class);
+		$watchers = $this->runtime->container->get(WatcherService::class);
 
 		// Anonymous reads get no marker at all: there is no "you" to answer
 		// for, and a hard false would read as "you do not follow this",
@@ -3530,7 +3463,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	private function applyReadStateMarkers(ObjectEntity $entity): void {
-		if ($this->container === null) {
+		if ($this->runtime->container === null) {
 			return;
 		}
 
@@ -3540,7 +3473,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		try {
-			$readState = $this->container->get(ReadStateService::class);
+			$readState = $this->runtime->container->get(ReadStateService::class);
 
 			// Anonymous reads get no marker at all: there is no "you" to answer
 			// for, and a hard false would read as "you have seen this", which is
@@ -3552,7 +3485,7 @@ class RenderObject implements RenderObjectInterface {
 			$entity->setUnread($readState->isUnreadForCaller(objectUuid: $uuid));
 		} catch (\Throwable $e) {
 			// A read-state lookup must never take out object rendering.
-			$this->logger->debug(
+			$this->runtime->logger->debug(
 				sprintf('[RenderObject] read state markers skipped for %s: %s', $uuid, $e->getMessage())
 			);
 		}//end try
@@ -3585,7 +3518,7 @@ class RenderObject implements RenderObjectInterface {
 		try {
 			$this->setRightsMarker(entity: $entity, schema: $schema);
 		} catch (\Throwable $e) {
-			$this->logger->debug(
+			$this->runtime->logger->debug(
 				sprintf('[RenderObject] update right marker skipped for %s: %s', (string)$entity->getUuid(), $e->getMessage())
 			);
 		}
@@ -3619,17 +3552,17 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 	 */
 	private function setRightsMarker(ObjectEntity $entity, Schema $schema): void {
-		if ($this->container === null) {
+		if ($this->runtime->container === null) {
 			return;
 		}
 
-		$permissions = $this->container->get(PermissionHandlerInterface::class);
+		$permissions = $this->runtime->container->get(PermissionHandlerInterface::class);
 		$owner       = $entity->getOwner();
 		if (is_string($owner) === false) {
 			$owner = null;
 		}
 
-		$can = $this->container->get(ObjectActionList::class)->canRun(object: $entity, schema: $schema);
+		$can = $this->runtime->container->get(ObjectActionList::class)->canRun(object: $entity, schema: $schema);
 		$can['update'] = $permissions->hasPermission(
 			schema: $schema,
 			action: 'update',
@@ -3648,11 +3581,11 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/i18n-source-of-truth/spec.md
 	 */
 	private function shouldAttachLanguageMeta(): bool {
-		if ($this->request === null) {
+		if ($this->runtime->request === null) {
 			return false;
 		}
 
-		$raw = $this->request->getParam('_translationMeta', null);
+		$raw = $this->runtime->request->getParam('_translationMeta', null);
 		if ($raw === null) {
 			return false;
 		}
@@ -3708,12 +3641,12 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/i18n-source-of-truth/spec.md
 	 */
 	private function languageMetaFor(LanguageMetaSubject $subject): array {
-		$translatableProps = $this->translationHandler->getTranslatableProperties($subject->schema);
+		$translatableProps = $this->enrichers->translations->translationHandler->getTranslatableProperties($subject->schema);
 		if (count($translatableProps) === 0) {
 			return [];
 		}
 
-		$served = $this->languageService->getPreferredLanguage();
+		$served = $this->enrichers->translations->languageService->getPreferredLanguage();
 		$languageMeta = [];
 		foreach ($translatableProps as $property) {
 			$sourceLanguage = $this->resolveSourceLanguageForProperty(
@@ -3763,7 +3696,7 @@ class RenderObject implements RenderObjectInterface {
 			}
 
 			try {
-				$row = $this->translationMapper->findOne($uuid, $property, $entry['served']);
+				$row = $this->enrichers->translations->translationMapper->findOne($uuid, $property, $entry['served']);
 			} catch (\Throwable $e) {
 				$row = null;
 			}
@@ -4094,7 +4027,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function logExtendMiss(string $message, array $context): void {
-		$this->logger->debug(message: $message, context: ['file' => __FILE__, 'line' => __LINE__] + $context);
+		$this->runtime->logger->debug(message: $message, context: ['file' => __FILE__, 'line' => __LINE__] + $context);
 	}//end logExtendMiss()
 
 	/**
@@ -4442,13 +4375,13 @@ class RenderObject implements RenderObjectInterface {
 			return;
 		}
 
-		$preloadedObjects = $this->objectCacheService->preloadObjects(
+		$preloadedObjects = $this->stores->mappers->objectCacheService->preloadObjects(
 			identifiers: $uuids,
 			registerId: $this->registerIdOf(entity: $entity)
 		);
 		$this->cacheExtendTargets(objects: $preloadedObjects);
 
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			message: '[RenderObject] Batch preloaded objects for extend',
 			context: [
 				'file' => __FILE__,
@@ -4519,7 +4452,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	private function extendObjectSourceRefs(SourceRefRun $run): void {
-		if ($this->objectSourceRegistry === null || $run->extend === []) {
+		if ($this->runtime->extensions->objectSourceRegistry === null || $run->extend === []) {
 			return;
 		}
 
@@ -4574,7 +4507,7 @@ class RenderObject implements RenderObjectInterface {
 			return false;
 		}
 
-		$run->provider = $this->objectSourceRegistry->get((string)$objectSource['provider']);
+		$run->provider = $this->runtime->extensions->objectSourceRegistry->get((string)$objectSource['provider']);
 		if ($run->provider?->isEnabled() !== true) {
 			return false;
 		}
@@ -4762,8 +4695,8 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		$this->inverseSupport = new InverseRenderSupport(
-			mapper: $this->objectEntityMapper,
-			logger: $this->logger,
+			mapper: $this->stores->mappers->objectEntityMapper,
+			logger: $this->runtime->logger,
 			schemas: new InverseSchemaLookups(
 				find: fn (int|string $id): ?Schema => $this->getSchema(id: $id),
 				resolveId: fn (string $ref): string => $this->resolveSchemaReference(schemaRef: $ref)
@@ -4856,7 +4789,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		try {
-			return (string)$this->schemaMapper->find($reference)->getId();
+			return (string)$this->stores->mappers->schemaMapper->find($reference)->getId();
 		} catch (\Exception $e) {
 			return null;
 		}
@@ -4883,7 +4816,7 @@ class RenderObject implements RenderObjectInterface {
 		$lastSegment = strtolower(preg_replace('/#.*$/', '', $lastSegment));
 
 		try {
-			$schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+			$schemas = $this->stores->mappers->schemaMapper->findAll(_rbac: false, _multitenancy: false);
 		} catch (\Exception $e) {
 			return null;
 		}
@@ -4908,7 +4841,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function schemaIdBySlug(string $slug): ?string {
-		$schemas = $this->schemaMapper->findAll(filters: ['slug' => $slug], _rbac: false, _multitenancy: false);
+		$schemas = $this->stores->mappers->schemaMapper->findAll(filters: ['slug' => $slug], _rbac: false, _multitenancy: false);
 		if (count($schemas) === 1) {
 			return (string)array_shift($schemas)->getId();
 		}
@@ -4978,7 +4911,7 @@ class RenderObject implements RenderObjectInterface {
 		$page->multitenancy = $_multitenancy;
 
 		// Debug level: this fires on EVERY extended list render (hot path).
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			message: '[RenderObject] [BATCH_PRELOAD] Starting batch preload check',
 			context: [
 				'file' => __FILE__,
@@ -5045,7 +4978,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		$allUuidsToPreload = array_unique($allUuidsToPreload);
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			message: '[RenderObject] [BATCH_PRELOAD] UUIDs collected',
 			context: [
 				'file' => __FILE__,
@@ -5075,13 +5008,13 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function cachePreloadedObjects(array $entities, array $uuids): void {
-		$preloadedObjects = $this->objectCacheService->preloadObjects(
+		$preloadedObjects = $this->stores->mappers->objectCacheService->preloadObjects(
 			identifiers: $uuids,
 			registerId: $this->sharedRegisterIdOf(entities: $entities)
 		);
 		$this->cacheExtendTargets(objects: $preloadedObjects);
 
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			message: '[RenderObject] Batch preloaded objects for renderEntities',
 			context: [
 				'file' => __FILE__,
@@ -5114,7 +5047,7 @@ class RenderObject implements RenderObjectInterface {
 
 		$uuids = self::pageUuids(entities: $entities);
 		if (empty($uuids) === false) {
-			$this->batchFileIdsCache = $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects($uuids));
+			$this->batchFileIdsCache = $this->readableFileIds(idsByUuid: $this->stores->files->fileMapper->getFileIdsForObjects($uuids));
 		}
 	}//end prefetchPageFileIds()
 
@@ -5210,7 +5143,7 @@ class RenderObject implements RenderObjectInterface {
 		} catch (Exception $e) {
 			// A prefetch failure must never break rendering: per-row paths will simply
 			// fall back to individual lookups (the pre-PERF-1 behaviour).
-			$this->logger->warning(
+			$this->runtime->logger->warning(
 				message: '[RenderObject] Batch file prefetch failed; falling back to per-row lookups',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
@@ -5243,7 +5176,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @return void
 	 */
 	private function preloadFiles(array $fileIds): void {
-		$filesById = $this->fileMapper->getFilesByIds(fileIds: $fileIds);
+		$filesById = $this->stores->files->fileMapper->getFilesByIds(fileIds: $fileIds);
 		$this->cacheFileTags(fileIds: $fileIds);
 
 		// Null for a missing file.
@@ -5354,7 +5287,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		$tagNameMap = [];
-		foreach ($this->systemTagManager->getTagsByIds(tagIds: $uniqueTagIds) as $tag) {
+		foreach ($this->stores->files->systemTagManager->getTagsByIds(tagIds: $uniqueTagIds) as $tag) {
 			$name = $tag->getName();
 			if (str_starts_with($name, 'object:') === false) {
 				$tagNameMap[$tag->getId()] = $name;

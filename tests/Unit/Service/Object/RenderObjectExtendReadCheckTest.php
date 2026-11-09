@@ -199,10 +199,42 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 			'container' => $container,
 		];
 
-		// Only what the constructor declares, so the test follows its dependency list.
-		$declared = array_column((new \ReflectionMethod(RenderObject::class, '__construct'))->getParameters(), 'name');
-
-		return new RenderObject(...array_intersect_key($dependencies, array_flip($declared)));
+return new RenderObject(
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $dependencies['objectEntityMapper'],
+					registerMapper: $dependencies['registerMapper'],
+					schemaMapper: $dependencies['schemaMapper'],
+					objectCacheService: $dependencies['objectCacheService']
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $dependencies['fileMapper'],
+					fileService: $dependencies['fileService'],
+					systemTagManager: $dependencies['systemTagManager'],
+					systemTagMapper: $dependencies['systemTagMapper']
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $dependencies['translationHandler'],
+					translationStatusService: $dependencies['translationStatusService'],
+					translationMapper: $dependencies['translationMapper'],
+					languageService: $dependencies['languageService']
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $dependencies['computedFieldHandler'],
+					calculationEvaluator: $dependencies['calculationEvaluator'],
+					linkedEntityEnricher: $dependencies['linkedEntityEnricher'],
+					urnService: $dependencies['urnService']
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $dependencies['logger'],
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(),
+				container: $dependencies['container']
+			),
+			propertyRbacHandler: $dependencies['propertyRbacHandler']
+		);
 	}
 
 	/**

@@ -95,25 +95,40 @@ class RenderObjectLanguageMetaGoldenTest extends TestCase {
 		$request->method('getParam')->willReturnMap([['_translationMeta', null, 'true']]);
 
 		$this->render = new RenderObject(
-			fileMapper: $this->createMock(FileMapperInterface::class),
-			objectEntityMapper: $this->createMock(MagicMapperInterface::class),
-			registerMapper: $this->registers,
-			schemaMapper: $this->createMock(SchemaMapperInterface::class),
-			systemTagManager: $this->createMock(ISystemTagManager::class),
-			systemTagMapper: $this->createMock(ISystemTagObjectMapper::class),
-			objectCacheService: $this->createMock(CacheHandlerInterface::class),
-			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
-			logger: $this->logger,
-			fileService: $this->createMock(FileService::class),
-			computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
-			translationHandler: $this->translations,
-			linkedEntityEnricher: $this->createMock(LinkedEntityEnricher::class),
-			calculationEvaluator: $this->createMock(CalculationEvaluatorInterface::class),
-			urnService: $this->createMock(UrnService::class),
-			translationStatusService: $this->createMock(TranslationStatusService::class),
-			translationMapper: $this->mapper,
-			languageService: $languages,
-			request: $request,
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->createMock(MagicMapperInterface::class),
+					registerMapper: $this->registers,
+					schemaMapper: $this->createMock(SchemaMapperInterface::class),
+					objectCacheService: $this->createMock(CacheHandlerInterface::class)
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->createMock(FileMapperInterface::class),
+					fileService: $this->createMock(FileService::class),
+					systemTagManager: $this->createMock(ISystemTagManager::class),
+					systemTagMapper: $this->createMock(ISystemTagObjectMapper::class)
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->translations,
+					translationStatusService: $this->createMock(TranslationStatusService::class),
+					translationMapper: $this->mapper,
+					languageService: $languages
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(CalculationEvaluatorInterface::class),
+					linkedEntityEnricher: $this->createMock(LinkedEntityEnricher::class),
+					urnService: $this->createMock(UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(),
+				request: $request
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class)
 		);
 	}//end setUp()
 
