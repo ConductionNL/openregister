@@ -39,6 +39,8 @@ interface SchemaRevalidatorInterface {
 	 * @param string|null               $startedBy          User id.
 	 *
 	 * @return SchemaRun The created run.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function start(int $schemaId, int $registerId, ?array $proposedDefinition = null, ?string $startedBy = null): SchemaRun;
 
@@ -49,6 +51,8 @@ interface SchemaRevalidatorInterface {
 	 * @param int       $batchSize Objects per batch.
 	 *
 	 * @return bool True when more work remains.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function processBatch(SchemaRun $run, int $batchSize = SchemaRevalidationService::DEFAULT_BATCH): bool;
 }//end interface

@@ -35,6 +35,8 @@ interface ConfigurationDraftsInterface {
 	 * Whether this instance requires an approver other than the author.
 	 *
 	 * @return boolean True when four eyes are required.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function requiresFourEyes(): bool;
 
@@ -47,6 +49,8 @@ interface ConfigurationDraftsInterface {
 	 * @return ConfigurationDraftSet The opened set.
 	 *
 	 * @throws DeploymentRefusedException When the name is empty.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function openSet(string $name, ?string $description = null): ConfigurationDraftSet;
 
@@ -58,6 +62,8 @@ interface ConfigurationDraftsInterface {
 	 * @return ConfigurationDraftSet The set.
 	 *
 	 * @throws DeploymentRefusedException When no such set exists.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function loadSet(string $uuid): ConfigurationDraftSet;
 
@@ -73,6 +79,8 @@ interface ConfigurationDraftsInterface {
 	 * @return ConfigurationDraft The pending value.
 	 *
 	 * @throws DeploymentRefusedException When the set is closed or the address is not draftable.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function draftValue(string $setUuid, string $layer, ?string $layerRef, string $configKey, mixed $value): ConfigurationDraft;
 
@@ -87,6 +95,8 @@ interface ConfigurationDraftsInterface {
 	 * @return ConfigurationDraft The pending removal.
 	 *
 	 * @throws DeploymentRefusedException When the set is closed or the address is not draftable.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function draftRemoval(string $setUuid, string $layer, ?string $layerRef, string $configKey): ConfigurationDraft;
 
@@ -96,6 +106,8 @@ interface ConfigurationDraftsInterface {
 	 * @param string $setUuid The set uuid.
 	 *
 	 * @return ConfigurationDraft[] The pending values.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function draftsIn(string $setUuid): array;
 
@@ -107,6 +119,8 @@ interface ConfigurationDraftsInterface {
 	 * @return ConfigurationDraftSet The approved set.
 	 *
 	 * @throws DeploymentRefusedException When the set is closed, empty, or self-approved under four eyes.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function approveSet(string $setUuid): ConfigurationDraftSet;
 
@@ -118,6 +132,8 @@ interface ConfigurationDraftsInterface {
 	 * @return ConfigurationDraftSet The discarded set.
 	 *
 	 * @throws DeploymentRefusedException When the set has already been deployed.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function discardSet(string $setUuid): ConfigurationDraftSet;
 
@@ -128,6 +144,8 @@ interface ConfigurationDraftsInterface {
 	 * @param integer     $limit How many at most.
 	 *
 	 * @return ConfigurationDraftSet[] The sets.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function listSets(?string $state = null, int $limit = 100): array;
 }//end interface
