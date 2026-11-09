@@ -80,8 +80,7 @@ class ViewerReachResolverTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->resolver = new ViewerReachResolver(
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->userSession, $this->groupManager),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
@@ -252,8 +251,7 @@ class ViewerReachResolverTest extends TestCase {
 		$users = $this->createMock(IUserManager::class);
 		$users->method('userExists')->willReturnCallback(static fn (string $uid): bool => $uid === 'fatma');
 		$withUsers = new ViewerReachResolver(
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->userSession, $this->groupManager),
 			logger: $this->createMock(LoggerInterface::class),
 			userManager: $users
 		);

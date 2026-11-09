@@ -24,9 +24,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Exception\ViewAlertRecipientException;
 use OCA\OpenRegister\Service\View\ViewAlert;
-use OCP\IGroupManager;
 use OCP\IUserManager;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -49,28 +47,34 @@ use Throwable;
 class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCheckInterface {
 
 	/**
-	 * The stateless resolver that reads a view's own share block.
+	 * The stateless resolver that reads a view's own share block, made on first use.
 	 *
-	 * @var ViewShareResolver
+	 * @var ViewShareResolver|null
 	 */
-	private ViewShareResolver $shares;
+	private ?ViewShareResolver $shares = null;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param IUserSession    $userSession  Who is signed in.
-	 * @param IGroupManager   $groupManager Their groups, and whether they administer the instance.
-	 * @param LoggerInterface   $logger       Where an unreadable membership is noted.
-	 * @param IUserManager|null $userManager  Which users exist, for user shares; without it no user share is accepted.
+	 * @param CallerContext     $caller      Who is signed in, their groups, and whether they administer the instance.
+	 * @param LoggerInterface   $logger      Where an unreadable membership is noted.
+	 * @param IUserManager|null $userManager Which users exist, for user shares; without it no user share is accepted.
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly CallerContext $caller,
 		private readonly LoggerInterface $logger,
 		private readonly ?IUserManager $userManager=null,
 	) {
-		$this->shares = new ViewShareResolver();
 	}//end __construct()
+
+	/**
+	 * The resolver that reads a view's own share block.
+	 *
+	 * @return ViewShareResolver The resolver.
+	 */
+	private function shares(): ViewShareResolver {
+		return $this->shares ??= new ViewShareResolver();
+	}//end shares()
 
 	/**
 	 * Findings for a share list about to be written, against the users and groups that exist.
@@ -82,10 +86,10 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function shareFindings(mixed $sharedWith): array {
-		return $this->shares->validateShares(
+		return $this->shares()->validateShares(
 			sharedWith: $sharedWith,
 			lookup: new ShareTargetLookup(
-				groupExists: fn (string $gid): bool => $this->groupManager->groupExists($gid),
+				groupExists: fn (string $gid): bool => $this->caller->groupManager->groupExists($gid),
 				userExists: fn (string $uid): bool => $this->userManager?->userExists($uid) === true
 			)
 		);
@@ -103,7 +107,7 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function currentUid(): string {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return '';
 		}
@@ -129,10 +133,10 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 		$isAdmin = false;
 
 		try {
-			$isAdmin = ($this->groupManager->isAdmin($userId) === true);
-			$user = $this->userSession->getUser();
+			$isAdmin = ($this->caller->groupManager->isAdmin($userId) === true);
+			$user = $this->caller->userSession->getUser();
 			if ($user !== null) {
-				$groups = $this->groupManager->getUserGroupIds($user);
+				$groups = $this->caller->groupManager->getUserGroupIds($user);
 			}
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -161,7 +165,7 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 			return true;
 		}
 
-		return $this->shares->accessOf(view: $view, reach: $reach) !== null;
+		return $this->shares()->accessOf(view: $view, reach: $reach) !== null;
 	}//end reaches()
 
 	/**
@@ -196,14 +200,14 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 	private function refusedFieldsOf(ReachedView $reached, array $update): array {
 		// An owner or an administrator may change everything: no difference
 		// to compute.
-		if ($this->shares->mayAdministerAs(view: $reached->view, reach: $reached->reach) === true) {
+		if ($this->shares()->mayAdministerAs(view: $reached->view, reach: $reached->reach) === true) {
 			return [];
 		}
 
-		$access = $this->shares->accessOf(view: $reached->view, reach: $reached->reach);
+		$access = $this->shares()->accessOf(view: $reached->view, reach: $reached->reach);
 
-		return $this->shares->refusedFields(
-			update: $this->shares->changedFields(update: $update, view: $reached->view),
+		return $this->shares()->refusedFields(
+			update: $this->shares()->changedFields(update: $update, view: $reached->view),
 			access: ($access ?? '')
 		);
 	}//end refusedFieldsOf()
@@ -307,7 +311,7 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 			return [];
 		}
 
-		$mayAdminister = $this->shares->mayAdministerAs(view: $view, reach: $reach);
+		$mayAdminister = $this->shares()->mayAdministerAs(view: $view, reach: $reach);
 
 		$refused = [];
 		foreach ($declared as $recipient) {
@@ -341,7 +345,7 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 	public function recipientReads(array $view, string $recipient): bool {
 		if (str_starts_with($recipient, ViewAlert::USER_PREFIX) === false) {
 			// A group reads the view when the view is shared with it or public.
-			return $this->shares->accessFor(view: $view, userId: '', userGroups: [$recipient]) !== null;
+			return $this->shares()->accessFor(view: $view, userId: '', userGroups: [$recipient]) !== null;
 		}
 
 		$uid = substr($recipient, strlen(ViewAlert::USER_PREFIX));
@@ -350,14 +354,14 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 		}
 
 		try {
-			if ($this->groupManager->isAdmin($uid) === true) {
+			if ($this->caller->groupManager->isAdmin($uid) === true) {
 				return true;
 			}
 
 			$groups = array_values(
 				array_filter(
-					$this->shares->shareGroups(view: $view),
-					fn (string $gid): bool => $this->groupManager->isInGroup($uid, $gid) === true
+					$this->shares()->shareGroups(view: $view),
+					fn (string $gid): bool => $this->caller->groupManager->isInGroup($uid, $gid) === true
 				)
 			);
 		} catch (Throwable $e) {
@@ -369,7 +373,7 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 			return false;
 		}
 
-		return $this->shares->accessFor(view: $view, userId: $uid, userGroups: $groups) !== null;
+		return $this->shares()->accessFor(view: $view, userId: $uid, userGroups: $groups) !== null;
 	}//end recipientReads()
 
 }//end class
