@@ -53,22 +53,41 @@ use RuntimeException;
 abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
+	 * The case layer's verbs.
+	 *
+	 * @var CasePlanService
+	 */
+	protected readonly CasePlanService $plans;
+
+	/**
+	 * Runs the work as the run's identity.
+	 *
+	 * @var FlowRunAsScope
+	 */
+	protected readonly FlowRunAsScope $scope;
+
+	/**
+	 * The interactive user, when the run names nobody.
+	 *
+	 * @var IUserSession
+	 */
+	protected readonly IUserSession $session;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param CasePlanService $plans The case layer's verbs.
-	 * @param FlowRunAsScope $scope Runs the work as the run's identity.
-	 * @param IUserSession $session The interactive user, when the run names nobody.
+	 * @param CaseStepRunner $steps The case layer's verbs, the run-as scope and the interactive user.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urls For the palette icon.
 	 */
 	public function __construct(
-		protected readonly CasePlanService $plans,
-		protected readonly FlowRunAsScope $scope,
-		protected readonly IUserSession $session,
+		CaseStepRunner $steps,
 		protected readonly IL10N $l10n,
 		protected readonly IURLGenerator $urls,
 	) {
-
+		$this->plans = $steps->plans;
+		$this->scope = $steps->scope;
+		$this->session = $steps->session;
 	}//end __construct()
 
 	/**
