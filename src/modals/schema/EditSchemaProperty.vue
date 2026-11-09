@@ -884,7 +884,6 @@ import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
-import SchemaRelationFields from './SchemaRelationFields.vue'
 import {
 	codedStoreOptions,
 	emptyCodedConfig,
@@ -895,6 +894,7 @@ import {
 	propertyTypeSelect,
 	semanticRoleOptions,
 } from './schemaPropertyForm.js'
+import SchemaRelationFields from './SchemaRelationFields.vue'
 
 export default {
 	name: 'EditSchemaProperty',
