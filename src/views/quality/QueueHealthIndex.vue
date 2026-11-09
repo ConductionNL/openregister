@@ -55,8 +55,8 @@ import { CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { NcAppContent, NcEmptyContent } from '@nextcloud/vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
-import { qualityStore } from '../../store/store.js'
 import QualityPageFrame from './QualityPageFrame.vue'
+import { qualityStore } from '../../store/store.js'
 
 export default {
 	name: 'QueueHealthIndex',
