@@ -20,14 +20,17 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCA\OpenRegister\Service\AvgComplianceService;
+use OCA\OpenRegister\Service\UnclassifiedProcessing;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -127,7 +130,8 @@ class AvgComplianceServiceGoldenTest extends TestCase {
 	 */
 	public function testUnclassifiedProcessingCount(): void {
 		$quiet = $this->createMock(LoggerInterface::class);
-		$db    = $this->db(rows: []);
+		$quiet->expects($this->never())->method('warning');
+		$db = $this->db(rows: []);
 
 		$fallback = new Verwerkingsactiviteit();
 		$fallback->setUuid('fb-uuid');
@@ -193,7 +197,12 @@ class AvgComplianceServiceGoldenTest extends TestCase {
 		?VerwerkingsactiviteitMapperInterface $vrwMapper,
 		LoggerInterface $logger
 	): AvgComplianceService {
-		return new AvgComplianceService($db, $this->schemas(), $this->registers(), $logger, $logMapper, $vrwMapper);
+		return new AvgComplianceService(
+			$db,
+			new SchemaCatalog($this->registers(), $this->schemas(), $this->createMock(MagicMapperInterface::class)),
+			$logger,
+			new UnclassifiedProcessing($logMapper, $vrwMapper)
+		);
 	}//end service()
 
 	/**
