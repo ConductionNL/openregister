@@ -3037,12 +3037,16 @@ class PermissionHandler implements PermissionHandlerInterface {
 		// Compute the schema-or-register baseline first.
 		$baseline = $this->baselineAuthorization(schema: $schema);
 
-		// Wave-12 Fix 5: layer per-object overrides on top.
-		if ($object === null) {
+		// Wave-12 Fix 5: layer an object's own authorization, roles expanded, over the baseline.
+		$objectAuth = $object?->getAuthorization();
+		if (empty($objectAuth) === true || is_array($objectAuth) === false) {
 			return $baseline;
 		}
 
-		return $this->layerObjectAuthorization(baseline: $baseline, object: $object, schema: $schema);
+		return $this->mergeObjectAuthorization(
+			baseline: $baseline,
+			override: $this->expandRoles(authorization: $objectAuth, schema: $schema)
+		);
 	}//end resolveAuthorizationRaw()
 
 	/**
@@ -3072,29 +3076,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return $this->expandRoles(authorization: $registerAuth, schema: $schema);
 	}//end baselineAuthorization()
-
-	/**
-	 * Layer an object's own authorization over the baseline.
-	 *
-	 * @param array|null   $baseline The schema-or-register baseline.
-	 * @param ObjectEntity $object   The object.
-	 * @param Schema       $schema   The schema (for role expansion).
-	 *
-	 * @return array|null The effective authorization
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	private function layerObjectAuthorization(?array $baseline, ObjectEntity $object, Schema $schema): ?array {
-		$objectAuth = $object->getAuthorization();
-		if (empty($objectAuth) === true || is_array($objectAuth) === false) {
-			return $baseline;
-		}
-
-		return $this->mergeObjectAuthorization(
-			baseline: $baseline,
-			override: $this->expandRoles(authorization: $objectAuth, schema: $schema)
-		);
-	}//end layerObjectAuthorization()
 
 	/**
 	 * Merge an object's expanded authorization over a baseline: replace per action, union deny.
@@ -3286,7 +3267,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 	private function schemaInheritFromPublic(Schema $schema, ?int $schemaId): ?bool {
 		$auth = $schema->getAuthorization();
 		if (is_array($auth) === true && array_key_exists('inheritFromPublic', $auth) === true) {
-			return $this->coerceStrictBoolOrLog(value: $auth['inheritFromPublic'], level: 'schema', schemaId: $schemaId);
+			return $this->coerceStrictBoolOrLog(
+				setting: new InheritFromPublicSetting(value: $auth['inheritFromPublic'], level: 'schema', schemaId: $schemaId)
+			);
 		}
 
 		return null;
@@ -3416,7 +3399,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return null;
 		}
 
-		return $this->coerceStrictBoolOrLog(value: $registerAuth['inheritFromPublic'], level: 'register', schemaId: $schemaId);
+		return $this->coerceStrictBoolOrLog(
+			setting: new InheritFromPublicSetting(value: $registerAuth['inheritFromPublic'], level: 'register', schemaId: $schemaId)
+		);
 	}//end registerInheritFromPublic()
 
 	/**
@@ -3427,24 +3412,22 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * "false" === true` would otherwise silently invert the gate on a
 	 * seed/migration/CLI write that bypasses the schema validator.
 	 *
-	 * @param mixed $value The stored value.
-	 * @param string $level The cascade level ('schema' | 'register'), for logging.
-	 * @param int|null $schemaId The schema id, for logging.
+	 * @param InheritFromPublicSetting $setting The stored value, and its cascade level and schema id for logging.
 	 *
 	 * @return bool|null The boolean value, or null when the value is not a real boolean.
 	 */
-	private function coerceStrictBoolOrLog(mixed $value, string $level, ?int $schemaId): ?bool {
-		if (is_bool($value) === true) {
-			return $value;
+	private function coerceStrictBoolOrLog(InheritFromPublicSetting $setting): ?bool {
+		if (is_bool($setting->value) === true) {
+			return $setting->value;
 		}
 
-		if ($value !== null) {
+		if ($setting->value !== null) {
 			$this->data->logger->warning(
 				message: '[PermissionHandler] Non-boolean inheritFromPublic value ignored; treating as unset',
 				context: [
-					'level' => $level,
-					'schemaId' => $schemaId,
-					'type' => get_debug_type($value),
+					'level' => $setting->level,
+					'schemaId' => $setting->schemaId,
+					'type' => get_debug_type($setting->value),
 				]
 			);
 		}
@@ -3724,24 +3707,24 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return true;
 		}
 
-		return $this->transitionListAdmits(authorizationList: $authorizationList, userGroupSet: array_flip($userGroups), schema: $schema);
+		$run = new TransitionAuthorizationRun(userGroupSet: array_flip($userGroups), schema: $schema);
+
+		return $this->transitionListAdmits(run: $run, authorizationList: $authorizationList);
 	}//end isTransitionAuthorized()
 
 	/**
 	 * Whether any entry of a transition authorization list admits the caller.
 	 *
-	 * @param array<int, mixed>  $authorizationList Group ids / `{role}` entries.
-	 * @param array<string, int> $userGroupSet      The caller's group ids as keys.
-	 * @param Schema             $schema            Schema the transition belongs to.
+	 * @param TransitionAuthorizationRun $run               The caller's groups and the transition's schema.
+	 * @param array<int, mixed>          $authorizationList Group ids / `{role}` entries.
 	 *
 	 * @return bool True when an entry admits the caller
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
 	 */
-	private function transitionListAdmits(array $authorizationList, array $userGroupSet, Schema $schema): bool {
-		$roleGroupMap = null;
+	private function transitionListAdmits(TransitionAuthorizationRun $run, array $authorizationList): bool {
 		foreach ($authorizationList as $entry) {
-			if ($this->transitionEntryAdmits(entry: $entry, userGroupSet: $userGroupSet, schema: $schema, roleGroupMap: $roleGroupMap) === true) {
+			if ($this->transitionEntryAdmits(run: $run, entry: $entry) === true) {
 				return true;
 			}
 		}
@@ -3778,19 +3761,17 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * groups assigned to that role (resolved once, on first use, into $roleGroupMap).
 	 * Anything else admits nobody.
 	 *
-	 * @param mixed                                   $entry        The entry.
-	 * @param array<string, int>                      $userGroupSet The caller's group ids as keys.
-	 * @param Schema                                  $schema       Schema the transition belongs to.
-	 * @param array<string, array<int, string>>|null $roleGroupMap The role map, or null when not resolved yet.
+	 * @param TransitionAuthorizationRun $run   The caller's groups, the schema, and the role map once resolved.
+	 * @param mixed                      $entry The entry.
 	 *
 	 * @return bool True when the entry admits the caller
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
 	 */
-	private function transitionEntryAdmits(mixed $entry, array $userGroupSet, Schema $schema, ?array &$roleGroupMap): bool {
+	private function transitionEntryAdmits(TransitionAuthorizationRun $run, mixed $entry): bool {
 		// Literal NC group id.
 		if (is_string($entry) === true) {
-			return $entry !== '' && isset($userGroupSet[$entry]) === true;
+			return $entry !== '' && isset($run->userGroupSet[$entry]) === true;
 		}
 
 		// Named-role indirection: { "role": "<name>" } → assigned groups.
@@ -3798,9 +3779,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		$roleGroupMap ??= $this->resolveTransitionRoleGroups(schema: $schema);
+		$run->roleGroupMap ??= $this->resolveTransitionRoleGroups(schema: $run->schema);
 
-		return $this->anyGroupInSet(groups: ($roleGroupMap[$entry['role']] ?? []), userGroupSet: $userGroupSet);
+		return $this->anyGroupInSet(groups: ($run->roleGroupMap[$entry['role']] ?? []), userGroupSet: $run->userGroupSet);
 	}//end transitionEntryAdmits()
 
 	/**
