@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware\Exception;
 
 use Exception;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionInterface;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 
@@ -104,18 +104,18 @@ class ApiVersionRefusedException extends Exception {
 	/**
 	 * The refusal for a version that was withdrawn.
 	 *
-	 * @param ApiVersion $version The withdrawn version.
+	 * @param ApiVersionInterface $version The withdrawn version.
 	 * @param array<int, string> $acceptable The identifiers this instance serves.
 	 *
 	 * @return self The refusal.
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
-	public static function withdrawn(ApiVersion $version, array $acceptable): self {
+	public static function withdrawn(ApiVersionInterface $version, array $acceptable): self {
 		return new self(
 			statusCode: Http::STATUS_GONE,
-			requestedId: $version->id,
-			successor: $version->successor,
+			requestedId: $version->identifier(),
+			successor: $version->successorIdentifier(),
 			acceptable: $acceptable,
 		);
 
