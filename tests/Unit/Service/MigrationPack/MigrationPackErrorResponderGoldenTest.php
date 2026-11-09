@@ -60,7 +60,10 @@ class MigrationPackErrorResponderGoldenTest extends TestCase {
 		$responder = new MigrationPackErrorResponder($this->passThroughL10n('NL:'), $this->createMock(LoggerInterface::class));
 
 		$this->assertSame([401, ['message' => 'NL:Authentication required', 'error' => 'not-authenticated']], self::shape($responder->notAuthenticated()));
-		$this->assertSame([403, ['message' => 'NL:Administrator privileges required', 'error' => 'admin-required']], self::shape($responder->adminRequired()));
+		$this->assertSame(
+			[403, ['message' => 'NL:Administrator privileges required', 'error' => 'admin-required']],
+			self::shape($responder->adminRequired())
+		);
 		$this->assertSame([404, ['message' => 'NL:Migration pack not found', 'error' => 'pack-not-found']], self::shape($responder->notFound()));
 		$this->assertSame(
 			[400, ['message' => 'Te veel rijen', 'error' => 'too-many-rows']],
