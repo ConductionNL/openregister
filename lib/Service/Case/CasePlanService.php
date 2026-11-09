@@ -649,11 +649,8 @@ class CasePlanService implements CasePlanServiceInterface {
 			return false;
 		}
 
-		$object = $this->anchorAccess->anchor->read(
-			objectUuid: (string)$item->getObjectUuid(),
-			registerId: $item->getRegisterId(),
-			schemaId: $item->getSchemaId()
-		);
+		$anchor = new CaseAnchor(objectUuid: (string)$item->getObjectUuid(), registerId: $item->getRegisterId(), schemaId: $item->getSchemaId());
+		$object = $this->anchorAccess->anchor->read(anchor: $anchor);
 
 		return $this->mechanics->sentries->entrySentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: $object)) !== null;
 	}//end isEnableable()
@@ -754,9 +751,7 @@ class CasePlanService implements CasePlanServiceInterface {
 		$first = $rows[0];
 		$visible = $this->anchorAccess->authorization->isAdministrator(uid: $uid)
 			|| ($uid !== null && $this->anchorAccess->anchor->mayRead(
-				objectUuid: $objectUuid,
-				registerId: $first->getRegisterId(),
-				schemaId: $first->getSchemaId()
+				anchor: new CaseAnchor(objectUuid: $objectUuid, registerId: $first->getRegisterId(), schemaId: $first->getSchemaId())
 			) === true);
 		if ($visible === false) {
 			throw new DoesNotExistException(sprintf('Object %s has no case plan.', $objectUuid));
