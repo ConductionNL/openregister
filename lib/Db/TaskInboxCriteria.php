@@ -32,7 +32,7 @@ use DateTime;
 /**
  * One inbox read's scope, filters and sort.
  *
- * Built from its parts — audience, selection, order — and flattened onto one
+ * Built from its two parts — audience and selection — and flattened onto one
  * property per filter the spec names, so every predicate reads one field.
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
@@ -191,8 +191,7 @@ final class TaskInboxCriteria {
 	 * Constructor.
 	 *
 	 * @param TaskInboxAudience       $audience  The caller and the scope of the read.
-	 * @param TaskInboxSelection|null $selection The filters, due window and anchor; none when null.
-	 * @param TaskInboxOrder|null     $order     The sort; due date ascending when null.
+	 * @param TaskInboxSelection|null $selection The filters, due window, anchor and sort; the defaults when null.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
@@ -200,10 +199,9 @@ final class TaskInboxCriteria {
 	public function __construct(
 		TaskInboxAudience $audience,
 		?TaskInboxSelection $selection = null,
-		?TaskInboxOrder $order = null,
 	) {
 		$selection = ($selection ?? new TaskInboxSelection());
-		$order = ($order ?? new TaskInboxOrder());
+		$order = $selection->order;
 		$this->uid = $audience->uid;
 		$this->groupIds = $audience->groupIds;
 		$this->isAdmin = $audience->isAdmin;

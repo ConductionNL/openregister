@@ -293,7 +293,7 @@ class TaskMapperQueriesTest extends TestCase {
 	 */
 	public function testFindInboxFiltersAndSortsInTheDatastore(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith());
-		$criteria = new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL), selection: new TaskInboxSelection(filter: new TaskInboxFilter(states: [Task::STATE_ACTIVE, Task::STATE_ENABLED], isTerminal: false, priority: 'high'), window: new TaskInboxDueWindow(overdueAt: new DateTime('2026-09-01T00:00:00+00:00')), anchor: new TaskInboxAnchor(objectUuid: 'obj-1')), order: new TaskInboxOrder(sort: TaskInboxCriteria::SORT_PRIORITY, sortDescending: true));
+		$criteria = new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL), selection: new TaskInboxSelection(filter: new TaskInboxFilter(states: [Task::STATE_ACTIVE, Task::STATE_ENABLED], isTerminal: false, priority: 'high'), window: new TaskInboxDueWindow(overdueAt: new DateTime('2026-09-01T00:00:00+00:00')), anchor: new TaskInboxAnchor(objectUuid: 'obj-1'), order: new TaskInboxOrder(sort: TaskInboxCriteria::SORT_PRIORITY, sortDescending: true)));
 
 		$mapper->findInbox(criteria: $criteria);
 
@@ -305,7 +305,7 @@ class TaskMapperQueriesTest extends TestCase {
 		$this->assertTrue((bool)array_filter($this->functions, static fn (string $f): bool => str_starts_with($f, 'CASE `priority` WHEN')));
 
 		$this->calls = [];
-		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true), order: new TaskInboxOrder(sort: TaskInboxCriteria::SORT_CREATED)));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true), selection: new TaskInboxSelection(order: new TaskInboxOrder(sort: TaskInboxCriteria::SORT_CREATED))));
 		$this->assertTrue($this->saw('orderBy', 'created'));
 	}//end testFindInboxFiltersAndSortsInTheDatastore()
 
@@ -320,7 +320,7 @@ class TaskMapperQueriesTest extends TestCase {
 	public function testFindInboxCanPutOpenTasksFirst(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
-		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true), order: new TaskInboxOrder(openFirst: true)));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true), selection: new TaskInboxSelection(order: new TaskInboxOrder(openFirst: true))));
 		$this->assertTrue($this->saw('orderBy', 'is_terminal'));
 		$this->assertTrue($this->saw('addOrderBy', 'due_at'));
 		$this->assertFalse($this->saw('orderBy', 'due_at'));

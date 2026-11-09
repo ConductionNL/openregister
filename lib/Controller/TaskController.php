@@ -339,12 +339,12 @@ class TaskController extends Controller {
 					objectUuid: $objectUuid,
 					runUuid: $this->trimmedOrNull(value: $runUuid),
 					includeBlocked: ($includeBlocked !== null && filter_var($includeBlocked, FILTER_VALIDATE_BOOLEAN) === true)
+				),
+				order: new TaskInboxOrder(
+					sort: $sortKey,
+					sortDescending: $descending,
+					openFirst: ($openFirst !== null && filter_var($openFirst, FILTER_VALIDATE_BOOLEAN) === true)
 				)
-			),
-			order: new TaskInboxOrder(
-				sort: $sortKey,
-				sortDescending: $descending,
-				openFirst: ($openFirst !== null && filter_var($openFirst, FILTER_VALIDATE_BOOLEAN) === true)
 			),
 		);
 

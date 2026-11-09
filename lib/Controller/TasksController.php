@@ -257,9 +257,9 @@ class TasksController extends Controller {
 			audience: new TaskInboxAudience(uid: $uid, groupIds: $this->groupIds(), isAdmin: $this->isAdmin(uid: $uid), scope: $filter['scope']),
 			selection: new TaskInboxSelection(
 				filter: new TaskInboxFilter(states: $filter['states'], isTerminal: $this->requestedTerminal()),
-				window: new TaskInboxDueWindow(overdueAt: $filter['overdueAt'])
+				window: new TaskInboxDueWindow(overdueAt: $filter['overdueAt']),
+				order: new TaskInboxOrder(sort: ltrim($sort, '-'), sortDescending: str_starts_with($sort, '-'))
 			),
-			order: new TaskInboxOrder(sort: ltrim($sort, '-'), sortDescending: str_starts_with($sort, '-')),
 		);
 	}//end criteria()
 

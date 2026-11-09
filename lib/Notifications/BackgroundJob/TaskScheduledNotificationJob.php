@@ -360,9 +360,9 @@ class TaskScheduledNotificationJob extends TimedJob {
 			audience: new TaskInboxAudience(uid: self::SWEEP_UID, isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL),
 			selection: new TaskInboxSelection(
 				filter: new TaskInboxFilter(isTerminal: false),
-				window: new TaskInboxDueWindow(overdueAt: $now)
-			),
-			order: new TaskInboxOrder(sort: TaskInboxCriteria::SORT_CREATED)
+				window: new TaskInboxDueWindow(overdueAt: $now),
+				order: new TaskInboxOrder(sort: TaskInboxCriteria::SORT_CREATED)
+			)
 		);
 
 		try {
