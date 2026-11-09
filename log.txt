@@ -654,3 +654,4 @@
 2026-11-09T22:12:55Z precheck-20261109T184912-5e4abf4c GREEN tree 269a3918fe on dev 6e03e095ef prs 1 front=ok: Tests: 53928, Assertions: 175329, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-09T22:13:37Z precheck-20261109T184908-54283be8 GREEN tree 4761504c53 on dev 6e03e095ef prs 1 front=skip: Tests: 53928, Assertions: 175329, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-09T22:13:54Z integrator-20261109T214134-37308df4 GREEN tree 649f88906e on dev 6e03e095ef prs 12 front=ok: Tests: 53947, Assertions: 175420, Errors: 6, Failures: 11, Warnings: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
+2026-11-09T22:14:52Z integrator-20261109T214134-37308df4 MERGED-TREE 649f88906e: 12 PRs in one push, main now 649f88906e = tested tree
