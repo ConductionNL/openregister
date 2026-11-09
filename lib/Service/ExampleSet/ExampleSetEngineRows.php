@@ -315,11 +315,9 @@ abstract class ExampleSetEngineRows {
 	/**
 	 * Write the rows of one fragment that the record does not hold, and let go of the held ones it no longer declares.
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<string, mixed> $report   The report; gains the outcomes under part() and `dropped`.
-	 * @param array<string, mixed> $record   The record; gains the rows written under part().
-	 * @param ExampleSetValues     $values   Fills placeholders.
+	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
+	 * @param array<string, mixed>    $report The report; gains the outcomes under part() and `dropped`.
+	 * @param array<string, mixed>    $record The record; gains the rows written under part().
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
@@ -328,9 +326,10 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetRecord::letGoUndeclared() is a pure function of its arguments, shared by every part.
 	 */
-	public function installFragment(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
-		$install = new ExampleSetRowInstall(rows: $this, refusal: $this->refusalIn(...), fill: $this->fillContext(...), values: $values);
-		$changed = $install->fragment(fragment: $fragment, context: $context, report: $report, record: $record);
+	public function installFragment(ExampleSetFragmentWrite $write, array &$report, array &$record): bool {
+		$fragment = $write->fragment;
+		$install  = new ExampleSetRowInstall(rows: $this, refusal: $this->refusalIn(...), fill: $this->fillContext(...), values: $write->values);
+		$changed  = $install->fragment(fragment: $fragment, context: $write->context, report: $report, record: $record);
 		if (ExampleSetRecord::letGoUndeclared(fragment: $fragment, part: $this->part(), noun: $this->noun(), report: $report, record: $record) === true) {
 			$changed = true;
 		}
