@@ -233,7 +233,7 @@ phase_build() {
 		say "RED-UNCHANGED this exact tree ($sig) was already red without a single culprit; stop for the coordinator"; exit 6
 	fi
 	printf 'D0=%s\nT=%s\nN=%s\n' "$d0" "$(git rev-parse HEAD)" "$inc" > "$W/tree.env"
-	lease_renew "$LEASE" 240 || { say "LEASE-LOST"; exit 6; }
+	[ "${NO_LEASE:-0}" = 1 ] || lease_renew "$LEASE" 240 || { say "LEASE-LOST"; exit 6; }
 	say "BUILT tree $(git rev-parse --short HEAD) on main ${d0:0:10}: $inc PRs"
 }
 

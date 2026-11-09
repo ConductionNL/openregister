@@ -10,7 +10,7 @@
 set -o pipefail
 BIN=$(dirname "$(readlink -f "$0")")
 I=$BIN/integrate.sh
-export SIG_WORK=${SIG_WORK:-$HOME/sigint} CAP=1
+export SIG_WORK=${SIG_WORK:-$HOME/sigint} CAP=1 NO_LEASE=1
 W=$SIG_WORK
 export ST=$W/state ST_ME_FILE=$W/.id SIG_ROLE=precheck
 source "$BIN/state.sh"
