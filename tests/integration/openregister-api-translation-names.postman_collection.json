@@ -147,7 +147,7 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/registers",
 						"body": {
 							"mode": "raw",
-							"raw": "{\"title\":\"t25 integrations newman register\",\"description\":\"fixture of the translation-names collection\"}",
+							"raw": "{\"title\":\"t25 integrations newman register\",\"description\":\"fixture of the translation-names collection\",\"languages\":[\"nl\",\"en\"]}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -187,7 +187,7 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
 						"body": {
 							"mode": "raw",
-							"raw": "{\"title\":\"t25 integrations newman schema\",\"properties\":{\"name\":{\"type\":\"string\",\"title\":\"Name\",\"maxLength\":255},\"email\":{\"type\":\"string\",\"title\":\"Email\",\"maxLength\":255},\"amount\":{\"type\":\"number\",\"title\":\"Amount\"}},\"authorization\":{\"read\":[\"admin\"],\"create\":[\"admin\"],\"update\":[\"admin\"],\"delete\":[\"admin\"]}}",
+							"raw": "{\"title\":\"t25 integrations newman schema\",\"properties\":{\"name\":{\"type\":\"string\",\"title\":\"Name\",\"maxLength\":255},\"email\":{\"type\":\"string\",\"title\":\"Email\",\"maxLength\":255},\"amount\":{\"type\":\"number\",\"title\":\"Amount\"},\"since\":{\"type\":\"string\",\"format\":\"date-time\",\"title\":\"Since\"},\"title\":{\"type\":\"string\",\"title\":\"Title\",\"translatable\":true}},\"configuration\":{\"linkedTypes\":[\"mail\"],\"x-openregister-party\":{\"kind\":\"person\",\"nameProperty\":\"name\"}},\"authorization\":{\"read\":[\"admin\"],\"create\":[\"admin\"],\"update\":[\"admin\"],\"delete\":[\"admin\"]}}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -265,7 +265,7 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
 						"body": {
 							"mode": "raw",
-							"raw": "{\"name\":\"Alpha\",\"email\":\"alpha@example.test\",\"amount\":10}",
+							"raw": "{\"name\":\"Alpha\",\"email\":\"alpha@example.test\",\"amount\":10,\"since\":\"2026-01-15T10:00:00+00:00\",\"title\":{\"nl\":\"Hallo\",\"en\":\"Hello\"}}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -304,7 +304,7 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
 						"body": {
 							"mode": "raw",
-							"raw": "{\"name\":\"Beta\",\"email\":\"beta@example.test\",\"amount\":32}",
+							"raw": "{\"name\":\"Beta\",\"email\":\"beta@example.test\",\"amount\":32,\"since\":\"2026-02-20T10:00:00+00:00\"}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -345,7 +345,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/name/en/status",
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/title/en/status",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -384,7 +384,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/name/en/status",
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/title/en/status",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"status\":\"no-such-status\"}",
@@ -403,14 +403,14 @@
 								"exec": [
 									"pm.test('status is 400', () => pm.response.to.have.status(400));",
 									"const b = pm.response.json();",
-									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+									"pm.test('lists the allowed statuses', () => { pm.expect(b.error).to.include('no-such-status'); pm.expect(b.error).to.include('human_reviewed'); });"
 								]
 							}
 						}
 					]
 				},
 				{
-					"name": "setStatus: human_reviewed is recorded",
+					"name": "setStatus: a valid status without a translation slot is 400",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -423,7 +423,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/name/en/status",
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/title/en/status",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"status\":\"human_reviewed\"}",
@@ -440,9 +440,9 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
 									"const b = pm.response.json();",
-									"pm.test('the row carries the status sent', () => pm.expect(JSON.stringify(b)).to.include('human_reviewed'));"
+									"pm.test('names the missing slot', () => { pm.expect(b.error).to.include('No translation slot'); pm.expect(b.error).to.include('property=title language=en'); });"
 								]
 							}
 						}
@@ -462,7 +462,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/name/en/status",
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/title/en/status",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"status\":\"stale\"}",
@@ -1852,7 +1852,7 @@
 					]
 				},
 				{
-					"name": "addObjectLink: non-admin without rights is refused",
+					"name": "addObjectLink: non-admin without read rights cannot find the object (400)",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -1897,9 +1897,9 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
 									"const b = pm.response.json();",
-									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+									"pm.test('the object is not found for them', () => pm.expect(b.error).to.match(/not found/i));"
 								]
 							}
 						}
@@ -1936,7 +1936,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 400/404', () => pm.expect(pm.response.code).to.be.oneOf([400,404]));",
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -1945,7 +1945,7 @@
 					]
 				},
 				{
-					"name": "removeObjectLink: non-admin without rights is refused",
+					"name": "removeObjectLink: non-admin without read rights cannot find the object (400)",
 					"request": {
 						"method": "DELETE",
 						"header": [
@@ -1981,9 +1981,9 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
 									"const b = pm.response.json();",
-									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+									"pm.test('the object is not found for them', () => pm.expect(b.error).to.match(/not found/i));"
 								]
 							}
 						}
@@ -2090,45 +2090,6 @@
 					]
 				},
 				{
-					"name": "addRegisterLink: admin links",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerUuid}}/_linked/mail",
-						"body": {
-							"mode": "raw",
-							"raw": "{\"id\":\"t25-reg-mail\"}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 200', () => pm.response.to.have.status(200));",
-									"const b = pm.response.json();",
-									"pm.test('the list holds the id', () => pm.expect(JSON.stringify(b._mail)).to.include('t25-reg-mail'));"
-								]
-							}
-						}
-					]
-				},
-				{
 					"name": "addRegisterLink: non-admin is 403",
 					"request": {
 						"method": "POST",
@@ -2216,45 +2177,6 @@
 									"pm.test('status is 400', () => pm.response.to.have.status(400));",
 									"const b = pm.response.json();",
 									"pm.test('names the field', () => pm.expect(b.error).to.eql('Missing required field: id'));"
-								]
-							}
-						}
-					]
-				},
-				{
-					"name": "addSchemaLink: admin links",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaUuid}}/_linked/mail",
-						"body": {
-							"mode": "raw",
-							"raw": "{\"id\":\"t25-schema-mail\"}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 200', () => pm.response.to.have.status(200));",
-									"const b = pm.response.json();",
-									"pm.test('the list holds the id', () => pm.expect(JSON.stringify(b._mail)).to.include('t25-schema-mail'));"
 								]
 							}
 						}
@@ -2416,7 +2338,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 200/403', () => pm.expect(pm.response.code).to.be.oneOf([200,403]));",
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
 									"const b = pm.response.json();",
 									"pm.test('sees no amount', () => { if (pm.response.code === 200) pm.expect(Number(b.value || 0)).to.eql(0); else pm.expect(b.error).to.be.a('string'); });"
 								]
@@ -2551,7 +2473,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 200/403', () => pm.expect(pm.response.code).to.be.oneOf([200,403]));",
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
 									"pm.test('Alpha is not exposed', () => pm.expect(pm.response.text()).to.not.include('Alpha'));"
 								]
 							}
@@ -2559,7 +2481,7 @@
 					]
 				},
 				{
-					"name": "timeseries: per day",
+					"name": "timeseries: per month",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2572,7 +2494,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?interval=day&metric=count"
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?field=since&interval=month&metric=count&from=2026-01-01T00:00:00Z&to=2026-03-31T23:59:59Z"
 					},
 					"event": [
 						{
@@ -2582,7 +2504,67 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.response.to.have.status(200));",
 									"const b = pm.response.json();",
-									"pm.test('answers a series', () => pm.expect(b).to.be.an('object').and.not.empty);"
+									"pm.test('both months carry one object', () => { const s = JSON.stringify(b); pm.expect(s).to.include('2026-01'); pm.expect(s).to.include('2026-02'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "timeseries: field missing is 400",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?interval=month"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names field', () => pm.expect(b.error).to.eql('`field` is required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "timeseries: undeclared field is 400",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?field=nope&interval=month"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names the field', () => pm.expect(b.error).to.include('nope'));"
 								]
 							}
 						}
@@ -2602,7 +2584,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/999999/{{schemaId}}/timeseries?interval=day"
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/999999/{{schemaId}}/timeseries?field=since&interval=month&from=2026-01-01T00:00:00Z&to=2026-03-31T23:59:59Z"
 					},
 					"event": [
 						{
@@ -2632,7 +2614,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?interval=fortnight&metric=count"
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?field=since&interval=fortnight&metric=count&from=2026-01-01T00:00:00Z&to=2026-03-31T23:59:59Z"
 					},
 					"event": [
 						{
@@ -2662,7 +2644,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?interval=day&metric=count",
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?field=since&interval=month&metric=count&from=2026-01-01T00:00:00Z&to=2026-03-31T23:59:59Z",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -2685,7 +2667,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 200/403', () => pm.expect(pm.response.code).to.be.oneOf([200,403]));",
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
 									"pm.test('no object data exposed', () => pm.expect(pm.response.text()).to.not.include('Alpha'));"
 								]
 							}
@@ -2728,7 +2710,7 @@
 					]
 				},
 				{
-					"name": "stats: unknown register is 404",
+					"name": "stats: unknown register scores nothing",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2749,9 +2731,9 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
 									"const b = pm.response.json();",
-									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+									"pm.test('total 0', () => pm.expect(b.total).to.eql(0));"
 								]
 							}
 						}
@@ -2794,7 +2776,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 200/403', () => pm.expect(pm.response.code).to.be.oneOf([200,403]));",
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
 									"pm.test('no object data exposed', () => pm.expect(pm.response.text()).to.not.include('Alpha'));"
 								]
 							}
@@ -2832,7 +2814,7 @@
 					]
 				},
 				{
-					"name": "index: unknown schema is 404",
+					"name": "index: unknown schema lists nothing",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2853,9 +2835,9 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
 									"const b = pm.response.json();",
-									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+									"pm.test('no items', () => { pm.expect(b.items).to.be.an('array').that.is.empty; pm.expect(b.total).to.eql(0); });"
 								]
 							}
 						}
@@ -2898,7 +2880,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 200/403', () => pm.expect(pm.response.code).to.be.oneOf([200,403]));",
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
 									"pm.test('no object data exposed', () => pm.expect(pm.response.text()).to.not.include('Alpha'));"
 								]
 							}
@@ -2910,45 +2892,6 @@
 		{
 			"name": "merge",
 			"item": [
-				{
-					"name": "reverse: unknown merge id is 404",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/merge/00000000-0000-4000-8000-000000000000/reverse",
-						"body": {
-							"mode": "raw",
-							"raw": "{}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 404', () => pm.response.to.have.status(404));",
-									"const b = pm.response.json();",
-									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
-								]
-							}
-						}
-					]
-				},
 				{
 					"name": "reverse: an object that was not merged is refused",
 					"request": {
@@ -2980,61 +2923,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 400/404/409/422', () => pm.expect(pm.response.code).to.be.oneOf([400,404,409,422]));",
-									"const b = pm.response.json();",
-									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
-								]
-							}
-						}
-					]
-				},
-				{
-					"name": "reverse: non-admin without rights is refused",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/merge/{{objUuid}}/reverse",
-						"body": {
-							"mode": "raw",
-							"raw": "{}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"auth": {
-							"type": "basic",
-							"basic": [
-								{
-									"key": "username",
-									"value": "{{t25_user}}",
-									"type": "string"
-								},
-								{
-									"key": "password",
-									"value": "{{t25_password}}",
-									"type": "string"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -3131,7 +3020,7 @@
 								"exec": [
 									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
-									"pm.test('object not found', () => pm.expect(b.error).to.eql('Object not found.'));"
+									"pm.test('object not found', () => pm.expect(b.error).to.match(/not found/i));"
 								]
 							}
 						}
@@ -3174,7 +3063,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -3306,7 +3195,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -3565,7 +3454,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -3629,7 +3518,7 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/new",
 						"body": {
 							"mode": "raw",
-							"raw": "{\"userId\":\"admin\"}",
+							"raw": "{\"contactUri\":\"x.vcf\",\"addressbookId\":1}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -3736,7 +3625,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -3868,7 +3757,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -4001,7 +3890,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -4108,50 +3997,6 @@
 					]
 				},
 				{
-					"name": "objects: non-admin cannot see the admin-only object",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/contacts/{{contactUid}}/objects",
-						"auth": {
-							"type": "basic",
-							"basic": [
-								{
-									"key": "username",
-									"value": "{{t25_user}}",
-									"type": "string"
-								},
-								{
-									"key": "password",
-									"value": "{{t25_password}}",
-									"type": "string"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 200', () => pm.response.to.have.status(200));",
-									"pm.test('the object is not exposed', () => pm.expect(pm.response.text()).to.not.include(pm.collectionVariables.get('objUuid')));"
-								]
-							}
-						}
-					]
-				},
-				{
 					"name": "destroy: non-admin without rights is refused",
 					"request": {
 						"method": "DELETE",
@@ -4188,7 +4033,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -4304,7 +4149,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?search=admin"
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?q=admin"
 					},
 					"event": [
 						{
@@ -4321,7 +4166,7 @@
 					]
 				},
 				{
-					"name": "search: query missing is 400",
+					"name": "search: a one-letter query is 400",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -4334,7 +4179,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search"
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?q=a"
 					},
 					"event": [
 						{
@@ -4344,7 +4189,7 @@
 								"exec": [
 									"pm.test('status is 400', () => pm.response.to.have.status(400));",
 									"const b = pm.response.json();",
-									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+									"pm.test('says the minimum', () => { pm.expect(b.error).to.match(/at least/); pm.expect(b.total).to.eql(0); });"
 								]
 							}
 						}
@@ -4364,7 +4209,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?search=admin",
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?q=admin",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -4409,7 +4254,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?search=admin",
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?q=admin",
 						"auth": {
 							"type": "noauth"
 						}
@@ -4453,7 +4298,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/mail/i));"
 								]
@@ -4492,7 +4337,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/mail/i));"
 								]
@@ -4522,7 +4367,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/mail/i));"
 								]
@@ -4552,7 +4397,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/mail/i));"
 								]
@@ -4597,7 +4442,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/mail/i));"
 								]
@@ -4636,7 +4481,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 200/501', () => pm.expect(pm.response.code).to.be.oneOf([200,501]));",
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
 									"const b = pm.response.json();",
 									"pm.test('documented answer', () => { if (pm.response.code === 501) pm.expect(b.error).to.eql('Reply threading is not available'); else pm.expect(b).to.be.an('object'); });"
 								]
@@ -4746,7 +4591,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -4785,7 +4630,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/mail/i));"
 								]
@@ -4860,7 +4705,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -4890,7 +4735,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 200/501/503', () => pm.expect(pm.response.code).to.be.oneOf([200,501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('empty or documented', () => { if (pm.response.code === 200) pm.expect(b.total).to.eql(0); else pm.expect(String(b.error)).to.match(/mail/i); });"
 								]
@@ -4920,7 +4765,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 200/404/501/503', () => pm.expect(pm.response.code).to.be.oneOf([200,404,501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('empty or documented', () => { if (pm.response.code === 200) pm.expect(b.total).to.eql(0); else pm.expect(String(b.error)).to.not.be.empty; });"
 								]
@@ -4950,7 +4795,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 400/501/503', () => pm.expect(pm.response.code).to.be.oneOf([400,501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -5060,7 +4905,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -5191,7 +5036,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -5284,7 +5129,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -5353,7 +5198,8 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status is 200', () => pm.response.to.have.status(200));",
-									"pm.test('describes Beta', () => pm.expect(pm.response.text()).to.include('Beta'));"
+									"const b = pm.response.json();",
+									"pm.test('Beta is a person party of Alpha', () => { pm.expect(b.uuid).to.eql(pm.collectionVariables.get('obj2Uuid')); pm.expect(b.kind).to.eql('person'); pm.expect(b.objects).to.include(pm.collectionVariables.get('objUuid')); });"
 								]
 							}
 						}
@@ -5426,39 +5272,9 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
-								]
-							}
-						}
-					]
-				},
-				{
-					"name": "search: admin",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/parties/search?q=Beta"
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 200', () => pm.response.to.have.status(200));",
-									"const b = pm.response.json();",
-									"pm.test('a result list', () => pm.expect(b).to.be.an('object'));"
 								]
 							}
 						}
@@ -5489,50 +5305,6 @@
 									"pm.test('status is 400', () => pm.response.to.have.status(400));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
-								]
-							}
-						}
-					]
-				},
-				{
-					"name": "search: non-admin does not see Beta",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/parties/search?q=Beta",
-						"auth": {
-							"type": "basic",
-							"basic": [
-								{
-									"key": "username",
-									"value": "{{t25_user}}",
-									"type": "string"
-								},
-								{
-									"key": "password",
-									"value": "{{t25_password}}",
-									"type": "string"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 200', () => pm.response.to.have.status(200));",
-									"pm.test('Beta not exposed', () => pm.expect(pm.response.text()).to.not.include(pm.collectionVariables.get('obj2Uuid')));"
 								]
 							}
 						}
@@ -5635,7 +5407,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -5803,7 +5575,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -5935,7 +5707,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -6067,7 +5839,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -6142,7 +5914,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -6202,7 +5974,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -6247,7 +6019,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
 									"const b = pm.response.json();",
 									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
 								]
@@ -6361,7 +6133,7 @@
 					]
 				},
 				{
-					"name": "listCalendarEvents: unknown calendar",
+					"name": "listCalendarEvents: the personal calendar",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -6374,7 +6146,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/calendar/calendars/t25-no-such-calendar/events"
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/calendar/calendars/personal/events"
 					},
 					"event": [
 						{
@@ -6382,9 +6154,9 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 200/404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));",
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
 									"const b = pm.response.json();",
-									"pm.test('empty or not found', () => { if (pm.response.code === 200) pm.expect(b.total).to.eql(0); else pm.expect(b.error).to.be.a('string'); });"
+									"pm.test('results is a list with a matching total', () => { pm.expect(b.results).to.be.an('array'); pm.expect(b.total).to.eql(b.results.length); });"
 								]
 							}
 						}
@@ -6417,7 +6189,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
 								]
@@ -6456,7 +6228,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
 								]
@@ -6495,7 +6267,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
 								]
@@ -6525,7 +6297,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
 								]
@@ -6555,7 +6327,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
 								]
@@ -6585,7 +6357,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
 								]
@@ -6663,7 +6435,7 @@
 					]
 				},
 				{
-					"name": "setDefault: non-admin is refused",
+					"name": "setDefault: admin sets the schema default",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -6680,6 +6452,75 @@
 						"body": {
 							"mode": "raw",
 							"raw": "{\"boardId\":7,\"stackId\":9}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('echoes the ids', () => { pm.expect(b.boardId).to.eql(7); pm.expect(b.stackId).to.eql(9); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "getDefault: the default is read back",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('7/9', () => { pm.expect(b.boardId).to.eql(7); pm.expect(b.stackId).to.eql(9); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "setDefault: a non-admin may set it too (shared schema config by design, @no-admin-idor-exempt)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"boardId\":8,\"stackId\":9}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -6708,16 +6549,16 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
 									"const b = pm.response.json();",
-									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+									"pm.test('echoes the ids', () => pm.expect(b.boardId).to.eql(8));"
 								]
 							}
 						}
 					]
 				},
 				{
-					"name": "CONTROL: the default is still unset",
+					"name": "getDefault: a non-admin reads the shared value",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -6730,7 +6571,22 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}"
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
 					},
 					"event": [
 						{
@@ -6740,7 +6596,7 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.response.to.have.status(200));",
 									"const b = pm.response.json();",
-									"pm.test('both null', () => pm.expect(b.boardId).to.eql(null));"
+									"pm.test('8/9', () => { pm.expect(b.boardId).to.eql(8); pm.expect(b.stackId).to.eql(9); });"
 								]
 							}
 						}
@@ -6773,7 +6629,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
 								]
@@ -6812,7 +6668,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
 								]
@@ -6842,7 +6698,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
 								]
@@ -6877,7 +6733,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/talk/i));"
 								]
@@ -6916,7 +6772,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/talk/i));"
 								]
@@ -6955,7 +6811,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/talk/i));"
 								]
@@ -6985,7 +6841,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/talk/i));"
 								]
@@ -7015,7 +6871,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/talk/i));"
 								]
@@ -7060,7 +6916,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is one of 501/503', () => pm.expect(pm.response.code).to.be.oneOf([501,503]));",
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
 									"const b = pm.response.json();",
 									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/talk/i));"
 								]
