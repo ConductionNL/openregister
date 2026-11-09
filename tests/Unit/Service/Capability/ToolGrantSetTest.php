@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Capability;
 
+use OCA\OpenRegister\Service\Capability\GrantCoordinates;
+use OCA\OpenRegister\Service\Capability\GrantedTool;
 use OCA\OpenRegister\Service\Capability\ToolGrantSet;
 use PHPUnit\Framework\TestCase;
 
@@ -380,4 +382,34 @@ class ToolGrantSetTest extends TestCase {
 		$this->assertTrue($after->has('openregister', 'runFlow', 'stop'));
 		$this->assertTrue($set->has('openregister', 'runFlow', 'runFlow'), 'the original set is immutable');
 	}//end testCoordinateMethodsAllowAndRefuseExactly()
+
+	/**
+	 * The value-object methods give the same outcomes as the coordinate methods.
+	 *
+	 * @return void
+	 */
+	public function testValueObjectMethodsMatchTheCoordinateMethods(): void {
+		$run  = new GrantCoordinates(app: 'openregister', subject: 'runFlow', action: 'runFlow');
+		$stop = new GrantCoordinates(app: 'openregister', subject: 'runFlow', action: 'stop');
+
+		$set = ToolGrantSet::fromStored([])
+			->withGrant(at: $run, tool: new GrantedTool(toolId: 'openregister.runFlow'))
+			->withGrant(at: $run, tool: new GrantedTool(toolId: 'openregister.runFlow'))
+			->withGrant(at: $run, tool: new GrantedTool(toolId: 'openregister.runFlow', args: ['flowId' => 'A']))
+			->withGrant(at: $stop, tool: new GrantedTool(toolId: 'openregister.stopFlow'));
+
+		$legacy = ToolGrantSet::fromStored([])
+			->with('openregister', 'runFlow', 'runFlow', 'openregister.runFlow')
+			->with('openregister', 'runFlow', 'runFlow', 'openregister.runFlow', ['flowId' => 'A'])
+			->with('openregister', 'runFlow', 'stop', 'openregister.stopFlow');
+
+		$this->assertSame($legacy->toStored(), $set->toStored());
+		$this->assertTrue($set->holds($run));
+		$this->assertFalse($set->holds(new GrantCoordinates(app: 'hermiq', subject: 'runFlow', action: 'runFlow')));
+
+		$after = $set->withoutGrant($run)->withoutGrant($stop);
+		$this->assertFalse($after->holds($run));
+		$this->assertTrue($after->isEmpty());
+		$this->assertSame([], $after->toStored());
+	}//end testValueObjectMethodsMatchTheCoordinateMethods()
 }//end class
