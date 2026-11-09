@@ -43,7 +43,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Service;
 
-use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\Response;
@@ -52,7 +51,6 @@ use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -93,18 +91,16 @@ class PublicPageResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppManager $appManager Resolves a leaf app's install path.
+	 * @param PublicPageManifests $manifests Resolves a leaf app's install path, and logs.
 	 * @param IUserSession $userSession Tells a signed-in visitor from an anonymous one.
 	 * @param IURLGenerator $urlGenerator Builds the login redirect.
 	 * @param IRequest $request The current request, for the address to return to.
-	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
-		private readonly IAppManager $appManager,
+		private readonly PublicPageManifests $manifests,
 		private readonly IUserSession $userSession,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IRequest $request,
-		private readonly LoggerInterface $logger,
 	) {
 
 	}//end __construct()
@@ -274,9 +270,9 @@ class PublicPageResolver {
 	 */
 	private function loadManifest(string $appId): array {
 		try {
-			$appPath = $this->appManager->getAppPath($appId);
+			$appPath = $this->manifests->appManager->getAppPath($appId);
 		} catch (Throwable $missing) {
-			$this->logger->debug(
+			$this->manifests->logger->debug(
 				'[PublicPageResolver] App path not found for ' . $appId . ': ' . $missing->getMessage()
 			);
 			return [];
@@ -294,7 +290,7 @@ class PublicPageResolver {
 
 		$decoded = json_decode($raw, associative: true);
 		if (is_array($decoded) === false) {
-			$this->logger->warning('[PublicPageResolver] The manifest of ' . $appId . ' is not valid JSON');
+			$this->manifests->logger->warning('[PublicPageResolver] The manifest of ' . $appId . ' is not valid JSON');
 			return [];
 		}
 
