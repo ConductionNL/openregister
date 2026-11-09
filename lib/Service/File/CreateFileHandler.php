@@ -146,21 +146,40 @@ class CreateFileHandler {
 		FileUpload $upload,
 		int|string|null $registerId = null,
 	): File {
+		$run = new FileUploadRun(action: 'create', upload: $upload);
+		$run->object = $objectEntity;
+		return $this->createFile(run: $run, registerId: $registerId);
+	}//end addFile()
+
+	/**
+	 * Write the upload into the object's folder, then share and tag it.
+	 *
+	 * @param FileUploadRun   $run        The create run.
+	 * @param int|string|null $registerId The registerId of the object to add the file to.
+	 *
+	 * @return File The created file.
+	 *
+	 * @throws NotPermittedException If file creation fails due to permissions.
+	 * @throws Exception If file creation fails for other reasons.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function createFile(FileUploadRun $run, int|string|null $registerId): File {
 		try {
-			$objectEntity = $this->resolveObject(objectEntity: $objectEntity);
+			$run->object = $this->resolveObject(objectEntity: $run->object);
 
 			// Use the new ID-based folder approach.
-			$folder = $this->folderMgmtHandler->getObjectFolder(objectEntity: $objectEntity, registerId: $registerId);
-			$content = $this->decodedContent(content: $upload->content);
-			$this->assertCreatable(objectEntity: $objectEntity, fileName: $upload->fileName, content: $content);
-			$file = $this->writeNewFile(folder: $folder, fileName: $upload->fileName, content: $content);
-			$this->shareIfRequested(file: $file, share: $upload->share);
-			$this->tagNewFile(file: $file, objectEntity: $objectEntity, tags: $upload->tags);
+			$folder = $this->folderMgmtHandler->getObjectFolder(objectEntity: $run->object, registerId: $registerId);
+			$run->content = $this->decodedContent(content: $run->upload->content);
+			$this->assertCreatable(run: $run);
+			$file = $this->writeNewFile(run: $run, folder: $folder);
+			$this->shareIfRequested(file: $file, share: $run->upload->share);
+			$this->tagNewFile(run: $run, file: $file);
 			return $file;
 		} catch (Exception $e) {
-			throw $this->failure(error: $e, action: 'create', fileName: $upload->fileName);
+			throw $this->failure(error: $e, run: $run);
 		}
-	}//end addFile()
+	}//end createFile()
 
 	/**
 	 * Save a file (upsert operation - create or update).
@@ -181,10 +200,12 @@ class CreateFileHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function saveFile(ObjectEntity $objectEntity, FileUpload $upload): File {
+		$run = new FileUploadRun(action: 'save', upload: $upload);
+		$run->object = $objectEntity;
 		try {
 			// Check if the file already exists for this object.
 			$existingFile = $this->fileService->getFile(object: $objectEntity, file: $upload->fileName);
-			$this->logUpsert(fileName: $upload->fileName, objectId: $objectEntity->getId(), exists: $existingFile !== null);
+			$this->logUpsert(run: $run, exists: $existingFile !== null);
 			if ($existingFile === null) {
 				return $this->addFile(objectEntity: $objectEntity, upload: $upload);
 			}
@@ -192,7 +213,7 @@ class CreateFileHandler {
 			// Update the existing file - pass the object so updateFile can find it in the object folder.
 			return $this->fileService->updateFile(filePath: $existingFile->getId(), content: $upload->content, tags: $upload->tags, object: $objectEntity);
 		} catch (Exception $e) {
-			throw $this->failure(error: $e, action: 'save', fileName: $upload->fileName);
+			throw $this->failure(error: $e, run: $run);
 		}
 	}//end saveFile()
 
@@ -275,14 +296,15 @@ class CreateFileHandler {
 	 *
 	 * @throws Exception When the name is empty or the content is executable.
 	 */
-	private function assertCreatable(ObjectEntity|string $objectEntity, string $fileName, mixed $content): void {
+	private function assertCreatable(FileUploadRun $run): void {
+		$fileName = $run->upload->fileName;
 		if (empty($fileName) === true) {
-			$objectId = $objectEntity->getId();
+			$objectId = $run->object->getId();
 			throw new Exception('Failed to create file because no filename has been provided for object ' . $objectId);
 		}
 
 		// Security: Block executable files.
-		$this->fileValidHandler->blockExecutableFile(fileName: $fileName, fileContent: $this->executableProbe(content: $content));
+		$this->fileValidHandler->blockExecutableFile(fileName: $fileName, fileContent: $this->executableProbe(content: $run->content));
 	}//end assertCreatable()
 
 	/**
@@ -324,10 +346,10 @@ class CreateFileHandler {
 	 *
 	 * @throws NotPermittedException When the folder or the new node refuses the session.
 	 */
-	private function writeNewFile(?Folder $folder, string $fileName, mixed $content): File {
-		$file = $folder->newFile($fileName);
+	private function writeNewFile(FileUploadRun $run, ?Folder $folder): File {
+		$file = $folder->newFile($run->upload->fileName);
 		$this->fileValidHandler->checkOwnership($file);
-		$file->putContent($content);
+		$file->putContent($run->content);
 		$this->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
 		return $file;
 	}//end writeNewFile()
@@ -357,8 +379,8 @@ class CreateFileHandler {
 	 *
 	 * @return void
 	 */
-	private function tagNewFile(File $file, ObjectEntity|string $objectEntity, array $tags): void {
-		$allTags = array_merge([$this->fileService->generateObjectTag($objectEntity)], $tags);
+	private function tagNewFile(FileUploadRun $run, File $file): void {
+		$allTags = array_merge([$this->fileService->generateObjectTag($run->object)], $run->upload->tags);
 		$this->fileService->attachTagsToFile(fileId: (string)$file->getId(), tags: $allTags);
 	}//end tagNewFile()
 
@@ -371,7 +393,9 @@ class CreateFileHandler {
 	 *
 	 * @return void
 	 */
-	private function logUpsert(string $fileName, int|string|null $objectId, bool $exists): void {
+	private function logUpsert(FileUploadRun $run, bool $exists): void {
+		$fileName = $run->upload->fileName;
+		$objectId = $run->object->getId();
 		$message = "[CreateFileHandler] File {$fileName} does not exist for object {$objectId}, creating...";
 		if ($exists === true) {
 			$message = "[CreateFileHandler] File {$fileName} already exists for object {$objectId}, updating...";
@@ -391,7 +415,9 @@ class CreateFileHandler {
 	 *
 	 * @return Exception The exception to throw.
 	 */
-	private function failure(Exception $error, string $action, string $fileName): Exception {
+	private function failure(Exception $error, FileUploadRun $run): Exception {
+		$action   = $run->action;
+		$fileName = $run->upload->fileName;
 		$reason = $error->getMessage();
 		if ($error instanceof NotPermittedException) {
 			$this->logger->error(
