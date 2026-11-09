@@ -405,7 +405,8 @@ class DashboardController extends Controller {
 	): JSONResponse {
 		return $this->adminRead(
 			read: fn (): array => $this->dashboardService->auditReads()->getAuditTrailActionChartData(
-				period: (new DashboardScope(registerId: $registerId, schemaId: $schemaId))->during(from: self::dateOrNull(value: $from), till: self::dateOrNull(value: $till))
+				period: (new DashboardScope(registerId: $registerId, schemaId: $schemaId))
+					->during(from: self::dateOrNull(value: $from), till: self::dateOrNull(value: $till))
 			)
 		);
 	}//end getAuditTrailActionChart()
@@ -527,7 +528,10 @@ class DashboardController extends Controller {
 	 */
 	public function getAuditTrailStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): JSONResponse {
 		return $this->adminRead(
-			read: fn (): array => $this->dashboardService->auditReads()->getAuditTrailStatistics(scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId), hours: $hours)
+			read: fn (): array => $this->dashboardService->auditReads()->getAuditTrailStatistics(
+				scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId),
+				hours: $hours
+			)
 		);
 	}//end getAuditTrailStatistics()
 
@@ -552,7 +556,10 @@ class DashboardController extends Controller {
 	 */
 	public function getAuditTrailActionDistribution(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): JSONResponse {
 		return $this->adminRead(
-			read: fn (): array => $this->dashboardService->auditReads()->getAuditTrailActionDistribution(scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId), hours: $hours)
+			read: fn (): array => $this->dashboardService->auditReads()->getAuditTrailActionDistribution(
+				scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId),
+				hours: $hours
+			)
 		);
 	}//end getAuditTrailActionDistribution()
 
@@ -582,7 +589,8 @@ class DashboardController extends Controller {
 		?int $limit = 10,
 		?int $hours = 24,
 	): JSONResponse {
-		return $this->mostActive(window: (new DashboardScope(registerId: $registerId, schemaId: $schemaId))->mostActive(limit: $limit, hours: $hours));
+		$scope = new DashboardScope(registerId: $registerId, schemaId: $schemaId);
+		return $this->mostActive(window: $scope->mostActive(limit: $limit, hours: $hours));
 	}//end getMostActiveObjects()
 	/**
 	 * The objects with the most audit activity in a window, for an administrator.
