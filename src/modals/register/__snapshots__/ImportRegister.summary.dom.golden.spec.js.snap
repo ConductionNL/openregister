@@ -1,0 +1,254 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ImportRegister import summary renders the summary rows and every expanded error table 1`] = `
+"<div class="importResults">
+  <!-- Summary Table -->
+  <div class="summaryTable">
+    <h3>Import Summary</h3>
+    <table class="sheetSummaryTable">
+      <thead>
+        <tr>
+          <th scope="col">Sheet</th>
+          <th scope="col">Found</th>
+          <th scope="col">t:Created</th>
+          <th scope="col">t:Updated</th>
+          <th scope="col">t:Unchanged</th>
+          <th scope="col">t:Invalid</th>
+          <th scope="col">Errors</th>
+          <th scope="col">t:Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="sheetName">Missing
+            <!--v-if-->
+            <div class="errorInfo"><small class="errorText">Missing required "id" column</small></div>
+            <!--v-if-->
+            <!--v-if-->
+            <!--v-if-->
+          </td>
+          <td class="statCell found">2</td>
+          <td class="statCell created">0</td>
+          <td class="statCell updated">0</td>
+          <td class="statCell unchanged">0</td>
+          <td class="statCell invalid">0</td>
+          <td class="statCell errors">
+            <div class="errorCell"><span>1</span><button type="button" class="expandButton expanded" aria-expanded="true" aria-label="t:Error Details">
+                <x-chevrondown size="16"></x-chevrondown>
+              </button></div>
+          </td>
+          <td class="statCell total">1</td>
+        </tr><!-- Error Details Row -->
+        <tr class="errorDetailsRow">
+          <td colspan="8" class="errorDetailsCell">
+            <div class="errorDetailsTable">
+              <table class="errorTable">
+                <thead>
+                  <tr>
+                    <th scope="col">Row</th>
+                    <th scope="col">Error Type</th>
+                    <th scope="col">t:Error Message</th>
+                    <th scope="col">t:Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="errorRow">
+                    <td class="errorRowNumber">1</td>
+                    <td class="errorType">MissingIdColumnException</td>
+                    <td class="errorMessage">no id
+                      <!--v-if-->
+                    </td>
+                    <td class="errorData"><span class="noData">No data</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="sheetName">BadUuid
+            <!--v-if-->
+            <div class="errorInfo"><small class="errorText">Invalid UUID format in ID column</small></div>
+            <!--v-if-->
+            <!--v-if-->
+            <!--v-if-->
+          </td>
+          <td class="statCell found">1</td>
+          <td class="statCell created">0</td>
+          <td class="statCell updated">0</td>
+          <td class="statCell unchanged">0</td>
+          <td class="statCell invalid">0</td>
+          <td class="statCell errors">
+            <div class="errorCell"><span>1</span><button type="button" class="expandButton expanded" aria-expanded="true" aria-label="t:Error Details">
+                <x-chevrondown size="16"></x-chevrondown>
+              </button></div>
+          </td>
+          <td class="statCell total">1</td>
+        </tr><!-- Error Details Row -->
+        <tr class="errorDetailsRow">
+          <td colspan="8" class="errorDetailsCell">
+            <div class="errorDetailsTable">
+              <table class="errorTable">
+                <thead>
+                  <tr>
+                    <th scope="col">Row</th>
+                    <th scope="col">Error Type</th>
+                    <th scope="col">t:Error Message</th>
+                    <th scope="col">t:Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="errorRow">
+                    <td class="errorRowNumber">2</td>
+                    <td class="errorType">InvalidUuidException</td>
+                    <td class="errorMessage">bad
+                      <!--v-if-->
+                    </td>
+                    <td class="errorData"><pre>{
+  "id": "x"
+}</pre>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="sheetName">Invalid <div class="schemaInfo"><small>Schema: Person</small></div>
+            <div class="errorInfo"><small class="errorText">1 objects failed validation</small></div>
+            <!--v-if-->
+            <!--v-if-->
+            <!--v-if-->
+          </td>
+          <td class="statCell found">3</td>
+          <td class="statCell created">1</td>
+          <td class="statCell updated">0</td>
+          <td class="statCell unchanged">0</td>
+          <td class="statCell invalid">1</td>
+          <td class="statCell errors">
+            <div class="errorCell"><span>1</span><button type="button" class="expandButton expanded" aria-expanded="true" aria-label="t:Error Details">
+                <x-chevrondown size="16"></x-chevrondown>
+              </button></div>
+          </td>
+          <td class="statCell total">3</td>
+        </tr><!-- Error Details Row -->
+        <tr class="errorDetailsRow">
+          <td colspan="8" class="errorDetailsCell">
+            <div class="errorDetailsTable">
+              <table class="errorTable">
+                <thead>
+                  <tr>
+                    <th scope="col">Row</th>
+                    <th scope="col">Error Type</th>
+                    <th scope="col">t:Error Message</th>
+                    <th scope="col">t:Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="errorRow">
+                    <td class="errorRowNumber">3</td>
+                    <td class="errorType">ValidationException</td>
+                    <td class="errorMessage">nope <div class="errorDebugInfo"><small>File: f</small><br><small>Line: 4</small><br><small>Class: C</small></div>
+                    </td>
+                    <td class="errorData"><span class="noData">No data</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="sheetName">Empty
+            <!--v-if-->
+            <!--v-if-->
+            <!--v-if-->
+            <div class="infoInfo"><small class="infoText">Sheet appears empty or has no matching data</small></div>
+            <div class="debugInfo"><small class="debugText"> Headers: a, b<br> Schema properties: c</small></div>
+          </td>
+          <td class="statCell found">0</td>
+          <td class="statCell created">0</td>
+          <td class="statCell updated">0</td>
+          <td class="statCell unchanged">0</td>
+          <td class="statCell invalid">0</td>
+          <td class="statCell errors">
+            <div class="errorCell"><span>0</span>
+              <!--v-if-->
+            </div>
+          </td>
+          <td class="statCell total">0</td>
+        </tr><!-- Error Details Row -->
+        <!--v-if-->
+        <tr>
+          <td class="sheetName">NoMatch
+            <!--v-if-->
+            <div class="errorInfo"><small class="errorText">No data found - check schema matching or cache issues</small></div>
+            <!--v-if-->
+            <!--v-if-->
+            <!--v-if-->
+          </td>
+          <td class="statCell found">0</td>
+          <td class="statCell created">0</td>
+          <td class="statCell updated">0</td>
+          <td class="statCell unchanged">0</td>
+          <td class="statCell invalid">0</td>
+          <td class="statCell errors">
+            <div class="errorCell"><span>1</span><button type="button" class="expandButton expanded" aria-expanded="true" aria-label="t:Error Details">
+                <x-chevrondown size="16"></x-chevrondown>
+              </button></div>
+          </td>
+          <td class="statCell total">1</td>
+        </tr><!-- Error Details Row -->
+        <tr class="errorDetailsRow">
+          <td colspan="8" class="errorDetailsCell">
+            <div class="errorDetailsTable">
+              <table class="errorTable">
+                <thead>
+                  <tr>
+                    <th scope="col">Row</th>
+                    <th scope="col">Error Type</th>
+                    <th scope="col">t:Error Message</th>
+                    <th scope="col">t:Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="errorRow">
+                    <td class="errorRowNumber">5</td>
+                    <td class="errorType">Other</td>
+                    <td class="errorMessage">cache miss
+                      <!--v-if-->
+                    </td>
+                    <td class="errorData"><span class="noData">No data</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="sheetName">Good
+            <!--v-if-->
+            <!--v-if-->
+            <!--v-if-->
+            <!--v-if-->
+            <!--v-if-->
+          </td>
+          <td class="statCell found">4</td>
+          <td class="statCell created">2</td>
+          <td class="statCell updated">1</td>
+          <td class="statCell unchanged">1</td>
+          <td class="statCell invalid">0</td>
+          <td class="statCell errors">
+            <div class="errorCell"><span>0</span>
+              <!--v-if-->
+            </div>
+          </td>
+          <td class="statCell total">4</td>
+        </tr><!-- Error Details Row -->
+        <!--v-if-->
+      </tbody>
+    </table>
+  </div>
+  <x-closecancelbutton label="Close" variant="secondary" style="margin-top: 1rem;"></x-closecancelbutton>
+</div>"
+`;
