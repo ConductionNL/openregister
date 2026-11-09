@@ -19,6 +19,7 @@
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Edepot;
+
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\TransferAuditLog;
@@ -56,9 +57,9 @@ final class TransferAuditLogRecordingTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->audit         = $this->createMock(AuditTrailMapperInterface::class);
+		$this->audit = $this->createMock(AuditTrailMapperInterface::class);
 		$this->notifications = $this->createMock(INotificationManager::class);
-		$this->logger        = $this->createMock(LoggerInterface::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 	}//end setUp()
 
 	/**
@@ -89,10 +90,10 @@ final class TransferAuditLogRecordingTest extends TestCase {
 		$this->logger->expects($this->once())->method('info')->with(
 			'[EdepotTransferService] Audit: archival.transfer_initiated',
 			[
-				'action'        => 'archival.transfer_initiated',
-				'transferUuid'  => 'list-1',
-				'objectCount'   => 3,
-				'transport'     => 'rest',
+				'action' => 'archival.transfer_initiated',
+				'transferUuid' => 'list-1',
+				'objectCount' => 3,
+				'transport' => 'rest',
 				'targetArchive' => 'nationaal-archief',
 			]
 		);
@@ -113,9 +114,9 @@ final class TransferAuditLogRecordingTest extends TestCase {
 		$this->logger->expects($this->once())->method('info')->with(
 			'[EdepotTransferService] Audit: archival.transferred',
 			[
-				'action'          => 'archival.transferred',
-				'objectUuid'      => 'obj-7',
-				'transferUuid'    => 'list-1',
+				'action' => 'archival.transferred',
+				'objectUuid' => 'obj-7',
+				'transferUuid' => 'list-1',
 				'eDepotReference' => 'NA-123',
 			]
 		);
@@ -150,11 +151,11 @@ final class TransferAuditLogRecordingTest extends TestCase {
 		$this->logger->expects($this->once())->method('error')->with(
 			'[EdepotTransferService] Audit: archival.transfer_failed',
 			[
-				'action'       => 'archival.transfer_failed',
+				'action' => 'archival.transfer_failed',
 				'transferUuid' => 'list-1',
-				'error'        => 'refused',
-				'transport'    => 'sftp',
-				'failedCount'  => 2,
+				'error' => 'refused',
+				'transport' => 'sftp',
+				'failedCount' => 2,
 			]
 		);
 

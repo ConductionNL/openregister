@@ -19,6 +19,7 @@
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Listener;
+
 use OCA\OpenRegister\Listener\ShareableConfigTypeRegistrationListener;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
 use OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent;
@@ -55,14 +56,14 @@ final class ShareableConfigTypeRegistrationListenerTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->dispatcher = $this->createMock(IEventDispatcher::class);
-		$this->logger     = $this->createMock(LoggerInterface::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 	}//end setUp()
 
 	/**
 	 * A type stub of the given interface with the given id.
 	 *
 	 * @param class-string<IShareableConfigType> $interface The interface.
-	 * @param string                             $id        The id.
+	 * @param string $id The id.
 	 *
 	 * @return IShareableConfigType The type.
 	 */

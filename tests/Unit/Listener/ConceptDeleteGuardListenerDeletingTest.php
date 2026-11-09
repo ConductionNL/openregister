@@ -63,10 +63,10 @@ final class ConceptDeleteGuardListenerDeletingTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->guard    = $this->createMock(ConceptDeleteGuardInterface::class);
+		$this->guard = $this->createMock(ConceptDeleteGuardInterface::class);
 		$this->concepts = $this->createMock(ConceptRepositoryInterface::class);
-		$this->schemas  = $this->createMock(SchemaMapperInterface::class);
-		$this->logger   = $this->createMock(LoggerInterface::class);
+		$this->schemas = $this->createMock(SchemaMapperInterface::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->schemas->method('find')->willReturn(new Schema());
 		$this->guard->method('systemDefinedMessage')->willReturn('system message');
 		$this->guard->method('inUseMessage')->willReturn('in use message');
@@ -89,8 +89,8 @@ final class ConceptDeleteGuardListenerDeletingTest extends TestCase {
 	/**
 	 * A delete event for an object with the given schema and data.
 	 *
-	 * @param string     $schema The schema reference.
-	 * @param array|null $data   The object data.
+	 * @param string $schema The schema reference.
+	 * @param array|null $data The object data.
 	 *
 	 * @return ObjectDeletingEvent The handled event.
 	 */
@@ -121,10 +121,10 @@ final class ConceptDeleteGuardListenerDeletingTest extends TestCase {
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame(
 			[
-				'code'          => ConceptDeleteGuardListener::ERROR_CODE_SYSTEM,
-				'message'       => 'system message',
-				'status'        => 409,
-				'concept'       => 'https://example.org/v',
+				'code' => ConceptDeleteGuardListener::ERROR_CODE_SYSTEM,
+				'message' => 'system message',
+				'status' => 409,
+				'concept' => 'https://example.org/v',
 				'systemDefined' => true,
 			],
 			$event->getErrors()
@@ -149,11 +149,11 @@ final class ConceptDeleteGuardListenerDeletingTest extends TestCase {
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame(
 			[
-				'code'    => ConceptDeleteGuardListener::ERROR_CODE_IN_USE,
+				'code' => ConceptDeleteGuardListener::ERROR_CODE_IN_USE,
 				'message' => 'in use message',
-				'status'  => 409,
+				'status' => 409,
 				'concept' => 'https://example.org/v',
-				'inUse'   => 2,
+				'inUse' => 2,
 				'holders' => ['a', 'b'],
 			],
 			$event->getErrors()

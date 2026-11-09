@@ -53,7 +53,7 @@ final class WorkingCalendarDeleteGuardListenerBehaviourTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->guard  = $this->createMock(WorkingCalendarWriteGuardInterface::class);
+		$this->guard = $this->createMock(WorkingCalendarWriteGuardInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->guard->method('blockedMessage')->willReturn('blocked');
 	}//end setUp()
@@ -91,12 +91,12 @@ final class WorkingCalendarDeleteGuardListenerBehaviourTest extends TestCase {
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame(
 			[
-				'code'       => WorkingCalendarDeleteGuardListener::ERROR_CODE,
-				'message'    => 'blocked',
-				'status'     => 409,
-				'calendar'   => 'nl-gov',
+				'code' => WorkingCalendarDeleteGuardListener::ERROR_CODE,
+				'message' => 'blocked',
+				'status' => 409,
+				'calendar' => 'nl-gov',
 				'openTimers' => 2,
-				'timers'     => ['t1', 't2'],
+				'timers' => ['t1', 't2'],
 			],
 			$event->getErrors()
 		);

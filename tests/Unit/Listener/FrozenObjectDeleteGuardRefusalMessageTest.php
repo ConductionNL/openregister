@@ -19,6 +19,7 @@
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Listener;
+
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Listener\FrozenObjectDeleteGuardListener;
@@ -83,12 +84,12 @@ final class FrozenObjectDeleteGuardRefusalMessageTest extends TestCase {
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame(
 			[
-				'code'      => FrozenObjectDeleteGuardListener::ERROR_CODE,
-				'message'   => 'This record is locked by Anna Archivist since 2026-03-04. Unlock it before deleting it.',
-				'status'    => 409,
-				'frozenBy'  => 'anna',
-				'frozenAt'  => '2026-03-04T10:00:00+00:00',
-				'uuid'      => 'obj-1',
+				'code' => FrozenObjectDeleteGuardListener::ERROR_CODE,
+				'message' => 'This record is locked by Anna Archivist since 2026-03-04. Unlock it before deleting it.',
+				'status' => 409,
+				'frozenBy' => 'anna',
+				'frozenAt' => '2026-03-04T10:00:00+00:00',
+				'uuid' => 'obj-1',
 			],
 			$event->getErrors()
 		);
