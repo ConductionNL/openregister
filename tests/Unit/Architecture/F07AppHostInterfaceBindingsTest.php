@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\AppHost\AppHostRegistrar;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
-use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterDocumentLoaderInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

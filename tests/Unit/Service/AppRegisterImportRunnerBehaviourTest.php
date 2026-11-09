@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterDocumentLoaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
 use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCA\OpenRegister\Service\AppRegisterImportRunner;

@@ -31,7 +31,7 @@ use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
 use OCA\OpenRegister\Twig\MappingExtension;
 use OCA\OpenRegister\Twig\MappingRuntimeLoader;
 use OCA\OpenRegister\Twig\MappingTwigInstaller;
-use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
+use OCA\OpenRegister\Kernel\Contracts\MappingTwigInstallerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

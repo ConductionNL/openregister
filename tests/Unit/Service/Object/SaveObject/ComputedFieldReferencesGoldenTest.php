@@ -20,7 +20,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
 use OCA\OpenRegister\Twig\MappingExtension;
 use OCA\OpenRegister\Twig\MappingRuntimeLoader;
-use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
+use OCA\OpenRegister\Kernel\Contracts\MappingTwigInstallerInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;

@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
-use OCA\OpenRegister\AppHost\Observability\MetricSample;
+use OCA\OpenRegister\Kernel\Contracts\Dto\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityValidationException;
 use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;

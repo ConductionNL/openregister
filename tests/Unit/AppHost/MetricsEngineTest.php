@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
-use OCA\OpenRegister\AppHost\Observability\MetricSample;
+use OCA\OpenRegister\Kernel\Contracts\Dto\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityManifest;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityProbes;

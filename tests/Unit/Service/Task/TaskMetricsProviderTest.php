@@ -26,8 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
 use DateTime;
-use OCA\OpenRegister\AppHost\IMetricsProvider;
-use OCA\OpenRegister\AppHost\Observability\MetricSample;
+use OCA\OpenRegister\Kernel\Contracts\IMetricsProvider;
+use OCA\OpenRegister\Kernel\Contracts\Dto\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityManifest;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskMetricsProvider;

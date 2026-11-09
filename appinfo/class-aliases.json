@@ -1824,7 +1824,7 @@
 		"OCA\\OpenRegister\\AppHost\\Observability\\MetricSample": {
 			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\Dto\\MetricSample",
 			"eager": true,
-			"service": false
+			"service": true
 		},
 		"OCA\\OpenRegister\\AppHost\\Service\\RegisterDocumentLoaderInterface": {
 			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RegisterDocumentLoaderInterface",
@@ -1833,12 +1833,12 @@
 		},
 		"OCA\\OpenRegister\\Mcp\\Service\\Mcp\\McpToolCatalogueInterface": {
 			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\McpToolCatalogueInterface",
-			"eager": false,
+			"eager": true,
 			"service": true
 		},
 		"OCA\\OpenRegister\\Twig\\MappingTwigInstallerInterface": {
 			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\MappingTwigInstallerInterface",
-			"eager": false,
+			"eager": true,
 			"service": true
 		}
 	}

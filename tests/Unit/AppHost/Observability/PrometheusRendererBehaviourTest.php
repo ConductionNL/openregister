@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Observability;
 
-use OCA\OpenRegister\AppHost\Observability\MetricSample;
+use OCA\OpenRegister\Kernel\Contracts\Dto\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\PrometheusRenderer;
 use PHPUnit\Framework\TestCase;
 

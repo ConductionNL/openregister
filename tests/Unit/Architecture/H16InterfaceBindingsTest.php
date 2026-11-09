@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Mcp\McpWiring;
-use OCA\OpenRegister\Mcp\Service\Mcp\McpToolCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\McpToolCatalogueInterface;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\Bindings\FeatureBindings;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;

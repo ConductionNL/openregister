@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Kernel\Contracts;
 /**
  * The aggregated tool descriptors of every registered MCP tool provider.
  *
- * Implemented by McpToolsService; the agent scope reads it to narrow the
+ * Implemented by the MCP tools service; the agent scope reads it to narrow the
  * catalogue to an agent's grant.
  *
  * @spec openspec/specs/chat-ai/spec.md

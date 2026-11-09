@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost\Observability\Source;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
-use OCA\OpenRegister\AppHost\Observability\MetricSample;
+use OCA\OpenRegister\Kernel\Contracts\Dto\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
