@@ -131,6 +131,16 @@ import {
 } from '../../services/githubPublish.js'
 import { navigationStore } from '../../store/store.js'
 
+/**
+ * The fetch options of the GitHub lookups: a JSON GET.
+ */
+const JSON_GET = {
+	method: 'GET',
+	headers: {
+		'Content-Type': 'application/json',
+	},
+}
+
 export default {
 	name: 'PublishToGithub',
 	components: {
@@ -332,12 +342,7 @@ export default {
 			try {
 				const response = await fetch(
 					'/index.php/apps/openregister/api/configurations/github/repositories',
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-					},
+					JSON_GET,
 				)
 
 				const data = await jsonOrThrow(
@@ -420,12 +425,7 @@ export default {
 			try {
 				const response = await fetch(
 					`/index.php/apps/openregister/api/configurations/github/branches?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`,
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-					},
+					JSON_GET,
 				)
 
 				const data = await jsonOrThrow(response, 'Failed to load branches')
