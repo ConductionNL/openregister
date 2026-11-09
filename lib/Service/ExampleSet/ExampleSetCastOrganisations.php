@@ -145,8 +145,8 @@ final class ExampleSetCastOrganisations {
 		foreach ((array) ($organisation['quota'] ?? []) as $key => $value) {
 			if ($this->isQuota(key: $key, value: $value) === false) {
 				throw new ExampleSetException(
-					$run->file.': OpenRegister organisation "'.(string) $organisation['slug'].'": quota "'.$key.'" must be storage, requests, bandwidth, users or objects'
-					.' with a whole number, or objectsSchema with a schema slug.'
+					$run->file.': OpenRegister organisation "'.(string) $organisation['slug'].'": quota "'.$key
+					.'" must be storage, requests, bandwidth, users or objects with a whole number, or objectsSchema with a schema slug.'
 				);
 			}
 
