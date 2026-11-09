@@ -264,7 +264,9 @@ class CasePlanCascade {
 		}
 
 		$tree = new CasePlanTree(items: $rows);
-		$object = $this->readers->anchor->read(objectUuid: $run->objectUuid, registerId: $rows[0]->getRegisterId(), schemaId: $rows[0]->getSchemaId());
+		$object = $this->readers->anchor->read(
+			anchor: new CaseAnchor(objectUuid: $run->objectUuid, registerId: $rows[0]->getRegisterId(), schemaId: $rows[0]->getSchemaId())
+		);
 		$state = new CasePassState(tree: $tree, object: $object, run: $run);
 
 		return $this->applyRules(state: $state);
@@ -325,7 +327,8 @@ class CasePlanCascade {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private function take(CaseCascadeStep $step, CasePlanTree $tree): void {
-		$why = new CaseTransitionCause(cause: $step->cause, causeRef: $step->causeRef, actor: $step->actor, reason: $step->reason);
+		$cause = $step->why;
+		$why = new CaseTransitionCause(cause: $cause->cause, causeRef: $cause->causeRef, actor: $cause->actor, reason: $cause->reason);
 		$this->machine->commit(move: new CasePlanMove(item: $step->item, to: $step->to, why: $why, tree: $tree));
 	}//end take()
 
