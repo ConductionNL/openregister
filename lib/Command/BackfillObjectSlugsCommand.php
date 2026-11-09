@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Command;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface;
@@ -46,19 +47,33 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class BackfillObjectSlugsCommand extends Command {
 	/**
+	 * Resolves the register argument.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Resolves the schema argument.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Wire the mappers and the backfill service.
 	 *
-	 * @param RegisterMapperInterface            $registerMapper Resolves the register argument.
-	 * @param SchemaMapperInterface              $schemaMapper   Resolves the schema argument.
-	 * @param ObjectSlugBackfillServiceInterface $backfill       Plans and writes the slugs.
+	 * @param SchemaCatalogInterface             $catalog  Resolves the register and the schema argument.
+	 * @param ObjectSlugBackfillServiceInterface $backfill Plans and writes the slugs.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		SchemaCatalogInterface $catalog,
 		private readonly ObjectSlugBackfillServiceInterface $backfill,
 	) {
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper = $catalog->schemas();
 		parent::__construct();
 	}//end __construct()
 
