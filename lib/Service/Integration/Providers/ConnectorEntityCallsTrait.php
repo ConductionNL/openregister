@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+
 /**
  * Entity calls shared by the connector-backed providers that link external entities.
  *
@@ -64,14 +66,8 @@ trait ConnectorEntityCallsTrait {
 	 */
 	public function get(string $register, string $schema, string $objectId, string $entityId): array {
 		$query = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: []);
-		$response = $this->router->call(
-			provider: $this,
-			method: 'GET',
-			path: rawurlencode($entityId),
-			options: ['query' => $query, 'headers' => $this->requestHeaders()]
-		);
 
-		return $this->normalizeRow(row: $response);
+		return $this->entityRow(request: new UpstreamRequest(method: 'GET', path: rawurlencode($entityId), options: ['query' => $query]));
 	}//end get()
 
 	/**
@@ -89,14 +85,8 @@ trait ConnectorEntityCallsTrait {
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
 		$body = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $payload);
-		$response = $this->router->call(
-			provider: $this,
-			method: 'POST',
-			path: '',
-			options: ['body' => $body, 'headers' => $this->requestHeaders(withBody: true)]
-		);
 
-		return $this->normalizeRow(row: $response);
+		return $this->entityRow(request: new UpstreamRequest(method: 'POST', path: '', options: ['body' => $body]));
 	}//end create()
 
 	/**
@@ -115,14 +105,8 @@ trait ConnectorEntityCallsTrait {
 	 */
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
 		$body = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $payload);
-		$response = $this->router->call(
-			provider: $this,
-			method: 'PUT',
-			path: rawurlencode($entityId),
-			options: ['body' => $body, 'headers' => $this->requestHeaders(withBody: true)]
-		);
 
-		return $this->normalizeRow(row: $response);
+		return $this->entityRow(request: new UpstreamRequest(method: 'PUT', path: rawurlencode($entityId), options: ['body' => $body]));
 	}//end update()
 
 	/**
@@ -139,16 +123,34 @@ trait ConnectorEntityCallsTrait {
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		$this->router->call(
-			provider: $this,
-			method: 'DELETE',
-			path: rawurlencode($entityId),
-			options: [
-				'query' => $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: []),
-				'headers' => $this->requestHeaders(),
-			]
-		);
+		$query = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: []);
+		$this->callEntity(request: new UpstreamRequest(method: 'DELETE', path: rawurlencode($entityId), options: ['query' => $query]));
 	}//end delete()
+
+	/**
+	 * One entity call, its answer normalised to a row.
+	 *
+	 * @param UpstreamRequest $request The method, the entity path and the query or body.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function entityRow(UpstreamRequest $request): array {
+		return $this->normalizeRow(row: $this->callEntity(request: $request));
+	}//end entityRow()
+
+	/**
+	 * Make one entity call with the standard headers: JSON responses, and a JSON body on writes.
+	 *
+	 * @param UpstreamRequest $request The method, the entity path and the query or body.
+	 *
+	 * @return array<string,mixed> The decoded response.
+	 */
+	private function callEntity(UpstreamRequest $request): array {
+		$options = $request->options;
+		$options['headers'] = $this->requestHeaders(withBody: array_key_exists('body', $options));
+
+		return $this->router->call(provider: $this, method: $request->method, path: $request->path, options: $options);
+	}//end callEntity()
 
 	/**
 	 * The standard `{register, schema, object, …filters}` context, used as the
