@@ -408,6 +408,27 @@ class FlowService {
 	}//end save()
 
 	/**
+	 * Refuse a new graph that mails any address unless an administrator or the app stores it.
+	 *
+	 * For write paths that insert a flow without save(), such as a federated
+	 * flow bundle install.
+	 *
+	 * @param mixed $nodes The graph's nodes.
+	 * @param mixed $edges The graph's edges.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When a non-administrator stores a step that mails any address.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	public function assertMayStoreGraph(mixed $nodes, mixed $edges): void {
+		if ($this->mailsAnyAddress(graph: [$nodes, $edges]) === true) {
+			$this->assertAdministratorAuthor();
+		}
+	}//end assertMayStoreGraph()
+
+	/**
 	 * Whether any step in the graph lets mail go to any address.
 	 *
 	 * The whole graph is walked, nodes and edges alike, so the check does not
@@ -420,22 +441,7 @@ class FlowService {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	private function mailsAnyAddress(mixed $graph): bool {
-		if (is_array($graph) === false) {
-			return false;
-		}
-
-		$mode = ($graph['externalRecipients'] ?? null);
-		if (is_string($mode) === true && strtolower(trim($mode)) === FlowMessagingService::EXTERNAL_ANY) {
-			return true;
-		}
-
-		foreach ($graph as $value) {
-			if (is_array($value) === true && $this->mailsAnyAddress(graph: $value) === true) {
-				return true;
-			}
-		}
-
-		return false;
+		return ExternalMailAuthorGate::mailsAnyAddress(graph: $graph);
 	}//end mailsAnyAddress()
 
 	/**
@@ -448,16 +454,11 @@ class FlowService {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	private function assertAdministratorAuthor(): void {
-		if (SystemOperationContext::isActive() === true) {
-			return;
-		}
-
-		$user = $this->userSession->getUser();
-		if ($user !== null && $this->container->get(IGroupManager::class)->isAdmin($user->getUID()) === true) {
-			return;
-		}
-
-		throw new NotAuthorizedException(message: 'Only an administrator may let a flow send email to any address');
+		// The same gate SchemaFlowImportListener asks, so both write paths agree.
+		(new ExternalMailAuthorGate(
+			userSession: $this->userSession,
+			groupManager: $this->container->get(IGroupManager::class)
+		))->assertAdministratorAuthor();
 	}//end assertAdministratorAuthor()
 
 	/**

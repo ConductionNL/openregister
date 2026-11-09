@@ -287,4 +287,20 @@ class FlowShareableConfigTypeTest extends TestCase {
 		$this->assertSame('manual', $captured->getTrigger());
 		$this->assertSame([['id' => 's1', 'from' => 'a', 'to' => 'b']], $captured->getEdges());
 	}//end testARoundTripPreservesTheFlowShape()
+
+	/**
+	 * obj-f1: a flow bundle with a step that mails any address goes through FlowService's gate.
+	 */
+	public function testAMailAnyGraphTheInstallerMayNotStoreIsRefused(): void {
+		$this->flows->method('assertMayStoreGraph')
+			->willThrowException(new \OCA\OpenRegister\Exception\NotAuthorizedException('admins only'));
+		$this->mapper->expects($this->never())->method('insert');
+
+		$this->expectException(\OCA\OpenRegister\Exception\NotAuthorizedException::class);
+		$this->type->deserialise(['flows' => [[
+			'name' => 'Relay',
+			'nodes' => [['id' => 'm', 'config' => ['externalRecipients' => 'any']]],
+			'edges' => [],
+		]]]);
+	}
 }//end class
