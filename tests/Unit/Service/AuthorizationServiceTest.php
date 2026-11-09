@@ -3,6 +3,7 @@
 namespace Unit\Service;
 
 use Jose\Component\Core\AlgorithmManager;
+use OCA\OpenRegister\Service\SessionPrincipal;
 use Jose\Component\Core\JWK;
 use Jose\Component\Signature\Algorithm\HS256;
 use Jose\Component\Signature\Algorithm\HS384;
@@ -85,11 +86,9 @@ class AuthorizationServiceTest extends TestCase {
 		$request->method('getHeader')->willReturnCallback(fn (string $name) => (strtolower($name) === 'authorization') ? 'Bearer sometoken' : '');
 
 		$this->service = new AuthorizationService(
-			userManager: $this->userManager,
-			userSession: $this->userSession,
+			principal: new SessionPrincipal(userSession: $this->userSession, groupManager: $this->createMock(\OCP\IGroupManager::class), userManager: $this->userManager),
 			consumerMapper: $this->consumerMapper,
 			cacheFactory: $cacheFactory,
-			groupManager: $this->createMock(\OCP\IGroupManager::class),
 			request: $request,
 		);
 	}

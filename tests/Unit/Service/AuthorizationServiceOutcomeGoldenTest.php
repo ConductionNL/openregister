@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\Consumer;
+use OCA\OpenRegister\Service\SessionPrincipal;
 use OCA\OpenRegister\Db\ConsumerMapper;
 use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Service\Audit\TokenContext;
@@ -128,13 +129,11 @@ class AuthorizationServiceOutcomeGoldenTest extends TestCase {
 		}
 
 		return new AuthorizationService(
-			$users,
-			$session,
+			new SessionPrincipal(userSession: $session, groupManager: $groups, userManager: $users),
 			$mapper,
 			$grants,
 			$tokenContext,
 			null,
-			$groups,
 			$theRequest,
 		);
 	}//end service()

@@ -23,8 +23,6 @@ use Exception;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCP\IURLGenerator;
-use OCP\IUserManager;
-use OCP\IUserSession;
 
 /**
  * Writes the link of a Nextcloud user on an object: the account side of
@@ -39,14 +37,12 @@ class UserLinkWriter {
 
 	/**
 	 * @param ContactLinkMapperInterface $links The link rows.
-	 * @param IUserManager $users The accounts.
-	 * @param IUserSession $session The signed-in user, recorded as the linker.
+	 * @param SessionPrincipal $principal The accounts, and the signed-in user recorded as the linker.
 	 * @param IURLGenerator $urls The avatar route.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapperInterface $links,
-		private readonly IUserManager $users,
-		private readonly IUserSession $session,
+		private readonly SessionPrincipal $principal,
 		private readonly IURLGenerator $urls,
 	) {
 	}//end __construct()
@@ -67,12 +63,12 @@ class UserLinkWriter {
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
 	public function write(string $objectUuid, int $registerId, ?int $schemaId, string $userId, ?string $role): ContactLink {
-		$user = $this->users->get($userId);
+		$user = $this->principal->userManager->get($userId);
 		if ($user === null) {
 			throw new Exception('User not found', 404);
 		}
 
-		$linker = $this->session->getUser();
+		$linker = $this->principal->userSession->getUser();
 		if ($linker === null) {
 			throw new Exception('No user logged in', 401);
 		}

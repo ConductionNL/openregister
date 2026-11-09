@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Jose\Component\Core\AlgorithmManager;
+use OCA\OpenRegister\Service\SessionPrincipal;
 use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\HS256;
 use Jose\Component\Signature\Algorithm\RS256;
@@ -140,11 +141,9 @@ class AuthorizationServiceHardeningTest extends TestCase {
 		$request->method('passesCSRFCheck')->willReturnCallback(fn (): bool => $this->passesCsrf);
 
 		return new AuthorizationService(
-			userManager: $users,
-			userSession: $session,
+			principal: new SessionPrincipal(userSession: $session, groupManager: $groups, userManager: $users),
 			consumerMapper: $mapper,
 			cacheFactory: $cacheFactory,
-			groupManager: $groups,
 			request: $request,
 		);
 	}//end service()

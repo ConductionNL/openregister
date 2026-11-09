@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
+use OCP\IGroupManager;
+use OCA\OpenRegister\Service\SessionPrincipal;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Service\UserLinkWriter;
@@ -72,7 +74,8 @@ class UserLinkWriterTest extends TestCase {
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('linkToRoute')->willReturn('/index.php/avatar/jan/64');
 
-		$this->writer = new UserLinkWriter($this->links, $this->users, $this->session, $urls);
+		$principal    = new SessionPrincipal(userSession: $this->session, groupManager: $this->createMock(IGroupManager::class), userManager: $this->users);
+		$this->writer = new UserLinkWriter($this->links, $principal, $urls);
 	}//end setUp()
 
 	/**

@@ -3,6 +3,8 @@
 namespace Unit\Service;
 
 use OCA\OpenRegister\Mcp\Db\Agent;
+use OCP\IUserManager;
+use OCA\OpenRegister\Service\SessionPrincipal;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLog;
@@ -46,12 +48,12 @@ class TestableEndpointService extends EndpointService {
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		AgentMapper $agentMapper,
+		IUserManager $userManager,
 	) {
 		parent::__construct(
 			mappers: new EndpointMappers($endpointLogMapper, $agentMapper),
 			logger: $logger,
-			userSession: $userSession,
-			groupManager: $groupManager
+			principal: new SessionPrincipal(userSession: $userSession, groupManager: $groupManager, userManager: $userManager)
 		);
 	}
 
@@ -131,7 +133,8 @@ class EndpointServiceTest extends TestCase {
 			$this->logger,
 			$this->userSession,
 			$this->groupManager,
-			$agentMapper
+			$agentMapper,
+			$this->createMock(IUserManager::class)
 		);
 	}
 

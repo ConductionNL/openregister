@@ -19,6 +19,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use GuzzleHttp\Client;
+use OCP\IUserManager;
+use OCA\OpenRegister\Service\SessionPrincipal;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Service\EndpointMappers;
@@ -92,13 +94,13 @@ class UninitialisedPropertyConstructionTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$agents = $this->createMock(AgentMapper::class);
 
-		$service = new EndpointService(new EndpointMappers($mapper, $agents), $logger, $session, $groups);
+		$service = new EndpointService(new EndpointMappers($mapper, $agents), $logger, new SessionPrincipal(userSession: $session, groupManager: $groups, userManager: $this->createMock(IUserManager::class)));
 
-		$this->assertSame($mapper, $this->readProperty($service, 'endpointLogMapper'));
+		$this->assertSame($mapper, $this->readProperty($service, 'mappers')->endpointLogMapper);
 		$this->assertSame($logger, $this->readProperty($service, 'logger'));
-		$this->assertSame($session, $this->readProperty($service, 'userSession'));
-		$this->assertSame($groups, $this->readProperty($service, 'groupManager'));
-		$this->assertSame($agents, $this->readProperty($service, 'agentMapper'));
+		$this->assertSame($session, $this->readProperty($service, 'principal')->userSession);
+		$this->assertSame($groups, $this->readProperty($service, 'principal')->groupManager);
+		$this->assertSame($agents, $this->readProperty($service, 'mappers')->agentMapper);
 	}//end testEndpointServiceStoresItsCollaborators()
 
 	/**

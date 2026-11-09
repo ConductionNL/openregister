@@ -25,12 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLog;
-use OCA\OpenRegister\Db\EndpointLogMapperInterface;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -65,52 +61,9 @@ class EndpointService implements EndpointServiceInterface {
 	];
 
 	/**
-	 * Endpoint log mapper
-	 *
-	 * Handles database operations for endpoint execution logs.
-	 *
-	 * @var EndpointLogMapperInterface Endpoint log mapper instance
-	 */
-	private readonly EndpointLogMapperInterface $endpointLogMapper;
-
-	/**
-	 * Logger
-	 *
-	 * Used for logging endpoint execution, errors, and debug information.
-	 *
-	 * @var LoggerInterface Logger instance
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * User session
-	 *
-	 * Provides current user context for permission checks.
-	 *
-	 * @var IUserSession User session instance
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Group manager
-	 *
-	 * Used for checking user group permissions for endpoint access.
-	 *
-	 * @var IGroupManager Group manager instance
-	 */
-	private readonly IGroupManager $groupManager;
-
-	/**
-	 * Agent lookups for agent-type endpoints.
-	 *
-	 * @var AgentMapperInterface
-	 */
-	private readonly AgentMapperInterface $agentMapper;
-
-	/**
 	 * Constructor.
 	 *
-	 * WHY THIS EXISTS. All four properties above were declared `readonly` and
+	 * WHY THIS EXISTS. The properties this class reads were once `readonly` and
 	 * never assigned — this class had no constructor — so every method that
 	 * touched one died with
 	 *
@@ -121,22 +74,15 @@ class EndpointService implements EndpointServiceInterface {
 	 * at lines 402/410/457 and the audit-log write at 487. Same defect as
 	 * NotificationService and UploadService in this repo.
 	 *
-	 * @param EndpointMappers $mappers Endpoint execution log and agent mappers.
-	 * @param LoggerInterface   $logger            Logger.
-	 * @param IUserSession      $userSession       Current user context.
-	 * @param IGroupManager     $groupManager      Group membership lookups.
+	 * @param EndpointMappers  $mappers   Endpoint execution log and agent mappers.
+	 * @param LoggerInterface  $logger    Logger.
+	 * @param SessionPrincipal $principal The current user and their group memberships.
 	 */
 	public function __construct(
-		EndpointMappers $mappers,
-		LoggerInterface $logger,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		private readonly EndpointMappers $mappers,
+		private readonly LoggerInterface $logger,
+		private readonly SessionPrincipal $principal,
 	) {
-		$this->agentMapper = $mappers->agentMapper;
-		$this->endpointLogMapper = $mappers->endpointLogMapper;
-		$this->logger = $logger;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
 	}//end __construct()
 
 	/**
@@ -277,7 +223,7 @@ class EndpointService implements EndpointServiceInterface {
 
 		// Find agent by UUID; the mapper throws when there is none, and the
 		// catch in executeAgentEndpoint() turns that into the 500 envelope.
-		$this->agentMapper->findByUuid($agentId);
+		$this->mappers->agentMapper->findByUuid($agentId);
 
 		// Extract message from request.
 		$message = $request['data']['message'] ?? $request['message'] ?? '';
@@ -321,13 +267,13 @@ class EndpointService implements EndpointServiceInterface {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission check has multiple user and group conditions
 	 */
 	private function canExecuteEndpoint(Endpoint $endpoint): bool {
-		$user = $this->userSession->getUser();
+		$user = $this->principal->userSession->getUser();
 		if ($user === null) {
 			// Without a user only an endpoint open to everyone may run.
 			return empty($endpoint->getGroups());
 		}
 
-		$userGroups = $this->groupManager->getUserGroupIds($user);
+		$userGroups = $this->principal->groupManager->getUserGroupIds($user);
 		if (in_array('admin', $userGroups) === true) {
 			return true;
 		}
@@ -370,7 +316,7 @@ class EndpointService implements EndpointServiceInterface {
 	 */
 	private function logEndpointCall(Endpoint $endpoint, EndpointExchange $exchange): void {
 		try {
-			$this->endpointLogMapper->insert($this->endpointLog(endpoint: $endpoint, exchange: $exchange));
+			$this->mappers->endpointLogMapper->insert($this->endpointLog(endpoint: $endpoint, exchange: $exchange));
 			$this->logger->debug(
 				message: '[EndpointService] Endpoint call logged',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'endpoint_id' => $endpoint->getId(), 'status_code' => $exchange->result['statusCode']]
@@ -394,7 +340,7 @@ class EndpointService implements EndpointServiceInterface {
 	private function endpointLog(Endpoint $endpoint, EndpointExchange $exchange): EndpointLog {
 		$log = $this->newEndpointLog();
 		$log->setEndpointId($endpoint->getId());
-		$user = $this->userSession->getUser();
+		$user = $this->principal->userSession->getUser();
 		if ($user !== null) {
 			$log->setUserId($user->getUID());
 		}

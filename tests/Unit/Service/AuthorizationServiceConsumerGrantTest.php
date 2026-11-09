@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Jose\Component\Core\AlgorithmManager;
+use OCA\OpenRegister\Service\SessionPrincipal;
 use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\HS256;
 use Jose\Component\Signature\JWSBuilder;
@@ -96,8 +97,7 @@ class AuthorizationServiceConsumerGrantTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
 		return new AuthorizationService(
-			userManager: $users,
-			userSession: $this->createMock(IUserSession::class),
+			principal: new SessionPrincipal(userSession: $this->createMock(IUserSession::class), groupManager: $this->createMock(IGroupManager::class), userManager: $users),
 			consumerMapper: $this->createMock(ConsumerMapper::class),
 			tokenGrantSource: $grants,
 			cacheFactory: $cacheFactory,
