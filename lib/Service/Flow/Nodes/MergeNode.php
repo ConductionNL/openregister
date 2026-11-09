@@ -137,6 +137,18 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 	 * @return array The combined items.
 	 */
 	public function execute(array $items, array $config, array $context): array {
+		return $this->merged(items: $items, config: $config);
+	}//end execute()
+
+	/**
+	 * The items combined the way the configured mode says.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $config The step configuration.
+	 *
+	 * @return array The combined items.
+	 */
+	private function merged(array $items, array $config): array {
 		$key = (string)($config['key'] ?? '');
 
 		return match ((string)($config['mode'] ?? 'append')) {
@@ -144,7 +156,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 			'unique' => $this->unique(items: $items, key: $key),
 			default => $this->append(items: $items),
 		};
-	}//end execute()
+	}//end merged()
 
 	/**
 	 * Append: the engine already concatenated the branches; re-pair each
