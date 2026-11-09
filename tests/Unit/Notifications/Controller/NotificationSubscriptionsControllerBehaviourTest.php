@@ -78,8 +78,7 @@ class NotificationSubscriptionsControllerBehaviourTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 		return new NotificationSubscriptionsController(
 			$request,
-			new NotificationSubscriptionsControllerServices($this->mapper, $this->registers, $this->schemas),
-			$session
+			new NotificationSubscriptionsControllerServices($this->mapper, $this->registers, $this->schemas, $session)
 		);
 	}
 
