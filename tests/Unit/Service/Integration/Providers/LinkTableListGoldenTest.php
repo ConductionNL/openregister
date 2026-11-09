@@ -35,6 +35,7 @@ use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning;
 use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
 
 /**
@@ -85,9 +86,12 @@ class LinkTableListGoldenTest extends TestCase {
 			$mapper->method('findByObjectUuid')->willReturn($links);
 		}
 
-		$last = ($spec[3] === true ? new NullLogger() : null);
+		$args = [new LeafProviderPlatform($this->createMock(IDBConnection::class), $apps, $this->createMock(IL10N::class)), $mapper, null];
+		if ($spec[3] === true) {
+			$args = [new LeafMarkerScanning($this->createMock(IDBConnection::class), $apps, $this->createMock(IL10N::class), new NullLogger()), $mapper];
+		}
 		$builder = $this->getMockBuilder($class)
-			->setConstructorArgs([new LeafProviderPlatform($this->createMock(IDBConnection::class), $apps, $this->createMock(IL10N::class)), $mapper, $last])
+			->setConstructorArgs($args)
 			->onlyMethods(method_exists($class, 'findByMarker') ? ['findByMarker'] : []);
 		$provider = $builder->getMock();
 		if (method_exists($class, 'findByMarker') === false) {

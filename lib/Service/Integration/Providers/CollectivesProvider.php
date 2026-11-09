@@ -88,20 +88,26 @@ class CollectivesProvider extends AbstractIntegrationProvider {
 	private IL10N $l10n;
 
 	/**
+	 * Logger for the degraded marker-scan path.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param LeafProviderPlatform          $platform             The DB connection, app manager and localisation.
+	 * @param LeafMarkerScanning            $leaf                 The DB connection, app manager, localisation and marker-scan logger.
 	 * @param CollectiveLinkMapperInterface $collectiveLinkMapper Collective-link mapper (Tier-2 link table).
-	 * @param LoggerInterface               $logger               Logger for the degraded marker-scan path.
 	 */
 	public function __construct(
-		LeafProviderPlatform $platform,
+		LeafMarkerScanning $leaf,
 		private CollectiveLinkMapperInterface $collectiveLinkMapper,
-		private LoggerInterface $logger,
 	) {
-		$this->db = $platform->db;
-		$this->appManager = $platform->appManager;
-		$this->l10n = $platform->l10n;
+		$this->db = $leaf->db;
+		$this->appManager = $leaf->appManager;
+		$this->l10n = $leaf->l10n;
+		$this->logger = $leaf->logger;
 	}//end __construct()
 
 	public function getId(): string {

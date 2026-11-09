@@ -45,8 +45,6 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use OCP\IL10N;
-use OCP\IUser;
-use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
 
@@ -69,18 +67,6 @@ class PollsProviderTest extends TestCase {
 		$mock->method('isInstalled')->willReturn($installed);
 		return $mock;
 	}//end buildAppManager()
-
-	private function buildUserSession(?string $uid): IUserSession {
-		$session = $this->createMock(IUserSession::class);
-		if ($uid === null) {
-			$session->method('getUser')->willReturn(null);
-			return $session;
-		}
-		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn($uid);
-		$session->method('getUser')->willReturn($user);
-		return $session;
-	}//end buildUserSession()
 
 	/**
 	 * Build a query-builder mock that returns the supplied rows.
@@ -134,7 +120,6 @@ class PollsProviderTest extends TestCase {
 				l10n: $this->buildL10n(),
 			),
 			pollLinkMapper: $this->buildMapper([]),
-			userSession: $this->buildUserSession('admin'),
 		);
 
 		self::assertSame('polls', $provider->getId());
@@ -153,7 +138,6 @@ class PollsProviderTest extends TestCase {
 				l10n: $this->buildL10n(),
 			),
 			pollLinkMapper: $this->buildMapper([]),
-			userSession: $this->buildUserSession('admin'),
 		);
 		self::assertFalse($provider->isEnabled());
 		self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
@@ -167,7 +151,6 @@ class PollsProviderTest extends TestCase {
 				l10n: $this->buildL10n(),
 			),
 			pollLinkMapper: $this->buildMapper([]),
-			userSession: $this->buildUserSession('admin'),
 		);
 
 		self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
@@ -225,7 +208,6 @@ class PollsProviderTest extends TestCase {
 				l10n: $this->buildL10n(),
 			),
 			pollLinkMapper: $this->buildMapper([$link]),
-			userSession: $this->buildUserSession('admin'),
 		);
 
 		$rows = $provider->list(register: 'r', schema: 's', objectId: $uuid);
@@ -255,7 +237,6 @@ class PollsProviderTest extends TestCase {
 				l10n: $this->buildL10n(),
 			),
 			pollLinkMapper: $this->buildMapper([]),
-			userSession: $this->buildUserSession('admin'),
 		);
 		$h = $provider->health();
 		self::assertSame('ok', $h['status']);
@@ -271,7 +252,6 @@ class PollsProviderTest extends TestCase {
 				l10n: $this->buildL10n(),
 			),
 			pollLinkMapper: $this->buildMapper([]),
-			userSession: $this->buildUserSession('admin'),
 		);
 		$h = $provider->health();
 		self::assertSame('unavailable', $h['status']);
