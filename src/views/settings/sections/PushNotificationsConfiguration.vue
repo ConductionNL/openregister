@@ -253,52 +253,13 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use './statusCallout' as *;
+
+@include status-callout('.push-status', '.push-status__badge');
+
 .push-status-section {
 	margin-top: 8px;
-}
-
-.push-status {
-	padding: 16px;
-	border-radius: var(--border-radius-large);
-	border-left: 4px solid;
-	margin-bottom: 16px;
-}
-
-.push-status--error {
-	background: var(--color-error-light, rgba(var(--color-error-rgb), 0.1));
-	border-color: var(--color-error);
-}
-
-.push-status--warning {
-	background: var(--color-warning-light, rgba(var(--color-warning-rgb), 0.1));
-	border-color: var(--color-warning);
-}
-
-.push-status--success {
-	background: var(--color-success-light, rgba(var(--color-success-rgb), 0.1));
-	border-color: var(--color-success);
-}
-
-.push-status__badge {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	font-weight: 600;
-	font-size: 15px;
-	margin-bottom: 8px;
-}
-
-.push-status--error .push-status__badge {
-	color: var(--color-error);
-}
-
-.push-status--warning .push-status__badge {
-	color: var(--color-warning);
-}
-
-.push-status--success .push-status__badge {
-	color: var(--color-success);
 }
 
 .push-status__hint {
@@ -342,11 +303,6 @@ export default {
 
 .push-vapid-section__key-value,
 .push-vapid-section__command {
-	display: inline-block;
-	font-family: var(--font-face-monospace, monospace);
-	background: var(--color-background-dark);
-	border-radius: var(--border-radius);
-	padding: 4px 8px;
-	word-break: break-all;
+	@include code-chip;
 }
 </style>

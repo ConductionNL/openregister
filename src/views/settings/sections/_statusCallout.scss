@@ -1,0 +1,45 @@
+// SPDX-FileCopyrightText: 2026 Conduction B.V.
+// SPDX-License-Identifier: EUPL-1.2
+
+// A status callout: a tinted box with a coloured left border and a bold,
+// coloured badge line, in a success, warning and error tone. The section
+// keeps its own class names; $box is the box and $badge its badge line, the
+// tones are $box--success, $box--warning and $box--error.
+@mixin status-callout($box, $badge) {
+	#{$box} {
+		padding: 16px;
+		border-radius: var(--border-radius-large);
+		border-left: 4px solid;
+		margin-bottom: 16px;
+	}
+
+	@each $tone in (success, warning, error) {
+		#{$box}--#{$tone} {
+			background: var(--color-#{$tone}-light, rgba(var(--color-#{$tone}-rgb), 0.1));
+			border-color: var(--color-#{$tone});
+		}
+
+		#{$box}--#{$tone} #{$badge} {
+			color: var(--color-#{$tone});
+		}
+	}
+
+	#{$badge} {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-weight: 600;
+		font-size: 15px;
+		margin-bottom: 8px;
+	}
+}
+
+// An inline monospace chip for a key or an occ command.
+@mixin code-chip {
+	display: inline-block;
+	font-family: var(--font-face-monospace, monospace);
+	background: var(--color-background-dark);
+	border-radius: var(--border-radius);
+	padding: 4px 8px;
+	word-break: break-all;
+}
