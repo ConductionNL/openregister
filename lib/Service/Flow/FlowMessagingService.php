@@ -40,8 +40,12 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\FlowEmailSentEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
+use OCA\OpenRegister\Notifications\Service\Notification\NoticeContent;
+use OCA\OpenRegister\Notifications\Service\Notification\NoticeRule;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
@@ -577,14 +581,13 @@ class FlowMessagingService {
 
 		$this->sendToAddresses(send: $send, item: $item);
 		if ($send->channel === 'nc-notification' && $item->delivered !== []) {
-			$this->channels->ncSender->enqueueWebPush(
-				recipients: $item->delivered,
-				ruleId: $send->stepName,
-				originApp: 'openregister',
-				subject: $item->title,
-				message: $item->body,
-				actions: [],
-				object: $item->objectReference()
+			$this->channels->ncSender->enqueuePush(
+				push: new PushRideAlong(
+					recipients: $item->delivered,
+					object: $item->objectReference(),
+					rule: new NoticeRule(name: $send->stepName),
+					content: new NoticeContent(subjectKey: '', subject: $item->title, message: $item->body)
+				)
 			);
 		}
 	}//end sendItem()
@@ -722,20 +725,16 @@ class FlowMessagingService {
 			return $this->channels->emailSender->send(uid: $item->recipient, subject: $item->title, body: $item->body);
 		}
 
-		return $this->channels->ncSender->send(
-			uid: $item->recipient,
-			object: $item->objectReference(),
-			subjectKey: 'flow_message',
-			name: $send->stepName,
-			subject: $item->title,
-			message: $item->body,
-			context: [],
-			originApp: 'openregister',
-			actions: [],
-			// Web-push rides along (enqueued after this item's sends), so the
-			// foreground popup is suppressed for the tag exactly as the
-			// declarative dispatcher suppresses it.
-			webPushActive: true
+		// Web-push rides along (enqueued after this item's sends), so the
+		// foreground popup is suppressed for the tag exactly as the
+		// declarative dispatcher suppresses it.
+		return $this->channels->ncSender->notify(
+			notice: new InAppNotice(
+				uid: $item->recipient,
+				object: $item->objectReference(),
+				rule: new NoticeRule(name: $send->stepName, webPushActive: true),
+				content: new NoticeContent(subjectKey: 'flow_message', subject: $item->title, message: $item->body)
+			)
 		);
 	}//end deliver()
 

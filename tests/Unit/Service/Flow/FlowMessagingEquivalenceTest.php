@@ -41,7 +41,9 @@ use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityFactory;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
@@ -103,6 +105,21 @@ class RecordingNcSender extends NcNotificationSender {
 		array $actions,
 		ObjectEntity $object,
 	): void {
+		// Ride-alongs are not part of the delivery comparison.
+	}
+
+	public function notify(InAppNotice $notice): string {
+		$this->sends[] = [
+			'channel' => 'nc-notification',
+			'uid' => $notice->uid,
+			'subject' => $notice->content->subject,
+			'message' => $notice->content->message,
+		];
+
+		return self::OUTCOME_DISPATCHED;
+	}
+
+	public function enqueuePush(PushRideAlong $push): void {
 		// Ride-alongs are not part of the delivery comparison.
 	}
 }//end class
