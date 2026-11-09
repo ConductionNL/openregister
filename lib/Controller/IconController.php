@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\MdiIconSvgInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -43,18 +44,16 @@ class IconController extends Controller {
 	/**
 	 * Constructor for the IconController.
 	 *
-	 * @param string $appName The name of the app
 	 * @param IRequest $request The HTTP request object
 	 * @param MdiIconSvgInterface $iconSvg Renders a curated MDI glyph to SVG
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly MdiIconSvgInterface $iconSvg,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

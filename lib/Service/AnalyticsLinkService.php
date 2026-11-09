@@ -242,14 +242,31 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function createAndLinkReport(LinkTarget $target, string $name, ?int $type = null): AnalyticsLink {
+		return $this->createAndLinkDraft(target: $target, draft: new AnalyticsReportDraft(name: $name, type: $type));
+	}//end createAndLinkReport()
+
+	/**
+	 * Create the drafted NC Analytics report and link it to an OR object.
+	 *
+	 * @param LinkTarget           $target The object to link to.
+	 * @param AnalyticsReportDraft $draft  The report name and optional datasource type (default group).
+	 *
+	 * @return AnalyticsLink The persisted link row.
+	 *
+	 * @throws Exception On missing user (401), empty name (400),
+	 *                   Analytics unavailable (503), create failure (500).
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function createAndLinkDraft(LinkTarget $target, AnalyticsReportDraft $draft): AnalyticsLink {
 		$uid = $this->requireUid();
 
-		$name = trim($name);
+		$name = trim($draft->name);
 		if ($name === '') {
 			throw new Exception('Report name is required', 400);
 		}
 
-		$reportType = ($type ?? self::REPORT_TYPE_GROUP);
+		$reportType = ($draft->type ?? self::REPORT_TYPE_GROUP);
 		$reportId   = $this->createReport(name: $name, reportType: $reportType);
 
 		$info = ($this->fetchReportInfo(reportId: $reportId) ?? $this->draftReportInfo(name: $name, reportType: $reportType));
@@ -257,7 +274,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->analyticsLinkMapper->insert($link);
-	}//end createAndLinkReport()
+	}//end createAndLinkDraft()
 
 	/**
 	 * Create a report in NC Analytics.
