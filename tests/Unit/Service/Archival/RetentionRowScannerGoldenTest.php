@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Archival;
 
 use Exception;
+use OCA\OpenRegister\Service\Archival\RetentionScanStores;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -111,7 +112,7 @@ class RetentionRowScannerGoldenTest extends TestCase {
 			);
 		}
 
-		return new RetentionRowScanner(db: $db, registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper, logger: $logger);
+		return new RetentionRowScanner(stores: new RetentionScanStores(db: $db, registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper), logger: $logger);
 	}//end scanner()
 
 	/**

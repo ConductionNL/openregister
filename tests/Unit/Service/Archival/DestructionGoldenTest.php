@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Archival;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Archival\DestructionInfrastructure;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -145,9 +146,7 @@ class DestructionGoldenTest extends TestCase {
 		);
 
 		return new DestructionService(
-			objectMapper: $this->mapper(),
-			appConfig: $config,
-			jobList: $jobs,
+			infrastructure: new DestructionInfrastructure(objectMapper: $this->mapper(), appConfig: $config, jobList: $jobs),
 			userSession: $session,
 			logger: $this->createMock(LoggerInterface::class),
 		);
