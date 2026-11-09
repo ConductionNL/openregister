@@ -83,30 +83,31 @@ class CascadingHandler {
 			return [$object, $uuid];
 		}
 
-		$uuid   = $uuid ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
-		$parent = new CascadeTarget(parentUuid: $uuid, register: $currentRegister);
+		$uuid    = $uuid ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+		$parent  = new CascadeTarget(parentUuid: $uuid, register: $currentRegister);
+		$targets = array_map(fn (array $definition): CascadeTarget => $parent->with(definition: $definition), $inversedByProperties);
 
-		return [$this->cascadeProperties(object: $object, properties: $inversedByProperties, parent: $parent), $uuid];
+		return [$this->cascadeProperties(object: $object, targets: $targets), $uuid];
 	}//end handlePreValidationCascading()
 
 	/**
 	 * Cascade every filled inversedBy property of an object.
 	 *
-	 * @param array         $object     The object data.
-	 * @param array         $properties The inversedBy property definitions by name.
-	 * @param CascadeTarget $parent     The parent the created objects point back to.
+	 * @param array                        $object  The object data.
+	 * @param array<string, CascadeTarget> $targets By inversedBy property name: the parent the created
+	 *                                              objects point back to, with that property's definition.
 	 *
 	 * @return array The object data with its cascaded values
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	private function cascadeProperties(array $object, array $properties, CascadeTarget $parent): array {
-		foreach ($properties as $propertyName => $definition) {
+	private function cascadeProperties(array $object, array $targets): array {
+		foreach ($targets as $propertyName => $target) {
 			if (isset($object[$propertyName]) === false || empty($object[$propertyName]) === true) {
 				continue;
 			}
 
-			$object[$propertyName] = $this->cascadeValue(value: $object[$propertyName], target: $parent->with(definition: $definition));
+			$object[$propertyName] = $this->cascadeValue(value: $object[$propertyName], target: $target);
 		}
 
 		return $object;
