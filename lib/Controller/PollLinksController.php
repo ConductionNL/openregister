@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use Closure;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\PollLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
 use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
@@ -53,20 +55,32 @@ class PollLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var PollLinkServiceInterface
+	 */
+	private readonly PollLinkServiceInterface $pollLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
-	 * @param IRequest $request HTTP request.
-	 * @param PollLinkServiceInterface $pollLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param IRequest                    $request  HTTP request.
+	 * @param PollLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly PollLinkServiceInterface $pollLinkService,
-		private readonly ObjectOperationsInterface $objectService,
+		PollLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->pollLinkService = $services->pollLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**

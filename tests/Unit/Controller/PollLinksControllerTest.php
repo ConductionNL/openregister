@@ -54,10 +54,11 @@ class PollLinksControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->controller = new PollLinksController(
-			'openregister',
 			$this->request,
-			$this->service,
-			$this->objectService,
+			new \OCA\OpenRegister\Controller\Support\PollLinksControllerServices(
+				$this->service,
+				$this->objectService,
+			)
 		);
 	}
 
