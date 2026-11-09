@@ -458,19 +458,31 @@ class ObjectIntegrationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function destroy(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
-		$denial = $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
-		if ($denial !== null) {
-			return $denial;
-		}
+		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatchDelete(
+			integrationId: $integrationId,
+			callback: fn ($provider) => $provider->delete($register, $schema, $this->guardedUuid(), $entityId)
+		);
+	}//end destroy()
 
+	/**
+	 * Dispatch a delete: 204 when the provider deleted, the failure's status otherwise.
+	 *
+	 * Unlike dispatch(), an invalid argument is not a 400 here: every failure
+	 * is answered by respondThrown(), as the delete endpoint always has.
+	 *
+	 * @param string   $integrationId Integration id.
+	 * @param callable $callback      Function that receives the resolved provider and deletes.
+	 *
+	 * @return JSONResponse
+	 */
+	private function dispatchDelete(string $integrationId, callable $callback): JSONResponse {
 		try {
-			$provider = $this->resolveProvider(integrationId: $integrationId);
-			$provider->delete($register, $schema, $this->guardedUuid(), $entityId);
+			$callback($this->resolveProvider(integrationId: $integrationId));
 			return new JSONResponse(null, Http::STATUS_NO_CONTENT);
 		} catch (\Throwable $e) {
 			return $this->respondThrown(exception: $e, integrationId: $integrationId);
 		}
-	}//end destroy()
+	}//end dispatchDelete()
 
 	/**
 	 * A successful dispatch answered as a creation (201); a failure keeps its own status.
