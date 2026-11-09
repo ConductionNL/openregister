@@ -330,7 +330,8 @@ abstract class ExampleSetEngineRows {
 		$fragment = $write->fragment;
 		$install  = new ExampleSetRowInstall(rows: $this, refusal: $this->refusalIn(...), fill: $this->fillContext(...), values: $write->values);
 		$changed  = $install->fragment(fragment: $fragment, context: $write->context, report: $report, record: $record);
-		if (ExampleSetRecord::letGoUndeclared(part: new ExampleSetRecordPart(part: $this->part(), noun: $this->noun()), fragment: $fragment, report: $report, record: $record) === true) {
+		$part     = new ExampleSetRecordPart(part: $this->part(), noun: $this->noun());
+		if (ExampleSetRecord::letGoUndeclared(part: $part, fragment: $fragment, report: $report, record: $record) === true) {
 			$changed = true;
 		}
 
