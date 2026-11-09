@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\ObjectSource\OrganisationActingUser;
 use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -89,8 +90,7 @@ class OrganisationObjectSourceWriteTest extends TestCase {
 	private function provider(): OrganisationObjectSourceProvider {
 		return new OrganisationObjectSourceProvider(
 			organisationMapper: $this->organisationMapper,
-			userSession: $this->userSession,
-			groupManager: $this->createMock(IGroupManager::class),
+			actingUser: new OrganisationActingUser(userSession: $this->userSession, groupManager: $this->createMock(IGroupManager::class)),
 			logger: $this->createMock(LoggerInterface::class),
 			organisationService: $this->organisationService
 		);

@@ -47,6 +47,17 @@ use Stringable;
  * the audit trail, the inverse relations and the outcome it reports.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\ObjectHandling
@@ -62,6 +73,8 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
  * @uses \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 final class SaveObjectCreateObjectTest extends TestCase {
 
@@ -77,12 +90,12 @@ final class SaveObjectCreateObjectTest extends TestCase {
 	 */
 	private static function cases(): array {
 		return [
-			'create' => ['args' => ['folderId' => 77, 'failIfExists' => true, '_owner' => 'alice']],
+			'create' => ['args' => ['failIfExists' => true, '_owner' => 'alice']],
 			'mapper took its update branch' => ['action' => 'update', 'session' => true, 'args' => ['_unowned' => true]],
 			'session user owns the create' => ['session' => true, 'args' => []],
 			'silent' => ['args' => ['silent' => true]],
 			'audit off' => ['audit' => false, 'args' => []],
-			'not persisted' => ['args' => ['persist' => false, 'folderId' => 77]],
+			'not persisted' => ['args' => ['persist' => false]],
 			'file property stored' => ['data' => ['doc' => 'raw'], 'image' => 'file', 'args' => []],
 			'file property, image not a file' => ['data' => ['doc' => 'raw'], 'image' => 'string', 'args' => []],
 			'file write fails' => ['data' => ['doc' => 'raw'], 'fileFails' => true, 'args' => []],
@@ -137,7 +150,6 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			schema: $schema,
 			data: array_merge(['title' => 'new'], ($case['data'] ?? [])),
 			uuid: self::UUID,
-			folderId: ($args['folderId'] ?? null),
 			_rbac: false,
 			persist: ($args['persist'] ?? true),
 			silent: ($args['silent'] ?? false),
@@ -271,8 +283,7 @@ final class SaveObjectCreateObjectTest extends TestCase {
 		$saved->setUuid(self::UUID);
 		$data = ['title' => 'new', 'doc' => 'raw'];
 
-		$method = (new \ReflectionClass(SaveObject::class))->getMethod('processFilePropertiesWithRollback');
-		$method->invokeArgs($this->handler(case: [], logger: new \Psr\Log\NullLogger()), [$saved, &$data, $register, $schema]);
+		FilePropertyCalls::processFilePropertiesWithRollback($this->handler(case: [], logger: new \Psr\Log\NullLogger()), [$saved, &$data, $register, $schema]);
 
 		$this->assertSame(['title' => 'new', 'doc' => 42], $data);
 	}

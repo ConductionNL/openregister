@@ -6,7 +6,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\RegisterService;
-use OCA\OpenRegister\Tool\RegisterTool;
+use OCA\OpenRegister\Mcp\Tool\RegisterTool;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;

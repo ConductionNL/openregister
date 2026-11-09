@@ -99,6 +99,22 @@ class ViewScopeApplierSearchMergeTest extends TestCase {
 	}//end testViewSearchTermIsNotDuplicated()
 
 	/**
+	 * A stored term that is not text still merges: a view holds whatever its author sent.
+	 *
+	 * @return void
+	 */
+	public function testANumericViewTermIsMerged(): void {
+		$result = $this->makeApplier(['searchTerms' => 2026])
+			->apply(query: ['_search' => 'invoice'], viewIds: [1]);
+
+		$this->assertSame('invoice 2026', $result['_search']);
+
+		$alone = $this->makeApplier(['searchTerms' => 2026])->apply(query: [], viewIds: [1]);
+
+		$this->assertSame('2026', $alone['_search']);
+	}//end testANumericViewTermIsMerged()
+
+	/**
 	 * An array of view terms is joined, and still merged with the caller's.
 	 *
 	 * @return void

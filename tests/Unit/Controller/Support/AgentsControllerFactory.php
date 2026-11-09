@@ -31,9 +31,9 @@ final class AgentsControllerFactory {
 	public static function args(
 		string $appName,
 		\OCP\IRequest $request,
-		\OCA\OpenRegister\Db\AgentMapper $agentMapper,
+		\OCA\OpenRegister\Mcp\Db\AgentMapper $agentMapper,
 		\OCA\OpenRegister\Service\OrganisationService $organisationService,
-		\OCA\OpenRegister\Service\ToolRegistry $toolRegistry,
+		\OCA\OpenRegister\Mcp\Service\ToolRegistry $toolRegistry,
 		\Psr\Log\LoggerInterface $logger,
 		?string $userId,
 	): array {

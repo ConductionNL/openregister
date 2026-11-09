@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
+use OCA\OpenRegister\Service\Rbac\SchemaRegisterLookup;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -88,7 +89,7 @@ class ConditionMatcherMemberOfTest extends TestCase {
 			}
 		);
 
-		return new MemberOfResolver($schemas, $registers, $this->containerGiving($objects), new OperatorEvaluator(new NullLogger()), new NullLogger());
+		return new MemberOfResolver(new SchemaRegisterLookup($schemas, $registers), $this->containerGiving($objects), new OperatorEvaluator(new NullLogger()), new NullLogger());
 	}//end resolver()
 
 	/**

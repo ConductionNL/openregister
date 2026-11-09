@@ -171,7 +171,7 @@ class SettingsControllerCoverageTest extends TestCase {
 		$maintenance->method('supportsConcurrentRebuild')->willReturn(true);
 		$maintenance->method('lastRun')->willReturn([]);
 		$this->container->method('get')
-			->with(\OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance::class)
+			->with(\OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface::class)
 			->willReturn($maintenance);
 
 		$result = $this->controller->getSearchIndexStatus();

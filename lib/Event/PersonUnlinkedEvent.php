@@ -18,9 +18,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\ContactLink;
-use OCP\EventDispatcher\Event;
-
 /**
  * A person's link on an object was removed.
  *
@@ -30,25 +27,5 @@ use OCP\EventDispatcher\Event;
  *
  * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-link-changes-are-events
  */
-class PersonUnlinkedEvent extends Event {
-
-	/**
-	 * @param ContactLink $link The link, a user or a contact on an object.
-	 */
-	public function __construct(
-		private readonly ContactLink $link,
-	) {
-		parent::__construct();
-	}//end __construct()
-
-	/**
-	 * The link.
-	 *
-	 * @return ContactLink The link as stored.
-	 *
-	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-link-changes-are-events
-	 */
-	public function getLink(): ContactLink {
-		return $this->link;
-	}//end getLink()
+class PersonUnlinkedEvent extends AbstractPersonLinkEvent {
 }//end class

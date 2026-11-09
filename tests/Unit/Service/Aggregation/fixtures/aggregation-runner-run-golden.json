@@ -1531,7 +1531,7 @@
                 "rowPredicate": true
             },
             {
-                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"oc_oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND (_status IS NULL OR _status <> 'draft') AND \"_organisation\" IN (?) AND rbac_pred = 1 AND \"team\" = ? GROUP BY \"status\"",
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND (_status IS NULL OR _status <> 'draft') AND \"_organisation\" IN (?) AND rbac_pred = 1 AND \"team\" = ? GROUP BY \"status\"",
                 "bindings": [
                     "__none__",
                     "a"
@@ -1618,7 +1618,7 @@
                 ]
             },
             {
-                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"oc_oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND (_status IS NULL OR _status <> 'draft') AND \"_organisation\" IN (?) AND \"team\" = ? GROUP BY \"status\"",
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND (_status IS NULL OR _status <> 'draft') AND \"_organisation\" IN (?) AND \"team\" = ? GROUP BY \"status\"",
                 "bindings": [
                     "__none__",
                     "a"
@@ -1714,7 +1714,7 @@
                 "rowPredicate": true
             },
             {
-                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"oc_oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND ((_status IS NULL OR _status <> 'draft') OR _owner = ?) AND \"_organisation\" IN (?) AND rbac_pred = 1 AND \"team\" = ? GROUP BY \"status\"",
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND ((_status IS NULL OR _status <> 'draft') OR _owner = ?) AND \"_organisation\" IN (?) AND rbac_pred = 1 AND \"team\" = ? GROUP BY \"status\"",
                 "bindings": [
                     "alice",
                     "__none__",

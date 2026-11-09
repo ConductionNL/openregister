@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\Conversation;
 
 /**
  * One streamed chat turn: who asks what, in which conversation.

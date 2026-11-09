@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -42,7 +43,7 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/production-observability/spec.md#metrics-storage-strategy
  */
 
-class MetricsService {
+class MetricsService implements MetricsRetentionInterface {
 
 	/**
 	 * Database connection instance.
@@ -149,14 +150,7 @@ class MetricsService {
 	 * success rates, and usage statistics. Metrics are stored with timestamps
 	 * and can include optional metadata for detailed analysis.
 	 *
-	 * @param string $metricType Type of metric (use class constants)
-	 * @param string|null $entityType Entity type (file, object, etc.)
-	 * @param string|null $entityId Entity ID
-	 * @param string $status Status (success, failure)
-	 * @param int|null $durationMs Duration in milliseconds
-	 * @param array|null $metadata Additional metadata
-	 * @param string|null $errorMessage Error message (if failed)
-	 * @param string|null $userId User ID
+	 * @param MetricRecord $record The metric type, subject (entity, user), outcome (status, duration, error) and metadata
 	 *
 	 * @return void
 	 *
@@ -168,16 +162,7 @@ class MetricsService {
 	 *       operational metric row — type, entity, status, duration, metadata, error, user, timestamp — that
 	 *       never disrupts the calling operation on DB error)
 	 */
-	public function recordMetric(
-		string $metricType,
-		?string $entityType = null,
-		?string $entityId = null,
-		string $status = 'success',
-		?int $durationMs = null,
-		?array $metadata = null,
-		?string $errorMessage = null,
-		?string $userId = null,
-	): void {
+	public function recordMetric(MetricRecord $record): void {
 		try {
 			// Get query builder instance for database operations.
 			$qb = $this->db->getQueryBuilder();
@@ -196,14 +181,14 @@ class MetricsService {
 			$qb->insert('openregister_metrics')
 				->values(
 					values: [
-						'metric_type' => $qb->createNamedParameter($metricType),
-						'entity_type' => $qb->createNamedParameter($entityType),
-						'entity_id' => $qb->createNamedParameter($entityId),
-						'user_id' => $qb->createNamedParameter($userId),
-						'status' => $qb->createNamedParameter($status),
-						'duration_ms' => $qb->createNamedParameter($durationMs, IQueryBuilder::PARAM_INT),
-						'metadata' => $qb->createNamedParameter($this->encodeMetadata(metadata: $metadata)),
-						'error_message' => $qb->createNamedParameter($errorMessage),
+						'metric_type' => $qb->createNamedParameter($record->metricType),
+						'entity_type' => $qb->createNamedParameter($record->subject->entityType),
+						'entity_id' => $qb->createNamedParameter($record->subject->entityId),
+						'user_id' => $qb->createNamedParameter($record->subject->userId),
+						'status' => $qb->createNamedParameter($record->outcome->status),
+						'duration_ms' => $qb->createNamedParameter($record->outcome->durationMs, IQueryBuilder::PARAM_INT),
+						'metadata' => $qb->createNamedParameter($this->encodeMetadata(metadata: $record->metadata)),
+						'error_message' => $qb->createNamedParameter($record->outcome->errorMessage),
 						'created_at' => $qb->createNamedParameter(time(), IQueryBuilder::PARAM_INT),
 					]
 				);
@@ -218,7 +203,7 @@ class MetricsService {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'metric_type' => $metricType,
+					'metric_type' => $record->metricType,
 					'error' => $e->getMessage(),
 				]
 			);

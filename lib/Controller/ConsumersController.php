@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Db\Consumer;
-use OCA\OpenRegister\Db\ConsumerMapper;
+use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -42,13 +42,13 @@ class ConsumersController extends Controller {
 	 *
 	 * @param string $appName The application name
 	 * @param IRequest $request The request object
-	 * @param ConsumerMapper $consumerMapper The consumer database mapper
+	 * @param ConsumerMapperInterface $consumerMapper The consumer database mapper
 	 * @param IL10N $l10n The localization service
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ConsumerMapper $consumerMapper,
+		private readonly ConsumerMapperInterface $consumerMapper,
 		private readonly IL10N $l10n,
 	) {
 		parent::__construct(appName: $appName, request: $request);

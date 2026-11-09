@@ -33,10 +33,13 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientResolver;
+use OCA\OpenRegister\Service\Credential\OAuth2CodeExchange;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectionWriter;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceClient;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
+use OCA\OpenRegister\Service\Credential\OAuth2UpstreamRevoker;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;
@@ -45,6 +48,8 @@ use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectClients;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectSteps;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2ConnectService
@@ -260,16 +265,24 @@ class OAuth2ReauthorisationTest extends TestCase {
 		$clientService = $this->createMock(IClientService::class);
 		$clientService->method('newClient')->willReturn($client);
 
+		$logger = $this->createMock(LoggerInterface::class);
+
 		return new OAuth2ConnectService(
-			catalogue: $catalogue,
-			broker: $broker,
-			clients: $clients,
-			refresh: $refresh,
-			instanceClients: $this->createMock(OAuth2InstanceClient::class),
-			identities: $this->createMock(OAuth2AccountIdentity::class),
-			objectService: $objectService,
-			clientService: $clientService,
-			logger: $this->createMock(LoggerInterface::class)
+			sources: new OAuth2ConnectClients(
+				catalogue: $catalogue,
+				clients: $clients,
+				instanceClients: $this->createMock(OAuth2InstanceClient::class),
+			),
+			steps: new OAuth2ConnectSteps(
+				exchange: new OAuth2CodeExchange(clientService: $clientService),
+				writer: new OAuth2ConnectionWriter(
+					broker: $broker,
+					refresh: $refresh,
+					identities: $this->createMock(OAuth2AccountIdentity::class),
+					objectService: $objectService
+				),
+				revoker: new OAuth2UpstreamRevoker(refresh: $refresh, clients: $clients, clientService: $clientService, logger: $logger),
+			),
 		);
 	}
 }

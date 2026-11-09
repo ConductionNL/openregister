@@ -174,7 +174,7 @@ class OrganisationContextTenancyTest extends TestCase {
 			$logger,
 			$groupManager
 		);
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$this->createMock(IUserManager::class),
 			$groupManager,

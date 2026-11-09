@@ -16,12 +16,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -60,10 +61,8 @@ class ObjectHandlerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new ObjectHandler(
-			$this->objectMapper,
+			new TextExtractionObjects($this->objectMapper, $this->schemaMapper, $this->registerMapper),
 			$this->chunkMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
 			$this->logger
 		);
 	}//end setUp()

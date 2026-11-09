@@ -22,47 +22,10 @@
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Db\Schema;
-
 /**
- * One SaveObject::scanForRelations() pass over a level of object data, and the key it is on.
+ * One RelationScanner pass over a level of object data, and the key it is on.
  *
  * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
  */
-final class RelationScanRun {
-
-	/**
-	 * The schema the data is scanned against, if any.
-	 *
-	 * @var Schema|null
-	 */
-	public ?Schema $schema = null;
-
-	/**
-	 * The schema's property definitions, or null without a readable schema.
-	 *
-	 * @var array|null
-	 */
-	public ?array $schemaProperties = null;
-
-	/**
-	 * The relations found so far, by dot path.
-	 *
-	 * @var array
-	 */
-	public array $relations = [];
-
-	/**
-	 * The data key being scanned.
-	 *
-	 * @var string
-	 */
-	public string $key = '';
-
-	/**
-	 * The dot path of the key being scanned.
-	 *
-	 * @var string
-	 */
-	public string $path = '';
+final class RelationScanRun extends RelationScanLevel {
 }//end class

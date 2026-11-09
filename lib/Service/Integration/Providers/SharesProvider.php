@@ -9,7 +9,7 @@
  * Storage strategy is `query-time` — share state mutates outside OR
  * (users click the Files share panel), so any link-table snapshot would
  * desync immediately. The provider walks the object's NC folder
- * (resolved lazily via `FolderManagementHandler`) and unions shares
+ * (resolved lazily via `FileService`) and unions shares
  * across files of every relevant share type (user / group / link /
  * federated), then deduplicates by share id.
  *
@@ -19,7 +19,7 @@
  * pivot is what the proposal acceptance criteria assume; see
  * `openspec/changes/integration-shares/proposal.md` for the rationale.
  *
- * Lazy-resolution policy: `IManager`, `FolderManagementHandler`, and
+ * Lazy-resolution policy: `IManager`, `FileService`, and
  * `IUserSession` are pulled from the server container on demand rather
  * than constructor-injected, so the ctor signature
  * `(IDBConnection, IAppManager, IL10N)` stays compatible with the
@@ -106,7 +106,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	/**
 	 * Optional server container override. Defaults to NC's global
 	 * `\OCP\Server` container; tests inject a mock so the IManager /
-	 * FolderManagementHandler / IUserSession lookups are exerciseable
+	 * FileService / IUserSession lookups are exerciseable
 	 * without spinning up the full container.
 	 *
 	 * @var ContainerInterface|null
@@ -186,7 +186,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * List shares linked to an OR object.
 	 *
 	 * Flow:
-	 *   1. Resolve `IManager`, `FolderManagementHandler`, and the
+	 *   1. Resolve `IManager`, `FileService`, and the
 	 *      current user's UID through the lazy container.
 	 *   2. Resolve the object's NC folder via the handler.
 	 *   3. Walk the folder's first {@see MAX_NODES} children and call
@@ -242,71 +242,140 @@ class SharesProvider extends AbstractIntegrationProvider {
 			// `data`) so existing consumers keep working. When the service
 			// is unavailable the original in-provider walk below is the
 			// fallback so the registry tab degrades gracefully per AD-23.
-			$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
-			if ($service !== null && method_exists($service, 'getLinkedShares') === true) {
-				try {
-					$serviceRows = $service->getLinkedShares($objectId);
-					return array_map([$this, 'mapServiceRow'], $serviceRows);
-				} catch (Throwable $e) {
-					// Fall through to the local walk below.
-				}
+			$serviceRows = $this->serviceRows(objectId: $objectId);
+			if ($serviceRows !== null) {
+				return $serviceRows;
 			}
 
-			$shareManager = $this->lookup(serviceName: 'OCP\\Share\\IManager');
-			$userId = $this->resolveCurrentUserId();
-			if ($shareManager === null || $userId === null) {
-				return [];
-			}
-
-			$folder = $this->resolveObjectFolder(objectId: $objectId);
-			if ($folder === null) {
-				return [];
-			}
-
-			$rows = [];
-			$seen = [];
-			$count = 0;
-			foreach ($folder->getDirectoryListing() as $node) {
-				if ($count >= self::MAX_NODES) {
-					break;
-				}
-
-				$count++;
-
-				foreach (self::SHARE_TYPES as $type) {
-					try {
-						$shares = $shareManager->getSharesBy($userId, $type, $node);
-					} catch (Throwable $e) {
-						// Per-type failure (e.g. provider missing) — keep
-						// walking the other types rather than blanking
-						// the whole list.
-						continue;
-					}
-
-					foreach ($shares as $share) {
-						$row = $this->normaliseShare(share: $share, userId: $userId);
-						if ($row === null) {
-							continue;
-						}
-
-						$id = $row['id'];
-						if (isset($seen[$id]) === true) {
-							continue;
-						}
-
-						$seen[$id] = true;
-						$rows[] = $row;
-					}
-				}//end foreach
-			}//end foreach
-
-			return $rows;
+			return $this->walkObjectFolder(objectId: $objectId);
 		} catch (Throwable $e) {
 			// Share subsystem unreachable; degrade to empty list per
 			// AD-23 graceful-degradation contract.
 			return [];
 		}//end try
 	}//end list()
+
+	/**
+	 * The ShareLinkService rows re-mapped to the widget contract, or null to fall back to the walk.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int, array<string, mixed>>|null The rows, or null when the service is absent or fails.
+	 */
+	private function serviceRows(string $objectId): ?array {
+		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
+		if ($service === null || method_exists($service, 'getLinkedShares') === false) {
+			return null;
+		}
+
+		try {
+			$serviceRows = $service->getLinkedShares($objectId);
+			return array_map([$this, 'mapServiceRow'], $serviceRows);
+		} catch (Throwable $e) {
+			// Fall through to the local walk.
+			return null;
+		}
+	}//end serviceRows()
+
+	/**
+	 * Walk the object's folder for the current user's shares.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int, array<string, mixed>> The rows, empty without a share manager, user or folder.
+	 */
+	private function walkObjectFolder(string $objectId): array {
+		$shareManager = $this->lookup(serviceName: 'OCP\\Share\\IManager');
+		$userId = $this->resolveCurrentUserId();
+		if ($shareManager === null || $userId === null) {
+			return [];
+		}
+
+		$folder = $this->resolveObjectFolder(objectId: $objectId);
+		if ($folder === null) {
+			return [];
+		}
+
+		return $this->walkFolder(folder: $folder, shareManager: $shareManager, userId: $userId);
+	}//end walkObjectFolder()
+
+	/**
+	 * Collect the shares of the first MAX_NODES children, each share once.
+	 *
+	 * @param Folder $folder       The object folder.
+	 * @param object $shareManager The share manager.
+	 * @param string $userId       The current user uid.
+	 *
+	 * @return array<int, array<string, mixed>> The rows, in walk order.
+	 */
+	private function walkFolder(Folder $folder, object $shareManager, string $userId): array {
+		$rows = [];
+		$seen = [];
+		$count = 0;
+		foreach ($folder->getDirectoryListing() as $node) {
+			if ($count >= self::MAX_NODES) {
+				break;
+			}
+
+			$count++;
+
+			foreach ($this->nodeShares(shareManager: $shareManager, userId: $userId, node: $node) as $row) {
+				$id = $row['id'];
+				if (isset($seen[$id]) === true) {
+					continue;
+				}
+
+				$seen[$id] = true;
+				$rows[] = $row;
+			}
+		}
+
+		return $rows;
+	}//end walkFolder()
+
+	/**
+	 * The readable shares of one node across every share type, in type order.
+	 *
+	 * @param object $shareManager The share manager.
+	 * @param string $userId       The current user uid.
+	 * @param mixed  $node         The child node.
+	 *
+	 * @return array<int, array<string, mixed>> The normalised rows (may repeat ids).
+	 */
+	private function nodeShares(object $shareManager, string $userId, mixed $node): array {
+		$rows = [];
+		foreach (self::SHARE_TYPES as $type) {
+			foreach ($this->sharesOfType(shareManager: $shareManager, userId: $userId, type: $type, node: $node) as $share) {
+				$row = $this->normaliseShare(share: $share, userId: $userId);
+				if ($row !== null) {
+					$rows[] = $row;
+				}
+			}
+		}
+
+		return $rows;
+	}//end nodeShares()
+
+	/**
+	 * The shares of one type on one node; a per-type failure yields none.
+	 *
+	 * A missing provider for one type keeps the other types walking rather
+	 * than blanking the whole list.
+	 *
+	 * @param object $shareManager The share manager.
+	 * @param string $userId       The current user uid.
+	 * @param int    $type         The share type.
+	 * @param mixed  $node         The child node.
+	 *
+	 * @return mixed The shares, as the manager returns them.
+	 */
+	private function sharesOfType(object $shareManager, string $userId, int $type, mixed $node): mixed {
+		try {
+			return $shareManager->getSharesBy($userId, $type, $node);
+		} catch (Throwable $e) {
+			return [];
+		}
+	}//end sharesOfType()
 
 	/**
 	 * Map a ShareLinkService row to the registry widget's row contract.
@@ -322,10 +391,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 */
 	private function mapServiceRow(array $row): array {
 		$fileId = (int)($row['fileId'] ?? 0);
-		$fileUrl = '/index.php/apps/files';
-		if ($fileId > 0) {
-			$fileUrl = '/index.php/apps/files/?fileid=' . $fileId;
-		}
+		$fileUrl = self::filesUrl(nodeId: $fileId);
 
 		return [
 			'id' => (string)($row['shareId'] ?? ''),
@@ -394,25 +460,45 @@ class SharesProvider extends AbstractIntegrationProvider {
 			return parent::create(register: $register, schema: $schema, objectId: $objectId, payload: $payload);
 		}
 
-		$label = $payload['label'] ?? null;
-		$ttlSeconds = null;
-		if (isset($payload['ttlSeconds']) === true && is_numeric($payload['ttlSeconds']) === true) {
-			$ttlSeconds = (int)$payload['ttlSeconds'];
-		}
-
-		$resolvedLabel = null;
-		if ($label !== null) {
-			$resolvedLabel = (string)$label;
-		}
-
 		return $service->mint(
 			objectUuid: $objectId,
 			registerId: $this->numericOrNull(value: $register),
 			schemaId: $this->numericOrNull(value: $schema),
-			label: $resolvedLabel,
-			ttlSeconds: $ttlSeconds
+			label: self::mintLabel(payload: $payload),
+			ttlSeconds: self::mintTtl(payload: $payload)
 		);
 	}//end create()
+
+	/**
+	 * The token label from a mint payload, cast to a string when given.
+	 *
+	 * @param array<string,mixed> $payload Mint options.
+	 *
+	 * @return string|null
+	 */
+	private static function mintLabel(array $payload): ?string {
+		$label = $payload['label'] ?? null;
+		if ($label === null) {
+			return null;
+		}
+
+		return (string)$label;
+	}//end mintLabel()
+
+	/**
+	 * The token lifetime from a mint payload, when it is numeric.
+	 *
+	 * @param array<string,mixed> $payload Mint options.
+	 *
+	 * @return int|null
+	 */
+	private static function mintTtl(array $payload): ?int {
+		if (isset($payload['ttlSeconds']) === true && is_numeric($payload['ttlSeconds']) === true) {
+			return (int)$payload['ttlSeconds'];
+		}
+
+		return null;
+	}//end mintTtl()
 
 	/**
 	 * Revoke / unlink a share OR a public case-token by id.
@@ -434,29 +520,38 @@ class SharesProvider extends AbstractIntegrationProvider {
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
 		// Case-token revoke path: `token:<token-or-id>`.
 		if (str_starts_with($entityId, 'token:') === true) {
-			$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
-			if ($service !== null && method_exists($service, 'revoke') === true) {
-				$service->revoke(substr($entityId, strlen('token:')));
-				return;
-			}
+			$this->deleteCaseToken(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
+			return;
+		}
 
+		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
+		if ($service === null || method_exists($service, 'revokeShare') === false) {
 			parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
 			return;
 		}
 
-		try {
-			$shareManager = $this->lookup(serviceName: 'OCP\\Share\\IManager');
-			if ($shareManager === null) {
-				parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
-				return;
-			}
-
-			$share = $shareManager->getShareById($entityId);
-			$shareManager->deleteShare($share);
-		} catch (Throwable $e) {
-			parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
-		}
+		$service->revokeShare($objectId, $entityId);
 	}//end delete()
+
+	/**
+	 * Revoke a `token:`-addressed case token, or answer the 501 without a token service.
+	 *
+	 * @param string $register Register slug.
+	 * @param string $schema   Schema slug.
+	 * @param string $objectId Owning object uuid.
+	 * @param string $entityId `token:<token-or-id>`.
+	 *
+	 * @return void
+	 */
+	private function deleteCaseToken(string $register, string $schema, string $objectId, string $entityId): void {
+		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
+		if ($service !== null && method_exists($service, 'revoke') === true) {
+			$service->revoke($objectId, substr($entityId, strlen('token:')));
+			return;
+		}
+
+		parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
+	}//end deleteCaseToken()
 
 	/**
 	 * Coerce a register/schema route param to an int, or null when it is
@@ -512,10 +607,10 @@ class SharesProvider extends AbstractIntegrationProvider {
 	}//end health()
 
 	/**
-	 * Resolve the object's NC folder via the FolderManagementHandler.
+	 * Resolve the object's NC folder via the FileService.
 	 *
-	 * Looks up the ObjectEntity via ObjectEntityMapper::find() first so
-	 * `FolderManagementHandler::getObjectFolder()` is invoked on its
+	 * Looks up the ObjectEntity via MagicMapper::find() first so
+	 * `FileService::getObjectFolder()` is invoked on its
 	 * entity-input branch (which knows how to resolve the register from
 	 * the entity itself). The string-input branch in the handler routes
 	 * to `createObjectFolderById(string, registerId: null)` which throws
@@ -531,7 +626,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	private function resolveObjectFolder(string $objectId): ?Folder {
 		try {
 			$handler = $this->lookup(
-				serviceName: 'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler'
+				serviceName: 'OCA\\OpenRegister\\Service\\FileService'
 			);
 			if ($handler === null) {
 				return null;
@@ -565,7 +660,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	private function resolveObjectEntity(string $objectId): ?object {
 		try {
 			$mapper = $this->lookup(
-				serviceName: 'OCA\\OpenRegister\\Db\\ObjectEntityMapper'
+				serviceName: 'OCA\\OpenRegister\\Db\\MagicMapper'
 			);
 			if ($mapper === null) {
 				return null;
@@ -620,18 +715,9 @@ class SharesProvider extends AbstractIntegrationProvider {
 			$sharedWith = (string)($share->getSharedWith() ?? '');
 			$displayName = (string)($share->getSharedWithDisplayName() ?? $sharedWith);
 			$permissions = (int)$share->getPermissions();
-			$hasPassword = $share->getPassword() !== null && $share->getPassword() !== '';
-			$expiration = null;
-			$expDate = $share->getExpirationDate();
-			if ($expDate !== null) {
-				$expiration = $expDate->format(\DateTimeInterface::ATOM);
-			}
-
-			$stime = $share->getShareTime();
-			$stimeTs = 0;
-			if ($stime !== null) {
-				$stimeTs = $stime->getTimestamp();
-			}
+			$hasPassword = self::hasPassword(share: $share);
+			$expiration = self::expiration(share: $share);
+			$stimeTs = self::shareTimestamp(share: $share);
 
 			$owner = (string)($share->getSharedBy() ?? '');
 			// IShare::getNode() is declared to return Node and throws when the
@@ -640,10 +726,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 			$nodeName = (string)$node->getName();
 			$nodeId = (int)$node->getId();
 
-			$nodeUrl = '/index.php/apps/files';
-			if ($nodeId > 0) {
-				$nodeUrl = '/index.php/apps/files/?fileid=' . $nodeId;
-			}
+			$nodeUrl = self::filesUrl(nodeId: $nodeId);
 
 			return [
 				'id' => $id,
@@ -668,6 +751,64 @@ class SharesProvider extends AbstractIntegrationProvider {
 			return null;
 		}//end try
 	}//end normaliseShare()
+
+	/**
+	 * Whether a share carries a non-empty password.
+	 *
+	 * @param IShare $share The share.
+	 *
+	 * @return bool
+	 */
+	private static function hasPassword(IShare $share): bool {
+		return $share->getPassword() !== null && $share->getPassword() !== '';
+	}//end hasPassword()
+
+	/**
+	 * A share's expiration as an ATOM date, or null without one.
+	 *
+	 * @param IShare $share The share.
+	 *
+	 * @return string|null
+	 */
+	private static function expiration(IShare $share): ?string {
+		$expDate = $share->getExpirationDate();
+		if ($expDate === null) {
+			return null;
+		}
+
+		return $expDate->format(\DateTimeInterface::ATOM);
+	}//end expiration()
+
+	/**
+	 * A share's creation time as a unix timestamp, 0 without one.
+	 *
+	 * @param IShare $share The share.
+	 *
+	 * @return int
+	 */
+	private static function shareTimestamp(IShare $share): int {
+		$stime = $share->getShareTime();
+		if ($stime === null) {
+			return 0;
+		}
+
+		return $stime->getTimestamp();
+	}//end shareTimestamp()
+
+	/**
+	 * The Files app link for a node, or the Files app itself for no node.
+	 *
+	 * @param int $nodeId The node id.
+	 *
+	 * @return string
+	 */
+	private static function filesUrl(int $nodeId): string {
+		if ($nodeId > 0) {
+			return '/index.php/apps/files/?fileid=' . $nodeId;
+		}
+
+		return '/index.php/apps/files';
+	}//end filesUrl()
 
 	/**
 	 * Resolve a service from the container.

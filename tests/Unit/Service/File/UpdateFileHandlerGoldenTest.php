@@ -9,7 +9,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
@@ -18,15 +18,14 @@ use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\InvalidPathException;
-use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
-use OCP\SystemTag\ISystemTagManager;
-use OCP\SystemTag\ISystemTagObjectMapper;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\File\UpdateFileGuards;
+use OCA\OpenRegister\Service\File\UpdateFileLocator;
 
 /**
  * Golden test for UpdateFileHandler::updateFile().
@@ -258,13 +257,14 @@ class UpdateFileHandlerGoldenTest extends TestCase {
 		});
 
 		$handler = new UpdateFileHandler(
-			$this->createMock(IRootFolder::class),
-			$folders,
-			$validation,
-			$ownership,
-			$readFileHandler,
-			$this->createMock(ISystemTagManager::class),
-			$this->createMock(ISystemTagObjectMapper::class),
+			new UpdateFileLocator(
+				$folders,
+				$readFileHandler
+			),
+			new UpdateFileGuards(
+				$validation,
+				$ownership
+			),
 			$logger
 		);
 		$handler->setFileService($fileService);

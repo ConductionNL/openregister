@@ -88,15 +88,30 @@ class ReferenceTenantGuard {
 	 */
 	public function firstAdmitted(?string $savingOrganisation, array $candidates): ?ObjectEntity {
 		foreach ($candidates as $candidate) {
-			if ($candidate instanceof ObjectEntity
-				&& $this->admits(savingOrganisation: $savingOrganisation, referenced: $candidate) === true
-			) {
+			if ($this->admitsCandidate(savingOrganisation: $savingOrganisation, candidate: $candidate) === true) {
 				return $candidate;
 			}
 		}
 
 		return null;
 	}//end firstAdmitted()
+
+	/**
+	 * Whether one candidate row is an ObjectEntity the saving tenant may read.
+	 *
+	 * @param string|null $savingOrganisation Organisation UUID of the object being saved.
+	 * @param mixed       $candidate          One row a reference read returned.
+	 *
+	 * @return bool True when it is an admitted ObjectEntity.
+	 *
+	 * @phpstan-assert-if-true ObjectEntity $candidate
+	 *
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
+	 */
+	private function admitsCandidate(?string $savingOrganisation, mixed $candidate): bool {
+		return $candidate instanceof ObjectEntity
+			&& $this->admits(savingOrganisation: $savingOrganisation, referenced: $candidate) === true;
+	}//end admitsCandidate()
 
 	/**
 	 * Whether the referenced object may feed a calculation of an object in `$savingOrganisation`.
@@ -109,35 +124,66 @@ class ReferenceTenantGuard {
 	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
 	public function admits(?string $savingOrganisation, ObjectEntity $referenced): bool {
-		$refOrganisation = $referenced->getOrganisation();
-		if ($refOrganisation === null || $refOrganisation === '') {
+		// Rule 1: no organisation, no tenant.
+		if (in_array($referenced->getOrganisation(), [null, ''], true) === true) {
 			return true;
 		}
 
-		if ($savingOrganisation === null || $savingOrganisation === '') {
+		// Rule 5, second half: an org-less saver claims no tenant's rows.
+		$saving = (string)$savingOrganisation;
+		if ($saving === '') {
 			return $this->refuse(savingOrganisation: '', referenced: $referenced);
 		}
 
+		if ($this->admitsOwned(savingOrganisation: $saving, referenced: $referenced) === true) {
+			return true;
+		}
+
+		return $this->refuse(savingOrganisation: $saving, referenced: $referenced);
+	}//end admits()
+
+	/**
+	 * Rules 2 to 4 for an organisation-owned reference and a saver with an
+	 * organisation: same organisation, a parent of it, or a master-data holder
+	 * sharing with that scope — asked in that order.
+	 *
+	 * @param string       $savingOrganisation The saving object's organisation UUID.
+	 * @param ObjectEntity $referenced         The organisation-owned referenced object.
+	 *
+	 * @return bool True when one of the three rules admits it.
+	 *
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
+	 */
+	private function admitsOwned(string $savingOrganisation, ObjectEntity $referenced): bool {
+		$refOrganisation = $referenced->getOrganisation();
 		if ($refOrganisation === $savingOrganisation) {
 			return true;
 		}
 
 		$scope = $this->scopeOf(organisation: $savingOrganisation);
-		if (in_array($refOrganisation, $scope, true) === true) {
-			return true;
-		}
 
-		$holders = $this->sharedMasterData->holdersForResource(
+		return in_array($refOrganisation, $scope, true) === true
+			|| in_array($refOrganisation, $this->holdersFor(referenced: $referenced, scope: $scope), true) === true;
+	}//end admitsOwned()
+
+	/**
+	 * The organisations holding the referenced object's register or schema as
+	 * master data shared with the saving scope.
+	 *
+	 * @param ObjectEntity       $referenced The referenced object.
+	 * @param array<int, string> $scope      The saving organisation and its parents.
+	 *
+	 * @return array<int, string> The holder organisation UUIDs.
+	 *
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
+	 */
+	private function holdersFor(ObjectEntity $referenced, array $scope): array {
+		return $this->sharedMasterData->holdersForResource(
 			registerId: $this->numericId(value: $referenced->getRegister()),
 			schemaId: $this->numericId(value: $referenced->getSchema()),
 			consumerOrgUuids: $scope
 		);
-		if (in_array($refOrganisation, $holders, true) === true) {
-			return true;
-		}
-
-		return $this->refuse(savingOrganisation: $savingOrganisation, referenced: $referenced);
-	}//end admits()
+	}//end holdersFor()
 
 	/**
 	 * The saving organisation followed by its parent chain.

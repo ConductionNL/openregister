@@ -26,8 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Twig;
 
 use OCA\OpenRegister\Db\Mapping;
-use OCA\OpenRegister\Db\MappingMapper;
-use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Db\MappingMapperInterface;
+use OCA\OpenRegister\Service\MappingServiceInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Uid\UuidV4;
 use Twig\Extension\RuntimeExtensionInterface;
@@ -60,14 +60,14 @@ class MappingRuntime implements RuntimeExtensionInterface {
 	/**
 	 * MappingRuntime constructor
 	 *
-	 * @param MappingService $mappingService The mapping service for executing mappings
-	 * @param MappingMapper $mappingMapper The mapping mapper for finding mappings
+	 * @param MappingServiceInterface $mappingService The mapping service for executing mappings
+	 * @param MappingMapperInterface $mappingMapper The mapping mapper for finding mappings
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MappingService $mappingService,
-		private readonly MappingMapper $mappingMapper,
+		private readonly MappingServiceInterface $mappingService,
+		private readonly MappingMapperInterface $mappingMapper,
 	) {
 	}//end __construct()
 

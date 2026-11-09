@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 
-use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Files\Controller\FilesController;
 
 /**
  * Builds FilesController from its services as separate arguments, wrapped into its constructor bundles.
@@ -45,39 +45,39 @@ final class FilesControllerFactory {
 		\OCP\Files\IRootFolder $rootFolder,
 		\OCP\IUserManager $userManager,
 		\OCP\EventDispatcher\IEventDispatcher $eventDispatcher,
-		?\OCA\OpenRegister\Db\FileMapper $fileMapper = null,
-		?\OCA\OpenRegister\Service\File\FileAuditHandler $fileAuditHandler = null,
+		?\OCA\OpenRegister\Files\Db\FileMapper $fileMapper = null,
+		?\OCA\OpenRegister\Files\Service\File\FileAuditHandler $fileAuditHandler = null,
 		?\OCP\IUserSession $userSession = null,
 		?\OCP\IL10N $l10n = null,
-		?\OCA\OpenRegister\Service\File\ObjectFileAccess $objectFileAccess = null,
-		?\OCA\OpenRegister\Service\File\OfficeSessionService $officeSessionService = null,
-		?\OCA\OpenRegister\Service\File\AttachNodeHandler $attachNodeHandler = null,
+		?\OCA\OpenRegister\Files\Service\File\ObjectFileAccess $objectFileAccess = null,
+		?\OCA\OpenRegister\Files\Service\File\OfficeSessionService $officeSessionService = null,
+		?\OCA\OpenRegister\Files\Service\File\AttachNodeHandler $attachNodeHandler = null,
 		?\OCA\OpenRegister\Service\Object\FileWriteGuard $fileWriteGuard = null,
-		?\OCA\OpenRegister\Service\File\FileRestrictionGuard $fileRestrictions = null,
+		?\OCA\OpenRegister\Files\Service\File\FileRestrictionGuard $fileRestrictions = null,
 	): array {
 		return [
 			$appName,
 			$request,
-			new \OCA\OpenRegister\Controller\Support\FilesControllerServices(
-				store: new \OCA\OpenRegister\Controller\Support\FileStore(
+			new \OCA\OpenRegister\Files\Controller\Support\FilesControllerServices(
+				store: new \OCA\OpenRegister\Files\Controller\Support\FileStore(
 					fileService: $fileService,
 					objectService: $objectService,
 					rootFolder: $rootFolder,
 					fileMapper: $fileMapper,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\FilePlatform(
+				platform: new \OCA\OpenRegister\Files\Controller\Support\FilePlatform(
 					userManager: $userManager,
 					eventDispatcher: $eventDispatcher,
 					userSession: $userSession,
 					l10n: $l10n,
 				),
-				guards: new \OCA\OpenRegister\Controller\Support\FileGuards(
+				guards: new \OCA\OpenRegister\Files\Controller\Support\FileGuards(
 					objectFileAccess: $objectFileAccess,
 					fileWriteGuard: $fileWriteGuard,
 					fileRestrictions: $fileRestrictions,
 					fileAuditHandler: $fileAuditHandler,
 				),
-				editing: new \OCA\OpenRegister\Controller\Support\FileEditing(
+				editing: new \OCA\OpenRegister\Files\Controller\Support\FileEditing(
 					officeSessionService: $officeSessionService,
 					attachNodeHandler: $attachNodeHandler,
 				),

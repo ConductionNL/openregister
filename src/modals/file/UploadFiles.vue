@@ -48,84 +48,16 @@ import { navigationStore, objectStore } from '../../store/store.js'
 							</p>
 						</NcNoteCard>
 					</div>
-					<div v-if="success !== null || error">
-						<NcNoteCard v-if="success" type="success">
-							<p>
-								{{ t('openregister', 'Files added successfully') }}
-							</p>
-						</NcNoteCard>
-						<NcNoteCard v-if="error && !success" type="error">
-							<p>
-								{{
-									t(
-										'openregister',
-										'Something went wrong while adding files',
-									)
-								}}
-							</p>
-						</NcNoteCard>
-						<NcNoteCard v-if="error && !success" type="error">
-							<p>{{ error }}</p>
-						</NcNoteCard>
-						<div v-if="false">
-							<NcNoteCard type="error">
-								<p>
-									{{
-										t(
-											'openregister',
-											'Select files with the correct extension',
-										)
-									}}
-								</p>
-							</NcNoteCard>
-						</div>
-					</div>
-					<div
-						class="filesListDragDropNoticeWrapper"
-						:class="{
-							'filesListDragDropNoticeWrapper--disabled':
-								!labelOptions.value?.length || loading,
-						}">
-						<div class="filesListDragDropNoticeWrapperIcon">
-							<TrayArrowDown :size="48" />
-							<h3 class="filesListDragDropNoticeTitle">
-								{{ t('openregister', 'Drag a file or files here') }}
-							</h3>
-						</div>
-
-						<h3 class="filesListDragDropNoticeTitle">
-							{{ t('openregister', 'Or') }}
-						</h3>
-
-						<div class="filesListDragDropNoticeTitle">
-							<NcButton
-								:disabled="loading || !labelOptions.value?.length"
-								variant="primary"
-								@click="openFileUpload()">
-								<template #icon>
-									<Plus :size="20" />
-								</template>
-								{{ t('openregister', 'Add a file or files') }}
-							</NcButton>
-						</div>
-					</div>
+					<UploadNotice
+						:success="success"
+						:error="error"
+						disabled
+						@add="openFileUpload()" />
 				</div>
 				<div
 					v-if="labelOptions.value?.length && !loading"
 					ref="dropzone"
 					class="filesListDragDropNotice tabPanelFileUpload">
-					<div v-if="!labelOptions.value?.length">
-						<NcNoteCard type="info">
-							<p>
-								{{
-									t(
-										'openregister',
-										'Select or create labels, or select "No label" to add files',
-									)
-								}}
-							</p>
-						</NcNoteCard>
-					</div>
 					<div v-if="checkForTooBigFiles(filesComputed)">
 						<NcNoteCard type="warning">
 							<p class="folderLink">
@@ -154,67 +86,10 @@ import { navigationStore, objectStore } from '../../store/store.js'
 							</p>
 						</NcNoteCard>
 					</div>
-					<div v-if="success !== null || error">
-						<NcNoteCard v-if="success" type="success">
-							<p>
-								{{ t('openregister', 'Files added successfully') }}
-							</p>
-						</NcNoteCard>
-						<NcNoteCard v-if="error && !success" type="error">
-							<p>
-								{{
-									t(
-										'openregister',
-										'Something went wrong while adding files',
-									)
-								}}
-							</p>
-						</NcNoteCard>
-						<NcNoteCard v-if="error && !success" type="error">
-							<p>{{ error }}</p>
-						</NcNoteCard>
-						<div v-if="false">
-							<NcNoteCard type="error">
-								<p>
-									{{
-										t(
-											'openregister',
-											'Select files with the correct extension',
-										)
-									}}
-								</p>
-							</NcNoteCard>
-						</div>
-					</div>
-					<div
-						class="filesListDragDropNoticeWrapper"
-						:class="{
-							'filesListDragDropNoticeWrapper--disabled':
-								!labelOptions.value?.length,
-						}">
-						<div class="filesListDragDropNoticeWrapperIcon">
-							<TrayArrowDown :size="48" />
-							<h3 class="filesListDragDropNoticeTitle">
-								{{ t('openregister', 'Drag a file or files here') }}
-							</h3>
-						</div>
-
-						<h3 class="filesListDragDropNoticeTitle">
-							{{ t('openregister', 'Or') }}
-						</h3>
-
-						<div class="filesListDragDropNoticeTitle">
-							<NcButton
-								:disabled="loading || !labelOptions.value?.length"
-								variant="primary"
-								@click="openFileUpload()">
-								<template #icon>
-									<Plus :size="20" />
-								</template>
-								{{ t('openregister', 'Add a file or files') }}
-							</NcButton>
-						</div>
-					</div>
+					<UploadNotice
+						:success="success"
+						:error="error"
+						@add="openFileUpload()" />
 				</div>
 				<div v-if="!filesComputed">
 					{{ t('openregister', 'No files selected') }}
@@ -408,10 +283,9 @@ import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue
 import Exclamation from 'vue-material-design-icons/Exclamation.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import Minus from 'vue-material-design-icons/Minus.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TagEdit from 'vue-material-design-icons/TagEdit.vue'
-import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
+import UploadNotice from './UploadNotice.vue'
 import { useFileSelection } from './../../composables/UseFileSelection.js'
 
 const dropzone = ref(null)
@@ -433,14 +307,13 @@ function labelSelect() {
 export default {
 	name: 'UploadFiles',
 	components: {
+		UploadNotice,
 		NcModal,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
 		NcCheckboxRadioSwitch,
-		Plus,
-		TrayArrowDown,
 		TagEdit,
 		ContentSaveOutline,
 		FolderOutline,
@@ -877,10 +750,6 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	margin-block-start: var(--OC-margin-20);
 	margin-inline-start: var(--OC-margin-20);
 	margin-inline-end: var(--OC-margin-20);
-}
-
-.filesListDragDropNoticeWrapper--disabled {
-	opacity: 0.4;
 }
 
 .folderLink {

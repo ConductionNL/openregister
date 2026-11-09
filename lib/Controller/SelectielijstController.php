@@ -36,17 +36,15 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
-use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Archival\SelectielijstImportServiceInterface;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Controller\Support\SelectielijstControllerServices;
 
 /**
  * Import, list and compare selectielijst versions.
@@ -61,47 +59,51 @@ class SelectielijstController extends Controller {
 	private const ARCHIVIST_GROUP = 'archivaris';
 
 	/**
-	 * The user session.
-	 *
-	 * @var IUserSession
+	 * The refusal of a diff that cannot tell which two versions to compare.
 	 */
-	private readonly IUserSession $userSession;
+	private const DIFF_NEEDS_VERSIONS = 'Name the version to compare with "to", and the one to compare against '
+		. 'with "from" or by setting the version in use';
 
 	/**
-	 * The group manager.
+	 * The user session, group manager and logger.
 	 *
-	 * @var IGroupManager
+	 * @var ControllerSession
 	 */
-	private readonly IGroupManager $groupManager;
+	private readonly ControllerSession $session;
 
 	/**
-	 * The logger.
+	 * Imports, versions and diffs a list.
 	 *
-	 * @var LoggerInterface
+	 * @var SelectielijstImportServiceInterface
 	 */
-	private readonly LoggerInterface $logger;
+	private readonly SelectielijstImportServiceInterface $selectielijst;
+
+	/**
+	 * Names the version in force.
+	 *
+	 * @var ArchivalSettingsReaderInterface
+	 */
+	private readonly ArchivalSettingsReaderInterface $settingsHandler;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param string                     $appName         The app name.
 	 * @param IRequest                   $request         The request.
-	 * @param SelectielijstImportService $selectielijst   Imports, versions and diffs a list.
-	 * @param ObjectRetentionHandler     $settingsHandler Names the version in force.
+	 * @param SelectielijstControllerServices $services The services, bundled.
 	 * @param ControllerSession $session Session, group manager and logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SelectielijstImportService $selectielijst,
-		private readonly ObjectRetentionHandler $settingsHandler,
+		SelectielijstControllerServices $services,
 		ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->selectielijst = $services->selectielijst;
+		$this->settingsHandler = $services->settingsHandler;
 
-		$this->userSession = $session->userSession;
-		$this->groupManager = $session->groupManager;
-		$this->logger = $session->logger;
+		$this->session = $session;
 	}//end __construct()
 
 	/**
@@ -128,33 +130,47 @@ class SelectielijstController extends Controller {
 			);
 		}
 
-		$source = null;
-		if ($filename !== '') {
-			$source = $filename;
-		}
+		return $this->importContents(contents: $contents, filename: $filename);
+	}//end import()
+
+	/**
+	 * Parse and store a submitted list.
+	 *
+	 * @param string $contents The file contents.
+	 * @param string $filename The file name, or '' when none was given.
+	 *
+	 * @return JSONResponse What was stored, or a 400/500 error.
+	 */
+	private function importContents(string $contents, string $filename): JSONResponse {
+		$source = $this->sourceName(filename: $filename);
 
 		try {
 			$rows = $this->selectielijst->parse(contents: $contents, filename: $filename);
-			$result = $this->selectielijst->import(
-				rows: $rows,
-				version: (string)$this->request->getParam('version', ''),
-				source: $source
-			);
+			$result = $this->selectielijst->import(rows: $rows, version: (string)$this->request->getParam('version', ''), source: $source);
 		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->refusal(error: $e->getMessage());
 		} catch (Throwable $e) {
-			$this->logger->error('[SelectielijstController] Import failed: ' . $e->getMessage());
-			return new JSONResponse(
-				data: ['error' => 'The selectielijst could not be imported'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			$this->session->logger->error('[SelectielijstController] Import failed: ' . $e->getMessage());
+			return $this->refusal(error: 'The selectielijst could not be imported', status: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}//end try
 
 		return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
-	}//end import()
+	}//end importContents()
+
+	/**
+	 * The source a stored list records: its file name, or null when it came without one.
+	 *
+	 * @param string $filename The file name, or ''.
+	 *
+	 * @return string|null The source.
+	 */
+	private function sourceName(string $filename): ?string {
+		if ($filename === '') {
+			return null;
+		}
+
+		return $filename;
+	}//end sourceName()
 
 	/**
 	 * Which selectielijst versions are stored, and which one is applied.
@@ -200,35 +216,60 @@ class SelectielijstController extends Controller {
 			return $authCheck;
 		}
 
-		$from = (string)$this->request->getParam('from', '');
+		$from = $this->fromVersion();
 		$to = (string)$this->request->getParam('to', '');
 
+		if ($from === '' || $to === '') {
+			return $this->refusal(error: self::DIFF_NEEDS_VERSIONS);
+		}
+
+		return $this->compare(from: $from, to: $to);
+	}//end diff()
+
+	/**
+	 * The version a diff compares against: `from`, else the version in use, else ''.
+	 *
+	 * @return string The version.
+	 */
+	private function fromVersion(): string {
+		$from = (string)$this->request->getParam('from', '');
 		if ($from === '') {
 			$from = (string)$this->versionInUse();
 		}
 
-		if ($from === '' || $to === '') {
-			return new JSONResponse(
-				data: [
-					'error' => 'Name the version to compare with "to", and the one to compare against '
-						. 'with "from" or by setting the version in use',
-				],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
-		}
+		return $from;
+	}//end fromVersion()
 
+	/**
+	 * The diff between two stored versions.
+	 *
+	 * @param string $from The version compared against.
+	 * @param string $to The version compared.
+	 *
+	 * @return JSONResponse The changed rows, or a 400 naming the missing version.
+	 */
+	private function compare(string $from, string $to): JSONResponse {
 		try {
 			return new JSONResponse(
 				data: $this->selectielijst->diff(from: $from, to: $to),
 				statusCode: Http::STATUS_OK
 			);
 		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->refusal(error: $e->getMessage());
 		}
-	}//end diff()
+	}//end compare()
+
+	/**
+	 * An error response with its reason.
+	 *
+	 * @param string $error The reason.
+	 * @param int $status The HTTP status.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function refusal(string $error, int $status=Http::STATUS_BAD_REQUEST): JSONResponse {
+		return new JSONResponse(data: ['error' => $error], statusCode: $status);
+	}//end refusal()
 
 	/**
 	 * The file the caller sent, however they sent it.
@@ -240,22 +281,7 @@ class SelectielijstController extends Controller {
 		$uploaded = $this->request->getUploadedFile('file');
 
 		if (is_array($uploaded) === true && isset($uploaded['tmp_name']) === true) {
-			$path = (string)$uploaded['tmp_name'];
-			$filename = (string)($uploaded['name'] ?? $filename);
-
-			// Check readability BEFORE the read, rather than silencing the read
-			// with `@`: an unreadable upload is worth reporting, and a
-			// suppressed warning hides which of the two went wrong.
-			if (is_readable($path) === false) {
-				return [null, $filename];
-			}
-
-			$contents = file_get_contents($path);
-			if ($contents === false || trim($contents) === '') {
-				return [null, $filename];
-			}
-
-			return [$contents, $filename];
+			return $this->readUpload(path: (string)$uploaded['tmp_name'], filename: (string)($uploaded['name'] ?? $filename));
 		}
 
 		$inline = $this->request->getParam('contents');
@@ -267,6 +293,31 @@ class SelectielijstController extends Controller {
 	}//end readSubmittedFile()
 
 	/**
+	 * The contents of an uploaded file, or null when it is unreadable or blank.
+	 *
+	 * Readability is checked BEFORE the read, rather than silencing the read
+	 * with `@`: an unreadable upload is worth reporting, and a suppressed
+	 * warning hides which of the two went wrong.
+	 *
+	 * @param string $path The uploaded file's temporary path.
+	 * @param string $filename The name it was uploaded under.
+	 *
+	 * @return array{0: string|null, 1: string} The contents and the filename.
+	 */
+	private function readUpload(string $path, string $filename): array {
+		if (is_readable($path) === false) {
+			return [null, $filename];
+		}
+
+		$contents = file_get_contents($path);
+		if ($contents === false || trim($contents) === '') {
+			return [null, $filename];
+		}
+
+		return [$contents, $filename];
+	}//end readUpload()
+
+	/**
 	 * The selectielijst version this instance applies, or null.
 	 *
 	 * @return string|null The version.
@@ -275,7 +326,7 @@ class SelectielijstController extends Controller {
 		try {
 			$version = ($this->settingsHandler->getArchivalSettingsOnly()['selectielijstVersion'] ?? null);
 		} catch (Throwable $e) {
-			$this->logger->warning('[SelectielijstController] Could not read the archival settings: ' . $e->getMessage());
+			$this->session->logger->warning('[SelectielijstController] Could not read the archival settings: ' . $e->getMessage());
 			return null;
 		}
 
@@ -292,24 +343,29 @@ class SelectielijstController extends Controller {
 	 * @return JSONResponse|null A refusal, or null when the caller may proceed.
 	 */
 	private function checkArchivistRole(): ?JSONResponse {
-		$user = $this->userSession->getUser();
+		$user = $this->session->userSession->getUser();
 		if ($user === null) {
-			return new JSONResponse(
-				data: ['error' => 'Niet geauthenticeerd'],
-				statusCode: Http::STATUS_UNAUTHORIZED
-			);
+			return $this->refusal(error: 'Niet geauthenticeerd', status: Http::STATUS_UNAUTHORIZED);
 		}
 
-		$isArchivist = $this->groupManager->isInGroup($user->getUID(), self::ARCHIVIST_GROUP);
-		$isAdmin = $this->groupManager->isAdmin($user->getUID());
-
-		if ($isArchivist === false && $isAdmin === false) {
-			return new JSONResponse(
-				data: ['error' => 'Onvoldoende rechten: archivaris rol is vereist'],
-				statusCode: Http::STATUS_FORBIDDEN
-			);
+		if ($this->administersArchive(uid: $user->getUID()) === false) {
+			return $this->refusal(error: 'Onvoldoende rechten: archivaris rol is vereist', status: Http::STATUS_FORBIDDEN);
 		}
 
 		return null;
 	}//end checkArchivistRole()
+
+	/**
+	 * Whether the user is in the archivist group or is an admin.
+	 *
+	 * @param string $uid The user id.
+	 *
+	 * @return bool True when the user may administer the archival rules.
+	 */
+	private function administersArchive(string $uid): bool {
+		$isArchivist = $this->session->groupManager->isInGroup($uid, self::ARCHIVIST_GROUP);
+		$isAdmin = $this->session->groupManager->isAdmin($uid);
+
+		return $isArchivist === true || $isAdmin === true;
+	}//end administersArchive()
 }//end class

@@ -103,7 +103,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
  */
-class FlowNodePreflight {
+class FlowNodePreflight implements FlowNodePreflightInterface {
 
 	/**
 	 * The owning app is enabled but does not provide the type.
@@ -207,17 +207,11 @@ class FlowNodePreflight {
 	public const REASON_NO_END = 'flow-has-no-end';
 
 	/**
-	 * The key the engine reads from the EDGE and never from `config`.
-	 */
-	private const EDGE_LEVEL_ONERROR = 'onError';
-
-	/**
 	 * The `onError` policy the engine applies when an edge declares none.
 	 *
-	 * Mirrors `FlowEngine::ON_ERROR_STOP`, not imported from it: this class
-	 * must not gain a dependency on the engine to know one default string.
+	 * Defined once, beside the check that compares against it.
 	 */
-	private const DEFAULT_ONERROR = 'stop';
+	private const DEFAULT_ONERROR = FlowPreflightStep::DEFAULT_ONERROR;
 
 	/**
 	 * The refusal line per blocking reason. Arguments: 1 type, 2 step,
@@ -249,14 +243,54 @@ class FlowNodePreflight {
 		. 'that app is behind the flow';
 
 	/**
+	 * A report with nothing in it.
+	 *
+	 * @var array{blocking: array, warnings: array}
+	 */
+	private const EMPTY_REPORT = [
+		'blocking' => [],
+		'warnings' => [],
+	];
+
+	/**
+	 * The refusal message: flow name, finding count, the joined finding lines.
+	 *
+	 * @var string
+	 */
+	private const REFUSAL_MESSAGE = 'Flow "%s" has %d step(s) this instance cannot run as written: %s. '
+		. 'Refusing the save: a step that cannot run only fails once the flow is already halfway through, '
+		. 'after earlier steps have made changes that do not roll back — and a step whose config is ignored '
+		. 'does not fail at all, it reports success having done nothing.';
+
+	/**
+	 * The log line for an `onError` written one level too deep: flow, step, type, value.
+	 *
+	 * @var string
+	 */
+	private const LOG_ONERROR_MISPLACED = '[FlowNodePreflight] Flow "%s", step "%s" (%s) sets config.onError="%s". '
+		. 'Nothing reads that: the engine takes the policy from the NODE, beside "type". '
+		. 'It happens to match the default, so the run behaves the same — move it up one level.';
+
+	/**
+	 * The log line for every other warning: flow, type, app.
+	 *
+	 * Loud on purpose. The measured failure was not that a step was missing,
+	 * it was that nothing said so — the run reported success.
+	 *
+	 * @var string
+	 */
+	private const LOG_OWNER_NOT_ENABLED = '[FlowNodePreflight] Flow "%s" uses step type "%s", which app "%s" owns. '
+		. 'That app is not enabled here, so this flow cannot run until it is.';
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodeRegistry $registry The live catalogue of node types.
+	 * @param FlowNodeCatalogueInterface $registry The live catalogue of node types.
 	 * @param IAppManager $appManager Tells an absent app from a stale one.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowNodeCatalogueInterface $registry,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {
@@ -288,23 +322,23 @@ class FlowNodePreflight {
 			return false;
 		}
 
-		if ($nodes === [] || $edges === []) {
-			return false;
-		}
-
 		return ($this->nodesLookRight(nodes: $nodes) === true && $this->edgesLookRight(edges: $edges) === true);
 	}//end looksLikeFlow()
 
 	/**
-	 * Whether every entry in a `nodes` list is a record carrying an id.
+	 * Whether a `nodes` list is non-empty and every entry a record carrying an id.
 	 *
 	 * @param array $nodes The candidate node list.
 	 *
-	 * @return boolean True when they all are.
+	 * @return boolean True when it is.
 	 *
 	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
 	 */
 	private function nodesLookRight(array $nodes): bool {
+		if ($nodes === []) {
+			return false;
+		}
+
 		foreach ($nodes as $node) {
 			if (is_array($node) === false || isset($node['id']) === false) {
 				return false;
@@ -315,26 +349,21 @@ class FlowNodePreflight {
 	}//end nodesLookRight()
 
 	/**
-	 * Whether every entry in an `edges` list carries both endpoints.
-	 *
-	 * Either spelling is accepted — `from`/`to` is this engine's, `source`/
-	 * `target` is what most graph editors emit.
+	 * Whether an `edges` list is non-empty and every entry carries both endpoints.
 	 *
 	 * @param array $edges The candidate edge list.
 	 *
-	 * @return boolean True when they all do.
+	 * @return boolean True when it is.
 	 *
 	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
 	 */
 	private function edgesLookRight(array $edges): bool {
-		foreach ($edges as $edge) {
-			if (is_array($edge) === false) {
-				return false;
-			}
+		if ($edges === []) {
+			return false;
+		}
 
-			$hasFrom = (isset($edge['from']) === true || isset($edge['source']) === true);
-			$hasTo = (isset($edge['to']) === true || isset($edge['target']) === true);
-			if ($hasFrom === false || $hasTo === false) {
+		foreach ($edges as $edge) {
+			if ($this->edgeLooksRight(edge: $edge) === false) {
 				return false;
 			}
 		}
@@ -343,21 +372,54 @@ class FlowNodePreflight {
 	}//end edgesLookRight()
 
 	/**
+	 * Whether one `edges` entry is a record carrying both endpoints.
+	 *
+	 * Either spelling is accepted — `from`/`to` is this engine's, `source`/
+	 * `target` is what most graph editors emit.
+	 *
+	 * @param mixed $edge The candidate edge.
+	 *
+	 * @return boolean True when it does.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	private function edgeLooksRight(mixed $edge): bool {
+		if (is_array($edge) === false) {
+			return false;
+		}
+
+		$hasFrom = (isset($edge['from']) === true || isset($edge['source']) === true);
+		$hasTo = (isset($edge['to']) === true || isset($edge['target']) === true);
+
+		return ($hasFrom === true && $hasTo === true);
+	}//end edgeLooksRight()
+
+	/**
 	 * Resolve every step type the document names.
 	 *
-	 * Only `edges[].type` is inspected. The graph's *shape* is deliberately not
-	 * validated here even though {@see FlowDefinitionBuilder} could: a flow being
-	 * drawn is legitimately half-connected, and refusing to save a draft would
-	 * make the editor unusable. A step type, by contrast, is never bogus on
-	 * purpose — nobody drafts a node type they do not mean.
+	 * The graph's *shape* is deliberately not validated here even though
+	 * {@see FlowDefinitionBuilder} could: a flow being drawn is legitimately
+	 * half-connected, and refusing to save a draft would make the editor
+	 * unusable. A step type, by contrast, is never bogus on purpose — nobody
+	 * drafts a node type they do not mean.
 	 *
-	 * An edge with no `type` is a pass-through and is skipped, matching
-	 * `RegistryStepDispatcher`, which returns items untouched for such an edge.
+	 * A node with no `type` is a pass-through and is skipped, matching
+	 * `RegistryStepDispatcher`, which returns items untouched for such a step.
 	 *
 	 * A resolved type is checked TWICE: once that it exists, and once that the
-	 * node accepts the config the edge gives it. The second check is the one
-	 * that catches an edge written in another node's dialect — the type is
-	 * right, the step runs, and it does nothing.
+	 * node accepts the config it is given. The second check is the one that
+	 * catches a step written in another node's dialect — the type is right,
+	 * the step runs, and it does nothing.
+	 *
+	 * A document still in the pre-inversion shape returns early with that one
+	 * refusal. Every later finding would be about a document in a shape
+	 * nothing will read, and burying the one actionable message under them
+	 * helps nobody.
+	 *
+	 * The graph-SHAPE questions — dead ends, and whether the flow has a way in
+	 * and a way out at all — live in {@see FlowConnectivity}: this class answers
+	 * questions about each node's type and config, a different subject over
+	 * the same document.
 	 *
 	 * @param array $flow The flow document.
 	 *
@@ -367,43 +429,57 @@ class FlowNodePreflight {
 	 */
 	public function inspect(array $flow): array {
 		$blocking = $this->preInversionFindings(flow: $flow);
-		$warnings = [];
-
 		if ($blocking !== []) {
-			// Return early. Every later finding would be about a document in a
-			// shape nothing will read, and burying the one actionable message
-			// under them helps nobody.
-			return ['blocking' => $blocking, 'warnings' => $warnings];
+			return ['blocking' => $blocking, 'warnings' => []];
 		}
 
-		// NODES, not edges. A node is the action that runs (or-flow-action-nodes),
-		// so a preflight still walking `edges[]` would inspect a list where
-		// nothing carries a `type` any more: every loop body skipped, zero
-		// findings, and a report that says "valid" about a document it never
-		// looked at. A validator that cannot fail is worse than none, because it
-		// is believed.
-		foreach (($flow['nodes'] ?? []) as $index => $entry) {
-			$findings = $this->nodeFindings(entry: $entry, index: $index);
-			$blocking = array_merge($blocking, $findings['blocking']);
-			$warnings = array_merge($warnings, $findings['warnings']);
-		}//end foreach
-
-		// The graph-SHAPE question lives in its own collaborator: this class
-		// answers questions about each node's type and config, which is a
-		// different subject over the same document.
+		$report = $this->nodesReport(flow: $flow);
 		$connectivity = new FlowConnectivity($this->registry);
-		$warnings = array_merge($warnings, $connectivity->deadEnds(flow: $flow));
+		$report['warnings'] = array_merge($report['warnings'], $connectivity->deadEnds(flow: $flow), $connectivity->entryAndExit(flow: $flow));
 
-		// Whether the flow has a way in and a way out at all — a question about
-		// the DOCUMENT, where the dead-end check is a question about each node.
-		$warnings = array_merge($warnings, $connectivity->entryAndExit(flow: $flow));
-
-		return [
-			'blocking' => $blocking,
-			'warnings' => $warnings,
-		];
-
+		return $report;
 	}//end inspect()
+
+	/**
+	 * The findings over every node of the document.
+	 *
+	 * NODES, not edges. A node is the action that runs (or-flow-action-nodes),
+	 * so a preflight still walking the `edges` list would inspect a list where nothing
+	 * carries a `type` any more: every loop body skipped, zero findings, and a
+	 * report that says "valid" about a document it never looked at. A
+	 * validator that cannot fail is worse than none, because it is believed.
+	 *
+	 * @param array $flow The flow document.
+	 *
+	 * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	private function nodesReport(array $flow): array {
+		$report = self::EMPTY_REPORT;
+		foreach (($flow['nodes'] ?? []) as $index => $entry) {
+			$report = $this->mergeReports(first: $report, second: $this->nodeFindings(entry: $entry, index: $index));
+		}
+
+		return $report;
+	}//end nodesReport()
+
+	/**
+	 * Two reports as one, the first's findings ahead of the second's.
+	 *
+	 * @param array{blocking: array, warnings: array} $first  The earlier report.
+	 * @param array{blocking: array, warnings: array} $second The later report.
+	 *
+	 * @return array{blocking: array, warnings: array} The combined report.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	private function mergeReports(array $first, array $second): array {
+		return [
+			'blocking' => array_merge($first['blocking'], $second['blocking']),
+			'warnings' => array_merge($first['warnings'], $second['warnings']),
+		];
+	}//end mergeReports()
 
 	/**
 	 * Refuse a document whose steps still sit on edges.
@@ -425,28 +501,41 @@ class FlowNodePreflight {
 	 */
 	private function preInversionFindings(array $flow): array {
 		$blocking = [];
-
 		foreach (($flow['edges'] ?? []) as $index => $edge) {
-			if (is_array($edge) === false) {
-				continue;
+			$step = $this->stepOf(entry: $edge, index: $index);
+			if ($step !== null) {
+				$blocking[] = $step->finding(
+					reason: self::REASON_PRE_INVERSION_SHAPE,
+					detail: 'the step is on an edge; a node is the action that runs'
+				);
 			}
-
-			$type = trim((string)($edge['type'] ?? ''));
-			if ($type === '') {
-				continue;
-			}
-
-			$blocking[] = [
-				'type' => $type,
-				'app' => $this->ownerOf(type: $type),
-				'step' => (string)($edge['id'] ?? $edge['name'] ?? $index),
-				'reason' => self::REASON_PRE_INVERSION_SHAPE,
-				'detail' => 'the step is on an edge; a node is the action that runs',
-			];
-		}//end foreach
+		}
 
 		return $blocking;
 	}//end preInversionFindings()
+
+	/**
+	 * The typed step a document entry declares, or null when it declares none.
+	 *
+	 * @param mixed      $entry The raw node or edge entry from the document.
+	 * @param int|string $index Its position, used when it carries no id or name.
+	 *
+	 * @return FlowPreflightStep|null The step.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	private function stepOf(mixed $entry, int|string $index): ?FlowPreflightStep {
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$type = trim((string)($entry['type'] ?? ''));
+		if ($type === '') {
+			return null;
+		}
+
+		return new FlowPreflightStep(entry: $entry, type: $type, stepId: (string)($entry['id'] ?? $entry['name'] ?? $index));
+	}//end stepOf()
 
 	/**
 	 * Inspect one node entry.
@@ -459,78 +548,87 @@ class FlowNodePreflight {
 	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
 	 */
 	private function nodeFindings(mixed $entry, int|string $index): array {
-		$blocking = [];
-		$warnings = [];
-
-		if (is_array($entry) === false) {
-			return ['blocking' => $blocking, 'warnings' => $warnings];
+		$step = $this->stepOf(entry: $entry, index: $index);
+		if ($step === null) {
+			return self::EMPTY_REPORT;
 		}
 
-		$edge = $entry;
-		$type = trim((string)($edge['type'] ?? ''));
-		if ($type === '') {
-			return ['blocking' => $blocking, 'warnings' => $warnings];
+		$node = $this->resolve(type: $step->type);
+		if ($node === null) {
+			return $this->unresolvedFindings(step: $step);
 		}
 
-		$stepId = (string)($edge['id'] ?? $edge['name'] ?? $index);
-		$node = $this->resolve(type: $type);
-		if ($node !== null) {
-			// The type resolving is only half the question. A node reads the
-			// config keys IT implements, and silently ignores the rest — so
-			// an edge written in another node's dialect resolves fine, runs,
-			// and returns its input untouched while reporting COMPLETED.
-			//
-			// Measured across the ten hydra flows: four are inert this way.
-			// `hydra-analyze-verdicts` declares `routes[].when`/`routes[].to`
-			// where RouterNode reads `rules[].output`, and `config.fields`
-			// where SetFieldsNode reads `set`/`compute`. The flow cannot run
-			// at all, and `scripts/test-flow-definitions.sh` passes on it —
-			// that script checks graph STRUCTURE and is blind to dialect.
-			//
-			// Every node already implements `validateConfig()`; the contract
-			// is on IFlowNode. It was simply never called at save time.
-			// SetFieldsNode's own docblock says the check exists so a
-			// malformed expression is "caught HERE, when the flow is saved,
-			// rather than evaluating to null on every item at 03:00" — which
-			// is exactly what it did NOT do, because nothing called it.
-			$rejection = $this->configRejection(node: $node, edge: $edge);
-			if ($rejection !== null) {
-				$blocking[] = [
-					'type' => $type,
-					'app' => $this->ownerOf(type: $type),
-					'step' => $stepId,
-					'reason' => self::REASON_CONFIG_REJECTED,
-					'detail' => $rejection,
-				];
-			}//end if
-
-			// ...and the half a required-key check cannot reach. A node
-			// only sees the keys it looks for; the ones it does not look
-			// for are invisible to it BY CONSTRUCTION, however careful its
-			// validateConfig() is. Only the node's declared vocabulary
-			// ({@see IFlowNodeConfigKeys}) can expose those.
-			$dialect = $this->dialectFindings(node: $node, edge: $edge, type: $type, stepId: $stepId);
-			$blocking = array_merge($blocking, $dialect['blocking']);
-			$warnings = array_merge($warnings, $dialect['warnings']);
-
-			return ['blocking' => $blocking, 'warnings' => $warnings];
-		}//end if
-
-		$finding = $this->classify(type: $type, edge: $stepId);
-		if ($finding['reason'] === self::REASON_OWNER_NOT_ENABLED) {
-			$warnings[] = $finding;
-
-			return ['blocking' => $blocking, 'warnings' => $warnings];
-		}
-
-		$blocking[] = $finding;
-
-		return [
-			'blocking' => $blocking,
-			'warnings' => $warnings,
-		];
-
+		return $this->resolvedFindings(node: $node, step: $step);
 	}//end nodeFindings()
+
+	/**
+	 * The findings about a step whose type resolves.
+	 *
+	 * The type resolving is only half the question. A node reads the config
+	 * keys IT implements, and silently ignores the rest — so a step written in
+	 * another node's dialect resolves fine, runs, and returns its input
+	 * untouched while reporting COMPLETED.
+	 *
+	 * Measured across the ten hydra flows: four are inert this way.
+	 * `hydra-analyze-verdicts` declares `routes.*.when`/`routes.*.to` where
+	 * RouterNode reads `rules.*.output`, and `config.fields` where SetFieldsNode
+	 * reads `set`/`compute`. The flow cannot run at all, and
+	 * `scripts/test-flow-definitions.sh` passes on it — that script checks graph
+	 * STRUCTURE and is blind to dialect.
+	 *
+	 * Every node already implements `validateConfig()`; the contract is on
+	 * IFlowNode. It was simply never called at save time. SetFieldsNode's own
+	 * docblock says the check exists so a malformed expression is "caught
+	 * HERE, when the flow is saved, rather than evaluating to null on every
+	 * item at 03:00" — which is exactly what it did NOT do, because nothing
+	 * called it.
+	 *
+	 * ...and the half a required-key check cannot reach. A node only sees the
+	 * keys it looks for; the ones it does not look for are invisible to it BY
+	 * CONSTRUCTION, however careful its validateConfig() is. Only the node's
+	 * declared vocabulary ({@see IFlowNodeConfigKeys}) can expose those.
+	 *
+	 * @param IFlowNode         $node The resolved node.
+	 * @param FlowPreflightStep $step The step.
+	 *
+	 * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	private function resolvedFindings(IFlowNode $node, FlowPreflightStep $step): array {
+		$report = self::EMPTY_REPORT;
+		$rejection = $this->configRejection(node: $node, step: $step);
+		if ($rejection !== null) {
+			$report['blocking'][] = $step->finding(reason: self::REASON_CONFIG_REJECTED, detail: $rejection);
+		}
+
+		return $this->mergeReports(first: $report, second: $this->dialectFindings(node: $node, step: $step));
+	}//end resolvedFindings()
+
+	/**
+	 * Why a step's type does not resolve, as a report.
+	 *
+	 * A type with no `app.` namespace can never be owned, and a type its
+	 * enabled owner does not provide is a defect: both block. An owning app
+	 * that is not enabled warns — installing it is the fix.
+	 *
+	 * @param FlowPreflightStep $step The step.
+	 *
+	 * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	private function unresolvedFindings(FlowPreflightStep $step): array {
+		if ($step->app() === '') {
+			return ['blocking' => [$step->finding(reason: self::REASON_NOT_NAMESPACED)], 'warnings' => []];
+		}
+
+		if ($this->isAppEnabled(appId: $step->app()) === true) {
+			return ['blocking' => [$step->finding(reason: self::REASON_MISSING_FROM_OWNER)], 'warnings' => []];
+		}
+
+		return ['blocking' => [], 'warnings' => [$step->finding(reason: self::REASON_OWNER_NOT_ENABLED)]];
+	}//end unresolvedFindings()
 
 	/**
 	 * Refuse a document the instance cannot run, and log the rest.
@@ -549,57 +647,53 @@ class FlowNodePreflight {
 		$name = ($label ?? (string)($flow['name'] ?? 'flow'));
 
 		foreach ($report['warnings'] as $warning) {
-			if ($warning['reason'] === self::REASON_CONFIG_ONERROR_MISPLACED) {
-				$this->logger->warning(
-					message: sprintf(
-						'[FlowNodePreflight] Flow "%s", step "%s" (%s) sets config.onError="%s". '
-						. 'Nothing reads that: the engine takes the policy from the NODE, beside "type". '
-						. 'It happens to match the default, so the run behaves the same — move it up one level.',
-						$name,
-						$warning['step'],
-						$warning['type'],
-						($warning['detail'] ?? '')
-					),
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'flow' => $name,
-						'type' => $warning['type'],
-						'step' => $warning['step'],
-						'reason' => $warning['reason'],
-					]
-				);
-				continue;
-			}//end if
-
-			// Loud on purpose. The measured failure was not that a step was
-			// missing, it was that nothing said so — the run reported success.
 			$this->logger->warning(
-				message: sprintf(
-					'[FlowNodePreflight] Flow "%s" uses step type "%s", which app "%s" owns. '
-					. 'That app is not enabled here, so this flow cannot run until it is.',
-					$name,
-					$warning['type'],
-					$warning['app']
-				),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'flow' => $name,
-					'type' => $warning['type'],
-					'app' => $warning['app'],
-					'step' => $warning['step'],
-					'reason' => $warning['reason'],
-				]
+				message: $this->warningMessage(flow: $name, warning: $warning),
+				context: $this->warningContext(flow: $name, warning: $warning)
 			);
-		}//end foreach
-
-		if ($report['blocking'] === []) {
-			return;
 		}
 
-		throw new UnexpectedValueException($this->describe(flow: $name, blocking: $report['blocking']));
+		if ($report['blocking'] !== []) {
+			throw new UnexpectedValueException($this->describe(flow: $name, blocking: $report['blocking']));
+		}
 	}//end assertRunnable()
+
+	/**
+	 * The log line for one warning.
+	 *
+	 * @param string                $flow    The flow's name.
+	 * @param array<string, string> $warning The warning finding.
+	 *
+	 * @return string The message.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	private function warningMessage(string $flow, array $warning): string {
+		if ($warning['reason'] === self::REASON_CONFIG_ONERROR_MISPLACED) {
+			return sprintf(self::LOG_ONERROR_MISPLACED, $flow, $warning['step'], $warning['type'], ($warning['detail'] ?? ''));
+		}
+
+		return sprintf(self::LOG_OWNER_NOT_ENABLED, $flow, $warning['type'], $warning['app']);
+	}//end warningMessage()
+
+	/**
+	 * The log context for one warning; the `onError` one carries no app.
+	 *
+	 * @param string                $flow    The flow's name.
+	 * @param array<string, string> $warning The warning finding.
+	 *
+	 * @return array<string, mixed> The context.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	private function warningContext(string $flow, array $warning): array {
+		$context = ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow, 'type' => $warning['type']];
+		if ($warning['reason'] !== self::REASON_CONFIG_ONERROR_MISPLACED) {
+			$context['app'] = $warning['app'];
+		}
+
+		return ($context + ['step' => $warning['step'], 'reason' => $warning['reason']]);
+	}//end warningContext()
 
 	/**
 	 * Build the refusal message.
@@ -615,20 +709,9 @@ class FlowNodePreflight {
 	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
 	 */
 	public function describe(string $flow, array $blocking): string {
-		$lines = [];
-		foreach ($blocking as $finding) {
-			$lines[] = $this->describeFinding(finding: $finding);
-		}
+		$lines = array_map(fn (array $finding): string => $this->describeFinding(finding: $finding), $blocking);
 
-		return sprintf(
-			'Flow "%s" has %d step(s) this instance cannot run as written: %s. '
-			. 'Refusing the save: a step that cannot run only fails once the flow is already halfway through, '
-			. 'after earlier steps have made changes that do not roll back — and a step whose config is ignored '
-			. 'does not fail at all, it reports success having done nothing.',
-			$flow,
-			count($blocking),
-			implode('; ', $lines)
-		);
+		return sprintf(self::REFUSAL_MESSAGE, $flow, count($blocking), implode('; ', $lines));
 
 	}//end describe()
 
@@ -645,17 +728,12 @@ class FlowNodePreflight {
 	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
 	 */
 	private function describeFinding(array $finding): string {
-		$reads = (string)($finding['reads'] ?? '');
-		if ($reads === '') {
-			$reads = 'no config at all';
-		}
-
 		return sprintf(
 			(self::FINDING_LINES[$finding['reason']] ?? self::FINDING_LINE_NOT_PROVIDED),
 			$finding['type'],
 			$finding['step'],
 			($finding['detail'] ?? '?'),
-			$reads,
+			$this->readsOf(finding: $finding),
 			self::DEFAULT_ONERROR,
 			($finding['detail'] ?? 'no detail'),
 			($finding['app'] ?? null)
@@ -663,7 +741,44 @@ class FlowNodePreflight {
 	}//end describeFinding()
 
 	/**
-	 * Ask the node whether it can read this edge's config.
+	 * What a finding says the node reads, in words when it reads nothing.
+	 *
+	 * @param array<string, string> $finding The blocking finding.
+	 *
+	 * @return string The vocabulary, or "no config at all".
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	private function readsOf(array $finding): string {
+		$reads = (string)($finding['reads'] ?? '');
+		if ($reads === '') {
+			return 'no config at all';
+		}
+
+		return $reads;
+	}//end readsOf()
+
+	/**
+	 * Ask the node whether it can read this step's config.
+	 *
+	 * @param IFlowNode         $node The resolved node.
+	 * @param FlowPreflightStep $step The step.
+	 *
+	 * @return string|null The node's message, or null when it accepts the config.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	private function configRejection(IFlowNode $node, FlowPreflightStep $step): ?string {
+		$config = $step->config();
+		if (is_array($config) === false) {
+			return 'Step config must be an object.';
+		}
+
+		return $this->refusalOf(node: $node, config: $config);
+	}//end configRejection()
+
+	/**
+	 * The node's own refusal of a config, or null when it accepts it.
 	 *
 	 * A node that throws for a reason of its own (a broken translation, a
 	 * missing collaborator) must not block the save — that would turn one bad
@@ -691,36 +806,47 @@ class FlowNodePreflight {
 	 * distinction that actually matters — the node REFUSED the config, versus
 	 * the node BROKE — is preserved by keeping the `Throwable` arm below.
 	 *
-	 * @param IFlowNode $node The resolved node.
-	 * @param array $edge The edge declaring the step.
+	 * @param IFlowNode $node   The resolved node.
+	 * @param array     $config The step's configuration.
 	 *
 	 * @return string|null The node's message, or null when it accepts the config.
 	 *
 	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
 	 */
-	private function configRejection(IFlowNode $node, array $edge): ?string {
-		$config = ($edge['config'] ?? []);
-		if (is_array($config) === false) {
-			return 'Step config must be an object.';
-		}
-
+	private function refusalOf(IFlowNode $node, array $config): ?string {
 		try {
 			$node->validateConfig($config);
 		} catch (UnexpectedValueException | InvalidArgumentException $e) {
 			return $e->getMessage();
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[FlowNodePreflight] A node\'s validateConfig() failed for its own reasons, not blocking: '
-					. $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'node' => get_class($node)]
+			$this->logNodeFailure(
+				message: 'A node\'s validateConfig() failed for its own reasons, not blocking: ' . $e->getMessage(),
+				node: $node
 			);
-		}//end try
+		}
 
 		return null;
-	}//end configRejection()
+	}//end refusalOf()
 
 	/**
-	 * Every config key on this edge that the node will never read.
+	 * Log a node that broke while being asked about itself.
+	 *
+	 * @param string    $message What failed, without the class prefix.
+	 * @param IFlowNode $node    The node that failed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	private function logNodeFailure(string $message, IFlowNode $node): void {
+		$this->logger->warning(
+			message: '[FlowNodePreflight] ' . $message,
+			context: ['file' => __FILE__, 'line' => __LINE__, 'node' => get_class($node)]
+		);
+	}//end logNodeFailure()
+
+	/**
+	 * Every config key on this step that the node will never read.
 	 *
 	 * Only asked of a node that declares its vocabulary. A node that does not
 	 * implement {@see IFlowNodeConfigKeys} is skipped entirely and silently:
@@ -741,57 +867,21 @@ class FlowNodePreflight {
 	 *   one level too deep, and telling them so is worth more than telling them
 	 *   the key is unrecognised.
 	 *
-	 * @param IFlowNode $node The resolved node.
-	 * @param array $edge The edge declaring the step.
-	 * @param string $type The step type.
-	 * @param string $stepId The edge's identifier, for the message.
+	 * @param IFlowNode         $node The resolved node.
+	 * @param FlowPreflightStep $step The step.
 	 *
 	 * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
 	 *
 	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
 	 */
-	private function dialectFindings(IFlowNode $node, array $edge, string $type, string $stepId): array {
-		$report = [
-			'blocking' => [],
-			'warnings' => [],
-		];
-
-		$config = ($edge['config'] ?? []);
+	private function dialectFindings(IFlowNode $node, FlowPreflightStep $step): array {
+		$config = $step->config();
 		$known = $this->declaredKeys(node: $node);
 		if ($known === null || is_array($config) === false || $config === []) {
-			return $report;
+			return self::EMPTY_REPORT;
 		}
 
-		$app = $this->ownerOf(type: $type);
-		$strays = $this->strayKeys(config: $config, known: $known);
-
-		if ($strays['onError'] === true) {
-			$finding = $this->onErrorFinding(config: $config, type: $type, app: $app, stepId: $stepId);
-			$severity = 'blocking';
-			if ($finding['detail'] === self::DEFAULT_ONERROR) {
-				$severity = 'warnings';
-			}
-
-			$report[$severity][] = $finding;
-		}
-
-		if ($strays['unknown'] === []) {
-			return $report;
-		}
-
-		// One finding per EDGE, not per key. An edge authored in the wrong
-		// dialect is wrong once — listing its four stray keys as four separate
-		// refusals reads like four separate mistakes.
-		$report['blocking'][] = [
-			'type' => $type,
-			'app' => $app,
-			'step' => $stepId,
-			'reason' => self::REASON_CONFIG_UNKNOWN_KEY,
-			'detail' => implode(', ', $strays['unknown']),
-			'reads' => implode(', ', $known),
-		];
-
-		return $report;
+		return $step->dialectFindings(known: $known);
 	}//end dialectFindings()
 
 	/**
@@ -801,6 +891,10 @@ class FlowNodePreflight {
 	 * them apart: `[]` is `openregister.switch` saying it reads no config at
 	 * all, null is a node that never joined the contract and must therefore not
 	 * be judged by it.
+	 *
+	 * A node whose own vocabulary lookup throws must not block the save — same
+	 * reasoning as refusalOf(): one broken node cannot be allowed to make the
+	 * instance unsavable.
 	 *
 	 * @param IFlowNode $node The resolved node.
 	 *
@@ -816,132 +910,12 @@ class FlowNodePreflight {
 		try {
 			$known = $node->configKeys();
 		} catch (Throwable $e) {
-			// A node whose own vocabulary lookup throws must not block the save
-			// — same reasoning as configRejection(): one broken node cannot be
-			// allowed to make the instance unsavable.
-			$this->logger->warning(
-				message: '[FlowNodePreflight] A node\'s configKeys() failed, skipping the dialect check: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'node' => get_class($node)]
-			);
+			$this->logNodeFailure(message: 'A node\'s configKeys() failed, skipping the dialect check: ' . $e->getMessage(), node: $node);
 			return null;
 		}
 
 		return array_map(static fn ($key): string => (string)$key, (array)$known);
 	}//end declaredKeys()
-
-	/**
-	 * Split a step's config keys into the ones nothing will read.
-	 *
-	 * @param array $config The step configuration.
-	 * @param array<int, string> $known The node's declared vocabulary.
-	 *
-	 * @return array{unknown: array<int, string>, onError: bool}
-	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
-	 */
-	private function strayKeys(array $config, array $known): array {
-		$unknown = [];
-		$onError = false;
-
-		foreach (array_keys($config) as $key) {
-			$key = (string)$key;
-			if (str_starts_with($key, IFlowNodeConfigKeys::ANNOTATION_PREFIX) === true) {
-				continue;
-			}
-
-			if ($key === self::EDGE_LEVEL_ONERROR) {
-				$onError = true;
-				continue;
-			}
-
-			if (in_array($key, $known, true) === false) {
-				$unknown[] = $key;
-			}
-		}//end foreach
-
-		return [
-			'unknown' => $unknown,
-			'onError' => $onError,
-		];
-
-	}//end strayKeys()
-
-	/**
-	 * Describe an `onError` policy that was written one level too deep.
-	 *
-	 * @param array $config The step configuration.
-	 * @param string $type The step type.
-	 * @param string $app The app that owns the type.
-	 * @param string $stepId The edge's identifier.
-	 *
-	 * @return array<string, string> The finding; its severity is the caller's call.
-	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
-	 */
-	private function onErrorFinding(array $config, string $type, string $app, string $stepId): array {
-		return [
-			'type' => $type,
-			'app' => $app,
-			'step' => $stepId,
-			'reason' => self::REASON_CONFIG_ONERROR_MISPLACED,
-			'detail' => (string)($config[self::EDGE_LEVEL_ONERROR] ?? ''),
-		];
-
-	}//end onErrorFinding()
-
-	/**
-	 * The app a namespaced type belongs to.
-	 *
-	 * @param string $type The step type.
-	 *
-	 * @return string The app id, or an empty string when the type is not namespaced.
-	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
-	 */
-	private function ownerOf(string $type): string {
-		$separator = strpos($type, '.');
-		if ($separator === false || $separator === 0) {
-			return '';
-		}
-
-		return substr($type, 0, $separator);
-	}//end ownerOf()
-
-	/**
-	 * Decide why a type failed to resolve.
-	 *
-	 * @param string $type The unresolved step type.
-	 * @param string $edge The edge that names it.
-	 *
-	 * @return array<string, string> The finding.
-	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
-	 */
-	private function classify(string $type, string $edge): array {
-		$separator = strpos($type, '.');
-		if ($separator === false || $separator === 0) {
-			return [
-				'type' => $type,
-				'app' => '',
-				'step' => $edge,
-				'reason' => self::REASON_NOT_NAMESPACED,
-			];
-		}
-
-		$app = substr($type, 0, $separator);
-		$reason = self::REASON_OWNER_NOT_ENABLED;
-		if ($this->isAppEnabled(appId: $app) === true) {
-			$reason = self::REASON_MISSING_FROM_OWNER;
-		}
-
-		return [
-			'type' => $type,
-			'app' => $app,
-			'step' => $edge,
-			'reason' => $reason,
-		];
-
-	}//end classify()
 
 	/**
 	 * The node answering to a type, or null when nothing does.

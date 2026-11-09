@@ -43,7 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
+use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProviderInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -60,12 +60,12 @@ class PersonLookupController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param BrpPersonProvider $brpProvider BRP person lookup leaf.
+	 * @param BrpPersonProviderInterface $brpProvider BRP person lookup leaf.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly BrpPersonProvider $brpProvider,
+		private readonly BrpPersonProviderInterface $brpProvider,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -102,16 +102,26 @@ class PersonLookupController extends Controller {
 
 		$result = $this->brpProvider->lookupByBsn($bsn);
 
-		if (($result['unavailable'] ?? false) === true) {
-			return new JSONResponse(
-				[
-					'error' => 'brp-haalcentraal source is not available',
-					'details' => ['cause' => $result['cause']],
-				],
-				503
-			);
+		return $this->unavailable(result: $result) ?? new JSONResponse($result);
+	}//end brpPerson()
+
+	/**
+	 * The 503 for a degraded provider, or null when the lookup answered.
+	 *
+	 * @param array<string, mixed> $result The provider lookup result.
+	 *
+	 * @return JSONResponse|null HTTP 503 with the cause, or null.
+	 *
+	 * @spec openspec/specs/integration-person-lookup/spec.md
+	 */
+	private function unavailable(array $result): ?JSONResponse {
+		if (($result['unavailable'] ?? false) !== true) {
+			return null;
 		}
 
-		return new JSONResponse($result);
-	}//end brpPerson()
+		return new JSONResponse(
+			['error' => 'brp-haalcentraal source is not available', 'details' => ['cause' => $result['cause']]],
+			503
+		);
+	}//end unavailable()
 }//end class

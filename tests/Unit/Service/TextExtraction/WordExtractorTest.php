@@ -14,10 +14,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
-use OCA\OpenRegister\Service\TextExtraction\WordExtractor;
+use OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor;
 use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
-use OCA\OpenRegister\Service\File\Office\ConversionManagerConverter;
+use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
@@ -30,9 +30,9 @@ use ReflectionMethod;
  * is checked through reflection. Real documents are covered by
  * {@see WordExtractorGoldenTest}.
  *
- * @covers \OCA\OpenRegister\Service\TextExtraction\WordExtractor
- * @uses   \OCA\OpenRegister\Service\TextExtraction\WordTextReader
- * @uses   \OCA\OpenRegister\Service\TextExtraction\OoxmlPackage
+ * @covers \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\WordTextReader
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\OoxmlPackage
  */
 class WordExtractorTest extends TestCase {
 

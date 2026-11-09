@@ -2,15 +2,16 @@
 
 namespace Unit\Service;
 
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLog;
 use OCA\OpenRegister\Db\EndpointLogMapper;
+use OCA\OpenRegister\Service\EndpointMappers;
 use OCA\OpenRegister\Service\EndpointService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\ToolRegistry;
-use OCA\OpenRegister\Tool\ToolInterface;
+use OCA\OpenRegister\Mcp\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Tool\ToolInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -47,11 +48,10 @@ class TestableEndpointService extends EndpointService {
 		AgentMapper $agentMapper,
 	) {
 		parent::__construct(
-			endpointLogMapper: $endpointLogMapper,
+			mappers: new EndpointMappers($endpointLogMapper, $agentMapper),
 			logger: $logger,
 			userSession: $userSession,
-			groupManager: $groupManager,
-			agentMapper: $agentMapper
+			groupManager: $groupManager
 		);
 	}
 

@@ -31,7 +31,7 @@ use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Notifications\Service\EmailService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\TaskService;
 use PHPUnit\Framework\MockObject\MockObject;

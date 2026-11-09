@@ -79,24 +79,49 @@ class FlowRunGuard {
 	private int $lastBeat = 0;
 
 	/**
+	 * The run being guarded.
+	 *
+	 * @var string
+	 */
+	private readonly string $runUuid;
+
+	/**
+	 * microtime(true) when the walk began.
+	 *
+	 * @var float
+	 */
+	private readonly float $startedAt;
+
+	/**
+	 * Seconds the whole run may take; 0 disables.
+	 *
+	 * @var integer
+	 */
+	private readonly int $budget;
+
+	/**
+	 * Seconds between liveness writes.
+	 *
+	 * @var integer
+	 */
+	private readonly int $minInterval;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowRunMapperInterface $mapper Writes the beat.
-	 * @param LoggerInterface $logger Records a beat that could not be written.
-	 * @param string $runUuid The run being guarded.
-	 * @param float $startedAt microtime(true) when the walk began.
-	 * @param integer $budget Seconds the whole run may take; 0 disables.
-	 * @param integer $minInterval Seconds between liveness writes.
+	 * @param LoggerInterface        $logger Records a beat that could not be written.
+	 * @param FlowRunGuardClock      $clock  The run, its start, its budget and its beat interval.
 	 */
 	public function __construct(
 		private readonly FlowRunMapperInterface $mapper,
 		private readonly LoggerInterface $logger,
-		private readonly string $runUuid,
-		private readonly float $startedAt,
-		private readonly int $budget,
-		private readonly int $minInterval = 30,
+		FlowRunGuardClock $clock,
 	) {
-
+		$this->runUuid     = $clock->runUuid;
+		$this->startedAt   = $clock->startedAt;
+		$this->budget      = $clock->budget;
+		$this->minInterval = $clock->minInterval;
 	}//end __construct()
 
 	/**

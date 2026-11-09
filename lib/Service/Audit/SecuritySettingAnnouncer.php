@@ -23,9 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use DateTime;
-use OCP\IGroupManager;
 use OCP\IUserSession;
-use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -68,15 +66,13 @@ class SecuritySettingAnnouncer {
 	 * Constructor.
 	 *
 	 * @param SecuritySettingRegistry $registry      The marker and the snapshot.
-	 * @param INotificationManager    $notifications Delivers the announcement.
-	 * @param IGroupManager           $groupManager  Finds the administrators.
+	 * @param AnnouncementRecipients $recipients The notification manager and the administrators it notifies.
 	 * @param IUserSession            $userSession   Names the actor.
 	 * @param LoggerInterface         $logger        Reports a delivery failure.
 	 */
 	public function __construct(
 		private readonly SecuritySettingRegistry $registry,
-		private readonly INotificationManager $notifications,
-		private readonly IGroupManager $groupManager,
+		private readonly AnnouncementRecipients $recipients,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
@@ -243,7 +239,7 @@ class SecuritySettingAnnouncer {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function administrators(): array {
-		$group = $this->groupManager->get(self::ADMIN_GROUP);
+		$group = $this->recipients->groupManager->get(self::ADMIN_GROUP);
 		if ($group === null) {
 			return [];
 		}
@@ -295,13 +291,13 @@ class SecuritySettingAnnouncer {
 	 */
 	private function deliver(string $uid, string $path, array $parameters): int {
 		try {
-			$notification = $this->notifications->createNotification();
+			$notification = $this->recipients->notifications->createNotification();
 			$notification->setApp('openregister')
 				->setUser($uid)
 				->setDateTime(new DateTime())
 				->setObject('security_setting', $path)
 				->setSubject(self::SUBJECT, $parameters);
-			$this->notifications->notify($notification);
+			$this->recipients->notifications->notify($notification);
 		} catch (Throwable $deliveryFailed) {
 			$this->logger->warning(
 				message: '[SecuritySettingAnnouncer] Could not announce a security setting change: '

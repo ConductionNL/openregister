@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
-use OCA\OpenRegister\Tool\SchemaTool;
+use OCA\OpenRegister\Mcp\Tool\SchemaTool;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -112,7 +112,7 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 			);
 
 		$tool = new SchemaTool($this->userSession, $this->createMock(LoggerInterface::class), $this->schemaMapper, $this->versioning(logger: $logger));
-		$result = $tool->updateSchema(id: '12', properties: ['title' => ['type' => 'string']], required: []);
+		$result = $tool->updateSchema(id: '12', properties: ['title' => ['type' => 'string']]);
 
 		$this->assertSame('2.0.0', $result['data']['version']);
 	}//end testAnAgentBreakingChangeIsLoggedNotRefused()
@@ -136,7 +136,7 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 	}//end testAnAcknowledgedBreakingChangeIsNotWarnedAbout()
 
 	/**
-	 * The schema tool dropping a required property is recorded as breaking with a major bump.
+	 * The schema tool dropping a property is recorded as breaking with a major bump.
 	 *
 	 * @return void
 	 */
@@ -147,7 +147,7 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 			->willReturn(new SchemaChangelog());
 
 		$tool = new SchemaTool($this->userSession, $this->createMock(LoggerInterface::class), $this->schemaMapper, $this->versioning());
-		$result = $tool->updateSchema(id: '12', properties: ['title' => ['type' => 'string']], required: []);
+		$result = $tool->updateSchema(id: '12', properties: ['title' => ['type' => 'string']]);
 
 		$this->assertSame('2.0.0', $result['data']['version']);
 	}//end testTheSchemaToolRecordsABreakingChange()

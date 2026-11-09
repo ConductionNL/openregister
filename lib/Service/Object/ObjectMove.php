@@ -32,6 +32,13 @@ use OCA\OpenRegister\Db\ObjectEntity;
 final class ObjectMove {
 
 	/**
+	 * The row as stored before the move changed its data, when the caller changed it.
+	 *
+	 * @var ObjectEntity|null
+	 */
+	private ?ObjectEntity $stored = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectEntity $object The object.
@@ -48,6 +55,32 @@ final class ObjectMove {
 		public readonly string $actor,
 	) {
 	}//end __construct()
+
+	/**
+	 * Name the row as stored, so the update guards judge the change from it.
+	 *
+	 * @param ObjectEntity $stored The object as stored at its source.
+	 *
+	 * @return self This move.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+	 */
+	public function storedAs(ObjectEntity $stored): self {
+		$this->stored = $stored;
+
+		return $this;
+	}//end storedAs()
+
+	/**
+	 * The object as it was before the move: the stored row when named, else a copy of the object now.
+	 *
+	 * @return ObjectEntity The old object of the target write.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+	 */
+	public function before(): ObjectEntity {
+		return clone ($this->stored ?? $this->object);
+	}//end before()
 
 	/**
 	 * The answer a move gives, naming both addresses.

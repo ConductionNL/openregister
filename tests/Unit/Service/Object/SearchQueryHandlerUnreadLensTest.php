@@ -132,6 +132,24 @@ class SearchQueryHandlerUnreadLensTest extends TestCase {
 	}//end testAnonymousCallerGetsAnImpossibleIdSet()
 
 	/**
+	 * The reader is always the session, whatever the request names.
+	 *
+	 * @return void
+	 */
+	public function testARequestCannotNameAnotherReader(): void {
+		$handler = $this->makeHandler();
+
+		$this->assertArrayNotHasKey(key: '_unreadFor', array: $handler->buildSearchQuery(['_unreadFor' => 'mallory'], 1, 777));
+		$this->assertArrayNotHasKey(key: '_unreadFor', array: $handler->buildSearchQuery(['_unread' => 'false', '_unreadFor' => 'mallory'], 1, 777));
+
+		$query = $handler->buildSearchQuery(['_unread' => 'true', '_unreadFor' => 'mallory'], 1, 777);
+		$this->assertSame(expected: 'alice', actual: ($query['_unreadFor'] ?? null));
+
+		$anonymous = $this->makeHandler(uid: null)->buildSearchQuery(['_unread' => 'true', '_unreadFor' => 'mallory'], 1, 777);
+		$this->assertArrayNotHasKey(key: '_unreadFor', array: $anonymous);
+	}//end testARequestCannotNameAnotherReader()
+
+	/**
 	 * `_unread=false` asks for no restriction, and gets none.
 	 *
 	 * @return void

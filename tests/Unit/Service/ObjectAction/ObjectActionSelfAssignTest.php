@@ -43,6 +43,10 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionFlowEngines;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionFlowRun;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunRecorder;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerChecks;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssign;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
@@ -66,6 +70,14 @@ use Psr\Log\NullLogger;
 
 /**
  * Who may take an unassigned object, and what the action may write.
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuard
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuardParser
  */
 class ObjectActionSelfAssignTest extends TestCase {
 
@@ -221,7 +233,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			}
 		);
 
-		$handler = new PermissionHandler(
+		$handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$users,
 			$groups,
@@ -270,21 +282,19 @@ class ObjectActionSelfAssignTest extends TestCase {
 		);
 		$audit = $this->createMock(ObjectActionAudit::class);
 		$audit->method('record')->willReturnCallback(
-			function (...$args): void {
-				$this->audited[] = $args;
+			function ($object, $definition, $outcome, $digest, $userId): void {
+				$this->audited[] = [$object, $definition->key, (string)$definition->kind, $outcome->run, $digest, $outcome->changes, $outcome->outcome, $userId];
 			}
 		);
 
+		$checks   = new ObjectActionRunnerChecks(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)), new ObjectActionInputs(new OasRequestValidator()));
+		$recorder = new ObjectActionRunRecorder($checks->inputs, $audit, $checks->gate);
+
 		return new ObjectActionRunner(
-			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
-			new ObjectActionInputs(new OasRequestValidator()),
-			$this->createMock(ObjectActionStepsFlow::class),
-			$audit,
+			$checks,
 			new ObjectActionWriters($this->createMock(TransitionEngine::class), new ObjectActionSelfAssign($objects, $session)),
-			$this->createMock(FlowService::class),
-			$this->createMock(MacroActionResolver::class),
-			new NullLogger()
+			$recorder,
+			new ObjectActionFlowRun(new ObjectActionFlowEngines($this->createMock(ObjectActionStepsFlow::class), $this->createMock(FlowService::class), $this->createMock(MacroActionResolver::class)), $checks->inputs, $recorder, new NullLogger())
 		);
 	}//end runner()
 
@@ -720,7 +730,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$this->createMock(IAppConfig::class),
 			new NullLogger()
 		);
-		$validate = new ReflectionMethod(SchemaMapper::class, 'validateDepartmentMatrix');
+		$validate = new ReflectionMethod(SchemaMapper::class, 'checkAccessDeclarations');
 		$matrix = static fn (string $action): array => [
 			'read' => ['team'],
 			'matrix' => ['field' => 'group', 'userSource' => ['groups' => true], 'rows' => [['group' => 'team', 'value' => '$self', 'actions' => [$action]]]],

@@ -34,7 +34,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<BulkJob>
  */
-class BulkJobMapper extends QBMapper {
+class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
 	/**
 	 * Constructor.
 	 *

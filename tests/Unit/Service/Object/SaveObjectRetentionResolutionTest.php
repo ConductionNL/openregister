@@ -52,6 +52,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use RuntimeException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 
 /**
  * Regression guard for the 2026-09-08 memory blow-up.
@@ -231,10 +232,7 @@ class SaveObjectRetentionResolutionTest extends TestCase {
 
 		$handler = $this->buildHandler($container);
 
-		$cache = new ReflectionClass(SaveObject::class);
-		$property = $cache->getProperty('schemaCache');
-		$property->setAccessible(true);
-		$property->setValue($handler, ['1' => $schema]);
+		SaveLookupsAccess::set($handler, 'schemaCache', ['1' => $schema]);
 
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://localhost/test');
 		$this->urlGenerator->method('linkToRoute')->willReturn('/test');

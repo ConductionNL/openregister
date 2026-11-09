@@ -9,7 +9,7 @@ import {
 </script>
 
 <template>
-	<NcDialog name="Upload Object" size="normal" :canClose="false">
+	<NcDialog name="Upload Object" size="normal" noClose>
 		<NcNoteCard v-if="success" type="success">
 			<p>Object successfully uploaded</p>
 		</NcNoteCard>
@@ -36,12 +36,7 @@ import {
 				</template>
 				Back to Schema
 			</NcButton>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
+			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeModal" />
 			<NcButton
 				v-if="success === null"
 				:disabled="
@@ -135,8 +130,8 @@ import {
 import CodeMirror from 'vue-codemirror6'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import AutoFix from 'vue-material-design-icons/AutoFix.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { getTheme } from '../../services/getTheme.js'
 
 export default {
@@ -148,7 +143,7 @@ export default {
 		NcNoteCard,
 		NcSelect,
 		// Icons
-		Cancel,
+		CloseCancelButton,
 		Upload,
 	},
 
@@ -343,27 +338,11 @@ export default {
     Number color is .ͼd
 */
 
-.codeMirrorContainer {
-	margin-block-start: 6px;
-}
-
-.prettifyButton {
-	margin-block-start: 10px;
-}
+@include code-mirror-frame;
 
 @include code-mirror-container-deep-cm-content;
 
-.codeMirrorContainer :deep(.cm-editor) {
-	outline: none !important;
-}
-
-.codeMirrorContainer.light > .vue-codemirror {
-	border: 1px dotted silver;
-}
-
-.codeMirrorContainer.dark > .vue-codemirror {
-	border: 1px dotted grey;
-}
+@include code-mirror-editor;
 
 @include code-mirror-theme;
 </style>

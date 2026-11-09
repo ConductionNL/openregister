@@ -44,7 +44,7 @@ use Throwable;
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
  */
-class FormDefinitionResolver {
+class FormDefinitionResolver implements FormDefinitionResolverInterface {
 
 	/**
 	 * Constructor.
@@ -74,33 +74,66 @@ class FormDefinitionResolver {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function resolve(string $formId): array {
-		try {
-			// RBAC off to READ the form definition only: a public form is read
-			// by a visitor with no account. Nothing of the body is returned;
-			// what may be WRITTEN is decided by the destination's RBAC.
-			$entity = $this->objects->find(id: $formId, _rbac: false, _multitenancy: false, _audit: false);
-		} catch (Throwable) {
-			$entity = null;
-		}
-
-		$body = [];
-		if ($entity !== null) {
-			$body = $entity->getObject();
-		}
-
-		$published = (($body['status'] ?? null) === 'published' || ($body['published'] ?? null) === true);
+		$body = $this->bodyOf(formId: $formId);
 		$writes = $this->writesOf(body: $body);
-		if ($published === false || $writes === []) {
+		if ($this->isPublished(body: $body) === false || $writes === []) {
 			throw new FormSubmitRefusedException(message: $this->l10n->t('This form does not exist.'), status: 404);
 		}
 
-		$audience = (string)($body['audience'] ?? 'public');
-		if ($audience === '') {
-			$audience = 'public';
+		return ['id' => $formId, 'writes' => $writes, 'audience' => $this->audienceOf(body: $body)];
+	}//end resolve()
+
+	/**
+	 * The stored body of a form object, or empty when there is none.
+	 *
+	 * RBAC off to READ the form definition only: a public form is read by a
+	 * visitor with no account. Nothing of the body is returned; what may be
+	 * WRITTEN is decided by the destination's RBAC.
+	 *
+	 * @param string $formId The form object's uuid.
+	 *
+	 * @return array<string, mixed> The body.
+	 */
+	private function bodyOf(string $formId): array {
+		try {
+			$entity = $this->objects->find(id: $formId, _rbac: false, _multitenancy: false, _audit: false);
+		} catch (Throwable) {
+			return [];
 		}
 
-		return ['id' => $formId, 'writes' => $writes, 'audience' => $audience];
-	}//end resolve()
+		if ($entity === null) {
+			return [];
+		}
+
+		return $entity->getObject();
+	}//end bodyOf()
+
+	/**
+	 * Whether a form body is published: status `published`, or `published: true`.
+	 *
+	 * @param array<string, mixed> $body The form body.
+	 *
+	 * @return bool True when published.
+	 */
+	private function isPublished(array $body): bool {
+		return ($body['status'] ?? null) === 'published' || ($body['published'] ?? null) === true;
+	}//end isPublished()
+
+	/**
+	 * A form's audience: as declared, `public` when it declares none.
+	 *
+	 * @param array<string, mixed> $body The form body.
+	 *
+	 * @return string The audience.
+	 */
+	private function audienceOf(array $body): string {
+		$audience = (string)($body['audience'] ?? 'public');
+		if ($audience === '') {
+			return 'public';
+		}
+
+		return $audience;
+	}//end audienceOf()
 
 	/**
 	 * The writes a form body declares: its `writes` list, or one write from `destination` and `mapping`.
@@ -114,6 +147,17 @@ class FormDefinitionResolver {
 			return array_values(array_filter($body['writes'], 'is_array'));
 		}
 
+		return $this->destinationWrites(body: $body);
+	}//end writesOf()
+
+	/**
+	 * The one write a form's `destination` and `mapping` declare, or none without a destination schema.
+	 *
+	 * @param array<string, mixed> $body The form body.
+	 *
+	 * @return array<int, array<string, mixed>> The writes.
+	 */
+	private function destinationWrites(array $body): array {
 		$destination = ($body['destination'] ?? null);
 		if (is_array($destination) === false || trim((string)($destination['schema'] ?? '')) === '') {
 			return [];
@@ -124,13 +168,6 @@ class FormDefinitionResolver {
 			$mapping = $body['mapping'];
 		}
 
-		return [
-			[
-				'register' => ($destination['register'] ?? null),
-				'schema' => $destination['schema'],
-				'mapping' => $mapping,
-				'as' => 'destination',
-			],
-		];
-	}//end writesOf()
+		return [['register' => ($destination['register'] ?? null), 'schema' => $destination['schema'], 'mapping' => $mapping, 'as' => 'destination']];
+	}//end destinationWrites()
 }//end class

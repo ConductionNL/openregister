@@ -15,8 +15,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCP\Files\Node;
 use OCP\Files\NotPermittedException;
@@ -566,11 +566,10 @@ class FileValidationHandlerTest extends TestCase {
 		$file->method('isReadable')->willReturn(true);
 		$file->method('getName')->willReturn('test.pdf');
 		$file->method('getId')->willReturn(42);
-		$file->method('getOwner')->willReturn(null);
+		$file->expects($this->never())->method('getOwner');
+		$this->logger->expects($this->never())->method('warning');
 
 		$this->handler->checkOwnership(file: $file);
-
-		$this->assertTrue(true);
 	}//end testCheckOwnershipReadableFileWithNullOwnerIsAllowed()
 
 	// =========================================================================

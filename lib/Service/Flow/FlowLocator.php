@@ -35,8 +35,8 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
-use OCA\OpenRegister\Db\FlowTriggerMapper;
-use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
+use OCA\OpenRegister\Db\FlowVersionMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -48,7 +48,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
-class FlowLocator {
+class FlowLocator implements FlowLocatorInterface {
 
 	/**
 	 * Per-request memo of resolved flow documents, keyed by flow id.
@@ -65,17 +65,17 @@ class FlowLocator {
 	 * Constructor.
 	 *
 	 * @param FlowMapper $mapper Reads flow definitions.
-	 * @param FlowTriggerMapper $triggerMapper The node-derived trigger index.
+	 * @param FlowTriggerMapperInterface $triggerMapper The node-derived trigger index.
 	 * @param ObjectOperationsInterface $objectService Loads the object a run is about.
 	 * @param LoggerInterface $logger Records refusals and failures.
-	 * @param FlowVersionMapper $versions Answers whether a fallback-matched flow has a published version.
+	 * @param FlowVersionMapperInterface $versions Answers whether a fallback-matched flow has a published version.
 	 */
 	public function __construct(
 		private readonly FlowMapper $mapper,
-		private readonly FlowTriggerMapper $triggerMapper,
+		private readonly FlowTriggerMapperInterface $triggerMapper,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
-		private readonly FlowVersionMapper $versions,
+		private readonly FlowVersionMapperInterface $versions,
 	) {
 
 	}//end __construct()

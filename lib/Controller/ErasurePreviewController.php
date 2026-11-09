@@ -30,11 +30,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
-use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService;
-use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore;
+use OCA\OpenRegister\Controller\Support\ErasurePreviewControllerServices;
+use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStoreInterface;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRefusedException;
-use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunnerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -45,22 +46,42 @@ use OCP\IRequest;
  */
 class ErasurePreviewController extends Controller {
 	/**
+	 * The preview.
+	 *
+	 * @var ErasurePreviewServiceInterface
+	 */
+	private readonly ErasurePreviewServiceInterface $previewService;
+
+	/**
+	 * The recorded preview and its approval.
+	 *
+	 * @var ErasurePreviewStoreInterface
+	 */
+	private readonly ErasurePreviewStoreInterface $store;
+
+	/**
+	 * The run.
+	 *
+	 * @var ErasureRunnerInterface
+	 */
+	private readonly ErasureRunnerInterface $runner;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                $appName        The app name.
 	 * @param IRequest              $request        The request.
-	 * @param ErasurePreviewService $previewService The preview.
-	 * @param ErasurePreviewStore   $store          The recorded preview and its approval.
-	 * @param ErasureRunner         $runner         The run.
+	 * @param ErasurePreviewControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ErasurePreviewService $previewService,
-		private readonly ErasurePreviewStore $store,
-		private readonly ErasureRunner $runner,
+		ErasurePreviewControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->previewService = $services->previewService;
+		$this->store = $services->store;
+		$this->runner = $services->runner;
 
 	}//end __construct()
 
@@ -98,7 +119,7 @@ class ErasurePreviewController extends Controller {
 			subjectId: $subject,
 			type: $this->optionalType(),
 			eraseMode: (string)($this->request->getParam(key: 'eraseMode')
-				?? DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE)
+				?? DataSubjectRequestServiceInterface::ERASE_MODE_PSEUDONYMISE)
 		);
 
 		$record = $this->store->record(

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCA\OpenRegister\Db\EmailLinkMapper;
@@ -81,6 +82,8 @@ if (class_exists('OCA\\Maps\\Service\\FavoritesService') === false) {
  * @uses   \OCA\OpenRegister\Db\MapLink
  * @uses   \OCA\OpenRegister\AppInfo\ClassAliasMap
  * @uses   \OCA\OpenRegister\Service\MailTableQueries
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class LinkServiceCreateGoldenTest extends TestCase {
 
@@ -123,8 +126,14 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$apps = $this->createMock(IAppManager::class);
 		$apps->method('isEnabledForUser')->willReturn(true);
 		$db = $this->createMock(IDBConnection::class);
-		$db->method('getQueryBuilder')->willReturnCallback(fn () => $this->rowBuilder($row));
-		$service = new EmailLinkService($mapper, $apps, $db, $this->session($uid2), $this->createMock(LoggerInterface::class));
+		// The first query is the account-owner lookup, the next the message.
+		$answers = [['user_id' => $uid2]];
+		$db->method('getQueryBuilder')->willReturnCallback(
+			function () use (&$answers, $row) {
+				return $this->rowBuilder(array_shift($answers) ?? $row);
+			}
+		);
+		$service = new EmailLinkService($mapper, $db, new LinkServiceRuntime($apps, $this->session($uid2), $this->createMock(LoggerInterface::class)));
 
 		$this->assertGolden(
 			function () use ($service, $messageId, $uid, $schemaId) {
@@ -144,9 +153,9 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$apps->method('isEnabledForUser')->willReturn(true);
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(
-			fn () => $this->rowBuilder(['id' => 7, 'uid' => 'u', 'subject' => 'Hello', 'message_id' => '<a1@x>'])
+			fn () => $this->rowBuilder(['id' => 7, 'uid' => 'u', 'subject' => 'Hello', 'message_id' => '<a1@x>', 'user_id' => 'alice'])
 		);
-		$service = new EmailLinkService($mapper, $apps, $db, $this->session('alice'), $this->createMock(LoggerInterface::class));
+		$service = new EmailLinkService($mapper, $db, new LinkServiceRuntime($apps, $this->session('alice'), $this->createMock(LoggerInterface::class)));
 
 		$link = $service->linkEmail((new LinkTarget('obj-1', 3))->inSchema(4), (new EmailMessageRef(42, '7'))->withUid('u'));
 
@@ -210,23 +219,44 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$node->method('getId')->willReturn(10);
 		$folder = $this->createMock(Folder::class);
 		$folder->method('getDirectoryListing')->willReturn([$node]);
-		$handler = new class($folder) {
-			public function __construct(private Folder $folder) {
+		$handler = new class($folder, $this->session('openregister')->getUser()) {
+			public function __construct(private Folder $folder, private \OCP\IUser $account) {
 			}
 
 			public function getObjectFolder(mixed $target): Folder {
 				return $this->folder;
 			}
+
+			public function getUser(): \OCP\IUser {
+				return $this->account;
+			}
 		};
+		$objects = new class {
+			public function find(string $uuid): \OCA\OpenRegister\Db\ObjectEntity {
+				return new \OCA\OpenRegister\Db\ObjectEntity();
+			}
+		};
+		$schemas = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
+		$schemas->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$rights = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		$rights->method('hasPermission')->willReturn(true);
 		$container = $this->container(
 			[
 				'OCP\\Share\\IManager' => $manager,
 				'OCP\\IUserSession' => $this->session('alice'),
-				'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $handler,
+				\OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface::class => new class {
+					public function readableNodes(array $nodes): array {
+						return $nodes;
+					}
+				},
+				'OCA\\OpenRegister\\Service\\FileService' => $handler,
+				'OCA\\OpenRegister\\Db\\MagicMapper' => $objects,
+				'OCA\\OpenRegister\\Db\\SchemaMapper' => $schemas,
+				'OCA\\OpenRegister\\Service\\Object\\PermissionHandlerInterface' => $rights,
 			]
 		);
 		$l10n = $this->createMock(IL10N::class);
-		$service = new ShareLinkService($l10n, $this->createMock(LoggerInterface::class), $container);
+		$service = new ShareLinkService( $this->createMock(LoggerInterface::class), $container);
 
 		$this->assertGolden(
 			function () use ($service, &$calls, $fileId, $shareType, $shareWith, $permissions, $password, $expiration) {
@@ -293,10 +323,8 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$mapper->method('insert')->willReturnArgument(0);
 		$service = new DeckLinkService(
 			$mapper,
-			$this->createMock(IAppManager::class),
-			$this->session('alice'),
+			new LinkServiceRuntime($this->createMock(IAppManager::class), $this->session('alice'), $this->createMock(LoggerInterface::class)),
 			$this->createMock(IUserManager::class),
-			$this->createMock(LoggerInterface::class),
 			$this->container(['OCA\\Deck\\Service\\CardService' => $cards])
 		);
 
@@ -372,10 +400,12 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$service = new MapLinkService(
 			$mapper,
 			$this->container(['OCA\\Maps\\Service\\FavoritesService' => $favorites]),
-			$apps,
-			$this->session('alice'),
 			$this->createMock(IURLGenerator::class),
-			$this->createMock(LoggerInterface::class)
+			new LinkServiceRuntime(
+				$apps,
+				$this->session('alice'),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$this->assertGolden(

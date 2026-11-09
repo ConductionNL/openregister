@@ -34,7 +34,7 @@ final class ConfigurationsControllerFactory {
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Db\ConfigurationMapper $configurationMapper,
 		\OCA\OpenRegister\Service\ConfigurationService $configurationService,
-		\OCA\OpenRegister\Service\UploadService $uploadService,
+		\OCA\OpenRegister\Files\Service\UploadService $uploadService,
 		?string $userId,
 		\OCP\IUserSession $userSession,
 		\OCP\IGroupManager $groupManager,

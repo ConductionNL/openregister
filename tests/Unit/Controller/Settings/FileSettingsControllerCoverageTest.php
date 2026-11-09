@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
-use OCA\OpenRegister\Controller\Settings\FileSettingsController;
+use OCA\OpenRegister\Files\Controller\Settings\FileSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -31,7 +31,6 @@ class FileSettingsControllerCoverageTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = new FileSettingsController(
-			'openregister',
 			$this->request,
 			$this->container,
 			$this->settingsService,

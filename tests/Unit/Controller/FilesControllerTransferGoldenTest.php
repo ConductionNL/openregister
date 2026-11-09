@@ -12,9 +12,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCA\OpenRegister\Service\ObjectService;
@@ -38,13 +38,14 @@ use PHPUnit\Framework\TestCase;
  * the recording with fixtures/files-transfer-golden.json.
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
- * @covers \OCA\OpenRegister\Controller\FilesController
- * @uses \OCA\OpenRegister\Controller\Support\FilesControllerServices
- * @uses \OCA\OpenRegister\Controller\Support\FileStore
- * @uses \OCA\OpenRegister\Controller\Support\FilePlatform
- * @uses \OCA\OpenRegister\Controller\Support\FileGuards
- * @uses \OCA\OpenRegister\Controller\Support\FileEditing
- * @uses \OCA\OpenRegister\Controller\Support\FileTransfer
+ * @covers \OCA\OpenRegister\Files\Controller\FilesController
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FilesControllerServices
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileStore
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FilePlatform
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileGuards
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileEditing
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileTransfer
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileAccessCheck
  * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Event\FileCopiedEvent

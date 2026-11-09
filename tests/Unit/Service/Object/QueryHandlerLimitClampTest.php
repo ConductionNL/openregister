@@ -50,16 +50,12 @@ class QueryHandlerLimitClampTest extends TestCase {
 
 		$this->handler = new QueryHandler(
 			$this->objectMapper,
-			$this->createMock(GetObject::class),
 			$this->createMock(RenderObject::class),
 			$this->createMock(SearchQueryHandler::class),
 			$this->createMock(FacetHandler::class),
 			$this->createMock(PerformanceOptimizationHandler::class),
 			$this->createMock(ContentSearchHandler::class),
-			$this->createMock(IAppContainer::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IRequest::class)
-		);
+			$this->createMock(IAppContainer::class));
 	}
 
 	private function runWithLimit(int $limit): void {

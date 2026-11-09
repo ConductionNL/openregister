@@ -36,27 +36,11 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 
 /**
  * A pass-through node whose outgoing edges carry the routing conditions.
  */
-class SwitchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
-
+class SwitchNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree, SwitchNodeInterface {
 	/**
 	 * The step type.
 	 *
@@ -92,17 +76,6 @@ class SwitchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, I
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/caret.svg');
 	}//end getIcon()
-
-	/**
-	 * Branching grants no privilege.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * A switch reads NO config — its conditions live on its outgoing edges.
@@ -157,16 +130,4 @@ class SwitchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, I
 		return IFlowNodeTaxonomy::KIND_GATEWAY;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

@@ -146,7 +146,25 @@ class ScheduledReportServiceRunGoldenTest extends TestCase {
 			$recorder = $this->getMockBuilder(ExportRunRecorder::class)->disableOriginalConstructor()->onlyMethods(['record'])->getMock();
 			$recorder->method('record')->willReturnCallback(
 				function (...$args) use ($opt) {
-					$this->calls[] = ['recorder.record', $this->plain($args)];
+					// The fixture pins the run's fields in the order record() took
+					// them before they were grouped; flatten the groups back.
+					[$origin, $content, $file, $retention] = $args;
+					$fields = [
+						$origin->source,
+						$origin->actor,
+						$content->format,
+						$content->rowCount,
+						$origin->profile,
+						$file->filename,
+						$content->registerName,
+						$content->schemaName,
+						$file->fileId,
+						$file->filePath,
+						$retention,
+						$file->downloadCount,
+						$origin->status,
+					];
+					$this->calls[] = ['recorder.record', $this->plain($fields)];
 					if (($opt['recorder'] ?? 'ok') === 'throws') {
 						throw new RuntimeException('no table');
 					}
@@ -176,7 +194,8 @@ class ScheduledReportServiceRunGoldenTest extends TestCase {
 		$service->runOne($report);
 		$this->calls[] = ['report', [$report->getLastStatus(), $report->getLastError()]];
 
-		$actual = json_decode(str_replace(date('Y-m-d'), 'TODAY', json_encode($this->calls, JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR)), true);
+		$recorded = json_encode($this->calls, JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+		$actual = json_decode(preg_replace('/(weekly-cases_)\d{4}-\d{2}-\d{2}/', '$1TODAY', $recorded), true);
 		$file = __DIR__ . '/fixtures/scheduled-report-run-golden.json';
 		$name = $this->dataName();
 		$all = is_file($file) === true ? json_decode(file_get_contents($file), true) : [];

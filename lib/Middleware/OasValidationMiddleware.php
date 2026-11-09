@@ -7,7 +7,7 @@
  * operation's request-body schema in the generated OAS, and validates
  * the incoming JSON body against it. On a validation miss the middleware
  * short-circuits with an RFC 7807 `application/problem+json` 422 response
- * via `ProblemDetailsBuilder::validationFailed`.
+ * via `ProblemDetailsBuilderInterface::validationFailed`.
  *
  * Opt-in: only runs on JSON-bodied (POST/PUT/PATCH) requests AND only
  * when an `_validate=true` query parameter is set OR when the operation
@@ -34,8 +34,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Service\Oas\OasRequestValidator;
-use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
+use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
+use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Middleware;
 use OCP\IRequest;
@@ -50,14 +50,14 @@ class OasValidationMiddleware extends Middleware {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming request.
-	 * @param OasRequestValidator $validator JSON-Schema validator wrapper.
-	 * @param ProblemDetailsBuilder $problems RFC 7807 response shape builder.
+	 * @param OasRequestValidatorInterface $validator JSON-Schema validator wrapper.
+	 * @param ProblemDetailsBuilderInterface $problems RFC 7807 response shape builder.
 	 * @param ?LoggerInterface $logger Optional logger for skipped paths.
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly OasRequestValidator $validator,
-		private readonly ProblemDetailsBuilder $problems,
+		private readonly OasRequestValidatorInterface $validator,
+		private readonly ProblemDetailsBuilderInterface $problems,
 		private readonly ?LoggerInterface $logger = null,
 	) {
 
@@ -74,15 +74,7 @@ class OasValidationMiddleware extends Middleware {
 	 * @throws OasValidationFailureException When the body fails validation.
 	 */
 	public function beforeController(mixed $controller, string $methodName): void {
-		// Only validate write methods.
-		$verb = strtoupper((string)$this->request->getMethod());
-		if (in_array($verb, ['POST', 'PUT', 'PATCH'], true) === false) {
-			return;
-		}
-
-		// Opt-in: respect the `?_validate=true` query parameter.
-		$optIn = (string)($this->request->getParam('_validate') ?? '');
-		if (in_array(strtolower($optIn), ['true', '1', 'yes', 'on'], true) === false) {
+		if ($this->isOptedInWrite() === false) {
 			return;
 		}
 
@@ -123,15 +115,43 @@ class OasValidationMiddleware extends Middleware {
 			throw $exception;
 		}
 
+		return $this->failureResponse(exception: $exception);
+	}//end afterException()
+
+	/**
+	 * Whether this is a write request (POST, PUT or PATCH) that opted in with `?_validate`.
+	 *
+	 * @return bool True when the body should be validated.
+	 */
+	private function isOptedInWrite(): bool {
+		// Only validate write methods.
+		$verb = strtoupper((string)$this->request->getMethod());
+		if (in_array($verb, ['POST', 'PUT', 'PATCH'], true) === false) {
+			return false;
+		}
+
+		// Opt-in: respect the `?_validate=true` query parameter.
+		$optIn = (string)($this->request->getParam('_validate') ?? '');
+		return in_array(strtolower($optIn), ['true', '1', 'yes', 'on'], true);
+	}//end isOptedInWrite()
+
+	/**
+	 * The RFC 7807 422 response for a body that failed validation.
+	 *
+	 * @param OasValidationFailureException $exception The failure.
+	 *
+	 * @return JSONResponse The problem details, as application/problem+json.
+	 */
+	private function failureResponse(OasValidationFailureException $exception): JSONResponse {
 		$problem = $this->problems->validationFailed(
 			errors: $exception->getErrors(),
 			detail: 'Request body failed OAS schema validation',
 			instance: (string)$this->request->getRequestUri()
 		);
 		$response = new JSONResponse(data: $problem, statusCode: 422);
-		$response->addHeader('Content-Type', ProblemDetailsBuilder::CONTENT_TYPE);
+		$response->addHeader('Content-Type', ProblemDetailsBuilderInterface::CONTENT_TYPE);
 		return $response;
-	}//end afterException()
+	}//end failureResponse()
 
 	/**
 	 * Resolve the JSON-Schema used to validate this operation.

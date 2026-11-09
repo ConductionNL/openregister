@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Oas;
 
+use OCA\OpenRegister\Service\Oas\ProblemDescription;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -45,9 +46,11 @@ class ProblemDetailsBuilderTest extends TestCase {
 		$problem = $this->builder->build(
 			status: 422,
 			title: 'Validation failed',
-			detail: 'The "email" field MUST be a valid e-mail.',
-			type: 'https://or.example.nl/probs/validation',
-			instance: '/api/objects/zaken/abc-123'
+			description: new ProblemDescription(
+				detail: 'The "email" field MUST be a valid e-mail.',
+				type: 'https://or.example.nl/probs/validation',
+				instance: '/api/objects/zaken/abc-123'
+			)
 		);
 
 		$this->assertSame('https://or.example.nl/probs/validation', $problem['type']);

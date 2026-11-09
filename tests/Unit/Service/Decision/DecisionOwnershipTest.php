@@ -24,6 +24,7 @@ use RuntimeException;
 /**
  * The ownership rule on a decision object (REQ-ROD-001, REQ-DEC-002).
  *
+ * @uses \OCA\OpenRegister\Event\AbstractDecisionRequestEvent
  * @covers \OCA\OpenRegister\Service\Decision\DecisionOwnership
  * @covers \OCA\OpenRegister\Event\DecisionChangeRequestedEvent
  * @uses   \OCA\OpenRegister\Service\Decision\ReviewPolicy

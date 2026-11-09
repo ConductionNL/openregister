@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Archival\DestructionReviewService;
-use OCA\OpenRegister\Service\Archival\DestructionService;
-use OCA\OpenRegister\Service\Archival\LegalHoldService;
-use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
+use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
+use OCA\OpenRegister\Service\Archival\DestructionServiceInterface;
+use OCA\OpenRegister\Service\Archival\LegalHoldServiceInterface;
+use OCA\OpenRegister\Service\Archival\ReviewOutcomeServiceInterface;
 
 /**
  * The domain services of the archival API.
@@ -36,18 +36,18 @@ final class ArchivalDecisions {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param DestructionService       $destructionService Destruction service.
-	 * @param LegalHoldService         $legalHoldService   Legal hold service.
-	 * @param DestructionReviewService $reviews            Assignment, sign-off and the decision history.
-	 * @param ReviewOutcomeService     $outcomes           Carries an answer out against the record.
+	 * @param DestructionServiceInterface       $destructionService Destruction service.
+	 * @param LegalHoldServiceInterface         $legalHoldService   Legal hold service.
+	 * @param DestructionReviewServiceInterface $reviews            Assignment, sign-off and the decision history.
+	 * @param ReviewOutcomeServiceInterface     $outcomes           Carries an answer out against the record.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function __construct(
-		public readonly DestructionService $destructionService,
-		public readonly LegalHoldService $legalHoldService,
-		public readonly DestructionReviewService $reviews,
-		public readonly ReviewOutcomeService $outcomes,
+		public readonly DestructionServiceInterface $destructionService,
+		public readonly LegalHoldServiceInterface $legalHoldService,
+		public readonly DestructionReviewServiceInterface $reviews,
+		public readonly ReviewOutcomeServiceInterface $outcomes,
 	) {
 	}//end __construct()
 }//end class

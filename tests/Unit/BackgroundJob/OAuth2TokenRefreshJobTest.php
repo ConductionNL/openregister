@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\BackgroundJob\Support\OAuth2TokenRefreshServices;
 
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\OAuth2TokenRefreshJob
@@ -182,9 +183,7 @@ class OAuth2TokenRefreshJobTest extends TestCase {
 
 		return new OAuth2TokenRefreshJob(
 			$this->createMock(ITimeFactory::class),
-			$objectService,
-			$catalogue,
-			$refresh,
+			new OAuth2TokenRefreshServices($objectService, $catalogue, $refresh),
 			$this->createMock(LoggerInterface::class)
 		);
 	}

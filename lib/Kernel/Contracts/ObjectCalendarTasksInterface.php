@@ -100,6 +100,19 @@ interface ObjectCalendarTasksInterface {
 	public function updateTask(string $calendarId, string $taskUri, array $data): ?array;
 
 	/**
+	 * Refuse a task that is not one of the caller's tasks on the given object.
+	 *
+	 * @param string $objectUuid The object the caller addressed.
+	 * @param string $calendarId The calendar the caller named.
+	 * @param string $taskUri    The task the caller named.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception With code 404 when it is not.
+	 */
+	public function requireTaskOf(string $objectUuid, string $calendarId, string $taskUri): void;
+
+	/**
 	 * Delete a CalDAV task.
 	 *
 	 * Deleting a PROJECTED VTODO deletes the calendar entry and nothing else:

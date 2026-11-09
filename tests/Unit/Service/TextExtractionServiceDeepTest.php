@@ -33,25 +33,29 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Tests\Unit\Service\Support\TextExtractionServiceFactory;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\TextExtraction\EmlParser;
-use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
+use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Service\ChunkSizing;
 
 /**
  * Deep coverage tests for TextExtractionService
@@ -109,7 +113,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 		$this->riskLevelService = $this->createMock(RiskLevelService::class);
 		$this->emlParser = $this->createMock(EmlParser::class);
 
-		$this->service = new TextExtractionService(
+		$this->service = TextExtractionServiceFactory::create(
 			fileMapper: $this->fileMapper,
 			chunkMapper: $this->chunkMapper,
 			rootFolder: $this->rootFolder,
@@ -119,14 +123,12 @@ class TextExtractionServiceDeepTest extends TestCase {
 			schemaMapper: $this->schemaMapper,
 			registerMapper: $this->registerMapper,
 			entityHandler: $this->entityHandler,
-			entityMapper: $this->entityMapper,
-			entityRelationMapper: $this->entityRelationMapper,
 			settingsService: $this->settingsService,
 			riskLevelService: $this->riskLevelService,
 			emlParser: $this->emlParser,
-			spreadsheetExtractor: new \OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor($this->logger),
-			pdfExtractor: new \OCA\OpenRegister\Service\TextExtraction\PdfExtractor($this->logger),
-			wordExtractor: new \OCA\OpenRegister\Service\TextExtraction\WordExtractor($this->logger),
+			spreadsheetExtractor: new \OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor($this->logger),
+			pdfExtractor: new \OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor($this->logger),
+			wordExtractor: new \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor($this->logger),
 		);
 
 	}//end setUp()
@@ -664,7 +666,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 			'embedding_provider' => null,
 		];
 
-		$chunk = $method->invoke($this->service, 'file', 42, $chunkData, 'admin', 'org1', 1000);
+		$chunk = $method->invoke($this->service, new ChunkSource('file', 42, new ChunkOwnership('admin', 'org1'), 1000), $chunkData);
 		$this->assertInstanceOf(Chunk::class, $chunk);
 		$this->assertEquals('file', $chunk->getSourceType());
 		$this->assertEquals(42, $chunk->getSourceId());
@@ -858,7 +860,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 	public function testChunkFixedSizeSmallText(): void {
 		$method = new \ReflectionMethod(TextExtractionService::class, 'chunkFixedSize');
 
-		$result = $method->invoke($this->service, 'Short text', 1000, 100);
+		$result = $method->invoke($this->service, 'Short text', new ChunkSizing(1000, 100));
 		$this->assertCount(1, $result);
 		$this->assertEquals('Short text', $result[0]['text']);
 
@@ -873,7 +875,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 		$method = new \ReflectionMethod(TextExtractionService::class, 'chunkFixedSize');
 
 		$text = str_repeat('a', 500);
-		$result = $method->invoke($this->service, $text, 500, 50);
+		$result = $method->invoke($this->service, $text, new ChunkSizing(500, 50));
 		$this->assertCount(1, $result);
 
 	}//end testChunkFixedSizeExact()
@@ -891,7 +893,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 		$method = new \ReflectionMethod(TextExtractionService::class, 'recursiveSplit');
 
 		$text = str_repeat('a', 500);
-		$result = $method->invoke($this->service, $text, [], 200, 20);
+		$result = $method->invoke($this->service, $text, [], new ChunkSizing(200, 20));
 		$this->assertNotEmpty($result);
 
 	}//end testRecursiveSplitNoSeparators()

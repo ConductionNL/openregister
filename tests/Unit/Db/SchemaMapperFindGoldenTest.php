@@ -36,10 +36,16 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
+ * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaLookup
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses   \OCA\OpenRegister\Db\MultiTenancyTrait
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaComposition
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ParentReference
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
  */
 class SchemaMapperFindGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

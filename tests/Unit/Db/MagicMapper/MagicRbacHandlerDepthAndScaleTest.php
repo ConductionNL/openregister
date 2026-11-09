@@ -66,6 +66,7 @@ use Psr\Log\NullLogger;
  * Tasks 4.2 and 6.3: the tree of depth five, and the tree of 100,000.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
  * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\MagicMapper\RbacResolvers
@@ -83,6 +84,8 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 
@@ -165,7 +168,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 		$appConfig->method('getValueBool')->willReturn(false);
 		$appConfig->method('getValueString')->willReturn(DenyEnforcementMode::MODE_ENFORCING);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->session(),
 			$userManager,
 			$this->groupManager(),

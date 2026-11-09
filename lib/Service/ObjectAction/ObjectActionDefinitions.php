@@ -44,7 +44,7 @@ use Throwable;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-register-may-declare-actions-its-schemas-inherit
  */
-class ObjectActionDefinitions {
+class ObjectActionDefinitions implements ObjectActionDefinitionsInterface {
 
 	/**
 	 * Constructor.

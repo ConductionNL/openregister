@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\FlowStateMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -46,13 +46,13 @@ class FlowStateBinding {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowStateMapper $stateMapper Persists state that outlives a run.
+	 * @param FlowStateMapperInterface $stateMapper Persists state that outlives a run.
 	 * @param LoggerInterface $logger Records a state write that could not be saved.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function __construct(
-		private readonly FlowStateMapper $stateMapper,
+		private readonly FlowStateMapperInterface $stateMapper,
 		private readonly LoggerInterface $logger,
 	) {
 

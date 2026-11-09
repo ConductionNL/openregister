@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SlugBackfillWriteException;
-use OCA\OpenRegister\Service\Object\ObjectSlugBackfillService;
+use OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -50,14 +50,14 @@ class BackfillObjectSlugsCommand extends Command {
 	 *
 	 * @param RegisterMapperInterface            $registerMapper Resolves the register argument.
 	 * @param SchemaMapperInterface              $schemaMapper   Resolves the schema argument.
-	 * @param ObjectSlugBackfillService $backfill       Plans and writes the slugs.
+	 * @param ObjectSlugBackfillServiceInterface $backfill       Plans and writes the slugs.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ObjectSlugBackfillService $backfill,
+		private readonly ObjectSlugBackfillServiceInterface $backfill,
 	) {
 		parent::__construct();
 	}//end __construct()

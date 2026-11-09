@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\AnalyticsLink;
 use OCA\OpenRegister\Db\AnalyticsLinkMapper;
 use OCA\OpenRegister\Service\AnalyticsLinkService;
 use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -86,9 +87,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 
 		$this->service = new AnalyticsLinkService(
 			$this->mapper,
-			$this->appManager,
-			$this->userSession,
-			$this->logger,
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger),
 			$this->createMock(ContainerInterface::class)
 		);
 	}//end setUp()
@@ -246,7 +245,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 		$this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(true);
 		$this->mapper->method('insert')->willReturnArgument(0);
 
-		return new AnalyticsLinkService($this->mapper, $this->appManager, $this->userSession, $this->logger, $container);
+		return new AnalyticsLinkService($this->mapper, new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger), $container);
 	}//end serviceWithReports()
 
 	public function testLinkReportStampsTheObjectAndCachesTheReport(): void {

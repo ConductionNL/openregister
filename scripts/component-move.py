@@ -13,8 +13,8 @@ file are moved. The script:
    one (in moved files, and in files that stay behind), and fully qualifies
    namespace-relative names such as `Object\\SaveObject` in moved files;
 3. rewrites every fully qualified old name (one, two or four backslashes, as in
-   PHP, strings, JSON and NEON) in lib/, tests/, appinfo/ and the root config and
-   baseline files, and every `lib/<old path>` to `lib/<new path>`;
+   PHP, strings, JSON and NEON) in lib/, tests/, appinfo/, .sig/ and the root config
+   and baseline files, and every `lib/<old path>` to `lib/<new path>`;
 4. keeps `__DIR__`-relative paths and `dirname(__DIR__, n)` in moved files
    pointing at the same file, and refuses frozen classes (events, Workflow
    Engine operations, migrations, the classes kept at their name);
@@ -23,7 +23,10 @@ file are moved. The script:
    container returns one shared instance under both names.
 
 The approved map is scripts/component-map.csv. A class added after the map was
-made gets a row with the target of the class it was split from.
+made gets a row with the target of the class it was split from. --skip leaves a
+file of the component where it is for now, for one another branch is still changing.
+
+Path lists kept outside the repository follow a move with scripts/follow-moved-paths.py.
 
 Run it from the repository root on a clean tree, then review `git diff`:
 
@@ -52,7 +55,7 @@ import subprocess
 import sys
 
 ROOT_NS = 'OCA\\OpenRegister'
-TEXT_DIRS = ('lib', 'tests', 'appinfo')
+TEXT_DIRS = ('lib', 'tests', 'appinfo', '.sig')
 ROOT_FILES = re.compile(r'^(phpstan[\w.-]*\.neon|psalm[\w.-]*\.xml|phpmd[\w.-]*\.xml|phpunit[\w.-]*\.xml|phpcs\.xml|composer\.json)$')
 TEXT_EXT = ('.php', '.xml', '.neon', '.json', '.yml', '.yaml', '.txt')
 FQCN_TOKEN = re.compile(r'OCA((?:\\+[A-Za-z_][A-Za-z0-9_]*)+)')
@@ -213,11 +216,11 @@ def rebase_dir_paths(src, old_rel, new_rel, warnings):
     return DIRNAME_DIR.sub(dirname, DIR_PATH.sub(path, src))
 
 
-def load_rows(classmap, component, lib):
+def load_rows(classmap, component, lib, skip=()):
     rows = []
     with open(classmap, newline='') as handle:
         for row in csv.DictReader(handle):
-            if row['target_component'] != component or row['target_path'] == row['file']:
+            if row['target_component'] != component or row['target_path'] == row['file'] or row['file'] in skip:
                 continue
             if not os.path.isfile(os.path.join(lib, row['file'])):
                 sys.exit(f'not in lib/: {row["file"]}')
@@ -244,9 +247,10 @@ def main():
     parser.add_argument('--classmap', required=True)
     parser.add_argument('--component', required=True)
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--skip', action='append', default=[], help='file under lib/ that stays for now')
     args = parser.parse_args()
     lib = 'lib'
-    rows = load_rows(args.classmap, args.component, lib)
+    rows = load_rows(args.classmap, args.component, lib, set(args.skip))
     if not rows:
         sys.exit(f'nothing to move for {args.component}')
 
@@ -288,8 +292,7 @@ def main():
         src = expand_group_uses(src, set(new_of))
         imported = imported_names(src)
         own_new_ns = split_fqcn(new_of.get(fqcn, fqcn))[0]
-        if fqcn in new_of:
-            src = qualify_relative_names(src, old_ns, new_of, imported)
+        src = qualify_relative_names(src, old_ns, new_of, imported, moved_only=fqcn not in new_of)
         needed = set()
         refs = reference_view(src)
         for short, neighbour in by_ns[old_ns].items():

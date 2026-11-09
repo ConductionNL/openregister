@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
+use OCA\OpenRegister\Service\Configuration\PreviewMappers;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use PHPUnit\Framework\TestCase;
@@ -45,6 +46,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Configuration\ObjectChangePreview
+ * @uses \OCA\OpenRegister\Service\Configuration\ObjectPreviewTargets
  * @uses \OCA\OpenRegister\Service\Configuration\PreviewHandler
  */
 class PreviewHandlerGoldenTest extends TestCase {
@@ -228,11 +230,13 @@ class PreviewHandlerGoldenTest extends TestCase {
 		);
 
 		$handler = new PreviewHandler(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			mappers: new PreviewMappers(
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				objectMapper: $objectMapper
+			),
 			logger: $this->createMock(LoggerInterface::class),
-			fetchHandler: $fetchHandler,
-			objectMapper: $objectMapper
+			fetchHandler: $fetchHandler
 		);
 
 		$configuration = new Configuration();

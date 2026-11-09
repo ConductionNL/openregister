@@ -30,7 +30,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<EmailLink>
  */
-class EmailLinkMapper extends QBMapper {
+class EmailLinkMapper extends QBMapper implements EmailLinkMapperInterface {
 
 	use ObjectKeyLinkTrait;
 	use DeleteLinksByObjectUuidTrait;
@@ -69,30 +69,10 @@ class EmailLinkMapper extends QBMapper {
 			return $this->tableExistsCache;
 		}
 
-		// Doctrine's createSchema() can miss tables created outside the
-		// migration framework. Fall back to a direct information_schema
-		// query so manual CREATEs (e.g. recovery, dev sandboxes) are
-		// honoured.
 		try {
-			$schema = $this->db->createSchema();
-			$this->tableExistsCache = $schema->hasTable('*PREFIX*' . $this->getTableName())
-				|| $schema->hasTable($this->getTableName());
+			$this->tableExistsCache = $this->db->tableExists($this->getTableName());
 		} catch (\Throwable $e) {
 			$this->tableExistsCache = false;
-		}
-
-		if ($this->tableExistsCache === false) {
-			try {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select($qb->func()->count('*'))
-					->from('information_schema.tables')
-					->where($qb->expr()->eq('table_name', $qb->createNamedParameter('oc_' . $this->getTableName())));
-				$result = $qb->executeQuery();
-				$row = $result->fetch();
-				$this->tableExistsCache = $row !== false && (int)reset($row) > 0;
-			} catch (\Throwable $e) {
-				$this->tableExistsCache = false;
-			}
 		}
 
 		return $this->tableExistsCache;
@@ -225,6 +205,22 @@ class EmailLinkMapper extends QBMapper {
 		int $mailMessageId,
 		?string $mailMessageUid,
 	): ?EmailLink {
+		$qb = $this->objectAccountQuery(objectUuid: $objectUuid, mailAccountId: $mailAccountId);
+		$this->matchMessageId(qb: $qb, mailMessageId: $mailMessageId);
+		$this->matchMessageUid(qb: $qb, mailMessageUid: $mailMessageUid);
+
+		return $this->findSingleOrNull(qb: $qb);
+	}//end findByObjectAccountMessageUid()
+
+	/**
+	 * The links of one object to one mail account, before the message predicates.
+	 *
+	 * @param string $objectUuid    The object UUID.
+	 * @param int    $mailAccountId The mail account ID.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function objectAccountQuery(string $objectUuid, int $mailAccountId): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
@@ -234,23 +230,40 @@ class EmailLinkMapper extends QBMapper {
 					'mail_account_id',
 					$qb->createNamedParameter($mailAccountId, IQueryBuilder::PARAM_INT)
 				)
-			)
-			->andWhere(
-				$qb->expr()->eq(
-					'mail_message_id',
-					$qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)
-				)
 			);
 
+		return $qb;
+	}//end objectAccountQuery()
+
+	/**
+	 * Match one mail message id.
+	 *
+	 * @param IQueryBuilder $qb            The query being built.
+	 * @param int           $mailMessageId The mail message ID.
+	 *
+	 * @return void
+	 */
+	private function matchMessageId(IQueryBuilder $qb, int $mailMessageId): void {
+		$qb->andWhere(
+			$qb->expr()->eq(
+				'mail_message_id',
+				$qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)
+			)
+		);
+	}//end matchMessageId()
+
+	/**
+	 * Match the message uid exactly, or require it to be unset when there is none.
+	 *
+	 * @param IQueryBuilder $qb             The query being built.
+	 * @param string|null   $mailMessageUid The uid, or null to match rows without one.
+	 *
+	 * @return void
+	 */
+	private function matchMessageUid(IQueryBuilder $qb, string|null $mailMessageUid): void {
 		if ($mailMessageUid === null) {
 			$qb->andWhere($qb->expr()->isNull('mail_message_uid'));
-			try {
-				return $this->findEntity(query: $qb);
-			} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-				return null;
-			} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-				return null;
-			}
+			return;
 		}
 
 		$qb->andWhere(
@@ -259,7 +272,16 @@ class EmailLinkMapper extends QBMapper {
 				$qb->createNamedParameter($mailMessageUid)
 			)
 		);
+	}//end matchMessageUid()
 
+	/**
+	 * The one link a query finds, or null when it finds none or several.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return EmailLink|null The link.
+	 */
+	private function findSingleOrNull(IQueryBuilder $qb): EmailLink|null {
 		try {
 			return $this->findEntity(query: $qb);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -267,7 +289,7 @@ class EmailLinkMapper extends QBMapper {
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
 			return null;
 		}
-	}//end findByObjectAccountMessageUid()
+	}//end findSingleOrNull()
 
 	/**
 	 * Delete a link by its primary key on a per-object basis.

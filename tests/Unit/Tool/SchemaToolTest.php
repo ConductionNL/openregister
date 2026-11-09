@@ -5,7 +5,7 @@ namespace Unit\Tool;
 use DateTime;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Tool\SchemaTool;
+use OCA\OpenRegister\Mcp\Tool\SchemaTool;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -272,7 +272,7 @@ class SchemaToolTest extends TestCase {
 			return $entity;
 		});
 
-		$result = $this->tool->updateSchema('1', 'New', 'New desc', ['a' => 1], ['a']);
+		$result = $this->tool->updateSchema('1', 'New', 'New desc', ['a' => 1]);
 		$this->assertTrue($result['success']);
 		$this->assertSame('New', $result['data']['title']);
 		$this->assertSame('New desc', $result['data']['description']);

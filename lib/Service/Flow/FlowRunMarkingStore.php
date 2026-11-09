@@ -73,24 +73,9 @@ class FlowRunMarkingStore implements MarkingStoreInterface {
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 */
 	public function getMarking(object $subject): Marking {
-		$places = ($this->run->getMarking() ?? []);
-		if (is_array($places) === false || $places === []) {
-			return new Marking();
-		}
-
 		// Stored as `place => tokens`. A list of place names is also accepted,
 		// because that is the shape a hand-authored fixture tends to take.
-		$normalised = [];
-		foreach ($places as $key => $value) {
-			if (is_int($key) === true) {
-				$normalised[(string)$value] = 1;
-				continue;
-			}
-
-			$normalised[(string)$key] = max(1, (int)$value);
-		}
-
-		return new Marking($normalised);
+		return new Marking(FlowRunCommit::normaliseMarking(places: ($this->run->getMarking() ?? [])));
 	}//end getMarking()
 
 	/**
@@ -172,20 +157,6 @@ class FlowRunMarkingStore implements MarkingStoreInterface {
 	 * @return array<string, int> The normalised marking.
 	 */
 	private function normalise(mixed $places): array {
-		if (is_array($places) === false) {
-			return [];
-		}
-
-		$normalised = [];
-		foreach ($places as $key => $value) {
-			if (is_int($key) === true) {
-				$normalised[(string)$value] = 1;
-				continue;
-			}
-
-			$normalised[(string)$key] = max(1, (int)$value);
-		}
-
-		return $normalised;
+		return FlowRunCommit::normaliseMarking(places: $places);
 	}//end normalise()
 }//end class

@@ -38,7 +38,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\AnalyticsLinkService;
+use OCA\OpenRegister\Service\AnalyticsLinkServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -58,13 +58,13 @@ class AnalyticsLinksController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param AnalyticsLinkService $analyticsLinkService Backing service.
+	 * @param AnalyticsLinkServiceInterface $analyticsLinkService Backing service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly AnalyticsLinkService $analyticsLinkService,
+		private readonly AnalyticsLinkServiceInterface $analyticsLinkService,
 		private readonly ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(appName: $appName, request: $request);

@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use Exception;
-use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Files\Controller\FilesController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
-use OCA\OpenRegister\Service\File\PreviewSize;
+use OCA\OpenRegister\Files\Service\File\PreviewSize;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -382,7 +382,7 @@ class FilesControllerFileActionsTest extends TestCase {
 	 * haven't been explicitly published with a public share.
 	 */
 	public function testPreviewAnonymousOnUnpublishedFileReturns403(): void {
-		$fileMapper = $this->createMock(\OCA\OpenRegister\Db\FileMapper::class);
+		$fileMapper = $this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class);
 		$fileMapper->expects($this->once())
 			->method('isFilePublished')
 			->with(42)
@@ -430,7 +430,7 @@ class FilesControllerFileActionsTest extends TestCase {
 
 		$this->request->method('getParam')->willReturn(null);
 
-		$fileMapper = $this->createMock(\OCA\OpenRegister\Db\FileMapper::class);
+		$fileMapper = $this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class);
 		$fileMapper->expects($this->once())
 			->method('isFilePublished')
 			->with(42)
@@ -478,7 +478,7 @@ class FilesControllerFileActionsTest extends TestCase {
 
 		$this->request->method('getParam')->willReturn(null);
 
-		$fileMapper = $this->createMock(\OCA\OpenRegister\Db\FileMapper::class);
+		$fileMapper = $this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class);
 		$fileMapper->expects($this->never())->method('isFilePublished');
 
 		$authedUser = $this->createMock(IUser::class);
@@ -830,7 +830,7 @@ class FilesControllerFileActionsTest extends TestCase {
 			$this->rootFolder,
 			$this->userManager,
 			$this->eventDispatcher,
-			$this->createMock(\OCA\OpenRegister\Db\FileMapper::class),
+			$this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
 			null,
 			$userSession
 		);

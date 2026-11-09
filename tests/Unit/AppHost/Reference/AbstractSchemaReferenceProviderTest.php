@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -56,6 +57,7 @@ final class TestLeadReferenceProvider extends AbstractSchemaReferenceProvider {
  * Tests for AbstractSchemaReferenceProvider.
  *
  * @covers \OCA\OpenRegister\AppHost\Reference\AbstractSchemaReferenceProvider
+ * @uses \OCA\OpenRegister\AppHost\SchemaScopedProvider
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\MdiIconRenderer
@@ -112,10 +114,12 @@ class AbstractSchemaReferenceProviderTest extends TestCase {
 		$this->formatter = new ObjectPreviewFormatter(
 			$this->urlGenerator,
 			$l10n,
-			$objectService,
-			$deepLinkRegistry,
-			$this->schemaMapper,
-			$this->registerMapper,
+			new ObjectPreviewSources(
+				objectService: $objectService,
+				deepLinkRegistry: $deepLinkRegistry,
+				schemaMapper: $this->schemaMapper,
+				registerMapper: $this->registerMapper
+			),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()

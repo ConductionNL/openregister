@@ -1074,15 +1074,43 @@ with a reason naming it, rather than continuing under any fallback.
 - **AND** the owner of the flow definition is notified
 - **AND** the schedule does not remain enabled while silently firing nothing
 
+### Requirement: A run says how it ended
+
+A run and the `lastRun` of `GET /api/flow-runs/summary` SHALL carry `outcome` beside `status`. `outcome` SHALL equal
+`status`, except that a `stopped` run whose stop came from an End step SHALL read `completed`. A stop from an oversight
+check names itself in the log entry's `checkId` and keeps `stopped`, as does a `stopped` run with no stop in its log.
+`outcome` SHALL be derived from the stored log when read, so runs stored before it existed read the same way.
+`status` SHALL NOT change.
+
+#### Scenario: A run that reached its End step
+
+- **GIVEN** a stored run with status `stopped` whose last log entry is an End step with status `stopped` and no `checkId`
+- **WHEN** it is read
+- **THEN** `outcome` is `completed` and `status` is `stopped`
+
+#### Scenario: A run an oversight check stopped
+
+- **GIVEN** a stored run with status `stopped` whose log entry has status `stopped` and a `checkId`
+- **WHEN** it is read
+- **THEN** `outcome` is `stopped`
+
 ### Requirement: A flow can be tried against an object without effect
 
 `POST /api/flows/{id}/dry-run` SHALL walk the flow's graph through the engine against the named object and answer the
-steps reached, in order, each with `nodeId`, `type`, `label`, `status`, `itemsIn`, `itemsOut` and a `preview`, plus the
-end `status`. It SHALL perform only steps that declare `IFlowSideEffectFree`; every other step SHALL be described and
-not performed. It SHALL write no run, object, audit trail entry or message and SHALL deliver nothing. It SHALL be
+steps reached, in order, each with `nodeId`, `type`, `label`, `status`, `error`, `itemsIn`, `itemsOut` and a `preview`,
+plus the end `status`. It SHALL perform only steps that declare `IFlowSideEffectFree`; every other step SHALL be
+described and not performed, and a described step whose `validateConfig()` refuses its configuration SHALL fail with
+that message, under the step's `onError` policy, as it would in a run. It SHALL write no run, object, audit trail entry or message and SHALL deliver nothing. It SHALL be
 refused without a session (401), without the `flow.update` right (403), for a flow the caller cannot see (404) and for
 an object the caller cannot read (404). A body with `payload` in place of an object SHALL walk the flow the same way
 with that data as the object, reading no object; a `payload` that is not a JSON object SHALL be refused (400).
+
+#### Scenario: A step the run would fail
+
+- **GIVEN** a flow with an object-write step that has no `operation`
+- **WHEN** it is tried against an object
+- **THEN** that step has status `failed` and an `error` naming the missing operation
+- **AND** the end `status` is `failed`, as it is in a real run
 
 #### Scenario: Example payload
 

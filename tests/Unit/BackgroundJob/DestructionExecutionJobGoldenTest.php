@@ -13,8 +13,11 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -42,6 +45,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\BackgroundJob\DestructionExecutionJob
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Service\Object\RetentionDestruction
  * @uses   \OCA\OpenRegister\Db\AuditTrail
  * @uses   \OCA\OpenRegister\BackgroundJob\DestructionListRun
  */
@@ -129,11 +133,11 @@ class DestructionExecutionJobGoldenTest extends TestCase
         $services = [
             LoggerInterface::class           => $this->logger(),
             RetentionServiceInterface::class => $this->retention(),
-            ObjectRetentionHandler::class    => $this->settings($case),
+            ArchivalSettingsReaderInterface::class => $this->settings($case),
             MagicMapperInterface::class      => $this->mapper($case),
             AuditTrailMapperInterface::class => $this->audit(),
             DeleteObject::class              => $this->deleter(),
-            SaveObject::class                => $this->saver($case),
+            SaveObjectWriterInterface::class => $this->saver($case),
             INotificationManager::class      => $this->notifications(),
             IGroupManager::class             => $this->groupManager($case),
         ];
@@ -273,6 +277,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
         $deleter->method('deleteObject')->willReturnCallback(
             function (...$args): bool {
                 $this->record('deleteObject', array_slice($args, 0, 6));
+                $this->assertTrue((new RetentionDestruction())->isRunning(), 'a destruction is not stopped by a lock or the archive');
                 if ($args[2] === 'undeletable') {
                     throw new RuntimeException('delete refused');
                 }
@@ -288,7 +293,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
         $saver = $this->createMock(SaveObject::class);
         $saver->method('saveObject')->willReturnCallback(
             function (...$args) use ($case): ObjectEntity {
-                $this->record('saveObject', array_slice($args, 0, 9));
+                $this->record('saveObject', array_slice($args, 0, 8));
                 if (($case['cert'] ?? null) === 'throw') {
                     throw new RuntimeException('cert refused');
                 }

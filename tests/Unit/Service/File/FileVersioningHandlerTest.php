@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
+use OCA\OpenRegister\Service\File\FileVersionsPlatform;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCP\App\IAppManager;
 use OCP\Files\File;
@@ -31,11 +32,9 @@ class FileVersioningHandlerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new FileVersioningHandler(
-			$this->rootFolder,
-			$this->appManager,
+			new FileVersionsPlatform($this->rootFolder, $this->appManager, $this->createMock(ContainerInterface::class)),
 			$this->userSession,
-			$this->logger,
-			$this->createMock(ContainerInterface::class)
+			$this->logger
 		);
 	}
 

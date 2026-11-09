@@ -142,6 +142,29 @@ describe('LLM configuration modal DOM golden', () => {
 	}
 })
 
+describe('LLM configuration modal provider sections DOM golden', () => {
+	for (const [embedding, chat] of [
+		['openai', 'fireworks'],
+		['ollama', 'openai'],
+		['fireworks', 'ollama'],
+		['openai', 'openai'],
+		['ollama', 'ollama'],
+		['fireworks', 'fireworks'],
+	]) {
+		it(`embedding ${embedding}, chat ${chat}`, async () => {
+			const wrapper = mountModal(LLMConfigModal, { show: true })
+			await flushPromises()
+			await wrapper.setData({
+				selectedEmbeddingProvider: { id: embedding, name: embedding },
+				selectedChatProvider: { id: chat, name: chat },
+			})
+			await flushPromises()
+			expect(normalised(wrapper.html())).toMatchSnapshot()
+			wrapper.unmount()
+		})
+	}
+})
+
 describe('LLM configuration modal footer buttons', () => {
 	/**
 	 * Click a footer button of an open modal and report what it caused.

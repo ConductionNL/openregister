@@ -38,6 +38,7 @@ use OCP\App\IAppManager;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Integration\Providers\CalendarProviderServices;
 
 class CalendarProviderTest extends TestCase {
 	private function buildL10n(): IL10N {
@@ -52,8 +53,10 @@ class CalendarProviderTest extends TestCase {
 
 	public function testMetadataGetters(): void {
 		$provider = new CalendarProvider(
-			$this->createMock(CalendarEventService::class),
-			$this->createMock(CalendarLinkService::class),
+			new CalendarProviderServices(
+				$this->createMock(CalendarEventService::class),
+				$this->createMock(CalendarLinkService::class),
+			),
 			$this->createMock(IAppManager::class),
 			$this->buildL10n(),
 			$this->buildLogger(),
@@ -77,8 +80,10 @@ class CalendarProviderTest extends TestCase {
 			]);
 
 		$provider = new CalendarProvider(
-			$this->createMock(CalendarEventService::class),
-			$link,
+			new CalendarProviderServices(
+				$this->createMock(CalendarEventService::class),
+				$link,
+			),
 			$this->createMock(IAppManager::class),
 			$this->buildL10n(),
 			$this->buildLogger(),
@@ -99,13 +104,34 @@ class CalendarProviderTest extends TestCase {
 		$linkSvc->expects($this->never())->method('unlinkEvent');
 
 		$provider = new CalendarProvider(
-			$eventSvc,
-			$linkSvc,
+			new CalendarProviderServices(
+				$eventSvc,
+				$linkSvc,
+			),
 			$this->createMock(IAppManager::class),
 			$this->buildL10n(),
 			$this->buildLogger(),
 		);
 
+		$provider->delete('r', 's', 'obj-1', '7/event.ics');
+	}
+
+	public function testDeleteLegacyShapeOfAnotherObjectIsRefused(): void {
+		$eventSvc = $this->createMock(CalendarEventService::class);
+		$eventSvc->method('requireEventOf')->with('obj-1', '7', 'event.ics')->willThrowException(new \Exception('Calendar event not found', 404));
+		$eventSvc->expects($this->never())->method('unlinkEvent');
+
+		$provider = new CalendarProvider(
+			new CalendarProviderServices(
+				$eventSvc,
+				$this->createMock(CalendarLinkService::class),
+			),
+			$this->createMock(IAppManager::class),
+			$this->buildL10n(),
+			$this->buildLogger(),
+		);
+
+		$this->expectExceptionCode(404);
 		$provider->delete('r', 's', 'obj-1', '7/event.ics');
 	}
 
@@ -119,8 +145,10 @@ class CalendarProviderTest extends TestCase {
 			->with('obj-1', 'ev-uid');
 
 		$provider = new CalendarProvider(
-			$eventSvc,
-			$linkSvc,
+			new CalendarProviderServices(
+				$eventSvc,
+				$linkSvc,
+			),
 			$this->createMock(IAppManager::class),
 			$this->buildL10n(),
 			$this->buildLogger(),
@@ -134,8 +162,10 @@ class CalendarProviderTest extends TestCase {
 		$appManager->method('isInstalled')->with('calendar')->willReturn(false);
 
 		$provider = new CalendarProvider(
-			$this->createMock(CalendarEventService::class),
-			$this->createMock(CalendarLinkService::class),
+			new CalendarProviderServices(
+				$this->createMock(CalendarEventService::class),
+				$this->createMock(CalendarLinkService::class),
+			),
 			$appManager,
 			$this->buildL10n(),
 			$this->buildLogger(),

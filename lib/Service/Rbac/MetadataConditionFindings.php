@@ -32,7 +32,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/row-field-level-security/spec.md
  */
-class MetadataConditionFindings {
+class MetadataConditionFindings implements MetadataConditionFindingsInterface {
 
 	/**
 	 * Reads which metadata keys a record carries.
@@ -227,27 +227,55 @@ class MetadataConditionFindings {
 	public function ruleLists(?array $authorization): array {
 		$lists = [];
 		foreach (($authorization ?? []) as $action => $rules) {
-			if (is_array($rules) === false) {
-				continue;
-			}
-
-			if ($action === DenyResolver::DENY_KEY) {
-				foreach ($rules as $denied => $entries) {
-					if (is_array($entries) === true) {
-						$lists['deny '.(string)$denied] = $entries;
-					}
-				}
-
-				continue;
-			}
-
-			if (array_is_list($rules) === true) {
-				$lists[(string)$action] = $rules;
+			foreach ($this->listsOf(action: $action, rules: $rules) as $key => $list) {
+				$lists[$key] = $list;
 			}
 		}
 
 		return $lists;
 	}//end ruleLists()
+
+	/**
+	 * The rule lists one key of a block carries: one per denied verb under `deny`, else the key's own list.
+	 *
+	 * @param int|string $action The block key.
+	 * @param mixed      $rules  Its value.
+	 *
+	 * @return array<string, array> Label to rule list; empty when the value is not a rule list.
+	 */
+	private function listsOf(int|string $action, mixed $rules): array {
+		if (is_array($rules) === false) {
+			return [];
+		}
+
+		if ($action === DenyResolverInterface::DENY_KEY) {
+			return $this->denyLists(rules: $rules);
+		}
+
+		if (array_is_list($rules) === true) {
+			return [(string)$action => $rules];
+		}
+
+		return [];
+	}//end listsOf()
+
+	/**
+	 * The entry list of each denied verb, labelled `deny <verb>`.
+	 *
+	 * @param array $rules The `deny` block.
+	 *
+	 * @return array<string, array> Label to entry list.
+	 */
+	private function denyLists(array $rules): array {
+		$lists = [];
+		foreach ($rules as $denied => $entries) {
+			if (is_array($entries) === true) {
+				$lists['deny '.(string)$denied] = $entries;
+			}
+		}
+
+		return $lists;
+	}//end denyLists()
 
 	/**
 	 * Whom a rule names, for the message.

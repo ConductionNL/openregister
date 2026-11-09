@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\ContextChat\ContentItem;
 use OCP\ContextChat\IContentManager;
@@ -35,9 +35,10 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionServices;
 
 /**
- * @covers \OCA\OpenRegister\Listener\ContextChatSubmissionListener
+ * @covers \OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
@@ -75,11 +76,13 @@ class ContextChatSubmissionListenerTest extends TestCase {
 		);
 
 		$this->listener = new ContextChatSubmissionListener(
-			$container,
-			$this->schemaMapper,
+			new ContextChatSubmissionServices(
+				$container,
+				$this->schemaMapper,
+				$this->userManager,
+				$this->createMock(LoggerInterface::class),
+			),
 			$this->permissionHandler,
-			$this->userManager,
-			$this->createMock(LoggerInterface::class)
 		);
 	}
 

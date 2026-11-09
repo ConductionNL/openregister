@@ -26,8 +26,11 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Controller\Support\CalendarEventsControllerServices;
+use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
-use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -43,6 +46,7 @@ use OCP\IRequest;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class CalendarEventsController extends Controller {
+	use ChecksObjectUpdateRight;
 
 	/**
 	 * Calendar event service (legacy X-OR-* CalDAV custom properties).
@@ -54,9 +58,9 @@ class CalendarEventsController extends Controller {
 	/**
 	 * Tier-2 calendar link service (additive link-table layer).
 	 *
-	 * @var CalendarLinkService
+	 * @var CalendarLinkServiceInterface
 	 */
-	private readonly CalendarLinkService $calendarLinkService;
+	private readonly CalendarLinkServiceInterface $calendarLinkService;
 
 	/**
 	 * Object service for object validation.
@@ -66,28 +70,32 @@ class CalendarEventsController extends Controller {
 	private readonly ObjectOperationsInterface $objectService;
 
 	/**
+	 * Answers the object update right
+	 *
+	 * @var PermissionHandlerInterface
+	 */
+	private readonly PermissionHandlerInterface $permissions;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param ObjectCalendarEventsInterface $calendarEventService Calendar event service (legacy)
-	 * @param CalendarLinkService $calendarLinkService Calendar link service (Tier-2)
-	 * @param ObjectOperationsInterface $objectService Object service
+	 * @param CalendarEventsControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ObjectCalendarEventsInterface $calendarEventService,
-		CalendarLinkService $calendarLinkService,
-		ObjectOperationsInterface $objectService,
+		CalendarEventsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->permissions = $services->permissions;
 
-		$this->calendarEventService = $calendarEventService;
-		$this->calendarLinkService = $calendarLinkService;
-		$this->objectService = $objectService;
+		$this->calendarEventService = $services->calendarEventService;
+		$this->calendarLinkService = $services->calendarLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
@@ -146,6 +154,10 @@ class CalendarEventsController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
+			if ($this->mayUpdate(object: $object) === false) {
+				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its events.'], 403);
+			}
+
 			$data = $this->request->getParams();
 
 			if (empty($data['summary']) === true) {
@@ -193,6 +205,10 @@ class CalendarEventsController extends Controller {
 			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
+			}
+
+			if ($this->mayUpdate(object: $object) === false) {
+				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its events.'], 403);
 			}
 
 			$data = $this->request->getParams();
@@ -248,6 +264,10 @@ class CalendarEventsController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
+			if ($this->mayUpdate(object: $object) === false) {
+				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its events.'], 403);
+			}
+
 			$this->calendarLinkService->unlinkEvent(
 				objectUuid: $object->getUuid(),
 				eventUid: $eventUid
@@ -289,6 +309,10 @@ class CalendarEventsController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
+			if ($this->mayUpdate(object: $object) === false) {
+				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its events.'], 403);
+			}
+
 			// Find the event in the unioned link list to recover its calendarId.
 			$events = $this->calendarLinkService->getLinkedEvents($object->getUuid());
 			$calendarId = null;
@@ -324,7 +348,12 @@ class CalendarEventsController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 400);
+			$status = 400;
+			if ($e->getCode() === 404) {
+				$status = 404;
+			}
+
+			return new JSONResponse(['error' => $e->getMessage()], $status);
 		}//end try
 	}//end destroy()
 

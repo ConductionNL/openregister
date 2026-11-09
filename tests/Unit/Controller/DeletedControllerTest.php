@@ -284,6 +284,7 @@ class DeletedControllerTest extends TestCase {
 		$this->stubAdminUser();
 		$object = new ObjectEntity();
 		$object->setDeleted(['deleted' => '2024-01-01']);
+		$object->setUuid('uuid-123');
 		$this->objectMapper->method('find')->willReturn($object);
 
 		// restore() now delegates to the magic-table-aware restoreObject()
@@ -315,6 +316,7 @@ class DeletedControllerTest extends TestCase {
 		// delegates each restore to the magic-table-aware restoreObject().
 		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$deletedObject]);
 		$this->objectMapper->method('restoreObject')->willReturn($deletedObject);
+		$this->objectMapper->method('find')->willReturn($deletedObject);
 
 		$result = $this->controller->restoreMultiple();
 
@@ -322,6 +324,70 @@ class DeletedControllerTest extends TestCase {
 		$data = $result->getData();
 		$this->assertTrue($data['success']);
 		$this->assertEquals(1, $data['restored']);
+	}
+
+	/**
+	 * A non-admin whose right on the schema follows from owning the row.
+	 *
+	 * The cross-table lookup answers the row without its owner and deleted
+	 * stamp; only the stored row carries them.
+	 *
+	 * @param bool $owns Whether bob owns the stored row.
+	 *
+	 * @return void
+	 */
+	private function bulkAsOwner(bool $owns): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('bob');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('isAdmin')->willReturn(false);
+		$this->schemaMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$this->permissionHandler->method('hasPermission')->willReturnCallback(
+			static fn (...$args): bool => ($args[3] ?? null) === 'bob'
+		);
+
+		$slim = new ObjectEntity();
+		$slim->setUuid('uuid-1');
+		$slim->setSchema('10');
+		$full = new ObjectEntity();
+		$full->setUuid('uuid-1');
+		$full->setSchema('10');
+		$full->setOwner($owns === true ? 'bob' : 'carol');
+		$full->setDeleted(['deleted' => '2024-01-01']);
+
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($key === 'ids') ? ['uuid-1'] : $default
+		);
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$slim]);
+		$this->objectMapper->method('find')->willReturn($full);
+	}
+
+	public function testABulkRestoreAsksTheRightOnTheStoredRow(): void {
+		$this->bulkAsOwner(owns: true);
+		$this->objectMapper->expects($this->once())->method('restoreObject')->with('uuid-1');
+
+		$this->assertSame(1, $this->controller->restoreMultiple()->getData()['restored']);
+	}
+
+	public function testABulkRestoreWithoutTheRightRestoresNothing(): void {
+		$this->bulkAsOwner(owns: false);
+		$this->objectMapper->expects($this->never())->method('restoreObject');
+
+		$this->assertSame(1, $this->controller->restoreMultiple()->getData()['failed']);
+	}
+
+	public function testABulkDestroyAsksTheRightOnTheStoredRow(): void {
+		$this->bulkAsOwner(owns: true);
+		$this->objectMapper->expects($this->once())->method('delete');
+
+		$this->assertSame(1, $this->controller->destroyMultiple()->getData()['deleted']);
+	}
+
+	public function testABulkDestroyWithoutTheRightDestroysNothing(): void {
+		$this->bulkAsOwner(owns: false);
+		$this->objectMapper->expects($this->never())->method('delete');
+
+		$this->assertSame(1, $this->controller->destroyMultiple()->getData()['failed']);
 	}
 
 	public function testRestoreMultipleException(): void {
@@ -353,6 +419,7 @@ class DeletedControllerTest extends TestCase {
 
 		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$deletedObject]);
 		$this->objectMapper->method('delete')->willReturn($deletedObject);
+		$this->objectMapper->method('find')->willReturn($deletedObject);
 
 		$result = $this->controller->destroyMultiple();
 

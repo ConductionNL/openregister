@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Flow\FlowScheduleService;
+use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -44,12 +44,12 @@ class FlowScheduleWorker extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Job scheduling clock (kept by the base Job as $this->time).
-	 * @param FlowScheduleService $schedule Decides which flows are due and fires them.
+	 * @param FlowScheduleServiceInterface $schedule Decides which flows are due and fires them.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly FlowScheduleService $schedule,
+		private readonly FlowScheduleServiceInterface $schedule,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

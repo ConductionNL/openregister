@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\DependentValueTable;
 use OCA\OpenRegister\Service\Rules\DependentValueValidator;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
+use OCA\OpenRegister\Service\Rules\FlowRuleDescriptors;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
@@ -211,10 +212,10 @@ class NoCeilingRegressionTest extends TestCase {
 		$summaries->method('findBySchema')->willReturn([]);
 
 		$inventory = new RuleInventoryService(
-			triggers: $triggers,
 			summaries: $summaries,
 			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary()
+			vocabulary: new RuleVocabulary(),
+			flows: new FlowRuleDescriptors(triggers: $triggers, published: null)
 		);
 
 		$rules = $inventory->describe(schema: $this->legacySchema());

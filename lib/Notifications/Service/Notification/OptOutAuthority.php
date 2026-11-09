@@ -130,54 +130,97 @@ class OptOutAuthority implements OptOutAuthorityInterface {
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function ask(string $channel, string $category, array $addresses, string $correlationId = ''): array {
-		$addresses = array_values(array_unique(array_filter(array_map('strval', $addresses), static fn (string $a): bool => $a !== '')));
+		$addresses = $this->cleanAddresses(addresses: $addresses);
 		if ($addresses === []) {
 			return [];
 		}
-
-		$category = self::normaliseCategory(category: $category);
 
 		if ($this->isCheckEnabled() === false) {
 			return $this->uniform(addresses: $addresses, code: self::CODE_CHECK_OFF);
 		}
 
-		$event = $this->dispatch(channel: $channel, category: $category, addresses: $addresses, correlationId: $correlationId);
+		$category = self::normaliseCategory(category: $category);
+		return $this->answer(question: new OptOutQuestion(channel: $channel, category: $category, addresses: $addresses, correlationId: $correlationId));
+	}//end ask()
+
+	/**
+	 * The addresses as strings, without empties and duplicates.
+	 *
+	 * @param array<int, mixed> $addresses The addresses as given.
+	 *
+	 * @return array<int, string>
+	 */
+	private function cleanAddresses(array $addresses): array {
+		return array_values(array_unique(array_filter(array_map('strval', $addresses), static fn (string $a): bool => $a !== '')));
+	}//end cleanAddresses()
+
+	/**
+	 * Integriq's decisions for a question; addresses it leaves unanswered get the answer without integriq.
+	 *
+	 * A handled event names every recipient. One it does not name has no
+	 * answer, and no answer is refused like an absent integriq.
+	 *
+	 * @param OptOutQuestion $question The question.
+	 *
+	 * @return array<string, array{send: bool, code: string, unsubscribe: array<string, mixed>|null}> By address.
+	 */
+	private function answer(OptOutQuestion $question): array {
+		$decisions = $this->decisionsFrom(event: $this->dispatch(question: $question), addresses: $question->addresses);
+		if ($decisions === null) {
+			return $this->absent(question: $question);
+		}
+
+		$missing   = array_values(array_diff($question->addresses, array_keys($decisions)));
+		if ($missing === []) {
+			return $decisions;
+		}
+
+		return array_merge($decisions, $this->absent(question: $question->forAddresses(addresses: $missing)));
+	}//end answer()
+
+	/**
+	 * The decisions a handled event carries, for the addresses it names; null when there is no answer.
+	 *
+	 * @param Event|null         $event     The handled event, or null when integriq gave no answer.
+	 * @param array<int, string> $addresses The addresses asked about.
+	 *
+	 * @return array<string, array{send: bool, code: string, unsubscribe: array<string, mixed>|null}>|null By address.
+	 */
+	private function decisionsFrom(?Event $event, array $addresses): ?array {
 		if ($event === null || method_exists($event, 'getDecision') === false) {
-			return $this->absent(channel: $channel, category: $category, addresses: $addresses, correlationId: $correlationId);
+			return null;
 		}
 
 		$decisions = [];
-		$missing   = [];
 		foreach ($addresses as $address) {
 			$decision = $event->getDecision($address);
-			if (is_array($decision) === false) {
-				$missing[] = $address;
-				continue;
+			if (is_array($decision) === true) {
+				$decisions[$address] = $this->decision(decision: $decision);
 			}
-
-			$unsubscribe = null;
-			if (is_array($decision['unsubscribe'] ?? null) === true) {
-				$unsubscribe = $decision['unsubscribe'];
-			}
-
-			$decisions[$address] = [
-				'send' => (($decision['send'] ?? false) === true),
-				'code' => (string)($decision['code'] ?? self::CODE_ALLOWED),
-				'unsubscribe' => $unsubscribe,
-			];
-		}
-
-		if ($missing !== []) {
-			// A handled event names every recipient. One it does not name has
-			// no answer, and no answer is refused like an absent integriq.
-			$decisions = array_merge(
-				$decisions,
-				$this->absent(channel: $channel, category: $category, addresses: $missing, correlationId: $correlationId)
-			);
 		}
 
 		return $decisions;
-	}//end ask()
+	}//end decisionsFrom()
+
+	/**
+	 * One decision as integriq gave it, in the shape ask() returns.
+	 *
+	 * @param array<string, mixed> $decision Integriq's decision.
+	 *
+	 * @return array{send: bool, code: string, unsubscribe: array<string, mixed>|null}
+	 */
+	private function decision(array $decision): array {
+		$unsubscribe = null;
+		if (is_array($decision['unsubscribe'] ?? null) === true) {
+			$unsubscribe = $decision['unsubscribe'];
+		}
+
+		return [
+			'send' => (($decision['send'] ?? false) === true),
+			'code' => (string)($decision['code'] ?? self::CODE_ALLOWED),
+			'unsubscribe' => $unsubscribe,
+		];
+	}//end decision()
 
 	/**
 	 * One address's decision; none means no answer, and no answer is refused.
@@ -247,48 +290,66 @@ class OptOutAuthority implements OptOutAuthorityInterface {
 	/**
 	 * Build and dispatch the event; null when integriq gave no answer.
 	 *
-	 * @param string $channel The channel.
-	 * @param string $category The category.
-	 * @param array<int, string> $addresses The addresses.
-	 * @param string $correlationId The correlation id.
+	 * @param OptOutQuestion $question The question.
 	 *
 	 * @return Event|null The handled event, or null.
 	 */
-	private function dispatch(string $channel, string $category, array $addresses, string $correlationId): ?Event {
+	private function dispatch(OptOutQuestion $question): ?Event {
 		$class = $this->resolveEventClass();
 		if ($class === null) {
 			return null;
 		}
 
-		try {
-			$event = new $class(
-				sourceApp: self::SOURCE_APP,
-				channel: $channel,
-				category: $category,
-				recipients: array_map(static fn (string $address): array => ['address' => $address], $addresses),
-				correlationId: $correlationId,
-				baseUrl: '',
-				requiresConsent: ($category === 'marketing'),
-			);
-			if (($event instanceof Event) === false) {
-				return null;
-			}
-
-			$this->eventDispatcher->dispatchTyped($event);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[OptOutAuthority] integriq threw while deciding; treating it as absent',
-				['category' => $category, 'channel' => $channel, 'exception' => $e->getMessage()]
-			);
-			return null;
-		}
-
-		if (method_exists($event, 'isHandled') === false || $event->isHandled() !== true) {
+		$event = $this->dispatchEvent(class: $class, question: $question);
+		if ($event === null || method_exists($event, 'isHandled') === false || $event->isHandled() !== true) {
 			return null;
 		}
 
 		return $event;
 	}//end dispatch()
+
+	/**
+	 * Build the event and dispatch it; null when it is no event or integriq threw.
+	 *
+	 * @param string         $class    The event class.
+	 * @param OptOutQuestion $question The question.
+	 *
+	 * @return Event|null The dispatched event, handled or not, or null.
+	 */
+	private function dispatchEvent(string $class, OptOutQuestion $question): ?Event {
+		try {
+			$event = $this->newEvent(class: $class, question: $question);
+			if (($event instanceof Event) === true) {
+				$this->eventDispatcher->dispatchTyped($event);
+				return $event;
+			}
+		} catch (Throwable $e) {
+			$context = ['category' => $question->category, 'channel' => $question->channel, 'exception' => $e->getMessage()];
+			$this->logger->warning('[OptOutAuthority] integriq threw while deciding; treating it as absent', $context);
+		}
+
+		return null;
+	}//end dispatchEvent()
+
+	/**
+	 * A new instance of integriq's decision event for a question.
+	 *
+	 * @param string         $class    The event class.
+	 * @param OptOutQuestion $question The question.
+	 *
+	 * @return mixed The event.
+	 */
+	private function newEvent(string $class, OptOutQuestion $question): mixed {
+		return new $class(
+			sourceApp: self::SOURCE_APP,
+			channel: $question->channel,
+			category: $question->category,
+			recipients: array_map(static fn (string $address): array => ['address' => $address], $question->addresses),
+			correlationId: $question->correlationId,
+			baseUrl: '',
+			requiresConsent: ($question->category === 'marketing'),
+		);
+	}//end newEvent()
 
 	/**
 	 * The event class to instantiate, or null when integriq does not ship it.
@@ -309,31 +370,39 @@ class OptOutAuthority implements OptOutAuthorityInterface {
 	/**
 	 * The answer without integriq: exempt is sent, everything else refused and logged.
 	 *
-	 * @param string $channel The channel.
-	 * @param string $category The category.
-	 * @param array<int, string> $addresses The addresses.
-	 * @param string $correlationId The correlation id.
+	 * @param OptOutQuestion $question The question.
 	 *
 	 * @return array<string, array{send: bool, code: string, unsubscribe: array<string, mixed>|null}> By address.
 	 */
-	private function absent(string $channel, string $category, array $addresses, string $correlationId): array {
-		if (self::isExempt(category: $category) === true) {
-			return $this->uniform(addresses: $addresses, code: self::CODE_EXEMPT);
+	private function absent(OptOutQuestion $question): array {
+		if (self::isExempt(category: $question->category) === true) {
+			return $this->uniform(addresses: $question->addresses, code: self::CODE_EXEMPT);
 		}
 
 		$this->logger->warning(
 			'[OptOutAuthority] no answer from integriq; refusing a non-exempt send (authority-unavailable)',
-			[
-				'category' => $category,
-				'channel' => $channel,
-				'addresses' => count($addresses),
-				'code' => self::CODE_AUTHORITY_UNAVAILABLE,
-				'correlationId' => $correlationId,
-			]
+			$this->absentContext(question: $question)
 		);
 
-		return $this->uniform(addresses: $addresses, code: self::CODE_AUTHORITY_UNAVAILABLE);
+		return $this->uniform(addresses: $question->addresses, code: self::CODE_AUTHORITY_UNAVAILABLE);
 	}//end absent()
+
+	/**
+	 * The log context of a send refused for want of an answer.
+	 *
+	 * @param OptOutQuestion $question The question.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function absentContext(OptOutQuestion $question): array {
+		return [
+			'category' => $question->category,
+			'channel' => $question->channel,
+			'addresses' => count($question->addresses),
+			'code' => self::CODE_AUTHORITY_UNAVAILABLE,
+			'correlationId' => $question->correlationId,
+		];
+	}//end absentContext()
 
 	/**
 	 * The same decision for every address. Only `authority-unavailable` refuses.

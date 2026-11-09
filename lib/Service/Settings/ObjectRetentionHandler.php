@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IAppConfig;
 use RuntimeException;
 
@@ -40,7 +41,7 @@ use RuntimeException;
  *
  * @link https://www.OpenRegister.nl
  */
-class ObjectRetentionHandler {
+class ObjectRetentionHandler implements ArchivalSettingsReaderInterface, RetentionSettingsReaderInterface {
 	use SettingsSectionDefaults;
 
 	/**
@@ -98,27 +99,18 @@ class ObjectRetentionHandler {
 	 */
 	private IAppConfig $appConfig;
 
-	/**
-	 * Application name identifier
-	 *
-	 * @var string
-	 */
-	private string $appName;
 
 	/**
 	 * Constructor for ObjectRetentionHandler.
 	 *
 	 * @param IAppConfig $appConfig Configuration service.
-	 * @param string $appName Application name (default: 'openregister').
 	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail, and announces it.
 	 */
 	public function __construct(
 		IAppConfig $appConfig,
-		string $appName = 'openregister',
 		private readonly ?OwnSettingsChangeRecorder $changeRecorder = null,
 	) {
 		$this->appConfig = $appConfig;
-		$this->appName = $appName;
 	}//end __construct()
 
 	/**
@@ -138,7 +130,7 @@ class ObjectRetentionHandler {
 	 */
 	public function getObjectSettingsOnly(): array {
 		try {
-			$objectConfig = $this->appConfig->getValueString($this->appName, 'objectManagement', '');
+			$objectConfig = $this->appConfig->getValueString(AppIdentity::APP_ID, 'objectManagement', '');
 			if (empty($objectConfig) === true) {
 				return self::OBJECT_DEFAULTS;
 			}
@@ -189,7 +181,7 @@ class ObjectRetentionHandler {
 		$beforeChange = $this->changeRecorder?->snapshot(keys: ['objectManagement']);
 		try {
 			$objectConfig = $this->overDefaults(defaults: self::OBJECT_DEFAULTS, values: $objectData);
-			$this->appConfig->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'objectManagement', json_encode($objectConfig));
 			$this->recordSettingsChange(before: $beforeChange, keys: ['objectManagement']);
 			return $objectConfig;
 		} catch (Exception $e) {
@@ -216,7 +208,7 @@ class ObjectRetentionHandler {
 	 */
 	public function getRetentionSettingsOnly(): array {
 		try {
-			$retentionConfig = $this->appConfig->getValueString($this->appName, 'retention', '');
+			$retentionConfig = $this->appConfig->getValueString(AppIdentity::APP_ID, 'retention', '');
 			if (empty($retentionConfig) === true) {
 				return self::RETENTION_DEFAULTS;
 			}
@@ -256,7 +248,7 @@ class ObjectRetentionHandler {
 			$retentionConfig = $this->overDefaults(defaults: self::RETENTION_DEFAULTS, values: $retentionData);
 			$retentionConfig['searchTrailRecordingMode'] = $this->normaliseRecordingMode(value: $retentionConfig['searchTrailRecordingMode']);
 
-			$this->appConfig->setValueString($this->appName, 'retention', json_encode($retentionConfig));
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'retention', json_encode($retentionConfig));
 			$this->recordSettingsChange(before: $beforeChange, keys: ['retention']);
 			return $retentionConfig;
 		} catch (Exception $e) {
@@ -275,7 +267,7 @@ class ObjectRetentionHandler {
 	 */
 	public function getArchivalSettingsOnly(): array {
 		try {
-			$archivalConfig = $this->appConfig->getValueString($this->appName, 'archival', '');
+			$archivalConfig = $this->appConfig->getValueString(AppIdentity::APP_ID, 'archival', '');
 			if (empty($archivalConfig) === true) {
 				return self::ARCHIVAL_DEFAULTS;
 			}
@@ -301,7 +293,7 @@ class ObjectRetentionHandler {
 		$beforeChange = $this->changeRecorder?->snapshot(keys: ['archival']);
 		try {
 			$archivalConfig = $this->overDefaults(defaults: self::ARCHIVAL_DEFAULTS, values: $archivalData);
-			$this->appConfig->setValueString($this->appName, 'archival', json_encode($archivalConfig));
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'archival', json_encode($archivalConfig));
 			$this->recordSettingsChange(before: $beforeChange, keys: ['archival']);
 			return $archivalConfig;
 		} catch (Exception $e) {

@@ -186,13 +186,9 @@
         "register": null,
         "calls": [
             [
-                "schemas.findAll",
+                "schemas.find",
                 [
-                    null,
-                    null,
-                    [],
-                    [],
-                    [],
+                    "21aab6e0-2177-4920-beb0-391492fed04b",
                     [],
                     true,
                     true
@@ -207,7 +203,37 @@
                     [],
                     [],
                     [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.find",
+                [
+                    "21aab6e0-2177-4920-beb0-391492fed04b",
+                    [],
                     false,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "registers.find",
+                [
+                    "21aab6e0-2177-4920-beb0-391492fed04b",
+                    true,
                     true
                 ]
             ],

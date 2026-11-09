@@ -34,7 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Task\TaskSubjectLocator;
+use OCA\OpenRegister\Service\Task\TaskSubjectLocatorInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
@@ -97,7 +97,7 @@ class BackfillTaskSubjectLocation implements IRepairStep {
 	public function run(IOutput $output): void {
 		try {
 			$db = $this->container->get(IDBConnection::class);
-			$locator = $this->container->get(TaskSubjectLocator::class);
+			$locator = $this->container->get(TaskSubjectLocatorInterface::class);
 			if ($db->tableExists('openregister_tasks') === false) {
 				$output->info('Task subject location: no task table yet.');
 				return;

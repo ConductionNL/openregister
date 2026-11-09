@@ -125,11 +125,9 @@ class DraftLifetimeImportExportTest extends TestCase {
 			objectEntityMapper:  $objectEntityMapper,
 			configurationMapper: $configurationMapper,
 			mappingMapper:       $mappingMapper,
-			client:              $this->createMock(Client::class),
 			appConfig:           $appConfig,
 			logger:              $logger,
 			appDataPath:         '/tmp',
-			uploadHandler:       $this->createMock(UploadHandler::class),
 			objectService:       $this->createMock(ObjectService::class)
 		);
 

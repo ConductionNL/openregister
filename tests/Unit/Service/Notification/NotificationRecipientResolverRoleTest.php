@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -69,10 +70,7 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 
 		$uids = $this->resolver->resolve(
 			recipientsSpec: [['kind' => 'role', 'role' => 'behandelaar']],
-			data: [],
-			object: null,
-			context: [],
-			roleGroups: ['behandelaar' => ['behandelaars']]
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: ['behandelaar' => ['behandelaars']])
 		);
 
 		$this->assertSame(['anna', 'bram'], $uids);
@@ -92,18 +90,12 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 
 		$before = $this->resolver->resolve(
 			recipientsSpec: [['kind' => 'role', 'role' => 'behandelaar']],
-			data: [],
-			object: null,
-			context: [],
-			roleGroups: ['behandelaar' => ['behandelaars']]
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: ['behandelaar' => ['behandelaars']])
 		);
 		$members[] = 'chris';
 		$after = $this->resolver->resolve(
 			recipientsSpec: [['kind' => 'role', 'role' => 'behandelaar']],
-			data: [],
-			object: null,
-			context: [],
-			roleGroups: ['behandelaar' => ['behandelaars']]
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: ['behandelaar' => ['behandelaars']])
 		);
 
 		$this->assertSame(['anna'], $before);
@@ -186,7 +178,7 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 
 		$uids = $this->resolver->resolve(
 			recipientsSpec: [['kind' => 'groups', 'groups' => ['behandelaars']]],
-			data: []
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: [])
 		);
 
 		$this->assertSame(['anna'], $uids);

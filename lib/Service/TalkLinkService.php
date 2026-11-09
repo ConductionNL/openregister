@@ -42,12 +42,12 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\TalkLink;
-use OCA\OpenRegister\Db\TalkLinkMapper;
-use OCP\App\IAppManager;
+use OCA\OpenRegister\Db\TalkLinkMapperInterface;
+use OCA\OpenRegister\Service\TalkLink\TalkGateway;
+use OCA\OpenRegister\Service\TalkLink\TalkLinkFactory;
+use OCA\OpenRegister\Service\TalkLink\TalkRoomFields;
 use OCP\IL10N;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -65,33 +65,54 @@ use Throwable;
  *     Room entity (which uses Entity::__call magic) inflate the
  *     cyclomatic score; splitting into helper classes would scatter
  *     the leaf-row contract.
+ *
+ * @spec openspec/specs/integration-talk/spec.md
  */
-class TalkLinkService {
-	private const REQUIRED_APP = 'spreed';
+class TalkLinkService implements TalkLinkServiceInterface {
 	private const ROOM_TAG = '[or:';
 	private const STALE_AFTER = 300;
 	// 5 minutes in seconds.
 
 	/**
+	 * Late-bound Talk services.
+	 *
+	 * @var TalkGateway
+	 */
+	private readonly TalkGateway $talk;
+
+	/**
+	 * Reads Talk Room entities.
+	 *
+	 * @var TalkRoomFields
+	 */
+	private readonly TalkRoomFields $roomFields;
+
+	/**
+	 * Populates link rows.
+	 *
+	 * @var TalkLinkFactory
+	 */
+	private readonly TalkLinkFactory $linkFactory;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param TalkLinkMapper $talkLinkMapper Persistence for link rows.
+	 * @param TalkLinkMapperInterface $talkLinkMapper Persistence for link rows.
 	 * @param ContainerInterface $container Container for late-bound Talk classes.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
 	 * @param IL10N $l10n Translation service.
-	 * @param LoggerInterface $logger Logger.
 	 * @param SchemaMapperInterface $schemaMapper Resolves the schema an object belongs to (external-participant opt-in check).
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 */
 	public function __construct(
-		private readonly TalkLinkMapper $talkLinkMapper,
-		private readonly ContainerInterface $container,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
-		private readonly IL10N $l10n,
-		private readonly LoggerInterface $logger,
+		private readonly TalkLinkMapperInterface $talkLinkMapper,
+		ContainerInterface $container,
+		IL10N $l10n,
 		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly LinkServiceRuntime $runtime,
 	) {
+		$this->talk = new TalkGateway(container: $container, appManager: $runtime->appManager(), logger: $runtime->logger());
+		$this->roomFields = new TalkRoomFields(l10n: $l10n);
+		$this->linkFactory = new TalkLinkFactory();
 	}//end __construct()
 
 	/**
@@ -99,9 +120,11 @@ class TalkLinkService {
 	 * user.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/specs/integration-talk/spec.md
 	 */
 	public function isTalkAvailable(): bool {
-		return $this->appManager->isEnabledForUser(self::REQUIRED_APP);
+		return $this->talk->isAvailable();
 	}//end isTalkAvailable()
 
 	/**
@@ -122,57 +145,71 @@ class TalkLinkService {
 	 * @throws Exception On missing user, missing room (404), duplicate (409),
 	 *                   Talk unavailable (503).
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential guard
-	 *     clauses (no user, duplicate, Talk unavailable, find failure,
-	 *     null room) followed by best-effort cache extraction.
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function linkRoom(string $objectUuid, int $registerId, int $schemaId, string $roomToken): TalkLink {
-		$user = $this->userSession->getUser();
+		$userUid = $this->requireUserUid();
+		if ($this->talkLinkMapper->findByObjectAndRoom($objectUuid, $roomToken) !== null) {
+			throw new Exception('Room already linked to this object', 409);
+		}
+
+		$room = $this->requireRoom(roomToken: $roomToken, userUid: $userUid);
+		$cache = $this->extractRoomFields(room: $room, userUid: $userUid);
+		$object = ['objectUuid' => $objectUuid, 'registerId' => $registerId, 'schemaId' => $schemaId];
+
+		return $this->talkLinkMapper->insert($this->linkFactory->newLink(object: $object, roomToken: $roomToken, cache: $cache, userUid: $userUid));
+	}//end linkRoom()
+
+	/**
+	 * The UID of the session user.
+	 *
+	 * @return string The user id.
+	 *
+	 * @throws Exception When no user is logged in.
+	 */
+	private function requireUserUid(): string {
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
 
-		$existing = $this->talkLinkMapper->findByObjectAndRoom($objectUuid, $roomToken);
-		if ($existing !== null) {
-			throw new Exception('Room already linked to this object', 409);
-		}
+		return $user->getUID();
+	}//end requireUserUid()
 
-		$manager = $this->resolveManager();
+	/**
+	 * Talk's Manager, or a 503 when Talk is unavailable.
+	 *
+	 * @return object Talk Manager.
+	 *
+	 * @throws Exception When Talk is unavailable (503).
+	 */
+	private function requireManager(): object {
+		$manager = $this->talk->manager();
 		if ($manager === null) {
 			throw new Exception('Talk is not available', 503);
 		}
 
-		$room = $this->findRoom(manager: $manager, roomToken: $roomToken, userUid: $user->getUID());
+		return $manager;
+	}//end requireManager()
+
+	/**
+	 * The Talk room with this token, as the user sees it.
+	 *
+	 * @param string $roomToken Talk room token.
+	 * @param string $userUid   User UID.
+	 *
+	 * @return object Talk Room.
+	 *
+	 * @throws Exception When Talk is unavailable (503) or the room is not found (404).
+	 */
+	private function requireRoom(string $roomToken, string $userUid): object {
+		$room = $this->talk->findRoom(manager: $this->requireManager(), roomToken: $roomToken, userUid: $userUid);
 		if ($room === null) {
 			throw new Exception('Talk room not found', 404);
 		}
 
-		$cache = $this->extractRoomFields(room: $room, userUid: $user->getUID());
-
-		$link = new TalkLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
-		$link->setRoomToken($roomToken);
-		$link->setRoomId($cache['roomId']);
-		$link->setRoomName($cache['roomName']);
-		$link->setRoomType($cache['roomType']);
-		$link->setSubtitle($cache['subtitle']);
-		$link->setParticipantCount($cache['participantCount']);
-		$lastMessageData = null;
-		if ($cache['lastMessage'] !== null) {
-			$lastMessageData = json_encode($cache['lastMessage']);
-		}
-
-		$link->setLastMessageData($lastMessageData);
-		$link->setLastActivity($cache['lastActivity']);
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
-
-		return $this->talkLinkMapper->insert($link);
-	}//end linkRoom()
+		return $room;
+	}//end requireRoom()
 
 	/**
 	 * Unlink a Talk room from an object. Does NOT destroy the room
@@ -231,7 +268,7 @@ class TalkLinkService {
 
 		$this->assertInviteAllowed(link: $link, email: $email);
 
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
@@ -278,23 +315,40 @@ class TalkLinkService {
 	 * @return array{degraded: bool, cause?: string, room?: object, participantService?: object}
 	 */
 	private function resolveInviteTargets(string $roomToken, string $userUid): array {
-		$manager = $this->resolveManager();
-		if ($manager === null) {
-			return ['degraded' => true, 'cause' => 'talk-not-available'];
+		$room = $this->inviteRoom(roomToken: $roomToken, userUid: $userUid);
+		if (is_string($room) === true) {
+			return ['degraded' => true, 'cause' => $room];
 		}
 
-		$room = $this->findRoom(manager: $manager, roomToken: $roomToken, userUid: $userUid);
-		if ($room === null) {
-			return ['degraded' => true, 'cause' => 'room-not-found'];
-		}
-
-		$participantService = $this->resolveParticipantService();
+		$participantService = $this->talk->participantService();
 		if ($participantService === null || method_exists($participantService, 'addUsers') === false) {
 			return ['degraded' => true, 'cause' => 'participant-service-unavailable'];
 		}
 
 		return ['degraded' => false, 'room' => $room, 'participantService' => $participantService];
 	}//end resolveInviteTargets()
+
+	/**
+	 * The room an invite goes to, or why it cannot be found.
+	 *
+	 * @param string $roomToken Talk room token.
+	 * @param string $userUid   Current user id (for room lookup).
+	 *
+	 * @return object|string The Talk room, or the degrade cause.
+	 */
+	private function inviteRoom(string $roomToken, string $userUid): object|string {
+		$manager = $this->talk->manager();
+		if ($manager === null) {
+			return 'talk-not-available';
+		}
+
+		$room = $this->talk->findRoom(manager: $manager, roomToken: $roomToken, userUid: $userUid);
+		if ($room === null) {
+			return 'room-not-found';
+		}
+
+		return $room;
+	}//end inviteRoom()
 
 	/**
 	 * Send the actual Talk invite, degrading (never throwing) when Talk's own call fails.
@@ -317,7 +371,7 @@ class TalkLinkService {
 				['actorType' => 'emails', 'actorId' => $email, 'displayName' => $resolvedDisplayName],
 			]);
 		} catch (Throwable $e) {
-			$this->logger->warning('Failed to invite external Talk participant: ' . $e->getMessage());
+			$this->runtime->logger()->warning('Failed to invite external Talk participant: ' . $e->getMessage());
 			return ['invited' => false, 'unavailable' => true, 'cause' => $e->getMessage()];
 		}
 
@@ -358,52 +412,83 @@ class TalkLinkService {
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
-	 * @SuppressWarnings(PHPMD.LongVariable) $refreshedLastMessageData is the only name that clearly
-	 * distinguishes the refreshed message payload from $link->getLastMessageData(); a shorter alias
-	 * would lose that semantic clarity in the stale-cache refresh path.
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function getLinkedRooms(string $objectUuid): array {
 		$links = $this->talkLinkMapper->findByObjectUuid($objectUuid);
-		$manager = $this->resolveManager();
-		$user = $this->userSession->getUser();
+		$manager = $this->talk->manager();
+		$user = $this->runtime->userSession()->getUser();
 
 		$results = [];
 		foreach ($links as $link) {
-			$row = $link->jsonSerialize();
-
-			if ($manager !== null && $user !== null && $this->isStale(link: $link) === true) {
-				try {
-					$room = $this->findRoom(manager: $manager, roomToken: $link->getRoomToken(), userUid: $user->getUID());
-					if ($room !== null) {
-						$refreshed = $this->extractRoomFields(room: $room, userUid: $user->getUID());
-						$link->setRoomId($refreshed['roomId']);
-						$link->setRoomName($refreshed['roomName']);
-						$link->setRoomType($refreshed['roomType']);
-						$link->setSubtitle($refreshed['subtitle']);
-						$link->setParticipantCount($refreshed['participantCount']);
-						$refreshedLastMessageData = null;
-						if ($refreshed['lastMessage'] !== null) {
-							$refreshedLastMessageData = json_encode($refreshed['lastMessage']);
-						}
-
-						$link->setLastMessageData($refreshedLastMessageData);
-						$link->setLastActivity($refreshed['lastActivity']);
-						$this->talkLinkMapper->update($link);
-						$row = $link->jsonSerialize();
-					}
-				} catch (Throwable $e) {
-					// Stale link — keep cached row as-is.
-					$this->logger->debug('Stale talk link for room ' . $link->getRoomToken() . ': ' . $e->getMessage());
-				}//end try
-			}//end if
-
-			$results[] = $row;
-		}//end foreach
+			$results[] = $this->linkedRoomRow(link: $link, manager: $manager, userUid: $user?->getUID());
+		}
 
 		return $results;
 	}//end getLinkedRooms()
+
+	/**
+	 * A link row as returned, refreshed first when Talk can be asked and the row is stale.
+	 *
+	 * @param TalkLink    $link    The stored link.
+	 * @param object|null $manager Talk Manager, when available.
+	 * @param string|null $userUid The session user, when logged in.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function linkedRoomRow(TalkLink $link, ?object $manager, ?string $userUid): array {
+		$row = $link->jsonSerialize();
+		if ($manager === null || $userUid === null) {
+			return $row;
+		}
+
+		return $this->refreshedRow(link: $link, manager: $manager, userUid: $userUid, cachedRow: $row);
+	}//end linkedRoomRow()
+
+	/**
+	 * Refresh a link's cached fields from Talk and persist them, when the link is stale.
+	 *
+	 * @param TalkLink $link    The stored link.
+	 * @param object   $manager Talk Manager.
+	 * @param string   $userUid The session user.
+	 * @param array<string,mixed> $cachedRow The row as stored, returned when the refresh cannot happen.
+	 *
+	 * @return array<string,mixed> The refreshed row, or the cached row when the room is gone or the refresh failed.
+	 */
+	private function refreshedRow(TalkLink $link, object $manager, string $userUid, array $cachedRow): array {
+		if ($this->isStale(link: $link) === false) {
+			return $cachedRow;
+		}
+
+		try {
+			$room = $this->talk->findRoom(manager: $manager, roomToken: $link->getRoomToken(), userUid: $userUid);
+			if ($room === null) {
+				return $cachedRow;
+			}
+
+			return $this->cacheRoom(link: $link, room: $room, userUid: $userUid);
+		} catch (Throwable $e) {
+			// Stale link — keep cached row as-is.
+			$this->runtime->logger()->debug('Stale talk link for room ' . $link->getRoomToken() . ': ' . $e->getMessage());
+			return $cachedRow;
+		}
+	}//end refreshedRow()
+
+	/**
+	 * Copy a room's fields onto its link, persist it and return the new row.
+	 *
+	 * @param TalkLink $link    The stored link.
+	 * @param object   $room    Talk Room entity.
+	 * @param string   $userUid The session user.
+	 *
+	 * @return array<string,mixed> The refreshed row.
+	 */
+	private function cacheRoom(TalkLink $link, object $room, string $userUid): array {
+		$this->linkFactory->applyCache(link: $link, cache: $this->extractRoomFields(room: $room, userUid: $userUid));
+		$this->talkLinkMapper->update($link);
+
+		return $link->jsonSerialize();
+	}//end cacheRoom()
 
 	/**
 	 * Create a new Talk room and link it to an object in one
@@ -431,18 +516,6 @@ class TalkLinkService {
 	 * @throws Exception On missing user, Talk unavailable, invalid
 	 *                   type, or create failure.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  createAndLinkRoom() guards user auth, room type
-	 * validity, Talk availability, createRoom success, token extraction, description (best-effort),
-	 * and participant invite (best-effort); each is a sequential guard required for the create+link
-	 * contract.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Each of the best-effort optional paths (description,
-	 * participant invite, display-name fallback) contributes to NPath independently; all are
-	 * correct-by-contract Try/catch degradations.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) createAndLinkRoom() creates the room, optionally
-	 * sets description and invites the owner, extracts the token, builds cached metadata, and persists
-	 * the link row in one transactional sequence; splitting would scatter the atomic create+link
-	 * operation.
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function createAndLinkRoom(
@@ -453,33 +526,46 @@ class TalkLinkService {
 		?string $description,
 		int $roomType = 2,
 	): TalkLink {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in');
-		}
-
+		$userUid = $this->requireUserUid();
 		if (in_array($roomType, [2, 3], true) === false) {
 			throw new Exception('Invalid room type (must be 2=group or 3=public)', 400);
 		}
 
-		$manager = $this->resolveManager();
-		if ($manager === null) {
-			throw new Exception('Talk is not available', 503);
-		}
+		$room = $this->createTaggedRoom(objectUuid: $objectUuid, roomName: $roomName, roomType: $roomType, userUid: $userUid);
+		$this->talk->setDescription(room: $room, description: $description);
+		$this->talk->addOwner(room: $room, userUid: $userUid);
+		$roomToken = $this->createdRoomToken(room: $room);
+		$cache = $this->extractRoomFields(room: $room, userUid: $userUid);
+		$cache = $this->withRequestedFallbacks(cache: $cache, roomName: $roomName, roomType: $roomType);
+		$object = ['objectUuid' => $objectUuid, 'registerId' => $registerId, 'schemaId' => $schemaId];
 
-		// Tag with the OR marker so the legacy `[or:{uuid}]` reverse
-		// lookup still finds it until that code path is removed.
+		return $this->talkLinkMapper->insert($this->linkFactory->newLink(object: $object, roomToken: $roomToken, cache: $cache, userUid: $userUid));
+	}//end createAndLinkRoom()
+
+	/**
+	 * Create a Talk room through the Manager, its name tagged with the OR marker.
+	 *
+	 * The `[or:{uuid}]` tag lets the legacy reverse lookup still find the room
+	 * until that code path is removed. Talk Manager::createRoom(type, name, owner):
+	 * the exact signature varies across Talk releases, so this passes the three
+	 * canonical args and trusts the manager to ignore extras.
+	 *
+	 * @param string $objectUuid The object the room is for.
+	 * @param string $roomName   Room display name.
+	 * @param int    $roomType   Talk room type.
+	 * @param string $userUid    The owner.
+	 *
+	 * @return object The new Talk room.
+	 *
+	 * @throws Exception When Talk is unavailable (503) or the create fails (500).
+	 */
+	private function createTaggedRoom(string $objectUuid, string $roomName, int $roomType, string $userUid): object {
+		$manager = $this->requireManager();
 		$taggedName = $roomName . ' ' . self::ROOM_TAG . $objectUuid . ']';
-		$userUid = $user->getUID();
-
 		try {
-			// Talk Manager::createRoom(type, name, owner) — exact
-			// signature varies across Talk releases. We pass the
-			// three canonical args and trust the manager to ignore
-			// extras.
 			$room = $manager->createRoom($roomType, $taggedName, $userUid);
 		} catch (Throwable $e) {
-			$this->logger->warning('Failed to create Talk room: ' . $e->getMessage());
+			$this->runtime->logger()->warning('Failed to create Talk room: ' . $e->getMessage());
 			throw new Exception('Failed to create Talk room: ' . $e->getMessage(), 500);
 		}
 
@@ -487,76 +573,45 @@ class TalkLinkService {
 			throw new Exception('Talk createRoom returned no room', 500);
 		}
 
-		// Set the description (best-effort; older Talk versions may
-		// not support it).
-		if ($description !== null && $description !== '') {
-			try {
-				$roomService = $this->resolveRoomService();
-				if ($roomService !== null && method_exists($roomService, 'setDescription') === true) {
-					$roomService->setDescription($room, $description);
-				}
-			} catch (Throwable $e) {
-				$this->logger->debug('Failed to set Talk room description: ' . $e->getMessage());
-			}
-		}
+		return $room;
+	}//end createTaggedRoom()
 
-		// Invite the current user so the room appears in their UI.
-		try {
-			$participantService = $this->resolveParticipantService();
-			if ($participantService !== null && method_exists($participantService, 'addUsers') === true) {
-				$participantService->addUsers($room, [['actorType' => 'users', 'actorId' => $userUid]]);
-			}
-		} catch (Throwable $e) {
-			// Best-effort — the owner is implicitly a participant in
-			// many Talk versions, so a failure here is non-fatal.
-			$this->logger->debug('Failed to add owner as Talk participant: ' . $e->getMessage());
-		}
-
-		$roomToken = '';
-		try {
-			$roomToken = (string)$room->getToken();
-		} catch (Throwable $e) {
-			throw new Exception('Talk room has no token after create', 500);
-		}
-
+	/**
+	 * The token of a room just created.
+	 *
+	 * @param object $room The new Talk room.
+	 *
+	 * @return string The token.
+	 *
+	 * @throws Exception When the room has no token (500).
+	 */
+	private function createdRoomToken(object $room): string {
+		$roomToken = $this->roomFields->token(room: $room);
 		if ($roomToken === '') {
 			throw new Exception('Talk room has no token after create', 500);
 		}
 
-		$cache = $this->extractRoomFields(room: $room, userUid: $userUid);
+		return $roomToken;
+	}//end createdRoomToken()
 
-		$link = new TalkLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
-		$link->setRoomToken($roomToken);
-		$link->setRoomId($cache['roomId']);
-		$resolvedRoomName = $roomName;
-		if ($cache['roomName'] !== null && $cache['roomName'] !== '') {
-			$resolvedRoomName = $cache['roomName'];
+	/**
+	 * A new room's cached fields, with the requested name and type where Talk reported none.
+	 *
+	 * @param array  $cache    The room's cached fields.
+	 * @param string $roomName The requested room name.
+	 * @param int    $roomType The requested room type.
+	 *
+	 * @return array The cached fields.
+	 */
+	private function withRequestedFallbacks(array $cache, string $roomName, int $roomType): array {
+		if (in_array($cache['roomName'], [null, ''], true) === true) {
+			$cache['roomName'] = $roomName;
 		}
 
-		$resolvedRoomType = $roomType;
-		if ($cache['roomType'] !== null) {
-			$resolvedRoomType = $cache['roomType'];
-		}
+		$cache['roomType'] = ($cache['roomType'] ?? $roomType);
 
-		$cacheLastMessageData = null;
-		if ($cache['lastMessage'] !== null) {
-			$cacheLastMessageData = json_encode($cache['lastMessage']);
-		}
-
-		$link->setRoomName($resolvedRoomName);
-		$link->setRoomType($resolvedRoomType);
-		$link->setSubtitle($cache['subtitle']);
-		$link->setParticipantCount($cache['participantCount']);
-		$link->setLastMessageData($cacheLastMessageData);
-		$link->setLastActivity($cache['lastActivity']);
-		$link->setLinkedBy($userUid);
-		$link->setLinkedAt(new DateTime());
-
-		return $this->talkLinkMapper->insert($link);
-	}//end createAndLinkRoom()
+		return $cache;
+	}//end withRequestedFallbacks()
 
 	/**
 	 * Return Talk rooms available to the current user for the picker.
@@ -573,212 +628,74 @@ class TalkLinkService {
 	 *
 	 * @return array<int,array{token:string,name:string,type:?int,participantCount:?int}>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  getAvailableRoomsForUser() iterates rooms and
-	 * per-room wraps every Talk Entity::__call getter (token, name, displayName, type, participantCount)
-	 * in try/catch; each is a cross-version compatibility guard required because Talk's Room entity API
-	 * changed between releases.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Per-room: empty-token skip + search filter +
-	 * changelog/note-to-self type exclude + displayName override + participantCount resolve each
-	 * independently expand NPath; all are valid filtering/degradation paths.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) getAvailableRoomsForUser() must wrap every Talk
-	 * getter individually in try/catch because Talk's Room entity uses Entity::__call magic and accessor
-	 * availability varies across Talk releases; extracting helpers for each getter would scatter the
-	 * version-compatibility logic.
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function getAvailableRoomsForUser(?string $search = null): array {
-		if ($this->isTalkAvailable() === false) {
+		$userUid = $this->pickerUserUid();
+		if ($userUid === null) {
 			return [];
 		}
 
-		$user = $this->userSession->getUser();
-		if ($user === null) {
+		$rooms = $this->roomsForUser(userUid: $userUid);
+		if ($rooms === null) {
 			return [];
 		}
 
-		$manager = $this->resolveManager();
-		if ($manager === null) {
-			return [];
-		}
+		$participantService = $this->talk->participantService();
 
-		try {
-			$rooms = $manager->getRoomsForUser($user->getUID(), [], true);
-		} catch (Throwable $e) {
-			$this->logger->debug('Talk Manager::getRoomsForUser failed: ' . $e->getMessage());
-			return [];
-		}
-
-		if (is_array($rooms) === false) {
-			return [];
-		}
-
-		$participantService = $this->resolveParticipantService();
-		$needle = null;
-		if ($search !== null) {
-			$needle = mb_strtolower(trim($search));
-		}
-
-		$out = [];
-		foreach ($rooms as $room) {
-			$token = '';
-			try {
-				$token = (string)$room->getToken();
-			} catch (Throwable $e) {
-				continue;
-			}
-
-			if ($token === '') {
-				continue;
-			}
-
-			$name = '';
-			try {
-				$name = (string)$room->getName();
-			} catch (Throwable $e) {
-				// Leave default empty.
-			}
-
-			if (method_exists($room, 'getDisplayName') === true) {
-				try {
-					$displayName = (string)$room->getDisplayName($user->getUID());
-					if ($displayName !== '') {
-						$name = $displayName;
-					}
-				} catch (Throwable $e) {
-					// Keep existing $name.
-				}
-			}
-
-			$cleanName = $this->stripMarker(name: $name);
-
-			if ($needle !== null && $needle !== '' && mb_strpos(mb_strtolower($cleanName), $needle) === false) {
-				continue;
-			}
-
-			$type = null;
-			try {
-				$type = (int)$room->getType();
-			} catch (Throwable $e) {
-				// Leave null.
-			}
-
-			// Exclude changelog / note-to-self / one2one auto-rooms
-			// from the picker — the user can't usefully link those.
-			if ($type === 4 || $type === 6) {
-				continue;
-			}
-
-			$count = null;
-			if ($participantService !== null && method_exists($participantService, 'getNumberOfActors') === true) {
-				try {
-					$count = (int)$participantService->getNumberOfActors($room);
-				} catch (Throwable $e) {
-					$count = null;
-				}
-			}
-
-			$out[] = [
-				'token' => $token,
-				'name' => $cleanName,
-				'type' => $type,
-				'participantCount' => $count,
-			];
-		}//end foreach
-
-		return $out;
+		return $this->roomFields->pickerRows(rooms: $rooms, userUid: $userUid, search: $search, participantService: $participantService);
 	}//end getAvailableRoomsForUser()
 
 	/**
-	 * Resolve Talk's `Manager` from the server container.
+	 * The user the picker lists rooms for: none when Talk is unavailable or nobody is logged in.
 	 *
-	 * @return object|null Returns null when Talk is unavailable.
+	 * @return string|null The user id.
 	 */
-	private function resolveManager(): ?object {
+	private function pickerUserUid(): ?string {
 		if ($this->isTalkAvailable() === false) {
 			return null;
 		}
 
-		if (class_exists('OCA\\Talk\\Manager') === false) {
+		return $this->runtime->userSession()->getUser()?->getUID();
+	}//end pickerUserUid()
+
+	/**
+	 * The user's Talk rooms, or null when Talk cannot list them.
+	 *
+	 * @param string $userUid The user id.
+	 *
+	 * @return array|null The rooms.
+	 */
+	private function roomsForUser(string $userUid): ?array {
+		$manager = $this->talk->manager();
+		if ($manager === null) {
 			return null;
 		}
 
 		try {
-			return $this->container->get('OCA\\Talk\\Manager');
+			$rooms = $manager->getRoomsForUser($userUid, [], true);
 		} catch (Throwable $e) {
-			$this->logger->debug('Talk Manager not resolvable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Talk Manager::getRoomsForUser failed: ' . $e->getMessage());
 			return null;
 		}
-	}//end resolveManager()
+
+		return $this->arrayOrNull(value: $rooms);
+	}//end roomsForUser()
 
 	/**
-	 * Resolve Talk's `RoomService`.
+	 * The value when it is an array, else null.
 	 *
-	 * @return object|null Returns null when Talk is unavailable.
+	 * @param mixed $value The value.
+	 *
+	 * @return array|null
 	 */
-	private function resolveRoomService(): ?object {
-		if (class_exists('OCA\\Talk\\Service\\RoomService') === false) {
+	private function arrayOrNull(mixed $value): ?array {
+		if (is_array($value) === false) {
 			return null;
 		}
 
-		try {
-			return $this->container->get('OCA\\Talk\\Service\\RoomService');
-		} catch (Throwable $e) {
-			$this->logger->debug('Talk RoomService not resolvable: ' . $e->getMessage());
-			return null;
-		}
-	}//end resolveRoomService()
-
-	/**
-	 * Resolve Talk's `ParticipantService`.
-	 *
-	 * @return object|null Returns null when Talk is unavailable.
-	 */
-	private function resolveParticipantService(): ?object {
-		if (class_exists('OCA\\Talk\\Service\\ParticipantService') === false) {
-			return null;
-		}
-
-		try {
-			return $this->container->get('OCA\\Talk\\Service\\ParticipantService');
-		} catch (Throwable $e) {
-			$this->logger->debug('Talk ParticipantService not resolvable: ' . $e->getMessage());
-			return null;
-		}
-	}//end resolveParticipantService()
-
-	/**
-	 * Look up a Talk Room by token via the Manager.
-	 *
-	 * Tries `getRoomForUserByToken(token, userUid)` first (the
-	 * user-scoped variant), then `getRoomByToken(token)` (raw).
-	 * Returns null when both throw or are missing.
-	 *
-	 * @param object $manager Talk Manager.
-	 * @param string $roomToken Talk room token.
-	 * @param string $userUid User UID.
-	 *
-	 * @return object|null Talk Room or null.
-	 */
-	private function findRoom(object $manager, string $roomToken, string $userUid): ?object {
-		if (method_exists($manager, 'getRoomForUserByToken') === true) {
-			try {
-				return $manager->getRoomForUserByToken($roomToken, $userUid);
-			} catch (Throwable $e) {
-				// Fall through.
-			}
-		}
-
-		if (method_exists($manager, 'getRoomByToken') === true) {
-			try {
-				return $manager->getRoomByToken($roomToken);
-			} catch (Throwable $e) {
-				return null;
-			}
-		}
-
-		return null;
-	}//end findRoom()
+		return $value;
+	}//end arrayOrNull()
 
 	/**
 	 * Whether a link row's cache is older than {@see self::STALE_AFTER}.
@@ -802,19 +719,6 @@ class TalkLinkService {
 	}//end isStale()
 
 	/**
-	 * Strip the OR linking marker `[or:{uuid}]` from a room name.
-	 *
-	 * @param string $name Raw room name.
-	 *
-	 * @return string
-	 */
-	private function stripMarker(string $name): string {
-		// Match [or:<uuid>] anywhere in the string.
-		$stripped = preg_replace('/\s*\[or:[^\]]+\]\s*/', ' ', $name) ?? $name;
-		return trim($stripped);
-	}//end stripMarker()
-
-	/**
 	 * Extract cached fields from a Talk Room entity.
 	 *
 	 * Returns:
@@ -834,197 +738,13 @@ class TalkLinkService {
 	 *
 	 * @return array{roomId:?int,roomName:?string,roomType:?int,subtitle:?string,participantCount:?int,lastMessage:?array,lastActivity:?DateTime}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) extractRoomFields() wraps every Talk Room getter
-	 * (id, name, displayName, type, participantCount, lastActivity, lastMessage) in individual
-	 * try/catch blocks; each is a required cross-version guard because Talk's Room entity uses
-	 * Entity::__call magic and accessor availability varies.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Each optional accessor (displayName, participantService,
-	 * lastActivity, lastMessage) contributes independent true/false paths; all are required degradation
-	 * guards for older Talk releases.
 	 */
 	private function extractRoomFields(object $room, string $userUid): array {
-		$roomId = null;
-		try {
-			$roomId = (int)$room->getId();
-		} catch (Throwable $e) {
-			// Leave null.
-		}
-
-		$name = '';
-		try {
-			$name = (string)$room->getName();
-		} catch (Throwable $e) {
-			// Leave default empty.
-		}
-
-		if (method_exists($room, 'getDisplayName') === true) {
-			try {
-				$displayName = (string)$room->getDisplayName($userUid);
-				if ($displayName !== '') {
-					$name = $displayName;
-				}
-			} catch (Throwable $e) {
-				// Keep $name as-is.
-			}
-		}
-
-		$cleanName = $this->stripMarker(name: $name);
-
-		$type = null;
-		try {
-			$type = (int)$room->getType();
-		} catch (Throwable $e) {
-			// Leave null.
-		}
-
-		$subtitle = $this->buildSubtitle(room: $room, type: $type);
-
-		$participantCount = null;
-		$participantService = $this->resolveParticipantService();
-		if ($participantService !== null && method_exists($participantService, 'getNumberOfActors') === true) {
-			try {
-				$participantCount = (int)$participantService->getNumberOfActors($room);
-			} catch (Throwable $e) {
-				$participantCount = null;
-			}
-		}
-
-		$lastActivity = null;
-		try {
-			$rawActivity = null;
-			if (method_exists($room, 'getLastActivity') === true) {
-				$rawActivity = $room->getLastActivity();
-			}
-
-			if ($rawActivity instanceof \DateTimeInterface) {
-				$lastActivity = new DateTime($rawActivity->format(DateTime::ATOM));
-			}
-		} catch (Throwable $e) {
-			// Leave null.
-		}
-
-		$lastMessage = $this->buildLastMessage(room: $room);
-
-		$resolvedName = null;
-		if ($cleanName !== '') {
-			$resolvedName = $cleanName;
-		}
-
-		return [
-			'roomId' => $roomId,
-			'roomName' => $resolvedName,
-			'roomType' => $type,
-			'subtitle' => $subtitle,
-			'participantCount' => $participantCount,
-			'lastMessage' => $lastMessage,
-			'lastActivity' => $lastActivity,
-		];
+		return $this->roomFields->cacheFields(
+			room: $room,
+			userUid: $userUid,
+			participantService: $this->talk->participantService()
+		);
 	}//end extractRoomFields()
 
-	/**
-	 * Build a human-readable subtitle from the room type.
-	 *
-	 * Prefers the room description when set, falling back to the
-	 * translated Talk room-type label.
-	 *
-	 * @param object $room Talk Room.
-	 * @param int|null $type Numeric room type.
-	 *
-	 * @return string|null
-	 */
-	private function buildSubtitle(object $room, ?int $type): ?string {
-		$description = '';
-		if (method_exists($room, 'getDescription') === true) {
-			try {
-				$description = trim((string)$room->getDescription());
-			} catch (Throwable $e) {
-				$description = '';
-			}
-		}
-
-		if ($description !== '') {
-			return $description;
-		}
-
-		switch ($type) {
-			case 1:
-				return $this->l10n->t('Direct message');
-			case 2:
-				return $this->l10n->t('Group');
-			case 3:
-				return $this->l10n->t('Public');
-			case 4:
-				return $this->l10n->t('System');
-			case 6:
-				return $this->l10n->t('Note to self');
-			default:
-				return null;
-		}
-	}//end buildSubtitle()
-
-	/**
-	 * Build the `{actor, text, timestamp}` shape from a Talk Room's
-	 * last comment.
-	 *
-	 * Returns `null` when the room has no last message yet, or when
-	 * the lookup throws (federated rooms return null by design).
-	 *
-	 * @param object $room Talk Room.
-	 *
-	 * @return array{actor:array{type:string,id:string},text:string,timestamp:?int}|null
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) buildLastMessage() handles four lastMessage shapes
-	 * returned by different Talk releases (IComment, Message entity, plain object, or null); each shape
-	 * requires distinct accessor paths that cannot be merged.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      The four lastMessage shapes × actor-type detection ×
-	 * actor-id extraction produce many paths; all are required for cross-version Talk compatibility.
-	 */
-	private function buildLastMessage(object $room): ?array {
-		if (method_exists($room, 'getLastMessage') === false) {
-			return null;
-		}
-
-		try {
-			$comment = $room->getLastMessage();
-		} catch (Throwable $e) {
-			return null;
-		}
-
-		if (is_object($comment) === false) {
-			return null;
-		}
-
-		$text = '';
-		if (method_exists($comment, 'getMessage') === true) {
-			$text = (string)$comment->getMessage();
-		}
-
-		$actorType = '';
-		if (method_exists($comment, 'getActorType') === true) {
-			$actorType = (string)$comment->getActorType();
-		}
-
-		$actorId = '';
-		if (method_exists($comment, 'getActorId') === true) {
-			$actorId = (string)$comment->getActorId();
-		}
-
-		$timestamp = null;
-		if (method_exists($comment, 'getCreationDateTime') === true) {
-			try {
-				$created = $comment->getCreationDateTime();
-				if ($created instanceof \DateTimeInterface) {
-					$timestamp = $created->getTimestamp();
-				}
-			} catch (Throwable $e) {
-				$timestamp = null;
-			}
-		}
-
-		return [
-			'actor' => ['type' => $actorType, 'id' => $actorId],
-			'text' => $text,
-			'timestamp' => $timestamp,
-		];
-	}//end buildLastMessage()
 }//end class

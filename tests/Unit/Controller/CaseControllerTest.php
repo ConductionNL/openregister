@@ -54,6 +54,13 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Controller\Support\CaseControllerServices
  * @uses \OCA\OpenRegister\Db\CaseItem
  * @uses \OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper
+ * @uses \OCA\OpenRegister\Service\Case\ZaaktypeSkeletonDraft
+ * @uses \OCA\OpenRegister\Service\Case\ZaaktypeStageBuilder
+ * @uses \OCA\OpenRegister\Service\Case\ZaaktypeRoleMapper
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStart
  * @uses \OCA\OpenRegister\Service\Flow\FlowHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass

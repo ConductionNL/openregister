@@ -186,4 +186,32 @@ class AggregateVisibilityTest extends TestCase {
 		$this->assertSame(['salary'], $split['allowed']);
 		$this->assertSame([], $split['withheld']);
 	}//end testPartitionKeepsWhatIsAllowed()
+
+	/**
+	 * The question about some row goes to the rule, and a rule that throws withholds.
+	 *
+	 * @return void
+	 */
+	public function testAFieldStaysOnlyWhenTheRuleAnswersYes(): void {
+		$yes = $this->createMock(PropertyRbacHandler::class);
+		$yes->method('couldReadProperty')->willReturn(true);
+		$broken = $this->createMock(PropertyRbacHandler::class);
+		$broken->method('couldReadProperty')->willThrowException(new \RuntimeException('groups unavailable'));
+
+		$this->assertTrue((new AggregateVisibility($yes, new NullLogger()))->mayReadOnSomeRow($this->governedSchema(), 'salary'));
+		$this->assertFalse((new AggregateVisibility($broken, new NullLogger()))->mayReadOnSomeRow($this->governedSchema(), 'salary'));
+		$this->assertFalse((new AggregateVisibility(null, new NullLogger()))->mayReadOnSomeRow($this->governedSchema(), 'salary'));
+	}//end testAFieldStaysOnlyWhenTheRuleAnswersYes()
+
+	/**
+	 * An ungoverned property keeps its field even when the rule cannot answer.
+	 *
+	 * @return void
+	 */
+	public function testAnUngovernedPropertyDoesNotWaitForTheRule(): void {
+		$broken = $this->createMock(PropertyRbacHandler::class);
+		$broken->method('couldReadProperty')->willThrowException(new \RuntimeException('groups unavailable'));
+
+		$this->assertTrue((new AggregateVisibility($broken, new NullLogger()))->mayReadOnSomeRow($this->governedSchema(), 'name'));
+	}//end testAnUngovernedPropertyDoesNotWaitForTheRule()
 }//end class

@@ -37,6 +37,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ProcessingLogController;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
+use OCA\OpenRegister\Db\ProcessingLogReadScope;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
@@ -46,6 +47,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ProcessingLogController
@@ -103,11 +105,9 @@ class ProcessingLogControllerTest extends TestCase {
 		$this->appConfig->method('getValueInt')->willReturn(366);
 
 		$this->controller = new ProcessingLogController(
-			appName: 'openregister',
 			request: $this->request,
-			logMapper: $this->logMapper,
+			services: new ProcessingLogControllerServices(logMapper: $this->logMapper, appConfig: $this->appConfig),
 			session: new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->createMock(\Psr\Log\LoggerInterface::class)),
-			appConfig: $this->appConfig,
 			organisationService: $this->organisationService
 		);
 
@@ -178,13 +178,9 @@ class ProcessingLogControllerTest extends TestCase {
 		$this->logMapper->expects($this->once())
 			->method('findFiltered')
 			->willReturnCallback(
-				function (
-					array $filters,
-					$from,
-					$to,
-					?string $organisationId,
-					bool $includeConfidential,
-				): array {
+				function (array $filters, ProcessingLogReadScope $scope): array {
+					$organisationId = $scope->organisationId;
+					$includeConfidential = $scope->includeConfidential;
 					$this->assertSame('org-7', $organisationId);
 					$this->assertTrue($includeConfidential);
 					return [];
@@ -208,13 +204,9 @@ class ProcessingLogControllerTest extends TestCase {
 		$this->logMapper->expects($this->once())
 			->method('findFiltered')
 			->willReturnCallback(
-				function (
-					array $filters,
-					$from,
-					$to,
-					?string $organisationId,
-					bool $includeConfidential,
-				): array {
+				function (array $filters, ProcessingLogReadScope $scope): array {
+					$organisationId = $scope->organisationId;
+					$includeConfidential = $scope->includeConfidential;
 					$this->assertNull($organisationId);
 					$this->assertTrue($includeConfidential);
 					return [];

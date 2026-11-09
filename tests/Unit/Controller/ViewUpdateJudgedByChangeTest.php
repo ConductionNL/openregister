@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\ViewsController;
+use OCA\OpenRegister\Search\Controller\ViewsController;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
@@ -42,8 +42,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 /**
- * @covers \OCA\OpenRegister\Controller\ViewsController
- * @uses \OCA\OpenRegister\Controller\Support\ViewPatch
+ * @covers \OCA\OpenRegister\Search\Controller\ViewsController
+ * @uses \OCA\OpenRegister\Search\Controller\Support\ViewPatch
  * @covers \OCA\OpenRegister\Search\Service\ViewService
  * @covers \OCA\OpenRegister\Service\Rbac\ViewShareResolver
  * @uses \OCA\OpenRegister\Search\Db\View
@@ -85,10 +85,12 @@ class ViewUpdateJudgedByChangeTest extends TestCase {
 		return new ViewsController(
 			'openregister',
 			$this->request,
-			new ViewService(viewMapper: $this->mapper, logger: $logger, schemaMapper: $this->createMock(SchemaMapper::class)),
-			$this->createMock(ViewPresentationService::class),
-			$logger,
-			new ViewerReachResolver(userSession: $session, groupManager: $groupManager, logger: $logger)
+			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
+				new ViewService(viewMapper: $this->mapper, logger: $logger, schemaMapper: $this->createMock(SchemaMapper::class)),
+				$this->createMock(ViewPresentationService::class),
+				$logger,
+				new ViewerReachResolver(userSession: $session, groupManager: $groupManager, logger: $logger)
+			)
 		);
 	}//end controllerFor()
 

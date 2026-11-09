@@ -58,7 +58,7 @@ use Throwable;
  *         to reach one stateless comparison would add a seam with nothing
  *         behind it, and the seam is not where the risk lives.
  */
-class CallerPolicy {
+class CallerPolicy implements CallerPolicyInterface {
 
 	/**
 	 * The app the configuration lives under.

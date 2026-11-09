@@ -18,6 +18,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -32,6 +35,7 @@ use RuntimeException;
  * a soft-deleted dependent, a lookup that fails and a chain deeper than the depth limit and an unknown onDelete value. Set OR_GOLDEN_RECORD=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityAuditEntry
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Dto\DeletionAnalysis
@@ -42,6 +46,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode
  * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep
  * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk
+ * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
  */
 class ReferentialIntegrityDeletionGraphGoldenTest extends TestCase {
 
@@ -68,14 +73,10 @@ class ReferentialIntegrityDeletionGraphGoldenTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($this->createMock(ICache::class));
 
 		$this->service = new ReferentialIntegrityService(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->objectMapper,
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			logger: $this->logger,
-			db: $this->createMock(IDBConnection::class),
-			cacheFactory: $cacheFactory,
-			archivalGuard: $this->createMock(ArchivalRetentionGuard::class)
+			index: new IntegrityRelationIndex(schemaMapper: $this->schemaMapper, registerMapper: $this->createMock(RegisterMapper::class), cacheFactory: $cacheFactory),
+			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->createMock(ArchivalRetentionGuard::class)),
+			logger: $this->logger
 		);
 	}//end setUp()
 

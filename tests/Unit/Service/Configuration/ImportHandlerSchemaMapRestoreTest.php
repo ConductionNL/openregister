@@ -33,7 +33,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use Exception;
-use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -43,7 +42,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
-use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -84,13 +82,9 @@ class ImportHandlerSchemaMapRestoreTest extends TestCase {
 
 	private MappingMapper&MockObject $mappingMapper;
 
-	private Client&MockObject $client;
-
 	private IAppConfig&MockObject $appConfig;
 
 	private LoggerInterface&MockObject $logger;
-
-	private UploadHandler&MockObject $uploadHandler;
 
 	private ObjectService&MockObject $objectService;
 
@@ -126,10 +120,8 @@ class ImportHandlerSchemaMapRestoreTest extends TestCase {
 		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
 		$this->configurationMapper = $this->createMock(ConfigurationMapper::class);
 		$this->mappingMapper = $this->createMock(MappingMapper::class);
-		$this->client = $this->createMock(Client::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->uploadHandler = $this->createMock(UploadHandler::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		// No previously-imported version -> never skip on the version check.
@@ -179,11 +171,9 @@ class ImportHandlerSchemaMapRestoreTest extends TestCase {
 			objectEntityMapper:  $this->objectEntityMapper,
 			configurationMapper: $this->configurationMapper,
 			mappingMapper:       $this->mappingMapper,
-			client:              $this->client,
 			appConfig:           $this->appConfig,
 			logger:              $this->logger,
 			appDataPath:         '/tmp',
-			uploadHandler:       $this->uploadHandler,
 			objectService:       $this->objectService
 		);
 	}//end setUp()

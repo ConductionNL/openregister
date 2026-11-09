@@ -7,7 +7,6 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 <template>
 	<NcAppContent>
 		<CnIndexPage
-			ref="indexPage"
 			:title="t('openregister', 'Sources')"
 			:description="
 				t(
@@ -22,13 +21,7 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 			:viewMode="viewMode"
 			:selectable="true"
 			:selectedIds="selectedSources"
-			:showEditAction="false"
-			:showCopyAction="false"
-			:showDeleteAction="false"
-			:showMassImport="false"
-			:showMassExport="false"
-			:showMassCopy="false"
-			:showMassDelete="false"
+			v-bind="builtinActionsOff"
 			showViewToggle
 			:addLabel="t('openregister', 'Add Source')"
 			rowKey="id"
@@ -53,52 +46,7 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 							<DatabaseArrowRightOutline :size="20" />
 							{{ object.title }}
 						</h2>
-						<NcActions
-							:primary="true"
-							:menuName="t('openregister', 'Actions')">
-							<template #icon>
-								<DotsHorizontal :size="20" />
-							</template>
-							<NcActionButton
-								closeAfterClick
-								@click="
-									() => {
-										sourceStore.setSourceItem(object)
-										navigationStore.setModal('viewSource')
-									}
-								">
-								<template #icon>
-									<Eye :size="20" />
-								</template>
-								{{ t('openregister', 'View') }}
-							</NcActionButton>
-							<NcActionButton
-								closeAfterClick
-								@click="
-									() => {
-										sourceStore.setSourceItem(object)
-										navigationStore.setModal('editSource')
-									}
-								">
-								<template #icon>
-									<Pencil :size="20" />
-								</template>
-								{{ t('openregister', 'Edit') }}
-							</NcActionButton>
-							<NcActionButton
-								closeAfterClick
-								@click="
-									() => {
-										sourceStore.setSourceItem(object)
-										navigationStore.setDialog('deleteSource')
-									}
-								">
-								<template #icon>
-									<TrashCanOutline :size="20" />
-								</template>
-								{{ t('openregister', 'Delete') }}
-							</NcActionButton>
-						</NcActions>
+						<ActionMenu :actions="sourceActions(object)" primary />
 					</div>
 					<!-- Source Details -->
 					<div class="sourceDetails">
@@ -173,50 +121,7 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 
 			<!-- Custom row actions for table view -->
 			<template #row-actions="{ row }">
-				<NcActions :primary="false">
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								sourceStore.setSourceItem(row)
-								navigationStore.setModal('viewSource')
-							}
-						">
-						<template #icon>
-							<Eye :size="20" />
-						</template>
-						{{ t('openregister', 'View') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								sourceStore.setSourceItem(row)
-								navigationStore.setModal('editSource')
-							}
-						">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						{{ t('openregister', 'Edit') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								sourceStore.setSourceItem(row)
-								navigationStore.setDialog('deleteSource')
-							}
-						">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						{{ t('openregister', 'Delete') }}
-					</NcActionButton>
-				</NcActions>
+				<ActionMenu :actions="sourceActions(row)" />
 			</template>
 		</CnIndexPage>
 	</NcAppContent>
@@ -224,36 +129,34 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 
 <script>
 import { CnIndexPage } from '@conduction/nextcloud-vue'
-import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
+import { NcAppContent } from '@nextcloud/vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import { deleteAction, editAction, viewAction } from '../../services/menuActions.js'
+import {
+	BUILTIN_ACTIONS_OFF,
+	rowOpeners,
+	timestampColumns,
+} from '../indexPageOptions.js'
+import { localPagination } from '../localPagination.js'
 
 export default {
 	name: 'SourcesIndex',
 	components: {
+		ActionMenu,
 		NcAppContent,
 		CnIndexPage,
-		NcActions,
-		NcActionButton,
 		DatabaseArrowRightOutline,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
-		Eye,
 	},
+
+	mixins: [localPagination],
 
 	data() {
 		return {
+			builtinActionsOff: BUILTIN_ACTIONS_OFF,
 			viewMode: 'cards',
 			selectedSources: [],
 			isRefreshing: false,
-			pagination: {
-				page: 1,
-				limit: 20,
-			},
 		}
 	},
 
@@ -270,16 +173,7 @@ export default {
 				{ key: 'type', label: t('openregister', 'Type') },
 				{ key: 'databaseUrl', label: t('openregister', 'Database URL') },
 				{ key: 'registers', label: t('openregister', 'Registers') },
-				{
-					key: 'created',
-					label: t('openregister', 'Created'),
-					sortable: true,
-				},
-				{
-					key: 'updated',
-					label: t('openregister', 'Updated'),
-					sortable: true,
-				},
+				...timestampColumns(),
 			]
 		},
 
@@ -338,6 +232,23 @@ export default {
 
 	methods: {
 		/**
+		 * The menu of one source.
+		 *
+		 * @spec exclude UI plumbing — menu entries; each delegates to the stores.
+		 * @param {object} source - list row
+		 * @return {Array<object>}
+		 */
+		sourceActions(source) {
+			return [
+				viewAction(() => this.openModal(source, 'viewSource')),
+				editAction(() => this.openModal(source, 'editSource')),
+				deleteAction(() => this.openDialog(source, 'deleteSource')),
+			]
+		},
+
+		...rowOpeners((item) => sourceStore.setSourceItem(item)),
+
+		/**
 		 * Reload the source list from the store.
 		 *
 		 * @spec exclude UI plumbing — refresh button delegates to the store.
@@ -350,29 +261,6 @@ export default {
 			} finally {
 				this.isRefreshing = false
 			}
-		},
-
-		/**
-		 * Handle a page change from the paginator.
-		 *
-		 * @spec exclude UI plumbing — pagination state mutation; admin list contract owned by admin-list-views.
-		 * @param {number} page - new page number
-		 * @return {void}
-		 */
-		onPageChanged(page) {
-			this.pagination.page = page
-		},
-
-		/**
-		 * Handle a page-size change from the paginator.
-		 *
-		 * @spec exclude UI plumbing — pagination state mutation; admin list contract owned by admin-list-views.
-		 * @param {number} pageSize - new page size
-		 * @return {void}
-		 */
-		onPageSizeChanged(pageSize) {
-			this.pagination.page = 1
-			this.pagination.limit = pageSize
 		},
 
 		/**

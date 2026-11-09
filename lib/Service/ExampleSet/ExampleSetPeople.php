@@ -76,7 +76,7 @@ class ExampleSetPeople {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
 	public function install(array $plan, array $adopt, string $password, array $report, array &$record): array {
-		$set    = (string) $plan['set'];
+		$terms  = new ExampleSetAccountTerms(set: (string) $plan['set'], adopt: $adopt, password: $password);
 		$report = $this->installGroups(plan: $plan, report: $report, record: $record);
 		foreach ($plan['cast']['people'] as $person) {
 			$uid = (string) ($person['uid'] ?? '');
@@ -84,12 +84,12 @@ class ExampleSetPeople {
 				continue;
 			}
 
-			$report = $this->installUser(set: $set, person: $person, adopt: $adopt, password: $password, report: $report, record: $record);
+			$report = $this->installUser(terms: $terms, person: $person, report: $report, record: $record);
 			$report = $this->installProfile(plan: $plan, person: $person, report: $report, record: $record);
 		}
 
 		foreach ($this->serviceAccounts(plan: $plan) as $account) {
-			$report = $this->installServiceUser(set: $set, account: $account, adopt: $adopt, report: $report, record: $record);
+			$report = $this->installServiceUser(terms: $terms, account: $account, report: $report, record: $record);
 		}
 
 		$report = $this->installMemberships(plan: $plan, report: $report, record: $record);
@@ -263,17 +263,18 @@ class ExampleSetPeople {
 	/**
 	 * One cast account: kept, adopted or created.
 	 *
-	 * @param string               $set      The set id.
-	 * @param array<string, mixed> $person   The cast person.
-	 * @param array<int, string>   $adopt    Adoptable account ids.
-	 * @param string               $password The administrator's password, or ''.
-	 * @param array<string, mixed> $report   The report so far.
-	 * @param array<string, mixed> $record   The record.
+	 * @param ExampleSetAccountTerms $terms  The set id, the adoptable account ids and the administrator's password.
+	 * @param array<string, mixed>   $person The cast person.
+	 * @param array<string, mixed>   $report The report so far.
+	 * @param array<string, mixed>   $record The record.
 	 *
 	 * @return array<string, mixed> The report.
 	 */
-	private function installUser(string $set, array $person, array $adopt, string $password, array $report, array &$record): array {
-		$uid = (string) $person['uid'];
+	private function installUser(ExampleSetAccountTerms $terms, array $person, array $report, array &$record): array {
+		$set      = $terms->set;
+		$adopt    = $terms->adopt;
+		$password = $terms->password;
+		$uid      = (string) $person['uid'];
 		if ($this->accounts->userExists(uid: $uid) === true) {
 			$report['users'][$uid] = 'kept';
 			if (isset($record['users'][$uid]) === false && in_array($uid, $adopt, true) === true) {
@@ -372,16 +373,17 @@ class ExampleSetPeople {
 	 * random one that is neither shown nor stored: nobody can sign in with it,
 	 * and the account stays enabled for the app that runs work as it.
 	 *
-	 * @param string               $set     The set id.
-	 * @param array<string, mixed> $account The declared service account.
-	 * @param array<int, string>   $adopt   Adoptable account ids.
-	 * @param array<string, mixed> $report  The report so far.
-	 * @param array<string, mixed> $record  The record.
+	 * @param ExampleSetAccountTerms $terms   The set id and the adoptable account ids; the password is not used.
+	 * @param array<string, mixed>   $account The declared service account.
+	 * @param array<string, mixed>   $report  The report so far.
+	 * @param array<string, mixed>   $record  The record.
 	 *
 	 * @return array<string, mixed> The report.
 	 */
-	private function installServiceUser(string $set, array $account, array $adopt, array $report, array &$record): array {
-		$uid = (string) $account['uid'];
+	private function installServiceUser(ExampleSetAccountTerms $terms, array $account, array $report, array &$record): array {
+		$set   = $terms->set;
+		$adopt = $terms->adopt;
+		$uid   = (string) $account['uid'];
 		if ($this->accounts->userExists(uid: $uid) === true) {
 			$report['users'][$uid] = 'kept';
 			if (isset($record['users'][$uid]) === false && in_array($uid, $adopt, true) === true) {

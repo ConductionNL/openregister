@@ -24,65 +24,34 @@ use GraphQL\Error\Error;
 use GraphQL\GraphQL;
 use GraphQL\Language\Parser;
 use GraphQL\Type\Schema;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCP\IAppConfig;
-use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
 
 /**
  * Main service for executing GraphQL queries.
  *
- * Orchestrates schema generation (with APCu caching), query complexity analysis,
- * RBAC enforcement, DataLoader batching, audit trailing, and introspection control.
+ * Orchestrates schema generation, query complexity analysis, the request guard
+ * (rate limiting and introspection control) and the resolver context that
+ * carries RBAC, DataLoader batching and audit trailing.
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+ *
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class GraphQLService {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaGenerator $schemaGenerator Schema generator
-	 * @param QueryComplexityAnalyzer $complexityAnalyzer Complexity analyzer
-	 * @param GraphQLErrorFormatter $errorFormatter Error formatter
-	 * @param GraphQLResolver $resolver GraphQL resolver
-	 * @param ObjectOperationsInterface $objectService Object service
-	 * @param PermissionHandler $permissionHandler Permission handler
-	 * @param PropertyRbacHandler $propertyRbac Property RBAC handler
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper
-	 * @param RegisterMapperInterface $registerMapper Register mapper
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper
-	 * @param IAppConfig $appConfig App configuration
-	 * @param IRequest $request Current request
-	 * @param IUserSession $userSession User session
-	 * @param LoggerInterface $logger Logger
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+	 * @param GraphQLRequestGuard   $guard          Rate limit and introspection guard
+	 * @param GraphQLSchemaServices $schema         Schema generation, pricing and error formatting
+	 * @param GraphQLContextFactory $contextFactory Resolver context factory
+	 * @param LoggerInterface       $logger         Logger
 	 */
 	public function __construct(
-		private readonly SchemaGenerator $schemaGenerator,
-		private readonly QueryComplexityAnalyzer $complexityAnalyzer,
-		private readonly GraphQLErrorFormatter $errorFormatter,
-		private readonly GraphQLResolver $resolver,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly PermissionHandler $permissionHandler,
-		private readonly PropertyRbacHandler $propertyRbac,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly IAppConfig $appConfig,
-		private readonly IRequest $request,
-		private readonly IUserSession $userSession,
+		private readonly GraphQLRequestGuard $guard,
+		private readonly GraphQLSchemaServices $schema,
+		private readonly GraphQLContextFactory $contextFactory,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -100,70 +69,99 @@ class GraphQLService {
 	 */
 	public function execute(string $query, ?array $variables = null, ?string $operationName = null): array {
 		try {
-			// Check rate limiting.
-			$this->checkRateLimit();
-
-			// Parse the query.
-			$document = Parser::parse($query);
-
-			// Check introspection control.
-			$this->checkIntrospection(document: $document);
-
-			// Analyze complexity.
-			$complexity = $this->complexityAnalyzer->analyze($document, $variables);
-
-			// Generate schema.
-			$schema = $this->getSchema();
-
-			// Execute.
-			$result = GraphQL::executeQuery(
-				$schema,
-				$query,
-				null,
-				$this->createContext(operationName: $operationName),
-				$variables,
-				$operationName,
-			);
-
-			$output = $result->toArray();
-
-			// Add complexity info to extensions.
-			$output['extensions'] = ($output['extensions'] ?? []);
-			$output['extensions']['complexity'] = [
-				'estimated' => $complexity['cost'],
-				'max' => $complexity['maxCost'],
-				'depth' => $complexity['depth'],
-				'maxDepth' => $complexity['maxDepth'],
-			];
-
-			// Errors are already formatted by the GraphQL executor.
-			return $output;
+			return $this->run(query: $query, variables: $variables, operationName: $operationName);
 		} catch (Error $e) {
 			return [
-				'errors' => [$this->errorFormatter->format($e)],
+				'errors' => [$this->schema->errorFormatter->format($e)],
 			];
 		} catch (\Exception $e) {
-			$this->logger->error(
-				'GraphQL execution error: ' . $e->getMessage(),
-				[
-					'exception' => $e,
-				]
-			);
-
-			return [
-				'errors' => [
-					[
-						'message' => 'Internal server error',
-						'extensions' => ['code' => 'INTERNAL_ERROR'],
-					],
-				],
-			];
-		}//end try
+			return $this->internalError(exception: $e);
+		}
 
 	}//end execute()
 
 	/**
-	 * Get the GraphQL schema, using APCu cache when available.
+	 * Guard, price and execute a query.
+	 *
+	 * @param string $query The GraphQL query string
+	 * @param array<string, mixed>|null $variables Query variables
+	 * @param string|null $operationName Operation name
+	 *
+	 * @return array<string, mixed> The execution result with its complexity extension
+	 *
+	 * @throws Error When the request is refused or the query does not parse
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
+	 */
+	private function run(string $query, ?array $variables, ?string $operationName): array {
+		$this->guard->checkRateLimit();
+		$document = Parser::parse($query);
+		$this->guard->checkIntrospection(document: $document);
+		$complexity = $this->schema->complexityAnalyzer->analyze($document, $variables);
+
+		$result = GraphQL::executeQuery(
+			$this->getSchema(),
+			$query,
+			null,
+			$this->contextFactory->create(schemaGenerator: $this->schema->schemaGenerator, operationName: $operationName),
+			$variables,
+			$operationName,
+		);
+
+		// Errors are already formatted by the GraphQL executor.
+		$output = $result->toArray();
+		$output['extensions'] = ($output['extensions'] ?? []);
+		$output['extensions']['complexity'] = $this->complexityExtension(complexity: $complexity);
+		return $output;
+	}//end run()
+
+	/**
+	 * Shape the complexity analysis as the response extension.
+	 *
+	 * @param array<string, mixed> $complexity The analysis
+	 *
+	 * @return array<string, mixed> The extension
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
+	 */
+	private function complexityExtension(array $complexity): array {
+		return [
+			'estimated' => $complexity['cost'],
+			'max' => $complexity['maxCost'],
+			'depth' => $complexity['depth'],
+			'maxDepth' => $complexity['maxDepth'],
+		];
+	}//end complexityExtension()
+
+	/**
+	 * Log an unexpected failure and answer without its details.
+	 *
+	 * @param \Exception $exception The failure
+	 *
+	 * @return array<string, mixed> The execution result
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
+	 */
+	private function internalError(\Exception $exception): array {
+		$this->logger->error(
+			'GraphQL execution error: ' . $exception->getMessage(),
+			[
+				'exception' => $exception,
+			]
+		);
+
+		return [
+			'errors' => [
+				[
+					'message' => 'Internal server error',
+					'extensions' => ['code' => 'INTERNAL_ERROR'],
+				],
+			],
+		];
+	}//end internalError()
+
+	/**
+	 * Get the GraphQL schema.
 	 *
 	 * @return Schema The GraphQL schema
 	 *
@@ -171,206 +169,12 @@ class GraphQLService {
 	 */
 	private function getSchema(): Schema {
 		// Wire the resolver into the schema generator.
-		$this->resolver->reset();
-		$this->schemaGenerator->setResolver($this->resolver);
+		$this->schema->resolver->reset();
+		$this->schema->schemaGenerator->setResolver($this->schema->resolver);
 
 		// Generate fresh each request.
 		// APCu caching of webonyx Schema objects is complex because they contain closures.
 		// We rely on the fact that schema generation is fast (~50ms for typical installs).
-		return $this->schemaGenerator->generate();
+		return $this->schema->schemaGenerator->generate();
 	}//end getSchema()
-
-	/**
-	 * Create the resolver context passed to all resolvers.
-	 *
-	 * @param string|null $operationName The operation name
-	 *
-	 * @return array<string, mixed> The context
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
-	 */
-	private function createContext(?string $operationName): array {
-		return [
-			'objectService' => $this->objectService,
-			'permissionHandler' => $this->permissionHandler,
-			'propertyRbac' => $this->propertyRbac,
-			'auditTrailMapper' => $this->auditTrailMapper,
-			'registerMapper' => $this->registerMapper,
-			'schemaMapper' => $this->schemaMapper,
-			'schemaGenerator' => $this->schemaGenerator,
-			'operationName' => $operationName,
-			'request' => $this->request,
-			'errors' => [],
-		];
-
-	}//end createContext()
-
-	/**
-	 * Check if introspection is allowed for the current request.
-	 *
-	 * @param \GraphQL\Language\AST\DocumentNode $document The parsed document
-	 *
-	 * @return void
-	 *
-	 * @throws Error If introspection is not allowed
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
-	 */
-	private function checkIntrospection(\GraphQL\Language\AST\DocumentNode $document): void {
-		$setting = $this->appConfig->getValueString(
-			'openregister',
-			'graphql_introspection',
-			'enabled'
-		);
-
-		if ($setting === 'enabled') {
-			return;
-		}
-
-		// Check if query contains introspection fields.
-		$hasIntrospection = false;
-		foreach ($document->definitions as $definition) {
-			if ($definition instanceof \GraphQL\Language\AST\OperationDefinitionNode === false) {
-				continue;
-			}
-
-			$hasIntrospection = $this->selectionSetHasIntrospection(selectionSet: $definition->selectionSet);
-			if ($hasIntrospection === true) {
-				break;
-			}
-		}
-
-		if ($hasIntrospection === false) {
-			return;
-		}
-
-		if ($setting === 'disabled') {
-			throw new Error(
-				'Introspection is disabled',
-				null,
-				null,
-				[],
-				null,
-				null,
-				['code' => 'INTROSPECTION_DISABLED']
-			);
-		}
-
-		// Setting is 'authenticated' — check if user is logged in.
-		if ($setting === 'authenticated') {
-			$user = $this->userSession->getUser();
-			if ($user === null) {
-				throw new Error(
-					'Introspection requires authentication',
-					null,
-					null,
-					[],
-					null,
-					null,
-					['code' => 'INTROSPECTION_DISABLED']
-				);
-			}
-		}
-
-	}//end checkIntrospection()
-
-	/**
-	 * Check if a selection set contains introspection fields.
-	 *
-	 * @param \GraphQL\Language\AST\SelectionSetNode $selectionSet The selection set
-	 *
-	 * @return bool True if introspection fields are present
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
-	 */
-	private function selectionSetHasIntrospection(
-		\GraphQL\Language\AST\SelectionSetNode $selectionSet,
-	): bool {
-		foreach ($selectionSet->selections as $selection) {
-			if ($selection instanceof \GraphQL\Language\AST\FieldNode === false) {
-				continue;
-			}
-
-			$name = $selection->name->value;
-			if ($name === '__schema' || $name === '__type') {
-				return true;
-			}
-		}
-
-		return false;
-	}//end selectionSetHasIntrospection()
-
-	/**
-	 * Check rate limiting for the current request.
-	 *
-	 * Uses APCu to track per-user and per-IP request counts.
-	 * Progressive delay: 2s → 4s → 8s → ... → 60s max.
-	 *
-	 * @return void
-	 *
-	 * @throws Error If rate limited
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
-	 */
-	private function checkRateLimit(): void {
-		$maxRequests = (int)$this->appConfig->getValueString(
-			'openregister',
-			'graphql_rate_limit',
-			'100'
-		);
-
-		$windowSeconds = 60;
-
-		// Identify the client.
-		$user = $this->userSession->getUser();
-		$key = 'openregister_graphql_rate_';
-		if ($user !== null) {
-			$key .= 'user_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $user->getUID());
-		}
-
-		if ($user === null) {
-			$clientIp = $this->request->getRemoteAddress();
-			if (empty($clientIp) === true) {
-				// No identifiable client (CLI/test context) — skip rate limiting.
-				return;
-			}
-
-			$key .= 'ip_' . preg_replace('/[^a-zA-Z0-9_.]/', '_', $clientIp);
-		}
-
-		if (function_exists('apcu_enabled') === false || apcu_enabled() === false) {
-			return;
-		}
-
-		$count = apcu_fetch($key);
-		if ($count === false) {
-			apcu_store($key, 1, $windowSeconds);
-			return;
-		}
-
-		if ($count >= $maxRequests) {
-			// Calculate progressive delay.
-			$overCount = ($count - $maxRequests);
-			$delay = min(60, (int)pow(2, min($overCount, 5)));
-			$retryAfter = $delay;
-
-			apcu_inc($key);
-
-			throw new Error(
-				"Rate limit exceeded. Retry after $retryAfter seconds.",
-				null,
-				null,
-				[],
-				null,
-				null,
-				[
-					'code' => 'RATE_LIMITED',
-					'retryAfter' => $retryAfter,
-				]
-			);
-		}//end if
-
-		apcu_inc($key);
-
-	}//end checkRateLimit()
 }//end class

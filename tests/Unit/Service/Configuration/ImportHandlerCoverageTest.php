@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use Exception;
-use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\DeployedWorkflow;
@@ -35,8 +34,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportDuplicates;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
-use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -69,17 +68,11 @@ class ImportHandlerCoverageTest extends TestCase {
 	/** @var MappingMapper&MockObject */
 	private MappingMapper $mappingMapper;
 
-	/** @var Client&MockObject */
-	private Client $client;
-
 	/** @var IAppConfig&MockObject */
 	private IAppConfig $appConfig;
 
 	/** @var LoggerInterface&MockObject */
 	private LoggerInterface $logger;
-
-	/** @var UploadHandler&MockObject */
-	private UploadHandler $uploadHandler;
 
 	/** @var ObjectService&MockObject */
 	private ObjectService $objectService;
@@ -97,10 +90,8 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
 		$this->configurationMapper = $this->createMock(ConfigurationMapper::class);
 		$this->mappingMapper = $this->createMock(MappingMapper::class);
-		$this->client = $this->createMock(Client::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->uploadHandler = $this->createMock(UploadHandler::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->handler = new ImportHandler(
@@ -109,11 +100,9 @@ class ImportHandlerCoverageTest extends TestCase {
 			objectEntityMapper:  $this->objectEntityMapper,
 			configurationMapper: $this->configurationMapper,
 			mappingMapper:       $this->mappingMapper,
-			client:              $this->client,
 			appConfig:           $this->appConfig,
 			logger:              $this->logger,
 			appDataPath:         '/tmp',
-			uploadHandler:       $this->uploadHandler,
 			objectService:       $this->objectService
 		);
 
@@ -294,7 +283,7 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([$reg1, $reg2]);
 
-		$result = $this->invokeMethod($this->handler, 'getDuplicateRegisterInfo', ['dup-reg']);
+		$result = (new ImportDuplicates($this->registerMapper, $this->schemaMapper, $this->logger))->describeRegisters('dup-reg');
 
 		$this->assertStringContainsString('2024-01-15 10:30:00', $result);
 		$this->assertStringContainsString('2024-02-20 14:00:00', $result);
@@ -318,7 +307,7 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([$reg1, $reg2]);
 
-		$result = $this->invokeMethod($this->handler, 'getDuplicateRegisterInfo', ['dup-reg']);
+		$result = (new ImportDuplicates($this->registerMapper, $this->schemaMapper, $this->logger))->describeRegisters('dup-reg');
 
 		$this->assertStringContainsString('unknown', $result);
 
@@ -893,7 +882,6 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->assertCount(0, $result['objects']);
 
 	}//end testImportFromJsonSkipsObjectWhenVersionNotHigher()
-
 
 	// =========================================================================
 	// importFromJson — seed data skip when no configuration (lines 1822-1826)
@@ -1503,7 +1491,6 @@ class ImportHandlerCoverageTest extends TestCase {
 
 	}//end testImportFromAppSkipsNonSchemaInResults()
 
-
 	// =========================================================================
 	// importFromFilePath — file not found / read failure (lines 2440-2447)
 	// =========================================================================
@@ -1930,8 +1917,6 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->assertCount(1, $result['schemas']);
 
 	}//end testImportFromJsonContinuesOnSchemaFailureInPass1()
-
-
 
 	// =========================================================================
 	// Setter methods coverage

@@ -40,10 +40,12 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
+use OCA\OpenRegister\Service\Rbac\SchemaRegisterLookup;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -175,10 +177,10 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 			$evaluator,
 			new NullLogger(),
 			$groups,
-			new MemberOfResolver($schemas, $registers, $container, $evaluator, new NullLogger())
+			new MemberOfResolver(new SchemaRegisterLookup($schemas, $registers), $container, $evaluator, new NullLogger())
 		);
 
-		$permissions = new PermissionHandler(
+		$permissions = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$users,
 			$groups,
@@ -193,7 +195,7 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($permissions, $registers, $objects) {
-				if ($id === PermissionHandler::class) {
+				if ($id === PermissionHandlerInterface::class) {
 					return $permissions;
 				}
 

@@ -40,9 +40,6 @@ use OCP\IL10N;
  * Structural + business-rule validator for a migration-pack JSON document.
  *
  * @spec openspec/specs/migration-mapping-packs/spec.md
- *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One small, independently-testable validate*() method
- *     per pack-document field keeps each check simple; the class total sums them, not any single method.
  */
 class PackDefinitionValidator {
 	/**
@@ -67,6 +64,13 @@ class PackDefinitionValidator {
 	public const ALLOWED_ID_STRATEGY_TYPES = ['sourceField', 'generate'];
 
 	/**
+	 * Validator for the `transform` block of a field mapping.
+	 *
+	 * @var PackTransformValidator
+	 */
+	private readonly PackTransformValidator $transforms;
+
+	/**
 	 * Constructor.
 	 *
 	 * Every message is shown to the person editing the pack (the pack editor
@@ -78,7 +82,7 @@ class PackDefinitionValidator {
 	public function __construct(
 		private readonly IL10N $l10n,
 	) {
-
+		$this->transforms = new PackTransformValidator(l10n: $l10n);
 	}//end __construct()
 
 	/**
@@ -132,7 +136,7 @@ class PackDefinitionValidator {
 	 */
 	private function validateId(array $definition): array {
 		$id = $definition['id'] ?? null;
-		if (is_string($id) === false || $id === '') {
+		if ($this->isNonEmptyString(value: $id) === false) {
 			return [$this->l10n->t('"%s" is required and must be a non-empty string', ['id'])];
 		}
 
@@ -151,8 +155,7 @@ class PackDefinitionValidator {
 	 * @return string[]
 	 */
 	private function validateName(array $definition): array {
-		$name = $definition['name'] ?? null;
-		if (is_string($name) === false || $name === '') {
+		if ($this->isNonEmptyString(value: $definition['name'] ?? null) === false) {
 			return [$this->l10n->t('"%s" is required and must be a non-empty string', ['name'])];
 		}
 
@@ -168,13 +171,8 @@ class PackDefinitionValidator {
 	 */
 	private function validateSourceFormat(array $definition): array {
 		$format = $definition['sourceFormat'] ?? null;
-		if (is_string($format) === false || in_array($format, self::ALLOWED_SOURCE_FORMATS, true) === false) {
-			return [
-				$this->l10n->t(
-					'%1$s must be one of: %2$s (got %3$s)',
-					['"sourceFormat"', implode(', ', self::ALLOWED_SOURCE_FORMATS), var_export($format, true)]
-				),
-			];
+		if (in_array($format, self::ALLOWED_SOURCE_FORMATS, true) === false) {
+			return [$this->notOneOf(label: '"sourceFormat"', allowed: self::ALLOWED_SOURCE_FORMATS, got: $format)];
 		}
 
 		return [];
@@ -208,124 +206,90 @@ class PackDefinitionValidator {
 	 * @return string[]
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Per-transform-type validation requires many branches.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Per-transform-type validation requires many branches.
 	 */
 	private function validateFieldMappings(array $definition): array {
 		$mappings = $definition['fieldMappings'] ?? null;
-		if (is_array($mappings) === false || empty($mappings) === true) {
+		if ($this->isNonEmptyArray(value: $mappings) === false) {
 			return [$this->l10n->t('"fieldMappings" is required and must be a non-empty array')];
 		}
 
 		$errors = [];
 		foreach (array_values($mappings) as $position => $mapping) {
-			$number = ($position + 1);
-			if (is_array($mapping) === false) {
-				$errors[] = $this->l10n->t('Mapping row %s must be an object', [$number]);
-				continue;
-			}
-
-			$source = $mapping['source'] ?? null;
-			if (is_string($source) === false || $source === '') {
-				$errors[] = $this->l10n->t('Mapping row %1$s: %2$s is required and must be a non-empty string', [$number, 'source']);
-			}
-
-			$target = $mapping['target'] ?? null;
-			if (is_string($target) === false || $target === '') {
-				$errors[] = $this->l10n->t('Mapping row %1$s: %2$s is required and must be a non-empty string', [$number, 'target']);
-			}
-
-			if (isset($mapping['required']) === true && is_bool($mapping['required']) === false) {
-				$errors[] = $this->l10n->t('Mapping row %s: required must be a boolean when present', [$number]);
-			}
-
-			if (isset($mapping['transform']) === true) {
-				$errors = array_merge(
-					$errors,
-					$this->validateTransform(transform: $mapping['transform'], path: $this->l10n->t('Mapping row %s: transform', [$number]))
-				);
-			}
-		}//end foreach
+			$errors = array_merge($errors, $this->validateMapping(mapping: $mapping, number: ($position + 1)));
+		}
 
 		return $errors;
 	}//end validateFieldMappings()
 
 	/**
-	 * Validate one `transform` block.
+	 * Validate one field mapping.
 	 *
-	 * @param mixed $transform The transform value to validate.
-	 * @param string $path The error-message path prefix.
+	 * @param mixed $mapping The mapping entry.
+	 * @param int   $number  Its position counted from 1.
 	 *
 	 * @return string[]
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each transform type has its own required-field shape.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Each transform type has its own required-field shape.
 	 */
-	private function validateTransform($transform, string $path): array {
-		if (is_array($transform) === false) {
-			return [$this->l10n->t('%s must be an object with a "type" key', [$path])];
+	private function validateMapping(mixed $mapping, int $number): array {
+		if (is_array($mapping) === false) {
+			return [$this->l10n->t('Mapping row %s must be an object', [$number])];
 		}
 
-		$type = $transform['type'] ?? null;
-		if (is_string($type) === false || in_array($type, self::ALLOWED_TRANSFORM_TYPES, true) === false) {
-			return [
-				$this->l10n->t(
-					'%1$s must be one of: %2$s (got %3$s)',
-					[$path . '.type', implode(', ', self::ALLOWED_TRANSFORM_TYPES), var_export($type, true)]
-				),
-			];
+		return array_merge(
+			$this->validateMappingString(mapping: $mapping, key: 'source', number: $number),
+			$this->validateMappingString(mapping: $mapping, key: 'target', number: $number),
+			$this->validateMappingRequired(mapping: $mapping, number: $number),
+			$this->validateMappingTransform(mapping: $mapping, number: $number)
+		);
+	}//end validateMapping()
+
+	/**
+	 * Validate a required non-empty string field of a mapping.
+	 *
+	 * @param array<string, mixed> $mapping The mapping entry.
+	 * @param string               $key     The field name (`source` or `target`).
+	 * @param int                  $number  The mapping's position counted from 1.
+	 *
+	 * @return string[]
+	 */
+	private function validateMappingString(array $mapping, string $key, int $number): array {
+		if ($this->isNonEmptyString(value: $mapping[$key] ?? null) === false) {
+			return [$this->l10n->t('Mapping row %1$s: %2$s is required and must be a non-empty string', [$number, $key])];
 		}
-
-		switch ($type) {
-			case 'date':
-				if (isset($transform['sourceFormat']) === true && is_string($transform['sourceFormat']) === false) {
-					return [$this->l10n->t('%s must be a string when present', [$path . '.sourceFormat'])];
-				}
-
-				if (isset($transform['targetFormat']) === true && is_string($transform['targetFormat']) === false) {
-					return [$this->l10n->t('%s must be a string when present', [$path . '.targetFormat'])];
-				}
-				break;
-
-			case 'bool-map':
-				if (is_array($transform['map'] ?? null) === false || empty($transform['map']) === true) {
-					return [$this->l10n->t('%1$s is required and must be a non-empty object for a %2$s transform', [$path . '.map', 'bool-map'])];
-				}
-				break;
-
-			case 'lookup':
-				if (is_array($transform['map'] ?? null) === false || empty($transform['map']) === true) {
-					return [$this->l10n->t('%1$s is required and must be a non-empty object for a %2$s transform', [$path . '.map', 'lookup'])];
-				}
-				break;
-
-			case 'concat':
-				if (is_array($transform['fields'] ?? null) === false || empty($transform['fields']) === true) {
-					return [$this->l10n->t('%1$s is required and must be a non-empty array for a %2$s transform', [$path . '.fields', 'concat'])];
-				}
-
-				foreach ($transform['fields'] as $fieldIndex => $field) {
-					if (is_string($field) === false || $field === '') {
-						return [$this->l10n->t('%s must be a non-empty string', [$path . '.fields[' . $fieldIndex . ']'])];
-					}
-				}
-				break;
-
-			case 'const':
-				if (array_key_exists('value', $transform) === false) {
-					return [$this->l10n->t('%1$s is required for a %2$s transform', [$path . '.value', 'const'])];
-				}
-				break;
-
-			case 'trim':
-			default:
-				// No extra fields required.
-				break;
-		}//end switch
 
 		return [];
-	}//end validateTransform()
+	}//end validateMappingString()
+
+	/**
+	 * Validate a mapping's optional `required` flag.
+	 *
+	 * @param array<string, mixed> $mapping The mapping entry.
+	 * @param int                  $number  The mapping's position counted from 1.
+	 *
+	 * @return string[]
+	 */
+	private function validateMappingRequired(array $mapping, int $number): array {
+		if (isset($mapping['required']) === true && is_bool($mapping['required']) === false) {
+			return [$this->l10n->t('Mapping row %s: required must be a boolean when present', [$number])];
+		}
+
+		return [];
+	}//end validateMappingRequired()
+
+	/**
+	 * Validate a mapping's optional `transform` block.
+	 *
+	 * @param array<string, mixed> $mapping The mapping entry.
+	 * @param int                  $number  The mapping's position counted from 1.
+	 *
+	 * @return string[]
+	 */
+	private function validateMappingTransform(array $mapping, int $number): array {
+		if (isset($mapping['transform']) === false) {
+			return [];
+		}
+
+		return $this->transforms->validate(transform: $mapping['transform'], path: $this->l10n->t('Mapping row %s: transform', [$number]));
+	}//end validateMappingTransform()
 
 	/**
 	 * Validate the optional `defaults` map.
@@ -362,10 +326,8 @@ class PackDefinitionValidator {
 			return [$this->l10n->t('"skipRows" must be an array of row numbers when present')];
 		}
 
-		foreach ($definition['skipRows'] as $row) {
-			if (is_int($row) === false || $row < 1) {
-				return [$this->l10n->t('"skipRows" entries must be positive integers')];
-			}
+		if ($this->allPositiveIntegers(values: $definition['skipRows']) === false) {
+			return [$this->l10n->t('"skipRows" entries must be positive integers')];
 		}
 
 		return [];
@@ -385,21 +347,80 @@ class PackDefinitionValidator {
 		}
 
 		$type = $idStrategy['type'] ?? null;
-		if (is_string($type) === false || in_array($type, self::ALLOWED_ID_STRATEGY_TYPES, true) === false) {
-			return [
-				$this->l10n->t(
-					'%1$s must be one of: %2$s (got %3$s)',
-					['idStrategy.type', implode(', ', self::ALLOWED_ID_STRATEGY_TYPES), var_export($type, true)]
-				),
-			];
+		if (in_array($type, self::ALLOWED_ID_STRATEGY_TYPES, true) === false) {
+			return [$this->notOneOf(label: 'idStrategy.type', allowed: self::ALLOWED_ID_STRATEGY_TYPES, got: $type)];
 		}
 
-		if ($type === 'sourceField'
-			&& (is_string($idStrategy['field'] ?? null) === false || $idStrategy['field'] === '')
-		) {
+		return $this->validateIdStrategyField(idStrategy: $idStrategy);
+	}//end validateIdStrategy()
+
+	/**
+	 * A `sourceField` id strategy names a non-empty source field.
+	 *
+	 * @param array<string, mixed> $idStrategy The id strategy, of an allowed type.
+	 *
+	 * @return string[]
+	 */
+	private function validateIdStrategyField(array $idStrategy): array {
+		if ($idStrategy['type'] === 'sourceField' && $this->isNonEmptyString(value: $idStrategy['field'] ?? null) === false) {
 			return [$this->l10n->t('idStrategy.field is required and must be a non-empty string when idStrategy.type is "sourceField"')];
 		}
 
 		return [];
-	}//end validateIdStrategy()
+	}//end validateIdStrategyField()
+
+	/**
+	 * The "must be one of" finding shared by every allow-listed field.
+	 *
+	 * @param string   $label   The field as named in the message.
+	 * @param string[] $allowed The allowed values.
+	 * @param mixed    $got     The value found.
+	 *
+	 * @return string The translated finding.
+	 */
+	private function notOneOf(string $label, array $allowed, mixed $got): string {
+		return $this->l10n->t(
+			'%1$s must be one of: %2$s (got %3$s)',
+			[$label, implode(', ', $allowed), var_export($got, true)]
+		);
+	}//end notOneOf()
+
+	/**
+	 * Whether every value is an integer of at least 1.
+	 *
+	 * @param array<mixed> $values The values.
+	 *
+	 * @return bool True when all are positive integers.
+	 */
+	private function allPositiveIntegers(array $values): bool {
+		foreach ($values as $value) {
+			if (is_int($value) === false || $value < 1) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end allPositiveIntegers()
+
+	/**
+	 * Whether a value is an array with at least one entry.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for a non-empty array.
+	 */
+	private function isNonEmptyArray(mixed $value): bool {
+		return is_array($value) === true && empty($value) === false;
+	}//end isNonEmptyArray()
+
+	/**
+	 * Whether a value is a string other than ''.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for a non-empty string.
+	 */
+	private function isNonEmptyString(mixed $value): bool {
+		return is_string($value) === true && $value !== '';
+	}//end isNonEmptyString()
 }//end class

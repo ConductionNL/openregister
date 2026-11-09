@@ -41,6 +41,10 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Flow\FlowStateHandle
  * @uses \OCA\OpenRegister\Service\Flow\FlowResumeState
  * @uses \OCA\OpenRegister\Service\Flow\FlowStepHistory
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStart
  * @uses \OCA\OpenRegister\Service\Flow\FlowHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass

@@ -45,7 +45,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
-use OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -120,12 +120,6 @@ class ExportService implements ObjectExporterInterface {
 	 */
 	private readonly PropertyRbacHandler $propertyRbacHandler;
 
-	/**
-	 * Translation handler for column projection during export.
-	 *
-	 * @var \OCA\OpenRegister\Service\Object\TranslationHandler
-	 */
-	private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler;
 
 	/**
 	 * Optional register context used during sheet population.
@@ -150,7 +144,6 @@ class ExportService implements ObjectExporterInterface {
 	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param CacheHandlerInterface $cacheHandler The cache handler for name resolution.
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
-	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler The translation handler.
 	 * @param NcOfficeConverterInterface|null $officeConverter Office server conversion; PDF output needs it.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
@@ -162,7 +155,6 @@ class ExportService implements ObjectExporterInterface {
 		ObjectOperationsInterface $objectService,
 		CacheHandlerInterface $cacheHandler,
 		PropertyRbacHandler $propertyRbacHandler,
-		\OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
 		private readonly ?NcOfficeConverterInterface $officeConverter = null,
 	) {
 		$this->registerMapper = $registerMapper;
@@ -170,7 +162,6 @@ class ExportService implements ObjectExporterInterface {
 		$this->objectService = $objectService;
 		$this->cacheHandler = $cacheHandler;
 		$this->propertyRbacHandler = $propertyRbacHandler;
-		$this->translationHandler = $translationHandler;
 	}//end __construct()
 
 	/**
@@ -882,12 +873,12 @@ class ExportService implements ObjectExporterInterface {
 		}
 
 		// Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.
-		// Set a very high limit to get all objects (export needs all data).
+		// An export needs every row, so it asks for no limit: a number would be
+		// cut at the page bound on the multi-schema paths.
 		// The export's own keys come first, so no property filter can replace them.
 		$query = [
 			'@self' => $objectFilters,
-			'_limit' => 999999,
-			// Very high limit to get all objects.
+			'_limit' => false,
 			'_includeDeleted' => false,
 			'_multitenancy_explicit' => $multiExplicitlySet,
 		] + $propertyFilters;

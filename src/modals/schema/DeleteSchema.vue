@@ -36,7 +36,10 @@ import {
 
 <script>
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
-import { confirmDialogState } from '../shared/confirmDialogState.js'
+import {
+	confirmDialogState,
+	settleConfirmRequest,
+} from '../shared/confirmDialogState.js'
 
 export default {
 	name: 'DeleteSchema',
@@ -165,26 +168,11 @@ export default {
 		async deleteSchema() {
 			this.loading = true
 
-			schemaStore
-				.deleteSchema({
-					...schemaStore.schemaItem,
-				})
-				.then(({ response }) => {
-					this.success = response.ok
-					this.error = false
-					if (response.ok) {
-						this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
-					}
-				})
-				.catch((error) => {
-					this.success = false
-					this.error =
-						error.message
-						|| 'An error occurred while deleting the schema'
-				})
-				.finally(() => {
-					this.loading = false
-				})
+			settleConfirmRequest(
+				this,
+				schemaStore.deleteSchema({ ...schemaStore.schemaItem }),
+				'An error occurred while deleting the schema',
+			)
 		},
 	},
 }

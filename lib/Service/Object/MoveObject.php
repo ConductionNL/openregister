@@ -49,6 +49,9 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Event\ObjectLeavingEvent;
+use OCP\EventDispatcher\IEventDispatcher;
+use Opis\JsonSchema\ValidationResult;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -64,7 +67,7 @@ use Throwable;
  *
  * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
  */
-class MoveObject {
+class MoveObject implements MoveObjectInterface {
 
 	/**
 	 * What a move is called in the audit trail.
@@ -84,15 +87,17 @@ class MoveObject {
 	 * Constructor.
 	 *
 	 * @param MagicMapperInterface      $objects  The object store.
-	 * @param ValidateObjectInterface   $validator Validation against a schema.
+	 * @param ObjectValidatorInterface   $validator Validation against a schema.
 	 * @param AuditTrailMapperInterface $audit    The audit trail.
 	 * @param LoggerInterface  $logger   The logger.
+	 * @param IEventDispatcher $events   Asks the guards of values other records hold.
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objects,
-		private readonly ValidateObjectInterface $validator,
+		private readonly ObjectValidatorInterface $validator,
 		private readonly AuditTrailMapperInterface $audit,
 		private readonly LoggerInterface $logger,
+		private readonly IEventDispatcher $events,
 	) {
 	}//end __construct()
 
@@ -135,10 +140,24 @@ class MoveObject {
 			return ['fits' => true, 'errors' => []];
 		}
 
-		// `subErrors()`, not `errors()`: opis names it that, and the top-level
-		// error is a summary of them. A caller told only the summary gets "the
-		// data must match schema" and cannot see WHICH property is missing,
-		// which is the whole content of the refusal.
+		return ['fits' => false, 'errors' => $this->errorsOf(result: $result)];
+	}//end fits()
+
+	/**
+	 * The sentences of a failed validation: one per sub-error, else the summary, else a fallback.
+	 *
+	 * `subErrors()`, not `errors()`: opis names it that, and the top-level
+	 * error is a summary of them. A caller told only the summary gets "the
+	 * data must match schema" and cannot see WHICH property is missing,
+	 * which is the whole content of the refusal.
+	 *
+	 * @param ValidationResult $result The failed validation.
+	 *
+	 * @return list<string> The sentences
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+	 */
+	private function errorsOf(ValidationResult $result): array {
 		$top = $result->error();
 		$errors = [];
 		foreach (($top?->subErrors() ?? []) as $error) {
@@ -153,8 +172,8 @@ class MoveObject {
 			$errors[] = 'The object does not fit the target schema.';
 		}
 
-		return ['fits' => false, 'errors' => $errors];
-	}//end fits()
+		return $errors;
+	}//end errorsOf()
 
 	/**
 	 * Move an object, keeping its uuid and everything keyed on it.
@@ -178,18 +197,32 @@ class MoveObject {
 		Schema $targetSchema,
 		string $actor,
 	): array {
-		$move = new ObjectMove(
-			object: $object,
-			source: new MoveAddress(register: $sourceRegister, schema: $sourceSchema),
-			target: new MoveAddress(register: $targetRegister, schema: $targetSchema),
-			actor: $actor
+		return $this->perform(
+			move: new ObjectMove(
+				object: $object,
+				source: new MoveAddress(register: $sourceRegister, schema: $sourceSchema),
+				target: new MoveAddress(register: $targetRegister, schema: $targetSchema),
+				actor: $actor
+			)
 		);
+	}//end move()
 
-		if ($move->source->ids() === $move->target->ids()) {
-			return $this->refusal(move: $move, error: 'This object is already there.');
+	/**
+	 * Perform a move, keeping the object's uuid and everything keyed on it.
+	 *
+	 * @param ObjectMove $move The move.
+	 *
+	 * @return array{moved: bool, uuid: string, from: array<string, mixed>, to: array<string, mixed>, errors: array<int, string>}
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	public function perform(ObjectMove $move): array {
+		$refused = $this->preconditionRefusal(move: $move);
+		if ($refused !== null) {
+			return $this->refusal(move: $move, error: $refused);
 		}
 
-		$verdict = $this->fits(object: $object, target: $targetSchema);
+		$verdict = $this->fits(object: $move->object, target: $move->target->schema);
 		if ($verdict['fits'] === false) {
 			return $move->answer(moved: false, errors: $verdict['errors']);
 		}
@@ -202,6 +235,40 @@ class MoveObject {
 			);
 		}
 
+		return $this->completeMove(move: $move);
+	}//end perform()
+
+	/**
+	 * Why a move may not start: already there, not at the source, or kept where it is.
+	 *
+	 * @param ObjectMove $move The move.
+	 *
+	 * @return string|null The refusal, or null when the move may start
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+	 */
+	private function preconditionRefusal(ObjectMove $move): ?string {
+		if ($move->source->ids() === $move->target->ids()) {
+			return 'This object is already there.';
+		}
+
+		if ($this->isAtSource(move: $move) === false) {
+			return 'This object does not live at the address it is being moved from.';
+		}
+
+		return $this->keptReason(object: $move->object);
+	}//end preconditionRefusal()
+
+	/**
+	 * Remove the source row and record the move; a row that stays behind is reported.
+	 *
+	 * @param ObjectMove $move The move, already written at its target.
+	 *
+	 * @return array The answer
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+	 */
+	private function completeMove(ObjectMove $move): array {
 		$stranded = $this->removeFromSource(move: $move) === false;
 		$this->record(move: $move, stranded: $stranded);
 
@@ -211,7 +278,61 @@ class MoveObject {
 		}
 
 		return $move->answer(moved: true, errors: $errors);
-	}//end move()
+	}//end completeMove()
+
+	/**
+	 * Why the object has to stay where it is, or null when it may leave.
+	 *
+	 * The source row goes without delete events, so the delete guards never see it.
+	 * A caller that changes the data before the move asks with the stored object:
+	 * the guards read what the row holds now.
+	 *
+	 * @param ObjectEntity $object The object, as stored at its source.
+	 *
+	 * @return string|null The reason.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	public function keptReason(ObjectEntity $object): ?string {
+		if ($object->isLocked() === true) {
+			return 'This object is locked, so it was not moved.';
+		}
+
+		return ((new FileWriteGuard())->refusalFor(object: $object)?->getMessage() ?? $this->heldReason(object: $object));
+	}//end keptReason()
+
+	/**
+	 * The refusal of a guard for a value other records still need here, or null.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return string|null The reason.
+	 */
+	private function heldReason(ObjectEntity $object): ?string {
+		$event = new ObjectLeavingEvent(object: $object);
+		$this->events->dispatchTyped($event);
+		if ($event->isPropagationStopped() === false) {
+			return null;
+		}
+
+		return (string)($event->getErrors()['message'] ?? 'Other records still need this object where it is, so it was not moved.');
+	}//end heldReason()
+
+	/**
+	 * Whether the object lives at the source address, the only table its old row is removed from.
+	 *
+	 * @param ObjectMove $move The move.
+	 *
+	 * @return bool False when the move would leave the object readable at two addresses.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	private function isAtSource(ObjectMove $move): bool {
+		$source = $move->source->ids();
+
+		return (int)$move->object->getRegister() === (int)$source['register']
+			&& (int)$move->object->getSchema() === (int)$source['schema'];
+	}//end isAtSource()
 
 	/**
 	 * Write the object at its target address.
@@ -227,14 +348,17 @@ class MoveObject {
 	 */
 	private function writeAtTarget(ObjectMove $move): ?string {
 		$object = $move->object;
+		$before = $move->before();
 		try {
 			$sourceSlug = $this->assignTargetSlug(object: $object, targetRegister: $move->target->register, targetSchema: $move->target->schema);
 			$object->setRegister((string)$move->target->register->getId());
 			$object->setSchema((string)$move->target->schema->getId());
-			$this->objects->updateObjectEntity(
+			// The old entity is given: the target table has no row to read it from.
+			$this->objects->update(
 				entity: $object,
 				register: $move->target->register,
-				schema: $move->target->schema
+				schema: $move->target->schema,
+				oldEntity: $before
 			);
 		} catch (Throwable $e) {
 			// Put the entity back the way it was in memory, so a caller that
@@ -329,18 +453,8 @@ class MoveObject {
 	 * @return string The sentence.
 	 */
 	private function sentenceFor(object $error): string {
-		$message = '';
-		if (method_exists($error, 'message') === true) {
-			$message = (string)$error->message();
-		}
-
-		$path = '';
-		if (method_exists($error, 'data') === true) {
-			$info = $error->data();
-			if (is_object($info) === true && method_exists($info, 'path') === true) {
-				$path = implode('/', (array)$info->path());
-			}
-		}
+		$message = self::messageOf(error: $error);
+		$path = self::pathOf(error: $error);
 
 		if ($path !== '' && $message !== '') {
 			return $path . ': ' . $message;
@@ -352,6 +466,45 @@ class MoveObject {
 
 		return 'invalid';
 	}//end sentenceFor()
+
+	/**
+	 * The message of a validation error, or '' when it has none.
+	 *
+	 * @param object $error The error.
+	 *
+	 * @return string The message
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+	 */
+	private static function messageOf(object $error): string {
+		if (method_exists($error, 'message') === true) {
+			return (string)$error->message();
+		}
+
+		return '';
+	}//end messageOf()
+
+	/**
+	 * The data path of a validation error joined by '/', or '' when it has none.
+	 *
+	 * @param object $error The error.
+	 *
+	 * @return string The path
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+	 */
+	private static function pathOf(object $error): string {
+		if (method_exists($error, 'data') === false) {
+			return '';
+		}
+
+		$info = $error->data();
+		if (is_object($info) === true && method_exists($info, 'path') === true) {
+			return implode('/', (array)$info->path());
+		}
+
+		return '';
+	}//end pathOf()
 
 	/**
 	 * The properties the target declares as platform-minted.

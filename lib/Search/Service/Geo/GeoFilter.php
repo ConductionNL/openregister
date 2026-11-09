@@ -83,32 +83,34 @@ class GeoFilter {
 			throw new InvalidArgumentException('bbox MUST be exactly 4 comma-separated decimal values');
 		}
 
-		foreach ($parts as $p) {
-			if (is_numeric($p) === false) {
-				throw new InvalidArgumentException('bbox values MUST be numeric');
-			}
+		if (count(array_filter($parts, 'is_numeric')) !== 4) {
+			throw new InvalidArgumentException('bbox values MUST be numeric');
 		}
 
-		$west = (float)$parts[0];
-		$south = (float)$parts[1];
-		$east = (float)$parts[2];
-		$north = (float)$parts[3];
+		$box = ['west' => (float)$parts[0], 'south' => (float)$parts[1], 'east' => (float)$parts[2], 'north' => (float)$parts[3]];
+		self::assertBboxOrdered(box: $box);
+		return new self(self::TYPE_BBOX, $box, $property);
+	}//end fromBbox()
 
-		if ($west > $east) {
+	/**
+	 * A bounding box's west edge may not lie east of its east edge, nor its
+	 * south edge north of its north edge.
+	 *
+	 * @param array{west: float, south: float, east: float, north: float} $box The parsed box.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When an edge pair is reversed.
+	 */
+	private static function assertBboxOrdered(array $box): void {
+		if ($box['west'] > $box['east']) {
 			throw new InvalidArgumentException('bbox west MUST be less than or equal to east');
 		}
 
-		if ($south > $north) {
+		if ($box['south'] > $box['north']) {
 			throw new InvalidArgumentException('bbox south MUST be less than or equal to north');
 		}
-
-		return new self(
-			self::TYPE_BBOX,
-			['west' => $west, 'south' => $south, 'east' => $east, 'north' => $north],
-			$property
-		);
-
-	}//end fromBbox()
+	}//end assertBboxOrdered()
 
 	/**
 	 * Build a point + radius filter.
@@ -184,8 +186,8 @@ class GeoFilter {
 	/**
 	 * Validate that a value looks like a GeoJSON geometry.
 	 *
-	 * @param mixed $geometry The candidate.
-	 * @param string $onName Operator name for error context.
+	 * @param array  $geometry The candidate (the factories' parameter type already makes it an array).
+	 * @param string $onName   Operator name for error context.
 	 *
 	 * @return void
 	 *
@@ -193,11 +195,7 @@ class GeoFilter {
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
 	 */
-	private static function assertGeoJsonGeometry(mixed $geometry, string $onName): void {
-		if (is_array($geometry) === false) {
-			throw new InvalidArgumentException("{$onName} geometry MUST be a GeoJSON object");
-		}
-
+	private static function assertGeoJsonGeometry(array $geometry, string $onName): void {
 		$type = $geometry['type'] ?? null;
 		if (in_array($type, ['Polygon', 'MultiPolygon'], true) === false) {
 			throw new InvalidArgumentException(
@@ -205,9 +203,8 @@ class GeoFilter {
 			);
 		}
 
-		if (isset($geometry['coordinates']) === false || is_array($geometry['coordinates']) === false) {
+		if (is_array($geometry['coordinates'] ?? null) === false) {
 			throw new InvalidArgumentException("{$onName} geometry MUST have a coordinates array");
 		}
-
 	}//end assertGeoJsonGeometry()
 }//end class

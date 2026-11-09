@@ -53,29 +53,33 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
-use OCA\OpenRegister\Service\File\DocumentProcessingHandler;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
+use OCA\OpenRegister\Service\File\FileContentHandlers;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
+use OCA\OpenRegister\Service\File\FileLifecycleHandlers;
 use OCA\OpenRegister\Service\File\FileLockHandler;
-use OCA\OpenRegister\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
-use OCA\OpenRegister\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Service\File\FileServicePlatform;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandlerInterface;
+use OCA\OpenRegister\Service\File\FileStorageHandlers;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
-use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
+use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
-use OCA\OpenRegister\Service\File\ShareUrlBuilder;
-use OCA\OpenRegister\Service\File\TaggingHandler;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\StreamResponse;
@@ -86,14 +90,9 @@ use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
-use OCP\IGroupManager;
 use OCP\IUser;
-use OCP\IUserManager;
 use OCP\IUserSession;
-use OCP\Share\IManager;
 use OCP\Share\IShare;
-use OCP\SystemTag\ISystemTagManager;
-use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -112,21 +111,9 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.LongVariable)             Handler properties use descriptive names for clarity
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
-class FileService {
+class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 
-	/**
-	 * File mapper
-	 *
-	 * @var FileMapperInterface
-	 */
-	private FileMapperInterface $fileMapper;
 
-	/**
-	 * Group manager
-	 *
-	 * @var IGroupManager
-	 */
-	private IGroupManager $groupManager;
 
 	/**
 	 * Logger
@@ -149,40 +136,16 @@ class FileService {
 	 */
 	private IRootFolder $rootFolder;
 
-	/**
-	 * Share manager
-	 *
-	 * @var IManager
-	 */
-	private IManager $shareManager;
 
-	/**
-	 * System tag manager
-	 *
-	 * @var ISystemTagManager
-	 */
-	private ISystemTagManager $systemTagManager;
 
-	/**
-	 * System tag mapper
-	 *
-	 * @var ISystemTagObjectMapper
-	 */
-	private ISystemTagObjectMapper $systemTagMapper;
 
 	/**
 	 * Builds share links for the host the visitor used
 	 *
-	 * @var ShareUrlBuilder
+	 * @var ShareUrlBuilderInterface
 	 */
-	private ShareUrlBuilder $shareUrls;
+	private ShareUrlBuilderInterface $shareUrls;
 
-	/**
-	 * User manager
-	 *
-	 * @var IUserManager
-	 */
-	private IUserManager $userManager;
 
 	/**
 	 * User session
@@ -208,16 +171,16 @@ class FileService {
 	/**
 	 * File ownership handler
 	 *
-	 * @var FileOwnershipHandler
+	 * @var FileOwnershipHandlerInterface
 	 */
-	private FileOwnershipHandler $fileOwnershipHandler;
+	private FileOwnershipHandlerInterface $fileOwnershipHandler;
 
 	/**
 	 * File sharing handler
 	 *
-	 * @var FileSharingHandler
+	 * @var FileSharingHandlerInterface
 	 */
-	private FileSharingHandler $fileSharingHandler;
+	private FileSharingHandlerInterface $fileSharingHandler;
 
 	/**
 	 * Create file handler (Single Responsibility: File creation)
@@ -250,9 +213,9 @@ class FileService {
 	/**
 	 * Tagging handler (Single Responsibility: Tag management)
 	 *
-	 * @var TaggingHandler
+	 * @var TaggingHandlerInterface
 	 */
-	private TaggingHandler $taggingHandler;
+	private TaggingHandlerInterface $taggingHandler;
 
 	/**
 	 * File formatting handler (Single Responsibility: File formatting and filtering)
@@ -264,9 +227,9 @@ class FileService {
 	/**
 	 * Document processing handler (Single Responsibility: Document manipulation and anonymization)
 	 *
-	 * @var DocumentProcessingHandler
+	 * @var DocumentProcessingHandlerInterface
 	 */
-	private DocumentProcessingHandler $documentProcessingHandler;
+	private DocumentProcessingHandlerInterface $documentProcessingHandler;
 
 	/**
 	 * File publishing handler (Single Responsibility: File publishing and ZIP archiving)
@@ -377,107 +340,110 @@ class FileService {
 		'createFileHandler',
 		'readFileHandler',
 		'fileFormattingHandler',
-		'documentProcessingHandler',
 		'filePublishingHandler',
 	];
 
 	/**
 	 * Constructor
 	 *
-	 * @param FileMapperInterface $fileMapper File mapper
-	 * @param IGroupManager $groupManager Group manager
-	 * @param LoggerInterface $logger Logger
-	 * @param IRootFolder $rootFolder Root folder
-	 * @param IManager $shareManager Share manager
-	 * @param ISystemTagManager $systemTagManager System tag manager
-	 * @param ISystemTagObjectMapper $systemTagMapper System tag mapper
-	 * @param ShareUrlBuilder $shareUrls Share link builder
-	 * @param IUserManager $userManager User manager
-	 * @param IUserSession $userSession User session
-	 * @param FileValidationHandler $fileValidHandler File validation handler
-	 * @param FolderManagementHandler $folderMgmtHandler Folder management handler
-	 * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler
-	 * @param FileSharingHandler $fileSharingHandler File sharing handler
-	 * @param CreateFileHandler $createFileHandler Create file handler
-	 * @param ReadFileHandler $readFileHandler Read file handler
-	 * @param UpdateFileHandler $updateFileHandler Update file handler
-	 * @param DeleteFileHandler $deleteFileHandler Delete file handler
-	 * @param TaggingHandler $taggingHandler Tagging handler
-	 * @param FileFormattingHandler $fileFormatHandler File formatting handler
-	 * @param DocumentProcessingHandler $docProcHandler Document processing handler
-	 * @param FilePublishingHandler $filePubHandler File publishing handler
-	 * @param FileVersioningHandler $fileVerHandler File versioning handler
-	 * @param FileLockHandler $fileLockHandler File lock handler
-	 * @param FileBatchHandler $fileBatchHandler File batch handler
-	 * @param FilePreviewHandler $filePreviewHandler File preview handler
-	 * @param FileAuditHandler $fileAuditHandler File audit handler
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+	 * @param FileServicePlatform   $platform  Logger, root folder, share link builder and user session
+	 * @param FileStorageHandlers   $storage   The node, folder, ownership and sharing handlers
+	 * @param FileContentHandlers   $content   The tagging, formatting, processing and publishing handlers
+	 * @param FileLifecycleHandlers $lifecycle The versioning, lock, audit, batch and preview handlers
 	 */
 	public function __construct(
-		FileMapperInterface $fileMapper,
-		IGroupManager $groupManager,
-		LoggerInterface $logger,
-		IRootFolder $rootFolder,
-		IManager $shareManager,
-		ISystemTagManager $systemTagManager,
-		ISystemTagObjectMapper $systemTagMapper,
-		ShareUrlBuilder $shareUrls,
-		IUserManager $userManager,
-		IUserSession $userSession,
-		FileValidationHandler $fileValidHandler,
-		FolderManagementHandler $folderMgmtHandler,
-		FileOwnershipHandler $fileOwnershipHandler,
-		FileSharingHandler $fileSharingHandler,
-		CreateFileHandler $createFileHandler,
-		ReadFileHandler $readFileHandler,
-		UpdateFileHandler $updateFileHandler,
-		DeleteFileHandler $deleteFileHandler,
-		TaggingHandler $taggingHandler,
-		FileFormattingHandler $fileFormatHandler,
-		DocumentProcessingHandler $docProcHandler,
-		FilePublishingHandler $filePubHandler,
-		FileVersioningHandler $fileVerHandler,
-		FileLockHandler $fileLockHandler,
-		FileBatchHandler $fileBatchHandler,
-		FilePreviewHandler $filePreviewHandler,
-		FileAuditHandler $fileAuditHandler,
+		FileServicePlatform $platform,
+		FileStorageHandlers $storage,
+		FileContentHandlers $content,
+		FileLifecycleHandlers $lifecycle,
 	) {
-		$this->logger = $logger;
+		$this->logger = $platform->logger;
 		$this->logger->debug(
 			message: '[FileService] FileService constructor started.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-		$this->fileMapper = $fileMapper;
-		$this->groupManager = $groupManager;
 		// REMOVED: registerMapper assignment (unused, caused circular dependency).
-		$this->rootFolder = $rootFolder;
-		$this->shareManager = $shareManager;
-		$this->systemTagManager = $systemTagManager;
-		$this->systemTagMapper = $systemTagMapper;
-		$this->shareUrls = $shareUrls;
-		$this->userManager = $userManager;
-		$this->userSession = $userSession;
-		$this->fileValidationHandler = $fileValidHandler;
-		$this->folderManagementHandler = $folderMgmtHandler;
-		$this->fileOwnershipHandler = $fileOwnershipHandler;
-		$this->fileSharingHandler = $fileSharingHandler;
-		$this->createFileHandler = $createFileHandler;
-		$this->readFileHandler = $readFileHandler;
-		$this->updateFileHandler = $updateFileHandler;
-		$this->deleteFileHandler = $deleteFileHandler;
-		$this->taggingHandler = $taggingHandler;
-		$this->fileFormattingHandler = $fileFormatHandler;
-		$this->documentProcessingHandler = $docProcHandler;
-		$this->filePublishingHandler = $filePubHandler;
-		$this->fileVersioningHandler = $fileVerHandler;
-		$this->fileLockHandler = $fileLockHandler;
-		$this->fileBatchHandler = $fileBatchHandler;
-		$this->filePreviewHandler = $filePreviewHandler;
-		$this->fileAuditHandler = $fileAuditHandler;
+		$this->adoptPlatform(platform: $platform);
+		$this->adoptStorage(storage: $storage);
+		$this->adoptContent(content: $content);
+		$this->adoptLifecycle(lifecycle: $lifecycle);
+		$this->attachServiceToHandlers();
 
-		// Break circular dependencies: these handlers need FileService back for cross-handler
-		// coordination and utilities (sharing, tagging, path extraction, file operations).
+		$this->logger->debug(
+			message: '[FileService] FileService constructor completed.',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end __construct()
+
+	/**
+	 * Take the root folder, share link builder and user session off the platform bundle.
+	 *
+	 * @param FileServicePlatform $platform The platform bundle
+	 *
+	 * @return void
+	 */
+	private function adoptPlatform(FileServicePlatform $platform): void {
+		$this->rootFolder = $platform->rootFolder;
+		$this->shareUrls = $platform->shareUrls;
+		$this->userSession = $platform->userSession;
+	}//end adoptPlatform()
+
+	/**
+	 * Take the node, folder, ownership and sharing handlers off the storage bundle.
+	 *
+	 * @param FileStorageHandlers $storage The storage bundle
+	 *
+	 * @return void
+	 */
+	private function adoptStorage(FileStorageHandlers $storage): void {
+		$this->fileValidationHandler = $storage->folders->fileValidHandler;
+		$this->folderManagementHandler = $storage->folders->folderMgmtHandler;
+		$this->fileOwnershipHandler = $storage->folders->fileOwnershipHandler;
+		$this->fileSharingHandler = $storage->folders->fileSharingHandler;
+		$this->createFileHandler = $storage->nodes->createFileHandler;
+		$this->readFileHandler = $storage->nodes->readFileHandler;
+		$this->updateFileHandler = $storage->nodes->updateFileHandler;
+		$this->deleteFileHandler = $storage->nodes->deleteFileHandler;
+	}//end adoptStorage()
+
+	/**
+	 * Take the tagging, formatting, processing and publishing handlers off the content bundle.
+	 *
+	 * @param FileContentHandlers $content The content bundle
+	 *
+	 * @return void
+	 */
+	private function adoptContent(FileContentHandlers $content): void {
+		$this->taggingHandler = $content->taggingHandler;
+		$this->fileFormattingHandler = $content->fileFormatHandler;
+		$this->documentProcessingHandler = $content->docProcHandler;
+		$this->filePublishingHandler = $content->filePubHandler;
+	}//end adoptContent()
+
+	/**
+	 * Take the versioning, lock, batch, preview and audit handlers off the lifecycle bundle.
+	 *
+	 * @param FileLifecycleHandlers $lifecycle The lifecycle bundle
+	 *
+	 * @return void
+	 */
+	private function adoptLifecycle(FileLifecycleHandlers $lifecycle): void {
+		$this->fileVersioningHandler = $lifecycle->history->fileVerHandler;
+		$this->fileLockHandler = $lifecycle->history->fileLockHandler;
+		$this->fileBatchHandler = $lifecycle->fileBatchHandler;
+		$this->filePreviewHandler = $lifecycle->filePreviewHandler;
+		$this->fileAuditHandler = $lifecycle->history->fileAuditHandler;
+	}//end adoptLifecycle()
+
+	/**
+	 * Hand this service to the handlers that need it back, in order.
+	 *
+	 * Breaks circular dependencies: these handlers need FileService back for cross-handler
+	 * coordination and utilities (sharing, tagging, path extraction, file operations).
+	 *
+	 * @return void
+	 */
+	private function attachServiceToHandlers(): void {
 		foreach (self::HANDLERS_NEEDING_SERVICE as $handlerName) {
 			$this->attachServiceTo(handlerName: $handlerName);
 		}
@@ -488,12 +454,7 @@ class FileService {
 			message: '[FileService] Called fileBatchHandler->setFileService.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-
-		$this->logger->debug(
-			message: '[FileService] FileService constructor completed.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-	}//end __construct()
+	}//end attachServiceToHandlers()
 
 	/**
 	 * Hand this service to one handler through its setFileService(), logged before and after.
@@ -699,21 +660,15 @@ class FileService {
 	}//end createObjectFolderById()
 
 	/**
-	 * Get the OpenRegister user root folder.
+	 * Refuse when the OpenRegister user's root folder cannot be reached.
 	 *
-	 * This method provides a consistent way to access the OpenRegister user's
-	 * root folder across the entire FileService.
-	 *
-	 * @return Folder The OpenRegister user's root folder
+	 * @return void
 	 *
 	 * @throws Exception If the user folder cannot be accessed
-	 *
-	 * @psalm-return   Folder
-	 * @phpstan-return Folder
 	 */
-	private function getOpenRegisterUserFolder(): Folder {
-		return $this->folderManagementHandler->getOpenRegisterUserFolder();
-	}//end getOpenRegisterUserFolder()
+	private function assertOpenRegisterUserFolder(): void {
+		$this->folderManagementHandler->getOpenRegisterUserFolder();
+	}//end assertOpenRegisterUserFolder()
 
 	/**
 	 * Get files for either a Register or ObjectEntity.
@@ -1194,8 +1149,7 @@ class FileService {
 		}
 
 		try {
-			// Note: userId and userFolder not currently used - file retrieved from rootFolder.
-			$this->getOpenRegisterUserFolder();
+			$this->assertOpenRegisterUserFolder();
 		} catch (Exception) {
 			$msg = "[FileService] Can't create share link for $path because OpenRegister user folder couldn't be found.";
 			$this->logger->error(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
@@ -1310,7 +1264,7 @@ class FileService {
 	 * @param string|null   $category    New category; '' clears, null skips.
 	 * @param string[]|null $labels      New labels; [] clears, null skips.
 	 *
-	 * @return \OCA\OpenRegister\Db\File The persisted metadata row.
+	 * @return \OCA\OpenRegister\Files\Db\File The persisted metadata row.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -1319,7 +1273,7 @@ class FileService {
 		?string $description = null,
 		?string $category = null,
 		?array $labels = null,
-	): \OCA\OpenRegister\Db\File {
+	): \OCA\OpenRegister\Files\Db\File {
 		return $this->updateFileHandler->updateFileMetadata(
 			fileId: $fileId,
 			description: $description,
@@ -1413,7 +1367,12 @@ class FileService {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function generateObjectTag(ObjectEntity|string $objectEntity): string {
-		return $this->taggingHandler->generateObjectTag($objectEntity);
+		$identifier = $objectEntity;
+		if ($objectEntity instanceof ObjectEntity === true) {
+			$identifier = $objectEntity->getUuid() ?? (string)$objectEntity->getId();
+		}
+
+		return $this->taggingHandler->generateObjectTag($identifier);
 	}//end generateObjectTag()
 
 	/**
@@ -1439,6 +1398,7 @@ class FileService {
 	 * @psalm-param   array<int, string> $tags
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_schema and $_register stay in this fixed public signature; moved here from CreateFileHandler.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
 	 */
@@ -1454,12 +1414,7 @@ class FileService {
 	): File {
 		return $this->createFileHandler->addFile(
 			objectEntity: $objectEntity,
-			fileName: $fileName,
-			content: $content,
-			share: $share,
-			tags: $tags,
-			_schema: $_schema,
-			_register: $_register,
+			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags),
 			registerId: $registerId
 		);
 	}//end addFile()
@@ -1497,10 +1452,7 @@ class FileService {
 	): File {
 		return $this->createFileHandler->saveFile(
 			objectEntity: $objectEntity,
-			fileName: $fileName,
-			content: $content,
-			share: $share,
-			tags: $tags
+			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags)
 		);
 	}//end saveFile()
 
@@ -2103,8 +2055,7 @@ class FileService {
 		// Use CreateFileHandler to create the file in target object folder.
 		$newFile = $this->createFileHandler->addFile(
 			objectEntity: $targetObject,
-			fileName: $resolvedName,
-			content: $content
+			upload: new FileUpload(fileName: $resolvedName, content: $content, share: false)
 		);
 
 		$sourceUuid = $sourceObject->getUuid();

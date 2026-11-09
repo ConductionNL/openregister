@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
-use OCA\OpenRegister\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OperatorEvaluator;
@@ -54,8 +54,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 
 /**
+ * @uses   \OCA\OpenRegister\Service\Rbac\RoleBlockExpander
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
- * @covers \OCA\OpenRegister\Service\File\ObjectFileAccess
+ * @covers \OCA\OpenRegister\Files\Service\File\ObjectFileAccess
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  * @uses \OCA\OpenRegister\Db\ObjectEntity
@@ -72,6 +73,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 
@@ -174,7 +177,7 @@ class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,

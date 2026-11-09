@@ -67,12 +67,14 @@ use ReflectionProperty;
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
  * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSaveRun
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses   \OCA\OpenRegister\Service\Object\ObjectFindRequest
  * @uses   \OCA\OpenRegister\Service\Object\ObjectFindScope
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectFindTarget
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

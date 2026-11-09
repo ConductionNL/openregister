@@ -99,7 +99,14 @@ class MultiTenancyTraitApplyActiveOrgFilterTest extends TestCase {
 	): void {
 		$method = new ReflectionMethod(WebhookMapper::class, 'applyActiveOrgFilter');
 		$method->setAccessible(true);
-		$method->invoke($this->mapper, $qb, $user, $activeOrgUuids, $allowNullOrg, $organisationColumn);
+		$scope = [
+			'activeOrgUuids' => $activeOrgUuids,
+			'allowNullOrg' => $allowNullOrg,
+			'organisationColumn' => $organisationColumn,
+			'sharedIds' => [],
+			'sharedIdColumn' => 'id',
+		];
+		$method->invoke($this->mapper, $qb, $user, $scope);
 	}//end invokeApplyActiveOrgFilter()
 
 	/**

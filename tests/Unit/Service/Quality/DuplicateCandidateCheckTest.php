@@ -91,9 +91,11 @@ class DuplicateCandidateCheckTest extends TestCase {
 		$this->dismissals->method('activeFor')->willReturn([]);
 		$this->service = new DuplicateDetectionService(
 			$this->objectService,
-			$this->schemaMapper,
-			$this->registerMapper,
-			new SimilarityCalculator(),
+			new \OCA\OpenRegister\Search\Service\Quality\DedupScoringSources(
+				$this->schemaMapper,
+				$this->registerMapper,
+				new SimilarityCalculator()
+			),
 			$this->dismissals,
 			$this->createMock(LoggerInterface::class)
 		);

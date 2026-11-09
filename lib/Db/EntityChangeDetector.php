@@ -75,16 +75,7 @@ class EntityChangeDetector {
 	 */
 	private function normaliseForCompare(mixed $value): mixed {
 		if (is_array($value) === true) {
-			$normalised = [];
-			foreach ($value as $key => $item) {
-				$normalised[(string)$key] = $this->normaliseForCompare(value: $item);
-			}
-
-			if (array_is_list($value) === false) {
-				ksort($normalised);
-			}
-
-			return $normalised;
+			return $this->normaliseArray(value: $value);
 		}
 
 		if ($value instanceof \DateTimeInterface) {
@@ -95,6 +86,37 @@ class EntityChangeDetector {
 			return $this->normaliseForCompare(value: $value->jsonSerialize());
 		}
 
+		return $this->normaliseScalar(value: $value);
+	}//end normaliseForCompare()
+
+	/**
+	 * Normalise every item of an array, sorting the keys of a map but not of a list.
+	 *
+	 * @param array<mixed> $value The array to normalise.
+	 *
+	 * @return array<mixed> The normalised array.
+	 */
+	private function normaliseArray(array $value): array {
+		$normalised = [];
+		foreach ($value as $key => $item) {
+			$normalised[(string)$key] = $this->normaliseForCompare(value: $item);
+		}
+
+		if (array_is_list($value) === false) {
+			ksort($normalised);
+		}
+
+		return $normalised;
+	}//end normaliseArray()
+
+	/**
+	 * Turn a bool into "1"/"0" and any other scalar into its string form; leave the rest as is.
+	 *
+	 * @param mixed $value The value to normalise.
+	 *
+	 * @return mixed The normalised value.
+	 */
+	private function normaliseScalar(mixed $value): mixed {
 		if (is_bool($value) === true) {
 			return (string)(int)$value;
 		}
@@ -104,5 +126,5 @@ class EntityChangeDetector {
 		}
 
 		return $value;
-	}//end normaliseForCompare()
+	}//end normaliseScalar()
 }//end class

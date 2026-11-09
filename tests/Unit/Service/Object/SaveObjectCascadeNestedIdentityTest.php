@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 
 /**
  * SaveObject::cascadeSingleObject resolves plain-slug, numeric and uuid `$ref`s that the
@@ -32,6 +33,17 @@ use ReflectionClass;
  * a row to write onto: the save looks that id up past every read filter.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  */
@@ -74,8 +86,8 @@ class SaveObjectCascadeNestedIdentityTest extends TestCase {
 		$note->setProperties(['text' => ['type' => 'string'], 'status' => ['type' => 'string']]);
 
 		$reflection = new ReflectionClass(SaveObject::class);
-		$reflection->getProperty('schemaReferenceCache')->setValue($handler, ['note' => '2']);
-		$reflection->getProperty('schemaCache')->setValue($handler, ['2' => $note]);
+		SaveLookupsAccess::set($handler, 'schemaReferenceCache', ['note' => '2']);
+		SaveLookupsAccess::set($handler, 'schemaCache', ['2' => $note]);
 		$reflection->getProperty('urlGenerator')->setValue($handler, $this->createMock(IURLGenerator::class));
 		$reflection->getProperty('permissionHandler')->setValue($handler, $this->createMock(PermissionHandler::class));
 

@@ -65,7 +65,7 @@ final class SchemaMigrationControllerFactory {
 					objectReader: $objectReader,
 					conversions: $conversions,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\SchemaMigrationPlatform(
+				platform: new \OCA\OpenRegister\Controller\Support\RetentionPlatform(
 					jobList: $jobList,
 					userSession: $userSession,
 					logger: $logger,

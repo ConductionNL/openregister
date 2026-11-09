@@ -43,11 +43,16 @@ class RegistrySubscriptionNotifierTest extends TestCase {
 				return $event instanceof RegistrySubscriptionRequestedEvent;
 			}));
 
-		$this->notifier->requested($this->personObject(), 'dossiq', 'brpPerson', 'brp', '999990019');
+		$object = $this->personObject();
+		$object->setRegister('dossiq');
+		$object->setSchema('brpPerson');
+		$this->notifier->requested($object, 'brp', '999990019');
 
 		$this->assertInstanceOf(RegistrySubscriptionRequestedEvent::class, $dispatched);
 		$this->assertSame('999990019', $dispatched->getIdentityValue());
 		$this->assertSame('brp', $dispatched->getRegistry());
+		$this->assertSame('dossiq', $dispatched->getRegister());
+		$this->assertSame('brpPerson', $dispatched->getSchema());
 	}
 
 	public function testRequestedWritesAnAuditEntry(): void {
@@ -59,7 +64,7 @@ class RegistrySubscriptionNotifierTest extends TestCase {
 				$this->anything(),
 			);
 
-		$this->notifier->requested($this->personObject(), 'dossiq', 'brpPerson', 'brp', '999990019');
+		$this->notifier->requested($this->personObject(), 'brp', '999990019');
 	}
 
 	public function testEndedDispatchesEvent(): void {

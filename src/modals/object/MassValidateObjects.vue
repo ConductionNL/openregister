@@ -1,78 +1,61 @@
-/** * @file MassValidateObjects.vue * @module Modals/Object * @author Your Name *
-@copyright 2024 Your Organization * @license EUPL-1.2
-https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 * @version 1.0.0 */
-
 <script setup>
-import { translate as t } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcDialog
-		:name="`Validate ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
-		:canClose="false"
+		:name="
+			n(
+				'openregister',
+				'Validate {count} object',
+				'Validate {count} objects',
+				selectedObjects.length,
+				{ count: selectedObjects.length },
+			)
+		"
+		noClose
 		size="normal">
 		<!-- Object Selection Review -->
 		<div v-if="success === null" class="validate-step">
-			<h3 class="step-title">Confirm Object Validation</h3>
+			<h3 class="step-title">
+				{{ t('openregister', 'Confirm validation') }}
+			</h3>
 
 			<NcNoteCard type="info">
-				Review the selected objects below. You can remove any objects you
-				don't want to validate by clicking the remove button.<br /><br />
-				<strong>When to use mass validation:</strong><br />
-				• After updating the schema to apply new validation rules<br />
-				• When objects need to be re-enriched with updated name/description
-				logic<br />
-				• To refresh computed properties or auto-generated fields<br />
-				• After changing schema configuration that affects existing
-				objects<br /><br />
-				Objects will be saved without modification to trigger validation and
-				enrichment processes against the current schema.
+				{{
+					t(
+						'openregister',
+						'Remove any object you want to skip. Use this after you change a schema, to apply new rules and refresh generated fields.',
+					)
+				}}<br /><br />
+				{{
+					t(
+						'openregister',
+						'We save each object unchanged, which checks it against the current schema.',
+					)
+				}}
 			</NcNoteCard>
 
-			<div class="selected-objects-container">
-				<h4>Selected Objects ({{ selectedObjects.length }})</h4>
-
-				<div v-if="selectedObjects.length" class="selected-objects-list">
-					<div
-						v-for="obj in selectedObjects"
-						:key="obj.id"
-						class="selected-object-item">
-						<div class="object-info">
-							<strong>{{
-								obj['@self']?.name
-								|| obj.name
-								|| obj.title
-								|| obj['@self']?.title
-								|| 'Unnamed Object'
-							}}</strong>
-							<p class="object-id">
-								ID: {{ obj.id || obj['@self']?.id }}
-							</p>
-						</div>
-						<NcButton
-							variant="tertiary"
-							:aria-label="`Remove ${obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id}`"
-							@click="removeObject(obj.id)">
-							<template #icon>
-								<Close :size="20" />
-							</template>
-						</NcButton>
-					</div>
-				</div>
-
-				<NcEmptyContent v-else name="No objects selected">
-					<template #description>
-						No objects are currently selected for validation.
-					</template>
-				</NcEmptyContent>
-			</div>
+			<SelectedObjectsList
+				:objects="selectedObjects"
+				:emptyDescription="
+					t('openregister', 'Select objects in the list to validate them.')
+				"
+				@remove="removeObject" />
 		</div>
 
 		<NcNoteCard v-if="success" type="success">
 			<p>
-				Object{{ selectedObjects.length > 1 ? 's' : '' }} successfully
-				validated
+				{{
+					n(
+						'openregister',
+						'{count} object validated',
+						'{count} objects validated',
+						validatedCount,
+						{ count: validatedCount },
+					)
+				}}
 			</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
@@ -84,7 +67,11 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success === null ? 'Cancel' : 'Close' }}
+				{{
+					success === null
+						? t('openregister', 'Cancel')
+						: t('openregister', 'Close')
+				}}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
@@ -95,46 +82,43 @@ import { navigationStore, objectStore } from '../../store/store.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<CheckCircle v-if="!loading" :size="20" />
 				</template>
-				Validate
+				{{ t('openregister', 'Validate') }}
 			</NcButton>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import Close from 'vue-material-design-icons/Close.vue'
+import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
+import selectedObjectsDialog, {
+	refreshObjectLists,
+} from './selectedObjectsDialog.js'
 
 export default {
 	name: 'MassValidateObjects',
 	components: {
+		SelectedObjectsList,
 		NcDialog,
 		NcButton,
-		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,
 		// Icons
 		CheckCircle,
 		Cancel,
-		Close,
 	},
+
+	mixins: [selectedObjectsDialog],
 
 	data() {
 		return {
 			success: null,
 			loading: false,
 			error: false,
-			result: null,
+			validatedCount: 0,
 			closeModalTimeout: null,
-			selectedObjects: [],
 		}
 	},
 
@@ -144,102 +128,77 @@ export default {
 
 	methods: {
 		/**
-		 * @spec openspec/specs/entity-management-modals/spec.md
-		 */
-		initializeSelection() {
-			// Get selected objects from the store or navigation context
-			this.selectedObjects = objectStore.selectedObjects || []
-			if (this.selectedObjects.length === 0) {
-				this.closeDialog()
-			}
-		},
-
-		/**
-		 * @param {string|number} objectId
-		 * @spec exclude UI selection plumbing — removes an object from the mass-validate selection.
-		 */
-		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(
-				(obj) => obj.id !== objectId,
-			)
-			// Update the store as well
-			objectStore.selectedObjects = this.selectedObjects
-			if (this.selectedObjects.length === 0) {
-				this.closeDialog()
-			}
-		},
-
-		/**
-		 * @spec exclude Modal close plumbing — closes the mass-validate dialog.
+		 * @spec exclude Modal close plumbing: closes the mass-validate dialog.
 		 */
 		closeDialog() {
 			clearTimeout(this.closeModalTimeout)
-			this.startClosing = true
 			navigationStore.setDialog(false)
 		},
 
 		/**
-		 * @spec exclude Modal action plumbing — re-saves each selected object to trigger validation.
+		 * Save one object as it is. A row that is not loaded is fetched first:
+		 * saving replaces the object, so `{ id }` alone would empty it.
+		 *
+		 * @param {object} obj The selected row
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 * @return {Promise<boolean>} Whether the object was saved
+		 */
+		async validateObject(obj) {
+			const type = objectStore.currentType
+			try {
+				const row = obj['@self']
+					? obj
+					: await objectStore.fetchObject(type, obj.id)
+				return (
+					Boolean(row)
+					&& (await objectStore.saveObject(type, { ...row, id: obj.id }))
+						!== null
+				)
+			} catch (error) {
+				console.error(`Failed to validate object ${obj.id}:`, error)
+				return false
+			}
+		},
+
+		/**
+		 * Report how the save went. The dialog closes by itself only when
+		 * every object was saved.
+		 *
+		 * @param {Array<boolean>} outcomes One entry per object
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 * @return {void}
+		 */
+		showOutcome(outcomes) {
+			this.validatedCount = outcomes.filter(Boolean).length
+			const failed = outcomes.length - this.validatedCount
+			if (this.validatedCount > 0) {
+				this.success = true
+				refreshObjectLists()
+			}
+			if (failed > 0) {
+				this.error = n(
+					'openregister',
+					'{count} object could not be validated',
+					'{count} objects could not be validated',
+					failed,
+					{ count: failed },
+				)
+				return
+			}
+			this.closeModalTimeout = setTimeout(() => this.closeDialog(), 2000)
+		},
+
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		async validateObjects() {
 			this.loading = true
-
-			try {
-				// Validate each object individually by saving it without modifications
-				const results = await Promise.allSettled(
-					this.selectedObjects.map(async (obj) => {
-						try {
-							// Save the object as-is to trigger validation and enrichment
-							await objectStore.saveObject(obj, {
-								register: obj['@self']?.register || obj.register,
-								schema: obj['@self']?.schema || obj.schema,
-							})
-							return { success: true, id: obj.id }
-						} catch (error) {
-							console.error(
-								`Failed to validate object ${obj.id}:`,
-								error,
-							)
-							return {
-								success: false,
-								id: obj.id,
-								error: error.message,
-							}
-						}
-					}),
-				)
-
-				// Count successful and failed operations
-				const successful = results.filter(
-					(r) => r.status === 'fulfilled' && r.value.success,
-				)
-				const failed = results.filter(
-					(r) =>
-						r.status === 'rejected'
-						|| (r.status === 'fulfilled' && !r.value.success),
-				)
-
-				if (successful.length > 0) {
-					this.success = true
-					// Clear selected objects and refresh the object list
-					objectStore.selectedObjects = []
-					objectStore.refreshObjectList()
-
-					this.closeModalTimeout = setTimeout(() => {
-						this.closeDialog()
-					}, 2000)
-				}
-
-				if (failed.length > 0) {
-					this.error = `Failed to validate ${failed.length} object${failed.length > 1 ? 's' : ''}`
-				}
-			} catch (error) {
-				this.success = false
-				this.error =
-					error.message || 'An error occurred while validating objects'
-			} finally {
-				this.loading = false
-			}
+			this.error = false
+			const outcomes = await Promise.all(
+				this.selectedObjects.map((obj) => this.validateObject(obj)),
+			)
+			this.showOutcome(outcomes)
+			this.loading = false
 		},
 	},
 }
@@ -253,16 +212,4 @@ export default {
 }
 
 @include step-title;
-
-.selected-objects-container {
-	margin: 20px 0;
-}
-
-@include selected-objects-list-rules;
-
-.selected-object-item:last-child {
-	border-bottom: none;
-}
-
-@include object-info-strong-rules;
 </style>

@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
+use OCA\OpenRegister\Service\Object\PatchDataMerge;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -181,10 +182,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 	 * @return array<string, mixed>
 	 */
 	private function merge(array $stored, array $patch): array {
-		$method = $this->reflection->getMethod('mergePatchData');
-		$method->setAccessible(true);
-
-		return $method->invokeArgs($this->service, [$stored, $patch]);
+		return (new PatchDataMerge())->merge($stored, $patch);
 	}//end merge()
 
 	/**

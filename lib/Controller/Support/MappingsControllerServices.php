@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\MappingMapper;
-use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Db\MappingMapperInterface;
+use OCA\OpenRegister\Service\MappingServiceInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\IAppConfig;
 
@@ -37,16 +37,16 @@ final class MappingsControllerServices {
 	 * Bundle the services.
 	 *
 	 * @param IAppConfig          $config              App configuration
-	 * @param MappingMapper       $mappingMapper       Mapping mapper for database operations
-	 * @param MappingService      $mappingService      Mapping service for executing mappings
+	 * @param MappingMapperInterface       $mappingMapper       Mapping mapper for database operations
+	 * @param MappingServiceInterface      $mappingService      Mapping service for executing mappings
 	 * @param OrganisationServiceInterface $organisationService Organisation service for multi-tenancy
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function __construct(
 		public readonly IAppConfig $config,
-		public readonly MappingMapper $mappingMapper,
-		public readonly MappingService $mappingService,
+		public readonly MappingMapperInterface $mappingMapper,
+		public readonly MappingServiceInterface $mappingService,
 		public readonly OrganisationServiceInterface $organisationService,
 	) {
 	}//end __construct()

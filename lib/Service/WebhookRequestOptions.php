@@ -122,11 +122,7 @@ final class WebhookRequestOptions {
 			'referer' => false,
 			'protocols' => ['http', 'https'],
 			'track_redirects' => true,
-			'on_redirect' => static function (
-				RequestInterface $request,
-				ResponseInterface $response,
-				UriInterface $uri,
-			) use ($assertSafe): void {
+			'on_redirect' => static function (RequestInterface $request, ResponseInterface $response, UriInterface $uri) use ($assertSafe): void {
 				$assertSafe((string)$uri);
 			},
 		];

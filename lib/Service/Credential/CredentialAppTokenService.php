@@ -42,7 +42,7 @@ use OCP\Security\ISecureRandom;
 /**
  * Issues and verifies short-lived signed per-app broker tokens.
  */
-class CredentialAppTokenService {
+class CredentialAppTokenService implements CredentialAppTokenServiceInterface {
 	/**
 	 * System-scoped vault key prefix for a per-app signing secret.
 	 *
@@ -173,32 +173,14 @@ class CredentialAppTokenService {
 			);
 		}
 
-		$now = $this->timeFactory->getTime();
-		$payload = [
-			'appId' => $appId,
-			'credentialId' => $credentialId,
-			'iat' => $now,
-			'exp' => ($now + self::TOKEN_TTL),
-		];
-
-		// Optional request binding (harden-credential-token-binding): bind the
-		// token to a specific method + path so a captured token cannot be replayed
-		// against a *different* allow-rule-permitted call within its TTL. Opt-in —
-		// tokens minted without method/path stay unbound (backward-compatible).
-		if ($method !== null && $path !== null) {
-			$payload['req'] = $this->requestDigest(method: $method, path: $path);
-		}
-
-		$payloadJson = json_encode($payload);
+		$payloadJson = json_encode($this->claimsFor(appId: $appId, credentialId: $credentialId, method: $method, path: $path));
 		if ($payloadJson === false) {
 			throw new CredentialAccessDeniedException(message: 'Failed to encode token payload');
 		}
 
-		$payloadB64 = rtrim(strtr(base64_encode($payloadJson), '+/', '-_'), '=');
-		$signature = hash_hmac('sha256', $payloadB64, $secret, true);
-		$signB64 = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
+		$payloadB64 = $this->base64Url(raw: $payloadJson);
 
-		return $payloadB64 . '.' . $signB64;
+		return $payloadB64 . '.' . $this->signatureOf(payloadB64: $payloadB64, secret: $secret);
 	}//end issueToken()
 
 	/**
@@ -220,50 +202,164 @@ class CredentialAppTokenService {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	public function verify(string $token, ?string $method = null, ?string $path = null): array {
-		$parts = explode('.', $token);
-		if (count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
-			throw new CredentialAccessDeniedException(message: 'Malformed broker token');
-		}
-
-		[$payloadB64, $signB64] = $parts;
-		$payload = $this->decodeClaims(payloadB64: $payloadB64);
-
+		$parts = $this->segmentsOf(token: $token);
+		$payload = $this->decodeClaims(payloadB64: $parts[0]);
 		$appId = (string)$payload['appId'];
-		$secret = $this->lookupSecret(appId: $appId);
-		if ($secret === null) {
-			throw new CredentialAccessDeniedException(message: 'Unknown app "' . $appId . '" in broker token');
-		}
-
-		$expected = rtrim(strtr(base64_encode(hash_hmac('sha256', $payloadB64, $secret, true)), '+/', '-_'), '=');
-		if (hash_equals($expected, $signB64) === false) {
-			throw new CredentialAccessDeniedException(message: 'Bad broker token signature');
-		}
+		$this->assertSigned(appId: $appId, payloadB64: $parts[0], signB64: $parts[1]);
 
 		if ((int)$payload['exp'] <= $this->timeFactory->getTime()) {
 			throw new CredentialAccessDeniedException(message: 'Expired broker token');
 		}
 
-		// Request binding (harden-credential-token-binding): a token bound to a
-		// specific method+path is valid ONLY for that call — the actual method and
-		// path MUST match, so a captured token cannot be replayed against a
-		// different allow-rule-permitted call. Fail-closed: a bound token verified
-		// without a method/path is rejected.
-		if (isset($payload['req']) === true) {
-			$matches = ($method !== null && $path !== null
-				&& hash_equals(
-					(string)$payload['req'],
-					$this->requestDigest(method: $method, path: $path)
-				) === true);
-			if ($matches === false) {
-				throw new CredentialAccessDeniedException(message: 'Broker token request-binding mismatch');
-			}
+		$this->assertRequestBinding(payload: $payload, method: $method, path: $path);
+
+		return ['appId' => $appId, 'credentialId' => (string)$payload['credentialId']];
+	}//end verify()
+
+	/**
+	 * The claims a new token carries.
+	 *
+	 * Optional request binding (harden-credential-token-binding): bind the token
+	 * to a specific method + path so a captured token cannot be replayed against
+	 * a *different* allow-rule-permitted call within its TTL. Opt-in — tokens
+	 * minted without method/path stay unbound (backward-compatible).
+	 *
+	 * @param string $appId The consuming app's id.
+	 * @param string $credentialId The credential UUID the app intends to use.
+	 * @param string|null $method Optional HTTP method to bind the token to.
+	 * @param string|null $path Optional request path to bind the token to.
+	 *
+	 * @return array<string, mixed> The claims.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function claimsFor(string $appId, string $credentialId, ?string $method, ?string $path): array {
+		$now = $this->timeFactory->getTime();
+		$payload = ['appId' => $appId, 'credentialId' => $credentialId, 'iat' => $now, 'exp' => ($now + self::TOKEN_TTL)];
+		if ($method !== null && $path !== null) {
+			$payload['req'] = $this->requestDigest(method: $method, path: $path);
 		}
 
-		return [
-			'appId' => $appId,
-			'credentialId' => (string)$payload['credentialId'],
-		];
-	}//end verify()
+		return $payload;
+	}//end claimsFor()
+
+	/**
+	 * Refuse a token not signed with the registered secret of the app it names.
+	 *
+	 * The signature is recomputed against the registered secret for the appId named
+	 * IN the payload, so a token cannot be forged without that secret.
+	 *
+	 * @param string $appId The app id the payload names.
+	 * @param string $payloadB64 The base64url payload segment.
+	 * @param string $signB64 The base64url signature segment.
+	 *
+	 * @return void
+	 *
+	 * @throws CredentialAccessDeniedException When the app is unknown or the signature does not match.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function assertSigned(string $appId, string $payloadB64, string $signB64): void {
+		$secret = $this->lookupSecret(appId: $appId);
+		if ($secret === null) {
+			throw new CredentialAccessDeniedException(message: 'Unknown app "' . $appId . '" in broker token');
+		}
+
+		if (hash_equals($this->signatureOf(payloadB64: $payloadB64, secret: $secret), $signB64) === false) {
+			throw new CredentialAccessDeniedException(message: 'Bad broker token signature');
+		}
+	}//end assertSigned()
+
+	/**
+	 * Refuse a request-bound token presented for any other call.
+	 *
+	 * Request binding (harden-credential-token-binding): a token bound to a
+	 * specific method+path is valid ONLY for that call — the actual method and
+	 * path MUST match, so a captured token cannot be replayed against a
+	 * different allow-rule-permitted call. Fail-closed: a bound token verified
+	 * without a method/path is rejected.
+	 *
+	 * @param array<string, mixed> $payload The verified claims.
+	 * @param string|null $method The actual request HTTP method.
+	 * @param string|null $path The actual request path.
+	 *
+	 * @return void
+	 *
+	 * @throws CredentialAccessDeniedException When a bound token does not match the call.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function assertRequestBinding(array $payload, ?string $method, ?string $path): void {
+		if (isset($payload['req']) === true && $this->bindingMatches(req: (string)$payload['req'], method: $method, path: $path) === false) {
+			throw new CredentialAccessDeniedException(message: 'Broker token request-binding mismatch');
+		}
+	}//end assertRequestBinding()
+
+	/**
+	 * Whether the actual call is the one a bound token names.
+	 *
+	 * @param string $req The bound request digest.
+	 * @param string|null $method The actual request HTTP method.
+	 * @param string|null $path The actual request path.
+	 *
+	 * @return boolean True only when both are given and their digest matches.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function bindingMatches(string $req, ?string $method, ?string $path): bool {
+		if ($method === null || $path === null) {
+			return false;
+		}
+
+		return hash_equals($req, $this->requestDigest(method: $method, path: $path));
+	}//end bindingMatches()
+
+	/**
+	 * Split a token into its payload and signature segments.
+	 *
+	 * @param string $token The `payload.signature` token.
+	 *
+	 * @return array{0: string, 1: string} The two non-empty segments.
+	 *
+	 * @throws CredentialAccessDeniedException When the token is not two non-empty segments.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function segmentsOf(string $token): array {
+		$parts = explode('.', $token);
+		if (count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
+			throw new CredentialAccessDeniedException(message: 'Malformed broker token');
+		}
+
+		return $parts;
+	}//end segmentsOf()
+
+	/**
+	 * The base64url HMAC-SHA256 signature of a payload segment.
+	 *
+	 * @param string $payloadB64 The base64url payload segment.
+	 * @param string $secret The app's signing secret.
+	 *
+	 * @return string The base64url signature.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function signatureOf(string $payloadB64, #[\SensitiveParameter] string $secret): string {
+		return $this->base64Url(raw: hash_hmac('sha256', $payloadB64, $secret, true));
+	}//end signatureOf()
+
+	/**
+	 * Unpadded base64url encoding.
+	 *
+	 * @param string $raw The bytes to encode.
+	 *
+	 * @return string The encoding.
+	 *
+	 * @spec exclude private encoding helper with no behaviour of its own
+	 */
+	private function base64Url(string $raw): string {
+		return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+	}//end base64Url()
 
 	/**
 	 * Compute the request-binding digest for a method + path.
@@ -299,16 +395,31 @@ class CredentialAppTokenService {
 		}
 
 		$payload = json_decode($payloadJson, true);
-		if (is_array($payload) === false
-			|| is_string(($payload['appId'] ?? null)) === false
-			|| is_string(($payload['credentialId'] ?? null)) === false
-			|| is_int(($payload['exp'] ?? null)) === false
-		) {
+		if ($this->hasClaimShape(payload: $payload) === false) {
 			throw new CredentialAccessDeniedException(message: 'Malformed broker token claims');
 		}
 
 		return $payload;
 	}//end decodeClaims()
+
+	/**
+	 * Whether a decoded payload carries the three required claims with their types.
+	 *
+	 * @param mixed $payload The decoded payload.
+	 *
+	 * @return boolean True for a string appId and credentialId and an integer exp.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function hasClaimShape(mixed $payload): bool {
+		if (is_array($payload) === false) {
+			return false;
+		}
+
+		return is_string(($payload['appId'] ?? null)) === true
+			&& is_string(($payload['credentialId'] ?? null)) === true
+			&& is_int(($payload['exp'] ?? null)) === true;
+	}//end hasClaimShape()
 
 	/**
 	 * Look up an app's registered signing secret, or null when absent.

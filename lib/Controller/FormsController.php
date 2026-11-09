@@ -31,11 +31,11 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\FormsControllerServices;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
-use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
-use OCA\OpenRegister\Service\Form\FormDestinationValidator;
-use OCA\OpenRegister\Service\Form\FormSubmitService;
-use OCA\OpenRegister\Service\Form\FormUploadStore;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
+use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
+use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
+use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
+use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\BruteForceProtection;
@@ -72,30 +72,30 @@ class FormsController extends Controller {
 	/**
 	 * Resolves a stored form.
 	 *
-	 * @var FormDefinitionResolver
+	 * @var FormDefinitionResolverInterface
 	 */
-	private readonly FormDefinitionResolver $resolver;
+	private readonly FormDefinitionResolverInterface $resolver;
 
 	/**
 	 * Creates the destination.
 	 *
-	 * @var FormSubmitService
+	 * @var FormSubmitServiceInterface
 	 */
-	private readonly FormSubmitService $submitter;
+	private readonly FormSubmitServiceInterface $submitter;
 
 	/**
 	 * Judges a mapping.
 	 *
-	 * @var FormDestinationValidator
+	 * @var FormDestinationValidatorInterface
 	 */
-	private readonly FormDestinationValidator $validator;
+	private readonly FormDestinationValidatorInterface $validator;
 
 	/**
 	 * Holds upload tokens.
 	 *
-	 * @var FormUploadStore
+	 * @var FormUploadStoreInterface
 	 */
-	private readonly FormUploadStore $uploads;
+	private readonly FormUploadStoreInterface $uploads;
 
 	/**
 	 * Resolves a destination schema.
@@ -213,7 +213,7 @@ class FormsController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 10, period: 60)]
 	#[UserRateLimit(limit: 60, period: 60)]
-	#[BruteForceProtection(action: ThrottledSurfaces::FORM_SUBMIT)]
+	#[BruteForceProtection(action: ThrottledSurfacesInterface::FORM_SUBMIT)]
 	public function submit(string $formId): JSONResponse {
 		// D7: the honeypot first. A hit stores nothing and tells the bot nothing.
 		if (trim((string)$this->request->getParam(self::HONEYPOT, '')) !== '') {
@@ -318,7 +318,7 @@ class FormsController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 20, period: 60)]
 	#[UserRateLimit(limit: 120, period: 60)]
-	#[BruteForceProtection(action: ThrottledSurfaces::FORM_SUBMIT)]
+	#[BruteForceProtection(action: ThrottledSurfacesInterface::FORM_SUBMIT)]
 	public function upload(string $formId): JSONResponse {
 		$property = trim((string)$this->request->getParam('property', ''));
 		$file = $this->request->getUploadedFile('file');
@@ -412,7 +412,7 @@ class FormsController extends Controller {
 			return $this->resolver->resolve(formId: $formId);
 		} catch (FormSubmitRefusedException $refused) {
 			try {
-				$this->throttler->registerAttempt(ThrottledSurfaces::FORM_SUBMIT, $this->request->getRemoteAddress());
+				$this->throttler->registerAttempt(ThrottledSurfacesInterface::FORM_SUBMIT, $this->request->getRemoteAddress());
 			} catch (Throwable $throttlerFailure) {
 				$this->logger->warning(
 					message: '[FormsController] registerAttempt failed',

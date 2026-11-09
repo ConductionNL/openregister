@@ -34,7 +34,6 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 
 /**
  * Aggregation result cache.

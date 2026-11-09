@@ -34,6 +34,10 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingDayRoll
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\SlaAddition
  */
 class SlaCalculatorTest extends TestCase {
 

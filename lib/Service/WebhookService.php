@@ -32,13 +32,13 @@ use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
 use OCA\OpenRegister\Db\Mapping;
-use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\Webhook;
-use OCA\OpenRegister\Db\WebhookLogMapper;
-use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\WebhookLogMapperInterface;
+use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
-use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
@@ -65,9 +65,9 @@ class WebhookService {
 	/**
 	 * Webhook mapper
 	 *
-	 * @var WebhookMapper
+	 * @var WebhookMapperInterface
 	 */
-	private WebhookMapper $webhookMapper;
+	private WebhookMapperInterface $webhookMapper;
 
 	/**
 	 * HTTP client
@@ -100,9 +100,9 @@ class WebhookService {
 	/**
 	 * Webhook log mapper
 	 *
-	 * @var WebhookLogMapper
+	 * @var WebhookLogMapperInterface
 	 */
-	private WebhookLogMapper $webhookLogMapper;
+	private WebhookLogMapperInterface $webhookLogMapper;
 
 	/**
 	 * CloudEvent formatter
@@ -128,9 +128,9 @@ class WebhookService {
 	/**
 	 * Mapping mapper for loading mapping entities
 	 *
-	 * @var MappingMapper
+	 * @var MappingMapperInterface
 	 */
-	private MappingMapper $mappingMapper;
+	private MappingMapperInterface $mappingMapper;
 
 	/**
 	 * Cache of the "has interception webhooks" flag per event type.
@@ -139,42 +139,32 @@ class WebhookService {
 	 * (unit tests, degraded environments); the fast path then falls back to
 	 * the direct lookup.
 	 *
-	 * @var WebhookInterceptionCache|null
+	 * @var WebhookInterceptionCacheInterface|null
 	 */
-	private ?WebhookInterceptionCache $interceptionCache;
+	private ?WebhookInterceptionCacheInterface $interceptionCache;
 
 	/**
 	 * Constructor
 	 *
-	 * @param WebhookMapper $webhookMapper Webhook mapper
-	 * @param LoggerInterface $logger Logger
-	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
-	 * @param MappingService $mappingService Mapping service
-	 * @param MappingMapper $mappingMapper Mapping mapper
-	 * @param IJobList $jobList Background job list for async delivery
-	 * @param CloudEventFormatterInterface|null $cloudEventFormatter CloudEvent formatter (optional)
-	 * @param WebhookInterceptionCache|null $interceptionCache Interception-flag cache (optional)
+	 * @param WebhookStores           $stores   Webhook, log and mapping stores
+	 * @param WebhookDispatchServices $dispatch Job list, CloudEvent formatter and interception cache
+	 * @param LoggerInterface         $logger   Logger
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		WebhookMapper $webhookMapper,
+		WebhookStores $stores,
+		WebhookDispatchServices $dispatch,
 		LoggerInterface $logger,
-		WebhookLogMapper $webhookLogMapper,
-		MappingService $mappingService,
-		MappingMapper $mappingMapper,
-		IJobList $jobList,
-		?CloudEventFormatterInterface $cloudEventFormatter = null,
-		?WebhookInterceptionCache $interceptionCache = null,
 	) {
-		$this->webhookMapper = $webhookMapper;
+		$this->webhookMapper = $stores->webhookMapper;
 		$this->logger = $logger;
-		$this->webhookLogMapper = $webhookLogMapper;
-		$this->mappingService = $mappingService;
-		$this->mappingMapper = $mappingMapper;
-		$this->jobList = $jobList;
-		$this->cloudEventFormatter = $cloudEventFormatter;
-		$this->interceptionCache = $interceptionCache;
+		$this->webhookLogMapper = $stores->webhookLogMapper;
+		$this->mappingService = $stores->mappingService;
+		$this->mappingMapper = $stores->mappingMapper;
+		$this->jobList = $dispatch->jobList;
+		$this->cloudEventFormatter = $dispatch->cloudEventFormatter;
+		$this->interceptionCache = $dispatch->interceptionCache;
 		$this->initializeHttpClient();
 	}//end __construct()
 

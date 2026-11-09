@@ -33,15 +33,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
+use OCA\OpenRegister\Command\Support\RematerialiseStorage;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
-use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Calculation\CalculationPayload;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -56,16 +59,67 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class RematerialiseCalculationsCommand extends Command {
 	/**
+	 * Register lookup mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Magic table mapper for objects.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Object persistence service.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Expression evaluator.
+	 *
+	 * @var CalculationEvaluatorInterface
+	 */
+	private readonly CalculationEvaluatorInterface $evaluator;
+
+	/**
+	 * Cross-object reference pre-resolver.
+	 *
+	 * @var ReferenceResolverInterface
+	 */
+	private readonly ReferenceResolverInterface $references;
+
+	/**
+	 * Aggregate-reference pre-resolver.
+	 *
+	 * @var AggregateReferenceResolverInterface
+	 */
+	private readonly AggregateReferenceResolverInterface $aggregates;
+
+	/**
+	 * Restores the stored form of `type: string` values the read decoded.
+	 *
+	 * @var SchemaTypeConverterInterface
+	 */
+	private readonly SchemaTypeConverterInterface $types;
+
+	/**
 	 * Wire the mappers, evaluator, and object service used by the command.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicMapperInterface $magicMapper Magic table mapper for objects.
-	 * @param ObjectOperationsInterface $objectService Object persistence service.
-	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator.
-	 * @param ReferenceResolver $references Cross-object reference pre-resolver.
-	 * @param AggregateReferenceResolver $aggregates Aggregate-reference pre-resolver.
-	 * @param SchemaTypeConverter $types Restores the stored form of `type: string` values the read decoded.
+	 * @param RematerialiseStorage    $storage    Register, schema and object stores.
+	 * @param RematerialiseEvaluation $evaluation Evaluator and reference pre-resolvers.
+	 * @param SchemaTypeConverterInterface $types      Restores the stored form of `type: string` values the read decoded.
 	 *
 	 * @return void
 	 *
@@ -74,15 +128,18 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly CalculationEvaluatorInterface $evaluator,
-		private readonly ReferenceResolver $references,
-		private readonly AggregateReferenceResolver $aggregates,
-		private readonly SchemaTypeConverter $types=new SchemaTypeConverter(),
+		RematerialiseStorage $storage,
+		RematerialiseEvaluation $evaluation,
+		SchemaTypeConverterInterface $types,
 	) {
+		$this->registerMapper = $storage->registerMapper;
+		$this->schemaMapper = $storage->schemaMapper;
+		$this->magicMapper = $storage->magicMapper;
+		$this->objectService = $storage->objectService;
+		$this->evaluator = $evaluation->evaluator;
+		$this->references = $evaluation->references;
+		$this->aggregates = $evaluation->aggregates;
+		$this->types = $types;
 		parent::__construct();
 	}//end __construct()
 
@@ -223,7 +280,7 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function evaluationPayload(RematerialiseRun $run, \OCA\OpenRegister\Db\ObjectEntity $entity): ?array {
-		$payload = $this->withSelf(data: ($entity->getObject() ?? []), entity: $entity);
+		$payload = (new CalculationPayload())->withSelf(data: ($entity->getObject() ?? []), entity: $entity);
 		if ($run->referenceSpecs !== null) {
 			$payload['@ref'] = $this->references->resolveAll(
 				payload: $payload,
@@ -451,39 +508,4 @@ class RematerialiseCalculationsCommand extends Command {
 		);
 		return false;
 	}//end saveForMaterialisation()
-
-	/**
-	 * Inject the synthetic `@self` metadata into an evaluation payload.
-	 *
-	 * @param array<string, mixed> $data Object data.
-	 * @param \OCA\OpenRegister\Db\ObjectEntity $entity Object entity providing metadata.
-	 *
-	 * @return array<string, mixed> Payload with `@self` injected.
-	 *
-	 * @spec openspec/specs/computed-fields/spec.md
-	 */
-	private function withSelf(array $data, \OCA\OpenRegister\Db\ObjectEntity $entity): array {
-		$created = $entity->getCreated();
-		$updated = $entity->getUpdated();
-		$createdFormatted = null;
-		if ($created !== null) {
-			$createdFormatted = $created->format(DateTimeInterface::ATOM);
-		}
-
-		$updatedFormatted = null;
-		if ($updated !== null) {
-			$updatedFormatted = $updated->format(DateTimeInterface::ATOM);
-		}
-
-		$data['@self'] = [
-			'id' => $entity->getUuid(),
-			'uuid' => $entity->getUuid(),
-			'register' => $entity->getRegister(),
-			'schema' => $entity->getSchema(),
-			'owner' => $entity->getOwner(),
-			'created' => $createdFormatted,
-			'updated' => $updatedFormatted,
-		];
-		return $data;
-	}//end withSelf()
 }//end class

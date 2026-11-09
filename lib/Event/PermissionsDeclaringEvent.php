@@ -114,27 +114,10 @@ class PermissionsDeclaringEvent extends Event {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function declareVerb(
-		string $verb,
-		string $app,
-		string $description,
-		array $levels = self::DEFAULT_LEVELS,
-	): bool {
-		if (preg_match(self::VERB_PATTERN, $verb) !== 1) {
-			$this->rejected[$verb] = sprintf(
-				'The app "%s" declared a verb the grammar does not accept.',
-				$app
-			);
-			return false;
-		}
-
-		if (isset($this->declared[$verb]) === true) {
-			$this->rejected[$verb] = sprintf(
-				'The app "%s" declared the verb "%s", which "%s" already owns.',
-				$app,
-				$verb,
-				$this->declared[$verb]['app']
-			);
+	public function declareVerb(string $verb, string $app, string $description, array $levels = self::DEFAULT_LEVELS): bool {
+		$refusal = $this->refusalFor(verb: $verb, app: $app);
+		if ($refusal !== null) {
+			$this->rejected[$verb] = $refusal;
 			return false;
 		}
 
@@ -147,6 +130,26 @@ class PermissionsDeclaringEvent extends Event {
 
 		return true;
 	}//end declareVerb()
+
+	/**
+	 * Why a declaration is refused: a verb outside the grammar, or one another app owns.
+	 *
+	 * @param string $verb The declared verb.
+	 * @param string $app  The declaring app id.
+	 *
+	 * @return string|null The refusal, or null when the declaration may be accepted.
+	 */
+	private function refusalFor(string $verb, string $app): ?string {
+		if (preg_match(self::VERB_PATTERN, $verb) !== 1) {
+			return sprintf('The app "%s" declared a verb the grammar does not accept.', $app);
+		}
+
+		if (isset($this->declared[$verb]) === true) {
+			return sprintf('The app "%s" declared the verb "%s", which "%s" already owns.', $app, $verb, $this->declared[$verb]['app']);
+		}
+
+		return null;
+	}//end refusalFor()
 
 	/**
 	 * Every accepted declaration, keyed by verb.

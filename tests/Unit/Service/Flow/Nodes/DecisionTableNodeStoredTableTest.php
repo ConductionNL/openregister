@@ -10,6 +10,7 @@ use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Service\Dmn\DecisionTableStoreTest;
 use OCP\IL10N;
@@ -45,9 +46,8 @@ class DecisionTableNodeStoredTableTest extends TestCase {
 		return new DecisionTableNode(
 			engine: new DecisionTableEvaluator(),
 			validator: new DecisionTableValidator(),
-			l10n: $l10n,
-			urls: $urls,
-			store: $store,
+			presentation: new FlowNodePresentation(l10n: $l10n, urls: $urls),
+			store: $store
 		);
 	}
 

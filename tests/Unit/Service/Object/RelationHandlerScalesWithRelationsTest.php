@@ -36,8 +36,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Object\RelationLookup;
@@ -104,11 +104,13 @@ class RelationHandlerScalesWithRelationsTest extends TestCase {
 		$rbac->method('isAdmin')->willReturn(true);
 
 		return new RelationHandler(
-			objectEntityMapper: $magic,
-			schemaMapper: $schemaMapper,
+			stores: new RelationHandlerStores(
+				objects: $magic,
+				schemas: $schemaMapper,
+				registers: $registerMapper
+			),
 			rbacHandler: $rbac,
-			logger: $this->createMock(LoggerInterface::class),
-			registerMapper: $registerMapper
+			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end handler()
 

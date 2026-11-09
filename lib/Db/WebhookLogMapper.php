@@ -44,7 +44,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<WebhookLog>
  */
-class WebhookLogMapper extends QBMapper {
+class WebhookLogMapper extends QBMapper implements WebhookLogMapperInterface {
 	use FindAllNewestFirstTrait;
 
 	/**

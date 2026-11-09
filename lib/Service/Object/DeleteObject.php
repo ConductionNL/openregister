@@ -46,7 +46,7 @@ use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
@@ -151,7 +151,7 @@ class DeleteObject {
 	 * @param ReferentialIntegrityService $integrityService Referential integrity service
 	 * @param IDBConnection $db Database connection for transactions
 	 * @param OrganisationMapperInterface $organisationMapper Resolves the deleting user's active organisation for the audit trail
-	 * @param FileService|null $fileService File service for object folder cleanup
+	 * @param FileFolderServiceInterface|null $fileService File service for object folder cleanup
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
 	 * @param \OCA\OpenRegister\Db\RegisterMapperInterface|null $registerMapper Register mapper for register lookups
 	 * @param DeletionWindowService|null $windowService Resolves and states the recovery window
@@ -170,7 +170,7 @@ class DeleteObject {
 		ReferentialIntegrityService $integrityService,
 		IDBConnection $db,
 		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly ?FileService $fileService = null,
+		private readonly ?FileFolderServiceInterface $fileService = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper = null,
 		private readonly ?DeletionWindowService $windowService = null,
@@ -1111,7 +1111,7 @@ class DeleteObject {
 		// Resolve every level-one cascade target in one batched lookup.
 		$targets = [];
 		try {
-			$targets = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(
+			$targets = $this->objectEntityMapper->findStoredAcrossAllMagicTables(
 				uuids: $cascadeIds,
 				includeDeleted: true
 			);
@@ -1126,7 +1126,19 @@ class DeleteObject {
 			);
 		}
 
-		$handledIds = $this->batchCascadeSoftDelete(targets: $targets);
+		// The batched write dispatches update events only, so a guard on the deleting
+		// event answers here: one refused child refuses the whole cascade.
+		foreach ($targets as $target) {
+			if (empty($target->getDeleted()) === true) {
+				$this->objectEntityMapper->assertDeletable(entity: $target);
+			}
+		}
+
+		$alreadyDeleted = array_filter($targets, static fn (ObjectEntity $target): bool => $target->isSoftDeleted());
+		$handledIds = $this->batchCascadeSoftDelete(targets: array_diff_key($targets, $alreadyDeleted));
+		foreach ($alreadyDeleted as $target) {
+			$handledIds[(string)$target->getUuid()] = true;
+		}
 
 		// Legacy per-id pipeline for ids the batch lookup did not resolve.
 		foreach ($cascadeIds as $cascadeId) {

@@ -44,20 +44,18 @@ class TenantQuotaMiddlewareTest extends TestCase {
 
 	public function testSkipsForUnauthenticatedRequests(): void {
 		$this->userSession->method('getUser')->willReturn(null);
+		$this->organisationService->expects($this->never())->method('getActiveOrganisation');
 
-		// Should not throw.
 		$this->middleware->beforeController('TestController', 'index');
-		$this->assertTrue(true);
 	}
 
 	public function testSkipsWhenNoActiveOrganisation(): void {
 		$user = $this->createMock(IUser::class);
 		$this->userSession->method('getUser')->willReturn($user);
-		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
+		$this->organisationService->expects($this->once())->method('getActiveOrganisation')->willReturn(null);
+		$this->groupManager->expects($this->never())->method('isAdmin');
 
-		// Should not throw.
 		$this->middleware->beforeController('TestController', 'index');
-		$this->assertTrue(true);
 	}
 
 	public function testBlocksSuspendedOrganisation(): void {
@@ -112,9 +110,12 @@ class TenantQuotaMiddlewareTest extends TestCase {
 		$org->setUuid('test-uuid');
 		$this->organisationService->method('getActiveOrganisation')->willReturn($org);
 
-		// Should not throw (quota is null = unlimited).
+		// Quota is null, so only the status can refuse this request.
 		$this->middleware->beforeController('TestController', 'index');
-		$this->assertTrue(true);
+
+		$org->setStatus('suspended');
+		$this->expectException(TenantStatusException::class);
+		$this->middleware->beforeController('TestController', 'index');
 	}
 
 	public function testProvisioningAllowsAdminOnly(): void {
@@ -137,15 +138,17 @@ class TenantQuotaMiddlewareTest extends TestCase {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('admin-user');
 		$this->userSession->method('getUser')->willReturn($user);
-		$this->groupManager->method('isAdmin')->willReturn(true);
+		$this->groupManager->expects($this->exactly(2))->method('isAdmin')->with('admin-user')
+			->willReturnOnConsecutiveCalls(true, false);
 
 		$org = new Organisation();
 		$org->setStatus('provisioning');
 		$org->setUuid('test-uuid');
 		$this->organisationService->method('getActiveOrganisation')->willReturn($org);
 
-		// Should not throw for admin.
 		$this->middleware->beforeController('TestController', 'index');
-		$this->assertTrue(true);
+
+		$this->expectException(TenantStatusException::class);
+		$this->middleware->beforeController('TestController', 'index');
 	}
 }

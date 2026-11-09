@@ -80,6 +80,21 @@ final class ScheduleDescriptor {
 	}//end isCron()
 
 	/**
+	 * The cron expression this schedule fires on, or null when it has none.
+	 *
+	 * @return string|null The declared cron, or the exact one for its interval.
+	 *
+	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 */
+	public function cronExpression(): ?string {
+		if ($this->cron !== null) {
+			return $this->cron;
+		}
+
+		return (new IntervalCron())->cronFor(seconds: (int)$this->intervalSeconds);
+	}//end cronExpression()
+
+	/**
 	 * Build a descriptor from a raw manifest entry, validating its structure.
 	 *
 	 * Rejects (throws) an entry that lacks a non-empty `id` or `action`, or that

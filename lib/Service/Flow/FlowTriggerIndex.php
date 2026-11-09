@@ -43,7 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowTriggerMapper;
+use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -52,23 +52,43 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
  */
-class FlowTriggerIndex {
+class FlowTriggerIndex implements FlowTriggerIndexInterface {
+	/**
+	 * Nodes to triggers.
+	 *
+	 * @var FlowTriggerDerivation
+	 */
+	private readonly FlowTriggerDerivation $derivation;
+
+	/**
+	 * Normalises a derived triple to the slugs matching runs on.
+	 *
+	 * @var FlowTriggerSlugs
+	 */
+	private readonly FlowTriggerSlugs $slugs;
+
+	/**
+	 * Resolves the published graph, when there is one.
+	 *
+	 * @var FlowPublishedGraph|null
+	 */
+	private readonly ?FlowPublishedGraph $published;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTriggerMapper $mapper The indexed trigger set.
-	 * @param FlowTriggerDerivation $derivation Nodes to triggers.
-	 * @param FlowTriggerSlugs $slugs Normalises a derived triple to the slugs matching runs on.
+	 * @param FlowTriggerMapperInterface $mapper The indexed trigger set.
+	 * @param FlowTriggerSources $sources The derivation, the slug normaliser and the published graph.
 	 * @param LoggerInterface $logger Diagnostics.
-	 * @param FlowPublishedGraph|null $published Resolves the published graph.
 	 */
 	public function __construct(
-		private readonly FlowTriggerMapper $mapper,
-		private readonly FlowTriggerDerivation $derivation,
-		private readonly FlowTriggerSlugs $slugs,
+		private readonly FlowTriggerMapperInterface $mapper,
+		FlowTriggerSources $sources,
 		private readonly LoggerInterface $logger,
-		private readonly ?FlowPublishedGraph $published = null,
 	) {
+		$this->derivation = $sources->derivation;
+		$this->slugs      = $sources->slugs;
+		$this->published  = $sources->published;
 
 	}//end __construct()
 

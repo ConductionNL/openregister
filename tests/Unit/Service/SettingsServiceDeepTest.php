@@ -105,16 +105,8 @@ class SettingsServiceDeepTest extends TestCase {
 
 		$this->service = new SettingsService(
 			$this->config,
-			$auditTrailMapper,
-			$cacheFactory,
-			$groupManager,
 			$this->logger,
-			$organisationMapper,
-			$schemaCacheService,
-			$searchTrailMapper,
-			$userManager,
 			$this->db,
-			$objectCacheService,
 			$this->container,
 			'openregister',
 			$this->validationOpsHandler,

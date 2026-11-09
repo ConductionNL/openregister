@@ -81,7 +81,7 @@ parameters:
 			message: "#^Parameter \\$shareType of method OCP\\\\Share\\\\IShare\\:\\:setShareType\\(\\) expects 0\\|1\\|2\\|3\\|4\\|6\\|7\\|8\\|9\\|10\\|12\\|13\\|15, int given\\.$#"
 			identifier: argument.type
 			count: 1
-			path: lib/Service/File/FileSharingHandler.php
+			path: lib/Files/Service/File/FileSharingHandler.php
 
 		-
 			message: "#^Parameter \\#1 \\$shareType of method OCP\\\\Share\\\\IShare\\:\\:setShareType\\(\\) expects 0\\|1\\|2\\|3\\|4\\|6\\|7\\|8\\|9\\|10\\|12\\|13\\|15, int given\\.$#"

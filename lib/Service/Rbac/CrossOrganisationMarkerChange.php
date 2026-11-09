@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Rbac;
  *
  * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
  */
-final class CrossOrganisationMarkerChange {
+final class CrossOrganisationMarkerChange implements CrossOrganisationMarkerChangeInterface {
 
 	/**
 	 * Whether the new block holds a marked rule the old one did not.

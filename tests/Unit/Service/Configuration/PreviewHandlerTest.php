@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
+use OCA\OpenRegister\Service\Configuration\PreviewMappers;
 use OCP\AppFramework\Http\JSONResponse;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -59,11 +60,9 @@ class PreviewHandlerTest extends TestCase {
 		$this->fetchHandler = $this->createMock(FetchHandler::class);
 
 		$this->handler = new PreviewHandler(
-			$this->registerMapper,
-			$this->schemaMapper,
+			new PreviewMappers($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapper::class)),
 			$this->logger,
-			$this->fetchHandler,
-			$this->createMock(MagicMapper::class)
+			$this->fetchHandler
 		);
 	}
 

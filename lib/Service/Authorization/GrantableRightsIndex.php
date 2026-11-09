@@ -44,18 +44,18 @@ namespace OCA\OpenRegister\Service\Authorization;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\McpScope;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 
 /**
  * Builds and caches the index of rights that may be offered to agents.
  *
- * @SuppressWarnings(PHPMD.StaticAccess) PermissionHandler::mcpOfferedActions() is deliberately static and pure so every
+ * @SuppressWarnings(PHPMD.StaticAccess) McpScope::offeredActions() is deliberately static and pure so every
  *      reader of an authorization block agrees on what the mcp scope means. An injected copy could diverge from the
  *      evaluator, and an index that disagrees with the enforcer about which rights exist is worse than no index.
  */
-class GrantableRightsIndex {
+class GrantableRightsIndex implements GrantableRightsIndexInterface {
 
 	/**
 	 * Distributed cache namespace.
@@ -234,7 +234,7 @@ class GrantableRightsIndex {
 	private function offeredActions(Schema $schema): array {
 		$offered = [];
 
-		foreach (PermissionHandler::mcpOfferedActions(authorization: $schema->getAuthorization()) as $action) {
+		foreach (McpScope::offeredActions(authorization: $schema->getAuthorization()) as $action) {
 			$offered[$action] = self::SOURCE_AUTHORIZATION;
 		}
 

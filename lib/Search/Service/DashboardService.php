@@ -27,7 +27,7 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\WebhookLogMapper;
+use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -90,9 +90,9 @@ class DashboardService {
 	 *
 	 * Handles database operations for webhook log entries.
 	 *
-	 * @var WebhookLogMapper Webhook log mapper instance
+	 * @var WebhookLogMapperInterface Webhook log mapper instance
 	 */
-	private readonly WebhookLogMapper $webhookLogMapper;
+	private readonly WebhookLogMapperInterface $webhookLogMapper;
 
 	/**
 	 * Register mapper
@@ -126,28 +126,22 @@ class DashboardService {
 	 *
 	 * Initializes service with required mappers and logger for dashboard operations.
 	 *
-	 * @param MagicMapperInterface $objectMapper Object entity mapper for object statistics
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for log statistics
-	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper for webhook statistics
-	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations
-	 * @param DashboardSizes $sizes Size recalculation
-	 * @param LoggerInterface $logger Logger instance for error tracking
+	 * @param DashboardMappers $mappers The object, audit trail, webhook log and register mappers
+	 * @param DashboardSizes   $sizes   Size recalculation
+	 * @param LoggerInterface  $logger  Logger instance for error tracking
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		MagicMapperInterface $objectMapper,
-		AuditTrailMapperInterface $auditTrailMapper,
-		WebhookLogMapper $webhookLogMapper,
-		RegisterMapperInterface $registerMapper,
+		DashboardMappers $mappers,
 		DashboardSizes $sizes,
 		LoggerInterface $logger,
 	) {
 		// Store dependencies for use in service methods.
-		$this->objectMapper = $objectMapper;
-		$this->auditTrailMapper = $auditTrailMapper;
-		$this->webhookLogMapper = $webhookLogMapper;
-		$this->registerMapper = $registerMapper;
+		$this->objectMapper = $mappers->objectMapper;
+		$this->auditTrailMapper = $mappers->auditTrailMapper;
+		$this->webhookLogMapper = $mappers->webhookLogMapper;
+		$this->registerMapper = $mappers->registerMapper;
 		$this->sizes = $sizes;
 		$this->logger = $logger;
 	}//end __construct()

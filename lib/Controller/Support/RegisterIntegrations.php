@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
-use OCA\OpenRegister\Service\OasService;
+use OCA\OpenRegister\Service\OasServiceInterface;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -38,7 +38,7 @@ final class RegisterIntegrations {
 	 *
 	 * @param ConfigurationServiceInterface  $configurationService The configuration service.
 	 * @param GitHubClientInterface $githubService        The GitHub client.
-	 * @param OasService            $oasService           The OpenAPI service.
+	 * @param OasServiceInterface   $oasService           The OpenAPI service.
 	 * @param ContainerInterface    $container            The DI container.
 	 *
 	 * @spec openspec/specs/register-service-extensions/spec.md
@@ -46,7 +46,7 @@ final class RegisterIntegrations {
 	public function __construct(
 		public readonly ConfigurationServiceInterface $configurationService,
 		public readonly GitHubClientInterface $githubService,
-		public readonly OasService $oasService,
+		public readonly OasServiceInterface $oasService,
 		public readonly ContainerInterface $container,
 	) {
 	}//end __construct()

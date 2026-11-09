@@ -27,9 +27,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SeedRelatedTarget;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IAppConfig;
@@ -45,6 +46,14 @@ use Psr\Log\LoggerInterface;
  * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\ImportHandler
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedTarget
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
+ * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
+ * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaShape
+ * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
+ * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
+ * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
  */
 class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 
@@ -119,7 +128,7 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @covers ::processRelatedItems
+	 * @covers \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
 	 *
 	 * @dataProvider cases
 	 */
@@ -170,11 +179,9 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper: $this->createMock(MappingMapper::class),
-			client: $this->createMock(Client::class),
 			appConfig: $this->createMock(IAppConfig::class),
 			logger: $logger,
 			appDataPath: '/tmp',
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $this->createMock(ObjectService::class)
 		);
 
@@ -220,8 +227,13 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setUuid('uuid-1');
 
-		$method = new \ReflectionMethod(ImportHandler::class, 'processRelatedItems');
-		$method->invokeArgs($handler, [$object, $items, 4, 9, 'Seed title', $hasUserContext, &$result]);
+		$target = new SeedRelatedTarget(object: $object);
+		$target->items = $items;
+		$target->registerId = 4;
+		$target->schemaId = 9;
+		$target->title = 'Seed title';
+		$target->hasUserContext = $hasUserContext;
+		(new \ReflectionProperty(ImportHandler::class, 'relatedItems'))->getValue($handler)->create($target, $result);
 
 		return json_decode((string)json_encode(['result' => $result, 'calls' => $this->calls]), true);
 	}//end runCase()

@@ -2,7 +2,6 @@
 	<NcDialog
 		:name="t('openregister', 'Edit View')"
 		size="large"
-		:canClose="true"
 		@closing="handleClose">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ t('openregister', 'View successfully updated') }}</p>
@@ -70,53 +69,26 @@
 							<span>{{ t('openregister', 'Share') }}</span>
 						</template>
 						<div class="form-editor">
-							<div class="groups-select-container">
-								<label class="groups-label">{{
-									t('openregister', 'Share with Groups')
-								}}</label>
-								<NcSelect
-									v-model="selectedGroups"
-									inputLabel="Selected Groups"
-									:disabled="loading || loadingGroups"
-									:options="availableGroups"
-									label="name"
-									trackBy="id"
-									:multiple="true"
-									:labelOutside="true"
-									:filterable="false"
-									:closeOnSelect="false"
-									:placeholder="
-										t('openregister', 'Type to search groups...')
-									"
-									@searchChange="searchGroups">
-									<template #option="{ name }">
-										<div class="group-option">
-											<span class="group-name">{{
-												name
-											}}</span>
-										</div>
-									</template>
-									<template #no-options>
-										<span v-if="loadingGroups">{{
-											t('openregister', 'Loading groups...')
-										}}</span>
-										<span v-else>{{
-											t(
-												'openregister',
-												'Type to search for groups',
-											)
-										}}</span>
-									</template>
-								</NcSelect>
-								<p class="field-hint">
-									{{
-										t(
-											'openregister',
-											'Members of selected groups can access this view',
-										)
-									}}
-								</p>
-							</div>
+							<GroupSelect
+								v-model="selectedGroups"
+								:label="t('openregister', 'Share with Groups')"
+								:options="availableGroups"
+								:disabled="loading"
+								:loading="loadingGroups"
+								:closeOnSelect="false"
+								:placeholder="
+									t('openregister', 'Type to search groups...')
+								"
+								:emptyText="
+									t('openregister', 'Type to search for groups')
+								"
+								:hint="
+									t(
+										'openregister',
+										'Members of selected groups can access this view',
+									)
+								"
+								@searchChange="searchGroups" />
 
 							<div class="groups-select-container">
 								<label class="groups-label">{{
@@ -208,6 +180,7 @@ import Close from 'vue-material-design-icons/Close.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import ShareVariant from 'vue-material-design-icons/ShareVariant.vue'
+import GroupSelect from '../../components/shared/GroupSelect.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import { searchGroupsDebounced } from '../../services/groupSearch.js'
@@ -216,6 +189,7 @@ import { viewsStore } from '../../store/store.js'
 export default {
 	name: 'EditView',
 	components: {
+		GroupSelect,
 		NcDialog,
 		NcTextField,
 		NcButton,

@@ -35,6 +35,7 @@ use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
 
 /**
  * list() of the link-table providers.
@@ -86,7 +87,7 @@ class LinkTableListGoldenTest extends TestCase {
 
 		$last = ($spec[3] === true ? new NullLogger() : null);
 		$builder = $this->getMockBuilder($class)
-			->setConstructorArgs([$this->createMock(IDBConnection::class), $apps, $this->createMock(IL10N::class), $mapper, $last])
+			->setConstructorArgs([new LeafProviderPlatform($this->createMock(IDBConnection::class), $apps, $this->createMock(IL10N::class)), $mapper, $last])
 			->onlyMethods(method_exists($class, 'findByMarker') ? ['findByMarker'] : []);
 		$provider = $builder->getMock();
 		if (method_exists($class, 'findByMarker') === false) {

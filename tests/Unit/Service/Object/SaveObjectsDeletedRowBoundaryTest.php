@@ -25,6 +25,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
@@ -68,6 +72,8 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 
@@ -173,7 +179,7 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 		$appConfig->method('getValueBool')->willReturnCallback(static fn (string $app, string $key, bool $default = false): bool => $default);
 		$container = $this->createMock(ContainerInterface::class);
 		$logger = new NullLogger();
-		$permissions = new PermissionHandler(
+		$permissions = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$users,
 			$groups,
@@ -219,16 +225,10 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 		$organisations->method('getOrganisationForNewEntity')->willReturn('org-a');
 
 		return new SaveObjects(
-			objectEntityMapper: $mapper,
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			saveHandler: $this->createMock(SaveObject::class),
-			userSession: $session,
-			organisationService: $organisations,
-			logger: $logger,
-			groupManager: $groups,
-			permissionHandler: $permissions,
-			validateHandler: $this->createMock(ValidateObject::class)
+			stores: new BulkSaveStores(objectEntityMapper: $mapper, schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $session, organisationService: $organisations, groupManager: $groups),
+			reporting: new BulkSaveReporting(logger: $logger),
+			checks: new BulkRowChecks(permissionHandler: $permissions, validateHandler: $this->createMock(ValidateObject::class))
 		);
 	}//end handler()
 

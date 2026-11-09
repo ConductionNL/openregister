@@ -204,29 +204,66 @@ class ObjectDateEventBuilder {
 		DateTimeImmutable $start,
 		DateTimeZone $timeZone,
 	): DateTimeImmutable {
-		$data = $object->getObject();
-
-		if ($declaration->endProperty !== null) {
-			$end = $this->parse(value: ($data[$declaration->endProperty] ?? null), timeZone: $timeZone);
-			if ($end !== null && $end >= $start) {
-				return $end->setTimezone($timeZone);
-			}
+		$end = $this->declaredEnd(object: $object, declaration: $declaration, start: $start, timeZone: $timeZone);
+		if ($end !== null) {
+			return $end;
 		}
 
 		if ($declaration->kind === ObjectDateDeclaration::KIND_APPOINTMENT) {
-			$minutes = ($declaration->durationMinutes ?? ObjectDateDeclaration::DEFAULT_APPOINTMENT_MINUTES);
-			if ($minutes < 1) {
-				$minutes = ObjectDateDeclaration::DEFAULT_APPOINTMENT_MINUTES;
-			}
-
-			// `add()` over `modify()`: modify() answers false on a modifier it
-			// cannot read, and an appointment that silently loses its end is
-			// worse than one that throws.
-			return $start->add(new DateInterval('PT' . $minutes . 'M'));
+			return $this->appointmentEnd(declaration: $declaration, start: $start);
 		}
 
 		return $start;
 	}//end endMoment()
+
+	/**
+	 * The end the object itself carries, when it declares one at or after the start.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param ObjectDateDeclaration $declaration The declaration.
+	 * @param DateTimeImmutable $start The resolved start.
+	 * @param DateTimeZone $timeZone The tenant zone.
+	 *
+	 * @return DateTimeImmutable|null The end in the tenant zone, or null when there is none to use.
+	 */
+	private function declaredEnd(
+		ObjectEntity $object,
+		ObjectDateDeclaration $declaration,
+		DateTimeImmutable $start,
+		DateTimeZone $timeZone,
+	): ?DateTimeImmutable {
+		if ($declaration->endProperty === null) {
+			return null;
+		}
+
+		$data = $object->getObject();
+		$end = $this->parse(value: ($data[$declaration->endProperty] ?? null), timeZone: $timeZone);
+		if ($end !== null && $end >= $start) {
+			return $end->setTimezone($timeZone);
+		}
+
+		return null;
+	}//end declaredEnd()
+
+	/**
+	 * The end of an appointment from its declared length, or the default hour.
+	 *
+	 * @param ObjectDateDeclaration $declaration The declaration.
+	 * @param DateTimeImmutable $start The resolved start.
+	 *
+	 * @return DateTimeImmutable The end.
+	 */
+	private function appointmentEnd(ObjectDateDeclaration $declaration, DateTimeImmutable $start): DateTimeImmutable {
+		$minutes = ($declaration->durationMinutes ?? ObjectDateDeclaration::DEFAULT_APPOINTMENT_MINUTES);
+		if ($minutes < 1) {
+			$minutes = ObjectDateDeclaration::DEFAULT_APPOINTMENT_MINUTES;
+		}
+
+		// `add()` over `modify()`: modify() answers false on a modifier it
+		// cannot read, and an appointment that silently loses its end is
+		// worse than one that throws.
+		return $start->add(new DateInterval('PT' . $minutes . 'M'));
+	}//end appointmentEnd()
 
 	/**
 	 * Whether the event publishes as an all-day event.
@@ -402,14 +439,8 @@ class ObjectDateEventBuilder {
 	 * @return array<int, string> The lines.
 	 */
 	private function attendeeLines(ObjectEntity $object, ObjectDateDeclaration $declaration, array $data): array {
-		if ($declaration->kind !== ObjectDateDeclaration::KIND_APPOINTMENT
-			|| $declaration->attendeesProperty === null
-		) {
-			return [];
-		}
-
-		$invitees = ($data[$declaration->attendeesProperty] ?? null);
-		if (is_array($invitees) === false) {
+		$invitees = $this->invitees(declaration: $declaration, data: $data);
+		if ($invitees === null) {
 			return [];
 		}
 
@@ -430,6 +461,29 @@ class ObjectDateEventBuilder {
 	}//end attendeeLines()
 
 	/**
+	 * The stored invitee list of an appointment that declares one.
+	 *
+	 * @param ObjectDateDeclaration $declaration The declaration.
+	 * @param array<string, mixed> $data The object data.
+	 *
+	 * @return array<mixed>|null The invitees, or null when the event carries no attendees.
+	 */
+	private function invitees(ObjectDateDeclaration $declaration, array $data): ?array {
+		if ($declaration->kind !== ObjectDateDeclaration::KIND_APPOINTMENT
+			|| $declaration->attendeesProperty === null
+		) {
+			return null;
+		}
+
+		$invitees = ($data[$declaration->attendeesProperty] ?? null);
+		if (is_array($invitees) === false) {
+			return null;
+		}
+
+		return $invitees;
+	}//end invitees()
+
+	/**
 	 * The identifier of one invitee, whatever shape the schema stores it in.
 	 *
 	 * @param mixed $invitee The stored invitee.
@@ -437,23 +491,50 @@ class ObjectDateEventBuilder {
 	 * @return string|null The identifier, or null when unreadable.
 	 */
 	private function inviteeName(mixed $invitee): ?string {
-		if (is_string($invitee) === true && trim($invitee) !== '') {
-			return trim($invitee);
+		$name = $this->nonBlank(value: $invitee);
+		if ($name !== null) {
+			return $name;
 		}
 
 		if (is_array($invitee) === false) {
 			return null;
 		}
 
+		return $this->firstNonBlank(invitee: $invitee);
+	}//end inviteeName()
+
+	/**
+	 * The first identifying field of an invitee object that is filled in.
+	 *
+	 * @param array<mixed> $invitee The stored invitee object.
+	 *
+	 * @return string|null The identifier, or null when none is filled in.
+	 */
+	private function firstNonBlank(array $invitee): ?string {
 		foreach (['email', 'uid', 'id', 'name'] as $key) {
-			$value = ($invitee[$key] ?? null);
-			if (is_string($value) === true && trim($value) !== '') {
-				return trim($value);
+			$value = $this->nonBlank(value: ($invitee[$key] ?? null));
+			if ($value !== null) {
+				return $value;
 			}
 		}
 
 		return null;
-	}//end inviteeName()
+	}//end firstNonBlank()
+
+	/**
+	 * A trimmed non-empty string, or null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|null The string, or null.
+	 */
+	private function nonBlank(mixed $value): ?string {
+		if (is_string($value) === true && trim($value) !== '') {
+			return trim($value);
+		}
+
+		return null;
+	}//end nonBlank()
 
 	/**
 	 * The CAL-ADDRESS for an invitee identifier.

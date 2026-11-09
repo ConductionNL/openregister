@@ -52,9 +52,7 @@ class ExportServiceStoredRowTest extends TestCase {
 			groupManager: $this->createMock(originalClassName: IGroupManager::class),
 			objectService: $this->createMock(originalClassName: ObjectService::class),
 			cacheHandler: $this->createMock(originalClassName: CacheHandler::class),
-			propertyRbacHandler: $this->createMock(originalClassName: PropertyRbacHandler::class),
-			translationHandler: $this->createMock(originalClassName: TranslationHandler::class)
-		);
+			propertyRbacHandler: $this->createMock(originalClassName: PropertyRbacHandler::class));
 	}//end setUp()
 
 	/**

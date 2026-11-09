@@ -78,28 +78,11 @@ class AuthorizationAuditService {
 		?array $oldAuthorization,
 		?array $newAuthorization,
 	): void {
-		$user = $this->userSession->getUser();
-		$userName = 'System';
-		$userId = 'system';
-		if ($user !== null) {
-			$userName = $user->getDisplayName();
-			$userId = $user->getUID();
-		}
-
-		$this->logger->info(
+		$this->logChange(
 			message: '[AuthorizationAudit] Schema authorization changed',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'event_type' => self::EVENT_TYPE,
-				'entity_type' => 'schema',
-				'entity_id' => $schemaId,
-				'entity_title' => $schemaTitle,
-				'changed_by_user' => $userId,
-				'changed_by_name' => $userName,
-				'old_authorization' => json_encode($oldAuthorization),
-				'new_authorization' => json_encode($newAuthorization),
-			]
+			fields: ['entity_type' => 'schema', 'entity_id' => $schemaId, 'entity_title' => $schemaTitle]
+				+ $this->changedBy()
+				+ ['old_authorization' => json_encode($oldAuthorization), 'new_authorization' => json_encode($newAuthorization)]
 		);
 	}//end logSchemaAuthorizationChange()
 
@@ -121,42 +104,12 @@ class AuthorizationAuditService {
 		?array $oldAuthorization,
 		?array $newAuthorization,
 	): void {
-		$user = $this->userSession->getUser();
-		$userName = 'System';
-		$userId = 'system';
-		if ($user !== null) {
-			$userName = $user->getDisplayName();
-			$userId = $user->getUID();
-		}
-
-		// Count schemas that will inherit this change.
-		// This is approximate -- we don't load each schema to check whether it has its own authorization.
-		$affectedSchemaCount = 0;
-		try {
-			$register = $this->registerMapper->find($registerId);
-			$schemas = $register->getSchemas();
-			if (is_array($schemas) === true) {
-				$affectedSchemaCount = count($schemas);
-			}
-		} catch (\Throwable $e) {
-			// Could not count affected schemas.
-		}
-
-		$this->logger->info(
+		$this->logChange(
 			message: '[AuthorizationAudit] Register authorization changed',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'event_type' => self::EVENT_TYPE,
-				'entity_type' => 'register',
-				'entity_id' => $registerId,
-				'entity_title' => $registerTitle,
-				'changed_by_user' => $userId,
-				'changed_by_name' => $userName,
-				'old_authorization' => json_encode($oldAuthorization),
-				'new_authorization' => json_encode($newAuthorization),
-				'affected_schema_count' => $affectedSchemaCount,
-			]
+			fields: ['entity_type' => 'register', 'entity_id' => $registerId, 'entity_title' => $registerTitle]
+				+ $this->changedBy()
+				+ ['old_authorization' => json_encode($oldAuthorization), 'new_authorization' => json_encode($newAuthorization)]
+				+ ['affected_schema_count' => $this->affectedSchemaCount(registerId: $registerId)]
 		);
 	}//end logRegisterAuthorizationChange()
 
@@ -178,6 +131,20 @@ class AuthorizationAuditService {
 		?array $oldRoles,
 		?array $newRoles,
 	): void {
+		$this->logChange(
+			message: '[AuthorizationAudit] Role definitions changed',
+			fields: ['entity_type' => 'register_roles', 'entity_id' => $registerId, 'entity_title' => $registerTitle]
+				+ $this->changedBy()
+				+ ['old_roles' => json_encode($oldRoles), 'new_roles' => json_encode($newRoles)]
+		);
+	}//end logRoleDefinitionChange()
+
+	/**
+	 * Who made the change: the session user, or the system.
+	 *
+	 * @return array{changed_by_user: string, changed_by_name: string}
+	 */
+	private function changedBy(): array {
 		$user = $this->userSession->getUser();
 		$userName = 'System';
 		$userId = 'system';
@@ -186,20 +153,50 @@ class AuthorizationAuditService {
 			$userId = $user->getUID();
 		}
 
+		return ['changed_by_user' => $userId, 'changed_by_name' => $userName];
+	}//end changedBy()
+
+	/**
+	 * How many schemas a register change cascades to.
+	 *
+	 * This is approximate -- we don't load each schema to check whether it has
+	 * its own authorization. Zero when the register cannot be read.
+	 *
+	 * @param int $registerId The register ID.
+	 *
+	 * @return int The number of schemas on the register.
+	 */
+	private function affectedSchemaCount(int $registerId): int {
+		$affectedSchemaCount = 0;
+		try {
+			$register = $this->registerMapper->find($registerId);
+			$schemas = $register->getSchemas();
+			if (is_array($schemas) === true) {
+				$affectedSchemaCount = count($schemas);
+			}
+		} catch (\Throwable $e) {
+			// Could not count affected schemas.
+		}
+
+		return $affectedSchemaCount;
+	}//end affectedSchemaCount()
+
+	/**
+	 * Write one structured audit entry.
+	 *
+	 * @param string              $message The log message.
+	 * @param array<string,mixed> $fields  The entry's fields after file, line and event type.
+	 *
+	 * @return void
+	 */
+	private function logChange(string $message, array $fields): void {
 		$this->logger->info(
-			message: '[AuthorizationAudit] Role definitions changed',
+			message: $message,
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'event_type' => self::EVENT_TYPE,
-				'entity_type' => 'register_roles',
-				'entity_id' => $registerId,
-				'entity_title' => $registerTitle,
-				'changed_by_user' => $userId,
-				'changed_by_name' => $userName,
-				'old_roles' => json_encode($oldRoles),
-				'new_roles' => json_encode($newRoles),
-			]
+			] + $fields
 		);
-	}//end logRoleDefinitionChange()
+	}//end logChange()
 }//end class

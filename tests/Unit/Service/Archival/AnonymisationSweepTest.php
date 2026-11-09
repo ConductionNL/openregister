@@ -36,6 +36,9 @@ use OCA\OpenRegister\Service\Archival\AnonymisationSweep;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
+// RecordingTarget is declared with the run's tests.
+require_once __DIR__ . '/AnonymisationRunTest.php';
+
 /**
  * Tests for AnonymisationSweep.
  */
@@ -103,6 +106,30 @@ class AnonymisationSweepTest extends TestCase {
 		$this->assertSame(2, $report['anonymisedCount']);
 		$this->assertSame(0, $report['refusedCount']);
 	}//end testASoundBatchIsAnonymised()
+
+	/**
+	 * The plan a sweep hands its targets is built from the candidate itself:
+	 * its uuid, its payload and the profile name the act is recorded under.
+	 *
+	 * @return void
+	 */
+	public function testThePlanCarriesTheCandidatesRecordAndProfileName(): void {
+		$seen = [];
+		$report = $this->sweep->run(
+			candidates: [$this->candidate('obj-7')],
+			targetsFor: static function (array $candidate, $plan) use (&$seen): array {
+				$seen = ['uuid' => $plan->objectUuid, 'profile' => $plan->profileName, 'before' => $plan->before, 'changed' => $plan->changedProperties];
+				return [new RecordingTarget(name: 'payload')];
+			},
+			salt: 'instance-salt'
+		);
+
+		$this->assertSame(
+			['uuid' => 'obj-7', 'profile' => 'zaak-statistiek', 'before' => ['naam' => 'Fatima El-Amrani', 'zaaknummer' => 'ZK-1'], 'changed' => ['naam']],
+			$seen
+		);
+		$this->assertSame('zaak-statistiek', $report['anonymised'][0]['marker']['profile']);
+	}//end testThePlanCarriesTheCandidatesRecordAndProfileName()
 
 	/**
 	 * 🔴 ONE HELD RECORD DOES NOT BLOCK THE REST, AND DOES NOT VANISH EITHER.

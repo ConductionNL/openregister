@@ -147,7 +147,7 @@ class ReportRenderServiceIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testRenderPdfProducesPdfDocument(): void {
-		$converter = \OC::$server->get(\OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class);
+		$converter = \OC::$server->get(\OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class);
 		if ($converter->isAvailable() === false) {
 			$this->expectException(\OCA\OpenRegister\Exception\OfficeServerRequiredException::class);
 		}

@@ -44,6 +44,7 @@ use RuntimeException;
  * Tests that a record's data cannot stand in for its organisation.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @uses   \OCA\OpenRegister\Service\ConditionMatcher
  * @uses   \OCA\OpenRegister\Service\OperatorEvaluator
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
@@ -58,6 +59,8 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class PermissionHandlerRecordOrganisationTest extends TestCase {
 
@@ -101,7 +104,7 @@ class PermissionHandlerRecordOrganisationTest extends TestCase {
 		);
 
 		$logger = new NullLogger();
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $userSession,
 			userManager: $userManager,
 			groupManager: $groupManager,

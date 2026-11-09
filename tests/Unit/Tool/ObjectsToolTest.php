@@ -3,10 +3,10 @@
 namespace Unit\Tool;
 
 use DateTime;
-use OCA\OpenRegister\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Tool\ObjectsTool;
+use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;

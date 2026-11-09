@@ -43,14 +43,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class RuleRunMapper extends QBMapper {
-
-	/**
-	 * How many rows one run-log read returns unless the caller asks for fewer.
-	 *
-	 * @var integer
-	 */
-	public const DEFAULT_LIMIT = 50;
+class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 
 	/**
 	 * The most rows one run-log read will ever return.
@@ -111,29 +104,10 @@ class RuleRunMapper extends QBMapper {
 		int $offset = 0,
 	): array {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($ruleId)))
-			->orderBy('created', 'DESC')
-			->addOrderBy('id', 'DESC')
-			->setMaxResults(max(1, min($limit, self::MAX_LIMIT)))
-			->setFirstResult(max(0, $offset));
-
-		if ($verdict !== null && $verdict !== '') {
-			$qb->andWhere($qb->expr()->eq('verdict', $qb->createNamedParameter($verdict)));
-		}
-
-		if ($since !== null) {
-			$qb->andWhere(
-				$qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
-
-		if ($until !== null) {
-			$qb->andWhere(
-				$qb->expr()->lte('created', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
+		$qb->select('*')->from($this->getTableName())
+			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($ruleId)));
+		$this->newestFirstPage(qb: $qb, limit: $limit, offset: $offset);
+		$this->applyRunFilters(qb: $qb, verdict: $verdict, range: [$since, $until]);
 
 		return $this->findEntities(query: $qb);
 
@@ -168,21 +142,9 @@ class RuleRunMapper extends QBMapper {
 	): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
-			->from($this->getTableName())
-			->orderBy('created', 'DESC')
-			->addOrderBy('id', 'DESC')
-			->setMaxResults(max(1, min($limit, self::MAX_LIMIT)))
-			->setFirstResult(max(0, $offset));
-
-		if ($verdict !== null && $verdict !== '') {
-			$qb->andWhere($qb->expr()->eq('verdict', $qb->createNamedParameter($verdict)));
-		}
-
-		if ($since !== null) {
-			$qb->andWhere(
-				$qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
+			->from($this->getTableName());
+		$this->newestFirstPage(qb: $qb, limit: $limit, offset: $offset);
+		$this->applyRunFilters(qb: $qb, verdict: $verdict, range: [$since, null]);
 
 		return $this->findEntities(query: $qb);
 
@@ -207,25 +169,9 @@ class RuleRunMapper extends QBMapper {
 		?DateTime $until = null,
 	): int {
 		$qb = $this->db->getQueryBuilder();
-		$qb->selectAlias($qb->createFunction('COUNT(*)'), 'run_count')
-			->from($this->getTableName())
+		$qb->selectAlias($qb->createFunction('COUNT(*)'), 'run_count')->from($this->getTableName())
 			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($ruleId)));
-
-		if ($verdict !== null && $verdict !== '') {
-			$qb->andWhere($qb->expr()->eq('verdict', $qb->createNamedParameter($verdict)));
-		}
-
-		if ($since !== null) {
-			$qb->andWhere(
-				$qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
-
-		if ($until !== null) {
-			$qb->andWhere(
-				$qb->expr()->lte('created', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
+		$this->applyRunFilters(qb: $qb, verdict: $verdict, range: [$since, $until]);
 
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
@@ -234,6 +180,57 @@ class RuleRunMapper extends QBMapper {
 		return (int)($row['run_count'] ?? 0);
 
 	}//end countByRule()
+
+	/**
+	 * Order newest first (id breaks ties) and take one page, the limit clamped to 1..MAX_LIMIT.
+	 *
+	 * @param IQueryBuilder $qb     The query.
+	 * @param int           $limit  The page size.
+	 * @param int           $offset The offset, at least 0.
+	 *
+	 * @return void
+	 */
+	private function newestFirstPage(IQueryBuilder $qb, int $limit, int $offset): void {
+		$qb->orderBy('created', 'DESC')
+			->addOrderBy('id', 'DESC')
+			->setMaxResults(max(1, min($limit, self::MAX_LIMIT)))
+			->setFirstResult(max(0, $offset));
+	}//end newestFirstPage()
+
+	/**
+	 * Narrow to one verdict (none for null or empty) and to a created range (a null bound is open).
+	 *
+	 * @param IQueryBuilder                     $qb      The query.
+	 * @param string|null                       $verdict The verdict, or null/empty for any.
+	 * @param array{0: ?DateTime, 1: ?DateTime} $range   The since and until moments.
+	 *
+	 * @return void
+	 */
+	private function applyRunFilters(IQueryBuilder $qb, ?string $verdict, array $range): void {
+		[$since, $until] = $range;
+		$this->applyVerdict(qb: $qb, verdict: $verdict);
+		if ($since !== null) {
+			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+		}
+
+		if ($until !== null) {
+			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+		}
+	}//end applyRunFilters()
+
+	/**
+	 * Narrow to one verdict; null or empty means any.
+	 *
+	 * @param IQueryBuilder $qb      The query.
+	 * @param string|null   $verdict The verdict.
+	 *
+	 * @return void
+	 */
+	private function applyVerdict(IQueryBuilder $qb, ?string $verdict): void {
+		if ($verdict !== null && $verdict !== '') {
+			$qb->andWhere($qb->expr()->eq('verdict', $qb->createNamedParameter($verdict)));
+		}
+	}//end applyVerdict()
 
 	/**
 	 * Delete detail rows older than a cut-off, in bounded batches.

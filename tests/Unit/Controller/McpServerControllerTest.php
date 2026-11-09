@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\McpServerControllerFactory;
-use OCA\OpenRegister\Controller\McpServerController;
-use OCA\OpenRegister\Service\Mcp\McpProtocolService;
-use OCA\OpenRegister\Service\Mcp\McpResourcesService;
-use OCA\OpenRegister\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Mcp\Controller\McpServerController;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpProtocolService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;

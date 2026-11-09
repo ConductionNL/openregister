@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\CorrectionService;
+use OCA\OpenRegister\Service\Object\CorrectionTarget;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -213,4 +214,31 @@ final class CorrectionsControllerTest extends TestCase {
 
 		$this->assertSame(400, $response->getStatus());
 	}//end testAMissingValuesBodyIsRefusedWithFourHundred()
+
+	/**
+	 * The route's register, schema and id reach the service as one target, with the body's values and reason.
+	 *
+	 * @return void
+	 */
+	public function testTheRouteReachesTheServiceAsItsTarget(): void {
+		$this->body(values: ['bsn' => '123456782'], reason: 'Overgetypt');
+
+		$entity = new ObjectEntity();
+		$entity->setUuid(self::OBJ);
+
+		$this->corrections->expects($this->once())
+			->method('correct')
+			->with(
+				$this->callback(
+					fn (CorrectionTarget $target): bool => [$target->register, $target->schema, $target->id] === [self::REGISTER, self::SCHEMA, self::OBJ]
+				),
+				['bsn' => '123456782'],
+				'Overgetypt'
+			)
+			->willReturn(['object' => $entity, 'audit' => null]);
+
+		$response = $this->controller()->correct(register: self::REGISTER, schema: self::SCHEMA, id: self::OBJ);
+
+		$this->assertSame(200, $response->getStatus());
+	}//end testTheRouteReachesTheServiceAsItsTarget()
 }//end class

@@ -63,7 +63,7 @@ final class FlowNodeRunControllerFactory {
 					objects: $objects,
 					permissions: $permissions,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\FlowNodeRunPlatform(
+				platform: new \OCA\OpenRegister\Controller\Support\DsarCasePlatform(
 					userSession: $userSession,
 				),
 			),

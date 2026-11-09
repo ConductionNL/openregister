@@ -35,9 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
-use DateInterval;
 use DateTimeImmutable;
-use Exception;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -81,6 +79,13 @@ final class ScheduledFilterEvaluator {
 	private ScheduledFilterParser $parser;
 
 	/**
+	 * Resolves instants, durations and object dates, failing closed.
+	 *
+	 * @var ScheduledFilterDates
+	 */
+	private ScheduledFilterDates $dates;
+
+	/**
 	 * Construct an evaluator with an optional logger.
 	 *
 	 * The logger is used to emit debug-level diagnostics when a value cannot
@@ -93,6 +98,7 @@ final class ScheduledFilterEvaluator {
 	public function __construct(?LoggerInterface $logger = null, ?ScheduledFilterParser $parser = null) {
 		$this->logger = ($logger ?? new NullLogger());
 		$this->parser = ($parser ?? new ScheduledFilterParser());
+		$this->dates  = new ScheduledFilterDates(logger: $this->logger);
 
 	}//end __construct()
 
@@ -112,137 +118,184 @@ final class ScheduledFilterEvaluator {
 			return true;
 		}
 
-		$parsed = $this->parser->parse(filter: $filter);
-
-		if ($parsed['ast'] === null) {
-			// An unexecutable filter is not normal data the way an unparsable
-			// date on one object is — it is a rule that can never fire, so it
-			// is reported at warning level rather than debug, and it matches
-			// nothing rather than everything.
-			$this->logger->warning(
-				'ScheduledFilterEvaluator: filter does not parse; the rule matches nothing',
-				[
-					'errors' => array_column($parsed['errors'], 'message'),
-				]
-			);
-
+		$ast = $this->parsedAst(filter: $filter);
+		if ($ast === null) {
 			return false;
 		}
 
-		return $this->nodeMatches(node: $parsed['ast'], objectData: $objectData, now: $now);
+		return $this->nodeMatches(node: $ast, target: new ScheduledFilterTarget(objectData: $objectData, now: $now));
 	}//end matches()
+
+	/**
+	 * The filter's AST, or null (logged) when it does not parse.
+	 *
+	 * An unexecutable filter is not normal data the way an unparsable date on
+	 * one object is — it is a rule that can never fire, so it is reported at
+	 * warning level rather than debug, and it matches nothing rather than
+	 * everything.
+	 *
+	 * @param array<string, mixed> $filter Filter map per the class docblock.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function parsedAst(array $filter): ?array {
+		$parsed = $this->parser->parse(filter: $filter);
+		if ($parsed['ast'] === null) {
+			$this->logger->warning(
+				'ScheduledFilterEvaluator: filter does not parse; the rule matches nothing',
+				['errors' => array_column($parsed['errors'], 'message')]
+			);
+		}
+
+		return $parsed['ast'];
+	}//end parsedAst()
 
 	/**
 	 * Evaluate one AST node against an object.
 	 *
-	 * @param array<string, mixed> $node The AST node.
-	 * @param array<string, mixed> $objectData The full object data map.
-	 * @param DateTimeImmutable $now Logical "now" for the scan pass.
+	 * @param array<string, mixed>  $node   The AST node.
+	 * @param ScheduledFilterTarget $target The object and the scan moment.
 	 *
 	 * @return bool True when the node matches.
 	 */
-	private function nodeMatches(array $node, array $objectData, DateTimeImmutable $now): bool {
+	private function nodeMatches(array $node, ScheduledFilterTarget $target): bool {
 		$type = (string)($node['type'] ?? '');
-
 		if ($type === 'all') {
-			// An empty conjunction matches — an unconstrained filter selects
-			// everything, which is what an empty `filter` already meant.
-			foreach (($node['clauses'] ?? []) as $clause) {
-				if ($this->nodeMatches(node: $clause, objectData: $objectData, now: $now) === false) {
-					return false;
-				}
-			}
-
-			return true;
+			return $this->allMatch(clauses: ($node['clauses'] ?? []), target: $target);
 		}
 
 		if ($type === 'any') {
-			// An empty disjunction does NOT match: "any of nothing" is false,
-			// and treating it as true would silently widen a rule to the whole
-			// table.
-			foreach (($node['clauses'] ?? []) as $clause) {
-				if ($this->nodeMatches(node: $clause, objectData: $objectData, now: $now) === true) {
-					return true;
-				}
-			}
-
-			return false;
+			return $this->anyMatches(clauses: ($node['clauses'] ?? []), target: $target);
 		}
 
-		return $this->leafMatches(node: $node, objectData: $objectData, now: $now);
+		return $this->leafMatches(clause: new ScheduledFilterClause(node: $node, target: $target));
 	}//end nodeMatches()
 
 	/**
-	 * Evaluate one leaf clause against an object.
+	 * Whether every clause matches. An empty conjunction matches — an
+	 * unconstrained filter selects everything, which is what an empty
+	 * `filter` already meant.
 	 *
-	 * @param array<string, mixed> $node The leaf node.
-	 * @param array<string, mixed> $objectData The full object data map.
-	 * @param DateTimeImmutable $now Logical "now" for the clause.
+	 * @param array<int, array<string, mixed>> $clauses The clauses.
+	 * @param ScheduledFilterTarget            $target  The object and the scan moment.
+	 *
+	 * @return bool
+	 */
+	private function allMatch(array $clauses, ScheduledFilterTarget $target): bool {
+		foreach ($clauses as $clause) {
+			if ($this->nodeMatches(node: $clause, target: $target) === false) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end allMatch()
+
+	/**
+	 * Whether any clause matches. An empty disjunction does NOT match: "any of
+	 * nothing" is false, and treating it as true would silently widen a rule to
+	 * the whole table.
+	 *
+	 * @param array<int, array<string, mixed>> $clauses The clauses.
+	 * @param ScheduledFilterTarget            $target  The object and the scan moment.
+	 *
+	 * @return bool
+	 */
+	private function anyMatches(array $clauses, ScheduledFilterTarget $target): bool {
+		foreach ($clauses as $clause) {
+			if ($this->nodeMatches(node: $clause, target: $target) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end anyMatches()
+
+	/**
+	 * Evaluate one leaf clause, by operator family. Unknown operators are
+	 * unreachable (the parser rejects them) and fail closed regardless.
+	 *
+	 * @param ScheduledFilterClause $clause The leaf clause.
 	 *
 	 * @return bool True when the clause matches.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  one arm per operator; the
-	 * grammar has eight, and a dispatch table would hide which operators exist
-	 * from anyone reading the evaluator.
 	 */
-	private function leafMatches(array $node, array $objectData, DateTimeImmutable $now): bool {
-		$field    = (string)($node['field'] ?? '');
-		$operator = (string)($node['operator'] ?? '');
-		$operand  = ($node['operand'] ?? null);
-		$actual   = ($objectData[$field] ?? null);
-
-		switch ($operator) {
-			case 'equals':
-				return $actual === $operand;
-			case 'notEquals':
-				// Missing/null field satisfies notEquals for any non-null target.
-				if ($actual === null && $operand !== null) {
-					return true;
-				}
-
-				return $actual !== $operand;
-			case 'in':
-				return $this->membershipMatches(actual: $actual, values: (array)$operand);
-			case 'notIn':
-				// Missing/null field is not a member of anything, so it
-				// satisfies notIn — the mirror of the notEquals rule above.
-				if ($actual === null) {
-					return true;
-				}
-
-				return ($this->membershipMatches(actual: $actual, values: (array)$operand) === false);
-			case 'before':
-			case 'after':
-				$instant = $this->resolveInstant(value: (string)$operand, field: $field, now: $now);
-				if ($instant === null) {
-					return false;
-				}
-
-				$fieldDate = $this->parseDate(value: $actual, field: $field);
-				if ($fieldDate === null) {
-					return false;
-				}
-
-				if ($operator === 'before') {
-					return ($fieldDate < $instant);
-				}
-
-				return ($fieldDate > $instant);
-			case 'withinNext':
-			case 'olderThan':
-				return $this->durationMatches(
-					operator: $operator,
-					operand: $operand,
-					actual: $actual,
-					field: $field,
-					now: $now
-				);
-			default:
-				// Unreachable: the parser rejects unknown operators before the
-				// evaluator ever sees them. Fail closed regardless.
-				return false;
-		}//end switch
+	private function leafMatches(ScheduledFilterClause $clause): bool {
+		return match ($clause->operator) {
+			'equals', 'notEquals' => $this->equalityMatches(clause: $clause),
+			'in', 'notIn' => $this->inMatches(clause: $clause),
+			'before', 'after', 'withinNext', 'olderThan' => $this->temporalMatches(clause: $clause),
+			default => false,
+		};
 	}//end leafMatches()
+
+	/**
+	 * `equals` / `notEquals`: strict comparison. A missing (null) field
+	 * satisfies notEquals for any non-null target.
+	 *
+	 * @param ScheduledFilterClause $clause The leaf clause.
+	 *
+	 * @return bool
+	 */
+	private function equalityMatches(ScheduledFilterClause $clause): bool {
+		$equal = ($clause->actual === $clause->operand);
+		if ($clause->operator === 'equals') {
+			return $equal;
+		}
+
+		return ($equal === false);
+	}//end equalityMatches()
+
+	/**
+	 * `in` / `notIn`. A missing (null) field is not a member of anything, so
+	 * it satisfies notIn — the mirror of the notEquals rule.
+	 *
+	 * @param ScheduledFilterClause $clause The leaf clause.
+	 *
+	 * @return bool
+	 */
+	private function inMatches(ScheduledFilterClause $clause): bool {
+		if ($clause->operator === 'in') {
+			return $this->membershipMatches(actual: $clause->actual, values: (array)$clause->operand);
+		}
+
+		return ($clause->actual === null || $this->membershipMatches(actual: $clause->actual, values: (array)$clause->operand) === false);
+	}//end inMatches()
+
+	/**
+	 * The date operators: instants (`before` / `after`) and durations.
+	 *
+	 * @param ScheduledFilterClause $clause The leaf clause.
+	 *
+	 * @return bool
+	 */
+	private function temporalMatches(ScheduledFilterClause $clause): bool {
+		if (in_array($clause->operator, ScheduledFilterGrammar::INSTANT_OPERATORS, true) === true) {
+			return $this->instantMatches(clause: $clause);
+		}
+
+		return $this->durationMatches(clause: $clause);
+	}//end temporalMatches()
+
+	/**
+	 * `before` / `after` a resolved instant.
+	 *
+	 * @param ScheduledFilterClause $clause The leaf clause.
+	 *
+	 * @return bool
+	 */
+	private function instantMatches(ScheduledFilterClause $clause): bool {
+		$instant   = $this->dates->resolveInstant(clause: $clause);
+		$fieldDate = $this->fieldDateIf(ready: $instant !== null, clause: $clause);
+		if ($instant === null || $fieldDate === null) {
+			return false;
+		}
+
+		if ($clause->operator === 'before') {
+			return ($fieldDate < $instant);
+		}
+
+		return ($fieldDate > $instant);
+	}//end instantMatches()
 
 	/**
 	 * Test strict membership, treating an array-valued field as an intersection.
@@ -270,147 +323,41 @@ final class ScheduledFilterEvaluator {
 	}//end membershipMatches()
 
 	/**
-	 * Evaluate the two duration-relative operators.
+	 * Evaluate the two duration-relative operators, `withinNext` and `olderThan`.
 	 *
-	 * @param string $operator Either `withinNext` or `olderThan`.
-	 * @param mixed $operand The ISO-8601 duration.
-	 * @param mixed $actual The object's value.
-	 * @param string $field The field name, for diagnostics.
-	 * @param DateTimeImmutable $now Logical "now".
+	 * @param ScheduledFilterClause $clause The leaf clause; its operand is the ISO-8601 duration.
 	 *
 	 * @return bool True when the clause matches.
 	 */
-	private function durationMatches(string $operator, $operand, $actual, string $field, DateTimeImmutable $now): bool {
-		$interval = $this->parseDuration(duration: (string)$operand, field: $field, operator: $operator);
-		if ($interval === null) {
+	private function durationMatches(ScheduledFilterClause $clause): bool {
+		$interval  = $this->dates->parseDuration(clause: $clause);
+		$fieldDate = $this->fieldDateIf(ready: $interval !== null, clause: $clause);
+		if ($interval === null || $fieldDate === null) {
 			return false;
 		}
 
-		$fieldDate = $this->parseDate(value: $actual, field: $field);
-		if ($fieldDate === null) {
-			return false;
-		}
-
-		if ($operator === 'withinNext') {
+		if ($clause->operator === 'withinNext') {
 			// Half-open window: (now, now + duration].
-			$upper = $now->add($interval);
-
-			return ($fieldDate > $now && $fieldDate <= $upper);
+			return ($fieldDate > $clause->now && $fieldDate <= $clause->now->add($interval));
 		}
 
-		$threshold = $now->sub($interval);
-
-		return ($fieldDate < $threshold);
+		return ($fieldDate < $clause->now->sub($interval));
 	}//end durationMatches()
 
 	/**
-	 * Resolve a reference instant for `before` / `after`.
+	 * The field's date, parsed only once the reference it is compared with
+	 * resolved, so a clause logs at most the first thing that failed.
 	 *
-	 * Accepts `now`, an absolute ISO-8601 date/date-time, or a signed ISO-8601
-	 * duration measured from now (`P7D` future, `-P7D` past). The sign is
-	 * mandatory for the past direction: `before "P7D"` reads equally naturally
-	 * as "a week from now" and "a week ago", and an ambiguous date operator in a
-	 * reminder engine is how a thousand wrong emails get sent.
-	 *
-	 * @param string $value The instant as written.
-	 * @param string $field The field name, for diagnostics.
-	 * @param DateTimeImmutable $now Logical "now".
-	 *
-	 * @return DateTimeImmutable|null The instant, or null when unresolvable.
-	 */
-	private function resolveInstant(string $value, string $field, DateTimeImmutable $now): ?DateTimeImmutable {
-		if ($value === 'now') {
-			return $now;
-		}
-
-		$negative = false;
-		$duration = $value;
-		if (str_starts_with($duration, '-') === true) {
-			$negative = true;
-			$duration = substr($duration, 1);
-		}
-
-		try {
-			$interval = new DateInterval($duration);
-
-			if ($negative === true) {
-				return $now->sub($interval);
-			}
-
-			return $now->add($interval);
-		} catch (Exception $e) {
-			// Not a duration — fall through to absolute-date parsing.
-		}
-
-		return $this->parseDate(value: $value, field: $field);
-	}//end resolveInstant()
-
-
-	/**
-	 * Parse an ISO-8601 DateInterval string. Logs + returns null on failure.
-	 *
-	 * @param string $duration ISO-8601 duration ("PT24H", "P30D", ...).
-	 * @param string $field Field name for diagnostics only.
-	 * @param string $operator Operator label for diagnostics only.
-	 *
-	 * @return DateInterval|null
-	 */
-	private function parseDuration(string $duration, string $field, string $operator): ?DateInterval {
-		if ($duration === '') {
-			$this->logger->debug(
-				'ScheduledFilterEvaluator: empty duration (fail-closed)',
-				['field' => $field, 'operator' => $operator]
-			);
-			return null;
-		}
-
-		try {
-			return new DateInterval($duration);
-		} catch (Exception $e) {
-			$this->logger->debug(
-				'ScheduledFilterEvaluator: unparsable duration (fail-closed)',
-				[
-					'field' => $field,
-					'operator' => $operator,
-					'value' => $duration,
-					'error' => $e->getMessage(),
-				]
-			);
-			return null;
-		}
-
-	}//end parseDuration()
-
-	/**
-	 * Parse an object-data date value. Accepts strings only; non-string
-	 * (null, bool, array, etc.) → null + debug log. Empty string → null.
-	 *
-	 * @param mixed $value Raw value from object data.
-	 * @param string $field Field name for diagnostics only.
+	 * @param bool                  $ready  Whether the reference resolved.
+	 * @param ScheduledFilterClause $clause The leaf clause.
 	 *
 	 * @return DateTimeImmutable|null
 	 */
-	private function parseDate($value, string $field): ?DateTimeImmutable {
-		if (is_string($value) === false || $value === '') {
-			$this->logger->debug(
-				'ScheduledFilterEvaluator: missing or non-string date (fail-closed)',
-				['field' => $field]
-			);
+	private function fieldDateIf(bool $ready, ScheduledFilterClause $clause): ?DateTimeImmutable {
+		if ($ready === false) {
 			return null;
 		}
 
-		try {
-			return new DateTimeImmutable($value);
-		} catch (Exception $e) {
-			$this->logger->debug(
-				'ScheduledFilterEvaluator: unparsable object date (fail-closed)',
-				[
-					'field' => $field,
-					'error' => $e->getMessage(),
-				]
-			);
-			return null;
-		}
-
-	}//end parseDate()
+		return $this->dates->parseDate(value: $clause->actual, field: $clause->field);
+	}//end fieldDateIf()
 }//end class

@@ -43,6 +43,7 @@ use OCP\IDBConnection;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
 
 /**
  * CollectivesProviderTest.
@@ -87,9 +88,11 @@ class CollectivesProviderTest extends TestCase {
 		$mapper = $mapper ?? $this->createMock(CollectiveLinkMapper::class);
 		$db = $db ?? $this->buildEmptyResultDb();
 		return new CollectivesProvider(
-			$db,
-			$this->buildAppManager($installed),
-			$this->buildL10n(),
+			new LeafProviderPlatform(
+				$db,
+				$this->buildAppManager($installed),
+				$this->buildL10n(),
+			),
 			$mapper,
 			$this->createMock(LoggerInterface::class),
 		);

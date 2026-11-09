@@ -44,6 +44,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Architecture\ControllerSources;
 
 class RegisterBeforeSchemaOrderTest extends TestCase {
 
@@ -53,9 +54,8 @@ class RegisterBeforeSchemaOrderTest extends TestCase {
 	 * @return array<string, array{0: string}>
 	 */
 	public static function controllerFiles(): array {
-		$dir   = __DIR__ . '/../../../lib/Controller';
 		$cases = [];
-		foreach (glob($dir . '/*.php') as $file) {
+		foreach (ControllerSources::controllers() as $file) {
 			$cases[basename($file)] = [$file];
 		}
 

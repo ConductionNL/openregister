@@ -1,0 +1,397 @@
+{
+    "custom target": {
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Register OAS published successfully to GitHub. Note: Published to branch 'dev' (default is 'main'). GitHub Code Search primarily indexes the default branch. This may not appear in search results immediately.",
+            "registerId": 1,
+            "commit_sha": "c1",
+            "commit_url": "u1",
+            "file_url": "f1",
+            "branch": "dev",
+            "default_branch": "main",
+            "indexing_note": "Published to non-default branch. For discovery, publish to 'main' branch."
+        },
+        "calls": [
+            [
+                "getFileSha",
+                "o",
+                "r",
+                "a/b.json",
+                "dev"
+            ],
+            [
+                "publishConfiguration",
+                "o",
+                "r",
+                "a/b.json",
+                "dev",
+                "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}",
+                "m",
+                null
+            ],
+            [
+                "getRepositoryInfo",
+                "o",
+                "r"
+            ]
+        ]
+    },
+    "default branch empty": {
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Register OAS published successfully to GitHub. Note: GitHub Code Search may take a few minutes to index new files.",
+            "registerId": 1,
+            "commit_sha": "c1",
+            "commit_url": "u1",
+            "file_url": "f1",
+            "branch": "dev",
+            "default_branch": "",
+            "indexing_note": "Published to non-default branch. For discovery, publish to '' branch."
+        },
+        "calls": [
+            [
+                "getFileSha",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "dev"
+            ],
+            [
+                "publishConfiguration",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "dev",
+                "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}",
+                "Update register OAS: Reg",
+                null
+            ],
+            [
+                "getRepositoryInfo",
+                "o",
+                "r"
+            ]
+        ]
+    },
+    "default branch unreported": {
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Register OAS published successfully to GitHub. Note: Published to branch 'dev' (default is 'main'). GitHub Code Search primarily indexes the default branch. This may not appear in search results immediately.",
+            "registerId": 1,
+            "commit_sha": "c1",
+            "commit_url": "u1",
+            "file_url": "f1",
+            "branch": "dev",
+            "default_branch": "main",
+            "indexing_note": "Published to non-default branch. For discovery, publish to 'main' branch."
+        },
+        "calls": [
+            [
+                "getFileSha",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "dev"
+            ],
+            [
+                "publishConfiguration",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "dev",
+                "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}",
+                "Update register OAS: Reg",
+                null
+            ],
+            [
+                "getRepositoryInfo",
+                "o",
+                "r"
+            ]
+        ]
+    },
+    "default target": {
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Register OAS published successfully to GitHub. Note: GitHub Code Search may take a few minutes to index new files.",
+            "registerId": 1,
+            "commit_sha": "c1",
+            "commit_url": "u1",
+            "file_url": "f1",
+            "branch": "main",
+            "default_branch": "main",
+            "indexing_note": "File published successfully. GitHub Code Search indexing may take a few minutes."
+        },
+        "calls": [
+            [
+                "getFileSha",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "main"
+            ],
+            [
+                "publishConfiguration",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "main",
+                "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}",
+                "Update register OAS: Reg",
+                null
+            ],
+            [
+                "getRepositoryInfo",
+                "o",
+                "r"
+            ]
+        ]
+    },
+    "file exists": {
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Register OAS published successfully to GitHub. Note: GitHub Code Search may take a few minutes to index new files.",
+            "registerId": 1,
+            "commit_sha": "c1",
+            "commit_url": "u1",
+            "file_url": "f1",
+            "branch": "main",
+            "default_branch": "main",
+            "indexing_note": "File published successfully. GitHub Code Search indexing may take a few minutes."
+        },
+        "calls": [
+            [
+                "getFileSha",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "main"
+            ],
+            [
+                "publishConfiguration",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "main",
+                "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}",
+                "Update register OAS: Reg",
+                "abc"
+            ],
+            [
+                "getRepositoryInfo",
+                "o",
+                "r"
+            ]
+        ]
+    },
+    "no owner": {
+        "status": 400,
+        "data": {
+            "error": "Owner and repo parameters are required"
+        },
+        "calls": []
+    },
+    "no repo": {
+        "status": 400,
+        "data": {
+            "error": "Owner and repo parameters are required"
+        },
+        "calls": []
+    },
+    "no slug": {
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Register OAS published successfully to GitHub. Note: GitHub Code Search may take a few minutes to index new files.",
+            "registerId": 1,
+            "commit_sha": "c1",
+            "commit_url": "u1",
+            "file_url": "f1",
+            "branch": "main",
+            "default_branch": "main",
+            "indexing_note": "File published successfully. GitHub Code Search indexing may take a few minutes."
+        },
+        "calls": [
+            [
+                "getFileSha",
+                "o",
+                "r",
+                "register_openregister.json",
+                "main"
+            ],
+            [
+                "publishConfiguration",
+                "o",
+                "r",
+                "register_openregister.json",
+                "main",
+                "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}",
+                "Update register OAS: Reg",
+                null
+            ],
+            [
+                "getRepositoryInfo",
+                "o",
+                "r"
+            ]
+        ]
+    },
+    "non default branch": {
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Register OAS published successfully to GitHub. Note: Published to branch 'dev' (default is 'main'). GitHub Code Search primarily indexes the default branch. This may not appear in search results immediately.",
+            "registerId": 1,
+            "commit_sha": "c1",
+            "commit_url": "u1",
+            "file_url": "f1",
+            "branch": "dev",
+            "default_branch": "main",
+            "indexing_note": "Published to non-default branch. For discovery, publish to 'main' branch."
+        },
+        "calls": [
+            [
+                "getFileSha",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "dev"
+            ],
+            [
+                "publishConfiguration",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "dev",
+                "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}",
+                "Update register OAS: Reg",
+                null
+            ],
+            [
+                "getRepositoryInfo",
+                "o",
+                "r"
+            ]
+        ]
+    },
+    "not an admin": {
+        "status": 403,
+        "data": {
+            "error": "Only administrators may publish registers to GitHub"
+        },
+        "calls": []
+    },
+    "publish fails": {
+        "status": 500,
+        "data": {
+            "error": "Failed to publish register OAS: refused"
+        },
+        "calls": [
+            [
+                "getFileSha",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "main"
+            ],
+            [
+                "publishConfiguration",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "main",
+                "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}",
+                "Update register OAS: Reg",
+                null
+            ]
+        ]
+    },
+    "register missing": {
+        "status": 404,
+        "data": {
+            "error": "Register not found"
+        },
+        "calls": []
+    },
+    "repository info fails": {
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Register OAS published successfully to GitHub. Note: GitHub Code Search may take a few minutes to index new files.",
+            "registerId": 1,
+            "commit_sha": "c1",
+            "commit_url": "u1",
+            "file_url": "f1",
+            "branch": "dev",
+            "default_branch": null,
+            "indexing_note": "File published successfully. GitHub Code Search indexing may take a few minutes."
+        },
+        "calls": [
+            [
+                "getFileSha",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "dev"
+            ],
+            [
+                "publishConfiguration",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "dev",
+                "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}",
+                "Update register OAS: Reg",
+                null
+            ],
+            [
+                "getRepositoryInfo",
+                "o",
+                "r"
+            ]
+        ]
+    },
+    "sha lookup fails": {
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Register OAS published successfully to GitHub. Note: GitHub Code Search may take a few minutes to index new files.",
+            "registerId": 1,
+            "commit_sha": "c1",
+            "commit_url": "u1",
+            "file_url": "f1",
+            "branch": "main",
+            "default_branch": "main",
+            "indexing_note": "File published successfully. GitHub Code Search indexing may take a few minutes."
+        },
+        "calls": [
+            [
+                "getFileSha",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "main"
+            ],
+            [
+                "publishConfiguration",
+                "o",
+                "r",
+                "reg_openregister.json",
+                "main",
+                "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}",
+                "Update register OAS: Reg",
+                null
+            ],
+            [
+                "getRepositoryInfo",
+                "o",
+                "r"
+            ]
+        ]
+    }
+}

@@ -479,7 +479,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 	 * @return IPreparedStatement The statement.
 	 */
 	private function statement(string $sql): IPreparedStatement {
-		$pdoStatement = $this->pdo->prepare($sql);
+		$pdoStatement = $this->pdo->prepare(str_replace('*PREFIX*', 'oc_', $sql));
 		$statement = $this->createMock(IPreparedStatement::class);
 		$statement->method('execute')->willReturnCallback(
 			function (?array $params = null) use ($pdoStatement) {

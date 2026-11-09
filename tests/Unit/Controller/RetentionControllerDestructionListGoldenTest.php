@@ -45,6 +45,7 @@ use Throwable;
  * @uses \OCA\OpenRegister\Controller\Support\RetentionPlatform
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\AuditTrail
  */
 class RetentionControllerDestructionListGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/retention-destruction-list-golden.json';

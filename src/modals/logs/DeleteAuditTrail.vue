@@ -151,19 +151,5 @@ export default {
 
 @include action-badge;
 
-.action-badge.action-create {
-	background: var(--color-success);
-}
-
-.action-badge.action-update {
-	background: var(--color-warning);
-}
-
-.action-badge.action-delete {
-	background: var(--color-error);
-}
-
-.action-badge.action-read {
-	background: var(--color-info);
-}
+@include action-badge-colours;
 </style>

@@ -3,21 +3,24 @@
 namespace Unit\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Conversation;
-use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Notifications\Db\MessageMapper;
-use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
-use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
-use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
-use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
-use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
-use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\ConversationManagementHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
+use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Mcp\Service\ChatService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 
 class ChatServiceTest extends TestCase {
 
@@ -80,15 +83,18 @@ class ChatServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new ChatService(
-			$this->conversationMapper,
-			$this->messageMapper,
-			$this->agentMapper,
-			$this->contextHandler,
-			$this->responseHandler,
-			$this->conversationHandler,
-			$this->historyHandler,
-			$this->toolHandler,
-			$this->logger
+			new ChatServiceStores(
+				$this->conversationMapper,
+				$this->messageMapper,
+				$this->agentMapper,
+			),
+			new ChatServiceHandlers(
+				$this->contextHandler,
+				$this->responseHandler,
+				$this->conversationHandler,
+				$this->historyHandler,
+			),
+			$this->logger,
 		);
 	}
 
@@ -110,8 +116,12 @@ class ChatServiceTest extends TestCase {
 			->willReturn($conversation);
 
 		$this->historyHandler
-			->expects($this->exactly(2))
-			->method('storeMessage');
+			->expects($this->once())
+			->method('storeUserMessage');
+
+		$this->historyHandler
+			->expects($this->once())
+			->method('storeAssistantMessage');
 
 		$this->conversationHandler
 			->expects($this->once())
@@ -357,15 +367,12 @@ class ChatServiceTest extends TestCase {
 			->expects($this->once())
 			->method('generateResponse')
 			->willReturnCallback(function (
-				string $userMessage,
+				ChatMessageRequest $request,
 				array $context,
 				array $messageHistory,
 				$agent,
-				array $selectedTools,
-				?StreamYieldChannel $channelArg = null,
-				array $cnAiContext = [],
 			) use (&$capturedChannel): string {
-				$capturedChannel = $channelArg;
+				$capturedChannel = $request->channel;
 				return 'AI says hello';
 			});
 
@@ -405,15 +412,12 @@ class ChatServiceTest extends TestCase {
 			->expects($this->once())
 			->method('generateResponse')
 			->willReturnCallback(function (
-				string $userMessage,
+				ChatMessageRequest $request,
 				array $context,
 				array $messageHistory,
 				$agent,
-				array $selectedTools,
-				?StreamYieldChannel $channelArg = null,
-				array $cnAiContext = [],
 			) use (&$capturedChannel): string {
-				$capturedChannel = $channelArg;
+				$capturedChannel = $request->channel;
 				return 'response';
 			});
 

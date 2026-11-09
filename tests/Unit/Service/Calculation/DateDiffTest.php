@@ -435,12 +435,12 @@ class DateDiffTest extends TestCase {
 	/**
 	 * dateDiff with "now" as from: result is >= 0 for a future to date.
 	 *
-	 * We use a date well in the future to ensure it's always after "now".
+	 * The date is ten years ahead of the clock, so it stays after "now".
 	 *
 	 * @return void
 	 */
 	public function testNowSentinel(): void {
-		$result = $this->eval->evaluate([], $this->expr('now', '2099-12-31', 'days'));
+		$result = $this->eval->evaluate([], $this->expr('now', date('Y-m-d', strtotime('+10 years')), 'days'));
 		$this->assertIsInt($result);
 		$this->assertGreaterThan(0, $result);
 
@@ -452,7 +452,7 @@ class DateDiffTest extends TestCase {
 	 * @return void
 	 */
 	public function testNowSentinelAsTo(): void {
-		$result = $this->eval->evaluate([], $this->expr('2099-12-31', 'now', 'days'));
+		$result = $this->eval->evaluate([], $this->expr(date('Y-m-d', strtotime('+10 years')), 'now', 'days'));
 		$this->assertIsInt($result);
 		$this->assertLessThan(0, $result);
 

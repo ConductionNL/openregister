@@ -30,8 +30,8 @@ namespace OCA\OpenRegister\Notifications\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
-use OCA\OpenRegister\Db\EmailLinkMapper;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicRelationReaderInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -51,9 +51,9 @@ class EmailService implements EmailServiceInterface {
 	/**
 	 * Email link mapper.
 	 *
-	 * @var EmailLinkMapper
+	 * @var EmailLinkMapperInterface
 	 */
-	private readonly EmailLinkMapper $emailLinkMapper;
+	private readonly EmailLinkMapperInterface $emailLinkMapper;
 
 	/**
 	 * App manager for checking Mail app availability.
@@ -93,37 +93,31 @@ class EmailService implements EmailServiceInterface {
 	/**
 	 * Magic mapper for cross-table _mail JSONB containment queries.
 	 *
-	 * @var MagicMapperInterface
+	 * @var MagicRelationReaderInterface
 	 */
-	private readonly MagicMapperInterface $magicMapper;
+	private readonly MagicRelationReaderInterface $magicMapper;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param EmailLinkMapper $emailLinkMapper Email link mapper.
-	 * @param IAppManager $appManager App manager.
-	 * @param IDBConnection $db Database connection.
-	 * @param IUserSession $userSession User session.
-	 * @param LoggerInterface $logger Logger.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper.
-	 * @param MagicMapperInterface $magicMapper Magic mapper.
+	 * @param EmailLinkMapperInterface    $emailLinkMapper Email link mapper.
+	 * @param EmailMailAppReader $mailApp         App manager, database connection and user session for the Mail app.
+	 * @param EmailLinkedSchemas $linkedSchemas   Schema and object mappers for the mail-linked schemas.
+	 * @param LoggerInterface    $logger          Logger.
 	 */
 	public function __construct(
-		EmailLinkMapper $emailLinkMapper,
-		IAppManager $appManager,
-		IDBConnection $db,
-		IUserSession $userSession,
+		EmailLinkMapperInterface $emailLinkMapper,
+		EmailMailAppReader $mailApp,
+		EmailLinkedSchemas $linkedSchemas,
 		LoggerInterface $logger,
-		SchemaMapperInterface $schemaMapper,
-		MagicMapperInterface $magicMapper,
 	) {
 		$this->emailLinkMapper = $emailLinkMapper;
-		$this->appManager = $appManager;
-		$this->db = $db;
-		$this->userSession = $userSession;
+		$this->appManager = $mailApp->appManager;
+		$this->db = $mailApp->db;
+		$this->userSession = $mailApp->userSession;
 		$this->logger = $logger;
-		$this->schemaMapper = $schemaMapper;
-		$this->magicMapper = $magicMapper;
+		$this->schemaMapper = $linkedSchemas->schemaMapper;
+		$this->magicMapper = $linkedSchemas->magicMapper;
 	}//end __construct()
 
 	/**
@@ -312,10 +306,10 @@ class EmailService implements EmailServiceInterface {
 		try {
 			// The mail_recipients.type=0 is "from"; mail_recipients.email is the address.
 			$sql = 'SELECT mb.account_id, m.id AS message_id
-                     FROM oc_mail_messages m
-                     JOIN oc_mail_recipients r ON r.message_id = m.id AND r.type = 0
-                     JOIN oc_mail_mailboxes mb ON mb.id = m.mailbox_id
-                     JOIN oc_mail_accounts ma ON ma.id = mb.account_id
+                     FROM *PREFIX*mail_messages m
+                     JOIN *PREFIX*mail_recipients r ON r.message_id = m.id AND r.type = 0
+                     JOIN *PREFIX*mail_mailboxes mb ON mb.id = m.mailbox_id
+                     JOIN *PREFIX*mail_accounts ma ON ma.id = mb.account_id
                      WHERE LOWER(r.email) = LOWER(?) AND ma.user_id = ?
                      LIMIT 200';
 			$stmt = $this->db->prepare($sql);

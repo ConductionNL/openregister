@@ -49,6 +49,7 @@ use Throwable;
  * Contacts (vCard / People) integration provider.
  */
 class ContactsProvider extends AbstractIntegrationProvider {
+	use LinkTableAppDescriptor;
 
 	/**
 	 * NC app id required for this integration.
@@ -88,18 +89,6 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	public function getGroup(): ?string {
 		return 'comms';
 	}//end getGroup()
-
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
 
 	/**
 	 * List vCard links for an OR object.

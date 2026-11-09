@@ -47,9 +47,9 @@ class ThreeWayMerge {
 	 * Compute the classified diff + merged result for an update-from-source.
 	 *
 	 * @param array<string, array<string,mixed>> $baseline Imported baseline property definitions.
-	 * @param array<string, array<string,mixed>> $current Current schema property definitions.
+	 * @param array<string, array<string,mixed>> $current  Current schema property definitions.
 	 * @param array<string, array<string,mixed>> $incoming Freshly-imported property definitions.
-	 * @param array<int, string> $resolved Conflicting property names the caller confirmed to apply.
+	 * @param array<int, string>                 $resolved Conflicting property names the caller confirmed to apply.
 	 *
 	 * @return array<string, mixed> {
 	 *                              added: string[], removed: string[], changed: string[], keptLocal: string[],
@@ -57,88 +57,127 @@ class ThreeWayMerge {
 	 *                              }
 	 *
 	 * @spec openspec/specs/schema-import/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The merge table is inherently branchy; each branch is one table row.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      The merge table is inherently branchy; each branch is one table row.
 	 */
 	public function compute(array $baseline, array $current, array $incoming, array $resolved = []): array {
-		$added = [];
-		$removed = [];
-		$changed = [];
-		$keptLocal = [];
-		$conflicts = [];
-		$merged = $current;
+		$sides = ['baseline' => $baseline, 'current' => $current, 'incoming' => $incoming, 'resolved' => array_fill_keys($resolved, true)];
+		$result = ['added' => [], 'removed' => [], 'changed' => [], 'keptLocal' => [], 'conflicts' => [], 'merged' => $current];
 
-		$resolvedSet = array_fill_keys($resolved, true);
+		foreach (array_unique(array_merge(array_keys($baseline), array_keys($current), array_keys($incoming))) as $name) {
+			$result = $this->place(result: $result, sides: $sides, name: $name);
+		}
 
-		$allNames = array_unique(
-			array_merge(array_keys($baseline), array_keys($current), array_keys($incoming))
-		);
-
-		foreach ($allNames as $name) {
-			$inBaseline = array_key_exists($name, $baseline);
-			$inCurrent = array_key_exists($name, $current);
-			$inIncoming = array_key_exists($name, $incoming);
-
-			// Added locally: present in current but never in baseline, and not
-			// (re)introduced by source — keep untouched.
-			if ($inCurrent === true && $inBaseline === false && $inIncoming === false) {
-				$keptLocal[] = $name;
-				continue;
-			}
-
-			// Source adds a new property absent locally → add it.
-			if ($inIncoming === true && $inCurrent === false) {
-				$merged[$name] = $incoming[$name];
-				$added[] = $name;
-				continue;
-			}
-
-			// Source removed a property that we still carry.
-			if ($inIncoming === false && $inBaseline === true && $inCurrent === true) {
-				$removed[] = $name;
-				// Removal is breaking; reported, not auto-applied here.
-				continue;
-			}
-
-			// Present in both current and incoming → compare against baseline.
-			if ($inCurrent === true && $inIncoming === true) {
-				$localModified = ($inBaseline === false || $this->differs(a: $baseline[$name] ?? null, b: $current[$name]));
-				$sourceChanged = ($inBaseline === false || $this->differs(a: $baseline[$name] ?? null, b: $incoming[$name]));
-
-				if ($sourceChanged === false) {
-					// Source unchanged → keep local (covers local mods + identical).
-					$keptLocal[] = $name;
-					continue;
-				}
-
-				if ($localModified === false) {
-					// Local matches baseline, source changed → apply source.
-					$merged[$name] = $incoming[$name];
-					$changed[] = $name;
-					continue;
-				}
-
-				// Both changed → conflict; apply only if explicitly resolved.
-				if (isset($resolvedSet[$name]) === true) {
-					$merged[$name] = $incoming[$name];
-					$changed[] = $name;
-				} else {
-					$conflicts[] = $name;
-				}
-			}//end if
-		}//end foreach
-
-		return [
-			'added' => $added,
-			'removed' => $removed,
-			'changed' => $changed,
-			'keptLocal' => $keptLocal,
-			'conflicts' => $conflicts,
-			'merged' => $merged,
-			'applied' => ($conflicts === []),
-		];
+		$result['applied'] = ($result['conflicts'] === []);
+		return $result;
 	}//end compute()
+
+	/**
+	 * Record one property name in its bucket; added and changed names take
+	 * the incoming definition into the merged map.
+	 *
+	 * @param array<string, array<int|string, mixed>> $result The result built so far.
+	 * @param array<string, array<int|string, mixed>> $sides  The baseline, current and incoming maps plus the resolved set.
+	 * @param int|string                              $name   The property name.
+	 *
+	 * @return array<string, array<int|string, mixed>> The result with the name placed.
+	 */
+	private function place(array $result, array $sides, int|string $name): array {
+		$bucket = $this->classify(sides: $sides, name: $name);
+		if ($bucket === null) {
+			return $result;
+		}
+
+		$result[$bucket][] = $name;
+		if ($bucket === 'added' || $bucket === 'changed') {
+			$result['merged'][$name] = $sides['incoming'][$name];
+		}
+
+		return $result;
+	}//end place()
+
+	/**
+	 * Classify one property name into its merge-table bucket.
+	 *
+	 * Carried by the source → see classifyIncoming(). Otherwise: dropped by
+	 * source but still carried → removed (breaking, so reported, not
+	 * auto-applied); added locally and never in the baseline → keptLocal; a
+	 * name only the baseline knows lands nowhere.
+	 *
+	 * @param array<string, array<int|string, mixed>> $sides The baseline, current and incoming maps plus the resolved set.
+	 * @param int|string                              $name  The property name.
+	 *
+	 * @return string|null The bucket, or null when the name lands nowhere.
+	 */
+	private function classify(array $sides, int|string $name): ?string {
+		return match (true) {
+			array_key_exists($name, $sides['incoming']) => $this->classifyIncoming(sides: $sides, name: $name),
+			array_key_exists($name, $sides['current']) === false => null,
+			array_key_exists($name, $sides['baseline']) => 'removed',
+			default => 'keptLocal',
+		};
+	}//end classify()
+
+	/**
+	 * Classify a name the source carries.
+	 *
+	 * Absent locally → added. Without a baseline both sides count as
+	 * changed, so it is a conflict; otherwise compare against the baseline.
+	 *
+	 * @param array<string, array<int|string, mixed>> $sides The baseline, current and incoming maps plus the resolved set.
+	 * @param int|string                              $name  The property name.
+	 *
+	 * @return string The bucket.
+	 */
+	private function classifyIncoming(array $sides, int|string $name): string {
+		if (array_key_exists($name, $sides['current']) === false) {
+			return 'added';
+		}
+
+		if (array_key_exists($name, $sides['baseline']) === false) {
+			return $this->resolveConflict(sides: $sides, name: $name);
+		}
+
+		return $this->compareWithBaseline(sides: $sides, name: $name);
+	}//end classifyIncoming()
+
+	/**
+	 * Classify a name present in all three maps.
+	 *
+	 * Source unchanged → keep local (covers local mods + identical); local
+	 * unchanged → apply source; both changed → conflict.
+	 *
+	 * @param array<string, array<int|string, mixed>> $sides The baseline, current and incoming maps plus the resolved set.
+	 * @param int|string                              $name  The property name.
+	 *
+	 * @return string The bucket.
+	 */
+	private function compareWithBaseline(array $sides, int|string $name): string {
+		$base = $sides['baseline'][$name];
+		if ($this->differs(a: $base, b: $sides['incoming'][$name]) === false) {
+			return 'keptLocal';
+		}
+
+		if ($this->differs(a: $base, b: $sides['current'][$name]) === false) {
+			return 'changed';
+		}
+
+		return $this->resolveConflict(sides: $sides, name: $name);
+	}//end compareWithBaseline()
+
+	/**
+	 * Both sides changed: apply only when the caller explicitly resolved it.
+	 *
+	 * @param array<string, array<int|string, mixed>> $sides The baseline, current and incoming maps plus the resolved set.
+	 * @param int|string                              $name  The property name.
+	 *
+	 * @return string The bucket.
+	 */
+	private function resolveConflict(array $sides, int|string $name): string {
+		if (isset($sides['resolved'][$name]) === true) {
+			return 'changed';
+		}
+
+		return 'conflicts';
+	}//end resolveConflict()
 
 	/**
 	 * Whether two property definitions differ (order-insensitive deep compare).

@@ -40,6 +40,7 @@ use ReflectionProperty;
  * Free-text search SQL, recorded per term, platform, fuzzy flag and column set.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
  * @uses   \OCA\OpenRegister\Db\MagicMapper\DeletedLens
@@ -218,7 +219,9 @@ class MagicSearchHandlerSearchLeafGoldenTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
 		);
-		(new ReflectionProperty(MagicSearchHandler::class, 'hasPgTrgm'))->setValue($handler, $fuzzy);
+		$probe = new \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe($this->createMock(IDBConnection::class), $this->createMock(LoggerInterface::class));
+		(new ReflectionProperty($probe, 'available'))->setValue($probe, $fuzzy);
+		(new ReflectionProperty(MagicSearchHandler::class, 'trgmProbe'))->setValue($handler, $probe);
 
 		return $handler;
 	}//end handler()

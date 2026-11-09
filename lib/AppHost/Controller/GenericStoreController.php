@@ -43,6 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Controller;
 
+use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
@@ -84,43 +85,95 @@ class GenericStoreController extends Controller {
 	private const SLUG_PATTERN = '/^[a-z0-9][a-z0-9-]*[a-z0-9]$/';
 
 	/**
+	 * Loads the leaf app's manifest.
+	 *
+	 * @var ManifestLoader
+	 */
+	private readonly ManifestLoader $manifestLoader;
+
+	/**
+	 * Guarded remote discovery.
+	 *
+	 * @var GenericStoreService
+	 */
+	private readonly GenericStoreService $storeService;
+
+	/**
+	 * Declarative component install.
+	 *
+	 * @var GenericStoreInstaller
+	 */
+	private readonly GenericStoreInstaller $installer;
+
+	/**
+	 * Configuration browse and install.
+	 *
+	 * @var FederatedStoreCatalog
+	 */
+	private readonly FederatedStoreCatalog $catalog;
+
+	/**
+	 * GitHub discovery source.
+	 *
+	 * @var GitHubStoreSource
+	 */
+	private readonly GitHubStoreSource $gitHubSource;
+
+	/**
+	 * ADR-023 action resolver.
+	 *
+	 * @var StoreActionAuthorizer
+	 */
+	private readonly StoreActionAuthorizer $actionAuthorizer;
+
+	/**
+	 * Current session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Admin check for install.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * `$appName` is the CALLING leaf app id, set by that app's alias
 	 * registration, which is what lets one controller serve every app.
 	 *
-	 * @param string                $appName        Calling leaf app id.
-	 * @param IRequest              $request        HTTP request.
-	 * @param ManifestLoader        $manifestLoader Loads the leaf app's manifest.
-	 * @param GenericStoreService   $storeService   Guarded remote discovery.
-	 * @param GenericStoreInstaller $installer      Declarative component install.
-	 * @param FederatedStoreCatalog $catalog        Configuration browse and install.
-	 * @param GitHubStoreSource     $gitHubSource   GitHub discovery source.
-	 * @param StoreActionAuthorizer $actionAuthorizer ADR-023 action resolver.
-	 * @param IUserSession          $userSession    Current session.
-	 * @param IGroupManager         $groupManager   Admin check for install.
-	 * @param LoggerInterface       $logger         PSR logger.
+	 * @param string                         $appName  Calling leaf app id.
+	 * @param IRequest                       $request  HTTP request.
+	 * @param GenericStoreControllerServices $services The discovery, install and platform services.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Each collaborator is one
-	 * discovery or install path the engine owns on a leaf app's behalf, and the
-	 * count grew because the plane absorbed work the apps used to do
-	 * themselves. Grouping them behind a locator would hide which paths exist
-	 * from the one file that has to choose between them.
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-leaf-app-must-declare-its-store-rather-than-implement-one
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ManifestLoader $manifestLoader,
-		private readonly GenericStoreService $storeService,
-		private readonly GenericStoreInstaller $installer,
-		private readonly FederatedStoreCatalog $catalog,
-		private readonly GitHubStoreSource $gitHubSource,
-		private readonly StoreActionAuthorizer $actionAuthorizer,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
+		GenericStoreControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->manifestLoader = $services->sources->manifestLoader;
+		$this->storeService = $services->sources->storeService;
+		$this->gitHubSource = $services->sources->gitHubSource;
+		$this->catalog = $services->sources->catalog;
+		$this->installer = $services->install->installer;
+		$this->actionAuthorizer = $services->install->actionAuthorizer;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**
@@ -167,15 +220,8 @@ class GenericStoreController extends Controller {
 			);
 		}
 
-		$query = $this->request->getParam('q');
-		if (is_string($query) === false) {
-			$query = null;
-		}
-
-		$kind = $this->request->getParam('kind');
-		if (is_string($kind) === false) {
-			$kind = null;
-		}
+		$query = $this->stringParam(name: 'q');
+		$kind = $this->stringParam(name: 'kind');
 
 		try {
 			$descriptor = $this->descriptor(store: $store);
@@ -205,10 +251,7 @@ class GenericStoreController extends Controller {
 		// type ids are the honest filter set when the app names no kinds of its
 		// own. Falling through to the shared kind vocabulary would offer chips
 		// (`adapter`, `agent-template`) that match nothing on this page.
-		$kinds = $store->kinds;
-		if ($kinds === [] && $store->isFederated() === true) {
-			$kinds = $store->declaredTypes();
-		}
+		$kinds = $this->searchKinds(store: $store);
 
 		// 🔴 `builtIn` RIDES BACK FOR THE SAME REASON `kinds` DOES.
 		//
@@ -233,6 +276,38 @@ class GenericStoreController extends Controller {
 			statusCode: Http::STATUS_OK
 		);
 	}//end search()
+
+	/**
+	 * A request parameter when it is a string, otherwise null.
+	 *
+	 * @param string $name The parameter name.
+	 *
+	 * @return string|null
+	 */
+	private function stringParam(string $name): ?string {
+		$value = $this->request->getParam($name);
+		if (is_string($value) === false) {
+			return null;
+		}
+
+		return $value;
+	}//end stringParam()
+
+	/**
+	 * The filter kinds a search answers with: the app's declared kinds, or a
+	 * federated store's declared type ids when it names no kinds of its own.
+	 *
+	 * @param StoreManifest $store The declared store block.
+	 *
+	 * @return array<int, string>
+	 */
+	private function searchKinds(StoreManifest $store): array {
+		if ($store->kinds === [] && $store->isFederated() === true) {
+			return $store->declaredTypes();
+		}
+
+		return $store->kinds;
+	}//end searchKinds()
 
 	/**
 	 * Install one store item into this instance.
@@ -267,7 +342,25 @@ class GenericStoreController extends Controller {
 			);
 		}
 
+		// Every gate runs before anything is resolved or written.
 		$store = $this->store();
+		$refusal = $this->installRefusal(store: $store, user: $user);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->installItem(store: $store, slug: $slug);
+	}//end install()
+
+	/**
+	 * The refusal for an install this caller may not run, or null when every gate passes.
+	 *
+	 * @param StoreManifest $store The declared store block.
+	 * @param IUser|null    $user  The signed-in user, or null.
+	 *
+	 * @return JSONResponse|null 404 no store; 403 unenforceable posture or not permitted; null when allowed.
+	 */
+	private function installRefusal(StoreManifest $store, ?IUser $user): ?JSONResponse {
 		if ($store->enabled === false) {
 			return new JSONResponse(
 				data: ['success' => false, 'message' => 'This app declares no store.'],
@@ -275,6 +368,18 @@ class GenericStoreController extends Controller {
 			);
 		}
 
+		return $this->postureRefusal(store: $store, user: $user);
+	}//end installRefusal()
+
+	/**
+	 * The refusal when the declared install posture is unenforceable or does not admit this caller.
+	 *
+	 * @param StoreManifest $store The declared store block.
+	 * @param IUser|null    $user  The signed-in user, or null.
+	 *
+	 * @return JSONResponse|null 403 when refused; null when the caller may install.
+	 */
+	private function postureRefusal(StoreManifest $store, ?IUser $user): ?JSONResponse {
 		// A posture this engine cannot yet enforce is REFUSED, never
 		// downgraded. `action:<name>` needs an ADR-023 resolver that lives in
 		// the leaf apps; until that lands, treating it as `authenticated`
@@ -301,18 +406,21 @@ class GenericStoreController extends Controller {
 			);
 		}
 
+		return null;
+	}//end postureRefusal()
+
+	/**
+	 * Resolve and install one item through the catalogue that owns it.
+	 *
+	 * @param StoreManifest $store The declared store block.
+	 * @param string        $slug  The remote item slug.
+	 *
+	 * @return JSONResponse 200 with the install report; 404 when unresolved.
+	 */
+	private function installItem(StoreManifest $store, string $slug): JSONResponse {
 		$descriptor = $this->descriptor(store: $store);
 
-		try {
-			$item = $this->resolveFor(descriptor: $descriptor, slug: $slug);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				message: sprintf('[AppHost\\Store] resolve failed for %s: %s', $this->appName, $e->getMessage()),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			$item = null;
-		}
-
+		$item = $this->resolveOrNull(descriptor: $descriptor, slug: $slug);
 		if ($item === null) {
 			return new JSONResponse(
 				data: ['success' => false, 'message' => 'The store item could not be resolved.'],
@@ -331,7 +439,27 @@ class GenericStoreController extends Controller {
 			data: $this->installer->install(store: $store, item: $item),
 			statusCode: Http::STATUS_OK
 		);
-	}//end install()
+	}//end installItem()
+
+	/**
+	 * Resolve a slug, treating a failing catalogue as unresolved (logged).
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param string          $slug       The item slug.
+	 *
+	 * @return array<string, mixed>|null The resolved item, or null.
+	 */
+	private function resolveOrNull(StoreDescriptor $descriptor, string $slug): ?array {
+		try {
+			return $this->resolveFor(descriptor: $descriptor, slug: $slug);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: sprintf('[AppHost\\Store] resolve failed for %s: %s', $this->appName, $e->getMessage()),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end resolveOrNull()
 
 	/**
 	 * Whether this caller may install, per the posture the app declared.

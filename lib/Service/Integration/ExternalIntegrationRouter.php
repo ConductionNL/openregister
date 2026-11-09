@@ -72,6 +72,17 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	private const SOURCE_SCHEMA = 'source';
 
 	/**
+	 * The probe descriptor of a provider that is reachable (or not external).
+	 *
+	 * @var array{status: string, authStatus: string, message: ?string}
+	 */
+	private const PROBE_OK = [
+		'status' => 'ok',
+		'authStatus' => 'configured',
+		'message' => null,
+	];
+
+	/**
 	 * Cached availability flag for the OpenConnector NC app.
 	 *
 	 * Null means "not yet checked" — the first call resolves it.
@@ -79,6 +90,13 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 * @var boolean|null
 	 */
 	private ?bool $connectorAvailable = null;
+
+	/**
+	 * Reads the body, status and metadata out of what the connector answers.
+	 *
+	 * @var ConnectorResponseReader
+	 */
+	private readonly ConnectorResponseReader $responses;
 
 	/**
 	 * Constructor.
@@ -99,6 +117,7 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 		private ContainerInterface $container,
 		private LoggerInterface $logger,
 	) {
+		$this->responses = new ConnectorResponseReader();
 	}//end __construct()
 
 	/**
@@ -128,17 +147,8 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-4
 	 */
-	public function call(
-		IntegrationProvider $provider,
-		string $method,
-		string $path,
-		array $options = [],
-	): array {
-		$this->assertProviderIsExternal(provider: $provider);
-		$this->assertOpenConnectorAvailable();
-
-		$sourceId = (string)$provider->getOpenConnectorSource();
-		$source = $this->loadSource(sourceId: $sourceId, providerId: $provider->getId());
+	public function call(IntegrationProvider $provider, string $method, string $path, array $options = []): array {
+		$target = $this->callTarget(provider: $provider);
 
 		// Mock mode: when the resolved source is flagged
 		// `configuration.mock === true`, short-circuit and return the canned
@@ -147,38 +157,21 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 		// demonstrably functional end-to-end without real credentials. The
 		// real path below stays 100% intact for non-mock sources; mock is
 		// opt-in per source. {@see resolveMockBody()} for the resolution.
-		$config = $this->readSourceConfiguration(source: $source);
-		if (($config['mock'] ?? false) === true) {
-			return $this->resolveMockBody(config: $config, sourceId: $sourceId);
+		if (($target['config']['mock'] ?? false) === true) {
+			return $this->resolveMockBody(config: $target['config'], sourceId: $target['sourceId']);
 		}
 
+		$request = new UpstreamRequest(method: $method, path: $path, options: $options);
 		try {
-			return $this->invoke(source: $source, method: $method, path: $path, options: $options);
+			return $this->invoke(source: $target['source'], request: $request);
 		} catch (ProviderUnavailableException $e) {
 			// Already classified — surface as-is.
 			throw $e;
 		} catch (\Throwable $e) {
-			// Anything else surfacing from OpenConnector / the upstream
-			// is treated as an upstream failure. The original throwable
-			// is wrapped so the caller can introspect if needed.
-			$this->logger->error(
-				sprintf(
-					'[ExternalIntegrationRouter] upstream call failed for provider %s %s %s',
-					$provider->getId(),
-					$method,
-					$path
-				),
-				['exception' => $e]
-			);
-			throw new ProviderUnavailableException(
-				message: sprintf(
-					'Upstream service for integration "%s" is unreachable.',
-					$provider->getId()
-				),
-				cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN,
-				previous: $e
-			);
-		}//end try
+			// Anything else surfacing from OpenConnector / the upstream is
+			// treated as an upstream failure, wrapping the original throwable.
+			throw $this->upstreamFailure(provider: $provider, kind: 'call', request: $request->describe(), previous: $e);
+		}
 	}//end call()
 
 	/**
@@ -218,56 +211,71 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 *
 	 * @spec openspec/changes/integration-brp-audit-metadata/tasks.md
 	 */
-	public function callWithMeta(
-		IntegrationProvider $provider,
-		string $method,
-		string $path,
-		array $options = [],
-	): array {
-		$this->assertProviderIsExternal(provider: $provider);
-		$this->assertOpenConnectorAvailable();
-
-		$sourceId = (string)$provider->getOpenConnectorSource();
-		$source = $this->loadSource(sourceId: $sourceId, providerId: $provider->getId());
+	public function callWithMeta(IntegrationProvider $provider, string $method, string $path, array $options = []): array {
+		$target = $this->callTarget(provider: $provider);
 
 		// Mock mode: short-circuit a flagged source with the canned body PLUS a
 		// synthesized `meta` envelope (fake correlationId / durationMs /
 		// status:200) so a meta-consuming leaf (e.g. the BRP/HaalCentraal leaf,
 		// which persists the Wet-BRP `X-Correlation-ID` + duration into its
 		// audit record) gets a fully-shaped response without a real call.
-		$config = $this->readSourceConfiguration(source: $source);
-		if (($config['mock'] ?? false) === true) {
-			return [
-				'body' => $this->resolveMockBody(config: $config, sourceId: $sourceId),
-				'meta' => $this->mockMeta(config: $config),
-			];
+		if (($target['config']['mock'] ?? false) === true) {
+			$config = $target['config'];
+			return ['body' => $this->resolveMockBody(config: $config, sourceId: $target['sourceId']), 'meta' => $this->mockMeta(config: $config)];
 		}
 
+		$request = new UpstreamRequest(method: $method, path: $path, options: $options);
 		try {
-			return $this->invokeWithMeta(source: $source, method: $method, path: $path, options: $options);
+			return $this->invokeWithMeta(source: $target['source'], request: $request);
 		} catch (ProviderUnavailableException $e) {
 			// Already classified — surface as-is.
 			throw $e;
 		} catch (\Throwable $e) {
-			$this->logger->error(
-				sprintf(
-					'[ExternalIntegrationRouter] upstream call (with meta) failed for provider %s %s %s',
-					$provider->getId(),
-					$method,
-					$path
-				),
-				['exception' => $e]
-			);
-			throw new ProviderUnavailableException(
-				message: sprintf(
-					'Upstream service for integration "%s" is unreachable.',
-					$provider->getId()
-				),
-				cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN,
-				previous: $e
-			);
-		}//end try
+			throw $this->upstreamFailure(provider: $provider, kind: 'call (with meta)', request: $request->describe(), previous: $e);
+		}
 	}//end callWithMeta()
+
+	/**
+	 * Check the provider and the connector, then load the provider's source and its configuration.
+	 *
+	 * @param IntegrationProvider $provider The provider making the call.
+	 *
+	 * @return array{sourceId: string, source: ObjectEntity, config: array<string,mixed>}
+	 *
+	 * @throws ProviderUnavailableException When the connector or the source is missing.
+	 */
+	private function callTarget(IntegrationProvider $provider): array {
+		$this->assertProviderIsExternal(provider: $provider);
+		$this->assertOpenConnectorAvailable();
+
+		$sourceId = (string)$provider->getOpenConnectorSource();
+		$source   = $this->loadSource(sourceId: $sourceId, providerId: $provider->getId());
+
+		return ['sourceId' => $sourceId, 'source' => $source, 'config' => $this->readSourceConfiguration(source: $source)];
+	}//end callTarget()
+
+	/**
+	 * Log an unclassified upstream failure and classify it as upstream-service-down.
+	 *
+	 * @param IntegrationProvider $provider The provider making the call.
+	 * @param string              $kind     `call` or `call (with meta)`, for the log line.
+	 * @param string              $request  The method and path, for the log line.
+	 * @param \Throwable          $previous The failure.
+	 *
+	 * @return ProviderUnavailableException The exception to throw.
+	 */
+	private function upstreamFailure(IntegrationProvider $provider, string $kind, string $request, \Throwable $previous): ProviderUnavailableException {
+		$this->logger->error(
+			sprintf('[ExternalIntegrationRouter] upstream %s failed for provider %s %s', $kind, $provider->getId(), $request),
+			['exception' => $previous]
+		);
+
+		return new ProviderUnavailableException(
+			message: sprintf('Upstream service for integration "%s" is unreachable.', $provider->getId()),
+			cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN,
+			previous: $previous
+		);
+	}//end upstreamFailure()
 
 	/**
 	 * The `configuration` array of the provider's connector source, so a
@@ -305,38 +313,36 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 */
 	public function probe(IntegrationProvider $provider): array {
 		if ($provider->getStorageStrategy() !== 'external') {
-			return [
-				'status' => 'ok',
-				'authStatus' => 'configured',
-				'message' => null,
-			];
+			return self::PROBE_OK;
 		}
 
 		if ($this->isOpenConnectorAvailable() === false) {
-			return [
-				'status' => 'unavailable',
-				'authStatus' => 'missing',
-				'message' => 'OpenConnector app is not installed or enabled.',
-			];
+			return $this->probeUnavailable(message: 'OpenConnector app is not installed or enabled.');
 		}
 
-		$sourceId = (string)$provider->getOpenConnectorSource();
 		try {
-			$this->loadSource(sourceId: $sourceId, providerId: $provider->getId());
+			$this->loadSource(sourceId: (string)$provider->getOpenConnectorSource(), providerId: $provider->getId());
 		} catch (ProviderUnavailableException $e) {
-			return [
-				'status' => 'unavailable',
-				'authStatus' => 'missing',
-				'message' => $e->getMessage(),
-			];
+			return $this->probeUnavailable(message: $e->getMessage());
 		}
 
-		return [
-			'status' => 'ok',
-			'authStatus' => 'configured',
-			'message' => null,
-		];
+		return self::PROBE_OK;
 	}//end probe()
+
+	/**
+	 * The probe descriptor of an external provider that cannot be reached.
+	 *
+	 * @param string $message Why it cannot be reached.
+	 *
+	 * @return array{status: string, authStatus: string, message: ?string}
+	 */
+	private function probeUnavailable(string $message): array {
+		return [
+			'status' => 'unavailable',
+			'authStatus' => 'missing',
+			'message' => $message,
+		];
+	}//end probeUnavailable()
 
 	/**
 	 * Reject non-external providers — they should not reach the router.
@@ -358,16 +364,26 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 			);
 		}
 
+		$this->assertSourceDeclared(provider: $provider);
+	}//end assertProviderIsExternal()
+
+	/**
+	 * Reject an external provider that declares no OpenConnector source.
+	 *
+	 * @param IntegrationProvider $provider Provider under inspection.
+	 *
+	 * @return void
+	 *
+	 * @throws ProviderUnavailableException With cause openconnector-source-missing.
+	 */
+	private function assertSourceDeclared(IntegrationProvider $provider): void {
 		if ($provider->getOpenConnectorSource() === null) {
 			throw new ProviderUnavailableException(
-				message: sprintf(
-					'External provider "%s" did not declare an OpenConnector source.',
-					$provider->getId()
-				),
+				message: sprintf('External provider "%s" did not declare an OpenConnector source.', $provider->getId()),
 				cause: ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING
 			);
 		}
-	}//end assertProviderIsExternal()
+	}//end assertSourceDeclared()
 
 	/**
 	 * Throw `ProviderUnavailableException` when the OpenConnector app
@@ -470,26 +486,18 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 			return null;
 		}
 
-		$objectService = $this->container->get(ObjectOperationsInterface::class);
-		if ($objectService instanceof ObjectService === false) {
-			throw new RuntimeException('The container did not return an ObjectService.');
-		}
-
+		$objectService = $this->objectService();
 		foreach (FleetAppId::candidates(canonical: 'integriq') as $register) {
-			try {
-				$source = $objectService->find(
+			$source = $this->absentAsNull(
+				read: static fn () => $objectService->find(
 					id: $sourceId,
 					register: $register,
 					schema: self::SOURCE_SCHEMA,
 					_rbac: false,
 					_multitenancy: false,
 					_audit: false
-				);
-			} catch (DoesNotExistException $e) {
-				// This register slug is absent here, or it holds no such source.
-				// Either way the next spelling may still answer.
-				continue;
-			}
+				)
+			);
 
 			if ($source !== null) {
 				return $source;
@@ -498,6 +506,40 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 
 		return null;
 	}//end findSource()
+
+	/**
+	 * One register's answer to the source lookup, null when it holds none.
+	 *
+	 * A missing register slug or a missing source both surface as
+	 * DoesNotExistException; either way the next spelling may still answer.
+	 *
+	 * @param callable(): ?ObjectEntity $read The lookup in one register.
+	 *
+	 * @return ObjectEntity|null The source, or null when absent here.
+	 */
+	private function absentAsNull(callable $read): ?ObjectEntity {
+		try {
+			return $read();
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end absentAsNull()
+
+	/**
+	 * The ObjectService the source lookup reads through.
+	 *
+	 * @return ObjectService The object service.
+	 *
+	 * @throws RuntimeException When the container hands back anything else.
+	 */
+	private function objectService(): ObjectService {
+		$objectService = $this->container->get(ObjectOperationsInterface::class);
+		if ($objectService instanceof ObjectService === false) {
+			throw new RuntimeException('The container did not return an ObjectService.');
+		}
+
+		return $objectService;
+	}//end objectService()
 
 	/**
 	 * Build the `openconnector-source-missing` failure.
@@ -540,34 +582,70 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 * @spec openspec/changes/integration-mock-mode/tasks.md
 	 */
 	private function readSourceConfiguration($source): array {
-		$data = null;
-
 		if (is_array($source) === true) {
-			$data = $source;
-		} elseif (is_object($source) === true && method_exists($source, 'getObject') === true) {
-			$data = $source->getObject();
-		} elseif (is_object($source) === true && method_exists($source, 'jsonSerialize') === true) {
-			$data = $source->jsonSerialize();
-		} elseif (is_object($source) === true && method_exists($source, 'getConfiguration') === true) {
-			$config = $source->getConfiguration();
-			if (is_array($config) === true) {
-				return $config;
-			}
+			return $this->configurationOf(data: $source);
+		}
 
+		if (is_object($source) === false) {
 			return [];
 		}
 
+		return $this->objectConfiguration(source: $source);
+	}//end readSourceConfiguration()
+
+	/**
+	 * The configuration of a source object: through getObject(), jsonSerialize()
+	 * or getConfiguration(), in that order of preference.
+	 *
+	 * @param object $source The source object.
+	 *
+	 * @return array<string,mixed> The configuration (possibly empty).
+	 */
+	private function objectConfiguration(object $source): array {
+		if (method_exists($source, 'getObject') === true) {
+			return $this->configurationOf(data: $source->getObject());
+		}
+
+		if (method_exists($source, 'jsonSerialize') === true) {
+			return $this->configurationOf(data: $source->jsonSerialize());
+		}
+
+		if (method_exists($source, 'getConfiguration') === true) {
+			return $this->arrayOrEmpty(value: $source->getConfiguration());
+		}
+
+		return [];
+	}//end objectConfiguration()
+
+	/**
+	 * The `configuration` of serialized source data.
+	 *
+	 * @param mixed $data The source data.
+	 *
+	 * @return array<string,mixed> The configuration (possibly empty).
+	 */
+	private function configurationOf(mixed $data): array {
 		if (is_array($data) === false) {
 			return [];
 		}
 
-		$config = ($data['configuration'] ?? []);
-		if (is_array($config) === true) {
-			return $config;
+		return $this->arrayOrEmpty(value: ($data['configuration'] ?? []));
+	}//end configurationOf()
+
+	/**
+	 * The value when it is an array, else an empty array.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return array<mixed>
+	 */
+	private function arrayOrEmpty(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
 		}
 
 		return [];
-	}//end readSourceConfiguration()
+	}//end arrayOrEmpty()
 
 	/**
 	 * Resolve the canned mock body for a flagged source.
@@ -617,35 +695,38 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 * @spec openspec/changes/integration-mock-mode/tasks.md
 	 */
 	private function mockMeta(array $config): array {
-		$override = ($config['mockMeta'] ?? []);
-		if (is_array($override) === false) {
-			$override = [];
-		}
+		$override      = $this->arrayOrEmpty(value: ($config['mockMeta'] ?? []));
+		$correlationId = $this->mockCorrelationId(override: $override);
+		$status        = (int)($override['status'] ?? 200);
 
-		$correlationId = ($override['correlationId'] ?? ('MOCK-CID-' . bin2hex(random_bytes(6))));
-		if ($correlationId !== null) {
-			$correlationId = (string)$correlationId;
-		}
-
-		$status = (int)($override['status'] ?? 200);
-		$durationMs = (int)($override['durationMs'] ?? 12);
-
-		$headers = ($override['headers'] ?? []);
-		if (is_array($headers) === false) {
-			$headers = [];
-		}
-
+		$headers = $this->arrayOrEmpty(value: ($override['headers'] ?? []));
 		if ($correlationId !== null && isset($headers['X-Correlation-ID']) === false) {
 			$headers['X-Correlation-ID'] = $correlationId;
 		}
 
 		return [
 			'status' => $status,
-			'durationMs' => $durationMs,
+			'durationMs' => (int)($override['durationMs'] ?? 12),
 			'correlationId' => $correlationId,
-			'headers' => $this->flattenHeaders(headers: $headers),
+			'headers' => $this->responses->flattenHeaders(headers: $headers),
 		];
 	}//end mockMeta()
+
+	/**
+	 * The mock correlation id: the override's, else a fresh `MOCK-CID-…`.
+	 *
+	 * @param array<string,mixed> $override The `mockMeta` override.
+	 *
+	 * @return string|null
+	 */
+	private function mockCorrelationId(array $override): ?string {
+		$correlationId = ($override['correlationId'] ?? ('MOCK-CID-' . bin2hex(random_bytes(6))));
+		if ($correlationId !== null) {
+			$correlationId = (string)$correlationId;
+		}
+
+		return $correlationId;
+	}//end mockCorrelationId()
 
 	/**
 	 * The connector's CallService FQCN for the id this instance actually has.
@@ -665,42 +746,38 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	/**
 	 * Invoke the upstream call via OpenConnector's CallService.
 	 *
-	 * @param mixed $source Resolved source entity.
-	 * @param string $method HTTP method.
-	 * @param string $path Path relative to source base URL.
-	 * @param array<string,mixed> $options Call options (query / body / headers / withholdBodies).
+	 * @param mixed           $source  Resolved source entity.
+	 * @param UpstreamRequest $request The method, path and call options.
 	 *
 	 * @return array<string,mixed> Decoded response body.
 	 *
 	 * @throws \RuntimeException When CallService is unreachable. The
 	 *                           caller wraps this as ProviderUnavailableException.
 	 */
-	private function invoke($source, string $method, string $path, array $options): array {
-		$response = $this->dispatch(source: $source, method: $method, path: $path, options: $options);
+	private function invoke($source, UpstreamRequest $request): array {
+		$response = $this->dispatch(source: $source, request: $request);
 
-		return $this->decodeResponse(response: $response);
+		return $this->responses->decode(response: $response);
 	}//end invoke()
 
 	/**
 	 * Invoke the upstream call like {@see invoke()} but return both the
 	 * decoded body and the extracted response metadata.
 	 *
-	 * @param mixed $source Resolved source entity.
-	 * @param string $method HTTP method.
-	 * @param string $path Path relative to source base URL.
-	 * @param array<string,mixed> $options Call options (query / body / headers / withholdBodies).
+	 * @param mixed           $source  Resolved source entity.
+	 * @param UpstreamRequest $request The method, path and call options.
 	 *
 	 * @return array{body: array<string,mixed>, meta: array{status: int, durationMs: int, correlationId: ?string, headers: array<string,string>}}
 	 *
 	 * @throws \RuntimeException When CallService is unreachable. The caller
 	 *                           wraps this as ProviderUnavailableException.
 	 */
-	private function invokeWithMeta($source, string $method, string $path, array $options): array {
-		$response = $this->dispatch(source: $source, method: $method, path: $path, options: $options);
+	private function invokeWithMeta($source, UpstreamRequest $request): array {
+		$response = $this->dispatch(source: $source, request: $request);
 
 		return [
-			'body' => $this->decodeResponse(response: $response),
-			'meta' => $this->extractMeta(response: $response),
+			'body' => $this->responses->decode(response: $response),
+			'meta' => $this->responses->meta(response: $response),
 		];
 	}//end invokeWithMeta()
 
@@ -716,10 +793,8 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 * refuse the unknown named argument: that would read as an outage and be
 	 * logged at error level on every call of an older connector.
 	 *
-	 * @param mixed $source Resolved source entity.
-	 * @param string $method HTTP method.
-	 * @param string $path Path relative to source base URL.
-	 * @param array<string,mixed> $options Call options (query / body / headers / withholdBodies).
+	 * @param mixed           $source  Resolved source entity.
+	 * @param UpstreamRequest $request The method, path and call options.
 	 *
 	 * @return mixed The raw CallService response.
 	 *
@@ -728,29 +803,20 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 *
 	 * @spec openspec/specs/integration-person-lookup/spec.md#requirement-a-call-may-be-recorded-without-its-bodies
 	 */
-	private function dispatch($source, string $method, string $path, array $options) {
+	private function dispatch($source, UpstreamRequest $request) {
+		$method  = $request->method;
+		$options = $request->options;
 		$withholdBodies = (($options['withholdBodies'] ?? false) === true);
 		unset($options['withholdBodies']);
 
 		$callService = $this->container->get($this->callServiceClass());
-		if ($withholdBodies === true && (new CallSignature())->accepts(service: $callService, method: 'call', name: 'withholdBodies') === false) {
-			$this->logger->info(
-				'[ExternalIntegrationRouter] The connector CallService cannot withhold bodies; the call is not made.'
-			);
-			throw new ProviderUnavailableException(
-				message: 'The connector cannot record a call without its bodies, so the call is not made.',
-				cause: ProviderUnavailableException::CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES
-			);
-		}
+		$this->assertCanWithholdBodies(callService: $callService, withholdBodies: $withholdBodies);
 
 		$options = $this->connectorOptions(options: $options);
-		$path = $this->connectorEndpoint(source: $source, path: $path);
+		$path = $this->connectorEndpoint(source: $source, path: $request->path);
 
 		if (method_exists($callService, 'call') === true) {
-			$named = [];
-			if ($withholdBodies === true) {
-				$named = ['withholdBodies' => true];
-			}
+			$named = self::withholdArguments(withholdBodies: $withholdBodies);
 
 			$response = $callService->call($source, $path, $method, $options, ...$named);
 			$this->assertUpstreamOk(response: $response);
@@ -769,108 +835,41 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	}//end dispatch()
 
 	/**
-	 * Extract transport metadata from a CallService response (OpenConnector
-	 * CallLog). Reads ONLY the HTTP status, the OpenConnector-measured
-	 * round-trip duration (`responseTime`, milliseconds), and the response
-	 * headers — never the request/response body, so no BSN or payload data
-	 * ever lands in `meta`.
+	 * Refuse a body-withholding call the connector cannot make, before it is made.
 	 *
-	 * The call log's response payload is
-	 * `{ statusCode, responseTime, headers, body, encoding, … }`, read through
-	 * {@see callLogResponse()}. The
-	 * `X-Correlation-ID` response header (case-insensitive) is surfaced as
-	 * `correlationId`. Headers are flattened to `array<string,string>`
-	 * (Guzzle returns `array<string,string[]>`).
+	 * @param mixed $callService    The connector CallService.
+	 * @param bool  $withholdBodies Whether the call must be recorded without its bodies.
 	 *
-	 * @param mixed $response The raw return from CallService.
+	 * @return void
 	 *
-	 * @return array{status: int, durationMs: int, correlationId: ?string, headers: array<string,string>}
-	 *
-	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
+	 * @throws ProviderUnavailableException When bodies are to be withheld and the connector cannot.
 	 */
-	private function extractMeta($response): array {
-		$meta = [
-			'status' => $this->callLogStatus(response: $response),
-			'durationMs' => 0,
-			'correlationId' => null,
-			'headers' => [],
-		];
-
-		$payload = $this->callLogResponse(response: $response);
-		if ($payload === null && is_array($response) === true) {
-			$payload = $response;
+	private function assertCanWithholdBodies(mixed $callService, bool $withholdBodies): void {
+		if ($withholdBodies === true && (new CallSignature())->accepts(service: $callService, method: 'call', name: 'withholdBodies') === false) {
+			$this->logger->info(
+				'[ExternalIntegrationRouter] The connector CallService cannot withhold bodies; the call is not made.'
+			);
+			throw new ProviderUnavailableException(
+				message: 'The connector cannot record a call without its bodies, so the call is not made.',
+				cause: ProviderUnavailableException::CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES
+			);
 		}
-
-		if (is_array($payload) === false) {
-			return $meta;
-		}
-
-		if ($meta['status'] === 0 && isset($payload['statusCode']) === true) {
-			$meta['status'] = (int)$payload['statusCode'];
-		}
-
-		if (isset($payload['responseTime']) === true && is_numeric($payload['responseTime']) === true) {
-			$meta['durationMs'] = (int)round((float)$payload['responseTime']);
-		}
-
-		$headers = ($payload['headers'] ?? []);
-		if (is_array($headers) === true) {
-			$meta['headers'] = $this->flattenHeaders(headers: $headers);
-			$meta['correlationId'] = $this->firstHeaderValue(headers: $headers, name: 'X-Correlation-ID');
-		}
-
-		return $meta;
-	}//end extractMeta()
+	}//end assertCanWithholdBodies()
 
 	/**
-	 * Flatten Guzzle-style `array<string,string[]>` response headers to
-	 * `array<string,string>` (first value per header).
+	 * The named arguments that ask the connector to withhold bodies, when asked.
 	 *
-	 * @param array<string,mixed> $headers Raw headers.
+	 * @param bool $withholdBodies Whether the call must be recorded without its bodies.
 	 *
-	 * @return array<string,string>
+	 * @return array<string, bool>
 	 */
-	private function flattenHeaders(array $headers): array {
-		$out = [];
-		foreach ($headers as $name => $value) {
-			if (is_array($value) === true) {
-				$value = ($value[0] ?? '');
-			}
-
-			$out[(string)$name] = (string)$value;
+	private static function withholdArguments(bool $withholdBodies): array {
+		if ($withholdBodies === true) {
+			return ['withholdBodies' => true];
 		}
 
-		return $out;
-	}//end flattenHeaders()
-
-	/**
-	 * Case-insensitive lookup of the first value of a named response header.
-	 *
-	 * @param array<string,mixed> $headers Raw (possibly array-valued) headers.
-	 * @param string $name Header name to find.
-	 *
-	 * @return string|null The first value, or null when the header is absent/empty.
-	 */
-	private function firstHeaderValue(array $headers, string $name): ?string {
-		$needle = strtolower($name);
-		foreach ($headers as $headerName => $value) {
-			if (strtolower((string)$headerName) !== $needle) {
-				continue;
-			}
-
-			if (is_array($value) === true) {
-				$value = ($value[0] ?? null);
-			}
-
-			if ($value === null || $value === '') {
-				return null;
-			}
-
-			return (string)$value;
-		}
-
-		return null;
-	}//end firstHeaderValue()
+		return [];
+	}//end withholdArguments()
 
 	/**
 	 * Treat a >= 400 upstream status (carried on the CallLog OpenConnector
@@ -887,7 +886,7 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
 	 */
 	private function assertUpstreamOk($response): void {
-		$status = $this->callLogStatus(response: $response);
+		$status = $this->responses->status(response: $response);
 		if ($status < 400) {
 			return;
 		}
@@ -902,141 +901,4 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 			cause: $cause
 		);
 	}//end assertUpstreamOk()
-
-	/**
-	 * The response half of a CallService call log, or null when there is none.
-	 *
-	 * The integriq CallService returns the call log as an OpenRegister
-	 * `ObjectEntity`. Its `getObject()` carries
-	 * `response: { statusCode, responseTime, headers, body, encoding, … }`, and
-	 * the returned entity keeps the body even when the stored row drops it. An
-	 * early exit (a disabled source, an exhausted rate limit) carries only a
-	 * top-level `statusCode`, so it has no response half. Older connector
-	 * builds returned a CallLog exposing `getResponse()` instead.
-	 *
-	 * @param mixed $response The raw return from CallService.
-	 *
-	 * @return array<string,mixed>|null The response payload.
-	 *
-	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
-	 */
-	private function callLogResponse($response): ?array {
-		if (is_object($response) === false) {
-			return null;
-		}
-
-		$payload = null;
-		if (method_exists($response, 'getResponse') === true) {
-			$payload = $response->getResponse();
-		} elseif (method_exists($response, 'getObject') === true) {
-			$payload = ($response->getObject()['response'] ?? null);
-		}
-
-		if (is_array($payload) === false) {
-			return null;
-		}
-
-		return $payload;
-	}//end callLogResponse()
-
-	/**
-	 * The HTTP status a CallService call log records, or 0 when it records none.
-	 *
-	 * Reads `getStatusCode()` on an older CallLog. On integriq's `ObjectEntity`
-	 * call log it reads `response.statusCode`, falling back to the top-level
-	 * `statusCode` an early exit carries (409 for a disabled source, 429 for an
-	 * exhausted rate limit).
-	 *
-	 * @param mixed $response The raw return from CallService.
-	 *
-	 * @return int The recorded status.
-	 *
-	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
-	 */
-	private function callLogStatus($response): int {
-		if (is_object($response) === false) {
-			return 0;
-		}
-
-		if (method_exists($response, 'getStatusCode') === true) {
-			return (int)$response->getStatusCode();
-		}
-
-		$status = ($this->callLogResponse(response: $response)['statusCode'] ?? null);
-		if ($status === null && method_exists($response, 'getObject') === true) {
-			$status = ($response->getObject()['statusCode'] ?? null);
-		}
-
-		if (is_numeric($status) === false) {
-			return 0;
-		}
-
-		return (int)$status;
-	}//end callLogStatus()
-
-	/**
-	 * Normalise a CallService response into a decoded array.
-	 *
-	 * The connector's CallService returns a call log whose response payload
-	 * ({@see callLogResponse()}) is `{ statusCode, headers, body, encoding, … }`.
-	 * The actual upstream payload is the (usually JSON) `body` string
-	 * (base64-encoded when the upstream wasn't UTF-8). We unwrap that,
-	 * JSON-decode it, and hand the caller the upstream body directly.
-	 * A raw array / scalar string from an older CallService is decoded
-	 * in place; non-arrays are wrapped under a `body` key so callers
-	 * have a stable shape to introspect.
-	 *
-	 * @param mixed $response The raw return from CallService.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles four distinct OpenConnector response shapes
-	 * (CallLog, array, jsonSerialize, string) across multiple OC versions; each branch is a required
-	 * shape check.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Handles four distinct OpenConnector response shapes
-	 * (CallLog, array, jsonSerialize, string) across multiple OC versions; each branch is a required
-	 * shape check.
-	 */
-	private function decodeResponse($response): array {
-		if (is_array($response) === true) {
-			return $response;
-		}
-
-		// A call log: pull the upstream body out of its response payload.
-		$payload = $this->callLogResponse(response: $response);
-		if ($payload !== null) {
-			if (array_key_exists('body', $payload) === true) {
-				$body = $payload['body'];
-				if (($payload['encoding'] ?? null) === 'base64' && is_string($body) === true) {
-					$body = (string)base64_decode($body, true);
-				}
-
-				return $this->decodeResponse(response: $body);
-			}
-
-			return $payload;
-		}
-
-		if (is_object($response) === true && method_exists($response, 'jsonSerialize') === true) {
-			$data = $response->jsonSerialize();
-			if (is_array($data) === true) {
-				return $data;
-			}
-
-			return ['body' => $data];
-		}
-
-		if (is_string($response) === true) {
-			$decoded = json_decode($response, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-
-			return ['body' => $response];
-		}
-
-		return ['body' => $response];
-	}//end decodeResponse()
 }//end class

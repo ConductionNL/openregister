@@ -3,7 +3,7 @@
 /**
  * PlaceholderIdTranslatorTest
  *
- * Unit tests for {@see \OCA\OpenRegister\Service\File\PlaceholderIdTranslator}
+ * Unit tests for {@see \OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator}
  * covering per-document first-appearance numbering, per-dossier deterministic
  * recomputation, ranking purity/ordering, and translation keyed on `e.id`
  * (anonymisation-placeholder-id-scope, Decisions 1, 3 & 4).
@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
-use OCA\OpenRegister\Service\File\PlaceholderIdTranslator;
+use OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**

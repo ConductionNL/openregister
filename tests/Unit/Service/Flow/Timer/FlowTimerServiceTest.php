@@ -35,7 +35,10 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerArithmetic;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerStorage;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSubjects;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
@@ -48,6 +51,12 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Timer\FlowTimerService
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerDeadlines
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerFactory
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerProjection
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerScope
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerValues
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService
  * @covers \OCA\OpenRegister\Db\FlowTimer
  * @covers \OCA\OpenRegister\Db\FlowTimerEvent
@@ -66,6 +75,11 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingDayRoll
  * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerLedgerEntry
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\EscalationRule
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaAddition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
  */
 class FlowTimerServiceTest extends TestCase {
 
@@ -191,16 +205,13 @@ class FlowTimerServiceTest extends TestCase {
 		});
 
 		return new FlowTimerService(
-			timers: $this->store->timerMapper(),
-			fires: $this->store->fireMapper(),
-			events: $this->store->eventMapper(),
-			tasks: $this->store->taskMapper(),
-			taskService: $this->taskService,
-			calendars: $this->calendars,
-			calculator: $this->calculator,
-			ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator),
-			db: $this->createMock(IDBConnection::class),
-			dispatcher: $dispatcher,
+			storage: new FlowTimerStorage(timers: $this->store->timerMapper(), fires: $this->store->fireMapper(), events: $this->store->eventMapper(), db: $this->createMock(IDBConnection::class)),
+			subjects: new FlowTimerSubjects(tasks: $this->store->taskMapper(), taskService: $this->taskService, dispatcher: $dispatcher),
+			arithmetic: new FlowTimerArithmetic(
+				calendars: $this->calendars,
+				calculator: $this->calculator,
+				ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator)
+			),
 			logger: new NullLogger()
 		);
 	}//end buildService()
@@ -601,6 +612,27 @@ class FlowTimerServiceTest extends TestCase {
 			self::assertStringContainsString('authorizing identity', $refused->getMessage());
 		}
 	}//end testTheSecondExtensionIsRefusedNamingTheBoundAndTheOverrideIsRecordedAsOne()
+
+	public function testAnExtensionRecordsItsActorReasonAndBasisAndRefusesANonPositiveAmountFirst(): void {
+		$this->task();
+		$start = $this->at('2026-09-01 09:00');
+		$timer = $this->service->arm(config: $this->config(), actor: null, now: $start);
+		$uuid = (string)$timer->getUuid();
+
+		try {
+			$this->service->extend(uuid: $uuid, amount: -2, unit: 'no-such-unit', rationale: 'x', actor: 'carol', now: $start->modify('+1 day'));
+			self::fail('a negative extension went through');
+		} catch (FlowTimerValidationException $refused) {
+			self::assertStringContainsString('must be positive; got -2', $refused->getMessage(), 'the amount is refused before the unit is read');
+		}
+
+		$this->service->extend(uuid: $uuid, amount: 3, unit: 'calendarDays', rationale: 'Verdaging', actor: 'carol', now: $start->modify('+2 days'));
+		$this->service->extendWithOverride(uuid: $uuid, amount: 4, unit: 'hours', rationale: 'Override', actor: 'supervisor', now: $start->modify('+3 days'));
+		$events = $this->service->history(uuid: $uuid);
+		self::assertSame([FlowTimerEvent::TYPE_EXTENDED, 'carol', 'Verdaging (+3 calendarDays)', 'Awb 4:14'], [$events[1]->getType(), $events[1]->getActor(), $events[1]->getReason(), $events[1]->getBasis()]);
+		self::assertSame([FlowTimerEvent::TYPE_EXTENDED, 'supervisor', 'Override (+4 hours)', 'override'], [$events[2]->getType(), $events[2]->getActor(), $events[2]->getReason(), $events[2]->getBasis()]);
+		self::assertSame(2, $this->store->timers[$uuid]->getExtensionCount());
+	}//end testAnExtensionRecordsItsActorReasonAndBasisAndRefusesANonPositiveAmountFirst()
 
 	public function testExtendingAfterExpiryIsRefusedAndTheBreachStays(): void {
 		$this->task();
@@ -1036,16 +1068,13 @@ class FlowTimerServiceTest extends TestCase {
 		$definitions->method('ladders')->willReturn([]);
 		$calendars = new WorkingCalendarService(definitions: $definitions);
 		$service = new FlowTimerService(
-			timers: $this->store->timerMapper(),
-			fires: $this->store->fireMapper(),
-			events: $events,
-			tasks: $this->store->taskMapper(),
-			taskService: $this->taskService,
-			calendars: $calendars,
-			calculator: $this->calculator,
-			ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator),
-			db: $db,
-			dispatcher: $this->createMock(IEventDispatcher::class),
+			storage: new FlowTimerStorage(timers: $this->store->timerMapper(), fires: $this->store->fireMapper(), events: $events, db: $db),
+			subjects: new FlowTimerSubjects(tasks: $this->store->taskMapper(), taskService: $this->taskService, dispatcher: $this->createMock(IEventDispatcher::class)),
+			arithmetic: new FlowTimerArithmetic(
+				calendars: $calendars,
+				calculator: $this->calculator,
+				ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator)
+			),
 			logger: new NullLogger()
 		);
 		$this->expectException(\RuntimeException::class);
@@ -1063,16 +1092,13 @@ class FlowTimerServiceTest extends TestCase {
 		$definitions->method('calendars')->willReturn(self::calendars());
 		$definitions->method('ladders')->willReturn([]);
 		$service = new FlowTimerService(
-			timers: $timers,
-			fires: $this->store->fireMapper(),
-			events: $this->store->eventMapper(),
-			tasks: $this->store->taskMapper(),
-			taskService: $this->taskService,
-			calendars: new WorkingCalendarService(definitions: $definitions),
-			calculator: $this->calculator,
-			ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator),
-			db: $this->createMock(IDBConnection::class),
-			dispatcher: $this->createMock(IEventDispatcher::class),
+			storage: new FlowTimerStorage(timers: $timers, fires: $this->store->fireMapper(), events: $this->store->eventMapper(), db: $this->createMock(IDBConnection::class)),
+			subjects: new FlowTimerSubjects(tasks: $this->store->taskMapper(), taskService: $this->taskService, dispatcher: $this->createMock(IEventDispatcher::class)),
+			arithmetic: new FlowTimerArithmetic(
+				calendars: new WorkingCalendarService(definitions: $definitions),
+				calculator: $this->calculator,
+				ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator)
+			),
 			logger: new NullLogger()
 		);
 		self::assertSame(0, $service->cancelForSubject(subjectType: 'task', subjectUuid: 't', reason: 'r', actor: null));

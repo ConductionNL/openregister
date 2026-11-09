@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\Schema;
  *
  * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
  */
-class ReferenceOptionsReader {
+class ReferenceOptionsReader implements ReferenceOptionsReaderInterface {
 
 	/**
 	 * The default page size.
@@ -76,37 +76,20 @@ class ReferenceOptionsReader {
 		$config     = ($properties[$property] ?? null);
 
 		if (is_array($config) === false) {
-			throw new ReferenceFilterException(
-				sprintf('There is no property \'%s\' on this schema to read options for.', $property)
-			);
+			throw new ReferenceFilterException(sprintf('There is no property \'%s\' on this schema to read options for.', $property));
 		}
 
-		$target = [
-			'schema'   => $this->targetSchema(config: $config),
-			'register' => ($config['register'] ?? null),
-		];
-
+		$target      = ['schema' => ReferenceFilterDeclaration::targetSchemaOf(config: $config), 'register' => ($config['register'] ?? null)];
 		$declaration = ReferenceFilterDeclaration::fromProperty(property: $config, path: $property);
 
-		if ($declaration === null) {
-			// No filter declared: every option the caller may read is on offer,
-			// which is what an unfiltered reference has always meant.
-			return [
-				'filtered' => false,
-				'needs'    => [],
-				'filter'   => [],
-				'target'   => $target,
-			];
+		// No filter declared: every option the caller may read is on offer,
+		// which is what an unfiltered reference has always meant.
+		$answer = ['needs' => [], 'filter' => []];
+		if ($declaration !== null) {
+			$answer = $declaration->resolve(record: $record);
 		}
 
-		$answer = $declaration->resolve(record: $record);
-
-		return [
-			'filtered' => true,
-			'needs'    => $answer['needs'],
-			'filter'   => $answer['filter'],
-			'target'   => $target,
-		];
+		return ['filtered' => ($declaration !== null), 'needs' => $answer['needs'], 'filter' => $answer['filter'], 'target' => $target];
 	}//end plan()
 
 	/**
@@ -171,28 +154,4 @@ class ReferenceOptionsReader {
 
 		return $query;
 	}//end queryFor()
-
-	/**
-	 * The schema a reference property points at.
-	 *
-	 * @param array<string, mixed> $config The property configuration.
-	 *
-	 * @return string|null The reference, or null when the property names none.
-	 */
-	private function targetSchema(array $config): ?string {
-		foreach (['$ref', 'schema'] as $key) {
-			$value = ($config[$key] ?? null);
-			if (is_string($value) === true && $value !== '') {
-				return $value;
-			}
-		}
-
-		// An array of references points at its item shape.
-		$items = ($config['items'] ?? null);
-		if (is_array($items) === true) {
-			return $this->targetSchema(config: $items);
-		}
-
-		return null;
-	}//end targetSchema()
 }//end class

@@ -26,10 +26,28 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 /**
  * Entity calls shared by the connector-backed providers that link external entities.
  *
- * The using provider provides `$this->router` (ExternalIntegrationRouterInterface)
- * and `normalizeRow(array $row): array`.
+ * The using provider provides `$this->router` (ExternalIntegrationRouterInterface),
+ * `normalizeRow(array $row): array` and `normalizeList(array $response): array`.
  */
 trait ConnectorEntityCallsTrait {
+
+	/**
+	 * List the external entities the connector source returns for a context query.
+	 *
+	 * @param array<string,mixed> $query The `{register, schema, object, …filters}` query.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function listFromSource(array $query): array {
+		$response = $this->router->call(
+			provider: $this,
+			method: 'GET',
+			path: '',
+			options: ['query' => $query, 'headers' => $this->requestHeaders()]
+		);
+
+		return $this->normalizeList(response: $response);
+	}//end listFromSource()
 
 	/**
 	 * Fetch one linked external entity.

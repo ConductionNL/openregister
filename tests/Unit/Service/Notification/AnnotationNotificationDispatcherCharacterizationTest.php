@@ -42,6 +42,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientRes
 use OCA\OpenRegister\Notifications\Service\Notification\OutboundTransportInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
@@ -410,7 +411,7 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		$services = [
 			IConfig::class                   => $config,
 			PartyNotificationService::class  => $party,
-			ReferencedAddressNotifier::class => $addresses,
+			ReferencedAddressNotifierInterface::class => $addresses,
 			'TransportOk'                    => $transport(null, false),
 			'TransportFails'                 => $transport('remote said no', false),
 			'TransportThrows'                => $transport(null, true),

@@ -31,8 +31,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\Object\DraftExpiry;
-use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
+use OCA\OpenRegister\Service\Object\DraftExpiryInterface;
+use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -67,12 +67,12 @@ class DraftExpiryJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory    $time   The clock.
-	 * @param DraftExpiry     $expiry Removes the expired drafts.
+	 * @param DraftExpiryInterface     $expiry Removes the expired drafts.
 	 * @param LoggerInterface $logger Where the counts go.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly DraftExpiry $expiry,
+		private readonly DraftExpiryInterface $expiry,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -89,7 +89,7 @@ class DraftExpiryJob extends TimedJob {
 	 * @throws Throwable When the sweep fails, after logging it.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) TimedJob's signature.
-	 * @SuppressWarnings(PHPMD.StaticAccess)          DraftRemovalRecord::asJob() is the ambient frame that names the job.
+	 * @SuppressWarnings(PHPMD.StaticAccess)          DraftRemovalFrame::asJob() is the ambient frame that names the job.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-one-background-job-must-remove-drafts-past-their-schemas-lifetime
 	 */
@@ -97,7 +97,7 @@ class DraftExpiryJob extends TimedJob {
 		try {
 			// Under the job's own name, so the audit-trail entry of each removed
 			// draft says which job removed it (decision 226).
-			$counts = DraftRemovalRecord::asJob(
+			$counts = DraftRemovalFrame::asJob(
 				job: self::JOB_NAME,
 				operation: fn (): array => $this->expiry->sweep(now: DateTimeImmutable::createFromMutable($this->time->getDateTime()))
 			);

@@ -182,7 +182,7 @@ class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 		);
 
 		$objectMapper = $this->createMock(MagicMapper::class);
-		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturnCallback(
+		$objectMapper->method('findStoredAcrossAllMagicTables')->willReturnCallback(
 			function (array $uuids, bool $includeDeleted) use ($rows, $case): array {
 				$this->record('objectMapper.findMultiple', [$uuids, $includeDeleted]);
 				if (($case['batchThrows'] ?? false) === true) {

@@ -11,6 +11,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailPageQuery;
 use OCP\BackgroundJob\IJobList;
+use OCA\OpenRegister\Service\Audit\AuditTrailQuery;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
@@ -482,14 +483,6 @@ class AuditTrailControllerTest extends TestCase {
 		$this->assertArrayHasKey('error', $result->getData());
 	}
 
-	public function testDestroyMultipleException(): void {
-		$this->markTestSkipped(
-			'Production destroyMultiple() always returns 405 (audit trails '
-			. 'immutable); no exception path remains. Covered by '
-			. 'testDestroyMultipleAlwaysReturns405Immutable.'
-		);
-	}
-
 	public function testStatisticsSuccess(): void {
 		$counts = [
 			'total' => 7,
@@ -847,9 +840,10 @@ class AuditTrailControllerTest extends TestCase {
 		$request->method('getParam')->willReturnCallback(static fn (string $key, $default = null) => ($params[$key] ?? $default));
 
 		$lister = $this->createMock(ReadableAuditTrailLister::class);
+		$lister->method('query')->willReturnCallback(static fn (array $filters = [], ?string $search = null): AuditTrailQuery => new AuditTrailQuery($filters, $search));
 		$lister->method('page')->willReturnCallback(
-			static function (?string $userId, int $limit = 20, int|string|null $cursor = null, array $filters = []) use (&$captured): array {
-				$captured = ['cursor' => $cursor, 'filters' => $filters];
+			static function (?string $userId, int $limit = 20, int|string|null $cursor = null, ?AuditTrailQuery $query = null) use (&$captured): array {
+				$captured = ['cursor' => $cursor, 'filters' => ($query?->filters ?? [])];
 
 				return ['results' => [], 'limit' => $limit, 'cursor' => $cursor, 'nextCursor' => null];
 			}

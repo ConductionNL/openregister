@@ -61,16 +61,52 @@ class DraftCallerRule {
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
 	 */
 	public function keptFromCaller(ObjectEntity $object, Schema $schema, ?string $userId, bool $isAdmin, ?bool $commandLine = null): bool {
-		if ((new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $userId) === false || $isAdmin === true) {
+		if (self::openToCaller(object: $object, schema: $schema, userId: $userId, isAdmin: $isAdmin) === true) {
 			return false;
 		}
 
-		if ($userId === null && AnonymousEvaluationContext::isActive() === false) {
-			$cli = ($commandLine ?? (PHP_SAPI === 'cli'));
-
-			return $cli === false && SystemOperationContext::isActive() === false;
+		if ($userId === null) {
+			return self::keptFromNoUser(commandLine: $commandLine);
 		}
 
 		return true;
 	}//end keptFromCaller()
+
+	/**
+	 * Whether the object is open to the caller: not a draft kept from them, or the caller is an admin.
+	 *
+	 * @param ObjectEntity $object  The object.
+	 * @param Schema       $schema  Its schema.
+	 * @param string|null  $userId  The caller.
+	 * @param bool         $isAdmin Whether the caller is an admin.
+	 *
+	 * @return bool True when nothing is kept from the caller
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+	 */
+	private static function openToCaller(ObjectEntity $object, Schema $schema, ?string $userId, bool $isAdmin): bool {
+		return (new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $userId) === false || $isAdmin === true;
+	}//end openToCaller()
+
+	/**
+	 * Whether a draft is kept from a caller without a user.
+	 *
+	 * Kept inside an anonymous evaluation; otherwise kept unless the call runs on
+	 * the command line or inside a system operation.
+	 *
+	 * @param bool|null $commandLine Whether the call runs on the command line; null reads PHP_SAPI.
+	 *
+	 * @return bool True when the draft is kept from the caller
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+	 */
+	private static function keptFromNoUser(?bool $commandLine): bool {
+		if (AnonymousEvaluationContext::isActive() === true) {
+			return true;
+		}
+
+		$cli = ($commandLine ?? (PHP_SAPI === 'cli'));
+
+		return $cli === false && SystemOperationContext::isActive() === false;
+	}//end keptFromNoUser()
 }//end class

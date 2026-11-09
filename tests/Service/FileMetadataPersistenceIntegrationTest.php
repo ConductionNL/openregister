@@ -29,8 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
-use OCA\OpenRegister\Db\File;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\File;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 

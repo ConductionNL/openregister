@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
@@ -42,6 +44,8 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceText;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 
 /**
  * Unit tests for SaveObject
@@ -169,6 +173,26 @@ class SaveObjectTest extends TestCase {
 	 * @return mixed The method return value
 	 */
 	private function invokePrivateMethod(string $methodName, array $args = []) {
+		if (in_array($methodName, FilePropertyCalls::METHODS, true) === true) {
+			return FilePropertyCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, EmptyValueCalls::METHODS, true) === true) {
+			return EmptyValueCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, RelationCalls::METHODS, true) === true) {
+			return RelationCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, PropertyDefaultsCalls::METHODS, true) === true) {
+			return PropertyDefaultsCalls::{$methodName}($this->handler, $args);
+		}
+
+		if ($methodName === 'validateReferences' || $methodName === 'validateReferenceExists') {
+			return ReferenceValidationCalls::{$methodName}($this->handler, $args);
+		}
+
 		$reflection = new ReflectionMethod(SaveObject::class, $methodName);
 		$reflection->setAccessible(true);
 		// Use array_values to ensure positional args (PHP 8+ treats string keys as named params).
@@ -184,6 +208,11 @@ class SaveObjectTest extends TestCase {
 	 * @return void
 	 */
 	private function setPrivateProperty(string $propertyName, $value): void {
+		if (in_array($propertyName, SaveLookupsAccess::CACHES, true) === true) {
+			SaveLookupsAccess::set($this->handler, $propertyName, $value);
+			return;
+		}
+
 		$reflection = new ReflectionClass(SaveObject::class);
 		$property = $reflection->getProperty($propertyName);
 		$property->setAccessible(true);
@@ -198,6 +227,10 @@ class SaveObjectTest extends TestCase {
 	 * @return mixed The property value
 	 */
 	private function getPrivateProperty(string $propertyName) {
+		if (in_array($propertyName, SaveLookupsAccess::CACHES, true) === true) {
+			return SaveLookupsAccess::get($this->handler, $propertyName);
+		}
+
 		$reflection = new ReflectionClass(SaveObject::class);
 		$property = $reflection->getProperty($propertyName);
 		$property->setAccessible(true);
@@ -596,12 +629,12 @@ class SaveObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testRemoveQueryParametersWithNoParams(): void {
-		$result = $this->invokePrivateMethod('removeQueryParameters', ['some-reference']);
+		$result = (new ReferenceText())->withoutQuery(reference: 'some-reference');
 		$this->assertSame('some-reference', $result);
 	}
 
 	public function testRemoveQueryParametersStripsParams(): void {
-		$result = $this->invokePrivateMethod('removeQueryParameters', ['schema?key=value&other=1']);
+		$result = (new ReferenceText())->withoutQuery(reference: 'schema?key=value&other=1');
 		$this->assertSame('schema', $result);
 	}
 
@@ -1363,7 +1396,7 @@ class SaveObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testResolveRegisterReferenceEmptyString(): void {
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: '');
 		$this->assertNull($result);
 	}
 
@@ -1371,7 +1404,7 @@ class SaveObjectTest extends TestCase {
 		$register = $this->createMockRegister(5, 'test-reg');
 		$this->registerMapper->method('find')->willReturn($register);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['5']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: '5');
 
 		$this->assertSame('5', $result);
 	}
@@ -1382,7 +1415,7 @@ class SaveObjectTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willThrowException(new DoesNotExistException('Not found'));
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['publication']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'publication');
 
 		$this->assertSame('3', $result);
 	}
@@ -1393,7 +1426,7 @@ class SaveObjectTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willThrowException(new DoesNotExistException('Not found'));
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['http://example.com/registers/publication']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'http://example.com/registers/publication');
 
 		$this->assertSame('3', $result);
 	}
@@ -1403,7 +1436,7 @@ class SaveObjectTest extends TestCase {
 			->willThrowException(new DoesNotExistException('Not found'));
 		$this->registerMapper->method('findAll')->willReturn([]);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['nonexistent']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'nonexistent');
 
 		$this->assertNull($result);
 	}
@@ -2528,12 +2561,12 @@ class SaveObjectTest extends TestCase {
 	}
 
 	public function testDeleteOrphanedRelatedObjectsHandlesDoesNotExist(): void {
-		$this->objectEntityMapper->method('find')
+		$this->objectEntityMapper->expects($this->once())->method('find')
 			->willThrowException(new DoesNotExistException('Not found'));
+		$this->objectEntityMapper->expects($this->never())->method('update');
+		$this->logger->expects($this->never())->method('warning');
 
-		// Should not throw.
 		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['nonexistent-uuid'], $this->orphanScope()]);
-		$this->assertTrue(true);
 	}
 
 	public function testDeleteOrphanedRelatedObjectsHandlesGenericException(): void {
@@ -3276,12 +3309,14 @@ class SaveObjectTest extends TestCase {
 				return $target;
 			}
 		);
-		\Closure::bind(function () use ($mapper): void {
-			$this->objectEntityMapper = $mapper;
-		}, $handler, SaveObject::class)();
-
-		$method = new \ReflectionMethod(SaveObject::class, 'writeBackToTarget');
-		$method->invoke($handler, '12', ['inverseProperty' => 'deelnames', 'register' => '1', 'schema' => '2', 'source' => 'parent-uuid']);
+		$writeBack = new InverseWriteBack(
+			objects: $mapper,
+			saver: $handler,
+			lookups: new SaveLookups(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class)),
+			urls: $this->createMock(IURLGenerator::class)
+		);
+		$method = new \ReflectionMethod(InverseWriteBack::class, 'writeToTarget');
+		$method->invoke($writeBack, '12', ['inverseProperty' => 'deelnames', 'register' => '1', 'schema' => '2', 'source' => 'parent-uuid']);
 
 		$this->assertCount(1, $saved);
 		[$register, $schema, $data, $uuid] = $saved[0];
@@ -3538,10 +3573,7 @@ class SaveObjectTest extends TestCase {
 		$register = $this->createMockRegister(7, 'uuid-reg');
 		$this->registerMapper->method('find')->willReturn($register);
 
-		$result = $this->invokePrivateMethod(
-			'resolveRegisterReference',
-			['dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4']
-		);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
 
 		$this->assertSame('7', $result);
 	}
@@ -3556,7 +3588,7 @@ class SaveObjectTest extends TestCase {
 			);
 		$this->registerMapper->method('findAll')->willReturn([$register]);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['test-reg']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'test-reg');
 
 		$this->assertSame('3', $result);
 	}
@@ -3871,7 +3903,7 @@ class SaveObjectTest extends TestCase {
 		// find() succeeds as last resort.
 		$this->registerMapper->method('find')->willReturn($register);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['my-register']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'my-register');
 
 		$this->assertSame('7', $result);
 	}
@@ -4630,10 +4662,7 @@ class SaveObjectTest extends TestCase {
 			->willThrowException(new DoesNotExistException('Not found'));
 		$this->registerMapper->method('findAll')->willReturn([]);
 
-		$result = $this->invokePrivateMethod(
-			'resolveRegisterReference',
-			['dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4']
-		);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
 
 		$this->assertNull($result);
 	}
@@ -4754,7 +4783,7 @@ class SaveObjectTest extends TestCase {
 		[$entity, $schema] = $this->slugEntity('hello-world');
 		$data = ['title' => 'A Completely New Title'];
 
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, $data, [], null]);
+		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, $data, []]);
 		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [[], $data]]);
 
 		$this->assertSame('hello-world', $entity->getSlug(), 'the stored slug is the freeze reference');

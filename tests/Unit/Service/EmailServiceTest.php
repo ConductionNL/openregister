@@ -5,6 +5,8 @@ namespace Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Notifications\Service\EmailLinkedSchemas;
+use OCA\OpenRegister\Notifications\Service\EmailMailAppReader;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -34,12 +36,12 @@ class EmailServiceTest extends TestCase {
 
 		$this->service = new EmailService(
 			$this->emailLinkMapper,
-			$this->appManager,
-			$this->db,
-			$this->userSession,
-			$this->logger,
-			$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
-			$this->createMock(\OCA\OpenRegister\Db\MagicMapper::class)
+			new EmailMailAppReader($this->appManager, $this->db, $this->userSession),
+			new EmailLinkedSchemas(
+				$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
+				$this->createMock(\OCA\OpenRegister\Db\MagicMapper::class)
+			),
+			$this->logger
 		);
 	}
 

@@ -1,0 +1,143 @@
+<?php
+
+/**
+ * Golden outcomes of the archive and freeze routes.
+ *
+ * Pins, before a restructure, that every verb refuses an anonymous caller
+ * before the handler, and the exact status and body of each refusal the
+ * handler raises and of an allowed call.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @category Test
+ * @package  OCA\OpenRegister\Tests\Unit\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Tests\Unit\Controller;
+
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+
+use OCA\OpenRegister\Controller\ObjectStateController;
+use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\ArchiveHandler;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * @covers \OCA\OpenRegister\Controller\ObjectStateController
+ */
+final class ObjectStateControllerA24GoldenTest extends TestCase {
+
+	/**
+	 * The four verbs.
+	 *
+	 * @var array<int, string>
+	 */
+	private const VERBS = ['archive', 'unarchive', 'freeze', 'unfreeze'];
+
+	/**
+	 * The handler double.
+	 *
+	 * @var ArchiveHandler&MockObject
+	 */
+	private ArchiveHandler&MockObject $handler;
+
+	/**
+	 * Build the controller.
+	 *
+	 * @param bool                 $signedIn Whether a user is signed in.
+	 * @param array<string, mixed> $params   The request parameters.
+	 *
+	 * @return ObjectStateController The controller.
+	 */
+	private function controller(bool $signedIn, array $params = []): ObjectStateController {
+		$this->handler = $this->createMock(ArchiveHandler::class);
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(static fn (string $key): mixed => ($params[$key] ?? null));
+		$session = $this->createMock(IUserSession::class);
+		$user = null;
+		if ($signedIn === true) {
+			$user = $this->createMock(IUser::class);
+		}
+
+		$session->method('getUser')->willReturn($user);
+
+		return new ObjectStateController('openregister', $request, $this->handler, $session);
+	}//end controller()
+
+	/**
+	 * An anonymous caller is refused 401 by every verb and the handler is never asked.
+	 *
+	 * @return void
+	 */
+	public function testAnAnonymousCallerIsRefusedByEveryVerb(): void {
+		foreach (self::VERBS as $verb) {
+			$controller = $this->controller(signedIn: false);
+			$this->handler->expects($this->never())->method($verb);
+			$response = $controller->$verb('1', '2', 'o');
+			$this->assertSame([401, ['error' => 'Not authenticated']], [$response->getStatus(), $response->getData()]);
+		}
+	}//end testAnAnonymousCallerIsRefusedByEveryVerb()
+
+	/**
+	 * Each handler refusal keeps its status on every verb, and an outage leaks nothing.
+	 *
+	 * @return void
+	 */
+	public function testEveryRefusalOnEveryVerb(): void {
+		$cases = [
+			[new ArchiveNotOfferedException('not offered'), 422, ['error' => 'not offered']],
+			[new NotAuthorizedException('no update'), 403, ['error' => 'no update']],
+			[new DoesNotExistException('gone'), 404, ['error' => 'Object not found']],
+			[new \RuntimeException('secret detail'), 500, ['error' => 'Internal server error']],
+			[new \Error('engine'), 500, ['error' => 'Internal server error']],
+		];
+		foreach (self::VERBS as $verb) {
+			foreach ($cases as [$exception, $status, $body]) {
+				$controller = $this->controller(signedIn: true);
+				$this->handler->method($verb)->willThrowException($exception);
+				$response = $controller->$verb('1', '2', 'o');
+				$this->assertSame([$status, $body], [$response->getStatus(), $response->getData()], $verb);
+			}
+		}
+	}//end testEveryRefusalOnEveryVerb()
+
+	/**
+	 * An allowed call hands the handler the request's trimmed text and answers its marker.
+	 *
+	 * @return void
+	 */
+	public function testAllowedCallsAnswerTheMarker(): void {
+		$params = ['reason' => ' done ', 'state' => ' woo '];
+		$controller = $this->controller(signedIn: true, params: $params);
+		$this->handler->expects($this->once())->method('archive')->with('o', 'done', '1', '2')->willReturn(['archived' => true]);
+		$this->assertSame(['archived' => true], $controller->archive('1', '2', 'o')->getData());
+
+		$controller = $this->controller(signedIn: true, params: $params);
+		$this->handler->expects($this->once())->method('unarchive')->with('o', 'done', '1', '2')->willReturn(['archived' => false]);
+		$this->assertSame(['archived' => false], $controller->unarchive('1', '2', 'o')->getData());
+
+		$controller = $this->controller(signedIn: true, params: $params);
+		$this->handler->expects($this->once())->method('freeze')->with('o', 'done', 'woo', '1', '2')->willReturn(['frozen' => true]);
+		$this->assertSame(['frozen' => true], $controller->freeze('1', '2', 'o')->getData());
+
+		$controller = $this->controller(signedIn: true, params: ['reason' => '  ']);
+		$this->handler->expects($this->once())->method('unfreeze')->with('o', null, '1', '2')->willReturn(['frozen' => false]);
+		$response = $controller->unfreeze('1', '2', 'o');
+		$this->assertSame([200, ['frozen' => false]], [$response->getStatus(), $response->getData()]);
+	}//end testAllowedCallsAnswerTheMarker()
+}//end class

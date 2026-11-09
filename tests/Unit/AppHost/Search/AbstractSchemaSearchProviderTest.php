@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -58,6 +59,8 @@ final class TestLeadSearchProvider extends AbstractSchemaSearchProvider {
  * Tests for AbstractSchemaSearchProvider.
  *
  * @covers \OCA\OpenRegister\AppHost\Search\AbstractSchemaSearchProvider
+ * @uses \OCA\OpenRegister\AppHost\Search\SchemaSearchPage
+ * @uses \OCA\OpenRegister\AppHost\SchemaScopedProvider
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
@@ -118,10 +121,12 @@ class AbstractSchemaSearchProviderTest extends TestCase {
 		$previewFormatter = new ObjectPreviewFormatter(
 			$urlGenerator,
 			$l10n,
-			$this->objectService,
-			$deepLinkRegistry,
-			$this->schemaMapper,
-			$this->registerMapper,
+			new ObjectPreviewSources(
+				objectService: $this->objectService,
+				deepLinkRegistry: $deepLinkRegistry,
+				schemaMapper: $this->schemaMapper,
+				registerMapper: $this->registerMapper
+			),
 			$this->createMock(LoggerInterface::class)
 		);
 

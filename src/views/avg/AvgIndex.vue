@@ -53,16 +53,9 @@
 							</template>
 							{{ t('openregister', 'New activity') }}
 						</NcButton>
-						<NcButton
-							variant="tertiary"
-							:disabled="loading"
-							@click="refreshActivities">
-							<template #icon>
-								<NcLoadingIcon v-if="loading" :size="20" />
-								<Refresh v-else :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcButton>
+						<RefreshButton
+							:loading="loading"
+							@click="refreshActivities" />
 					</div>
 				</div>
 
@@ -395,16 +388,12 @@
 						</span>
 					</div>
 					<div class="viewActions">
-						<NcButton
+						<RefreshButton
 							variant="primary"
-							:disabled="loading"
+							:loading="loading"
 							@click="loadCompliance">
-							<template #icon>
-								<NcLoadingIcon v-if="loading" :size="20" />
-								<Refresh v-else :size="20" />
-							</template>
 							{{ t('openregister', 'Run compliance scan') }}
-						</NcButton>
+						</RefreshButton>
 					</div>
 				</div>
 
@@ -527,16 +516,9 @@
 							</span>
 						</div>
 						<div class="viewActions">
-							<NcButton
-								variant="tertiary"
-								:disabled="loading"
-								@click="refreshCases">
-								<template #icon>
-									<NcLoadingIcon v-if="loading" :size="20" />
-									<Refresh v-else :size="20" />
-								</template>
-								{{ t('openregister', 'Refresh') }}
-							</NcButton>
+							<RefreshButton
+								:loading="loading"
+								@click="refreshCases" />
 						</div>
 					</div>
 
@@ -666,16 +648,9 @@
 							</NcButton>
 						</div>
 						<div class="viewActions">
-							<NcButton
-								variant="tertiary"
-								:disabled="loading"
-								@click="reloadSelectedCase">
-								<template #icon>
-									<NcLoadingIcon v-if="loading" :size="20" />
-									<Refresh v-else :size="20" />
-								</template>
-								{{ t('openregister', 'Refresh') }}
-							</NcButton>
+							<RefreshButton
+								:loading="loading"
+								@click="reloadSelectedCase" />
 						</div>
 					</div>
 
@@ -1091,10 +1066,10 @@ import MarkerIcon from 'vue-material-design-icons/Marker.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import ShieldAlertOutline from 'vue-material-design-icons/ShieldAlertOutline.vue'
 import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import RefreshButton from '../../components/shared/RefreshButton.vue'
 import DenialComposerDialog from '../../dialogs/avg/DenialComposerDialog.vue'
 import EditActivityDialog from '../../dialogs/avg/EditActivityDialog.vue'
 import RedactionDialog from '../../dialogs/avg/RedactionDialog.vue'
@@ -1133,7 +1108,7 @@ export default {
 		Plus,
 		Pencil,
 		Archive,
-		Refresh,
+		RefreshButton,
 		ShieldLockOutline,
 		ShieldAlertOutline,
 		FileDocumentOutline,

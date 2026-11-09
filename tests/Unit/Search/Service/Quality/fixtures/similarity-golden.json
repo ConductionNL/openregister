@@ -1,0 +1,515 @@
+{
+    "identical": {
+        "exact": 1.0,
+        "token exact": [
+            "Acme",
+            "Acme"
+        ],
+        "normalized": 1.0,
+        "token normalized": [
+            "acme",
+            "acme"
+        ],
+        "levenshtein": 1.0,
+        "token levenshtein": [
+            "acme",
+            "acme"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "acme",
+            "acme"
+        ],
+        "": 0.0,
+        "token ": [
+            "acme",
+            "acme"
+        ]
+    },
+    "case": {
+        "exact": 0.0,
+        "token exact": [
+            "Acme",
+            "acme"
+        ],
+        "normalized": 1.0,
+        "token normalized": [
+            "acme",
+            "acme"
+        ],
+        "levenshtein": 1.0,
+        "token levenshtein": [
+            "acme",
+            "acme"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "acme",
+            "acme"
+        ],
+        "": 0.0,
+        "token ": [
+            "acme",
+            "acme"
+        ]
+    },
+    "whitespace": {
+        "exact": 0.0,
+        "token exact": [
+            "  Acme \t\n BV ",
+            "acme bv"
+        ],
+        "normalized": 1.0,
+        "token normalized": [
+            "acme bv",
+            "acme bv"
+        ],
+        "levenshtein": 1.0,
+        "token levenshtein": [
+            "acme bv",
+            "acme bv"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "acme bv",
+            "acme bv"
+        ],
+        "": 0.0,
+        "token ": [
+            "acme bv",
+            "acme bv"
+        ]
+    },
+    "accent": {
+        "exact": 0.0,
+        "token exact": [
+            "Café",
+            "cafe"
+        ],
+        "normalized": 1.0,
+        "token normalized": [
+            "cafe",
+            "cafe"
+        ],
+        "levenshtein": 1.0,
+        "token levenshtein": [
+            "cafe",
+            "cafe"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "cafe",
+            "cafe"
+        ],
+        "": 0.0,
+        "token ": [
+            "cafe",
+            "cafe"
+        ]
+    },
+    "one edit": {
+        "exact": 0.0,
+        "token exact": [
+            "Jansen",
+            "Janssen"
+        ],
+        "normalized": 0.0,
+        "token normalized": [
+            "jansen",
+            "janssen"
+        ],
+        "levenshtein": 0.8571428571428572,
+        "token levenshtein": [
+            "jansen",
+            "janssen"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "jansen",
+            "janssen"
+        ],
+        "": 0.0,
+        "token ": [
+            "jansen",
+            "janssen"
+        ]
+    },
+    "different": {
+        "exact": 0.0,
+        "token exact": [
+            "Acme",
+            "Globex Corp"
+        ],
+        "normalized": 0.0,
+        "token normalized": [
+            "acme",
+            "globex corp"
+        ],
+        "levenshtein": 0.09090909090909094,
+        "token levenshtein": [
+            "acme",
+            "globex corp"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "acme",
+            "globex corp"
+        ],
+        "": 0.0,
+        "token ": [
+            "acme",
+            "globex corp"
+        ]
+    },
+    "empty both": {
+        "exact": 1.0,
+        "token exact": [
+            "",
+            ""
+        ],
+        "normalized": 1.0,
+        "token normalized": [
+            "",
+            ""
+        ],
+        "levenshtein": 1.0,
+        "token levenshtein": [
+            "",
+            ""
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "",
+            ""
+        ],
+        "": 0.0,
+        "token ": [
+            "",
+            ""
+        ]
+    },
+    "empty one": {
+        "exact": 0.0,
+        "token exact": [
+            "",
+            "abc"
+        ],
+        "normalized": 0.0,
+        "token normalized": [
+            "",
+            "abc"
+        ],
+        "levenshtein": 0.0,
+        "token levenshtein": [
+            "",
+            "abc"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "",
+            "abc"
+        ],
+        "": 0.0,
+        "token ": [
+            "",
+            "abc"
+        ]
+    },
+    "blank vs empty": {
+        "exact": 0.0,
+        "token exact": [
+            "   ",
+            ""
+        ],
+        "normalized": 1.0,
+        "token normalized": [
+            "",
+            ""
+        ],
+        "levenshtein": 1.0,
+        "token levenshtein": [
+            "",
+            ""
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "",
+            ""
+        ],
+        "": 0.0,
+        "token ": [
+            "",
+            ""
+        ]
+    },
+    "numbers": {
+        "exact": 1.0,
+        "token exact": [
+            "12",
+            "12"
+        ],
+        "normalized": 1.0,
+        "token normalized": [
+            "12",
+            "12"
+        ],
+        "levenshtein": 1.0,
+        "token levenshtein": [
+            "12",
+            "12"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "12",
+            "12"
+        ],
+        "": 0.0,
+        "token ": [
+            "12",
+            "12"
+        ]
+    },
+    "float": {
+        "exact": 0.0,
+        "token exact": [
+            "1.5",
+            "1.50"
+        ],
+        "normalized": 0.0,
+        "token normalized": [
+            "1.5",
+            "1.50"
+        ],
+        "levenshtein": 0.75,
+        "token levenshtein": [
+            "1.5",
+            "1.50"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "1.5",
+            "1.50"
+        ],
+        "": 0.0,
+        "token ": [
+            "1.5",
+            "1.50"
+        ]
+    },
+    "bool": {
+        "exact": 1.0,
+        "token exact": [
+            "1",
+            "1"
+        ],
+        "normalized": 1.0,
+        "token normalized": [
+            "1",
+            "1"
+        ],
+        "levenshtein": 1.0,
+        "token levenshtein": [
+            "1",
+            "1"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "1",
+            "1"
+        ],
+        "": 0.0,
+        "token ": [
+            "1",
+            "1"
+        ]
+    },
+    "false vs empty": {
+        "exact": 1.0,
+        "token exact": [
+            "",
+            ""
+        ],
+        "normalized": 1.0,
+        "token normalized": [
+            "",
+            ""
+        ],
+        "levenshtein": 1.0,
+        "token levenshtein": [
+            "",
+            ""
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "",
+            ""
+        ],
+        "": 0.0,
+        "token ": [
+            "",
+            ""
+        ]
+    },
+    "null": {
+        "exact": 0.0,
+        "token exact": [
+            "",
+            "a"
+        ],
+        "normalized": 0.0,
+        "token normalized": [
+            "",
+            "a"
+        ],
+        "levenshtein": 0.0,
+        "token levenshtein": [
+            "",
+            "a"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "",
+            "a"
+        ],
+        "": 0.0,
+        "token ": [
+            "",
+            "a"
+        ]
+    },
+    "array": {
+        "exact": 0.0,
+        "token exact": [
+            "",
+            "a"
+        ],
+        "normalized": 0.0,
+        "token normalized": [
+            "",
+            "a"
+        ],
+        "levenshtein": 0.0,
+        "token levenshtein": [
+            "",
+            "a"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "",
+            "a"
+        ],
+        "": 0.0,
+        "token ": [
+            "",
+            "a"
+        ]
+    },
+    "long equal prefix": {
+        "exact": 0.0,
+        "token exact": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijX",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijY"
+        ],
+        "normalized": 0.0,
+        "token normalized": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijx",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijy"
+        ],
+        "levenshtein": 1.0,
+        "token levenshtein": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijx",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijy"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijx",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijy"
+        ],
+        "": 0.0,
+        "token ": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijx",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijy"
+        ]
+    },
+    "long vs short": {
+        "exact": 0.0,
+        "token exact": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+            "abc"
+        ],
+        "normalized": 0.0,
+        "token normalized": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+            "abc"
+        ],
+        "levenshtein": 0.0117647058823529,
+        "token levenshtein": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+            "abc"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+            "abc"
+        ],
+        "": 0.0,
+        "token ": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+            "abc"
+        ]
+    },
+    "long one edit early": {
+        "exact": 0.0,
+        "token exact": [
+            "Zabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
+        ],
+        "normalized": 0.0,
+        "token normalized": [
+            "zabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
+        ],
+        "levenshtein": 0.9921568627450981,
+        "token levenshtein": [
+            "zabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "zabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
+        ],
+        "": 0.0,
+        "token ": [
+            "zabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
+        ]
+    },
+    "exactly 255": {
+        "exact": 0.0,
+        "token exact": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcde",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdQ"
+        ],
+        "normalized": 0.0,
+        "token normalized": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcde",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdq"
+        ],
+        "levenshtein": 0.996078431372549,
+        "token levenshtein": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcde",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdq"
+        ],
+        "jaro": 0.0,
+        "token jaro": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcde",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdq"
+        ],
+        "": 0.0,
+        "token ": [
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcde",
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdq"
+        ]
+    }
+}

@@ -35,10 +35,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\EmailLinksControllerServices;
+use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\EmailLinkServiceInterface;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
@@ -53,22 +56,45 @@ use OCP\IRequest;
  */
 class EmailLinksController extends Controller {
 	use ObjectLinkActionsTrait;
+	use ChecksObjectUpdateRight;
+
+	/**
+	 * Backing service.
+	 *
+	 * @var EmailLinkServiceInterface
+	 */
+	private readonly EmailLinkServiceInterface $emailLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Answers the object update right
+	 *
+	 * @var PermissionHandlerInterface
+	 */
+	private readonly PermissionHandlerInterface $permissions;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param EmailLinkService $emailLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param EmailLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly EmailLinkService $emailLinkService,
-		private readonly ObjectOperationsInterface $objectService,
+		EmailLinksControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->emailLinkService = $services->emailLinkService;
+		$this->objectService = $services->objectService;
+		$this->permissions = $services->permissions;
 	}//end __construct()
 
 	/**
@@ -130,6 +156,10 @@ class EmailLinksController extends Controller {
 		return $this->onLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
 			action: function (ObjectEntity $object): JSONResponse {
+				if ($this->mayUpdate(object: $object) === false) {
+					return $this->updateRefused();
+				}
+
 				$mailAccountId = (int)$this->request->getParam('mailAccountId', 0);
 				$messageId = (string)$this->request->getParam('messageId', '');
 				$messageUid = (string)$this->request->getParam('messageUid', '');
@@ -171,12 +201,25 @@ class EmailLinksController extends Controller {
 		return $this->onLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
 			action: function (ObjectEntity $object) use ($linkId): JSONResponse {
+				if ($this->mayUpdate(object: $object) === false) {
+					return $this->updateRefused();
+				}
+
 				$this->emailLinkService->unlinkEmail($object->getUuid(), (int)$linkId);
 
 				return new JSONResponse(['success' => true]);
 			}
 		);
 	}//end destroy()
+
+	/**
+	 * The answer to a caller who may read the object but not change it.
+	 *
+	 * @return JSONResponse The 403.
+	 */
+	private function updateRefused(): JSONResponse {
+		return new JSONResponse(['error' => 'You may not change this object, so you cannot change its emails.'], 403);
+	}//end updateRefused()
 
 	/**
 	 * List Mail accounts owned by the current user (picker step 1).

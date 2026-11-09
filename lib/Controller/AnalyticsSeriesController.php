@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\AnalyticsSeriesService;
+use OCA\OpenRegister\Service\AnalyticsSeriesServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -45,6 +45,8 @@ use OCP\IRequest;
 
 /**
  * Page-level analytics series controller.
+ *
+ * @spec openspec/specs/integration-leaf-foundation/spec.md
  */
 class AnalyticsSeriesController extends Controller {
 	/**
@@ -52,14 +54,14 @@ class AnalyticsSeriesController extends Controller {
 	 *
 	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
-	 * @param AnalyticsSeriesService $seriesService Series register/fetch service.
+	 * @param AnalyticsSeriesServiceInterface $seriesService Series register/fetch service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private AnalyticsSeriesService $seriesService,
+		private AnalyticsSeriesServiceInterface $seriesService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -92,21 +94,7 @@ class AnalyticsSeriesController extends Controller {
 			// a series is a write — it requires an authenticated user.
 			$this->seriesService->ensureCanRegister();
 
-			$title = null;
-			if (isset($params['title']) === true) {
-				$title = (string)$params['title'];
-			}
-
-			$stored = $this->seriesService->register(
-				seriesKey: (string)($params['seriesKey'] ?? ''),
-				labels: (array)($params['labels'] ?? []),
-				datasets: (array)($params['datasets'] ?? []),
-				title: $title,
-				chartType: (string)($params['chartType'] ?? 'line'),
-				visibility: (string)($params['visibility'] ?? 'private'),
-				registerId: $this->intOrNull(value: ($params['registerId'] ?? null)),
-				schemaId: $this->intOrNull(value: ($params['schemaId'] ?? null))
-			);
+			$stored = $this->storeSeries(params: $params);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}//end try
@@ -140,6 +128,43 @@ class AnalyticsSeriesController extends Controller {
 
 		return new JSONResponse($series);
 	}//end fetch()
+
+	/**
+	 * Map the request params onto AnalyticsSeriesService::register().
+	 *
+	 * @param array<string, mixed> $params The request params.
+	 *
+	 * @return array<string, mixed> The stored series render contract.
+	 *
+	 * @throws \InvalidArgumentException When the service rejects the series.
+	 */
+	private function storeSeries(array $params): array {
+		return $this->seriesService->register(
+			seriesKey: (string)($params['seriesKey'] ?? ''),
+			labels: (array)($params['labels'] ?? []),
+			datasets: (array)($params['datasets'] ?? []),
+			title: $this->stringOrNull(value: ($params['title'] ?? null)),
+			chartType: (string)($params['chartType'] ?? 'line'),
+			visibility: (string)($params['visibility'] ?? 'private'),
+			registerId: $this->intOrNull(value: ($params['registerId'] ?? null)),
+			schemaId: $this->intOrNull(value: ($params['schemaId'] ?? null))
+		);
+	}//end storeSeries()
+
+	/**
+	 * Coerce a request param to a string, or null when absent.
+	 *
+	 * @param mixed $value The raw param.
+	 *
+	 * @return string|null
+	 */
+	private function stringOrNull(mixed $value): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		return (string)$value;
+	}//end stringOrNull()
 
 	/**
 	 * Coerce a request param to an int, or null when absent / non-numeric.

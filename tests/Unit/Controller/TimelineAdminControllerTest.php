@@ -30,6 +30,7 @@ namespace Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Notifications\Controller\TimelineAdminController;
+use OCA\OpenRegister\Notifications\Controller\Support\TimelineAdminControllerServices;
 use OCA\OpenRegister\Notifications\Db\ReferencePattern;
 use OCA\OpenRegister\Notifications\Db\TextBlock;
 use OCA\OpenRegister\Notifications\Db\TimelineKind;
@@ -72,10 +73,17 @@ class TimelineAdminControllerTest extends TestCase {
 		$this->controller = new TimelineAdminController(
 			'openregister',
 			$this->request,
-			$this->kinds,
-			$this->references,
-			$this->blocks,
-			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->createMock(LoggerInterface::class)));
+			new TimelineAdminControllerServices(
+				kinds: $this->kinds,
+				references: $this->references,
+				blocks: $this->blocks,
+				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
+					userSession: $this->userSession,
+					groupManager: $this->groupManager,
+					logger: $this->createMock(LoggerInterface::class)
+				)
+			)
+		);
 	}
 
 	private function signIn(bool $isAdmin): void {

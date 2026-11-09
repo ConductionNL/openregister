@@ -437,12 +437,12 @@ class MagicSearchHandlerTest extends TestCase {
 		// The `_fuzzy=true` param is honoured only when pg_trgm is available.
 		// hasPgTrgmExtension() short-circuits to false on non-PostgreSQL, so
 		// even a client-supplied _fuzzy MUST NOT emit similarity() on MariaDB.
-		// We prime the cached hasPgTrgm=false directly so the test doesn't need
+		// We prime the probe with false directly so the test doesn't need
 		// a full IDBConnection platform mock — the platform-branch semantics in
 		// buildSearchConditionSql are the SUT here, not the pg_trgm probe.
-		$hasPgTrgmProp = new \ReflectionProperty(MagicSearchHandler::class, 'hasPgTrgm');
-		$hasPgTrgmProp->setAccessible(true);
-		$hasPgTrgmProp->setValue($this->handler, false);
+		$probe = new \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe($this->createMock(IDBConnection::class), $this->createMock(LoggerInterface::class));
+		(new \ReflectionProperty($probe, 'available'))->setValue($probe, false);
+		(new \ReflectionProperty(MagicSearchHandler::class, 'trgmProbe'))->setValue($this->handler, $probe);
 
 		$sql = $this->invokeBuildSearchConditionSql(
 			search: 'foo',

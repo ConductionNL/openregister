@@ -51,6 +51,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 
@@ -97,7 +99,7 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		// but on this lineage IAppConfig is already a REQUIRED constructor
 		// dependency sitting at position 7 (before $logger). The positional list
 		// wave-12 shipped would bind $logger into $appConfig here.
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $this->userSession,
 			userManager: $this->userManager,
 			groupManager: $this->groupManager,

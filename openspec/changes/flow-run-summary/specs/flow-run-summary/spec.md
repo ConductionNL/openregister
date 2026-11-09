@@ -12,7 +12,7 @@ array, at most 200 honoured) and an optional `since` (ISO 8601, default seven
 days ago). It SHALL return `{results: {flowId: {lastRun, runsSince}}, since}`
 with an entry for EVERY requested flow, `lastRun: null` and `runsSince: 0`
 for a flow without visible runs. `lastRun` SHALL carry only `uuid`, `status`,
-`error`, `created` and `updated`, never the log or marking.
+`outcome`, `error`, `created` and `updated`, never the log or marking.
 
 #### Scenario: a flow that never ran is still answered
 - GIVEN flows A and B, where only A has runs

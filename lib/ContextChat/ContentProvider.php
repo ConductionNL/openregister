@@ -35,33 +35,21 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
+use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCP\ContextChat\IContentProvider;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\ContextChat\Support\ContentProviderSources;
+use OCA\OpenRegister\ContextChat\Support\ContentProviderLinks;
 
 /**
  * Content provider surfacing OpenRegister objects to Context Chat.
  *
  * @spec openspec/specs/context-chat-provider/spec.md
  */
-class ContentProvider implements IContentProvider {
-
-	/**
-	 * The app id this provider is registered under.
-	 *
-	 * @var string
-	 */
-	public const APP_ID = 'openregister';
-
-	/**
-	 * The provider id this provider is registered under.
-	 *
-	 * @var string
-	 */
-	public const PROVIDER_ID = 'openregister_objects';
+class ContentProvider implements IContentProvider, ContentProviderInterface {
 
 	/**
 	 * Batch size used when walking a (register, schema) pair during import.
@@ -71,14 +59,46 @@ class ContentProvider implements IContentProvider {
 	private const BATCH_SIZE = 200;
 
 	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register lookup mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Object lookup/walk mapper.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Deep link registry for `getItemUrl`.
+	 *
+	 * @var DeepLinkResolverInterface
+	 */
+	private readonly DeepLinkResolverInterface $deepLinkRegistry;
+
+	/**
+	 * URL generator for the fallback route.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urlGenerator;
+
+	/**
 	 * Wire collaborators.
 	 *
-	 * @param ContextChatSubmissionListener $submissionListener Shared submission logic (single object).
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
-	 * @param MagicMapperInterface $magicMapper Object lookup/walk mapper.
-	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry for `getItemUrl`.
-	 * @param IURLGenerator $urlGenerator URL generator for the fallback route.
+	 * @param ContextChatSubmissionListenerInterface $submissionListener Shared submission logic (single object).
+	 * @param ContentProviderSources $sources Schema, register and magic-table lookups.
+	 * @param ContentProviderLinks $links Deep-link resolver and URL generator.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
@@ -86,14 +106,16 @@ class ContentProvider implements IContentProvider {
 	 * @spec openspec/specs/context-chat-provider/spec.md
 	 */
 	public function __construct(
-		private readonly ContextChatSubmissionListener $submissionListener,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly DeepLinkRegistryService $deepLinkRegistry,
-		private readonly IURLGenerator $urlGenerator,
+		private readonly ContextChatSubmissionListenerInterface $submissionListener,
+		ContentProviderSources $sources,
+		ContentProviderLinks $links,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->schemaMapper = $sources->schemaMapper;
+		$this->registerMapper = $sources->registerMapper;
+		$this->magicMapper = $sources->magicMapper;
+		$this->deepLinkRegistry = $links->deepLinkRegistry;
+		$this->urlGenerator = $links->urlGenerator;
 	}//end __construct()
 
 	/**
@@ -121,7 +143,7 @@ class ContentProvider implements IContentProvider {
 	/**
 	 * Resolve the absolute URL a user would reach this content item at.
 	 *
-	 * Resolves via {@see DeepLinkRegistryService::resolveUrl()} — the same
+	 * Resolves via {@see DeepLinkResolverInterface::resolveUrl()} — the same
 	 * mechanism `ObjectsProvider` already uses for unified-search result
 	 * URLs — and falls back to the `openregister.objects.show` route when no
 	 * app has claimed a deep link for the object's (register, schema) pair.

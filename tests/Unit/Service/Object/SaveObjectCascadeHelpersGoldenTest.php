@@ -30,12 +30,24 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 
 /**
  * Recorded on the code before the identifier test and the orphan scope were extracted; orphan cleanup of pointers later dropped.
  * Set UPDATE_GOLDEN=1 to rewrite the fixture, then run again without it.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
@@ -117,14 +129,14 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		);
 
 		$reflection = new ReflectionClass(SaveObject::class);
-		$reflection->getProperty('schemaReferenceCache')->setValue($handler, ['note' => '2']);
-		$reflection->getProperty('schemaCache')->setValue($handler, ['2' => $note]);
 		$reflection->getProperty('urlGenerator')->setValue($handler, $this->createMock(IURLGenerator::class));
 		$reflection->getProperty('objectEntityMapper')->setValue($handler, $mapper);
 		$reflection->getProperty('registerMapper')->setValue($handler, $registers);
 		$schemas = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
 		$schemas->method('findAll')->willReturn([$note]);
 		$reflection->getProperty('schemaMapper')->setValue($handler, $schemas);
+		SaveLookupsAccess::set($handler, 'schemaReferenceCache', ['note' => '2']);
+		SaveLookupsAccess::set($handler, 'schemaCache', ['2' => $note]);
 		$reflection->getProperty('userSession')->setValue($handler, $this->createMock(IUserSession::class));
 		$reflection->getProperty('logger')->setValue($handler, new NullLogger());
 		if ($reflection->hasProperty('permissionHandler') === true) {
@@ -156,7 +168,10 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$schema->setProperties($properties);
 
 		$extra = $method === 'cascadeObjects' ? [$stored] : [];
-		$answer = (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, $schema, $data, ...$extra);
+		$answer = match ($method) {
+			'handleInverseRelationsWriteBack' => RelationCalls::handleInverseRelationsWriteBack($handler, [$parent, $schema, $data]),
+			default => (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, $schema, $data, ...$extra),
+		};
 		$orphans = (new ReflectionClass(SaveObject::class))->getProperty('pendingOrphans')->getValue($handler);
 
 		return ['answer' => $answer, 'trace' => $this->trace, 'orphans' => $orphans];

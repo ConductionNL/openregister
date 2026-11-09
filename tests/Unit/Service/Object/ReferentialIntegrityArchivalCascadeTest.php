@@ -39,6 +39,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -119,14 +122,10 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 		);
 
 		$this->service = new ReferentialIntegrityService(
-			$schemaMapper,
-			$this->createMock(RegisterMapper::class),
-			$this->objectMapper,
-			$this->auditTrailMapper,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IDBConnection::class),
-			$this->nullCacheFactory(),
-			new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class))
+			index: new IntegrityRelationIndex(schemaMapper: $schemaMapper, registerMapper: $this->createMock(RegisterMapper::class), cacheFactory: $this->nullCacheFactory()),
+			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class))),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 		$this->auditTrailMapper->method('buildAuditTrail')->willReturnCallback(
@@ -204,7 +203,7 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 		// THE BATCH IS ASKED FOR THE ORDINARY CHILD ONLY. If the retained child
 		// appeared in this list, the cascade would already have reached for it.
 		$this->objectMapper->expects($this->once())
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->with(
 				$this->equalTo(['child-ordinary']),
 				$this->equalTo(false)
@@ -266,7 +265,7 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAllArchivalCascadeDeletesNothingAndReportsEveryChild(): void {
-		$this->objectMapper->expects($this->never())->method('findMultipleAcrossAllMagicTables');
+		$this->objectMapper->expects($this->never())->method('findStoredAcrossAllMagicTables');
 		$this->objectMapper->expects($this->never())->method('softDeleteMultipleObjectEntities');
 		$this->objectMapper->expects($this->never())->method('deleteObjects');
 
@@ -326,7 +325,7 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 	 */
 	public function testAnOrdinaryCascadeReportsAnEmptyRetainedList(): void {
 		$ordinary = $this->entity('child-ordinary', self::SCHEMA_ORDINARY);
-		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$ordinary]);
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')->willReturn([$ordinary]);
 		$this->objectMapper->method('softDeleteMultipleObjectEntities')->willReturnArgument(0);
 
 		$analysis = new DeletionAnalysis(

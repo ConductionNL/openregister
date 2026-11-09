@@ -35,6 +35,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
+use OCA\OpenRegister\Service\Configuration\ConfigurationGitHosts;
+use OCA\OpenRegister\Service\Configuration\ConfigurationServicePlatform;
+use OCA\OpenRegister\Service\Configuration\ConfigurationTransferHandlers;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
@@ -225,23 +228,23 @@ class SelectiveImportTest extends TestCase {
 		);
 
 		return new ConfigurationService(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
 			$this->configurationMapper,
-			$this->createMock(IAppManager::class),
-			$container,
-			$this->createMock(IAppConfig::class),
-			$logger,
-			$client,
-			$this->createMock(ObjectService::class),
-			$this->createMock(GitHubHandler::class),
-			$this->createMock(GitLabHandler::class),
-			$this->createMock(CacheHandler::class),
-			$this->createMock(PreviewHandler::class),
-			$this->createMock(ExportHandler::class),
-			$this->createMock(UploadHandler::class),
-			'/tmp'
-		);
+			new ConfigurationServicePlatform(
+				$this->createMock(IAppManager::class),
+				$container,
+				$this->createMock(IAppConfig::class),
+				$logger
+			),
+			new ConfigurationGitHosts(
+				$this->createMock(GitHubHandler::class),
+				$this->createMock(GitLabHandler::class)
+			),
+			new ConfigurationTransferHandlers(
+				$this->createMock(CacheHandler::class),
+				$this->createMock(PreviewHandler::class),
+				$this->createMock(ExportHandler::class),
+				$this->createMock(UploadHandler::class)
+			));
 
 	}//end service()
 

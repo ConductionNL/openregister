@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Service\SystemOperationContext;
+use OCA\OpenRegister\Support\OrderParameter;
 
 /**
  * The request's reveal grants, and the pure rules of explicit reveal.
@@ -51,14 +52,7 @@ use OCA\OpenRegister\Service\SystemOperationContext;
  *
  * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
  */
-class ExplicitReveal {
-
-	/**
-	 * The authorization key and value that make a property explicit-reveal.
-	 */
-	public const KEY = 'reveal';
-
-	public const EXPLICIT = 'explicit';
+class ExplicitReveal implements ExplicitRevealInterface {
 
 	/**
 	 * How many characters of the value the mask keeps.
@@ -303,13 +297,10 @@ class ExplicitReveal {
 			return;
 		}
 
-		$order = $query['_order'] ?? [];
-		if (is_string($order) === true) {
-			$order = (json_decode($order, true) ?? []);
-		}
+		$order = (new OrderParameter(order: $query['_order'] ?? []))->fields();
 
 		foreach ($names as $name) {
-			if (array_key_exists($name, $query) === true || (is_array($order) === true && array_key_exists($name, $order) === true)) {
+			if (array_key_exists($name, $query) === true || array_key_exists($name, $order) === true) {
 				throw new ExplicitRevealQueryException(
 					message: sprintf('\'%s\' is shown only on request, so it cannot be filtered or sorted on.', $name)
 				);

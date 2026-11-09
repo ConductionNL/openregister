@@ -14,26 +14,7 @@ import { translate as t } from '@nextcloud/l10n'
 		:loading="loading"
 		:loadingMessage="t('openregister', 'Loading multitenancy settings...')">
 		<template #actions>
-			<NcButton
-				variant="error"
-				:disabled="loading || saving || rebasing"
-				@click="showRebaseDialog">
-				<template #icon>
-					<NcLoadingIcon v-if="rebasing" :size="20" />
-					<Refresh v-else :size="20" />
-				</template>
-				Rebase
-			</NcButton>
-			<NcButton
-				variant="primary"
-				:disabled="loading || saving || rebasing"
-				@click="saveSettings">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<Save v-else :size="20" />
-				</template>
-				Save
-			</NcButton>
+			<SectionSaveActions v-bind="saveActions" />
 		</template>
 
 		<!-- Section Description -->
@@ -163,33 +144,26 @@ import { translate as t } from '@nextcloud/l10n'
 
 <script>
 import {
-	NcButton,
 	NcCheckboxRadioSwitch,
-	NcLoadingIcon,
 	NcSelect,
 } from '@nextcloud/vue'
-import { mapStores } from 'pinia'
-import Save from 'vue-material-design-icons/ContentSave.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { useSettingsStore } from '../../../store/settings.js'
+import SectionSaveActions from './SectionSaveActions.vue'
+import { settingsSectionState } from './settingsSectionState.js'
 
 export default {
 	name: 'MultitenancyConfiguration',
 
 	components: {
+		SectionSaveActions,
 		SettingsSection,
-		NcButton,
-		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
 		NcSelect,
-		Refresh,
-		Save,
 	},
 
-	computed: {
-		...mapStores(useSettingsStore),
+	mixins: [settingsSectionState],
 
+	computed: {
 		multitenancyOptions: {
 			/**
 			 * Read multitenancy options from the settings store.
@@ -222,49 +196,9 @@ export default {
 		tenantOptions() {
 			return this.settingsStore.tenantOptions
 		},
-
-		/**
-		 * Loading flag from the settings store.
-		 *
-		 * @spec exclude UI plumbing — store passthrough computed.
-		 * @return {boolean}
-		 */
-		loading() {
-			return this.settingsStore.loading
-		},
-
-		/**
-		 * Saving flag from the settings store.
-		 *
-		 * @spec exclude UI plumbing — store passthrough computed.
-		 * @return {boolean}
-		 */
-		saving() {
-			return this.settingsStore.saving
-		},
-
-		/**
-		 * Rebasing flag from the settings store.
-		 *
-		 * @spec exclude UI plumbing — store passthrough computed.
-		 * @return {boolean}
-		 */
-		rebasing() {
-			return this.settingsStore.rebasing
-		},
 	},
 
 	methods: {
-		/**
-		 * Open the tenant-rebase confirmation dialog.
-		 *
-		 * @spec exclude UI plumbing — store passthrough; rebase contract owned by tenant-lifecycle.
-		 * @return {void}
-		 */
-		showRebaseDialog() {
-			this.settingsStore.showRebaseDialog()
-		},
-
 		/**
 		 * Persist multitenancy settings.
 		 *

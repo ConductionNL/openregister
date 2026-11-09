@@ -217,7 +217,7 @@
             "importJobId": "<uuid>"
         }
     },
-    "invalid ignored without validation": {
+    "invalid reported without validation": {
         "calls": [
             {
                 "method": "audit.setRequestImportJobId",
@@ -286,7 +286,14 @@
                 "created": [],
                 "updated": [],
                 "unchanged": [],
-                "errors": [],
+                "errors": [
+                    {
+                        "sheet": "Things",
+                        "object": [],
+                        "error": "bad",
+                        "type": "ValidationException"
+                    }
+                ],
                 "schema": {
                     "id": 9,
                     "title": "Schema things",

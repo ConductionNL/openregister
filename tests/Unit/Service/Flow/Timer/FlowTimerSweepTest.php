@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTasks;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTimers;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\IDBConnection;
@@ -66,7 +68,10 @@ class FlowTimerSweepTest extends TestCase {
 		$this->service = $this->createMock(FlowTimerService::class);
 		$this->calendars = $this->createMock(WorkingCalendarService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->sweep = new FlowTimerSweep(timers: $this->mapper, service: $this->service, calendars: $this->calendars, logger: $this->logger);
+		$this->sweep = new FlowTimerSweep(
+			timers: new FlowTimerSweepTimers(timers: $this->mapper, service: $this->service, calendars: $this->calendars),
+			logger: $this->logger
+		);
 	}//end setUp()
 
 	private function seed(string $uuid, string $purpose, string $fireAt, ?string $nextRungAt = null, string $state = FlowTimer::STATE_ARMED): FlowTimer {
@@ -174,12 +179,9 @@ class FlowTimerSweepTest extends TestCase {
 		$this->logger->expects(self::once())->method('error');
 
 		$sweep = new FlowTimerSweep(
-			timers: $this->mapper,
-			service: $this->service,
-			calendars: $this->calendars,
+			timers: new FlowTimerSweepTimers(timers: $this->mapper, service: $this->service, calendars: $this->calendars),
 			logger: $this->logger,
-			tasks: $tasks,
-			taskService: $taskService
+			tasks: new FlowTimerSweepTasks(tasks: $tasks, taskService: $taskService)
 		);
 		$result = $sweep->run(now: new DateTimeImmutable('2026-09-01 10:00:00'), batch: 3);
 

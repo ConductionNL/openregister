@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Archival\RetentionScanStores;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -36,7 +37,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
+use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionStores;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -114,27 +117,27 @@ class RetentionSweepTest extends TestCase {
 		);
 
 		$this->service = new RetentionService(
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->createMock(AuditTrailMapper::class),
-			$this->settingsHandler,
-			$this->createMock(IAppConfig::class),
+			new RetentionStores(
+				$this->objectMapper,
+				$this->schemaMapper,
+				$this->registerMapper,
+				$this->createMock(AuditTrailMapper::class)
+			),
+			new RetentionRules(
+				$this->settingsHandler,
+				// The REAL scanner over the SAME mocks these tests program, not a
+				// mock of its own: what is under test here is which tables get
+				// walked and how, and a mocked scanner would assert only that this
+				// service called something.
+				new RetentionRowScanner(
+					new RetentionScanStores($this->db, $this->registerMapper, $this->schemaMapper, $this->objectMapper),
+					$this->logger
+				),
+				new ArchiveActionDateCalculator($this->objectMapper, $this->logger),
+				$this->createMock(SelectielijstResolver::class)
+			),
 			$this->createMock(IUserSession::class),
 			$this->logger,
-			// The REAL scanner over the SAME mocks these tests program, not a
-			// mock of its own: what is under test here is which tables get
-			// walked and how, and a mocked scanner would assert only that this
-			// service called something.
-			new RetentionRowScanner(
-				$this->db,
-				$this->registerMapper,
-				$this->schemaMapper,
-				$this->objectMapper,
-				$this->logger
-			),
-			new ArchiveActionDateCalculator($this->objectMapper, $this->logger),
-			$this->createMock(SelectielijstResolver::class),
 		);
 	}//end setUp()
 
@@ -338,7 +341,7 @@ class RetentionSweepTest extends TestCase {
 	 */
 	public function testAFutureDisposalDateExcludes(): void {
 		$retention = $this->dueForDestruction();
-		$retention['archiefactiedatum'] = '2099-01-01';
+		$retention['archiefactiedatum'] = date('Y-m-d', strtotime('+10 years'));
 		$this->givenLegacyRow(id: 3, uuid: 'future-uuid', retention: $retention);
 
 		$this->assertSame([], $this->service->findEligibleForDestruction());

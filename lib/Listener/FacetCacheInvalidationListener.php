@@ -37,7 +37,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Object\FacetCacheVersion;
+use OCA\OpenRegister\Service\Object\FacetCacheVersionInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -52,14 +52,14 @@ class FacetCacheInvalidationListener implements IEventListener {
 	/**
 	 * Wire the counter bumped on every object write.
 	 *
-	 * @param FacetCacheVersion $versions Per-scope facet freshness counter.
+	 * @param FacetCacheVersionInterface $versions Per-scope facet freshness counter.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-an-object-write-must-invalidate-the-facet-response-derived-from-it
 	 */
 	public function __construct(
-		private readonly FacetCacheVersion $versions,
+		private readonly FacetCacheVersionInterface $versions,
 	) {
 	}//end __construct()
 

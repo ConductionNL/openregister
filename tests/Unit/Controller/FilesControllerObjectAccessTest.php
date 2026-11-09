@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Files\Controller\FilesController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -35,10 +35,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
-use OCA\OpenRegister\Service\File\ObjectFileAccess;
-use OCA\OpenRegister\Service\File\OfficeSession;
-use OCA\OpenRegister\Service\File\OfficeSessionService;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Files\Service\File\OfficeSession;
+use OCA\OpenRegister\Files\Service\File\OfficeSessionToken;
+use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -117,16 +118,17 @@ class FilesControllerObjectAccessTest extends TestCase {
 	 *
 	 * @param string        $uid    The acting user.
 	 * @param array<string> $groups Their groups.
+	 * @param bool          $signedIn False leaves the session without a user.
 	 *
 	 * @return FilesController
 	 */
-	private function controllerAs(string $uid, array $groups): FilesController {
+	private function controllerAs(string $uid, array $groups, bool $signedIn = true): FilesController {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($uid);
 		$user->method('getDisplayName')->willReturn(ucfirst($uid));
 
 		$userSession = $this->createMock(IUserSession::class);
-		$userSession->method('getUser')->willReturn($user);
+		$userSession->method('getUser')->willReturn($signedIn === true ? $user : null);
 
 		$userManager = $this->createMock(IUserManager::class);
 		$userManager->method('get')->willReturn($user);
@@ -142,7 +144,7 @@ class FilesControllerObjectAccessTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($this->schema);
 
 		$logger = new NullLogger();
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,
@@ -321,9 +323,11 @@ class FilesControllerObjectAccessTest extends TestCase {
 				return new OfficeSession(
 					urlSrc: 'https://office.test/browser/cool.html?',
 					wopiSrc: 'https://nc.test/index.php/apps/richdocuments/wopi/files/77_oc',
-					token: 'tok',
-					tokenTtl: 1,
-					readOnly: ($canWrite === false)
+					access: new OfficeSessionToken(
+						token: 'tok',
+						tokenTtl: 1,
+						readOnly: ($canWrite === false)
+					)
 				);
 			}
 		);
@@ -364,6 +368,17 @@ class FilesControllerObjectAccessTest extends TestCase {
 		$this->assertSame(404, $response->getStatus());
 		$this->assertSame([], $issued);
 	}//end testAPersonWithoutAccessGetsNoToken()
+
+	public function testAnAnonymousCallerGetsNoToken(): void {
+		$issued = [];
+		$this->arrangeOffice($issued);
+
+		$response = $this->controllerAs('admin', ['admin'], signedIn: false)
+			->office(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 77);
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame([], $issued);
+	}//end testAnAnonymousCallerGetsNoToken()
 
 	public function testTheOfficePagePostsAnEditTokenForAnUpdateHolder(): void {
 		$issued = [];

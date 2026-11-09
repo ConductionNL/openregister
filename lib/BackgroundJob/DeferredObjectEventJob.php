@@ -39,16 +39,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventActor;
+use OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventLookup;
+use OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventPlatform;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
-use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IUserManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -58,27 +54,20 @@ class DeferredObjectEventJob extends QueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Clock for the job base class.
-	 * @param MagicMapperInterface $objectMapper Re-reads the object at run time.
-	 * @param RegisterMapperInterface $registerMapper Resolves the register to scope the read.
-	 * @param SchemaMapperInterface $schemaMapper Resolves the schema to scope the read.
-	 * @param IEventDispatcher $eventDispatcher Dispatches the event.
-	 * @param IUserSession $userSession Restores the acting user for the dispatch.
-	 * @param IUserManager $userManager Resolves the acting user by uid.
-	 * @param LoggerInterface $logger The logger.
+	 * @param ITimeFactory                $time     Clock for the job base class.
+	 * @param DeferredObjectEventLookup   $lookup   Object, register and schema mappers for the scoped re-read.
+	 * @param DeferredObjectEventActor    $actor    Session and user manager that restore the acting user.
+	 * @param DeferredObjectEventPlatform $platform Event dispatcher and logger.
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly IUserSession $userSession,
-		private readonly IUserManager $userManager,
-		private readonly LoggerInterface $logger,
+		private readonly DeferredObjectEventLookup $lookup,
+		private readonly DeferredObjectEventActor $actor,
+		private readonly DeferredObjectEventPlatform $platform,
 	) {
 		parent::__construct(time: $time);
-
 	}//end __construct()
 
 	/**
@@ -100,58 +89,13 @@ class DeferredObjectEventJob extends QueuedJob {
 			return;
 		}
 
-		$registerId = (int)(((array)$argument)['registerId'] ?? 0);
-		$schemaId = (int)(((array)$argument)['schemaId'] ?? 0);
-		$actingUid = (string)(((array)$argument)['user'] ?? '');
-
-		// Restore the acting user for the dispatch. A background job has no
-		// session, and OpenRegister reads are organisation-filtered against the
-		// session user — so listeners that consult the register (the CloudEvent
-		// firehose gate is the clearest example) see an empty instance and skip.
-		// Verified 2026-07-29: dispatching without this ran clean, logged
-		// nothing, and produced zero CloudEvents where the inline path produced
-		// one. Deferring side effects without carrying identity does not move
-		// the work — it deletes it.
-		$restored = false;
-		if ($actingUid !== '') {
-			$actingUser = $this->userManager->get($actingUid);
-			if ($actingUser !== null) {
-				$this->userSession->setUser($actingUser);
-				$restored = true;
-			}
-		}
-
-		if ($restored === false) {
-			$this->logger->warning(
-				message: '[DeferredObjectEventJob] No acting user for ' . $uuid
-					. '; listeners that read organisation-scoped data will see nothing.',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'uid' => $actingUid]
-			);
-		}
-
+		$restored = $this->restoreActingUser(uid: (string)(((array)$argument)['user'] ?? ''), uuid: $uuid);
 		try {
-			$register = null;
-			$schema = null;
-			if ($registerId > 0) {
-				$register = $this->registerMapper->find($registerId);
-			}
-
-			if ($schemaId > 0) {
-				$schema = $this->schemaMapper->find($schemaId);
-			}
-
-			// Scoped read: the register and schema are known, so this never
-			// reaches the cross-table fan-out.
-			$object = $this->objectMapper->find(
-				identifier: $uuid,
-				register: $register,
-				schema: $schema,
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
+			$this->dispatchCreated(
+				uuid: $uuid,
+				registerId: (int)(((array)$argument)['registerId'] ?? 0),
+				schemaId: (int)(((array)$argument)['schemaId'] ?? 0)
 			);
-
-			(new ObjectEventGate(events: $this->eventDispatcher))->created(object: $object);
 		} catch (Throwable $e) {
 			// The object may legitimately be gone by now — a create followed by
 			// a delete before the queue drained — so this is not an error. It is
@@ -160,7 +104,7 @@ class DeferredObjectEventJob extends QueuedJob {
 			// does not run, and the default loglevel (2 = warning) would hide an
 			// INFO line. A side effect that vanished must be visible at the
 			// level operators actually keep.
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[DeferredObjectEventJob] Could not dispatch deferred event for ' . $uuid . ': ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
 			);
@@ -168,9 +112,82 @@ class DeferredObjectEventJob extends QueuedJob {
 			// Do not leave the impersonation standing for whatever job the
 			// worker runs next out of the same process.
 			if ($restored === true) {
-				$this->userSession->setUser(null);
+				$this->actor->userSession->setUser(null);
 			}
 		}//end try
 
 	}//end run()
+
+	/**
+	 * Restore the acting user for the dispatch.
+	 *
+	 * A background job has no session, and OpenRegister reads are
+	 * organisation-filtered against the session user — so listeners that
+	 * consult the register (the CloudEvent firehose gate is the clearest
+	 * example) see an empty instance and skip. Verified 2026-07-29:
+	 * dispatching without this ran clean, logged nothing, and produced zero
+	 * CloudEvents where the inline path produced one. Deferring side effects
+	 * without carrying identity does not move the work — it deletes it.
+	 *
+	 * @param string $uid  The acting user's uid, empty when none was captured.
+	 * @param string $uuid The object's uuid, for the warning.
+	 *
+	 * @return bool Whether a user was set on the session.
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	private function restoreActingUser(string $uid, string $uuid): bool {
+		$actingUser = null;
+		if ($uid !== '') {
+			$actingUser = $this->actor->userManager->get($uid);
+		}
+
+		if ($actingUser === null) {
+			$this->platform->logger->warning(
+				message: '[DeferredObjectEventJob] No acting user for ' . $uuid
+					. '; listeners that read organisation-scoped data will see nothing.',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'uid' => $uid]
+			);
+			return false;
+		}
+
+		$this->actor->userSession->setUser($actingUser);
+		return true;
+	}//end restoreActingUser()
+
+	/**
+	 * Re-read the object, scoped to its register and schema, and dispatch its created event.
+	 *
+	 * @param string $uuid       The object's uuid.
+	 * @param int    $registerId The register id, 0 when unknown.
+	 * @param int    $schemaId   The schema id, 0 when unknown.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	private function dispatchCreated(string $uuid, int $registerId, int $schemaId): void {
+		$register = null;
+		$schema = null;
+		if ($registerId > 0) {
+			$register = $this->lookup->registerMapper->find($registerId);
+		}
+
+		if ($schemaId > 0) {
+			$schema = $this->lookup->schemaMapper->find($schemaId);
+		}
+
+		// Scoped read: the register and schema are known, so this never
+		// reaches the cross-table fan-out.
+		$object = $this->lookup->objectMapper->find(
+			identifier: $uuid,
+			register: $register,
+			schema: $schema,
+			includeDeleted: false,
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		(new ObjectEventGate(events: $this->platform->eventDispatcher))->created(object: $object);
+	}//end dispatchCreated()
 }//end class

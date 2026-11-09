@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Handoff\HandoffService;
+use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -57,12 +57,12 @@ class HandoffQueueDrainJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory.
-	 * @param HandoffService $handoffService The handoff engine (drain surface).
+	 * @param HandoffServiceInterface $handoffService The handoff engine (drain surface).
 	 * @param LoggerInterface $logger Structured logging.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly HandoffService $handoffService,
+		private readonly HandoffServiceInterface $handoffService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

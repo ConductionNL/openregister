@@ -21,10 +21,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Service\File\FileRestrictionService;
-use OCA\OpenRegister\Service\File\FileRestrictionStore;
+use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Files\Service\File\FileRestriction;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionService;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionRecords;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -53,21 +55,20 @@ class FileRestrictionServiceTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$this->service = new FileRestrictionService(
-			$this->store,
-			$this->createMock(FileRestrictionGuard::class),
-			$session,
-			new NullLogger(),
-			$this->fileMapper
+			records: new FileRestrictionRecords(
+				store: $this->store,
+				guard: $this->createMock(FileRestrictionGuard::class)
+			),
+			userSession: $session,
+			logger: new NullLogger(),
+			fileMapper: $this->fileMapper
 		);
 	}//end setUp()
 
 	public function testARestrictionIsStoredWithWhoSetIt(): void {
 		$this->store->expects($this->once())->method('save')->with(
 			42,
-			['pieter', '1001'],
-			['woo-team'],
-			'Commercially sensitive prices',
-			'pieter',
+			$this->equalTo(new FileRestriction(['pieter', '1001'], ['woo-team'], 'Commercially sensitive prices', 'pieter')),
 			$this->isInstanceOf(\DateTimeImmutable::class)
 		);
 		$this->store->method('find')->willReturn(['fileId' => 42]);

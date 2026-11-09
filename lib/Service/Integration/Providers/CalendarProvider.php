@@ -54,6 +54,7 @@ use Throwable;
  * Calendar (CalDAV / Meetings) integration provider.
  */
 class CalendarProvider extends AbstractIntegrationProvider {
+	use LinkTableAppDescriptor;
 
 	/**
 	 * NC app id that must be installed/enabled for this integration.
@@ -63,23 +64,37 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'calendar';
 
 	/**
+	 * Legacy X-OR-* CalDAV service.
+	 *
+	 * @var CalendarEventService
+	 */
+	private CalendarEventService $calendarEventService;
+
+	/**
+	 * Tier-2 link-table service (UNION read path).
+	 *
+	 * @var CalendarLinkService
+	 */
+	private CalendarLinkService $calendarLinkService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param CalendarEventService $calendarEventService Legacy X-OR-* CalDAV service.
-	 * @param CalendarLinkService $calendarLinkService Tier-2 link-table service (UNION read path).
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 * @param LoggerInterface $logger PSR-3 logger for surfacing CalDAV failures.
+	 * @param CalendarProviderServices $calendar   The calendar event and link services.
+	 * @param IAppManager              $appManager NC app manager.
+	 * @param IL10N                    $l10n       Localisation.
+	 * @param LoggerInterface          $logger     PSR-3 logger for surfacing CalDAV failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private CalendarEventService $calendarEventService,
-		private CalendarLinkService $calendarLinkService,
+		CalendarProviderServices $calendar,
 		private IAppManager $appManager,
 		private IL10N $l10n,
 		private LoggerInterface $logger,
 	) {
+		$this->calendarEventService = $calendar->calendarEventService;
+		$this->calendarLinkService = $calendar->calendarLinkService;
 	}//end __construct()
 
 	/**
@@ -127,39 +142,6 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	}//end getGroup()
 
 	/**
-	 * Nextcloud app that must be installed for this integration.
-	 *
-	 * @return string|null
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	/**
-	 * Registry routing classification (not literal physical storage — see class docblock).
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	/**
-	 * Whether the required NC app is installed.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
-
-	/**
 	 * List VEVENTs linked to an OR object.
 	 *
 	 * Filters are accepted but currently ignored — CalendarEventService
@@ -202,17 +184,10 @@ class CalendarProvider extends AbstractIntegrationProvider {
 			// for link-table providers) but does NOT mandate silent
 			// failure: surface the cause so an empty Meetings tab can
 			// be diagnosed from nextcloud.log instead of guessing.
+			$scope = ['objectId' => $objectId, 'register' => $register, 'schema' => $schema, 'exception' => $e];
 			$this->logger->warning(
 				'CalendarProvider::list() failed; degrading to empty list',
-				[
-					'app' => 'openregister',
-					'provider' => self::class,
-					'method' => 'list',
-					'objectId' => $objectId,
-					'register' => $register,
-					'schema' => $schema,
-					'exception' => $e,
-				]
+				['app' => 'openregister', 'provider' => self::class, 'method' => 'list'] + $scope
 			);
 			return [];
 		}//end try
@@ -242,6 +217,7 @@ class CalendarProvider extends AbstractIntegrationProvider {
 		$parts = explode('/', $entityId, 2);
 		if (count($parts) === 2) {
 			[$calendarId, $eventUri] = $parts;
+			$this->calendarEventService->requireEventOf(objectUuid: $objectId, calendarId: $calendarId, eventUri: $eventUri);
 			$this->calendarEventService->unlinkEvent(calendarId: $calendarId, eventUri: $eventUri);
 			return;
 		}

@@ -28,7 +28,6 @@
 import { translate as t } from '@nextcloud/l10n'
 import { NcSelect } from '@nextcloud/vue'
 import { scopePickers } from '../services/scopePickers.js'
-import { registerStore } from '../store/store.js'
 
 /**
  * The register and schema filters of a list sidebar.
@@ -40,15 +39,6 @@ export default {
 	components: { NcSelect },
 	mixins: [scopePickers],
 	emits: ['registerChange', 'schemaChange'],
-	computed: {
-		/**
-		 * @spec exclude whether a register is picked, UI plumbing
-		 */
-		hasRegister() {
-			return !!registerStore.registerItem
-		},
-	},
-
 	methods: { t },
 }
 </script>

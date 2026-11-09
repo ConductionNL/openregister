@@ -11,12 +11,12 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch"
+                        ]
                     }
                 ]
             },
@@ -256,12 +256,12 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch"
+                        ]
                     }
                 ]
             },
@@ -499,12 +499,12 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch"
+                        ]
                     }
                 ]
             },
@@ -746,11 +746,11 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "p.json"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path"
+                        ]
                     }
                 ]
             },
@@ -999,12 +999,12 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch"
+                        ]
                     }
                 ]
             },
@@ -1246,12 +1246,12 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch"
+                        ]
                     }
                 ]
             },
@@ -1290,14 +1290,14 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev",
-                            "syncEnabled": false,
-                            "syncInterval": "12"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch",
+                            "syncEnabled",
+                            "syncInterval"
+                        ]
                     }
                 ]
             },
@@ -1551,12 +1551,12 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch"
+                        ]
                     }
                 ]
             },
@@ -1592,12 +1592,12 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch"
+                        ]
                     }
                 ]
             },
@@ -1633,12 +1633,12 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch"
+                        ]
                     }
                 ]
             },
@@ -1674,12 +1674,12 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch"
+                        ]
                     }
                 ]
             },
@@ -1715,12 +1715,12 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch"
+                        ]
                     }
                 ]
             },
@@ -1756,12 +1756,12 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch"
+                        ]
                     }
                 ]
             },
@@ -1797,12 +1797,12 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from gitlab",
                     {
-                        "params": {
-                            "namespace": "acme",
-                            "project": "conf",
-                            "path": "c/d.json",
-                            "ref": "release"
-                        }
+                        "fields": [
+                            "namespace",
+                            "project",
+                            "path",
+                            "ref"
+                        ]
                     }
                 ]
             },
@@ -2077,12 +2077,12 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch"
+                        ]
                     }
                 ]
             },
@@ -2270,9 +2270,9 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme"
-                        }
+                        "fields": [
+                            "owner"
+                        ]
                     }
                 ]
             },
@@ -2329,13 +2329,13 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from github",
                     {
-                        "params": {
-                            "owner": "acme",
-                            "repo": "conf",
-                            "path": "a/b.json",
-                            "branch": "dev",
-                            "syncEnabled": "true"
-                        }
+                        "fields": [
+                            "owner",
+                            "repo",
+                            "path",
+                            "branch",
+                            "syncEnabled"
+                        ]
                     }
                 ]
             },
@@ -2586,9 +2586,9 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from url",
                     {
-                        "params": {
-                            "url": "not a url"
-                        }
+                        "fields": [
+                            "url"
+                        ]
                     }
                 ]
             },
@@ -2616,7 +2616,7 @@
                 "logger.debug": [
                     "[ConfigurationController] Importing configuration from url",
                     {
-                        "params": []
+                        "fields": []
                     }
                 ]
             },

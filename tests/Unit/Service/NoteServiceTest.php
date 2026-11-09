@@ -12,9 +12,11 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Exception\NoteLockedException;
-use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\NoteVersionService;
+use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteAccounts;
+use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
@@ -42,22 +44,21 @@ class NoteServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->visibility = new TimelineVisibilityService(
-			$this->createMock(SchemaMapper::class),
+			new TimelineVisibilityPlatform($this->createMock(SchemaMapper::class), $this->userSession, $this->logger),
 			$this->createMock(PermissionHandler::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->userSession,
-			$this->logger
+			$this->createMock(AuditTrailMapper::class)
 		);
 
 		$this->versions = $this->createMock(NoteVersionService::class);
 
 		$this->service = new NoteService(
-			$this->commentsManager,
-			$this->userSession,
-			$this->userManager,
-			$this->logger,
-			$this->visibility,
-			$this->versions
+			commentsManager: $this->commentsManager,
+			accounts: new NoteAccounts(
+				userSession: $this->userSession,
+				userManager: $this->userManager
+			),
+			visibility: $this->visibility,
+			versions: $this->versions
 		);
 	}
 
@@ -389,7 +390,7 @@ class NoteServiceTest extends TestCase {
 		// kept BEFORE the comment is saved: afterwards it exists nowhere.
 		$this->versions->expects($this->once())
 			->method('record')
-			->with(1, 'Applicant called', 'a', 'users', 'a');
+			->with(1, $this->callback(self::noteReading(message: 'Applicant called', actor: 'a')), 'a');
 		$comment->expects($this->once())
 			->method('setMessage')
 			->with('Applicant called, will send documents');
@@ -407,7 +408,7 @@ class NoteServiceTest extends TestCase {
 
 		$this->versions->expects($this->once())
 			->method('record')
-			->with(1, 'msg', 'handler', 'users', 'supervisor');
+			->with(1, $this->callback(self::noteReading(message: 'msg', actor: 'handler')), 'supervisor');
 
 		$this->service->updateNote(1, 'rewritten', null, true);
 	}
@@ -527,5 +528,62 @@ class NoteServiceTest extends TestCase {
 
 		$this->assertCount(2, $rows);
 		$this->assertSame('Second', $rows[0]['message']);
+	}
+
+	/**
+	 * A comment of the given object.
+	 *
+	 * @param string $objectType The comment's object type.
+	 * @param string $objectId   The comment's object id.
+	 *
+	 * @return IComment
+	 */
+	private function commentOn(string $objectType, string $objectId): IComment {
+		$comment = $this->createMock(IComment::class);
+		$comment->method('getObjectType')->willReturn($objectType);
+		$comment->method('getObjectId')->willReturn($objectId);
+		return $comment;
+	}
+
+	public function testRequireNoteOfAcceptsANoteOfTheObject(): void {
+		$this->commentsManager->method('get')->willReturn($this->commentOn('openregister', 'uuid-mine'));
+
+		$this->service->requireNoteOf('uuid-mine', 5);
+		$this->addToAssertionCount(1);
+	}
+
+	public function testRequireNoteOfRefusesANoteOfAnotherObject(): void {
+		$this->commentsManager->method('get')->willReturn($this->commentOn('openregister', 'uuid-other'));
+
+		$this->expectExceptionCode(404);
+		$this->service->requireNoteOf('uuid-mine', 5);
+	}
+
+	public function testRequireNoteOfRefusesACommentOfAnotherApp(): void {
+		$this->commentsManager->method('get')->willReturn($this->commentOn('files', 'uuid-mine'));
+
+		$this->expectExceptionCode(404);
+		$this->service->requireNoteOf('uuid-mine', 5);
+	}
+
+	public function testRequireNoteOfRefusesAnUnknownNote(): void {
+		$this->commentsManager->method('get')->willThrowException(new \OCP\Comments\NotFoundException());
+
+		$this->expectExceptionCode(404);
+		$this->service->requireNoteOf('uuid-mine', 5);
+	}
+
+	/**
+	 * A check that the comment still reads as the note before the edit.
+	 *
+	 * @param string $message The text it still carries.
+	 * @param string $actor   The actor it is still attributed to.
+	 *
+	 * @return \Closure The check.
+	 */
+	private static function noteReading(string $message, string $actor): \Closure {
+		return static fn (IComment $comment): bool => $comment->getMessage() === $message
+			&& $comment->getActorId() === $actor
+			&& $comment->getActorType() === 'users';
 	}
 }

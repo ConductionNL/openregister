@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Search\Service\Reporting;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
 use Psr\Log\LoggerInterface;
 
@@ -58,24 +58,67 @@ class ReportRenderService {
 	public const FORMATS = ['csv', 'xlsx', 'ods', 'html', 'pdf'];
 
 	/**
+	 * Server-side aggregation runner.
+	 *
+	 * @var AggregationRunnerInterface
+	 */
+	private readonly AggregationRunnerInterface $aggregationRunner;
+
+	/**
+	 * GraphQL executor.
+	 *
+	 * @var GraphQLService
+	 */
+	private readonly GraphQLService $graphqlService;
+
+	/**
+	 * CSV / XLSX / ODS writer.
+	 *
+	 * @var SpreadsheetReportWriter
+	 */
+	private readonly SpreadsheetReportWriter $spreadsheetWriter;
+
+	/**
+	 * HTML writer.
+	 *
+	 * @var HtmlReportWriter
+	 */
+	private readonly HtmlReportWriter $htmlWriter;
+
+	/**
+	 * PDF writer (office server conversion).
+	 *
+	 * @var PdfReportWriter
+	 */
+	private readonly PdfReportWriter $pdfWriter;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param AggregationRunner $aggregationRunner Server-side aggregation runner.
-	 * @param GraphQLService $graphqlService GraphQL executor.
-	 * @param SpreadsheetReportWriter $spreadsheetWriter CSV / XLSX / ODS writer.
-	 * @param HtmlReportWriter $htmlWriter HTML writer.
-	 * @param PdfReportWriter $pdfWriter PDF writer (office server conversion).
-	 * @param LoggerInterface $logger Logger.
+	 * @param AggregationRunnerInterface $aggregationRunner Server-side aggregation runner.
+	 * @param GraphQLService             $graphqlService    GraphQL executor.
+	 * @param ReportWriters              $writers           The spreadsheet, HTML and PDF writers.
+	 * @param LoggerInterface            $logger            Logger.
 	 */
 	public function __construct(
-		private readonly AggregationRunner $aggregationRunner,
-		private readonly GraphQLService $graphqlService,
-		private readonly SpreadsheetReportWriter $spreadsheetWriter,
-		private readonly HtmlReportWriter $htmlWriter,
-		private readonly PdfReportWriter $pdfWriter,
-		private readonly LoggerInterface $logger,
+		AggregationRunnerInterface $aggregationRunner,
+		GraphQLService $graphqlService,
+		ReportWriters $writers,
+		LoggerInterface $logger,
 	) {
-
+		$this->aggregationRunner = $aggregationRunner;
+		$this->graphqlService    = $graphqlService;
+		$this->spreadsheetWriter = $writers->spreadsheetWriter;
+		$this->htmlWriter        = $writers->htmlWriter;
+		$this->pdfWriter         = $writers->pdfWriter;
+		$this->logger            = $logger;
 	}//end __construct()
 
 	/**

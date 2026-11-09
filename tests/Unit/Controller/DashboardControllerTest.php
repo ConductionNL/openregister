@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\DashboardController;
+use OCA\OpenRegister\Search\Controller\DashboardController;
 use DateTime;
 use OCA\OpenRegister\Search\Service\ActivityWindow;
 use OCA\OpenRegister\Search\Service\DashboardAuditReads;
@@ -54,10 +54,12 @@ class DashboardControllerTest extends TestCase {
 		$this->controller = new DashboardController(
 			'openregister',
 			$this->request,
-			$this->dashboardService,
-			$this->logger,
-			$this->userSession,
-			$this->groupManager
+			new \OCA\OpenRegister\Search\Controller\Support\DashboardControllerServices(
+				$this->dashboardService,
+				$this->logger,
+				$this->userSession,
+				$this->groupManager
+			)
 		);
 	}
 
@@ -72,10 +74,12 @@ class DashboardControllerTest extends TestCase {
 		$controller = new DashboardController(
 			'openregister',
 			$this->request,
-			$this->dashboardService,
-			$this->logger,
-			$session,
-			$groupManager
+			new \OCA\OpenRegister\Search\Controller\Support\DashboardControllerServices(
+				$this->dashboardService,
+				$this->logger,
+				$session,
+				$groupManager
+			)
 		);
 
 		// None of the tenant-wide aggregations must be computed for a non-admin.

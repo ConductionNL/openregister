@@ -5,26 +5,7 @@
 		:loading="loading"
 		:loadingMessage="t('openregister', 'Loading RBAC settings...')">
 		<template #actions>
-			<NcButton
-				variant="error"
-				:disabled="loading || saving || rebasing"
-				@click="showRebaseDialog">
-				<template #icon>
-					<NcLoadingIcon v-if="rebasing" :size="20" />
-					<Refresh v-else :size="20" />
-				</template>
-				Rebase
-			</NcButton>
-			<NcButton
-				variant="primary"
-				:disabled="loading || saving || rebasing"
-				@click="saveSettings">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<Save v-else :size="20" />
-				</template>
-				Save
-			</NcButton>
+			<SectionSaveActions v-bind="saveActions" />
 		</template>
 
 		<!-- Section Description -->
@@ -168,36 +149,29 @@
 <script>
 import { translate as t } from '@nextcloud/l10n'
 import {
-	NcButton,
 	NcCheckboxRadioSwitch,
-	NcLoadingIcon,
 	NcSelect,
 } from '@nextcloud/vue'
 /**
  * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
  */
-import { mapStores } from 'pinia'
-import Save from 'vue-material-design-icons/ContentSave.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { useSettingsStore } from '../../../store/settings.js'
+import SectionSaveActions from './SectionSaveActions.vue'
+import { settingsSectionState } from './settingsSectionState.js'
 
 export default {
 	name: 'RbacConfiguration',
 
 	components: {
+		SectionSaveActions,
 		SettingsSection,
-		NcButton,
-		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
 		NcSelect,
-		Refresh,
-		Save,
 	},
 
-	computed: {
-		...mapStores(useSettingsStore),
+	mixins: [settingsSectionState],
 
+	computed: {
 		rbacOptions: {
 			/**
 			 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
@@ -228,37 +202,9 @@ export default {
 		userOptions() {
 			return this.settingsStore.userOptions
 		},
-
-		/**
-		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
-		 */
-		loading() {
-			return this.settingsStore.loading
-		},
-
-		/**
-		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
-		 */
-		saving() {
-			return this.settingsStore.saving
-		},
-
-		/**
-		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
-		 */
-		rebasing() {
-			return this.settingsStore.rebasing
-		},
 	},
 
 	methods: {
-		/**
-		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
-		 */
-		showRebaseDialog() {
-			this.settingsStore.showRebaseDialog()
-		},
-
 		/**
 		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */

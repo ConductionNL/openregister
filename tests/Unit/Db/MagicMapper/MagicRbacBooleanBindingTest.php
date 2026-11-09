@@ -27,6 +27,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacMatchSql;
+use OCA\OpenRegister\Db\MagicMapper\RbacQueryMatch;
+use OCA\OpenRegister\Db\MagicMapper\RbacSqlDialect;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -43,7 +46,6 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
-use ReflectionMethod;
 
 class MagicRbacBooleanBindingTest extends TestCase {
 
@@ -79,6 +81,20 @@ class MagicRbacBooleanBindingTest extends TestCase {
 			)
 		);
 	}//end handler()
+
+	/**
+	 * The QueryBuilder `match` compiler the list query uses; dynamic tokens resolve to themselves.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return RbacQueryMatch
+	 */
+	private function queryMatch(IQueryBuilder $qb): RbacQueryMatch {
+		$conditionMatcher = $this->createMock(ConditionMatcher::class);
+		$conditionMatcher->method('resolveDynamicValue')->willReturnArgument(0);
+
+		return new RbacQueryMatch($qb, new RbacMatchSql($conditionMatcher, new RbacSqlDialect($this->createMock(ContainerInterface::class), new NullLogger())));
+	}//end queryMatch()
 
 	/**
 	 * A query builder that binds parameters the way PDO does against PostgreSQL.
@@ -138,11 +154,8 @@ class MagicRbacBooleanBindingTest extends TestCase {
 	 * @return void
 	 */
 	public function testAMatchOnFalseBindsABoolean(): void {
-		$method = new ReflectionMethod(MagicRbacHandler::class, 'buildPropertyCondition');
-		$method->setAccessible(true);
-
-		$this->assertSame('eq(t.is_private,false)', $method->invoke($this->handler(), $this->pgsqlQueryBuilder(), 'isPrivate', false));
-		$this->assertSame('eq(t.is_private,true)', $method->invoke($this->handler(), $this->pgsqlQueryBuilder(), 'isPrivate', true));
+		$this->assertSame('eq(t.is_private,false)', $this->queryMatch($this->pgsqlQueryBuilder())->propertyCondition('isPrivate', false));
+		$this->assertSame('eq(t.is_private,true)', $this->queryMatch($this->pgsqlQueryBuilder())->propertyCondition('isPrivate', true));
 	}//end testAMatchOnFalseBindsABoolean()
 
 	/**
@@ -151,11 +164,8 @@ class MagicRbacBooleanBindingTest extends TestCase {
 	 * @return void
 	 */
 	public function testAComparisonOperatorOnABooleanBindsABoolean(): void {
-		$method = new ReflectionMethod(MagicRbacHandler::class, 'buildOperatorCondition');
-		$method->setAccessible(true);
-
-		$this->assertSame('eq(t.is_private,false)', $method->invoke($this->handler(), $this->pgsqlQueryBuilder(), 'is_private', ['$eq' => false]));
-		$this->assertSame('neq(t.is_private,true)', $method->invoke($this->handler(), $this->pgsqlQueryBuilder(), 'is_private', ['$ne' => true]));
+		$this->assertSame('eq(t.is_private,false)', $this->queryMatch($this->pgsqlQueryBuilder())->operatorConditions('is_private', ['$eq' => false]));
+		$this->assertSame('neq(t.is_private,true)', $this->queryMatch($this->pgsqlQueryBuilder())->operatorConditions('is_private', ['$ne' => true]));
 	}//end testAComparisonOperatorOnABooleanBindsABoolean()
 
 	/**
@@ -164,11 +174,8 @@ class MagicRbacBooleanBindingTest extends TestCase {
 	 * @return void
 	 */
 	public function testStringsAndNumbersAreBoundAsBefore(): void {
-		$method = new ReflectionMethod(MagicRbacHandler::class, 'buildPropertyCondition');
-		$method->setAccessible(true);
-
-		$this->assertSame('eq(t.status,:"open")', $method->invoke($this->handler(), $this->pgsqlQueryBuilder(), 'status', 'open'));
-		$this->assertSame('eq(t.level,:3)', $method->invoke($this->handler(), $this->pgsqlQueryBuilder(), 'level', 3));
+		$this->assertSame('eq(t.status,:"open")', $this->queryMatch($this->pgsqlQueryBuilder())->propertyCondition('status', 'open'));
+		$this->assertSame('eq(t.level,:3)', $this->queryMatch($this->pgsqlQueryBuilder())->propertyCondition('level', 3));
 	}//end testStringsAndNumbersAreBoundAsBefore()
 
 	/**

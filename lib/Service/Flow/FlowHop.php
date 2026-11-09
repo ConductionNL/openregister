@@ -44,19 +44,39 @@ abstract class FlowHop {
 	public readonly float $startedAt;
 
 	/**
+	 * The transition being fired.
+	 *
+	 * @var object
+	 */
+	public readonly object $transition;
+
+	/**
+	 * The step configuration for the transition.
+	 *
+	 * @var array
+	 */
+	public readonly array $step;
+
+	/**
+	 * The items on the transition's input places.
+	 *
+	 * @var array<int, mixed>
+	 */
+	public readonly array $itemsIn;
+
+	/**
 	 * Constructor. The start moment is taken when the hop is made.
 	 *
-	 * @param FlowWalkPass|FlowStreamPass $owner      The pass the hop belongs to.
-	 * @param object                     $transition The transition being fired.
-	 * @param array                      $step       The step configuration for the transition.
-	 * @param array<int, mixed>          $itemsIn    The items on the transition's input places.
+	 * @param FlowWalkPass|FlowStreamPass $owner The pass the hop belongs to.
+	 * @param FlowHopPlan                 $plan  The transition, its step and its items.
 	 */
 	public function __construct(
 		private readonly FlowWalkPass|FlowStreamPass $owner,
-		public readonly object $transition,
-		public readonly array $step,
-		public readonly array $itemsIn,
+		FlowHopPlan $plan,
 	) {
+		$this->transition = $plan->transition;
+		$this->step = $plan->step;
+		$this->itemsIn = $plan->itemsIn;
 		$this->startedAt = microtime(true);
 	}//end __construct()
 

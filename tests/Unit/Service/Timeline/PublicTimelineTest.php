@@ -32,7 +32,7 @@ namespace Unit\Service\Timeline;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;

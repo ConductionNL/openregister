@@ -473,7 +473,7 @@ jobs:
       #
       # There is no .js/.json parity leg: l10n/*.js is the browser catalogue and
       # l10n/*.json the PHP one, separate sets with separate consumers.
-      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n"]'
+      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n", "test:coverage-ratchet"]'
       # ── Cost controls (see ConductionNL/.github#596, #599) ───────────────
       #
       # The fleet's CI was not slow, it was QUEUED. A Code Quality run does

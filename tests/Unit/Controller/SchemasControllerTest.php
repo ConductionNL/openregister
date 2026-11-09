@@ -9,6 +9,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -22,7 +23,7 @@ use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
@@ -135,11 +136,11 @@ class SchemasControllerTest extends TestCase {
 					return $groupManager;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\SchemaDeletionService::class) {
+				if ($id === \OCA\OpenRegister\Service\SchemaTeardownInterface::class) {
 					return $schemaDeletionService;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\Form\FormDependentsCheck::class) {
+				if ($id === \OCA\OpenRegister\Service\Form\FormDependentsCheckInterface::class) {
 					return $this->formCheck;
 				}
 
@@ -1791,8 +1792,7 @@ class SchemasControllerTest extends TestCase {
 		$jsonLdContext->method('getImplementedTypes')->willReturn($implementedTypes);
 
 		$resolver = new \OCA\OpenRegister\Service\SemanticTypeResolver(
-			$schemaMapper,
-			$registerMapper,
+			new RegisterSchemaMappers($registerMapper, $schemaMapper),
 			$jsonLdContext,
 			$this->logger,
 			null

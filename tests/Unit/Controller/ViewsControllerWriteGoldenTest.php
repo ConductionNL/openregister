@@ -9,11 +9,12 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Controller\ViewsController;
+use OCA\OpenRegister\Search\Controller\ViewsController;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
@@ -32,8 +33,8 @@ use Psr\Log\LoggerInterface;
  * nothing, so a forged owner or userId in the body shows up as a refusal or
  * as a different recorded uid. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
- * @covers \OCA\OpenRegister\Controller\ViewsController
- * @uses \OCA\OpenRegister\Controller\Support\ViewPatch
+ * @covers \OCA\OpenRegister\Search\Controller\ViewsController
+ * @uses \OCA\OpenRegister\Search\Controller\Support\ViewPatch
  * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
@@ -109,10 +110,12 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 		$controller = new ViewsController(
 			'openregister',
 			$request,
-			$this->viewService($case),
-			$this->createMock(ViewPresentationService::class),
-			$logger,
-			$this->resolver($case)
+			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
+				$this->viewService($case),
+				$this->createMock(ViewPresentationService::class),
+				$logger,
+				$this->resolver($case)
+			)
 		);
 
 		$response = match ($case['action']) {
@@ -187,7 +190,8 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 				}
 
 				$view = new View();
-				$view->setName($args['name'] ?? $args[0] ?? 'saved');
+				$first = $args['name'] ?? $args[0] ?? 'saved';
+				$view->setName($first instanceof ViewDefinition ? $first->name : $first);
 				$view->setOwner('saved-owner');
 				return $view;
 			});

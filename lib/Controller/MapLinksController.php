@@ -38,7 +38,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\MapLinkService;
+use OCA\OpenRegister\Service\MapLinkServiceInterface;
 use OCA\OpenRegister\Service\PoiDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
@@ -59,13 +59,13 @@ class MapLinksController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param MapLinkService $mapLinkService Backing service.
+	 * @param MapLinkServiceInterface $mapLinkService Backing service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly MapLinkService $mapLinkService,
+		private readonly MapLinkServiceInterface $mapLinkService,
 		private readonly ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(appName: $appName, request: $request);

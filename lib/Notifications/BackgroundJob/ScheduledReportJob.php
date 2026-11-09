@@ -42,7 +42,6 @@ use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Search\BackgroundJob\ReportRenderJob;
 
 /**
  * Hourly scheduled-report deliverer.

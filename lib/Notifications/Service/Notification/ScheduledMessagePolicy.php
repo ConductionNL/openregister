@@ -116,6 +116,10 @@ class ScheduledMessagePolicy {
 	/**
 	 * Whether this row may be claimed by a sweep running now.
 	 *
+	 * Cancellation wins over being due, over being claimed, over everything:
+	 * the window between somebody pressing cancel and the sweep reading the
+	 * row is exactly when this matters.
+	 *
 	 * @param array<string,mixed> $message The stored row.
 	 * @param DateTimeImmutable   $now     The moment the sweep is running.
 	 *
@@ -124,17 +128,7 @@ class ScheduledMessagePolicy {
 	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md
 	 */
 	public function isClaimable(array $message, DateTimeImmutable $now): bool {
-		$state = (string)($message['state'] ?? self::PENDING);
-
-		// Cancellation wins over being due, over being claimed, over
-		// everything. The window between somebody pressing cancel and the
-		// sweep reading the row is exactly when this matters.
-		if ($state === self::CANCELLED || $state === self::SENT || $state === self::PARKED) {
-			return false;
-		}
-
-		if ($state === self::CLAIMED && $this->claimIsFresh(message: $message, now: $now) === true) {
-			// Another worker holds it and is still within its window.
+		if ($this->isClosed(message: $message) === true || $this->isHeld(message: $message, now: $now) === true) {
 			return false;
 		}
 
@@ -146,11 +140,50 @@ class ScheduledMessagePolicy {
 	}//end isClaimable()
 
 	/**
+	 * Whether the row is cancelled, sent or parked.
+	 *
+	 * @param array<string,mixed> $message The row.
+	 *
+	 * @return bool
+	 */
+	private function isClosed(array $message): bool {
+		return in_array(self::stateOf(message: $message), [self::CANCELLED, self::SENT, self::PARKED], true);
+	}//end isClosed()
+
+	/**
+	 * Whether another worker holds the row and is still within its window.
+	 *
+	 * @param array<string,mixed> $message The row.
+	 * @param DateTimeImmutable   $now     Now.
+	 *
+	 * @return bool
+	 */
+	private function isHeld(array $message, DateTimeImmutable $now): bool {
+		return self::stateOf(message: $message) === self::CLAIMED && $this->claimIsFresh(message: $message, now: $now) === true;
+	}//end isHeld()
+
+	/**
+	 * The row's state; a row without one is pending.
+	 *
+	 * @param array<string,mixed> $message The row.
+	 *
+	 * @return string
+	 */
+	private static function stateOf(array $message): string {
+		return (string)($message['state'] ?? self::PENDING);
+	}//end stateOf()
+
+	/**
 	 * Whether a message's moment has come.
 	 *
 	 * A `sendAt` in the PAST sends now rather than being skipped: a sweep that
 	 * missed its window because the server was down must still deliver, and a
 	 * message silently abandoned for being late is the worst of both.
+	 *
+	 * No moment named means send at the first opportunity, which is what an
+	 * immediate send through the same table looks like. An unparseable moment
+	 * is NOT treated as "now": a typo would then send immediately, which is the
+	 * one outcome nobody asked for.
 	 *
 	 * @param array<string,mixed> $message The row.
 	 * @param DateTimeImmutable   $now     Now.
@@ -160,21 +193,12 @@ class ScheduledMessagePolicy {
 	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md
 	 */
 	public function isDue(array $message, DateTimeImmutable $now): bool {
-		$sendAt = trim((string)($message['sendAt'] ?? ''));
-		if ($sendAt === '') {
-			// No moment named means send at the first opportunity, which is
-			// what an immediate send through the same table looks like.
+		$moment = $this->momentOf(message: $message, field: 'sendAt');
+		if ($moment === null) {
 			return true;
 		}
 
-		$moment = strtotime($sendAt);
-		if ($moment === false) {
-			// An unparseable moment is NOT treated as "now": a typo would then
-			// send immediately, which is the one outcome nobody asked for.
-			return false;
-		}
-
-		return ($moment <= $now->getTimestamp());
+		return ($moment !== false && $moment <= $now->getTimestamp());
 	}//end isDue()
 
 	/**
@@ -194,23 +218,35 @@ class ScheduledMessagePolicy {
 	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md
 	 */
 	public function claim(array $message, string $worker, DateTimeImmutable $now): array {
+		$expect = $this->expected(message: $message);
 		return [
-			// The STATE and the attempt count are both compared: two sweeps
-			// that read the same pending row write different attempt counts,
-			// so whichever lands second finds the row changed and backs off.
-			'expect' => [
-				'id' => (string)($message['id'] ?? ''),
-				'state' => (string)($message['state'] ?? self::PENDING),
-				'attempts' => (int)($message['attempts'] ?? 0),
-			],
+			'expect' => $expect,
 			'set' => [
 				'state' => self::CLAIMED,
-				'attempts' => ((int)($message['attempts'] ?? 0) + 1),
+				'attempts' => ($expect['attempts'] + 1),
 				'claimedBy' => $worker,
 				'claimedAt' => $now->format('c'),
 			],
 		];
 	}//end claim()
+
+	/**
+	 * What a claim compares. The STATE and the attempt count are both
+	 * compared: two sweeps that read the same pending row write different
+	 * attempt counts, so whichever lands second finds the row changed and
+	 * backs off.
+	 *
+	 * @param array<string,mixed> $message The row.
+	 *
+	 * @return array{id:string,state:string,attempts:int}
+	 */
+	private function expected(array $message): array {
+		return [
+			'id' => (string)($message['id'] ?? ''),
+			'state' => self::stateOf(message: $message),
+			'attempts' => (int)($message['attempts'] ?? 0),
+		];
+	}//end expected()
 
 	/**
 	 * What to write when a send failed.
@@ -253,24 +289,33 @@ class ScheduledMessagePolicy {
 	/**
 	 * Whether a claim is still within its window.
 	 *
+	 * Claimed with no moment recorded, or an unparseable one: the claim is
+	 * treated as stale rather than as eternal, or the row is stuck for ever.
+	 *
 	 * @param array<string,mixed> $message The row.
 	 * @param DateTimeImmutable   $now     Now.
 	 *
 	 * @return bool True when another worker still holds it.
 	 */
 	private function claimIsFresh(array $message, DateTimeImmutable $now): bool {
-		$claimedAt = trim((string)($message['claimedAt'] ?? ''));
-		if ($claimedAt === '') {
-			// Claimed with no moment recorded: treat the claim as stale rather
-			// than as eternal, or the row is stuck for ever.
-			return false;
-		}
-
-		$moment = strtotime($claimedAt);
-		if ($moment === false) {
-			return false;
-		}
-
-		return (($moment + self::CLAIM_SECONDS) > $now->getTimestamp());
+		$moment = $this->momentOf(message: $message, field: 'claimedAt');
+		return (is_int($moment) === true && ($moment + self::CLAIM_SECONDS) > $now->getTimestamp());
 	}//end claimIsFresh()
+
+	/**
+	 * A timestamp field of the row.
+	 *
+	 * @param array<string,mixed> $message The row.
+	 * @param string              $field   The field name.
+	 *
+	 * @return int|false|null Null when blank, false when unparseable.
+	 */
+	private function momentOf(array $message, string $field): int|false|null {
+		$text = trim((string)($message[$field] ?? ''));
+		if ($text === '') {
+			return null;
+		}
+
+		return strtotime($text);
+	}//end momentOf()
 }//end class

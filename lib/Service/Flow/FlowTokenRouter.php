@@ -141,32 +141,40 @@ class FlowTokenRouter {
 		// among unconditioned exits, one an item is tagged for — by exit id or
 		// by target place — beats the plain declaration-order else.
 		$tags = $this->routedTags(items: $items);
-		$tagged = null;
-		$fallback = null;
+		return $this->chooseExit(
+			flow: $flow,
+			exits: $node['exits'],
+			routing: ['nodeId' => $transition->getName(), 'candidates' => $all, 'data' => $data, 'tags' => $tags]
+		);
+	}//end takenExits()
 
-		foreach ($node['exits'] as $exit) {
-			if (is_array($exit) === false) {
-				continue;
-			}
+	/**
+	 * Try a node's exits in declaration order and return the places of the one taken.
+	 *
+	 * @param array<string, mixed> $flow    The flow document.
+	 * @param array<int, mixed>    $exits   The node's declared exits.
+	 * @param array<string, mixed> $routing The firing node (`nodeId`), its output places (`candidates`), the expression data (`data`) and the items' tags (`tags`).
+	 *
+	 * @return array<string> The output places that receive the token.
+	 *
+	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 */
+	private function chooseExit(array $flow, array $exits, array $routing): array {
+		$nodeId = $routing['nodeId'];
+		$candidates = $routing['candidates'];
+		$data = $routing['data'];
+		$tags = $routing['tags'];
+		$defaults = ['tagged' => null, 'fallback' => null];
 
-			$exitId = (string)($exit['id'] ?? '');
-			$targets = $this->placesForExit(
-				flow: $flow,
-				nodeId: $transition->getName(),
-				exitId: $exitId,
-				candidates: $all
-			);
+		foreach ($exits as $exit) {
+			$targets = $this->targetsOfExit(flow: $flow, nodeId: $nodeId, exit: $exit, candidates: $candidates);
 			if (empty($targets) === true) {
 				continue;
 			}
 
-			$condition = ($exit['condition'] ?? null);
-			if (is_array($condition) === false || $condition === []) {
-				if ($this->exitIsTagged(exitId: $exitId, targets: $targets, tags: $tags) === true) {
-					$tagged = ($tagged ?? $targets);
-				}
-
-				$fallback = ($fallback ?? $targets);
+			$condition = $this->guardOf(exit: $exit);
+			if ($condition === null) {
+				$defaults = $this->noteDefault(defaults: $defaults, exitId: (string)($exit['id'] ?? ''), targets: $targets, tags: $tags);
 				continue;
 			}
 
@@ -180,8 +188,72 @@ class FlowTokenRouter {
 		// node is required to have one, so reaching null here means the
 		// document got past the builder's guard and the token would vanish —
 		// return nothing rather than silently broadcasting to every branch.
-		return ($tagged ?? $fallback ?? []);
-	}//end takenExits()
+		return ($defaults['tagged'] ?? $defaults['fallback'] ?? []);
+	}//end chooseExit()
+
+	/**
+	 * The output places one declared exit reaches; none for a malformed exit.
+	 *
+	 * @param array<string, mixed> $flow       The flow document.
+	 * @param string               $nodeId     The firing node.
+	 * @param mixed                $exit       The declared exit.
+	 * @param array<string>        $candidates The transition's output places.
+	 *
+	 * @return array<string> The places.
+	 *
+	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 */
+	private function targetsOfExit(array $flow, string $nodeId, mixed $exit, array $candidates): array {
+		if (is_array($exit) === false) {
+			return [];
+		}
+
+		return $this->placesForExit(
+			flow: $flow,
+			nodeId: $nodeId,
+			exitId: (string)($exit['id'] ?? ''),
+			candidates: $candidates
+		);
+	}//end targetsOfExit()
+
+	/**
+	 * The condition an exit declares, or null when it is an unconditioned default.
+	 *
+	 * @param array<string, mixed> $exit The declared exit.
+	 *
+	 * @return array|null The guard, or null for a default exit.
+	 *
+	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 */
+	private function guardOf(array $exit): ?array {
+		$condition = ($exit['condition'] ?? null);
+		if (is_array($condition) === false || $condition === []) {
+			return null;
+		}
+
+		return $condition;
+	}//end guardOf()
+
+	/**
+	 * Record an unconditioned exit: the first one tagged, and the first one at all.
+	 *
+	 * @param array{tagged: array<string>|null, fallback: array<string>|null} $defaults The defaults seen so far.
+	 * @param string                                                          $exitId   The exit's id.
+	 * @param array<string>                                                   $targets  The exit's places.
+	 * @param array<string, true>                                             $tags     The items' output tags.
+	 *
+	 * @return array{tagged: array<string>|null, fallback: array<string>|null} The updated defaults.
+	 *
+	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 */
+	private function noteDefault(array $defaults, string $exitId, array $targets, array $tags): array {
+		if ($this->exitIsTagged(exitId: $exitId, targets: $targets, tags: $tags) === true) {
+			$defaults['tagged'] = ($defaults['tagged'] ?? $targets);
+		}
+
+		$defaults['fallback'] = ($defaults['fallback'] ?? $targets);
+		return $defaults;
+	}//end noteDefault()
 
 	/**
 	 * The set of output tags the produced items carry, keyed for lookup.
@@ -249,31 +321,60 @@ class FlowTokenRouter {
 		$all = array_map(static fn ($t): string => (string)$t, $transition->getTos());
 
 		foreach ($items as $index => $item) {
-			if (is_array($item) === false) {
-				continue;
-			}
-
-			$tag = FlowItems::outputOf(member: $item);
-			if ($tag === null || in_array($tag, $all, true) === true) {
-				continue;
-			}
-
-			$places = $this->placesForExit(
-				flow: $flow,
-				nodeId: $transition->getName(),
-				exitId: $tag,
-				candidates: $all
-			);
-
-			if (count($places) === 1) {
-				$items[$index][FlowItems::OUTPUT] = $places[0];
-			} elseif (count($places) > 1) {
-				unset($items[$index][FlowItems::OUTPUT]);
-			}
+			$items[$index] = $this->resolveItemTag(flow: $flow, nodeId: $transition->getName(), item: $item, candidates: $all);
 		}
 
 		return $items;
 	}//end resolveOutputTags()
+
+	/**
+	 * Resolve one item's exit-id tag into a place; anything else passes through.
+	 *
+	 * @param array<string, mixed> $flow       The flow document.
+	 * @param string               $nodeId     The firing node.
+	 * @param mixed                $item       One produced member.
+	 * @param array<string>        $candidates The transition's output places.
+	 *
+	 * @return mixed The member, its tag resolved when it named an exit.
+	 *
+	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 */
+	private function resolveItemTag(array $flow, string $nodeId, mixed $item, array $candidates): mixed {
+		if (is_array($item) === false) {
+			return $item;
+		}
+
+		$tag = FlowItems::outputOf(member: $item);
+		if ($tag === null || in_array($tag, $candidates, true) === true) {
+			return $item;
+		}
+
+		$places = $this->placesForExit(flow: $flow, nodeId: $nodeId, exitId: $tag, candidates: $candidates);
+		return $this->retag(item: $item, places: $places);
+	}//end resolveItemTag()
+
+	/**
+	 * Point an item at the one place its exit reaches, or untag it for several.
+	 *
+	 * @param array<string, mixed> $item   The item.
+	 * @param array<string>        $places The places its tagged exit reaches.
+	 *
+	 * @return array<string, mixed> The item.
+	 *
+	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 */
+	private function retag(array $item, array $places): array {
+		if (count($places) === 1) {
+			$item[FlowItems::OUTPUT] = $places[0];
+			return $item;
+		}
+
+		if (count($places) > 1) {
+			unset($item[FlowItems::OUTPUT]);
+		}
+
+		return $item;
+	}//end retag()
 
 	/**
 	 * The output places reached through one named exit.
@@ -290,28 +391,60 @@ class FlowTokenRouter {
 	public function placesForExit(array $flow, string $nodeId, string $exitId, array $candidates): array {
 		$places = [];
 		foreach (($flow['edges'] ?? []) as $edge) {
-			if (is_array($edge) === false) {
+			if ($this->edgeLeavesExit(edge: $edge, nodeId: $nodeId, exitId: $exitId) === false) {
 				continue;
 			}
 
-			$from = $this->graph->normaliseEndpoints(value: ($edge['from'] ?? null));
-			if (in_array($nodeId, $from, true) === false) {
-				continue;
-			}
-
-			if (trim((string)($edge['fromExit'] ?? '')) !== $exitId) {
-				continue;
-			}
-
-			foreach ($this->graph->normaliseEndpoints(value: ($edge['to'] ?? null)) as $target) {
-				if (in_array($target, $candidates, true) === true) {
-					$places[] = $target;
-				}
-			}
-		}//end foreach
+			$places = array_merge($places, $this->targetsAmong(edge: $edge, candidates: $candidates));
+		}
 
 		return array_values(array_unique($places));
 	}//end placesForExit()
+
+	/**
+	 * Whether an edge leaves the given node through the given exit.
+	 *
+	 * @param mixed  $edge   The edge.
+	 * @param string $nodeId The node.
+	 * @param string $exitId The exit.
+	 *
+	 * @return bool True for a well-formed edge leaving that exit.
+	 *
+	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 */
+	private function edgeLeavesExit(mixed $edge, string $nodeId, string $exitId): bool {
+		if (is_array($edge) === false) {
+			return false;
+		}
+
+		$from = $this->graph->normaliseEndpoints(value: ($edge['from'] ?? null));
+		if (in_array($nodeId, $from, true) === false) {
+			return false;
+		}
+
+		return trim((string)($edge['fromExit'] ?? '')) === $exitId;
+	}//end edgeLeavesExit()
+
+	/**
+	 * The edge's targets that are among the candidate places, in edge order.
+	 *
+	 * @param array<string, mixed> $edge       The edge.
+	 * @param array<string>        $candidates The transition's output places.
+	 *
+	 * @return array<int, string> The targets.
+	 *
+	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 */
+	private function targetsAmong(array $edge, array $candidates): array {
+		$places = [];
+		foreach ($this->graph->normaliseEndpoints(value: ($edge['to'] ?? null)) as $target) {
+			if (in_array($target, $candidates, true) === true) {
+				$places[] = $target;
+			}
+		}
+
+		return $places;
+	}//end targetsAmong()
 
 	/**
 	 * The condition guarding the path into a node, or null when it is a default.
@@ -330,12 +463,7 @@ class FlowTokenRouter {
 	 */
 	public function conditionReaching(array $flow, string $nodeId): ?array {
 		foreach (($flow['edges'] ?? []) as $edge) {
-			if (is_array($edge) === false) {
-				continue;
-			}
-
-			$targets = $this->graph->normaliseEndpoints(value: ($edge['to'] ?? null));
-			if (in_array($nodeId, $targets, true) === false) {
+			if ($this->edgeReaches(edge: $edge, nodeId: $nodeId) === false) {
 				continue;
 			}
 
@@ -351,6 +479,25 @@ class FlowTokenRouter {
 
 		return null;
 	}//end conditionReaching()
+
+	/**
+	 * Whether a well-formed edge leads into the given node.
+	 *
+	 * @param mixed  $edge   The edge.
+	 * @param string $nodeId The node.
+	 *
+	 * @return bool True when the node is among the edge's targets.
+	 *
+	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 */
+	private function edgeReaches(mixed $edge, string $nodeId): bool {
+		if (is_array($edge) === false) {
+			return false;
+		}
+
+		$targets = $this->graph->normaliseEndpoints(value: ($edge['to'] ?? null));
+		return in_array($nodeId, $targets, true);
+	}//end edgeReaches()
 
 	/**
 	 * The condition an edge's named exit declares, or null when it is a default.
@@ -370,22 +517,12 @@ class FlowTokenRouter {
 		// step, which made every guarded branch look unconditional: the token
 		// took a path whose condition was false and the run looked fine.
 		foreach ($this->graph->normaliseEndpoints(value: ($edge['from'] ?? null)) as $sourceId) {
-			$source = $this->stepFor(flow: $flow, transitionName: $sourceId);
-			foreach (($source['exits'] ?? []) as $exit) {
-				if (is_array($exit) === false || (string)($exit['id'] ?? '') !== $exitId) {
-					continue;
-				}
-
-				$condition = ($exit['condition'] ?? null);
-
+			$exit = $this->declaredExit(source: $this->stepFor(flow: $flow, transitionName: $sourceId), exitId: $exitId);
+			if ($exit !== null) {
 				// An exit that exists but declares no condition is the default
 				// branch — reported as unconditional so it becomes the fallback
 				// rather than being treated as a failed match.
-				if (is_array($condition) === true && $condition !== []) {
-					return $condition;
-				}
-
-				return null;
+				return $this->guardOf(exit: $exit);
 			}
 		}
 
@@ -394,6 +531,26 @@ class FlowTokenRouter {
 		// never be taken is a flow that stops for no visible reason.
 		return null;
 	}//end exitCondition()
+
+	/**
+	 * The exit a node declares under the given id, or null when it has none.
+	 *
+	 * @param array<string, mixed> $source The node.
+	 * @param string               $exitId The exit id.
+	 *
+	 * @return array<string, mixed>|null The exit.
+	 *
+	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 */
+	private function declaredExit(array $source, string $exitId): ?array {
+		foreach (($source['exits'] ?? []) as $exit) {
+			if (is_array($exit) === true && (string)($exit['id'] ?? '') === $exitId) {
+				return $exit;
+			}
+		}
+
+		return null;
+	}//end declaredExit()
 
 	/**
 	 * Withdraw the tokens the taken exit did not claim.

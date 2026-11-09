@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Export;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -67,7 +67,7 @@ class ExportRightService {
 	/**
 	 * Wire the RBAC collaborators.
 	 *
-	 * @param PermissionHandler $permissionHandler Canonical RBAC verdict.
+	 * @param PermissionHandlerInterface $permissionHandler Canonical RBAC verdict.
 	 * @param IUserSession      $userSession       The calling principal.
 	 * @param IGroupManager     $groupManager      Administrator bypass.
 	 * @param LoggerInterface   $logger            PSR logger.
@@ -75,7 +75,7 @@ class ExportRightService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,

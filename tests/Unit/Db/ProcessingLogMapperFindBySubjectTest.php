@@ -47,6 +47,47 @@ class ProcessingLogMapperFindBySubjectTest extends TestCase {
 		$this->assertStringContainsString('expr.orX(', $log);
 	}
 
+	public function testTheFilterAlsoSearchesSubjectIds(): void {
+		$this->mapper()->findFiltered(['subject_id_type' => 'BSN', 'subject_id_value' => '111']);
+
+		$log = str_replace('\\"', '"', implode("\n", $this->queryLog));
+		$this->assertStringContainsString('%{"type":"BSN","value":"111"}%', $log);
+		$this->assertStringContainsString('expr.like(subject_ids', $log);
+		$this->assertStringContainsString('expr.orX(', $log);
+	}
+
+	public function testAFilterOnTheValueAloneEndsAtTheElement(): void {
+		$this->mapper()->findFiltered(['subject_id_value' => '111']);
+
+		$this->assertStringContainsString('%"value":"111"}%', str_replace('\\"', '"', implode("\n", $this->queryLog)));
+	}
+
+	public function testAFilterOnTheTypeAloneStartsAtTheElement(): void {
+		$this->mapper()->findFiltered(['subject_id_type' => 'BSN']);
+
+		$this->assertStringContainsString('%{"type":"BSN",%', str_replace('\\"', '"', implode("\n", $this->queryLog)));
+	}
+
+	public function testNoSubjectFilterLeavesSubjectIdsOutOfTheQuery(): void {
+		$this->mapper()->findFiltered(['actor' => 'admin', 'subject_id_type' => '', 'subject_id_value' => null]);
+
+		$this->assertStringNotContainsString('subject_id', implode("\n", $this->queryLog));
+	}
+
+	public function testAFilteredListEntryStaysWhole(): void {
+		$this->queuedRows = [[[
+			'id' => 4,
+			'object_count' => 2,
+			'subject_ids' => '[{"type":"BSN","value":"111"},{"type":"BSN","value":"222"}]',
+			'object_uuids' => '["uuid-a","uuid-b"]',
+		]]];
+
+		$entry = $this->mapper()->findFiltered(['subject_id_type' => 'BSN', 'subject_id_value' => '111'])[0];
+
+		$this->assertCount(2, $entry->getSubjectIds());
+		$this->assertSame(['uuid-a', 'uuid-b'], $entry->getObjectUuids());
+	}
+
 	public function testAListEntryComesBackReducedToTheOneSubject(): void {
 		$this->queuedRows = [[[
 			'id' => 4,

@@ -87,6 +87,19 @@ class ObjectsControllerBulkRoutesGoldenTest extends TestCase {
 		];
 	}
 
+	public function testAFailedValidationLogsTheDetailAndAnswersWithoutIt(): void {
+		$service = $this->service();
+		$service->method('validateAndSaveObjectsBySchema')->willThrowException(new \RuntimeException('table oc_secret is gone'));
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(fn (string $key) => ['register' => 1, 'schema' => 2][$key] ?? null);
+
+		$response = $this->controller(request: $request, service: $service)->validate();
+
+		$this->assertSame(500, $response->getStatus());
+		$this->assertSame(['success' => false, 'error' => 'Internal server error', 'message' => 'Validation failed'], $response->getData());
+		$this->assertStringContainsString('table oc_secret is gone', (string)json_encode($this->calls));
+	}
+
 	#[DataProvider('validateCases')]
 	public function testValidateMatchesTheRecording(array $params, mixed $result): void {
 		$service = $this->service();
@@ -175,7 +188,7 @@ class ObjectsControllerBulkRoutesGoldenTest extends TestCase {
 		$response = $this->controller(request: $this->validationRequest(), service: $service)->validate();
 
 		$this->assertSame(500, $response->getStatus());
-		$this->assertSame(['success' => false, 'error' => 'validate', 'message' => 'Validation failed'], $response->getData());
+		$this->assertSame(['success' => false, 'error' => 'Internal server error', 'message' => 'Validation failed'], $response->getData());
 	}
 
 	public function testValidateLeavesAnErrorToTheServer(): void {

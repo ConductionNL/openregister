@@ -29,6 +29,7 @@ use ReflectionClass;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ObjectsController
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs
  * @uses   \OCA\OpenRegister\Controller\Support\GeoServices
  */
 class ObjectsControllerGeoRoutesGoldenTest extends TestCase {

@@ -29,6 +29,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
@@ -50,6 +53,7 @@ use RuntimeException;
  * `note` schema whose `labels` property lists codes.
  *
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityAuditEntry
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
@@ -58,6 +62,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
  */
 class ReferentialIntegrityKeyReferenceTest extends TestCase {
 
@@ -125,14 +130,10 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 		$this->db->method('getDatabasePlatform')->willReturnCallback(fn (): AbstractPlatform => $this->reported);
 
 		$this->service = new ReferentialIntegrityService(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->mapper,
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			logger: $this->createMock(LoggerInterface::class),
-			db: $this->db,
-			cacheFactory: $cacheFactory,
-			archivalGuard: $this->createMock(ArchivalRetentionGuard::class),
+			index: new IntegrityRelationIndex(schemaMapper: $this->schemaMapper, registerMapper: $this->createMock(RegisterMapper::class), cacheFactory: $cacheFactory),
+			storage: new IntegrityStorage(objectEntityMapper: $this->mapper, db: $this->db),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->createMock(ArchivalRetentionGuard::class)),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
 
@@ -311,6 +312,18 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 	}//end testRowWithoutKeyIsDeletable()
 
 	/**
+	 * A key of only spaces cites nothing, so nothing is asked of the citing table.
+	 *
+	 * @return void
+	 */
+	public function testBlankKeyIsDeletable(): void {
+		$this->schemas(labelsProperty: ['type' => 'array', 'referenceSchema' => 'label', 'referenceKey' => 'code', 'onDelete' => 'RESTRICT']);
+		$this->db->expects(self::never())->method('prepare');
+
+		self::assertTrue($this->service->canDelete($this->label(code: '   '))->deletable);
+	}//end testBlankKeyIsDeletable()
+
+	/**
 	 * A key reference with an action other than RESTRICT is not indexed at all.
 	 *
 	 * @return void
@@ -374,4 +387,23 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 
 		self::assertSame('unverifiable', $this->service->canDelete($this->label(code: 'A1'))->blockers[0]['reason']);
 	}//end testAPropertyWithoutAColumnFailsClosed()
+
+	/**
+	 * A relation's own `$ref` goes first, then the one on its items, then `referenceSchema`.
+	 *
+	 * @return void
+	 */
+	public function testTheTargetOfARelationIsReadInOrder(): void {
+		$read = new \ReflectionMethod(ReferentialIntegrityService::class, 'extractTargetRef');
+		$service = (new \ReflectionClass(ReferentialIntegrityService::class))->newInstanceWithoutConstructor();
+
+		$all = ['$ref' => 'own', 'referenceSchema' => 'key', 'items' => ['$ref' => 'items', 'referenceSchema' => 'itemKey']];
+		self::assertSame('own', $read->invoke($service, $all));
+		self::assertSame('items', $read->invoke($service, array_diff_key($all, ['$ref' => true])));
+
+		$noRef = ['referenceSchema' => 'key', 'items' => ['referenceSchema' => 'itemKey']];
+		self::assertSame('key', $read->invoke($service, $noRef));
+		self::assertSame('itemKey', $read->invoke($service, ['items' => ['referenceSchema' => 'itemKey']]));
+		self::assertNull($read->invoke($service, ['items' => 'string']));
+	}
 }//end class

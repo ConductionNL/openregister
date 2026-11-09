@@ -91,19 +91,13 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider {
 		}
 
 		try {
-			$client = $this->clientService->newClient();
-			$response = $client->get($base . '/objects/' . rawurlencode($id), ['timeout' => 15]);
-			$body = json_decode((string)$response->getBody(), true);
+			$body = $this->getJson(url: $base . '/objects/' . rawurlencode($id), options: ['timeout' => 15]);
 		} catch (Throwable $e) {
 			$this->logger->warning('[ObjectSource:federated] find failed: ' . $e->getMessage());
 			return null;
 		}
 
-		if (is_array($body) === false || isset($body['error']) === true) {
-			return null;
-		}
-
-		return $this->toObjectEntity(register: $register, schema: $schema, record: $body);
+		return $this->recordEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), body: $body);
 	}//end find()
 
 	/**
@@ -121,34 +115,97 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider {
 		if ($base === null) {
 			return [];
 		}
+		$options = ['timeout' => 15, 'query' => $this->listParams(query: $query)];
+		try {
+			$body = $this->getJson(url: $base . '/objects', options: $options);
+		} catch (Throwable $e) {
+			$this->logger->warning('[ObjectSource:federated] findAll failed: ' . $e->getMessage());
+			return [];
+		}//end try
 
+		return $this->listEntities(binding: new SourcedObjectBinding(register: $register, schema: $schema), body: $body);
+	}//end findAll()
+
+	/**
+	 * GET a remote URL and decode its JSON body.
+	 *
+	 * @param string $url The URL.
+	 * @param array<string, mixed> $options The client options.
+	 *
+	 * @return mixed The decoded body (null when it is not JSON).
+	 *
+	 * @throws Throwable When the request fails.
+	 */
+	private function getJson(string $url, array $options): mixed {
+		$response = $this->clientService->newClient()->get($url, $options);
+		return json_decode((string)$response->getBody(), true);
+	}//end getJson()
+
+	/**
+	 * The remote list query: paging plus the first non-empty search spelling.
+	 *
+	 * @param array<string, mixed> $query The findAll() query.
+	 *
+	 * @return array<string, string> The query parameters.
+	 */
+	private function listParams(array $query): array {
 		$params = [
 			'_limit' => (string)($query['limit'] ?? 50),
 			'_offset' => (string)($query['offset'] ?? 0),
 		];
-		$search = ($query['filters']['search'] ?? $query['_search'] ?? $query['search'] ?? null);
+		$search = $this->searchTerm(query: $query);
 		if ($search !== null && $search !== '') {
 			$params['_search'] = (string)$search;
 		}
 
-		try {
-			$client = $this->clientService->newClient();
-			$response = $client->get($base . '/objects', ['timeout' => 15, 'query' => $params]);
-			$body = json_decode((string)$response->getBody(), true);
-		} catch (Throwable $e) {
-			$this->logger->warning('[ObjectSource:federated] findAll failed: ' . $e->getMessage());
-			return [];
+		return $params;
+	}//end listParams()
+
+	/**
+	 * The search term: `filters.search`, else `_search`, else `search`.
+	 *
+	 * @param array<string, mixed> $query The findAll() query.
+	 *
+	 * @return mixed The term, or null.
+	 */
+	private function searchTerm(array $query): mixed {
+		return ($query['filters']['search'] ?? $query['_search'] ?? $query['search'] ?? null);
+	}//end searchTerm()
+
+	/**
+	 * The virtual object of a single-record body; null for an error or non-record body.
+	 *
+	 * @param SourcedObjectBinding $binding The bound register and schema.
+	 * @param mixed $body The decoded body.
+	 *
+	 * @return ObjectEntity|null The virtual object.
+	 */
+	private function recordEntity(SourcedObjectBinding $binding, mixed $body): ?ObjectEntity {
+		if (is_array($body) === false || isset($body['error']) === true) {
+			return null;
 		}
 
+		return $this->toObjectEntity(binding: $binding, record: $body);
+	}//end recordEntity()
+
+	/**
+	 * The virtual objects of a list body's array `results`.
+	 *
+	 * @param SourcedObjectBinding $binding The bound register and schema.
+	 * @param mixed $body The decoded body.
+	 *
+	 * @return ObjectEntity[] The virtual objects.
+	 */
+	private function listEntities(SourcedObjectBinding $binding, mixed $body): array {
 		$results = [];
 		foreach (($body['results'] ?? []) as $record) {
 			if (is_array($record) === true) {
-				$results[] = $this->toObjectEntity(register: $register, schema: $schema, record: $record);
+				$results[] = $this->toObjectEntity(binding: $binding, record: $record);
 			}
 		}
 
 		return $results;
-	}//end findAll()
+	}//end listEntities()
 
 	/**
 	 * Build the remote federation base URL from the source config.
@@ -172,29 +229,33 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * Project a remote rendered record onto a non-persisted local ObjectEntity.
 	 *
-	 * @param Register $register The local shadow register.
-	 * @param Schema $schema The local shadow schema.
+	 * @param SourcedObjectBinding $binding The local shadow register and schema.
 	 * @param array<string, mixed> $record The remote rendered object (data + `@self`).
 	 *
 	 * @return ObjectEntity The virtual object (never saved).
 	 */
-	private function toObjectEntity(Register $register, Schema $schema, array $record): ObjectEntity {
+	private function toObjectEntity(SourcedObjectBinding $binding, array $record): ObjectEntity {
 		$self = ($record['@self'] ?? []);
-		$uuid = (string)($self['id'] ?? $record['id'] ?? $record['uuid'] ?? '');
-
 		$data = $record;
 		unset($data['@self']);
 
-		$entity = new ObjectEntity();
-		$entity->setUuid($uuid);
-		$entity->setRegister((string)$register->getId());
-		$entity->setSchema((string)$schema->getId());
-		$entity->setObject($data);
-
+		$entity = $binding->toEntity(uuid: $this->recordUuid(record: $record), data: $data);
 		if (isset($self['uri']) === true) {
 			$entity->setUri((string)$self['uri']);
 		}
 
 		return $entity;
 	}//end toObjectEntity()
+
+	/**
+	 * The uuid of a remote record: `@self.id`, else `id`, else `uuid`.
+	 *
+	 * @param array<string, mixed> $record The remote record.
+	 *
+	 * @return string The uuid ('' when absent).
+	 */
+	private function recordUuid(array $record): string {
+		$self = ($record['@self'] ?? []);
+		return (string)($self['id'] ?? $record['id'] ?? $record['uuid'] ?? '');
+	}//end recordUuid()
 }//end class

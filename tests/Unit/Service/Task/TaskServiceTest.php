@@ -371,6 +371,30 @@ class TaskServiceTest extends TestCase {
 	}//end testCandidateJsonAndCandidateIndexAgree()
 
 	/**
+	 * A non-string candidate group entry is never indexed as a group name:
+	 * casting it would write the literal group "Array" to the index.
+	 *
+	 * @return void
+	 */
+	public function testANonStringCandidateGroupIsNotIndexed(): void {
+		$captured = null;
+		$this->candidates->expects($this->once())->method('replaceForTask')->willReturnCallback(
+			static function (int $taskId, array $candidates) use (&$captured): void {
+				$captured = $candidates;
+			}
+		);
+
+		$this->service()->create(
+			data: [
+				'candidateGroups' => ['reviewers', ['type' => 'group', 'id' => 'controllers']],
+			],
+			actor: 'rita'
+		);
+
+		$this->assertSame(expected: [['kind' => 'group', 'ref' => 'reviewers']], actual: $captured);
+	}//end testANonStringCandidateGroupIsNotIndexed()
+
+	/**
 	 * KILLING A RUN EMPTIES ITS INBOXES: every open task of the run is
 	 * terminated with a reason naming the run and its status, audited with
 	 * the propagation source as actor — and the read is BY RUN UUID, so a

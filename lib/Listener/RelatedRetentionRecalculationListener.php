@@ -25,10 +25,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\RelatedRetentionRecalculationJob;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
+use OCA\OpenRegister\Service\Archival\DependantRetentionIndexInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -46,13 +46,13 @@ class RelatedRetentionRecalculationListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface            $schemaMapper Resolves the saved record's schema
-	 * @param DependantRetentionIndex $index        Knows which schemas read a date off it
+	 * @param DependantRetentionIndexInterface $index        Knows which schemas read a date off it
 	 * @param IJobList                $jobList      The background job queue
 	 * @param LoggerInterface         $logger       The logger
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly DependantRetentionIndex $index,
+		private readonly DependantRetentionIndexInterface $index,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
 	) {
@@ -75,42 +75,57 @@ class RelatedRetentionRecalculationListener implements IEventListener {
 			return;
 		}
 
-		$object = $event->getNewObject();
-		$uuid = $object->getUuid();
-		$schemaId = $object->getSchema();
-		if ($uuid === null || $schemaId === null || $schemaId === '') {
+		$uuid = $event->getNewObject()->getUuid();
+		if ($uuid === null || (string)$event->getNewObject()->getSchema() === '') {
 			return;
 		}
 
 		try {
-			$schema = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
-			$watched = $this->index->watchedPropertiesOf(source: $schema);
-			if ($watched === []) {
-				return;
-			}
-
-			$newData = ($object->getObject() ?? []);
-			$oldData = ($event->getOldObject()?->getObject() ?? []);
-			$changed = array_filter(
-				$watched,
-				static fn (string $property): bool => ($oldData[$property] ?? null) !== ($newData[$property] ?? null)
-			);
-			if ($changed === []) {
-				return;
-			}
-
-			$argument = ['uuid' => $uuid];
-			if ($this->jobList->has(RelatedRetentionRecalculationJob::class, $argument) === true) {
-				return;
-			}
-
-			$this->jobList->add(RelatedRetentionRecalculationJob::class, $argument);
+			$this->queueWhenWatchedChanged(event: $event, uuid: $uuid);
 		} catch (Throwable $failure) {
 			// The save itself already succeeded; a queue that cannot be reached
 			// must not turn it into an error.
-			$this->logger->warning(
-				'[RelatedRetentionRecalculationListener] Could not queue the dependants of ' . $uuid . ': ' . $failure->getMessage()
-			);
+			$this->logger->warning('[RelatedRetentionRecalculationListener] Could not queue the dependants of ' . $uuid . ': ' . $failure->getMessage());
 		}//end try
 	}//end handle()
+
+	/**
+	 * Queue the recalculation when the update changed a property dependants' retention is derived from.
+	 *
+	 * @param ObjectUpdatedEvent $event The update.
+	 * @param string             $uuid  The updated object's uuid.
+	 *
+	 * @return void
+	 */
+	private function queueWhenWatchedChanged(ObjectUpdatedEvent $event, string $uuid): void {
+		$schema = $this->schemaMapper->find(id: (string)$event->getNewObject()->getSchema(), _rbac: false, _multitenancy: false);
+		$watched = $this->index->watchedPropertiesOf(source: $schema);
+		if ($watched === [] || self::changedOf(watched: $watched, event: $event) === []) {
+			return;
+		}
+
+		$argument = ['uuid' => $uuid];
+		if ($this->jobList->has(JobHandles::RELATED_RETENTION_RECALCULATION, $argument) === true) {
+			return;
+		}
+
+		$this->jobList->add(JobHandles::RELATED_RETENTION_RECALCULATION, $argument);
+	}//end queueWhenWatchedChanged()
+
+	/**
+	 * The watched properties whose value the update changed.
+	 *
+	 * @param list<string>       $watched The properties dependants' retention is derived from.
+	 * @param ObjectUpdatedEvent $event   The update.
+	 *
+	 * @return array<int, string> The changed ones.
+	 */
+	private static function changedOf(array $watched, ObjectUpdatedEvent $event): array {
+		$newData = ($event->getNewObject()->getObject() ?? []);
+		$oldData = ($event->getOldObject()?->getObject() ?? []);
+		return array_filter(
+			$watched,
+			static fn (string $property): bool => ($oldData[$property] ?? null) !== ($newData[$property] ?? null)
+		);
+	}//end changedOf()
 }//end class

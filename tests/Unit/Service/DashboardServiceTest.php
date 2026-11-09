@@ -65,10 +65,12 @@ class DashboardServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new DashboardService(
-			$this->objectMapper,
-			$this->auditTrailMapper,
-			$this->webhookLogMapper,
-			$this->registerMapper,
+			new \OCA\OpenRegister\Search\Service\DashboardMappers(
+				$this->objectMapper,
+				$this->auditTrailMapper,
+				$this->webhookLogMapper,
+				$this->registerMapper
+			),
 			new DashboardSizes(
 				$this->objectMapper,
 				$this->auditTrailMapper,

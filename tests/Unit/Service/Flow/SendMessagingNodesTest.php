@@ -27,8 +27,11 @@ use OCA\OpenRegister\Listener\FlowNodeRegistrationListener;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -58,6 +61,33 @@ class SendMessagingNodesTest extends TestCase {
 		);
 		$this->urls = $this->createMock(IURLGenerator::class);
 	}//end setUp()
+
+	/**
+	 * The constructor parameter types of a class, followed through the
+	 * OpenRegister bundles it takes down to the leaf types.
+	 *
+	 * @param string $class The class to read.
+	 *
+	 * @return list<string> The leaf parameter types.
+	 */
+	private function constructorTypes(string $class): array {
+		$types = [];
+		foreach ((new ReflectionClass($class))->getConstructor()?->getParameters() ?? [] as $param) {
+			$type = $param->getType();
+			if (($type instanceof ReflectionNamedType) === false) {
+				continue;
+			}
+
+			if (str_starts_with($type->getName(), 'OCA\\OpenRegister\\Listener\\FlowNodes\\') === true) {
+				array_push($types, ...$this->constructorTypes($type->getName()));
+				continue;
+			}
+
+			$types[] = $type->getName();
+		}
+
+		return $types;
+	}//end constructorTypes()
 
 	/**
 	 * All three nodes, keyed by their type id.
@@ -170,20 +200,14 @@ class SendMessagingNodesTest extends TestCase {
 			))
 		);
 
-		// The registration listener constructor carries all three node types,
-		// which is the wiring `handle()` registers.
-		$ctor = (new ReflectionClass(FlowNodeRegistrationListener::class))->getConstructor();
-		$paramTypes = [];
-		foreach ($ctor->getParameters() as $param) {
-			$type = $param->getType();
-			if ($type instanceof ReflectionNamedType) {
-				$paramTypes[] = $type->getName();
-			}
-		}
+		// The registration listener's constructor, through the node bundles it
+		// takes, carries all three node types (by their interfaces), which is the
+		// wiring `handle()` registers.
+		$paramTypes = $this->constructorTypes(FlowNodeRegistrationListener::class);
 
-		$this->assertContains(SendNotificationNode::class, $paramTypes);
-		$this->assertContains(SendEmailNode::class, $paramTypes);
-		$this->assertContains(SendTalkMessageNode::class, $paramTypes);
+		$this->assertContains(SendNotificationNodeInterface::class, $paramTypes);
+		$this->assertContains(SendEmailNodeInterface::class, $paramTypes);
+		$this->assertContains(SendTalkMessageNodeInterface::class, $paramTypes);
 
 		// The boundary with ADR-094: outbound HTTP stays with OpenConnector.
 		// No send-webhook node exists — not in the built-ins directory, and no

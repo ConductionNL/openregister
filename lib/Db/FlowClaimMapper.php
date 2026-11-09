@@ -41,6 +41,9 @@ use OCP\IDBConnection;
  */
 class FlowClaimMapper extends QBMapper {
 
+	use RunScopedRowsTrait;
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -165,11 +168,8 @@ class FlowClaimMapper extends QBMapper {
 	 * @return array<int, FlowClaim> The claims.
 	 */
 	public function findByRun(string $runUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('run_uuid', $qb->createNamedParameter($runUuid)))
-			->orderBy('place', 'ASC');
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'run_uuid', value: $runUuid));
+		$qb->orderBy('place', 'ASC');
 
 		return $this->findEntities(query: $qb);
 	}//end findByRun()
@@ -194,36 +194,4 @@ class FlowClaimMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findOlderThan()
-
-	/**
-	 * Drop every claim of a run — with the run's own deletion.
-	 *
-	 * @param string $runUuid The run.
-	 *
-	 * @return int Rows deleted.
-	 */
-	public function deleteByRun(string $runUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('run_uuid', $qb->createNamedParameter($runUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByRun()
-
-	/**
-	 * Drop every claim row whose run no longer exists — the retention pass
-	 * prunes runs by age, and their claims go with them.
-	 *
-	 * @return int Rows deleted.
-	 */
-	public function deleteOrphans(): int {
-		$runs = $this->db->getQueryBuilder();
-		$runs->select('uuid')->from('openregister_flow_runs');
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->createFunction('run_uuid NOT IN (' . $runs->getSQL() . ')'));
-
-		return $qb->executeStatement();
-	}//end deleteOrphans()
 }//end class

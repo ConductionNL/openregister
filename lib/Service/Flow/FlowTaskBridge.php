@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskState;
@@ -65,7 +65,7 @@ use Throwable;
  * name it imports is one side or the other; splitting it would put the two
  * halves of "a task the graph raised" in two files that must agree.
  */
-class FlowTaskBridge {
+class FlowTaskBridge implements FlowTaskBridgeInterface {
 
 	/**
 	 * Resume-slot key holding the created task's uuid.
@@ -438,7 +438,7 @@ class FlowTaskBridge {
 		}
 
 		try {
-			$streams = $this->container->get(FlowStreamMapper::class)->findByRun(runUuid: $runUuid);
+			$streams = $this->container->get(FlowStreamMapperInterface::class)->findByRun(runUuid: $runUuid);
 		} catch (Throwable $unavailable) {
 			$this->logger->debug(
 				message: '[FlowTaskBridge] The stream layer is not available: ' . $unavailable->getMessage(),

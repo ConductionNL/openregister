@@ -1565,7 +1565,7 @@
                 "url": "/index.php/apps/forms/h23",
                 "status": "open",
                 "accessible": true,
-                "expiresAt": "2100-01-01T00:00:00+00:00",
+                "expiresAt": "9999-12-31T00:00:00+00:00",
                 "submissionCount": 1,
                 "data": {
                     "id": 23,
@@ -1574,7 +1574,7 @@
                     "description": "",
                     "status": "open",
                     "accessible": true,
-                    "expiresAt": "2100-01-01T00:00:00+00:00",
+                    "expiresAt": "9999-12-31T00:00:00+00:00",
                     "submissionCount": 1
                 }
             },
@@ -1840,7 +1840,7 @@
                 "url": "/index.php/apps/forms/h23",
                 "status": "open",
                 "accessible": true,
-                "expiresAt": "2100-01-01T00:00:00+00:00",
+                "expiresAt": "9999-12-31T00:00:00+00:00",
                 "submissionCount": 1,
                 "data": {
                     "id": 23,
@@ -1849,7 +1849,7 @@
                     "description": "",
                     "status": "open",
                     "accessible": true,
-                    "expiresAt": "2100-01-01T00:00:00+00:00",
+                    "expiresAt": "9999-12-31T00:00:00+00:00",
                     "submissionCount": 1
                 }
             },

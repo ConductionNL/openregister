@@ -144,31 +144,52 @@ class FileValidationHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function blockExecutableFile(string $fileName, string $fileContent): void {
-		// Check file extension.
-		$extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-		if (in_array($extension, self::DANGEROUS_EXTENSIONS, true) === true) {
-			$this->logger->warning(
-				message: '[FileValidationHandler] Executable file upload blocked',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'app' => 'openregister',
-					'filename' => $fileName,
-					'extension' => $extension,
-				]
-			);
-
-			$part1 = "File '$fileName' is an executable file (.$extension). ";
-			$part2 = 'Executable files are blocked for security reasons. ';
-			$part3 = 'Allowed formats: documents, images, archives, data files.';
-			throw new Exception($part1 . $part2 . $part3);
-		}
+		$this->refuseDangerousExtension(fileName: $fileName);
 
 		// Check magic bytes (file signatures) in content.
 		if (empty($fileContent) === false) {
 			$this->detectExecutableMagicBytes(content: $fileContent, fileName: $fileName);
 		}
 	}//end blockExecutableFile()
+
+	/**
+	 * Refuse a file whose extension marks it as executable.
+	 *
+	 * @param string $fileName The file name.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the extension is a dangerous one.
+	 */
+	private function refuseDangerousExtension(string $fileName): void {
+		$extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+		if (in_array($extension, self::DANGEROUS_EXTENSIONS, true) === false) {
+			return;
+		}
+
+		$this->logBlocked(message: '[FileValidationHandler] Executable file upload blocked', fileName: $fileName, detail: ['extension' => $extension]);
+
+		$part1 = "File '$fileName' is an executable file (.$extension). ";
+		$part2 = 'Executable files are blocked for security reasons. ';
+		$part3 = 'Allowed formats: documents, images, archives, data files.';
+		throw new Exception($part1 . $part2 . $part3);
+	}//end refuseDangerousExtension()
+
+	/**
+	 * Log a blocked upload.
+	 *
+	 * @param string               $message  The message.
+	 * @param string               $fileName The file name.
+	 * @param array<string, mixed> $detail   What blocked it.
+	 *
+	 * @return void
+	 */
+	private function logBlocked(string $message, string $fileName, array $detail): void {
+		$this->logger->warning(
+			message: $message,
+			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'filename' => $fileName] + $detail
+		);
+	}//end logBlocked()
 
 	/**
 	 * Detects executable magic bytes in file content.
@@ -196,22 +217,7 @@ class FileValidationHandler {
 	 */
 	public function detectExecutableMagicBytes(string $content, string $fileName): void {
 		// Offset-0 executable signatures — universal, every upload.
-		$description = $this->executableDetector->matchExecutableSignature(content: $content);
-		if ($description !== null) {
-			$this->logger->warning(
-				message: '[FileValidationHandler] Executable magic bytes detected',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'app' => 'openregister',
-					'filename' => $fileName,
-					'type' => $description,
-				]
-			);
-
-			$execMsg = "File '$fileName' contains executable code ($description). ";
-			throw new Exception($execMsg . 'Executable files are blocked for security.');
-		}
+		$this->refuseExecutableSignature(content: $content, fileName: $fileName);
 
 		// Script shebangs — universal, every upload.
 		if ($this->executableDetector->hasScriptShebang(content: $content) === true) {
@@ -227,6 +233,28 @@ class FileValidationHandler {
 			);
 		}
 	}//end detectExecutableMagicBytes()
+
+	/**
+	 * Refuse content that starts with an executable signature.
+	 *
+	 * @param string $content  The file content.
+	 * @param string $fileName The file name, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the content is an executable.
+	 */
+	private function refuseExecutableSignature(string $content, string $fileName): void {
+		$description = $this->executableDetector->matchExecutableSignature(content: $content);
+		if ($description === null) {
+			return;
+		}
+
+		$this->logBlocked(message: '[FileValidationHandler] Executable magic bytes detected', fileName: $fileName, detail: ['type' => $description]);
+
+		$execMsg = "File '$fileName' contains executable code ($description). ";
+		throw new Exception($execMsg . 'Executable files are blocked for security.');
+	}//end refuseExecutableSignature()
 
 	/**
 	 * Whether the embedded-PHP-tag scan applies to this payload.

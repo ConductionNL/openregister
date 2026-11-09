@@ -41,6 +41,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Decision\DecisionVisibility
  * @uses \OCA\OpenRegister\Db\Decision
  * @uses \OCA\OpenRegister\Db\EntityRelation
+ * @uses \OCA\OpenRegister\Event\AbstractDecisionRequestEvent
  * @uses \OCA\OpenRegister\Event\DecisionVisibilityRequestedEvent
  * @uses \OCA\OpenRegister\Service\Decision\ReviewPolicy
  */
@@ -299,7 +300,7 @@ class HiddenDecisionTest extends TestCase {
 	public function testEveryRelationEndpointMasks(): void {
 		$serialisers = [];
 		$unfiltered = [];
-		foreach (glob(__DIR__ . '/../../../../lib/Controller/{,*/}*Controller.php', GLOB_BRACE) as $path) {
+		foreach (glob(__DIR__ . '/../../../../lib/{,*/}Controller/{,*/}*Controller.php', GLOB_BRACE) as $path) {
 			$source = (string)file_get_contents($path);
 			if (str_contains($source, 'EntityRelationMapper') === false
 				|| preg_match('/(\$r|\$relation\w*|\[\'relation\'\])->jsonSerialize\(\)|decisionVisibility->present/', $source) !== 1

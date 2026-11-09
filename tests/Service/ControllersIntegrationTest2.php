@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ApiTokenSettingsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CacheSettingsControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkControllerFactory;
@@ -33,18 +34,18 @@ use OC\Files\AppData\Factory;
 use OCA\OpenRegister\Controller\BulkController;
 use OCA\OpenRegister\Controller\ChatController;
 use OCA\OpenRegister\Controller\ConversationController;
-use OCA\OpenRegister\Controller\FileExtractionController;
-use OCA\OpenRegister\Controller\FileTextController;
+use OCA\OpenRegister\Files\Controller\FileExtractionController;
+use OCA\OpenRegister\Files\Controller\FileTextController;
 use OCA\OpenRegister\Controller\GdprEntitiesController;
 use OCA\OpenRegister\Controller\OrganisationController;
 use OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController;
 use OCA\OpenRegister\Controller\Settings\CacheSettingsController;
-use OCA\OpenRegister\Controller\Settings\FileSettingsController;
+use OCA\OpenRegister\Files\Controller\Settings\FileSettingsController;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
 use OCA\OpenRegister\Controller\WebhooksController;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
@@ -55,16 +56,16 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
-use OCA\OpenRegister\Service\ChatService;
-use OCA\OpenRegister\Service\File\ManualEntityService;
+use OCA\OpenRegister\Mcp\Service\ChatService;
+use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TenantLifecycleService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -1968,7 +1969,6 @@ class ControllersIntegrationTest2 extends TestCase {
 	 */
 	private function buildFileSettingsController(): FileSettingsController {
 		return new FileSettingsController(
-			'openregister',
 			$this->request,
 			\OC::$server->get(ContainerInterface::class),
 			\OC::$server->get(SettingsService::class),
@@ -2003,7 +2003,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return CacheSettingsController
 	 */
 	private function buildCacheSettingsController(): CacheSettingsController {
-		return new CacheSettingsController(
+		return CacheSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(SettingsService::class),

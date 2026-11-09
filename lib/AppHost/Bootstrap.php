@@ -141,23 +141,11 @@ class Bootstrap {
 	private const GENERIC_HEALTH_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController';
 	private const GENERIC_METRICS_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericMetricsController';
 	private const GENERIC_STORE_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericStoreController';
-	private const GENERIC_STORE_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericStoreService';
-	private const GENERIC_STORE_INSTALLER = 'OCA\\OpenRegister\\AppHost\\Store\\GenericStoreInstaller';
 
 	/**
-	 * The catalogue serving a store that exchanges configuration.
+	 * The store controller's discovery, install and platform services.
 	 */
-	private const FEDERATED_STORE_CATALOG = 'OCA\\OpenRegister\\AppHost\\Store\\FederatedStoreCatalog';
-
-	/**
-	 * The GitHub discovery source, for stores declaring `source: github`.
-	 */
-	private const GITHUB_STORE_SOURCE = 'OCA\\OpenRegister\\AppHost\\Store\\Source\\GitHubStoreSource';
-
-	/**
-	 * Resolves an `installAuth: action:<name>` posture against the leaf app.
-	 */
-	private const STORE_ACTION_AUTHORIZER = 'OCA\\OpenRegister\\AppHost\\Store\\StoreActionAuthorizer';
+	private const GENERIC_STORE_CONTROLLER_SERVICES = 'OCA\\OpenRegister\\AppHost\\Controller\\Support\\GenericStoreControllerServices';
 
 	private const GENERIC_SETTINGS_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\AppHostSettingsService';
 	private const GENERIC_ACTION_AUTH_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService';
@@ -223,28 +211,21 @@ class Bootstrap {
 		$listenerNs = (string)($options['listenerNamespace'] ?? ($base . '\\Listener'));
 		$serviceNs = (string)($options['serviceNamespace'] ?? ($base . '\\Service'));
 
-		$sectionId = (string)($options['sectionId'] ?? $appId);
-		$sectionName = (string)($options['sectionName'] ?? $studly);
-		$sectionIcon = (string)($options['sectionIcon'] ?? 'app-dark.svg');
-		$sectionPriority = (int)($options['sectionPriority'] ?? 75);
-		$adminPriority = (int)($options['adminPriority'] ?? 10);
+		$section = [
+			'id' => (string)($options['sectionId'] ?? $appId),
+			'name' => (string)($options['sectionName'] ?? $studly),
+			'icon' => (string)($options['sectionIcon'] ?? 'app-dark.svg'),
+			'priority' => (int)($options['sectionPriority'] ?? 75),
+			'adminPriority' => (int)($options['adminPriority'] ?? 10),
+		];
 		$registerDeepLinks = ($options['deepLinks'] ?? true) !== false;
 		$registerObserv = ($options['observability'] ?? true) !== false;
 
 		self::registerControllers(context: $context, appId: $appId, controllerNs: $controllerNs, observability: $registerObserv);
 		self::registerServices(context: $context, appId: $appId, serviceNs: $serviceNs);
 		self::registerRepairSteps(context: $context, appId: $appId, repairNs: $repairNs);
-		self::registerAdminSettings(
-			context: $context,
-			appId: $appId,
-			settingsNs: $settingsNs,
-			sectionsNs: $sectionsNs,
-			sectionId: $sectionId,
-			sectionName: $sectionName,
-			sectionIcon: $sectionIcon,
-			sectionPriority: $sectionPriority,
-			adminPriority: $adminPriority
-		);
+		self::registerAdminForm(context: $context, appId: $appId, settingsNs: $settingsNs, section: $section);
+		self::registerSettingsSection(context: $context, appId: $appId, sectionsNs: $sectionsNs, section: $section);
 
 		if ($registerDeepLinks === true) {
 			self::registerDeepLinkListener(context: $context, appId: $appId, listenerNs: $listenerNs);
@@ -391,15 +372,7 @@ class Bootstrap {
 				return new $class(
 					appName: $appId,
 					request: $c->get('OCP\\IRequest'),
-					manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
-					storeService: $c->get(self::GENERIC_STORE_SERVICE),
-					installer: $c->get(self::GENERIC_STORE_INSTALLER),
-					catalog: $c->get(self::FEDERATED_STORE_CATALOG),
-					gitHubSource: $c->get(self::GITHUB_STORE_SOURCE),
-					actionAuthorizer: $c->get(self::STORE_ACTION_AUTHORIZER),
-					userSession: $c->get('OCP\\IUserSession'),
-					groupManager: $c->get('OCP\\IGroupManager'),
-					logger: $c->get('Psr\\Log\\LoggerInterface')
+					services: $c->get(self::GENERIC_STORE_CONTROLLER_SERVICES)
 				);
 			}
 		);
@@ -557,32 +530,25 @@ class Bootstrap {
 	}//end registerRepairSteps()
 
 	/**
-	 * Bind the leaf admin-settings + section class names (referenced by
-	 * info.xml) to the generic admin settings/section with the leaf metadata.
+	 * Bind the leaf admin-settings class name (referenced by info.xml) to the
+	 * generic admin settings form with the leaf metadata.
 	 *
-	 * @param IRegistrationContext $context Leaf registration context.
-	 * @param string $appId Leaf app id.
-	 * @param string $settingsNs Leaf settings namespace.
-	 * @param string $sectionsNs Leaf sections namespace.
-	 * @param string $sectionId Section id.
-	 * @param string $sectionName Section display name.
-	 * @param string $sectionIcon Section icon file.
-	 * @param int $sectionPriority Section priority.
-	 * @param int $adminPriority Admin form priority.
+	 * @param IRegistrationContext $context    Leaf registration context.
+	 * @param string               $appId      Leaf app id.
+	 * @param string               $settingsNs Leaf settings namespace.
+	 * @param array{id: string, name: string, icon: string, priority: int, adminPriority: int} $section Section metadata.
 	 *
 	 * @return void
 	 */
-	private static function registerAdminSettings(
+	private static function registerAdminForm(
 		IRegistrationContext $context,
 		string $appId,
 		string $settingsNs,
-		string $sectionsNs,
-		string $sectionId,
-		string $sectionName,
-		string $sectionIcon,
-		int $sectionPriority,
-		int $adminPriority,
+		array $section,
 	): void {
+		$sectionId = $section['id'];
+		$adminPriority = $section['adminPriority'];
+
 		$context->registerService(
 			$settingsNs . '\\AdminSettings',
 			static function (ContainerInterface $c) use ($appId, $sectionId, $adminPriority) {
@@ -597,6 +563,29 @@ class Bootstrap {
 				);
 			}
 		);
+	}//end registerAdminForm()
+
+	/**
+	 * Bind the leaf settings-section class name (referenced by info.xml) to
+	 * the generic settings section with the leaf metadata.
+	 *
+	 * @param IRegistrationContext $context    Leaf registration context.
+	 * @param string               $appId      Leaf app id.
+	 * @param string               $sectionsNs Leaf sections namespace.
+	 * @param array{id: string, name: string, icon: string, priority: int, adminPriority: int} $section Section metadata.
+	 *
+	 * @return void
+	 */
+	private static function registerSettingsSection(
+		IRegistrationContext $context,
+		string $appId,
+		string $sectionsNs,
+		array $section,
+	): void {
+		$sectionId = $section['id'];
+		$sectionName = $section['name'];
+		$sectionIcon = $section['icon'];
+		$sectionPriority = $section['priority'];
 
 		$context->registerService(
 			$sectionsNs . '\\SettingsSection',
@@ -612,7 +601,7 @@ class Bootstrap {
 				);
 			}
 		);
-	}//end registerAdminSettings()
+	}//end registerSettingsSection()
 
 	/**
 	 * Register the generic deep-link listener (manifest-driven) and bind the

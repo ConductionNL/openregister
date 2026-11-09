@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Service\TmloServiceInterface;
 
 /**
  * Services of the tmlo API.
@@ -38,7 +38,7 @@ final class TmloRecords {
 	 *
 	 * @param RegisterMapperInterface $registerMapper Register mapper
 	 * @param SchemaMapperInterface   $schemaMapper   Schema mapper
-	 * @param TmloService    $tmloService    TMLO metadata service
+	 * @param TmloServiceInterface    $tmloService    TMLO metadata service
 	 * @param ObjectOperationsInterface  $objectService  Object service for querying objects
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
@@ -46,7 +46,7 @@ final class TmloRecords {
 	public function __construct(
 		public readonly RegisterMapperInterface $registerMapper,
 		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly TmloService $tmloService,
+		public readonly TmloServiceInterface $tmloService,
 		public readonly ObjectOperationsInterface $objectService,
 	) {
 	}//end __construct()

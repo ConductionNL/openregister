@@ -71,7 +71,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			}
 		);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,
@@ -679,7 +679,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			}
 		);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,
@@ -793,7 +793,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		$register = $this->createRegister(10, null);
 		$this->setupRegisterForSchema(1, $register);
 
-		$object = $this->createObjectEntity(['publishedAt' => '2099-01-01 00:00:00']);
+		$object = $this->createObjectEntity(['publishedAt' => date('Y-m-d H:i:s', strtotime('+10 years'))]);
 		$handler = $this->buildHandlerWithRealMatcher();
 
 		$this->assertFalse(
@@ -962,7 +962,7 @@ class PermissionHandlerRbacTest extends TestCase {
 				$schema, 'read', null, null, true,
 				$this->createObjectEntity([
 					'publicatiedatum' => '2025-01-01 00:00:00',
-					'depublicatiedatum' => '2099-01-01 00:00:00',
+					'depublicatiedatum' => date('Y-m-d H:i:s', strtotime('+10 years')),
 				])
 			),
 			'Published, within window: allow'
@@ -997,7 +997,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			$handler->hasPermission(
 				$schema, 'read', null, null, true,
 				$this->createObjectEntity([
-					'publicatiedatum' => '2099-01-01 00:00:00',
+					'publicatiedatum' => date('Y-m-d H:i:s', strtotime('+10 years')),
 					'depublicatiedatum' => null,
 				])
 			),

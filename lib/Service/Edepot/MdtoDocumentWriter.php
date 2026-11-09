@@ -88,12 +88,7 @@ class MdtoDocumentWriter {
 		$dom = new DOMDocument('1.0', 'UTF-8');
 		$dom->formatOutput = true;
 
-		$root = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':MDTO');
-		$root->setAttributeNS(
-			self::XSI_NAMESPACE,
-			'xsi:schemaLocation',
-			self::MDTO_NAMESPACE . ' ' . self::SCHEMA_LOCATION
-		);
+		$root = self::rootElement(dom: $dom);
 		$dom->appendChild($root);
 
 		$content = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':' . $kind);
@@ -214,6 +209,20 @@ class MdtoDocumentWriter {
 	}//end begrip()
 
 	/**
+	 * The `MDTO` root element with its schema location.
+	 *
+	 * @param DOMDocument $dom The document.
+	 *
+	 * @return DOMElement The root.
+	 */
+	private static function rootElement(DOMDocument $dom): DOMElement {
+		$root = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':MDTO');
+		$root->setAttributeNS(self::XSI_NAMESPACE, 'xsi:schemaLocation', self::MDTO_NAMESPACE . ' ' . self::SCHEMA_LOCATION);
+
+		return $root;
+	}//end rootElement()
+
+	/**
 	 * Add a `verwijzingGegevens` element.
 	 *
 	 * @param DOMElement $parent The parent element.
@@ -235,14 +244,8 @@ class MdtoDocumentWriter {
 	): void {
 		$element = $this->element(parent: $parent, name: $name);
 		$this->text(parent: $element, name: 'verwijzingNaam', content: $verwijzingNaam);
-
 		if (($kenmerk ?? '') !== '' && ($bron ?? '') !== '') {
-			$this->identificatie(
-				parent: $element,
-				name: 'verwijzingIdentificatie',
-				kenmerk: (string)$kenmerk,
-				bron: (string)$bron
-			);
+			$this->identificatie(parent: $element, name: 'verwijzingIdentificatie', kenmerk: (string)$kenmerk, bron: (string)$bron);
 		}
 	}//end verwijzing()
 

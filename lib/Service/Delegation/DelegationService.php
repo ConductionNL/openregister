@@ -50,6 +50,7 @@ namespace OCA\OpenRegister\Service\Delegation;
 
 use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCP\IUser;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
@@ -109,32 +110,37 @@ class DelegationService {
 		array $scope = [],
 		?DateTime $now = null,
 	) {
+		return $this->runDelegated(
+			request: new DelegationRequest(
+				principal: $principal,
+				actingAs: $actingAs,
+				scope: $scope,
+				now: ($now ?? new DateTime())
+			),
+			operation: $operation
+		);
+	}//end runAsDelegated()
+
+	/**
+	 * Resolve the request and run the work under the identity it permits.
+	 *
+	 * @param DelegationRequest $request   Who acts as whom, for what, when.
+	 * @param callable          $operation The work.
+	 *
+	 * @return mixed Whatever the operation returns.
+	 *
+	 * @throws DelegationRefused When no live grant covers the delegation.
+	 */
+	private function runDelegated(DelegationRequest $request, callable $operation) {
 		$verdict = $this->verdictFor(
-			principal: $principal,
-			actingAs: $actingAs,
-			scope: $scope,
-			now: ($now ?? new DateTime())
+			principal: $request->principal,
+			actingAs: $request->actingAs,
+			scope: $request->scope,
+			now: $request->now
 		);
 
 		if ($verdict->permitted === false) {
-			// 🔴 Log the refusal at WARNING, not INFO. A delegation that was
-			// asked for and refused is the security-relevant event here: the
-			// permitted case is ordinary operation, and burying refusals at the
-			// same level as successes is how a probing pattern becomes
-			// invisible in a log nobody greps.
-			$this->logger->warning(
-				message: '[DelegationService] Delegation refused',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'principal' => $principal,
-					'actingAs' => $actingAs,
-					'reason' => $verdict->reason,
-					'scope' => $scope,
-				]
-			);
-
-			throw new DelegationRefused(principal: $principal, actingAs: $actingAs, verdict: $verdict);
+			$this->refuse(request: $request, verdict: $verdict);
 		}
 
 		if ($verdict->reason === DelegationVerdict::REASON_SELF) {
@@ -144,48 +150,95 @@ class DelegationService {
 			return $operation();
 		}
 
-		$user = $this->userManager->get($actingAs);
-		if ($user === null) {
-			// A grant naming an account that no longer exists is not a licence
-			// to run as nobody. `runAs(null)` is not even expressible, but the
-			// tempting repair — fall back to the principal — would silently
-			// execute the work under the WRONG identity while the audit trail
-			// said otherwise.
-			$gone = DelegationVerdict::refused(
-				reason: DelegationVerdict::REASON_UNNAMED,
-				detail: sprintf('"%s" resolves to no account, so it cannot be acted as.', $actingAs)
-			);
-
-			$this->logger->error(
-				message: '[DelegationService] A live grant names an account that does not resolve',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'principal' => $principal,
-					'actingAs' => $actingAs,
-					'grantId' => $verdict->grant?->getId(),
-				]
-			);
-
-			throw new DelegationRefused(principal: $principal, actingAs: $actingAs, verdict: $gone);
-		}//end if
+		$user = $this->actedAsUser(request: $request, verdict: $verdict);
 
 		$this->logger->info(
 			message: '[DelegationService] Acting on behalf of another user',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'principal' => $principal,
-				'actingAs' => $actingAs,
+				'principal' => $request->principal,
+				'actingAs' => $request->actingAs,
 				'grantId' => $verdict->grant?->getId(),
 				'grantedBy' => $verdict->grant?->getGrantedBy(),
 				'statedReason' => $verdict->grant?->getReason(),
-				'scope' => $scope,
+				'scope' => $request->scope,
 			]
 		);
 
 		return $this->objectService->runAs(user: $user, operation: $operation);
-	}//end runAsDelegated()
+	}//end runDelegated()
+
+	/**
+	 * Log and throw a refused delegation.
+	 *
+	 * @param DelegationRequest $request The refused request.
+	 * @param DelegationVerdict $verdict The refusal.
+	 *
+	 * @return never
+	 *
+	 * @throws DelegationRefused Always.
+	 */
+	private function refuse(DelegationRequest $request, DelegationVerdict $verdict): never {
+		// 🔴 Log the refusal at WARNING, not INFO. A delegation that was
+		// asked for and refused is the security-relevant event here: the
+		// permitted case is ordinary operation, and burying refusals at the
+		// same level as successes is how a probing pattern becomes
+		// invisible in a log nobody greps.
+		$this->logger->warning(
+			message: '[DelegationService] Delegation refused',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'principal' => $request->principal,
+				'actingAs' => $request->actingAs,
+				'reason' => $verdict->reason,
+				'scope' => $request->scope,
+			]
+		);
+
+		throw new DelegationRefused(principal: $request->principal, actingAs: $request->actingAs, verdict: $verdict);
+	}//end refuse()
+
+	/**
+	 * The account a permitted delegation acts as.
+	 *
+	 * @param DelegationRequest $request The permitted request.
+	 * @param DelegationVerdict $verdict The permitting verdict.
+	 *
+	 * @return IUser The acted-as account.
+	 *
+	 * @throws DelegationRefused When the acted-as uid resolves to no account.
+	 */
+	private function actedAsUser(DelegationRequest $request, DelegationVerdict $verdict): IUser {
+		$user = $this->userManager->get($request->actingAs);
+		if ($user !== null) {
+			return $user;
+		}
+
+		// A grant naming an account that no longer exists is not a licence
+		// to run as nobody. `runAs(null)` is not even expressible, but the
+		// tempting repair — fall back to the principal — would silently
+		// execute the work under the WRONG identity while the audit trail
+		// said otherwise.
+		$gone = DelegationVerdict::refused(
+			reason: DelegationVerdict::REASON_UNNAMED,
+			detail: sprintf('"%s" resolves to no account, so it cannot be acted as.', $request->actingAs)
+		);
+
+		$this->logger->error(
+			message: '[DelegationService] A live grant names an account that does not resolve',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'principal' => $request->principal,
+				'actingAs' => $request->actingAs,
+				'grantId' => $verdict->grant?->getId(),
+			]
+		);
+
+		throw new DelegationRefused(principal: $request->principal, actingAs: $request->actingAs, verdict: $gone);
+	}//end actedAsUser()
 
 	/**
 	 * Would this delegation be permitted, without performing it?

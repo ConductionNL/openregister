@@ -23,22 +23,7 @@ export default {
 }
 </script>
 
-<style scoped>
-.option-content {
-	display: flex;
-	flex-direction: column;
-	gap: 0.25rem;
-}
-
-.option-title {
-	font-weight: 500;
-}
-
-.option-description {
-	font-size: 0.875rem;
-	color: var(--color-text-maxcontrast);
-	max-width: 100%;
-	white-space: normal;
-	overflow-wrap: break-word;
-}
+<style lang="scss" scoped>
+@use '../../styles/components.scss' as *;
+@include option-content-rules;
 </style>

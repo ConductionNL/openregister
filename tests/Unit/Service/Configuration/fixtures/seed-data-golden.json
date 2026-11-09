@@ -117,9 +117,9 @@
             "log": "error",
             "message": "[ImportHandler] Seed for 'main' missing slug and title",
             "context": {
-                "objectData": {
-                    "name": "nameless"
-                }
+                "objectKeys": [
+                    "name"
+                ]
             }
         },
         {
@@ -755,9 +755,9 @@
             "log": "error",
             "message": "[ImportHandler] Seed for 'main' missing slug and title",
             "context": {
-                "objectData": {
-                    "name": "nameless"
-                }
+                "objectKeys": [
+                    "name"
+                ]
             }
         },
         {
@@ -1393,9 +1393,9 @@
             "log": "error",
             "message": "[ImportHandler] Seed for 'main' missing slug and title",
             "context": {
-                "objectData": {
-                    "name": "nameless"
-                }
+                "objectKeys": [
+                    "name"
+                ]
             }
         },
         {
@@ -1973,9 +1973,9 @@
             "log": "error",
             "message": "[ImportHandler] Seed for 'main' missing slug and title",
             "context": {
-                "objectData": {
-                    "name": "nameless"
-                }
+                "objectKeys": [
+                    "name"
+                ]
             }
         },
         {
@@ -2599,9 +2599,9 @@
             "log": "error",
             "message": "[ImportHandler] Seed for 'main' missing slug and title",
             "context": {
-                "objectData": {
-                    "name": "nameless"
-                }
+                "objectKeys": [
+                    "name"
+                ]
             }
         },
         {

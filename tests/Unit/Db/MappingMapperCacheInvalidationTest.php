@@ -46,6 +46,7 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -89,9 +90,11 @@ class MappingMapperCacheInvalidationTest extends TestCase {
 
 		$this->mapper = new MappingMapper(
 			$this->createMock(IDBConnection::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
+			new TenancyServices(
+				$this->createMock(OrganisationMapper::class),
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class)
+			),
 			$factory,
 			new NullLogger()
 		);

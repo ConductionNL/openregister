@@ -62,13 +62,6 @@ final class ObjectUpdateRun {
 	public array $selfData = [];
 
 	/**
-	 * The folder id to set on the object.
-	 *
-	 * @var integer|null
-	 */
-	public ?int $folderId = null;
-
-	/**
 	 * Whether audit trail, events and inverse relations are skipped.
 	 *
 	 * @var boolean
@@ -81,4 +74,11 @@ final class ObjectUpdateRun {
 	 * @var ObjectEntity|null
 	 */
 	public ?ObjectEntity $oldObject = null;
+
+	/**
+	 * The object as updated, once it is persisted.
+	 *
+	 * @var ObjectEntity|null
+	 */
+	public ?ObjectEntity $updated = null;
 }//end class

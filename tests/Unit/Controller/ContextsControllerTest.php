@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ContextsControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -56,7 +57,7 @@ class ContextsControllerTest extends TestCase {
 
 		$contextService = new JsonLdContextService($urlGenerator);
 
-		$this->controller = new ContextsController(
+		$this->controller = ContextsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->registerMapper,

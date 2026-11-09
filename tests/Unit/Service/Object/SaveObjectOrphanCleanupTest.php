@@ -56,12 +56,24 @@ use Psr\Container\ContainerInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 
 /**
  * Every case runs the real SaveObject::saveObject. The mapper finds a row by uuid or slug, as
  * the real one does, and the test reads which rows were soft-deleted.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @covers \OCA\OpenRegister\Service\Object\OrphanDeletionGuard
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
@@ -82,6 +94,8 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 class SaveObjectOrphanCleanupTest extends TestCase {
 
@@ -357,9 +371,9 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$register->setId(10);
 
 		$reflection = new ReflectionClass(SaveObject::class);
-		$reflection->getProperty('schemaReferenceCache')->setValue($handler, ['note' => '2']);
-		$reflection->getProperty('schemaCache')->setValue($handler, ['2' => $note, '1' => $incident]);
-		$reflection->getProperty('registerCache')->setValue($handler, ['10' => $register]);
+		SaveLookupsAccess::set($handler, 'schemaReferenceCache', ['note' => '2']);
+		SaveLookupsAccess::set($handler, 'schemaCache', ['2' => $note, '1' => $incident]);
+		SaveLookupsAccess::set($handler, 'registerCache', ['10' => $register]);
 
 		try {
 			$handler->saveObject(register: $register, schema: $incident, data: ['notes' => $notes] + $this->extra['data'], uuid: $uuid, _rbac: $rbac, persist: $this->persist);

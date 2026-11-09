@@ -55,7 +55,7 @@ class ValidationHandler {
 	/**
 	 * Constructor for ValidationHandler.
 	 *
-	 * @param ValidateObjectInterface $validateHandler Handler for object validation.
+	 * @param ValidationErrorResponseInterface $validateHandler Handler for object validation.
 	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities.
 	 * @param RegisterMapperInterface $registerMapper Mapper for registers.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas.
@@ -65,7 +65,7 @@ class ValidationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly ValidateObjectInterface $validateHandler,
+		private readonly ValidationErrorResponseInterface $validateHandler,
 		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
@@ -530,7 +530,7 @@ class ValidationHandler {
 		return [
 			'processed' => count($objectsData),
 			'updated' => ($statistics['saved'] ?? 0) + ($statistics['updated'] ?? 0),
-			'failed' => $statistics['failed'] ?? 0,
+			'failed' => $statistics['failed'] ?? $statistics['invalid'] ?? 0,
 		];
 	}//end bulkSaveCounts()
 

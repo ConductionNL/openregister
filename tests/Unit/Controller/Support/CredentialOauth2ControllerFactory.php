@@ -56,7 +56,7 @@ final class CredentialOauth2ControllerFactory {
 					relay: $relay,
 					endpoints: $endpoints,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\CredentialOauth2Platform(
+				platform: new \OCA\OpenRegister\Controller\Support\AccessLinkPlatform(
 					userSession: $userSession,
 					throttler: $throttler,
 					logger: $logger,

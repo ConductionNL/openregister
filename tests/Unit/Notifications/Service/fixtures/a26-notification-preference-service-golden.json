@@ -1,0 +1,1518 @@
+{
+    "optIn none": [],
+    "available none": [
+        "nc-notification"
+    ],
+    "optIn declared": [],
+    "available declared": [
+        "email"
+    ],
+    "optIn opt-in": [
+        "web-push",
+        "activity"
+    ],
+    "available opt-in": [
+        "email",
+        "web-push",
+        "activity"
+    ],
+    "optIn default": [
+        "email"
+    ],
+    "available default": [
+        "nc-notification",
+        "email"
+    ],
+    "optIn scalar": [
+        "activity"
+    ],
+    "available scalar": [
+        "email",
+        "activity"
+    ],
+    "keys": [
+        "notification_pref/case/assigned",
+        "notification_pref/sssssssssssssssssssssssssssss~a4adfdb29ba4e8e9",
+        "notif_pref_s/register:1/case/assigned",
+        "notif_pref_s/register:1/sssssssssssssssssssssss~a03025aafc62e4d4",
+        "notif_grp_pref/staff/domain:x/case/assigned",
+        "notif_grp_pref/staff/domain:x/sssssssssssssssss~c6a324b5bc0289fc",
+        "notif_grp_pref/staff/global/case/assigned",
+        "notif_grp_pref/staff/schema:2/case/assigned"
+    ],
+    "store override missing": {
+        "result": null,
+        "config": [
+            "read user/alice/notification_pref/case/assigned = "
+        ]
+    },
+    "store override set": {
+        "result": null,
+        "config": [
+            "write user/alice/notification_pref/case/assigned = '{\"enabled\":false,\"channels\":[\"email\",\"push\"]}'"
+        ]
+    },
+    "store override read": {
+        "result": {
+            "enabled": false,
+            "channels": [
+                "email",
+                "push"
+            ]
+        },
+        "config": [
+            "read user/alice/notification_pref/case/assigned = {\"enabled\":false,\"channels\":[\"email\",\"push\"]}"
+        ]
+    },
+    "store override set scoped": {
+        "result": null,
+        "config": [
+            "write user/alice/notif_pref_s/register:1/case/assigned = '{\"enabled\":true}'"
+        ]
+    },
+    "store override read scoped": {
+        "result": {
+            "enabled": true
+        },
+        "config": [
+            "read user/alice/notif_pref_s/register:1/case/assigned = {\"enabled\":true}"
+        ]
+    },
+    "store override reset": {
+        "result": null,
+        "config": [
+            "write user/alice/notification_pref/case/assigned = NULL"
+        ]
+    },
+    "store override reset scoped": {
+        "result": null,
+        "config": [
+            "write user/alice/notif_pref_s/register:1/case/assigned = NULL"
+        ]
+    },
+    "store override corrupt": {
+        "result": null,
+        "config": [
+            "read user/bob/notification_pref/case/assigned = \"text\""
+        ]
+    },
+    "store group missing": {
+        "result": null,
+        "config": [
+            "read app/notif_grp_pref/staff/global/case/assigned = "
+        ]
+    },
+    "store group set": {
+        "result": null,
+        "config": [
+            "write app/notif_grp_pref/staff/global/case/assigned = '{\"enabled\":false}'"
+        ]
+    },
+    "store group read": {
+        "result": {
+            "enabled": false
+        },
+        "config": [
+            "read app/notif_grp_pref/staff/global/case/assigned = {\"enabled\":false}"
+        ]
+    },
+    "store group set scoped": {
+        "result": null,
+        "config": [
+            "write app/notif_grp_pref/staff/schema:2/case/assigned = '{\"enabled\":true,\"channels\":[\"email\"]}'"
+        ]
+    },
+    "store group read scoped": {
+        "result": {
+            "enabled": true,
+            "channels": [
+                "email"
+            ]
+        },
+        "config": [
+            "read app/notif_grp_pref/staff/schema:2/case/assigned = {\"enabled\":true,\"channels\":[\"email\"]}"
+        ]
+    },
+    "store group reset": {
+        "result": null,
+        "config": [
+            "write app/notif_grp_pref/staff/global/case/assigned = NULL"
+        ]
+    },
+    "store group corrupt": {
+        "result": null,
+        "config": [
+            "read app/notif_grp_pref/staff/global/case/assigned = {bad"
+        ]
+    },
+    "store groupsOf": {
+        "result": [
+            "staff"
+        ],
+        "config": [
+            "user alice",
+            "groups of alice"
+        ]
+    },
+    "store groupsOf cached": {
+        "result": [
+            "staff"
+        ],
+        "config": []
+    },
+    "store groupsOf unknown": {
+        "result": [],
+        "config": [
+            "user nobody"
+        ]
+    },
+    "store groupsOf failing": {
+        "result": [],
+        "config": [
+            "user broken",
+            "groups of broken"
+        ]
+    },
+    "store groupsOf no managers": {
+        "result": [],
+        "config": []
+    },
+    "effective schema default": {
+        "result": {
+            "enabled": false,
+            "channels": [
+                "email"
+            ],
+            "source": "schema-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": [
+                        "email"
+                    ]
+                }
+            ]
+        },
+        "config": [
+            "read user/dave/notification_pref/case/assigned = "
+        ]
+    },
+    "effective plain spec": {
+        "result": {
+            "enabled": true,
+            "channels": null,
+            "source": "schema-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": null
+                }
+            ]
+        },
+        "config": [
+            "user dave",
+            "groups of dave",
+            "read user/dave/notification_pref/case/assigned = "
+        ]
+    },
+    "effective group global": {
+        "result": {
+            "enabled": true,
+            "channels": [
+                "email"
+            ],
+            "source": "group-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": [
+                        "email"
+                    ]
+                },
+                {
+                    "layer": "group-default",
+                    "group": "staff",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                }
+            ]
+        },
+        "config": [
+            "user bob",
+            "groups of bob",
+            "read app/notif_grp_pref/staff/global/case/assigned = {\"enabled\":true}",
+            "read user/bob/notification_pref/case/assigned = "
+        ]
+    },
+    "effective group scoped": {
+        "result": {
+            "enabled": false,
+            "channels": [
+                "email"
+            ],
+            "source": "group-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": [
+                        "email"
+                    ]
+                },
+                {
+                    "layer": "group-default",
+                    "group": "ops",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": [
+                        "email"
+                    ]
+                }
+            ]
+        },
+        "config": [
+            "user bob",
+            "groups of bob",
+            "read app/notif_grp_pref/ops/register:1/case/assigned = ",
+            "read app/notif_grp_pref/ops/global/case/assigned = {\"enabled\":false}",
+            "read user/bob/notif_pref_s/register:1/case/assigned = ",
+            "read user/bob/notification_pref/case/assigned = "
+        ]
+    },
+    "effective user scoped wins": {
+        "result": {
+            "enabled": true,
+            "channels": [
+                "email"
+            ],
+            "source": "user-override",
+            "scope": "schema:2",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": [
+                        "email"
+                    ]
+                },
+                {
+                    "layer": "group-default",
+                    "group": "staff",
+                    "scope": "register:1",
+                    "enabled": false,
+                    "channels": [
+                        "web-push"
+                    ]
+                },
+                {
+                    "layer": "user-override",
+                    "scope": "schema:2",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                }
+            ]
+        },
+        "config": [
+            "user alice",
+            "groups of alice",
+            "read app/notif_grp_pref/staff/register:1/case/assigned = {\"enabled\":false,\"channels\":[\"web-push\",\"fax\"]}",
+            "read user/alice/notif_pref_s/register:1/case/assigned = ",
+            "read user/alice/notif_pref_s/schema:2/case/assigned = {\"enabled\":true,\"channels\":[\"email\"]}"
+        ]
+    },
+    "effective user global": {
+        "result": {
+            "enabled": true,
+            "channels": [],
+            "source": "user-override",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": [
+                        "email"
+                    ]
+                },
+                {
+                    "layer": "user-override",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": []
+                }
+            ]
+        },
+        "config": [
+            "user carol",
+            "groups of carol",
+            "read user/carol/notif_pref_s/domain:x/case/assigned = ",
+            "read user/carol/notification_pref/case/assigned = {\"enabled\":true,\"channels\":[]}"
+        ]
+    },
+    "effective explicit no groups": {
+        "result": {
+            "enabled": false,
+            "channels": [
+                "email"
+            ],
+            "source": "schema-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": [
+                        "email"
+                    ]
+                }
+            ]
+        },
+        "config": [
+            "read user/bob/notification_pref/case/assigned = "
+        ]
+    },
+    "for user": {
+        "result": [
+            {
+                "schema": "case",
+                "schemaTitle": "Case",
+                "application": null,
+                "notification": "assigned",
+                "enabled": false,
+                "channels": [
+                    "web-push"
+                ],
+                "availableChannels": [
+                    "email",
+                    "web-push"
+                ],
+                "optInChannels": [
+                    "web-push"
+                ],
+                "source": "group-default",
+                "scope": "register:1",
+                "layers": [
+                    {
+                        "layer": "schema-default",
+                        "scope": "global",
+                        "enabled": true,
+                        "channels": [
+                            "email"
+                        ]
+                    },
+                    {
+                        "layer": "group-default",
+                        "group": "staff",
+                        "scope": "register:1",
+                        "enabled": false,
+                        "channels": [
+                            "web-push"
+                        ]
+                    }
+                ]
+            },
+            {
+                "schema": "case",
+                "schemaTitle": "Case",
+                "application": null,
+                "notification": "9",
+                "enabled": false,
+                "channels": null,
+                "availableChannels": [
+                    "nc-notification"
+                ],
+                "optInChannels": [],
+                "source": "schema-default",
+                "scope": "global",
+                "layers": [
+                    {
+                        "layer": "schema-default",
+                        "scope": "global",
+                        "enabled": false,
+                        "channels": null
+                    }
+                ]
+            },
+            {
+                "schema": "case",
+                "schemaTitle": "Same version, higher id",
+                "application": "pipelinq",
+                "notification": "assigned",
+                "enabled": false,
+                "channels": [
+                    "web-push",
+                    "fax"
+                ],
+                "availableChannels": [
+                    "nc-notification"
+                ],
+                "optInChannels": [],
+                "source": "group-default",
+                "scope": "register:1",
+                "layers": [
+                    {
+                        "layer": "schema-default",
+                        "scope": "global",
+                        "enabled": true,
+                        "channels": null
+                    },
+                    {
+                        "layer": "group-default",
+                        "group": "staff",
+                        "scope": "register:1",
+                        "enabled": false,
+                        "channels": [
+                            "web-push",
+                            "fax"
+                        ]
+                    }
+                ]
+            },
+            {
+                "schema": "5",
+                "schemaTitle": "5",
+                "application": null,
+                "notification": "done",
+                "enabled": true,
+                "channels": null,
+                "availableChannels": [
+                    "nc-notification"
+                ],
+                "optInChannels": [],
+                "source": "schema-default",
+                "scope": "global",
+                "layers": [
+                    {
+                        "layer": "schema-default",
+                        "scope": "global",
+                        "enabled": true,
+                        "channels": null
+                    }
+                ]
+            }
+        ],
+        "config": [
+            "user alice",
+            "groups of alice",
+            "read app/notif_grp_pref/staff/register:1/case/assigned = {\"enabled\":false,\"channels\":[\"web-push\",\"fax\"]}",
+            "read user/alice/notif_pref_s/register:1/case/assigned = ",
+            "read user/alice/notification_pref/case/assigned = ",
+            "read app/notif_grp_pref/staff/register:1/case/9 = ",
+            "read app/notif_grp_pref/staff/global/case/9 = ",
+            "read user/alice/notif_pref_s/register:1/case/9 = ",
+            "read user/alice/notification_pref/case/9 = ",
+            "read app/notif_grp_pref/staff/register:1/case/assigned = {\"enabled\":false,\"channels\":[\"web-push\",\"fax\"]}",
+            "read user/alice/notif_pref_s/register:1/case/assigned = ",
+            "read user/alice/notification_pref/case/assigned = ",
+            "read app/notif_grp_pref/staff/register:1/5/done = ",
+            "read app/notif_grp_pref/staff/global/5/done = ",
+            "read user/alice/notif_pref_s/register:1/5/done = ",
+            "read user/alice/notification_pref/5/done = "
+        ]
+    },
+    "for user unscoped": {
+        "result": [
+            {
+                "schema": "case",
+                "schemaTitle": "Case",
+                "application": null,
+                "notification": "assigned",
+                "enabled": true,
+                "channels": [],
+                "availableChannels": [
+                    "email",
+                    "web-push"
+                ],
+                "optInChannels": [
+                    "web-push"
+                ],
+                "source": "user-override",
+                "scope": "global",
+                "layers": [
+                    {
+                        "layer": "schema-default",
+                        "scope": "global",
+                        "enabled": true,
+                        "channels": [
+                            "email"
+                        ]
+                    },
+                    {
+                        "layer": "user-override",
+                        "scope": "global",
+                        "enabled": true,
+                        "channels": []
+                    }
+                ]
+            },
+            {
+                "schema": "case",
+                "schemaTitle": "Case",
+                "application": null,
+                "notification": "9",
+                "enabled": false,
+                "channels": null,
+                "availableChannels": [
+                    "nc-notification"
+                ],
+                "optInChannels": [],
+                "source": "schema-default",
+                "scope": "global",
+                "layers": [
+                    {
+                        "layer": "schema-default",
+                        "scope": "global",
+                        "enabled": false,
+                        "channels": null
+                    }
+                ]
+            },
+            {
+                "schema": "case",
+                "schemaTitle": "Same version, higher id",
+                "application": "pipelinq",
+                "notification": "assigned",
+                "enabled": true,
+                "channels": [],
+                "availableChannels": [
+                    "nc-notification"
+                ],
+                "optInChannels": [],
+                "source": "user-override",
+                "scope": "global",
+                "layers": [
+                    {
+                        "layer": "schema-default",
+                        "scope": "global",
+                        "enabled": true,
+                        "channels": null
+                    },
+                    {
+                        "layer": "user-override",
+                        "scope": "global",
+                        "enabled": true,
+                        "channels": []
+                    }
+                ]
+            },
+            {
+                "schema": "5",
+                "schemaTitle": "5",
+                "application": null,
+                "notification": "done",
+                "enabled": true,
+                "channels": null,
+                "availableChannels": [
+                    "nc-notification"
+                ],
+                "optInChannels": [],
+                "source": "schema-default",
+                "scope": "global",
+                "layers": [
+                    {
+                        "layer": "schema-default",
+                        "scope": "global",
+                        "enabled": true,
+                        "channels": null
+                    }
+                ]
+            }
+        ],
+        "config": [
+            "user carol",
+            "groups of carol",
+            "read user/carol/notification_pref/case/assigned = {\"enabled\":true,\"channels\":[]}",
+            "read user/carol/notification_pref/case/9 = ",
+            "read user/carol/notification_pref/case/assigned = {\"enabled\":true,\"channels\":[]}",
+            "read user/carol/notification_pref/5/done = "
+        ]
+    },
+    "for user failing": {
+        "result": [],
+        "config": [
+            "user carol",
+            "groups of carol"
+        ]
+    },
+    "system slugs": [
+        "openregister_register",
+        "openregister_schema",
+        "openregister_configuration",
+        "openregister_source",
+        "openregister_agent",
+        "openregister_webhook"
+    ],
+    "system rules openregister_register": {
+        "register-changed": {
+            "trigger": {
+                "type": "updated"
+            },
+            "recipients": [
+                {
+                    "kind": "groups",
+                    "groups": [
+                        "admin"
+                    ]
+                }
+            ],
+            "channels": [
+                "nc-notification"
+            ],
+            "subject": {
+                "nl": "Register \"{{title}}\" is bijgewerkt",
+                "en": "Register \"{{title}}\" was updated"
+            }
+        }
+    },
+    "system rules openregister_schema": {
+        "schema-changed": {
+            "trigger": {
+                "type": "updated"
+            },
+            "recipients": [
+                {
+                    "kind": "groups",
+                    "groups": [
+                        "admin"
+                    ]
+                }
+            ],
+            "channels": [
+                "nc-notification"
+            ],
+            "subject": {
+                "nl": "Schema \"{{title}}\" is bijgewerkt",
+                "en": "Schema \"{{title}}\" was updated"
+            }
+        }
+    },
+    "system rules openregister_configuration": {
+        "configuration-changed": {
+            "trigger": {
+                "type": "updated"
+            },
+            "recipients": [
+                {
+                    "kind": "groups",
+                    "groups": [
+                        "admin"
+                    ]
+                }
+            ],
+            "channels": [
+                "nc-notification"
+            ],
+            "subject": {
+                "nl": "Configuratie \"{{title}}\" is bijgewerkt",
+                "en": "Configuration \"{{title}}\" was updated"
+            }
+        }
+    },
+    "system rules openregister_source": {
+        "source-unhealthy": {
+            "trigger": {
+                "type": "updated",
+                "condition": {
+                    "field": "status",
+                    "operator": "equals",
+                    "value": "error"
+                }
+            },
+            "recipients": [
+                {
+                    "kind": "groups",
+                    "groups": [
+                        "admin"
+                    ]
+                }
+            ],
+            "channels": [
+                "nc-notification"
+            ],
+            "subject": {
+                "nl": "Bron \"{{title}}\" is niet beschikbaar",
+                "en": "Source \"{{title}}\" is unhealthy"
+            }
+        },
+        "source-changed": {
+            "trigger": {
+                "type": "updated"
+            },
+            "recipients": [
+                {
+                    "kind": "groups",
+                    "groups": [
+                        "admin"
+                    ]
+                }
+            ],
+            "channels": [
+                "nc-notification"
+            ],
+            "subject": {
+                "nl": "Bron \"{{title}}\" is bijgewerkt",
+                "en": "Source \"{{title}}\" was updated"
+            }
+        }
+    },
+    "system rules openregister_agent": {
+        "agent-unhealthy": {
+            "trigger": {
+                "type": "updated",
+                "condition": {
+                    "field": "status",
+                    "operator": "equals",
+                    "value": "error"
+                }
+            },
+            "recipients": [
+                {
+                    "kind": "groups",
+                    "groups": [
+                        "admin"
+                    ]
+                }
+            ],
+            "channels": [
+                "nc-notification"
+            ],
+            "subject": {
+                "nl": "Agent \"{{name}}\" is niet beschikbaar",
+                "en": "Agent \"{{name}}\" is unhealthy"
+            }
+        },
+        "agent-changed": {
+            "trigger": {
+                "type": "updated"
+            },
+            "recipients": [
+                {
+                    "kind": "groups",
+                    "groups": [
+                        "admin"
+                    ]
+                }
+            ],
+            "channels": [
+                "nc-notification"
+            ],
+            "subject": {
+                "nl": "Agent \"{{name}}\" is bijgewerkt",
+                "en": "Agent \"{{name}}\" was updated"
+            }
+        }
+    },
+    "system rules openregister_webhook": {
+        "webhook-changed": {
+            "trigger": {
+                "type": "updated"
+            },
+            "recipients": [
+                {
+                    "kind": "groups",
+                    "groups": [
+                        "admin"
+                    ]
+                }
+            ],
+            "channels": [
+                "nc-notification"
+            ],
+            "subject": {
+                "nl": "Webhook \"{{name}}\" is bijgewerkt",
+                "en": "Webhook \"{{name}}\" was updated"
+            }
+        }
+    },
+    "system rules unknown": null,
+    "task rules": {
+        "taskAssignedToYou": {
+            "trigger": {
+                "type": "transition",
+                "action": [
+                    "create",
+                    "assign",
+                    "reassign",
+                    "claim",
+                    "delegate"
+                ]
+            },
+            "enabled": true,
+            "channels": [
+                "nc-notification",
+                "web-push"
+            ],
+            "recipients": [
+                {
+                    "kind": "field",
+                    "field": "assignee"
+                }
+            ],
+            "subject": {
+                "en": "Assigned to you: {{title}}",
+                "nl": "Aan jou toegewezen: {{title}}"
+            },
+            "message": {
+                "en": "You can answer this task from here.",
+                "nl": "Je kunt deze taak vanaf hier afhandelen."
+            },
+            "actions": [
+                {
+                    "label": {
+                        "en": "Approve",
+                        "nl": "Goedkeuren"
+                    },
+                    "primary": true,
+                    "target": {
+                        "kind": "task-verb",
+                        "verb": "complete",
+                        "outcome": "approved"
+                    }
+                },
+                {
+                    "label": {
+                        "en": "Reject",
+                        "nl": "Afwijzen"
+                    },
+                    "target": {
+                        "kind": "task-verb",
+                        "verb": "complete",
+                        "outcome": "rejected"
+                    }
+                }
+            ]
+        },
+        "taskOfferedToPool": {
+            "trigger": {
+                "type": "transition",
+                "action": "offer"
+            },
+            "enabled": true,
+            "channels": [
+                "nc-notification"
+            ],
+            "recipients": [
+                {
+                    "kind": "expression",
+                    "resolver": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\TaskPoolRecipientResolver"
+                }
+            ],
+            "subject": {
+                "en": "New task for your group: {{title}}",
+                "nl": "Nieuwe taak voor je groep: {{title}}"
+            },
+            "actions": [
+                {
+                    "label": {
+                        "en": "Open",
+                        "nl": "Openen"
+                    },
+                    "primary": true,
+                    "target": {
+                        "kind": "route",
+                        "app": "openregister",
+                        "route": "flow-tasks/{{taskUuid}}"
+                    }
+                }
+            ]
+        },
+        "taskReassignedAway": {
+            "trigger": {
+                "type": "transition",
+                "action": [
+                    "reassign",
+                    "delegate"
+                ]
+            },
+            "enabled": true,
+            "channels": [
+                "nc-notification"
+            ],
+            "recipients": [
+                {
+                    "kind": "field",
+                    "field": "previousAssignee"
+                }
+            ],
+            "subject": {
+                "en": "No longer yours: {{title}}",
+                "nl": "Niet meer van jou: {{title}}"
+            }
+        },
+        "taskDueSoon": {
+            "trigger": {
+                "type": "transition",
+                "action": "due-soon"
+            },
+            "enabled": true,
+            "channels": [
+                "nc-notification"
+            ],
+            "recipients": [
+                {
+                    "kind": "field",
+                    "field": "assignee"
+                }
+            ],
+            "subject": {
+                "en": "Due soon: {{title}}",
+                "nl": "Bijna over tijd: {{title}}"
+            },
+            "actions": [
+                {
+                    "label": {
+                        "en": "Open",
+                        "nl": "Openen"
+                    },
+                    "primary": true,
+                    "target": {
+                        "kind": "route",
+                        "app": "openregister",
+                        "route": "flow-tasks/{{taskUuid}}"
+                    }
+                }
+            ]
+        },
+        "taskEscalated": {
+            "trigger": {
+                "type": "transition",
+                "action": "escalate"
+            },
+            "enabled": true,
+            "channels": [
+                "nc-notification"
+            ],
+            "recipients": [
+                {
+                    "kind": "field",
+                    "field": "assignee"
+                },
+                {
+                    "kind": "field",
+                    "field": "requester"
+                }
+            ],
+            "subject": {
+                "en": "Escalated: {{title}}",
+                "nl": "Geescaleerd: {{title}}"
+            }
+        },
+        "taskOverdue": {
+            "trigger": {
+                "type": "scheduled",
+                "intervalSec": 86400,
+                "filter": {
+                    "all": [
+                        {
+                            "field": "isTerminal",
+                            "operator": "notIn",
+                            "values": [
+                                true
+                            ]
+                        },
+                        {
+                            "field": "dueAt",
+                            "operator": "before",
+                            "value": "now"
+                        }
+                    ]
+                },
+                "dedupeFields": [
+                    "taskUuid"
+                ]
+            },
+            "enabled": true,
+            "channels": [
+                "nc-notification"
+            ],
+            "recipients": [
+                {
+                    "kind": "field",
+                    "field": "assignee"
+                }
+            ],
+            "subject": {
+                "en": "Task overdue: {{title}}",
+                "nl": "Taak over tijd: {{title}}"
+            },
+            "actions": [
+                {
+                    "label": {
+                        "en": "Open",
+                        "nl": "Openen"
+                    },
+                    "primary": true,
+                    "target": {
+                        "kind": "route",
+                        "app": "openregister",
+                        "route": "flow-tasks/{{taskUuid}}"
+                    }
+                }
+            ]
+        },
+        "taskCancelled": {
+            "trigger": {
+                "type": "transition",
+                "action": [
+                    "cancel",
+                    "terminate"
+                ]
+            },
+            "enabled": true,
+            "channels": [
+                "nc-notification"
+            ],
+            "recipients": [
+                {
+                    "kind": "field",
+                    "field": "assignee"
+                }
+            ],
+            "subject": {
+                "en": "Task withdrawn: {{title}}",
+                "nl": "Taak ingetrokken: {{title}}"
+            }
+        },
+        "taskWriteBackRefused": {
+            "trigger": {
+                "type": "transition",
+                "action": "write-back-refused"
+            },
+            "enabled": true,
+            "channels": [
+                "nc-notification"
+            ],
+            "recipients": [
+                {
+                    "kind": "field",
+                    "field": "writeBackActor"
+                }
+            ],
+            "subject": {
+                "en": "Change not applied: {{title}}",
+                "nl": "Wijziging niet doorgevoerd: {{title}}"
+            },
+            "message": {
+                "en": "{{writeBackReason}}",
+                "nl": "{{writeBackReason}}"
+            },
+            "actions": [
+                {
+                    "label": {
+                        "en": "Open task",
+                        "nl": "Taak openen"
+                    },
+                    "primary": true,
+                    "target": {
+                        "kind": "route",
+                        "app": "openregister",
+                        "route": "flow-tasks/{{taskUuid}}"
+                    }
+                }
+            ]
+        }
+    },
+    "task schema": {
+        "properties": {
+            "taskUuid": {
+                "type": "string"
+            },
+            "title": {
+                "type": "string"
+            },
+            "description": {
+                "type": "string"
+            },
+            "state": {
+                "type": "string"
+            },
+            "isTerminal": {
+                "type": "boolean"
+            },
+            "lastAction": {
+                "type": "string"
+            },
+            "outcome": {
+                "type": "string"
+            },
+            "priority": {
+                "type": "string"
+            },
+            "performerType": {
+                "type": "string"
+            },
+            "assignee": {
+                "type": "string"
+            },
+            "previousAssignee": {
+                "type": "string"
+            },
+            "candidateUsers": {
+                "type": "array"
+            },
+            "candidateGroups": {
+                "type": "array"
+            },
+            "candidateRole": {
+                "type": "string"
+            },
+            "requester": {
+                "type": "string"
+            },
+            "watchers": {
+                "type": "array"
+            },
+            "startAt": {
+                "type": "string"
+            },
+            "dueAt": {
+                "type": "string"
+            },
+            "expiresAt": {
+                "type": "string"
+            },
+            "overdue": {
+                "type": "boolean"
+            },
+            "daysUntilDue": {
+                "type": "integer"
+            },
+            "daysOverdue": {
+                "type": "integer"
+            },
+            "objectUuid": {
+                "type": "string"
+            },
+            "registerId": {
+                "type": "integer"
+            },
+            "schemaId": {
+                "type": "integer"
+            },
+            "subjectTitle": {
+                "type": "string"
+            },
+            "appId": {
+                "type": "string"
+            },
+            "runUuid": {
+                "type": "string"
+            },
+            "completedBy": {
+                "type": "string"
+            },
+            "writeBackActor": {
+                "type": "string"
+            },
+            "writeBackReason": {
+                "type": "string"
+            }
+        },
+        "x-openregister-notifications": {
+            "taskAssignedToYou": {
+                "trigger": {
+                    "type": "transition",
+                    "action": [
+                        "create",
+                        "assign",
+                        "reassign",
+                        "claim",
+                        "delegate"
+                    ]
+                },
+                "enabled": true,
+                "channels": [
+                    "nc-notification",
+                    "web-push"
+                ],
+                "recipients": [
+                    {
+                        "kind": "field",
+                        "field": "assignee"
+                    }
+                ],
+                "subject": {
+                    "en": "Assigned to you: {{title}}",
+                    "nl": "Aan jou toegewezen: {{title}}"
+                },
+                "message": {
+                    "en": "You can answer this task from here.",
+                    "nl": "Je kunt deze taak vanaf hier afhandelen."
+                },
+                "actions": [
+                    {
+                        "label": {
+                            "en": "Approve",
+                            "nl": "Goedkeuren"
+                        },
+                        "primary": true,
+                        "target": {
+                            "kind": "task-verb",
+                            "verb": "complete",
+                            "outcome": "approved"
+                        }
+                    },
+                    {
+                        "label": {
+                            "en": "Reject",
+                            "nl": "Afwijzen"
+                        },
+                        "target": {
+                            "kind": "task-verb",
+                            "verb": "complete",
+                            "outcome": "rejected"
+                        }
+                    }
+                ]
+            },
+            "taskOfferedToPool": {
+                "trigger": {
+                    "type": "transition",
+                    "action": "offer"
+                },
+                "enabled": true,
+                "channels": [
+                    "nc-notification"
+                ],
+                "recipients": [
+                    {
+                        "kind": "expression",
+                        "resolver": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\TaskPoolRecipientResolver"
+                    }
+                ],
+                "subject": {
+                    "en": "New task for your group: {{title}}",
+                    "nl": "Nieuwe taak voor je groep: {{title}}"
+                },
+                "actions": [
+                    {
+                        "label": {
+                            "en": "Open",
+                            "nl": "Openen"
+                        },
+                        "primary": true,
+                        "target": {
+                            "kind": "route",
+                            "app": "openregister",
+                            "route": "flow-tasks/{{taskUuid}}"
+                        }
+                    }
+                ]
+            },
+            "taskReassignedAway": {
+                "trigger": {
+                    "type": "transition",
+                    "action": [
+                        "reassign",
+                        "delegate"
+                    ]
+                },
+                "enabled": true,
+                "channels": [
+                    "nc-notification"
+                ],
+                "recipients": [
+                    {
+                        "kind": "field",
+                        "field": "previousAssignee"
+                    }
+                ],
+                "subject": {
+                    "en": "No longer yours: {{title}}",
+                    "nl": "Niet meer van jou: {{title}}"
+                }
+            },
+            "taskDueSoon": {
+                "trigger": {
+                    "type": "transition",
+                    "action": "due-soon"
+                },
+                "enabled": true,
+                "channels": [
+                    "nc-notification"
+                ],
+                "recipients": [
+                    {
+                        "kind": "field",
+                        "field": "assignee"
+                    }
+                ],
+                "subject": {
+                    "en": "Due soon: {{title}}",
+                    "nl": "Bijna over tijd: {{title}}"
+                },
+                "actions": [
+                    {
+                        "label": {
+                            "en": "Open",
+                            "nl": "Openen"
+                        },
+                        "primary": true,
+                        "target": {
+                            "kind": "route",
+                            "app": "openregister",
+                            "route": "flow-tasks/{{taskUuid}}"
+                        }
+                    }
+                ]
+            },
+            "taskEscalated": {
+                "trigger": {
+                    "type": "transition",
+                    "action": "escalate"
+                },
+                "enabled": true,
+                "channels": [
+                    "nc-notification"
+                ],
+                "recipients": [
+                    {
+                        "kind": "field",
+                        "field": "assignee"
+                    },
+                    {
+                        "kind": "field",
+                        "field": "requester"
+                    }
+                ],
+                "subject": {
+                    "en": "Escalated: {{title}}",
+                    "nl": "Geescaleerd: {{title}}"
+                }
+            },
+            "taskOverdue": {
+                "trigger": {
+                    "type": "scheduled",
+                    "intervalSec": 86400,
+                    "filter": {
+                        "all": [
+                            {
+                                "field": "isTerminal",
+                                "operator": "notIn",
+                                "values": [
+                                    true
+                                ]
+                            },
+                            {
+                                "field": "dueAt",
+                                "operator": "before",
+                                "value": "now"
+                            }
+                        ]
+                    },
+                    "dedupeFields": [
+                        "taskUuid"
+                    ]
+                },
+                "enabled": true,
+                "channels": [
+                    "nc-notification"
+                ],
+                "recipients": [
+                    {
+                        "kind": "field",
+                        "field": "assignee"
+                    }
+                ],
+                "subject": {
+                    "en": "Task overdue: {{title}}",
+                    "nl": "Taak over tijd: {{title}}"
+                },
+                "actions": [
+                    {
+                        "label": {
+                            "en": "Open",
+                            "nl": "Openen"
+                        },
+                        "primary": true,
+                        "target": {
+                            "kind": "route",
+                            "app": "openregister",
+                            "route": "flow-tasks/{{taskUuid}}"
+                        }
+                    }
+                ]
+            },
+            "taskCancelled": {
+                "trigger": {
+                    "type": "transition",
+                    "action": [
+                        "cancel",
+                        "terminate"
+                    ]
+                },
+                "enabled": true,
+                "channels": [
+                    "nc-notification"
+                ],
+                "recipients": [
+                    {
+                        "kind": "field",
+                        "field": "assignee"
+                    }
+                ],
+                "subject": {
+                    "en": "Task withdrawn: {{title}}",
+                    "nl": "Taak ingetrokken: {{title}}"
+                }
+            },
+            "taskWriteBackRefused": {
+                "trigger": {
+                    "type": "transition",
+                    "action": "write-back-refused"
+                },
+                "enabled": true,
+                "channels": [
+                    "nc-notification"
+                ],
+                "recipients": [
+                    {
+                        "kind": "field",
+                        "field": "writeBackActor"
+                    }
+                ],
+                "subject": {
+                    "en": "Change not applied: {{title}}",
+                    "nl": "Wijziging niet doorgevoerd: {{title}}"
+                },
+                "message": {
+                    "en": "{{writeBackReason}}",
+                    "nl": "{{writeBackReason}}"
+                },
+                "actions": [
+                    {
+                        "label": {
+                            "en": "Open task",
+                            "nl": "Taak openen"
+                        },
+                        "primary": true,
+                        "target": {
+                            "kind": "route",
+                            "app": "openregister",
+                            "route": "flow-tasks/{{taskUuid}}"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

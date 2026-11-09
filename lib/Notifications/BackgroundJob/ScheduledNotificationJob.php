@@ -35,11 +35,12 @@ namespace OCA\OpenRegister\Notifications\BackgroundJob;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -86,33 +87,79 @@ final class ScheduledNotificationJob extends TimedJob {
 	private ?ICache $stateCache = null;
 
 	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Magic object mapper.
+	 *
+	 * @var MagicObjectFinderInterface
+	 */
+	private readonly MagicObjectFinderInterface $objectMapper;
+
+	/**
+	 * Operator-aware filter evaluator.
+	 *
+	 * @var ScheduledFilterEvaluator
+	 */
+	private readonly ScheduledFilterEvaluator $filterEvaluator;
+
+	/**
+	 * Notification dispatcher.
+	 *
+	 * @var AnnotationNotificationDispatcher
+	 */
+	private readonly AnnotationNotificationDispatcher $dispatcher;
+
+	/**
+	 * Per-object dedup state mapper.
+	 *
+	 * @var NotificationDedupeStateMapper
+	 */
+	private readonly NotificationDedupeStateMapper $dedupeMapper;
+
+	/**
+	 * App config for tunable retention window.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Wire collaborators and configure the timed-job interval.
 	 *
-	 * @param ITimeFactory $time Nextcloud time factory.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicMapperInterface $objectMapper Magic object mapper.
-	 * @param AnnotationNotificationDispatcher $dispatcher Notification dispatcher.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param ICacheFactory $cacheFactory Distributed cache factory.
-	 * @param ScheduledFilterEvaluator $filterEvaluator Operator-aware filter evaluator.
-	 * @param NotificationDedupeStateMapper $dedupeMapper Per-object dedup state mapper.
-	 * @param IAppConfig $appConfig App config for tunable retention window.
+	 * @param ITimeFactory                  $time         Nextcloud time factory.
+	 * @param ScheduledObjectSources        $sources      Schemas, objects and the filter evaluator.
+	 * @param ScheduledNotificationDelivery $delivery     Dispatcher, dedup state, app config and logger.
+	 * @param ICacheFactory                 $cacheFactory Distributed cache factory.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly AnnotationNotificationDispatcher $dispatcher,
-		private readonly LoggerInterface $logger,
+		ScheduledObjectSources $sources,
+		ScheduledNotificationDelivery $delivery,
 		ICacheFactory $cacheFactory,
-		private readonly ScheduledFilterEvaluator $filterEvaluator,
-		private readonly NotificationDedupeStateMapper $dedupeMapper,
-		private readonly IAppConfig $appConfig,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: 60);
+		$this->schemaMapper = $sources->schemaMapper;
+		$this->objectMapper = $sources->objectMapper;
+		$this->filterEvaluator = $sources->filterEvaluator;
+		$this->dispatcher = $delivery->dispatcher;
+		$this->dedupeMapper = $delivery->dedupeMapper;
+		$this->appConfig = $delivery->appConfig;
+		$this->logger = $delivery->logger;
 
 		try {
 			$this->stateCache = $cacheFactory->createDistributed('openregister_scheduled_notifs');
@@ -525,9 +572,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	 */
 	private function upsertState(ScheduledFire $fire, bool $dispatched): void {
 		$this->dedupeMapper->upsert(
-			schemaId: $fire->schemaId,
-			ruleKey: $fire->name,
-			objectUuid: $fire->objectUuid,
+			key: new NotificationDedupeKey(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $fire->objectUuid),
 			fingerprint: $fire->fingerprint,
 			now: $fire->seenAt,
 			dispatched: $dispatched

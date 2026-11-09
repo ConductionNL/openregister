@@ -68,7 +68,9 @@ use Psr\Log\NullLogger;
 /**
  * Task 4.2: the role grant and the grant that arrives from outside the block.
  *
+ * @uses   \OCA\OpenRegister\Service\Rbac\RoleBlockExpander
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
@@ -81,6 +83,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class PermissionHandlerDenyOverGrantChainTest extends TestCase {
 
@@ -147,7 +151,7 @@ class PermissionHandlerDenyOverGrantChainTest extends TestCase {
 
 		$logger = new NullLogger();
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,

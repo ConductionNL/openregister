@@ -20,12 +20,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ChatStreamController;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Conversation;
-use OCA\OpenRegister\Db\ConversationMapper;
-use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\ConversationMapper;
+use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
+use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatStreamControllerFactory;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -116,9 +116,12 @@ class GoldenChatStreamController extends ChatStreamController {
  * fixtures/chat-stream-golden.json. Set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Controller\ChatStreamController
- * @uses \OCA\OpenRegister\Service\Chat\StreamYieldChannel
- * @uses \OCA\OpenRegister\Db\Conversation
- * @uses \OCA\OpenRegister\Db\Agent
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel
+ * @uses \OCA\OpenRegister\Mcp\Db\Conversation
+ * @uses \OCA\OpenRegister\Mcp\Db\Agent
+ * @uses \OCA\OpenRegister\Controller\Support\ChatStreamChat
+ * @uses \OCA\OpenRegister\Controller\Support\ChatStreamControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ChatStreamPlatform
  */
 class ChatStreamControllerStreamGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/chat-stream-golden.json';

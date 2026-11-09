@@ -21,7 +21,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
-use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\Flow;
@@ -32,7 +31,6 @@ use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
-use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -79,11 +77,9 @@ class ImportHandlerFlowTest extends TestCase {
 			objectEntityMapper:  $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper:       $this->createMock(MappingMapper::class),
-			client:              $this->createMock(Client::class),
 			appConfig:           $this->createMock(IAppConfig::class),
 			logger:              $this->logger,
 			appDataPath:         '/tmp',
-			uploadHandler:       $this->createMock(UploadHandler::class),
 			objectService:       $this->createMock(ObjectService::class)
 		);
 
@@ -114,11 +110,9 @@ class ImportHandlerFlowTest extends TestCase {
 			objectEntityMapper:  $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper:       $this->createMock(MappingMapper::class),
-			client:              $this->createMock(Client::class),
 			appConfig:           $this->createMock(IAppConfig::class),
 			logger:              $this->createMock(LoggerInterface::class),
 			appDataPath:         '/tmp',
-			uploadHandler:       $this->createMock(UploadHandler::class),
 			objectService:       $this->createMock(ObjectService::class)
 		);
 

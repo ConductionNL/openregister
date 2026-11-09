@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence;
+use PHPUnit\Framework\MockObject\MockObject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use PHPUnit\Framework\TestCase;
@@ -45,11 +47,35 @@ use ReflectionProperty;
  * Row-outcome classification in the streaming bulk-upsert primitive.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Exception\ValidationException
  * @uses \OCA\OpenRegister\Service\Object\BatchOperationStatus
  */
 class SaveObjectStreamingOutcomeTest extends TestCase {
+
+	/**
+	 * A handler whose saveObject() the test answers, with an empty reference verdict store.
+	 *
+	 * @return SaveObject&MockObject
+	 */
+	private function streamingHandler(): SaveObject {
+		$handler = $this->createPartialMock(SaveObject::class, ['saveObject']);
+		$existence = (new \ReflectionClass(ReferenceExistence::class))->newInstanceWithoutConstructor();
+		(new ReflectionProperty(SaveObject::class, 'referenceExistence'))->setValue($handler, $existence);
+
+		return $handler;
+	}//end streamingHandler()
 
 	/**
 	 * A SaveObject whose `saveObject()` is stubbed to publish a given verdict.
@@ -65,7 +91,7 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 		// this reachable without the twenty collaborators a real SaveObject
 		// needs. The loop under test touches only the status object, the
 		// reference cache and this one method.
-		$handler = $this->createPartialMock(SaveObject::class, ['saveObject']);
+		$handler = $this->streamingHandler();
 
 		$slot = new ReflectionProperty(SaveObject::class, 'lastSaveOutcome');
 		$slot->setAccessible(true);
@@ -105,7 +131,7 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 	 * @return SaveObject The instrumented handler.
 	 */
 	private function handlerYieldingWithFailureAt(int $failIndex): SaveObject {
-		$handler = $this->createPartialMock(SaveObject::class, ['saveObject']);
+		$handler = $this->streamingHandler();
 
 		$logger = new ReflectionProperty(SaveObject::class, 'logger');
 		$logger->setAccessible(true);
@@ -287,19 +313,19 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 	 * @return void
 	 */
 	public function testReferenceCacheGrowthCountsAsMissesAndNoGrowthAsAHit(): void {
-		$handler = $this->createPartialMock(SaveObject::class, ['saveObject']);
-		$cache = new ReflectionProperty(SaveObject::class, 'referenceValidationCache');
-		$cache->setAccessible(true);
+		$handler = $this->streamingHandler();
+		$existence = (new ReflectionProperty(SaveObject::class, 'referenceExistence'))->getValue($handler);
+		$cache = new ReflectionProperty(ReferenceExistence::class, 'verdicts');
 		$growth = [2, 0, 1];
 		$call = 0;
 		$handler->method('saveObject')->willReturnCallback(
-			function () use ($handler, $cache, $growth, &$call): ObjectEntity {
-				$entries = $cache->getValue($handler);
+			function () use ($existence, $cache, $growth, &$call): ObjectEntity {
+				$entries = $cache->getValue($existence);
 				for ($i = 0; $i < $growth[$call]; $i++) {
 					$entries['k' . $call . '-' . $i] = true;
 				}
 
-				$cache->setValue($handler, $entries);
+				$cache->setValue($existence, $entries);
 				$call++;
 				$entity = new ObjectEntity();
 				$entity->setUuid('uuid-' . $call);

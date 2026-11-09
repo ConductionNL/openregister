@@ -31,9 +31,9 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatStreamControllerFactory;
 
 use OCA\OpenRegister\Controller\ChatStreamController;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\ConversationMapper;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\ConversationMapper;
+use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use OCP\IUser;

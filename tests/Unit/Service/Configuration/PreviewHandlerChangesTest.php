@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\ImportSelection;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
+use OCA\OpenRegister\Service\Configuration\PreviewMappers;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -89,11 +90,9 @@ final class PreviewHandlerChangesTest extends TestCase {
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 
 		$this->handler = new PreviewHandler(
-			$this->registerMapper,
-			$this->schemaMapper,
+			new PreviewMappers($this->registerMapper, $this->schemaMapper, $this->objectMapper),
 			$this->createMock(LoggerInterface::class),
-			$this->fetchHandler,
-			$this->objectMapper
+			$this->fetchHandler
 		);
 	}//end setUp()
 

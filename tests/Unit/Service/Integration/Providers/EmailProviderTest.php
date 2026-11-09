@@ -181,6 +181,34 @@ class EmailProviderTest extends TestCase {
 		$this->assertSame('2', $result['nextCursor']);
 	}//end testListHonoursPaginationFilters()
 
+	public function testListWithoutALimitAsksForEverythingAndHasNoCursor(): void {
+		$this->emailService->expects($this->once())
+			->method('getEmailsForObject')
+			->with(objectUuid: 'obj-uuid', limit: null, offset: null)
+			->willReturn(['results' => [['id' => 2]], 'total' => '25']);
+
+		$this->assertSame(
+			['items' => [['id' => 2]], 'total' => 25, 'nextCursor' => null],
+			$this->provider->list('reg', 'schema', 'obj-uuid', ['_page' => 4])
+		);
+	}//end testListWithoutALimitAsksForEverythingAndHasNoCursor()
+
+	public function testListTreatsANegativePageAsTheFirst(): void {
+		$this->emailService->expects($this->once())
+			->method('getEmailsForObject')
+			->with(objectUuid: 'obj-uuid', limit: 2, offset: 0)
+			->willReturn(['results' => [['id' => 1], ['id' => 2]], 'total' => 3]);
+
+		$this->assertSame('1', $this->provider->list('reg', 'schema', 'obj-uuid', ['_limit' => '2', '_page' => '-3'])['nextCursor']);
+	}//end testListTreatsANegativePageAsTheFirst()
+
+	public function testListHasNoCursorWhenThisPageReachesTheTotalExactly(): void {
+		$this->emailService->method('getEmailsForObject')
+			->willReturn(['results' => [['id' => 3]], 'total' => 3]);
+
+		$this->assertNull($this->provider->list('r', 's', 'obj', ['_limit' => 1, '_page' => 2])['nextCursor']);
+	}//end testListHasNoCursorWhenThisPageReachesTheTotalExactly()
+
 	public function testListReturnsEmptyEnvelopeOnException(): void {
 		$this->emailService->method('getEmailsForObject')
 			->willThrowException(new \RuntimeException('Mail down'));

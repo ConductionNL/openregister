@@ -53,48 +53,36 @@ final class ObjectActionShape {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
 	 */
 	public static function refusals(string $key, array $definition, array $lifecycle, ?array $authorization): array {
+		$action = new ObjectActionEntry(key: $key, definition: $definition);
 		$bodies = ObjectActionDefinition::bodiesOf(definition: $definition);
 		if (count($bodies) > 1) {
 			return [sprintf('Action "%s": an action has one body, but this one declares %s.', $key, implode(' and ', $bodies))];
 		}
 
-		$kind = ($bodies[0] ?? null);
-
-		return array_values(
-			array_merge(
-				self::bodyRefusals(key: $key, kind: $kind, definition: $definition, lifecycle: $lifecycle),
-				self::inputRefusals(key: $key, definition: $definition),
-				self::surfaceRefusals(key: $key, definition: $definition),
-				self::modeRefusals(key: $key, kind: $kind, definition: $definition),
-				ObjectActionElevation::refusals(key: $key, definition: $definition, authorization: $authorization)
-			)
-		);
+		return array_values(array_merge(
+			self::bodyRefusals(action: $action, lifecycle: $lifecycle),
+			self::inputRefusals(action: $action),
+			self::surfaceRefusals(action: $action),
+			self::modeRefusals(action: $action),
+			ObjectActionElevation::refusals(key: $key, definition: $definition, authorization: $authorization)
+		));
 	}//end refusals()
 
 	/**
 	 * Refusals about the body itself.
 	 *
-	 * @param string               $key        The action key.
-	 * @param string|null          $kind       The body kind.
-	 * @param array<string, mixed> $definition The declared entry.
-	 * @param array<string, mixed> $lifecycle  The schema lifecycle; [] skips the transition check.
+	 * @param ObjectActionEntry    $action    The declared action.
+	 * @param array<string, mixed> $lifecycle The schema lifecycle; [] skips the transition check.
 	 *
 	 * @return list<string> The refusals.
 	 */
-	private static function bodyRefusals(string $key, ?string $kind, array $definition, array $lifecycle): array {
-		if ($kind === ObjectActionDefinition::KIND_TRANSITION) {
-			return self::transitionRefusals(key: $key, transition: $definition[$kind], lifecycle: $lifecycle);
-		}
-
-		if ($kind === ObjectActionDefinition::KIND_STEPS) {
-			return self::stepsRefusals(key: $key, steps: $definition[$kind]);
-		}
-
-		if ($kind === ObjectActionDefinition::KIND_SELF_ASSIGN) {
-			return ObjectActionSelfAssignShape::refusals(key: $key, definition: $definition);
-		}
-
-		return [];
+	private static function bodyRefusals(ObjectActionEntry $action, array $lifecycle): array {
+		return match (ObjectActionDefinition::bodiesOf(definition: $action->definition)[0] ?? null) {
+			ObjectActionDefinition::KIND_TRANSITION => self::transitionRefusals(action: $action, lifecycle: $lifecycle),
+			ObjectActionDefinition::KIND_STEPS => self::stepsRefusals(key: $action->key, steps: $action->definition[ObjectActionDefinition::KIND_STEPS]),
+			ObjectActionDefinition::KIND_SELF_ASSIGN => ObjectActionSelfAssignShape::refusals(key: $action->key, definition: $action->definition),
+			default => [],
+		};
 	}//end bodyRefusals()
 
 	/**
@@ -103,28 +91,40 @@ final class ObjectActionShape {
 	 * A lifecycle in `provider` or `graph` mode answers its transitions at run
 	 * time, so only a static `transitions` map can be checked here.
 	 *
-	 * @param string               $key        The action key.
-	 * @param mixed                $transition The declared transition key.
-	 * @param array<string, mixed> $lifecycle  The schema lifecycle; [] skips the check.
+	 * @param ObjectActionEntry    $action    The declared action, with a `transition` body.
+	 * @param array<string, mixed> $lifecycle The schema lifecycle; [] skips the check.
 	 *
 	 * @return list<string> The refusals.
 	 */
-	private static function transitionRefusals(string $key, mixed $transition, array $lifecycle): array {
+	private static function transitionRefusals(ObjectActionEntry $action, array $lifecycle): array {
+		$transition = $action->definition[ObjectActionDefinition::KIND_TRANSITION];
 		if (is_string($transition) === false || trim($transition) === '') {
-			return [sprintf('Action "%s": "transition" must name a lifecycle transition.', $key)];
+			return [sprintf('Action "%s": "transition" must name a lifecycle transition.', $action->key)];
 		}
 
-		$transitions = ($lifecycle['transitions'] ?? []);
-		if (is_array($transitions) === false || $transitions === []) {
-			return [];
-		}
-
-		if (array_key_exists($transition, $transitions) === false) {
-			return [sprintf('Action "%s": the lifecycle declares no transition "%s".', $key, $transition)];
+		$declared = self::declaredTransitions(lifecycle: $lifecycle);
+		if ($declared !== [] && array_key_exists($transition, $declared) === false) {
+			return [sprintf('Action "%s": the lifecycle declares no transition "%s".', $action->key, $transition)];
 		}
 
 		return [];
 	}//end transitionRefusals()
+
+	/**
+	 * The lifecycle's static `transitions` map, [] when it declares none or not as a map.
+	 *
+	 * @param array<string, mixed> $lifecycle The schema lifecycle.
+	 *
+	 * @return array<mixed> The declared transitions, keyed by transition key.
+	 */
+	private static function declaredTransitions(array $lifecycle): array {
+		$transitions = ($lifecycle['transitions'] ?? []);
+		if (is_array($transitions) === false) {
+			return [];
+		}
+
+		return $transitions;
+	}//end declaredTransitions()
 
 	/**
 	 * Refusals about the shape of a `steps` body.
@@ -138,12 +138,12 @@ final class ObjectActionShape {
 	 * @return list<string> The refusals.
 	 */
 	private static function stepsRefusals(string $key, mixed $steps): array {
-		if (is_array($steps) === false || $steps === [] || array_is_list($steps) === false) {
+		if (self::isStepList(steps: $steps) === false) {
 			return [sprintf('Action "%s": "steps" must be a non-empty list of flow steps.', $key)];
 		}
 
 		foreach ($steps as $index => $step) {
-			$refusal = self::stepRefusal(key: $key, position: ($index + 1), step: $step);
+			$refusal = self::stepRefusal(prefix: sprintf('Action "%s": step %d', $key, ($index + 1)), step: $step);
 			if ($refusal !== null) {
 				return [$refusal];
 			}
@@ -153,42 +153,63 @@ final class ObjectActionShape {
 	}//end stepsRefusals()
 
 	/**
+	 * Whether declared steps are a non-empty list.
+	 *
+	 * @param mixed $steps The declared steps.
+	 *
+	 * @return bool True when they are.
+	 */
+	private static function isStepList(mixed $steps): bool {
+		return is_array($steps) === true && $steps !== [] && array_is_list($steps) === true;
+	}//end isStepList()
+
+	/**
 	 * The refusal one step earns.
 	 *
-	 * @param string $key      The action key.
-	 * @param int    $position The step's position, from 1.
-	 * @param mixed  $step     The step.
+	 * @param string $prefix The refusal's opening, naming the action and the step's position from 1.
+	 * @param mixed  $step   The step.
 	 *
 	 * @return string|null The refusal.
 	 */
-	private static function stepRefusal(string $key, int $position, mixed $step): ?string {
-		if (is_array($step) === false || is_string($step['type'] ?? null) === false || trim((string)$step['type']) === '') {
-			return sprintf('Action "%s": step %d must name its node "type".', $key, $position);
+	private static function stepRefusal(string $prefix, mixed $step): ?string {
+		if (is_array($step) === false || self::namesType(step: $step) === false) {
+			return $prefix.' must name its node "type".';
 		}
 
 		if (array_key_exists('config', $step) === true && is_array($step['config']) === false) {
-			return sprintf('Action "%s": step %d has a "config" that is not an object.', $key, $position);
+			return $prefix.' has a "config" that is not an object.';
 		}
 
 		return null;
 	}//end stepRefusal()
 
 	/**
+	 * Whether a step names its node type.
+	 *
+	 * @param array<mixed> $step The step.
+	 *
+	 * @return bool True when `type` is a non-blank string.
+	 */
+	private static function namesType(array $step): bool {
+		return is_string($step['type'] ?? null) === true && trim((string)$step['type']) !== '';
+	}//end namesType()
+
+	/**
 	 * Refusals about `inputs` and `when`.
 	 *
-	 * @param string               $key        The action key.
-	 * @param array<string, mixed> $definition The declared entry.
+	 * @param ObjectActionEntry $action The declared action.
 	 *
 	 * @return list<string> The refusals.
 	 */
-	private static function inputRefusals(string $key, array $definition): array {
-		$refusals = [];
+	private static function inputRefusals(ObjectActionEntry $action): array {
+		$definition = $action->definition;
+		$refusals   = [];
 		if (array_key_exists('inputs', $definition) === true && self::isObjectSchema(inputs: $definition['inputs']) === false) {
-			$refusals[] = sprintf('Action "%s": "inputs" must be a JSON Schema of type "object".', $key);
+			$refusals[] = sprintf('Action "%s": "inputs" must be a JSON Schema of type "object".', $action->key);
 		}
 
 		if (array_key_exists('when', $definition) === true && FlowExpression::isValid(logic: $definition['when']) === false) {
-			$refusals[] = sprintf('Action "%s": "when" is not valid JSONLogic.', $key);
+			$refusals[] = sprintf('Action "%s": "when" is not valid JSONLogic.', $action->key);
 		}
 
 		return $refusals;
@@ -212,21 +233,21 @@ final class ObjectActionShape {
 	/**
 	 * Refusals about `surfaces`.
 	 *
-	 * @param string               $key        The action key.
-	 * @param array<string, mixed> $definition The declared entry.
+	 * @param ObjectActionEntry $action The declared action.
 	 *
 	 * @return list<string> The refusals.
 	 */
-	private static function surfaceRefusals(string $key, array $definition): array {
-		$surfaces = ($definition['surfaces'] ?? ObjectActionDefinition::DEFAULT_SURFACES);
+	private static function surfaceRefusals(ObjectActionEntry $action): array {
+		$surfaces = ($action->definition['surfaces'] ?? ObjectActionDefinition::DEFAULT_SURFACES);
 		if (is_array($surfaces) === false || array_diff(array_map('strval', $surfaces), ObjectActionDefinition::SURFACES) !== []) {
-			return [sprintf('Action "%s": "surfaces" may only name %s.', $key, implode(', ', ObjectActionDefinition::SURFACES))];
+			return [sprintf('Action "%s": "surfaces" may only name %s.', $action->key, implode(', ', ObjectActionDefinition::SURFACES))];
 		}
 
+		$inputs = ($action->definition['inputs'] ?? null);
 		if (in_array('bulk', $surfaces, true) === true
-			&& ObjectActionInputSchema::anyProperty(inputs: ($definition['inputs'] ?? null), test: ObjectActionInputSchema::defaultsFromObject(...)) === true
+			&& ObjectActionInputSchema::anyProperty(inputs: $inputs, test: ObjectActionInputSchema::defaultsFromObject(...)) === true
 		) {
-			return [sprintf('Action "%s": an input defaults from "@object", so the action cannot be offered on "bulk".', $key)];
+			return [sprintf('Action "%s": an input defaults from "@object", so the action cannot be offered on "bulk".', $action->key)];
 		}
 
 		return [];
@@ -235,28 +256,45 @@ final class ObjectActionShape {
 	/**
 	 * Refusals about `mode` and `next`.
 	 *
-	 * @param string               $key        The action key.
-	 * @param string|null          $kind       The body kind.
-	 * @param array<string, mixed> $definition The declared entry.
+	 * @param ObjectActionEntry $action The declared action.
 	 *
 	 * @return list<string> The refusals.
 	 */
-	private static function modeRefusals(string $key, ?string $kind, array $definition): array {
+	private static function modeRefusals(ObjectActionEntry $action): array {
+		$mode     = ($action->definition['mode'] ?? 'sync');
 		$refusals = [];
-		$mode = ($definition['mode'] ?? 'sync');
-		$writeOnly = ObjectActionInputSchema::anyProperty(inputs: ($definition['inputs'] ?? null), test: ObjectActionInputSchema::isWriteOnly(...));
 		if (in_array($mode, ObjectActionDefinition::MODES, true) === false) {
-			$refusals[] = sprintf('Action "%s": "mode" must be "sync" or "async".', $key);
-		} else if ($mode === 'async' && $kind === ObjectActionDefinition::KIND_TRANSITION) {
-			$refusals[] = sprintf('Action "%s": a transition is one write and always runs sync.', $key);
-		} else if ($mode === 'async' && $writeOnly === true) {
-			$refusals[] = sprintf('Action "%s": a writeOnly input is never stored, so the action cannot run async.', $key);
+			$refusals[] = sprintf('Action "%s": "mode" must be "sync" or "async".', $action->key);
+		} else if ($mode === 'async') {
+			$refusals = self::asyncRefusals(action: $action);
 		}
 
-		if (array_key_exists('next', $definition) === true && in_array($definition['next'], FlowNextHint::HINTS, true) === false) {
-			$refusals[] = sprintf('Action "%s": "next" must be one of %s.', $key, implode(', ', FlowNextHint::HINTS));
+		if (array_key_exists('next', $action->definition) === true && in_array($action->definition['next'], FlowNextHint::HINTS, true) === false) {
+			$refusals[] = sprintf('Action "%s": "next" must be one of %s.', $action->key, implode(', ', FlowNextHint::HINTS));
 		}
 
 		return $refusals;
 	}//end modeRefusals()
+
+	/**
+	 * The refusals an action declared `async` earns.
+	 *
+	 * The entry declares at most one body here, so a `transition` key is its body.
+	 *
+	 * @param ObjectActionEntry $action The declared action.
+	 *
+	 * @return list<string> The refusals.
+	 */
+	private static function asyncRefusals(ObjectActionEntry $action): array {
+		if (array_key_exists(ObjectActionDefinition::KIND_TRANSITION, $action->definition) === true) {
+			return [sprintf('Action "%s": a transition is one write and always runs sync.', $action->key)];
+		}
+
+		$inputs = ($action->definition['inputs'] ?? null);
+		if (ObjectActionInputSchema::anyProperty(inputs: $inputs, test: ObjectActionInputSchema::isWriteOnly(...)) === true) {
+			return [sprintf('Action "%s": a writeOnly input is never stored, so the action cannot run async.', $action->key)];
+		}
+
+		return [];
+	}//end asyncRefusals()
 }//end class

@@ -34,28 +34,28 @@ namespace OCA\OpenRegister\Service\BulkJob;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\BulkAction\RestorePriorValuesAction;
+use OCA\OpenRegister\BulkAction\RestorePriorValuesActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\BulkJobMapper;
-use OCA\OpenRegister\Db\BulkJobMemberMapper;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
+use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 
 /**
  * Class BulkJobReversal
  */
-class BulkJobReversal {
+class BulkJobReversal implements BulkJobReversalInterface {
 
 	/**
 	 * Constructor.
 	 *
 	 * @param BulkJobService      $service      The lifecycle the reversal reuses.
-	 * @param BulkJobMapper       $jobMapper    Job persistence.
-	 * @param BulkJobMemberMapper $memberMapper Member persistence.
+	 * @param BulkJobMapperInterface       $jobMapper    Job persistence.
+	 * @param BulkJobMemberMapperInterface $memberMapper Member persistence.
 	 */
 	public function __construct(
 		private readonly BulkJobService $service,
-		private readonly BulkJobMapper $jobMapper,
-		private readonly BulkJobMemberMapper $memberMapper,
+		private readonly BulkJobMapperInterface $jobMapper,
+		private readonly BulkJobMemberMapperInterface $memberMapper,
 	) {
 	}//end __construct()
 
@@ -97,8 +97,8 @@ class BulkJobReversal {
 		}
 
 		$reversal = $this->service->create(
-			actionId: RestorePriorValuesAction::ID,
-			parameters: [RestorePriorValuesAction::PARAM_JOB => (int)$original->getId()],
+			actionId: RestorePriorValuesActionInterface::ID,
+			parameters: [RestorePriorValuesActionInterface::PARAM_JOB => (int)$original->getId()],
 			selection: ['ids' => $uuids],
 			justification: $justification,
 			actorUid: $actorUid,

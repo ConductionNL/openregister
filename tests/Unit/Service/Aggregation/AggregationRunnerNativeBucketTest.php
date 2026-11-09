@@ -112,7 +112,7 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 			$captured['sql'],
 			'MySQL path MUST emit DATE_FORMAT with the day-gap format string'
 		);
-		$this->assertStringContainsString('`oc_register_1_schema_calllogs`', $captured['sql'], 'MySQL path MUST use backticks for the table');
+		$this->assertStringContainsString('`*PREFIX*register_1_schema_calllogs`', $captured['sql'], 'MySQL path MUST use backticks for the table');
 		$this->assertStringContainsString('`_organisation`', $captured['sql'], 'MySQL path MUST use backticks for the org column');
 		$this->assertSame('mysql', $result['backend'], 'response backend MUST be "mysql"');
 
@@ -178,7 +178,7 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 			$captured['sql'],
 			'SQLite path MUST emit strftime with the day-gap format string'
 		);
-		$this->assertStringContainsString('"oc_register_1_schema_calllogs"', $captured['sql'], 'SQLite path MUST use double-quotes for the table');
+		$this->assertStringContainsString('"*PREFIX*register_1_schema_calllogs"', $captured['sql'], 'SQLite path MUST use double-quotes for the table');
 		$this->assertSame('sqlite', $result['backend'], 'response backend MUST be "sqlite"');
 
 	}//end testSqlitePlatformEmitsStrftimeWithDoubleQuotes()

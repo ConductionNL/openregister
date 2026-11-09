@@ -119,11 +119,7 @@ class MacroActionValidator {
 				}
 			}
 
-			return sprintf(
-				'Action "%s": flow "%s" has no manual trigger, so nothing in it starts when the action is invoked.',
-				$binding->action,
-				$binding->flow
-			);
+			return $this->refusal(binding: $binding, why: 'has no manual trigger, so nothing in it starts when the action is invoked.');
 		}
 
 		return null;
@@ -170,31 +166,31 @@ class MacroActionValidator {
 				return $this->declaredRefusalFor(binding: $binding, configuration: $configuration);
 			}
 
-			return sprintf(
-				'Action "%s": flow "%s" does not exist.',
-				$binding->action,
-				$binding->flow
-			);
+			return $this->refusal(binding: $binding, why: 'does not exist.');
 		}
 
 		if ($this->isPublished(flow: $flow) === false) {
-			return sprintf(
-				'Action "%s": flow "%s" is not published, so the action would do nothing.',
-				$binding->action,
-				$binding->flow
-			);
+			return $this->refusal(binding: $binding, why: 'is not published, so the action would do nothing.');
 		}
 
 		if ($this->hasManualTrigger(flow: $flow) === false) {
-			return sprintf(
-				'Action "%s": flow "%s" has no manual trigger, so nothing in it starts when the action is invoked.',
-				$binding->action,
-				$binding->flow
-			);
+			return $this->refusal(binding: $binding, why: 'has no manual trigger, so nothing in it starts when the action is invoked.');
 		}
 
 		return null;
 	}//end refusalFor()
+
+	/**
+	 * One refusal sentence about the binding's flow.
+	 *
+	 * @param MacroActionBinding $binding The binding.
+	 * @param string             $why     What is wrong with the flow, as the end of the sentence.
+	 *
+	 * @return string The refusal.
+	 */
+	private function refusal(MacroActionBinding $binding, string $why): string {
+		return sprintf('Action "%s": flow "%s" %s', $binding->action, $binding->flow, $why);
+	}//end refusal()
 
 	/**
 	 * Whether a flow is published.

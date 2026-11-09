@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Db\FlowTimer;
-use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -53,14 +53,14 @@ class RecomputeTimersForCalendarJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory      $time      The clock.
-	 * @param FlowTimerMapper   $timers    Where the timers are.
+	 * @param FlowTimerMapperInterface   $timers    Where the timers are.
 	 * @param FlowTimerControlInterface  $service   The supersession path, reused whole.
 	 * @param CalendarRecompute $recompute The rule.
 	 * @param LoggerInterface   $logger    The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly FlowTimerMapper $timers,
+		private readonly FlowTimerMapperInterface $timers,
 		private readonly FlowTimerControlInterface $service,
 		private readonly CalendarRecompute $recompute,
 		private readonly LoggerInterface $logger,

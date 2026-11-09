@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Operations;
 
 use DateTime;
 use OCA\OpenRegister\Db\JobRun;
-use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -51,7 +51,7 @@ use Throwable;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
  */
-class JobRunRecorder {
+class JobRunRecorder implements JobRunRecorderInterface {
 
 	/**
 	 * How much of a failure message the row keeps.
@@ -73,12 +73,12 @@ class JobRunRecorder {
 	/**
 	 * Constructor.
 	 *
-	 * @param JobRunMapper     $runs   The run log.
+	 * @param JobRunMapperInterface     $runs   The run log.
 	 * @param LoggerInterface  $logger Where a failure to record is reported.
 	 * @param JobAlertService  $alerts Raises the threshold alert on a failure.
 	 */
 	public function __construct(
-		private readonly JobRunMapper $runs,
+		private readonly JobRunMapperInterface $runs,
 		private readonly LoggerInterface $logger,
 		private readonly JobAlertService $alerts,
 	) {
@@ -87,12 +87,9 @@ class JobRunRecorder {
 	/**
 	 * Run the work, recording it.
 	 *
-	 * @param string        $jobClass The job class the run belongs to.
-	 * @param callable      $work     The execution to observe.
-	 * @param string        $cause    One of the JobRun CAUSE_ constants.
-	 * @param string|null   $actor    The uid that caused the run, when a person did.
-	 * @param mixed         $argument The job argument, digested into the row.
-	 * @param array<string, mixed>|null $details What the act concerned.
+	 * @param string             $jobClass The job class the run belongs to.
+	 * @param callable           $work     The execution to observe.
+	 * @param JobRunContext|null $context  The cause, actor, argument and details; null for a scheduled run.
 	 *
 	 * @return mixed Whatever the work returned.
 	 *
@@ -103,10 +100,7 @@ class JobRunRecorder {
 	public function around(
 		string $jobClass,
 		callable $work,
-		string $cause = JobRun::CAUSE_SCHEDULE,
-		?string $actor = null,
-		mixed $argument = null,
-		?array $details = null,
+		?JobRunContext $context = null,
 	): mixed {
 		if (($this->depth[$jobClass] ?? 0) > 0) {
 			// An outer recorder already holds this run and already carries the
@@ -115,7 +109,7 @@ class JobRunRecorder {
 		}
 
 		$this->depth[$jobClass] = (($this->depth[$jobClass] ?? 0) + 1);
-		$run = $this->open(jobClass: $jobClass, cause: $cause, actor: $actor, argument: $argument, details: $details);
+		$run = $this->open(jobClass: $jobClass, context: ($context ?? new JobRunContext()));
 		$startedAt = microtime(true);
 
 		try {
@@ -188,31 +182,22 @@ class JobRunRecorder {
 	 * A row that is written only at the end cannot answer "what is running
 	 * now", which is the read that refuses a double start (D-2).
 	 *
-	 * @param string               $jobClass The job class.
-	 * @param string               $cause    The cause constant.
-	 * @param string|null          $actor    The uid, when a person caused it.
-	 * @param mixed                $argument The job argument.
-	 * @param array<string, mixed>|null $details What the act concerned.
+	 * @param string        $jobClass The job class.
+	 * @param JobRunContext $context  The cause, actor, argument and details.
 	 *
 	 * @return JobRun|null The open row, or null when the log is unwritable.
 	 */
-	private function open(
-		string $jobClass,
-		string $cause,
-		?string $actor,
-		mixed $argument,
-		?array $details,
-	): ?JobRun {
+	private function open(string $jobClass, JobRunContext $context): ?JobRun {
 		$run = new JobRun();
 		$run->setJobClass($jobClass);
 		$run->setStarted(new DateTime());
 		$run->setOutcome(JobRun::OUTCOME_RUNNING);
-		$run->setCause($cause);
-		$run->setActor($actor);
-		$run->setArgumentDigest($this->digest(argument: $argument));
+		$run->setCause($context->cause);
+		$run->setActor($context->actor);
+		$run->setArgumentDigest($this->digest(argument: $context->argument));
 
-		if ($details !== null) {
-			$run->setDetails($this->encodedDetails(details: $details));
+		if ($context->details !== null) {
+			$run->setDetails($this->encodedDetails(details: $context->details));
 		}
 
 		try {

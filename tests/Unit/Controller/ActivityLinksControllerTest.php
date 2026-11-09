@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ActivityFilterService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ActivityLinksControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -89,7 +90,7 @@ class ActivityLinksControllerTest extends TestCase {
 
 		$this->visibility = $this->createMock(TimelineVisibilityService::class);
 
-		$this->controller = new ActivityLinksController(
+		$this->controller = ActivityLinksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->filterService,

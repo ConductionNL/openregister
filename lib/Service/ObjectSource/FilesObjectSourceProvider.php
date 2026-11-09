@@ -120,20 +120,13 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 			return null;
 		}
 
-		try {
-			$nodes = $userFolder->getById((int)$id);
-		} catch (Throwable $e) {
-			$this->logger->warning('[ObjectSource:files-source] could not read file: ' . $e->getMessage());
+		$file = $this->firstFile(nodes: $this->nodesById(userFolder: $userFolder, id: (int)$id));
+		if ($file === null) {
 			return null;
 		}
 
-		foreach ($nodes as $node) {
-			if ($node instanceof File) {
-				return $this->toObjectEntity(register: $register, schema: $schema, file: $node, userFolder: $userFolder);
-			}
-		}
-
-		return null;
+		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
+		return $this->fileEntity(binding: $binding, data: $this->fileData(file: $file, userFolder: $userFolder));
 	}//end find()
 
 	/**
@@ -162,13 +155,11 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 			return [];
 		}
 
-		$files = array_slice($this->collectFiles(root: $userFolder), $offset, $limit);
-		$objects = [];
-		foreach ($files as $file) {
-			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, file: $file, userFolder: $userFolder);
-		}
-
-		return $objects;
+		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
+		return array_map(
+			fn (File $file): ObjectEntity => $this->fileEntity(binding: $binding, data: $this->fileData(file: $file, userFolder: $userFolder)),
+			array_slice($this->collectFiles(root: $userFolder), $offset, $limit)
+		);
 	}//end findAll()
 
 	/**
@@ -202,53 +193,92 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
 	private function collectFiles(Folder $root): array {
-		$files = [];
-		$stack = [$root];
-		$scanned = 0;
+		$scan = new FilesScan(root: $root, cap: self::SCAN_CAP);
+		for ($folder = $scan->next(); $folder !== null; $folder = $scan->next()) {
+			$scan->visit(children: $this->listChildren(folder: $folder));
+		}
 
-		while ($stack !== [] && $scanned < self::SCAN_CAP) {
-			$folder = array_pop($stack);
-
-			try {
-				$children = $folder->getDirectoryListing();
-			} catch (Throwable $e) {
-				$this->logger->warning('[ObjectSource:files-source] could not list folder: ' . $e->getMessage());
-				continue;
-			}
-
-			foreach ($children as $child) {
-				$scanned++;
-				if ($child instanceof File) {
-					$files[] = $child;
-					continue;
-				}
-
-				if ($child instanceof Folder) {
-					$stack[] = $child;
-				}
-			}
-		}//end while
-
-		return $files;
+		return $scan->files();
 	}//end collectFiles()
 
 	/**
-	 * Map a Nextcloud file onto a non-persisted virtual ObjectEntity.
+	 * A folder's children, failing closed to none.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
-	 * @param File $file The Nextcloud file.
-	 * @param Folder $userFolder The acting user's home folder (for relative paths).
+	 * @param Folder $folder The folder.
+	 *
+	 * @return mixed The children (whatever getDirectoryListing() returns), or [].
+	 */
+	private function listChildren(Folder $folder): mixed {
+		try {
+			return $folder->getDirectoryListing();
+		} catch (Throwable $e) {
+			$this->logger->warning('[ObjectSource:files-source] could not list folder: ' . $e->getMessage());
+			return [];
+		}
+	}//end listChildren()
+
+	/**
+	 * The nodes with a file id in the user's folder, failing closed to none.
+	 *
+	 * @param Folder $userFolder The acting user's home folder.
+	 * @param int $id The file id.
+	 *
+	 * @return mixed The nodes (whatever getById() returns), or [].
+	 */
+	private function nodesById(Folder $userFolder, int $id): mixed {
+		try {
+			return $userFolder->getById($id);
+		} catch (Throwable $e) {
+			$this->logger->warning('[ObjectSource:files-source] could not read file: ' . $e->getMessage());
+			return [];
+		}
+	}//end nodesById()
+
+	/**
+	 * The first file among some nodes.
+	 *
+	 * @param mixed $nodes The nodes.
+	 *
+	 * @return File|null The file, or null when none is a file.
+	 */
+	private function firstFile(mixed $nodes): ?File {
+		foreach ($nodes as $node) {
+			if ($node instanceof File) {
+				return $node;
+			}
+		}
+
+		return null;
+	}//end firstFile()
+
+	/**
+	 * A virtual object keyed by its file id.
+	 *
+	 * @param SourcedObjectBinding $binding The bound register and schema.
+	 * @param array<string, mixed> $data The file's object data.
 	 *
 	 * @return ObjectEntity The virtual object (never saved).
+	 */
+	private function fileEntity(SourcedObjectBinding $binding, array $data): ObjectEntity {
+		return $binding->toEntity(uuid: $data['id'], data: $data);
+	}//end fileEntity()
+
+	/**
+	 * The object data of a file, with its path relative to the user's folder
+	 * (or its absolute path when it has none).
+	 *
+	 * @param File $file The file node.
+	 * @param Folder $userFolder The acting user's home folder.
+	 *
+	 * @return array<string, mixed> The object data; `id` is the file id.
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	private function toObjectEntity(Register $register, Schema $schema, File $file, Folder $userFolder): ObjectEntity {
+	private function fileData(File $file, Folder $userFolder): array {
 		$id = (string)$file->getId();
 		$path = ($userFolder->getRelativePath($file->getPath()) ?? $file->getPath());
 
-		$data = [
+		return [
 			'id' => $id,
 			'name' => $file->getName(),
 			'path' => $path,
@@ -256,13 +286,5 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 			'size' => (int)$file->getSize(),
 			'mtime' => $file->getMTime(),
 		];
-
-		$entity = new ObjectEntity();
-		$entity->setUuid($id);
-		$entity->setRegister((string)$register->getId());
-		$entity->setSchema((string)$schema->getId());
-		$entity->setObject($data);
-
-		return $entity;
-	}//end toObjectEntity()
+	}//end fileData()
 }//end class

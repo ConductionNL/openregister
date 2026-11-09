@@ -55,30 +55,11 @@ class ExampleSetOrder {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
 	 */
 	public function order(array $after, array $enabled, array $expected=[]): array {
-		$skipped = [];
-		foreach ($expected as $app) {
-			if (in_array($app, $enabled, true) === false) {
-				$skipped[] = $app;
-			}
-		}
-
+		$skipped = array_filter($expected, static fn (mixed $app): bool => in_array($app, $enabled, true) === false);
 		$waitsOn = [];
 		foreach ($after as $app => $before) {
-			$waitsOn[$app] = [];
-			if ($app !== self::CAST_APP && isset($after[self::CAST_APP]) === true) {
-				$waitsOn[$app][] = self::CAST_APP;
-			}
-
-			foreach ($before as $other) {
-				if (isset($after[$other]) === true) {
-					$waitsOn[$app][] = $other;
-					continue;
-				}
-
-				if (in_array($other, $enabled, true) === false) {
-					$skipped[] = $other;
-				}
-			}
+			$waitsOn[$app] = $this->waitsOn(app: $app, after: $after);
+			$skipped       = array_merge($skipped, $this->notTakingPart(before: $before, apps: ['after' => $after, 'enabled' => $enabled]));
 		}
 
 		$skipped = array_values(array_unique($skipped));
@@ -86,6 +67,41 @@ class ExampleSetOrder {
 
 		return ['order' => $this->sorted(waitsOn: $waitsOn), 'skipped' => $skipped];
 	}//end order()
+
+	/**
+	 * The apps one app waits on: OpenRegister when it ships a fragment, then every app in its `after` that ships one.
+	 *
+	 * @param int|string                        $app   The app.
+	 * @param array<string, array<int, string>> $after The `after` list of each app that ships a fragment.
+	 *
+	 * @return array<int, string>
+	 */
+	private function waitsOn(int|string $app, array $after): array {
+		$waits = [];
+		if ($app !== self::CAST_APP && isset($after[self::CAST_APP]) === true) {
+			$waits[] = self::CAST_APP;
+		}
+
+		return array_merge($waits, array_values(array_filter($after[$app], static fn (mixed $other): bool => isset($after[$other]) === true)));
+	}//end waitsOn()
+
+	/**
+	 * The apps of an `after` list that ship no fragment and are not enabled.
+	 *
+	 * @param array<int, string>                                                    $before The `after` list.
+	 * @param array{after: array<string, array<int, string>>, enabled: array<int, string>} $apps   The `after` lists, and every
+	 *                                                                                      enabled app id.
+	 *
+	 * @return array<int, string>
+	 */
+	private function notTakingPart(array $before, array $apps): array {
+		return array_values(
+			array_filter(
+				$before,
+				static fn (mixed $other): bool => isset($apps['after'][$other]) === false && in_array($other, $apps['enabled'], true) === false
+			)
+		);
+	}//end notTakingPart()
 
 	/**
 	 * A topological order, ties broken by app id, OpenRegister first.
@@ -99,34 +115,7 @@ class ExampleSetOrder {
 	private function sorted(array $waitsOn): array {
 		$order = [];
 		while ($waitsOn !== []) {
-			$ready = [];
-			foreach ($waitsOn as $app => $before) {
-				if (array_diff($before, $order) === []) {
-					$ready[] = $app;
-				}
-			}
-
-			if ($ready === []) {
-				$cycle = [];
-				foreach (array_keys($waitsOn) as $app) {
-					if ($this->reaches(waitsOn: $waitsOn, from: $app, target: $app, seen: []) === true) {
-						$cycle[] = $app;
-					}
-				}
-
-				sort($cycle);
-				throw new ExampleSetException(
-					'The fragments of this set wait on each other in a cycle through '.implode(', ', $cycle)
-					.'. Fix the "after" lists of these apps; nothing was written.'
-				);
-			}
-
-			sort($ready);
-			$next = $ready[0];
-			if (in_array(self::CAST_APP, $ready, true) === true) {
-				$next = self::CAST_APP;
-			}
-
+			$next    = $this->next(waitsOn: $waitsOn, order: $order);
 			$order[] = $next;
 			unset($waitsOn[$next]);
 		}
@@ -135,22 +124,66 @@ class ExampleSetOrder {
 	}//end sorted()
 
 	/**
-	 * Whether following `after` from one app leads to the target.
+	 * The app that goes next: OpenRegister when it is ready, else the ready app with the lowest id.
+	 *
+	 * @param array<int|string, array<int, string>> $waitsOn The apps each app not ordered yet waits on.
+	 * @param array<int, string>                    $order   The apps ordered so far.
+	 *
+	 * @return int|string
+	 *
+	 * @throws ExampleSetException When no app is ready: they wait on each other.
+	 */
+	private function next(array $waitsOn, array $order): int|string {
+		$ready = array_keys(array_filter($waitsOn, static fn (array $before): bool => array_diff($before, $order) === []));
+		if ($ready === []) {
+			throw $this->cycle(waitsOn: $waitsOn);
+		}
+
+		sort($ready);
+		if (in_array(self::CAST_APP, $ready, true) === true) {
+			return self::CAST_APP;
+		}
+
+		return $ready[0];
+	}//end next()
+
+	/**
+	 * The refusal naming every app that waits on itself through others.
+	 *
+	 * @param array<string, array<int, string>> $waitsOn The apps each app not ordered yet waits on.
+	 *
+	 * @return ExampleSetException
+	 */
+	private function cycle(array $waitsOn): ExampleSetException {
+		$cycle = array_values(
+			array_filter(
+				array_keys($waitsOn),
+				fn (int|string $app): bool => $this->reaches(waitsOn: $waitsOn, path: new ExampleSetOrderPath(from: $app, target: $app))
+			)
+		);
+		sort($cycle);
+
+		return new ExampleSetException(
+			'The fragments of this set wait on each other in a cycle through '.implode(', ', $cycle)
+			.'. Fix the "after" lists of these apps; nothing was written.'
+		);
+	}//end cycle()
+
+	/**
+	 * Whether following `after` from where the path is leads to its target.
 	 *
 	 * @param array<string, array<int, string>> $waitsOn The apps each app waits on.
-	 * @param string                            $from    Where to start.
-	 * @param string                            $target  The app looked for.
-	 * @param array<string, bool>               $seen    Apps already followed.
+	 * @param ExampleSetOrderPath               $path    Where the search is, what it looks for and what it followed.
 	 *
 	 * @return bool
 	 */
-	private function reaches(array $waitsOn, string $from, string $target, array $seen): bool {
-		foreach (($waitsOn[$from] ?? []) as $next) {
-			if ($next === $target) {
+	private function reaches(array $waitsOn, ExampleSetOrderPath $path): bool {
+		foreach (($waitsOn[$path->from] ?? []) as $next) {
+			if ($next === $path->target) {
 				return true;
 			}
 
-			if (isset($seen[$next]) === false && $this->reaches(waitsOn: $waitsOn, from: $next, target: $target, seen: ($seen + [$next => true])) === true) {
+			if (isset($path->seen[$next]) === false && $this->reaches(waitsOn: $waitsOn, path: $path->step(next: $next)) === true) {
 				return true;
 			}
 		}

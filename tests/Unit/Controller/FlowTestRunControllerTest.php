@@ -22,6 +22,7 @@ use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowTestRunControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -118,7 +119,7 @@ class FlowTestRunControllerTest extends TestCase {
 	 * @return FlowTestRunController The controller.
 	 */
 	private function controllerWith(?FlowAccess $access): FlowTestRunController {
-		return new FlowTestRunController(
+		return FlowTestRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			runner: $this->runner,

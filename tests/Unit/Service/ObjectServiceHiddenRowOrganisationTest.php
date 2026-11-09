@@ -88,7 +88,9 @@ use ReflectionMethod;
  */
 /**
  * @covers \OCA\OpenRegister\Service\ObjectService
+ * @uses   \OCA\OpenRegister\Service\Object\SaveAccessRequest
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSaveRun
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
@@ -107,6 +109,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 
@@ -150,7 +154,7 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 		$logger = new NullLogger();
 		$conditionMatcher = new ConditionMatcher($userSession, $container, new OperatorEvaluator($logger), $logger);
 
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,

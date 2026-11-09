@@ -14,7 +14,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				{ count: selectedObjects.length },
 			)
 		"
-		:canClose="false"
+		noClose
 		size="normal">
 		<!-- Object Selection Review -->
 		<div v-if="success === null" class="delete-step">
@@ -49,69 +49,15 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				}}
 			</NcNoteCard>
 
-			<div class="selected-objects-container">
-				<h4>
-					{{
-						t('openregister', 'Selected Objects ({count})', {
-							count: selectedObjects.length,
-						})
-					}}
-				</h4>
-
-				<div v-if="selectedObjects.length" class="selected-objects-list">
-					<div
-						v-for="obj in selectedObjects"
-						:key="obj.id"
-						class="selected-object-item">
-						<div class="object-info">
-							<strong>{{
-								obj['@self']?.name
-								|| obj.name
-								|| obj.title
-								|| obj['@self']?.title
-								|| t('openregister', 'Unnamed Object')
-							}}</strong>
-							<p class="object-id">
-								{{
-									t('openregister', 'ID: {id}', {
-										id: obj.id || obj['@self']?.id,
-									})
-								}}
-							</p>
-						</div>
-						<NcButton
-							variant="tertiary"
-							:aria-label="
-								t('openregister', 'Remove {title}', {
-									title:
-										obj['@self']?.name
-										|| obj.name
-										|| obj.title
-										|| obj['@self']?.title
-										|| obj.id,
-								})
-							"
-							@click="removeObject(obj.id)">
-							<template #icon>
-								<Close :size="20" />
-							</template>
-						</NcButton>
-					</div>
-				</div>
-
-				<NcEmptyContent
-					v-else
-					:name="t('openregister', 'No objects selected')">
-					<template #description>
-						{{
-							t(
-								'openregister',
-								'No objects are currently selected for deletion.',
-							)
-						}}
-					</template>
-				</NcEmptyContent>
-			</div>
+			<SelectedObjectsList
+				:objects="selectedObjects"
+				:emptyDescription="
+					t(
+						'openregister',
+						'No objects are currently selected for deletion.',
+					)
+				"
+				@remove="removeObject" />
 		</div>
 
 		<NcNoteCard v-if="success" type="success">
@@ -157,30 +103,28 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Close from 'vue-material-design-icons/Close.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
+import selectedObjectsDialog, {
+	refreshObjectLists,
+} from './selectedObjectsDialog.js'
 
 export default {
 	name: 'MassDeleteObject',
 	components: {
+		SelectedObjectsList,
 		NcDialog,
 		NcButton,
-		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,
 		// Icons
 		TrashCanOutline,
 		Cancel,
-		Close,
 	},
+
+	mixins: [selectedObjectsDialog],
 
 	data() {
 		return {
@@ -189,7 +133,6 @@ export default {
 			error: false,
 			result: null,
 			closeModalTimeout: null,
-			selectedObjects: [],
 		}
 	},
 
@@ -198,62 +141,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * @spec openspec/specs/entity-management-modals/spec.md
-		 */
-		initializeSelection() {
-			// `objectStore.selectedObjects` holds plain ID STRINGS — that is the
-			// contract the table binding relies on (SearchIndex's
-			// `selectedIdsForPage` does `list.map(String)`), so it must NOT be
-			// changed to objects. This dialog, however, renders objects
-			// (`obj['@self']?.name`, `obj.id`) and submits `map(obj => obj.id)`.
-			// Resolve ids to their rows here, keeping the store as-is. Anything that
-			// cannot be resolved still yields `{ id }` so the delete itself works
-			// even when the row is not in the loaded page.
-			const selection = objectStore.selectedObjects || []
-			const pool = Array.isArray(objectStore.searchCollection)
-				? objectStore.searchCollection
-				: []
-			const byId = new Map()
-			for (const row of pool) {
-				const rowId = row?.['@self']?.id ?? row?.id
-				if (rowId) byId.set(String(rowId), row)
-			}
-
-			this.selectedObjects = selection
-				.map((entry) => {
-					if (entry && typeof entry === 'object') {
-						return { ...entry, id: entry['@self']?.id ?? entry.id }
-					}
-					const row = byId.get(String(entry))
-					return row
-						? { ...row, id: row['@self']?.id ?? row.id }
-						: { id: String(entry) }
-				})
-				.filter((obj) => obj.id)
-
-			if (this.selectedObjects.length === 0) {
-				this.closeDialog()
-			}
-		},
-
-		/**
-		 * @param {string|number} objectId
-		 * @spec exclude form-state helper to deselect an object from the list
-		 */
-		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(
-				(obj) => obj.id !== objectId,
-			)
-			// Write IDs back, never objects — the table's `selectedIdsForPage`
-			// stringifies whatever is here, and objects would serialise to
-			// "[object Object]" and silently clear the visible selection.
-			objectStore.selectedObjects = this.selectedObjects.map((obj) => obj.id)
-			if (this.selectedObjects.length === 0) {
-				this.closeDialog()
-			}
-		},
-
 		/**
 		 * @spec exclude modal close UI handler
 		 */
@@ -286,25 +173,7 @@ export default {
 					this.success = result.successfulIds.length > 0
 					this.error = result.failedIds.length > 0
 					if (result.successfulIds.length > 0) {
-						// Clear selected objects and refresh whichever list is on screen.
-						//
-						// `refreshObjectList()` alone was not enough: it refetches the
-						// register/schema collection derived from registerStore/
-						// schemaStore, but the search view renders
-						// `objectStore.searchCollection`, which is only refilled by
-						// `refetchSearchCollection()`. Deleting from the search view
-						// therefore left the deleted rows on screen.
-						objectStore.selectedObjects = []
-						if (
-							typeof objectStore.refetchSearchCollection === 'function'
-						) {
-							objectStore.refetchSearchCollection()
-						}
-						objectStore.refreshObjectList().catch(() => {
-							// The register/schema pair is unavailable on views that do not
-							// set it (e.g. global search). The search refetch above is the
-							// authoritative refresh there, so this is not an error.
-						})
+						refreshObjectLists()
 
 						// Close immediately rather than after a 2s delay. The selection is
 						// already empty at this point, so leaving the dialog mounted let the
@@ -338,18 +207,6 @@ export default {
 }
 
 @include step-title;
-
-.selected-objects-container {
-	margin: 20px 0;
-}
-
-@include selected-objects-list-rules;
-
-.selected-object-item:last-child {
-	border-bottom: none;
-}
-
-@include object-info-strong-rules;
 
 .deleted-link {
 	color: var(--color-primary);

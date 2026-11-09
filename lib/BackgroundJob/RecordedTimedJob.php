@@ -25,8 +25,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Service\Operations\JobRunRecorder;
-use OCA\OpenRegister\Service\Operations\JobScheduleService;
+use OCA\OpenRegister\Service\Operations\JobRunContext;
+use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
+use OCA\OpenRegister\Service\Operations\JobScheduleServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 
@@ -51,13 +52,13 @@ abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory       $time     Time factory for the parent job class.
-	 * @param JobRunRecorder     $recorder The wrapper that writes the run row.
-	 * @param JobScheduleService $schedule The administered schedule.
+	 * @param JobRunRecorderInterface     $recorder The wrapper that writes the run row.
+	 * @param JobScheduleServiceInterface $schedule The administered schedule.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		protected readonly JobRunRecorder $recorder,
-		protected readonly JobScheduleService $schedule,
+		protected readonly JobRunRecorderInterface $recorder,
+		protected readonly JobScheduleServiceInterface $schedule,
 	) {
 		parent::__construct(time: $time);
 
@@ -85,7 +86,7 @@ abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 			work: function () use ($argument): void {
 				$this->runRecorded(argument: $argument);
 			},
-			argument: $argument
+			context: new JobRunContext(argument: $argument)
 		);
 
 	}//end run()

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Service\RiskLevelService;
-use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCP\FilesMetadata\IFilesMetadataManager;
 use OCP\FilesMetadata\Model\IFilesMetadata;
 use OCP\FilesMetadata\Model\IMetadataValueWrapper;

@@ -42,7 +42,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodeRegistry $registry The node catalogue.
+	 * @param FlowNodeRegistryInterface $registry The node catalogue.
 	 * @param FlowRunGuard|null $guard Keeps the run visibly alive between steps
 	 *                                 and enforces its deadline. Null for
 	 *                                 callers with no run to guard — the flow
@@ -58,7 +58,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 *                                   construction sites supply one.
 	 */
 	public function __construct(
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowNodeRegistryInterface $registry,
 		private readonly ?FlowRunGuard $guard = null,
 		private readonly ?FlowRunAsScope $scope = null,
 	) {
@@ -125,9 +125,9 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 		// else's answer instead of suspending with a question of its own.
 		$this->scopeSignal(context: $context, scoped: $scoped);
 
-		$startedAt = microtime(true);
+		$startedAt = hrtime(true);
 		$out = $this->executeScoped(node: $node, items: $items, config: $config, context: $context);
-		$tookMs = (int)round((microtime(true) - $startedAt) * 1000);
+		$tookMs = (int)round((hrtime(true) - $startedAt) / 1_000_000);
 
 		// Reached only when the node RETURNED. A node that suspends throws, so
 		// this line is skipped and its progress survives — which is the whole

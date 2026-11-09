@@ -35,12 +35,12 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\BulkJobsControllerServices;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\BulkJobMapper;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
-use OCA\OpenRegister\Service\BulkActionRegistry;
-use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
-use OCA\OpenRegister\Service\BulkJob\BulkJobService;
+use OCA\OpenRegister\Service\BulkActionRegistryInterface;
+use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
+use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -78,30 +78,30 @@ class BulkJobsController extends Controller {
 	/**
 	 * The lifecycle service.
 	 *
-	 * @var BulkJobService
+	 * @var BulkJobServiceInterface
 	 */
-	private readonly BulkJobService $service;
+	private readonly BulkJobServiceInterface $service;
 
 	/**
 	 * The inverse of a reversible job.
 	 *
-	 * @var BulkJobReversal
+	 * @var BulkJobReversalInterface
 	 */
-	private readonly BulkJobReversal $reversal;
+	private readonly BulkJobReversalInterface $reversal;
 
 	/**
 	 * Job persistence.
 	 *
-	 * @var BulkJobMapper
+	 * @var BulkJobMapperInterface
 	 */
-	private readonly BulkJobMapper $jobMapper;
+	private readonly BulkJobMapperInterface $jobMapper;
 
 	/**
 	 * The action catalogue.
 	 *
-	 * @var BulkActionRegistry
+	 * @var BulkActionRegistryInterface
 	 */
-	private readonly BulkActionRegistry $registry;
+	private readonly BulkActionRegistryInterface $registry;
 
 	/**
 	 * Current-user session.

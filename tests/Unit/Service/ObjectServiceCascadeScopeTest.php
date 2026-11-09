@@ -81,6 +81,12 @@ use Psr\Log\LoggerInterface;
  * The pre-validation cascade runs inside a cascade scope that carries the save's RBAC mode.
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
+ * @uses   \OCA\OpenRegister\Service\Object\BulkCacheInvalidator
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectSaveRun
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectCacheInvalidator
+ * @uses   \OCA\OpenRegister\Service\Object\ReferencePreviewInvalidation
+ * @uses   \OCA\OpenRegister\Service\Object\SavedObjectScope
+ * @uses   \OCA\OpenRegister\Service\Object\SavedScopeIds
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
@@ -90,6 +96,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindRequest
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindScope
+ * @uses \OCA\OpenRegister\Service\Object\ObjectFindTarget
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses \OCA\OpenRegister\Service\Object\NotSuppliedHandler
@@ -102,6 +109,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectDateValues
+ * @uses \OCA\OpenRegister\Service\Object\SaveAccessRequest
  */
 class ObjectServiceCascadeScopeTest extends TestCase {
 

@@ -3,7 +3,7 @@
 /**
  * OpenRegister — Declared Group Reconciler Job
  *
- * An hourly `TimedJob` driving {@see GroupReconciler}: each tick it creates any
+ * An hourly `TimedJob` driving {@see GroupReconcilerInterface}: each tick it creates any
  * Nextcloud group that a register, schema, property or stored app declaration
  * names but that does not exist.
  *
@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Authorization\GroupReconciler;
+use OCA\OpenRegister\Service\Authorization\GroupReconcilerInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -49,12 +49,12 @@ class GroupReconcilerJob extends TimedJob {
 	 * Constructor for GroupReconcilerJob.
 	 *
 	 * @param ITimeFactory $time Time factory.
-	 * @param GroupReconciler $reconciler The declared-group reconciler.
+	 * @param GroupReconcilerInterface $reconciler The declared-group reconciler.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly GroupReconciler $reconciler,
+		private readonly GroupReconcilerInterface $reconciler,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

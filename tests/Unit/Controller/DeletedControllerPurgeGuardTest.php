@@ -326,8 +326,19 @@ class DeletedControllerPurgeGuardTest extends TestCase {
 		$this->request->method('getParam')->willReturnMap(
 			[['ids', [], ['live-2', 'arch-2', 'trash-2']]]
 		);
-		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
-			->willReturn([$live, $archival, $trashed]);
+		$rows = ['live-2' => $live, 'arch-2' => $archival, 'trash-2' => $trashed];
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn(
+			array_map(
+				static function (ObjectEntity $full): ObjectEntity {
+					$slim = new ObjectEntity();
+					$slim->setUuid($full->getUuid());
+					$slim->setSchema($full->getSchema());
+					return $slim;
+				},
+				array_values($rows)
+			)
+		);
+		$this->objectMapper->method('find')->willReturnCallback(static fn (...$args): ObjectEntity => $rows[$args[0]]);
 		$this->spyOnPurges();
 
 		$response = $this->controller->destroyMultiple();

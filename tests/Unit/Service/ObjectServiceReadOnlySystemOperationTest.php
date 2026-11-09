@@ -108,6 +108,36 @@ class ObjectServiceReadOnlySystemOperationTest extends TestCase {
 	}//end testAClientUpdateToAReadOnlyPropertyIsRefused()
 
 	/**
+	 * Both rules compare business properties only, so @self never reaches them.
+	 *
+	 * @return void
+	 */
+	public function testTheRulesNeverSeeTheSelfBlock(): void {
+		$stored = new ObjectEntity();
+		$stored->setObject(['title' => 'Case 1']);
+		$mapper = $this->createMock(MagicMapper::class);
+		$mapper->method('find')->willReturn($stored);
+
+		$incoming = $this->callback(
+			static fn (array $candidate): bool => $candidate === ['title' => 'Case 2']
+		);
+		$validate = $this->createMock(ValidateObject::class);
+		$validate->expects($this->once())->method('validateReadOnlyConstraints')
+			->with($incoming, $this->anything(), $this->anything())->willReturn([]);
+		$validate->expects($this->once())->method('validateImmutableConstraints')
+			->with($incoming, $this->anything(), $this->anything())->willReturn([]);
+
+		$reflection = new ReflectionClass(ObjectService::class);
+		$service = $reflection->newInstanceWithoutConstructor();
+		foreach (['objectMapper' => $mapper, 'validateHandler' => $validate, 'currentSchema' => new Schema()] as $name => $value) {
+			$reflection->getProperty(name: $name)->setValue(objectOrValue: $service, value: $value);
+		}
+
+		$reflection->getMethod(name: 'enforceReadOnlyOnUpdate')
+			->invoke($service, ['title' => 'Case 2', '@self' => ['owner' => 'someone']], 'case-1');
+	}//end testTheRulesNeverSeeTheSelfBlock()
+
+	/**
 	 * The same write inside a system operation stamps the value.
 	 *
 	 * @return void

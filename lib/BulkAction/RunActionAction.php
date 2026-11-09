@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\BulkAction;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Http;
 use OCP\IUser;
@@ -48,24 +48,17 @@ use OCP\IUser;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
  */
-class RunActionAction implements BulkActionInterface {
-
-	/**
-	 * The bulk action id.
-	 *
-	 * @var string
-	 */
-	public const ID = 'openregister:run-action';
+class RunActionAction implements RunActionActionInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectActionRunner  $runner  The single-object run path.
+	 * @param ObjectActionRunnerInterface  $runner  The single-object run path.
 	 * @param MacroActionResolver $schemas Loads a member's schema.
 	 * @param ObjectOperationsInterface       $objects Runs the commit as the job's actor.
 	 */
 	public function __construct(
-		private readonly ObjectActionRunner $runner,
+		private readonly ObjectActionRunnerInterface $runner,
 		private readonly MacroActionResolver $schemas,
 		private readonly ObjectOperationsInterface $objects,
 	) {

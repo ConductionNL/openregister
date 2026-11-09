@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 
 /**
  * The acting user is `mallory`, a clerk. Only editors may create notes. `alice` is an editor:
@@ -46,6 +47,17 @@ use ReflectionClass;
  * signed-in caller would pass where it must refuse.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @covers \OCA\OpenRegister\Service\Object\CascadingHandler
  * @uses   \OCA\OpenRegister\Service\Object\CascadeTarget
  * @uses   \OCA\OpenRegister\Service\Object\PermissionHandler
@@ -60,6 +72,8 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses   \OCA\OpenRegister\Db\ObjectHandling
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class CascadeCreateRightsTest extends TestCase {
 
@@ -120,7 +134,7 @@ class CascadeCreateRightsTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new \RuntimeException('not available'));
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$userManager,
 			$groupManager,
@@ -159,8 +173,8 @@ class CascadeCreateRightsTest extends TestCase {
 		);
 
 		$reflection = new ReflectionClass(SaveObject::class);
-		$reflection->getProperty('schemaReferenceCache')->setValue($handler, ['note' => '2']);
-		$reflection->getProperty('schemaCache')->setValue($handler, ['2' => self::note()]);
+		SaveLookupsAccess::set($handler, 'schemaReferenceCache', ['note' => '2']);
+		SaveLookupsAccess::set($handler, 'schemaCache', ['2' => self::note()]);
 		$reflection->getProperty('urlGenerator')->setValue($handler, $this->createMock(IURLGenerator::class));
 		$reflection->getProperty('permissionHandler')->setValue($handler, $permissions);
 

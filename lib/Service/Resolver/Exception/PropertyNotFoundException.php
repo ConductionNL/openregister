@@ -34,28 +34,7 @@ use Exception;
  *
  * @phpstan-consistent-constructor
  */
-class PropertyNotFoundException extends Exception {
-
-	/**
-	 * Consumer app id (e.g. `openconnector`).
-	 *
-	 * @var string
-	 */
-	private string $appId;
-
-	/**
-	 * Config key the resolver read.
-	 *
-	 * @var string
-	 */
-	private string $configKey;
-
-	/**
-	 * Slug/UUID/name that failed to resolve to a property.
-	 *
-	 * @var string
-	 */
-	private string $resolvedValue;
+class PropertyNotFoundException extends UnresolvedValueException {
 
 	/**
 	 * Slug/UUID of the schema the property lookup targeted.
@@ -80,12 +59,12 @@ class PropertyNotFoundException extends Exception {
 		string $schemaIdentifier,
 		?Exception $previous = null,
 	) {
-		$this->appId = $appId;
-		$this->configKey = $configKey;
-		$this->resolvedValue = $resolvedValue;
 		$this->schemaIdentifier = $schemaIdentifier;
 
 		parent::__construct(
+			appId: $appId,
+			configKey: $configKey,
+			resolvedValue: $resolvedValue,
 			message: sprintf(
 				'Property "%s" (from config key "%s" on app "%s") not found on schema "%s".',
 				$resolvedValue,
@@ -93,38 +72,9 @@ class PropertyNotFoundException extends Exception {
 				$appId,
 				$schemaIdentifier
 			),
-			code: 404,
 			previous: $previous
 		);
-
 	}//end __construct()
-
-	/**
-	 * Get the app id the resolver was working against.
-	 *
-	 * @return string The consumer app id.
-	 */
-	public function getAppId(): string {
-		return $this->appId;
-	}//end getAppId()
-
-	/**
-	 * Get the config key that was read.
-	 *
-	 * @return string The config key.
-	 */
-	public function getConfigKey(): string {
-		return $this->configKey;
-	}//end getConfigKey()
-
-	/**
-	 * Get the resolved value that could not be hydrated.
-	 *
-	 * @return string The slug/UUID/name the lookup attempted.
-	 */
-	public function getResolvedValue(): string {
-		return $this->resolvedValue;
-	}//end getResolvedValue()
 
 	/**
 	 * Get the schema identifier the property lookup targeted.

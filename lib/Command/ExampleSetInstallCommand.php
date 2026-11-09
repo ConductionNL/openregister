@@ -34,9 +34,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogueInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyMarksInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -57,16 +57,16 @@ class ExampleSetInstallCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExampleSetCatalogue $catalogue Gathers the set.
+	 * @param ExampleSetCatalogueInterface $catalogue Gathers the set.
 	 * @param ExampleSetInstallerInterface $installer Checks, writes and proves.
-	 * @param ExampleSetDailyRefresh|null $daily Marks a set for the daily refresh.
+	 * @param ExampleSetDailyMarksInterface|null $daily Marks a set for the daily refresh.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ExampleSetCatalogue $catalogue,
+		private readonly ExampleSetCatalogueInterface $catalogue,
 		private readonly ExampleSetInstallerInterface $installer,
-		private readonly ?ExampleSetDailyRefresh $daily=null,
+		private readonly ?ExampleSetDailyMarksInterface $daily=null,
 	) {
 		parent::__construct();
 	}//end __construct()

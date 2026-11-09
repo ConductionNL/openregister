@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\EmailLink\EmailLinkFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -177,20 +178,9 @@ class EmailLink extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
-		$this->addType(fieldName: 'mailAccountId', type: 'integer');
-		$this->addType(fieldName: 'mailMessageId', type: 'integer');
-		$this->addType(fieldName: 'mailMessageUid', type: 'string');
-		$this->addType(fieldName: 'subject', type: 'string');
-		$this->addType(fieldName: 'sender', type: 'string');
-		$this->addType(fieldName: 'senderName', type: 'string');
-		$this->addType(fieldName: 'mailDate', type: 'datetime');
-		$this->addType(fieldName: 'metadata', type: 'string');
-		$this->addType(fieldName: 'linkedBy', type: 'string');
-		$this->addType(fieldName: 'linkedAt', type: 'datetime');
-		$this->addType(fieldName: 'rfcMessageId', type: 'string');
+		foreach (EmailLinkFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -243,22 +233,9 @@ class EmailLink extends Entity implements JsonSerializable {
 	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-details-the-row-shows
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'mailAccountId' => $this->mailAccountId,
-			'mailMessageId' => $this->mailMessageId,
-			'mailMessageUid' => $this->mailMessageUid,
-			'subject' => $this->subject,
-			'sender' => $this->sender,
-			'senderName' => $this->senderName,
-			'mailDate' => $this->mailDate?->format(DateTime::ATOM),
-			'metadata' => $this->metadata,
-			'details' => $this->details(),
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
-		];
+		$typed = new TypedFieldsJson();
+		$json = $typed->pick(values: get_object_vars($this), names: array_diff(array_keys($this->getFieldTypes()), ['rfcMessageId']));
+
+		return $typed->inserted(json: $json, entriesAfter: ['metadata' => ['details' => $this->details()]]);
 	}//end jsonSerialize()
 }//end class

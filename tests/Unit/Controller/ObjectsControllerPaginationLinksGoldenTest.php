@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCP\AppFramework\Controller;
 use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -33,6 +34,7 @@ use ReflectionProperty;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
+ * @uses \OCA\OpenRegister\Controller\Support\ResultWindow
  * @uses \OCA\OpenRegister\Service\Object\PaginationLinks
  */
 class ObjectsControllerPaginationLinksGoldenTest extends TestCase {
@@ -107,7 +109,7 @@ class ObjectsControllerPaginationLinksGoldenTest extends TestCase {
 		(new ReflectionProperty(Controller::class, 'request'))->setValue($controller, $request);
 
 		$result = (new ReflectionMethod(ObjectsController::class, 'paginate'))
-			->invoke($controller, [], ($pages * 10), 10, 0, $page);
+			->invoke($controller, [], new ResultWindow(($pages * 10), 10, 0, $page));
 
 		return ['next' => ($result['next'] ?? null), 'prev' => ($result['prev'] ?? null)];
 	}//end links()

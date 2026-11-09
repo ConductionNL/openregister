@@ -38,12 +38,12 @@ trait MagicColumnNameTrait {
 	 * kept and the name is not shortened, because existing tables were created
 	 * with exactly these names (`inStock` is `in_stock`, `1abc` stays `1abc`).
 	 *
-	 * @param string $name The property name.
+	 * @param int|string $name The property name; PHP keeps a numeric array key as an int.
 	 *
 	 * @return string The column name.
 	 */
-	private function sanitizeColumnName(string $name): string {
-		$name = strtolower((string) preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name));
+	private function sanitizeColumnName(int|string $name): string {
+		$name = strtolower((string) preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', (string) $name));
 		$name = (string) preg_replace('/[^a-z0-9_]/', '_', $name);
 
 		return rtrim((string) preg_replace('/_+/', '_', $name), '_');

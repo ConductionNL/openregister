@@ -32,9 +32,9 @@ final class ChatStreamControllerFactory {
 	public static function args(
 		string $appName,
 		\OCP\IRequest $request,
-		\OCA\OpenRegister\Service\ChatService $chatService,
-		\OCA\OpenRegister\Db\ConversationMapper $conversationMapper,
-		\OCA\OpenRegister\Db\AgentMapper $agentMapper,
+		\OCA\OpenRegister\Mcp\Service\ChatService $chatService,
+		\OCA\OpenRegister\Mcp\Db\ConversationMapper $conversationMapper,
+		\OCA\OpenRegister\Mcp\Db\AgentMapper $agentMapper,
 		\Psr\Log\LoggerInterface $logger,
 		\OCP\IUserSession $userSession,
 		\OCP\IDBConnection $db,

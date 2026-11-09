@@ -18,10 +18,7 @@
 
 namespace OCA\OpenRegister\Search\Service\GraphQL\Scalar;
 
-use GraphQL\Error\Error;
-use GraphQL\Language\AST\StringValueNode;
-use GraphQL\Type\Definition\ScalarType;
-use GraphQL\Utils\Utils;
+use OCA\OpenRegister\Formats\UuidFormat;
 
 /**
  * UUID scalar type validating UUID v4 format.
@@ -29,9 +26,10 @@ use GraphQL\Utils\Utils;
  * @psalm-suppress UnusedClass
  *
  * @SuppressWarnings(PHPMD.StaticAccess)
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ *
+ * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
  */
-class UuidType extends ScalarType {
+class UuidType extends FormattedStringType {
 
 	/**
 	 * The name of this scalar type.
@@ -48,77 +46,22 @@ class UuidType extends ScalarType {
 	public ?string $description = 'UUID v4 string (e.g., 550e8400-e29b-41d4-a716-446655440000).';
 
 	/**
-	 * The UUID validation pattern.
+	 * The noun naming a value of this format in the invalid-value message.
 	 *
-	 * @var string
+	 * @return string The noun.
 	 */
-	private const UUID_PATTERN = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+	protected function formatNoun(): string {
+		return 'UUID';
+	}//end formatNoun()
 
 	/**
-	 * Serializes a UUID value to string.
+	 * Whether a string is in this scalar's format.
 	 *
-	 * @param mixed $value The value to serialize
+	 * @param string $value The string.
 	 *
-	 * @return string The UUID string
-	 *
-	 * @throws Error If the value is not a string
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+	 * @return bool True when it is.
 	 */
-	public function serialize(mixed $value): string {
-		if (is_string($value) === false) {
-			throw new Error(
-				'UUID cannot represent non-string value: ' . Utils::printSafe($value)
-			);
-		}
-
-		return $value;
-	}//end serialize()
-
-	/**
-	 * Parses a value from client input.
-	 *
-	 * @param mixed $value The value to parse
-	 *
-	 * @return string The validated UUID string
-	 *
-	 * @throws Error If the value is not a valid UUID
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
-	 */
-	public function parseValue(mixed $value): string {
-		if (is_string($value) === false) {
-			throw new Error(
-				'UUID cannot represent non-string value: ' . Utils::printSafe($value)
-			);
-		}
-
-		if (preg_match(self::UUID_PATTERN, $value) !== 1) {
-			throw new Error(
-				'UUID cannot represent invalid UUID value: ' . $value
-			);
-		}
-
-		return $value;
-	}//end parseValue()
-
-	/**
-	 * Parses a literal AST value.
-	 *
-	 * @param \GraphQL\Language\AST\Node $valueNode The AST node
-	 * @param array|null $variables Variables map
-	 *
-	 * @return string The parsed value
-	 *
-	 * @throws Error If the node is not a string
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
-	 */
-	public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables = null): string {
-		if ($valueNode instanceof StringValueNode === false) {
-			throw new Error('UUID cannot represent non-string value', $valueNode);
-		}
-
-		return $this->parseValue(value: $valueNode->value);
-	}//end parseLiteral()
+	protected function isWellFormed(string $value): bool {
+		return UuidFormat::isCanonical(value: $value) === true;
+	}//end isWellFormed()
 }//end class

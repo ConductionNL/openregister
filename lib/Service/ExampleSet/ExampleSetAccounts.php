@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCP\Group\ISubAdmin;
 use OCP\IGroupManager;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Security\ISecureRandom;
 use Psr\Log\LoggerInterface;
@@ -112,6 +113,25 @@ class ExampleSetAccounts {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
 	public function createUser(string $uid, string $displayName, string $email, string $password): string {
+		$user = $this->newUser(uid: $uid, password: $password);
+		if (is_string($user) === true) {
+			return $user;
+		}
+
+		$this->describe(user: $user, names: ['displayName' => $displayName, 'email' => $email]);
+
+		return '';
+	}//end createUser()
+
+	/**
+	 * Make the account in Nextcloud; the account, or why it was not made.
+	 *
+	 * @param string $uid      The account id.
+	 * @param string $password The password; never logged.
+	 *
+	 * @return IUser|string
+	 */
+	private function newUser(string $uid, string $password): IUser|string {
 		try {
 			$user = $this->users->createUser($uid, $password);
 		} catch (Throwable $e) {
@@ -127,13 +147,23 @@ class ExampleSetAccounts {
 			return 'Nextcloud refused the account';
 		}
 
-		$user->setDisplayName($displayName);
-		if ($email !== '') {
-			$user->setSystemEMailAddress($email);
-		}
+		return $user;
+	}//end newUser()
 
-		return '';
-	}//end createUser()
+	/**
+	 * Give a new account its display name and, when there is one, its e-mail address.
+	 *
+	 * @param IUser                                       $user  The new account.
+	 * @param array{displayName: string, email: string} $names The name shown and the e-mail address, or ''.
+	 *
+	 * @return void
+	 */
+	private function describe(IUser $user, array $names): void {
+		$user->setDisplayName($names['displayName']);
+		if ($names['email'] !== '') {
+			$user->setSystemEMailAddress($names['email']);
+		}
+	}//end describe()
 
 	/**
 	 * Delete an account; true when it is gone.

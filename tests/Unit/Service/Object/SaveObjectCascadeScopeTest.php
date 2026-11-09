@@ -46,12 +46,24 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 
 /**
  * The permission check of the nested create records the RBAC mode it is asked in and then
  * refuses, so the save stops at the first nested object and nothing is written.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -138,8 +150,8 @@ class SaveObjectCascadeScopeTest extends TestCase {
 		$register->setId(10);
 
 		$reflection = new ReflectionClass(SaveObject::class);
-		$reflection->getProperty('schemaReferenceCache')->setValue($handler, ['note' => '2']);
-		$reflection->getProperty('schemaCache')->setValue($handler, ['2' => $note, '1' => $incident]);
+		SaveLookupsAccess::set($handler, 'schemaReferenceCache', ['note' => '2']);
+		SaveLookupsAccess::set($handler, 'schemaCache', ['2' => $note, '1' => $incident]);
 
 		try {
 			$handler->saveObject(register: $register, schema: $incident, data: ['note' => ['text' => 'nested']], uuid: $uuid, _rbac: $rbac);

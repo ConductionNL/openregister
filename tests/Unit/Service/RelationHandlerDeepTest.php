@@ -5,7 +5,6 @@
  *
  * Tests targeting uncovered lines in RelationHandler:
  * - extractRelatedData delegation
- * - extractAllRelationshipIds (circuit breaker, array slicing, string values)
  * - bulkLoadRelationshipsBatched (empty, cap at 200, batch exception)
  * - loadRelationshipChunkOptimized (empty, exception)
  * - getContracts (success, pagination, exception)
@@ -23,8 +22,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use OCA\OpenRegister\Service\Object\RelatedReadFilter;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -41,8 +40,6 @@ class RelationHandlerDeepTest extends TestCase {
 
 	private MockObject|SchemaMapper $schemaMapper;
 
-	private MockObject|PerformanceHandler $performanceHandler;
-
 	private MockObject|MagicRbacHandler $rbacHandler;
 
 	private MockObject|LoggerInterface $logger;
@@ -57,17 +54,14 @@ class RelationHandlerDeepTest extends TestCase {
 	protected function setUp(): void {
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
-		$this->performanceHandler = $this->createMock(PerformanceHandler::class);
 		$this->rbacHandler = $this->createMock(MagicRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 
 		$this->handler = new RelationHandler(
-			$this->objectMapper,
-			$this->schemaMapper,
+			new RelationHandlerStores($this->objectMapper, $this->schemaMapper, $this->registerMapper),
 			$this->rbacHandler,
-			$this->logger,
-			$this->registerMapper
+			$this->logger
 		);
 
 	}//end setUp()
@@ -75,146 +69,6 @@ class RelationHandlerDeepTest extends TestCase {
 	// =========================================================================
 	// extractRelatedData
 	// =========================================================================
-
-	// =========================================================================
-	// extractAllRelationshipIds
-	// =========================================================================
-
-	/**
-	 * Test extractAllRelationshipIds with empty objects
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsEmpty(): void {
-		$result = $this->handler->extractAllRelationshipIds([], ['field1']);
-		$this->assertEquals([], $result);
-
-	}//end testExtractAllRelationshipIdsEmpty()
-
-	/**
-	 * Test extractAllRelationshipIds with string value
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsStringValue(): void {
-		$obj = $this->createMock(ObjectEntity::class);
-		$obj->method('getObject')->willReturn(['author' => 'uuid-123']);
-
-		$result = $this->handler->extractAllRelationshipIds([$obj], ['author']);
-		$this->assertContains('uuid-123', $result);
-
-	}//end testExtractAllRelationshipIdsStringValue()
-
-	/**
-	 * Test extractAllRelationshipIds with array value
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsArrayValue(): void {
-		$obj = $this->createMock(ObjectEntity::class);
-		$obj->method('getObject')->willReturn([
-			'tags' => ['uuid-1', 'uuid-2', 'uuid-3'],
-		]);
-
-		$result = $this->handler->extractAllRelationshipIds([$obj], ['tags']);
-		$this->assertContains('uuid-1', $result);
-		$this->assertContains('uuid-2', $result);
-		$this->assertContains('uuid-3', $result);
-
-	}//end testExtractAllRelationshipIdsArrayValue()
-
-	/**
-	 * Test extractAllRelationshipIds with more than 10 array items (limit)
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsArrayLimit(): void {
-		$ids = [];
-		for ($i = 0; $i < 15; $i++) {
-			$ids[] = 'uuid-' . $i;
-		}
-
-		$obj = $this->createMock(ObjectEntity::class);
-		$obj->method('getObject')->willReturn(['refs' => $ids]);
-
-		$result = $this->handler->extractAllRelationshipIds([$obj], ['refs']);
-		// Max 10 per array.
-		$this->assertCount(10, $result);
-
-	}//end testExtractAllRelationshipIdsArrayLimit()
-
-	/**
-	 * Test extractAllRelationshipIds respects circuit breaker (200 max)
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsCircuitBreaker(): void {
-		$objects = [];
-		for ($i = 0; $i < 50; $i++) {
-			$obj = $this->createMock(ObjectEntity::class);
-			$ids = [];
-			for ($j = 0; $j < 10; $j++) {
-				$ids[] = 'uuid-' . $i . '-' . $j;
-			}
-
-			$obj->method('getObject')->willReturn(['refs' => $ids]);
-			$objects[] = $obj;
-		}
-
-		$result = $this->handler->extractAllRelationshipIds($objects, ['refs']);
-		// Should be capped at 200.
-		$this->assertLessThanOrEqual(200, count($result));
-
-	}//end testExtractAllRelationshipIdsCircuitBreaker()
-
-	/**
-	 * Test extractAllRelationshipIds skips empty strings and non-strings
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsSkipsInvalid(): void {
-		$obj = $this->createMock(ObjectEntity::class);
-		$obj->method('getObject')->willReturn([
-			'refs' => ['', null, 123, 'valid-uuid'],
-		]);
-
-		$result = $this->handler->extractAllRelationshipIds([$obj], ['refs']);
-		$this->assertContains('valid-uuid', $result);
-		// Empty string and non-strings should be excluded.
-		$this->assertNotContains('', $result);
-
-	}//end testExtractAllRelationshipIdsSkipsInvalid()
-
-	/**
-	 * Test extractAllRelationshipIds deduplicates
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsDeduplicates(): void {
-		$obj1 = $this->createMock(ObjectEntity::class);
-		$obj1->method('getObject')->willReturn(['author' => 'same-uuid']);
-
-		$obj2 = $this->createMock(ObjectEntity::class);
-		$obj2->method('getObject')->willReturn(['author' => 'same-uuid']);
-
-		$result = $this->handler->extractAllRelationshipIds([$obj1, $obj2], ['author']);
-		$this->assertCount(1, $result);
-
-	}//end testExtractAllRelationshipIdsDeduplicates()
-
-	/**
-	 * Test extractAllRelationshipIds skips missing properties
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsSkipsMissing(): void {
-		$obj = $this->createMock(ObjectEntity::class);
-		$obj->method('getObject')->willReturn(['title' => 'test']);
-
-		$result = $this->handler->extractAllRelationshipIds([$obj], ['nonexistent']);
-		$this->assertEmpty($result);
-
-	}//end testExtractAllRelationshipIdsSkipsMissing()
 
 	// =========================================================================
 	// bulkLoadRelationshipsBatched
@@ -505,7 +359,7 @@ class RelationHandlerDeepTest extends TestCase {
 		$obj->setOwner('admin');
 
 		// First call returns true (has permission), second returns false.
-		$this->rbacHandler->method('hasPermission')->willReturn(true);
+		$this->rbacHandler->method('hasRowPermission')->willReturn(true);
 
 		$result = $filter->admitted(objects: [$obj]);
 		$this->assertCount(1, $result);
@@ -531,7 +385,7 @@ class RelationHandlerDeepTest extends TestCase {
 		$obj->setOrganisation('org-1');
 		$obj->setOwner('admin');
 
-		$this->rbacHandler->method('hasPermission')->willReturn(false);
+		$this->rbacHandler->method('hasRowPermission')->willReturn(false);
 
 		$result = $filter->admitted(objects: [$obj]);
 		$this->assertCount(0, $result);

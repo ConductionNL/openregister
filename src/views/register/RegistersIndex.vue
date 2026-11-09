@@ -32,13 +32,7 @@ import {
 			:selectable="true"
 			:selectedIds="selectedRegisters"
 			:schema="registerSchema"
-			:showEditAction="false"
-			:showCopyAction="false"
-			:showDeleteAction="false"
-			:showMassImport="false"
-			:showMassExport="false"
-			:showMassCopy="false"
-			:showMassDelete="false"
+			v-bind="builtinActionsOff"
 			showViewToggle
 			:addLabel="t('openregister', 'Add Register')"
 			rowKey="id"
@@ -105,18 +99,7 @@ import {
 				<div class="titleContent">
 					<strong>
 						{{ row.title }}
-						<span
-							v-if="isManagedByExternalConfig(row)"
-							class="managedBadge managedBadge--external">
-							<CogOutline :size="16" />
-							{{ t('openregister', 'Managed') }}
-						</span>
-						<span
-							v-else-if="isManagedByLocalConfig(row)"
-							class="managedBadge managedBadge--local">
-							<CogOutline :size="16" />
-							{{ t('openregister', 'Local') }}
-						</span>
+						<ManagedBadge :config="getManagingConfiguration(row)" />
 					</strong>
 					<span
 						v-if="row.description"
@@ -151,114 +134,7 @@ import {
 
 			<!-- Custom row actions for table view -->
 			<template #row-actions="{ row }">
-				<NcActions :primary="false">
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton
-						:title="
-							isManagedByExternalConfig(row)
-								? t(
-										'openregister',
-										'Cannot edit: This register is managed by external configuration {title}',
-										{
-											title: getManagingConfiguration(row)
-												?.title,
-										},
-									)
-								: ''
-						"
-						closeAfterClick
-						:disabled="isManagedByExternalConfig(row)"
-						@click="$refs.indexPage.openFormDialog(row)">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						{{ t('openregister', 'Edit') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								navigationStore.setModal('publishRegister')
-							}
-						">
-						<template #icon>
-							<CloudUploadOutline :size="20" />
-						</template>
-						{{ t('openregister', 'Publish OAS') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								navigationStore.setModal('importRegister')
-							}
-						">
-						<template #icon>
-							<Upload :size="20" />
-						</template>
-						{{ t('openregister', 'Import') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								viewOasDoc(row)
-							}
-						">
-						<template #icon>
-							<ApiIcon :size="20" />
-						</template>
-						{{ t('openregister', 'View API Documentation') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								downloadOas(row)
-							}
-						">
-						<template #icon>
-							<Download :size="20" />
-						</template>
-						{{ t('openregister', 'Download API Specification') }}
-					</NcActionButton>
-					<NcActionButton
-						:title="
-							row.stats?.total > 0
-								? t(
-										'openregister',
-										'Cannot delete: objects are still attached',
-									)
-								: ''
-						"
-						closeAfterClick
-						:disabled="row.stats?.total > 0"
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								navigationStore.setDialog('deleteRegister')
-							}
-						">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						{{ t('openregister', 'Delete') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="viewRegisterDetails(row)">
-						<template #icon>
-							<InformationOutline :size="20" />
-						</template>
-						{{ t('openregister', 'View Details') }}
-					</NcActionButton>
-				</NcActions>
+				<ActionMenu :actions="registerActions(row)" />
 			</template>
 		</CnIndexPage>
 	</NcAppContent>
@@ -268,29 +144,33 @@ import {
 import { CnIndexPage } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
-import {
-	NcActionButton,
-	NcActions,
-	NcAppContent,
-} from '@nextcloud/vue'
+import { NcActionButton, NcAppContent } from '@nextcloud/vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 import RegisterFormFields from '../../components/register/RegisterFormFields.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import ManagedBadge from '../../components/shared/ManagedBadge.vue'
+import {
+	isExternalConfiguration,
+	isLocalConfiguration,
+	managedRowClass,
+} from '../../composables/managedConfiguration.js'
 import { applyFilterChange, filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
+import { deleteAction, editAction } from '../../services/menuActions.js'
 import {
 	registerFormSchema,
 	registerPayload,
 	schemaOptionsOf,
 } from '../../services/registerForm.js'
+import {
+	BUILTIN_ACTIONS_OFF,
+	timestampColumns,
+} from '../indexPageOptions.js'
 
 /**
  * How the names cache changed in size, in words.
@@ -350,25 +230,21 @@ function failureText(error) {
 export default {
 	name: 'RegistersIndex',
 	components: {
+		ActionMenu,
+		NcActionButton,
+		Upload,
+		ApiIcon,
+		CloudUploadOutline,
 		RegisterFormFields,
 		NcAppContent,
 		CnIndexPage,
-		NcActions,
-		NcActionButton,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
-		Upload,
-		ApiIcon,
-		Download,
-		InformationOutline,
-		CogOutline,
-		CloudUploadOutline,
+		ManagedBadge,
 		RegisterSchemaCard,
 	},
 
 	data() {
 		return {
+			builtinActionsOff: BUILTIN_ACTIONS_OFF,
 			selectedRegisters: [],
 			isRefreshing: false,
 			schemaSelectOptions: [],
@@ -439,16 +315,7 @@ export default {
 			return [
 				{ key: 'title', label: t('openregister', 'Title'), sortable: true },
 				{ key: 'schemas', label: t('openregister', 'Schemas') },
-				{
-					key: 'created',
-					label: t('openregister', 'Created'),
-					sortable: true,
-				},
-				{
-					key: 'updated',
-					label: t('openregister', 'Updated'),
-					sortable: true,
-				},
+				...timestampColumns(),
 			]
 		},
 
@@ -508,6 +375,128 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The menu of one register.
+		 *
+		 * @spec exclude UI plumbing — menu entries; each delegates to the stores.
+		 * @param {object} register - list row
+		 * @return {Array<object>}
+		 */
+		registerActions(register) {
+			const selected = (action) => () => {
+				registerStore.setRegisterItem(register)
+				action()
+			}
+			return [
+				this.lockedEdit(register),
+				...this.publishActions(selected),
+				...this.apiActions(register, selected),
+				this.lockedDelete(register, selected),
+				this.detailsAction(register),
+			]
+		},
+
+		/**
+		 * The publish and import entries.
+		 *
+		 * @spec exclude UI plumbing — menu entries; each delegates to the stores.
+		 * @param {(action: () => void) => () => void} selected - selects the register first
+		 * @return {Array<object>}
+		 */
+		publishActions(selected) {
+			return [
+				{
+					label: t('openregister', 'Publish OAS'),
+					icon: CloudUploadOutline,
+					run: selected(() => navigationStore.setModal('publishRegister')),
+				},
+				{
+					label: t('openregister', 'Import'),
+					icon: Upload,
+					run: selected(() => navigationStore.setModal('importRegister')),
+				},
+			]
+		},
+
+		/**
+		 * The API documentation and specification entries.
+		 *
+		 * @spec exclude UI plumbing — menu entries; each delegates to the page.
+		 * @param {object} register - register row
+		 * @param {(action: () => void) => () => void} selected - selects the register first
+		 * @return {Array<object>}
+		 */
+		apiActions(register, selected) {
+			return [
+				{
+					label: t('openregister', 'View API Documentation'),
+					icon: ApiIcon,
+					run: selected(() => this.viewOasDoc(register)),
+				},
+				{
+					label: t('openregister', 'Download API Specification'),
+					icon: Download,
+					run: selected(() => this.downloadOas(register)),
+				},
+			]
+		},
+
+		/**
+		 * The entry that opens the register detail page.
+		 *
+		 * @spec exclude UI plumbing — menu entry.
+		 * @param {object} register - register row
+		 * @return {object}
+		 */
+		detailsAction(register) {
+			return {
+				label: t('openregister', 'View Details'),
+				icon: InformationOutline,
+				run: () => this.viewRegisterDetails(register),
+			}
+		},
+
+		/**
+		 * The edit entry, locked while an external configuration manages the register.
+		 *
+		 * @spec exclude UI plumbing — menu entry state.
+		 * @param {object} register - register row
+		 * @return {object}
+		 */
+		lockedEdit(register) {
+			const locked = this.isManagedByExternalConfig(register)
+			const title = this.getManagingConfiguration(register)?.title
+			return editAction(() => this.$refs.indexPage.openFormDialog(register), {
+				title: locked
+					? t(
+							'openregister',
+							'Cannot edit: This register is managed by external configuration {title}',
+							{ title },
+						)
+					: '',
+				disabled: locked,
+			})
+		},
+
+		/**
+		 * The delete entry, locked while objects are attached.
+		 *
+		 * @spec exclude UI plumbing — menu entry state.
+		 * @param {object} register - register row
+		 * @param {(action: () => void) => () => void} selected - selects the register first
+		 * @return {object}
+		 */
+		lockedDelete(register, selected) {
+			const locked = register.stats?.total > 0
+			const run = selected(() => navigationStore.setDialog('deleteRegister'))
+			return deleteAction(run, {
+				title: locked
+					? t('openregister', 'Cannot delete: objects are still attached')
+					: '',
+				disabled: locked,
+			})
+		},
+
 		/**
 		 * @spec exclude list-view manual refresh plumbing
 		 */
@@ -577,10 +566,7 @@ export default {
 		 * @spec exclude list-view row CSS-class helper based on managing-configuration state
 		 */
 		getRowClass(register) {
-			if (this.isManagedByExternalConfig(register))
-				return 'viewTableRow--managed'
-			if (this.isManagedByLocalConfig(register)) return 'viewTableRow--local'
-			return ''
+			return managedRowClass(this.getManagingConfiguration(register))
 		},
 
 		/**
@@ -602,13 +588,7 @@ export default {
 		 * @spec exclude list-view display predicate; whether a register is externally managed
 		 */
 		isManagedByExternalConfig(register) {
-			const config = this.getManagingConfiguration(register)
-			if (!config) return false
-			return (
-				(config.sourceType
-					&& ['github', 'gitlab', 'url'].includes(config.sourceType))
-				|| config.isLocal === false
-			)
+			return isExternalConfiguration(this.getManagingConfiguration(register))
 		},
 
 		/**
@@ -616,13 +596,7 @@ export default {
 		 * @spec exclude list-view display predicate; whether a register is locally managed
 		 */
 		isManagedByLocalConfig(register) {
-			const config = this.getManagingConfiguration(register)
-			if (!config) return false
-			return (
-				config.sourceType === 'local'
-				|| config.sourceType === 'manual'
-				|| config.isLocal === true
-			)
+			return isLocalConfiguration(this.getManagingConfiguration(register))
 		},
 
 		/**
@@ -741,8 +715,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@use '../../styles/common.scss' as *;
-
 /* Table row accents. Drawn with an inset box-shadow, never border-left: a
    border adds layout width and shifts the row's cell content sideways, while
    box-shadow paints inside the box. Matches .cn-table-row--selected.
@@ -761,13 +733,4 @@ export default {
 :deep(.viewTableRow--local:not(.cn-table-row--selected)) {
 	box-shadow: inset 3px 0 0 0 var(--color-warning);
 }
-
-/* Managed by Configuration badge */
-@include managed-badge;
-
-/* External (managed) badge - green */
-@include managed-badge-external;
-
-/* Local configuration badge - orange */
-@include managed-badge-local;
 </style>

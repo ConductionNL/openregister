@@ -2,7 +2,7 @@
     "not postgres": {
         "calls": [
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             }
         ],
         "diagnostics": {
@@ -23,7 +23,7 @@
     "not postgres, chunk mapper missing": {
         "calls": [
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -52,7 +52,7 @@
     "not postgres, container answers something else": {
         "calls": [
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             }
         ],
         "diagnostics": {
@@ -85,7 +85,7 @@
                 "db.executeQuery": "SELECT COUNT(*) AS total FROM *PREFIX*openregister_vectors"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -147,7 +147,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             }
         ],
         "diagnostics": {
@@ -189,7 +189,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             }
         ],
         "diagnostics": {
@@ -240,7 +240,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             }
         ],
         "diagnostics": {
@@ -294,7 +294,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             }
         ],
         "diagnostics": {
@@ -348,7 +348,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             }
         ],
         "diagnostics": {
@@ -396,7 +396,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             }
         ],
         "diagnostics": {
@@ -450,7 +450,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             }
         ],
         "diagnostics": {
@@ -504,7 +504,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             }
         ],
         "diagnostics": {
@@ -561,7 +561,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             }
         ],
         "diagnostics": {
@@ -618,7 +618,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             }
         ],
         "diagnostics": {
@@ -672,7 +672,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             }
         ],
         "diagnostics": {

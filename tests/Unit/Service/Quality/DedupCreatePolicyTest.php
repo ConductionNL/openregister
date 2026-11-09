@@ -89,8 +89,10 @@ class DedupCreatePolicyTest extends TestCase {
 			$this->duplicates,
 			$this->userSession,
 			$this->groupManager,
-			$this->auditTrailMapper,
-			$this->createMock(LoggerInterface::class)
+			new \OCA\OpenRegister\Search\Service\Quality\DedupOverrideAudit(
+				$this->auditTrailMapper,
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end setUp()
 

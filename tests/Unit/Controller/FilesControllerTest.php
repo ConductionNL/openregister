@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use Exception;
-use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Files\Controller\FilesController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -76,7 +76,7 @@ class FilesControllerTest extends TestCase {
 		]);
 		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
 
-		$entity = new \OCA\OpenRegister\Db\File();
+		$entity = new \OCA\OpenRegister\Files\Db\File();
 		$this->fileService->expects($this->once())
 			->method('updateFileMetadata')
 			->with(7, 'a scanned invoice', 'finance', ['paid'])
@@ -107,7 +107,7 @@ class FilesControllerTest extends TestCase {
 		$this->fileService->expects($this->once())
 			->method('updateFileMetadata')
 			->with(7, null, 'finance', null)
-			->willReturn(new \OCA\OpenRegister\Db\File());
+			->willReturn(new \OCA\OpenRegister\Files\Db\File());
 
 		$this->controller->updateMetadata(register: 'reg', schema: 'sch', id: 'obj-1', fileId: 7);
 	}
@@ -125,7 +125,7 @@ class FilesControllerTest extends TestCase {
 		$this->fileService->expects($this->once())
 			->method('updateFileMetadata')
 			->with(7, '', null, null)
-			->willReturn(new \OCA\OpenRegister\Db\File());
+			->willReturn(new \OCA\OpenRegister\Files\Db\File());
 
 		$this->controller->updateMetadata(register: 'reg', schema: 'sch', id: 'obj-1', fileId: 7);
 	}
@@ -1983,21 +1983,15 @@ class FilesControllerTest extends TestCase {
 		$this->assertEquals('doc.pdf', $result[0]['name']);
 	}
 
-	// -- validateAndGetObject --
+	// -- fileBelongsToObject --
 
-	public function testValidateAndGetObjectReturnsObject(): void {
-		$object = $this->createMock(ObjectEntity::class);
-		$this->setupObjectServiceMocks($object);
+	public function testAFileInAFolderWithoutANameBelongsToNoObjectWithoutIds(): void {
+		$parent = $this->createMock(\OCP\Files\Folder::class);
+		$parent->method('getName')->willReturn('');
+		$file = $this->createMock(\OCP\Files\File::class);
+		$file->method('getParent')->willReturn($parent);
 
-		$result = $this->invokePrivateMethod('validateAndGetObject', ['reg1', 'schema1', 'obj1']);
-		$this->assertSame($object, $result);
-	}
-
-	public function testValidateAndGetObjectReturnsNull(): void {
-		$this->setupObjectServiceMocks(null);
-
-		$result = $this->invokePrivateMethod('validateAndGetObject', ['reg1', 'schema1', 'obj1']);
-		$this->assertNull($result);
+		$this->assertFalse($this->invokePrivateMethod('fileBelongsToObject', [$file, new ObjectEntity()]));
 	}
 
 	// -- processUploadedFiles --

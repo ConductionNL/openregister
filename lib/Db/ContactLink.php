@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\ContactLink\ContactLinkFieldTypes;
+use OCA\OpenRegister\Db\ContactLink\ContactLinkJson;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -262,28 +264,9 @@ class ContactLink extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
-		$this->addType(fieldName: 'contactUid', type: 'string');
-		$this->addType(fieldName: 'addressbookId', type: 'integer');
-		$this->addType(fieldName: 'contactUri', type: 'string');
-		$this->addType(fieldName: 'displayName', type: 'string');
-		$this->addType(fieldName: 'email', type: 'string');
-		$this->addType(fieldName: 'phone', type: 'string');
-		$this->addType(fieldName: 'org', type: 'string');
-		$this->addType(fieldName: 'avatarUrl', type: 'string');
-		$this->addType(fieldName: 'role', type: 'string');
-		$this->addType(fieldName: 'metadata', type: 'string');
-		$this->addType(fieldName: 'linkedBy', type: 'string');
-		$this->addType(fieldName: 'linkedAt', type: 'datetime');
-		$this->addType(fieldName: 'userId', type: 'string');
-		$this->addType(fieldName: 'validFrom', type: 'datetime');
-		$this->addType(fieldName: 'validUntil', type: 'datetime');
-		$this->addType(fieldName: 'note', type: 'string');
-		$this->addType(fieldName: 'partyUuid', type: 'string');
-		$this->addType(fieldName: 'partyKind', type: 'string');
-		$this->addType(fieldName: 'primaryParty', type: 'boolean');
+		foreach (ContactLinkFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -359,48 +342,10 @@ class ContactLink extends Entity implements JsonSerializable {
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
 	public function jsonSerialize(): array {
-		// `metadata` is stored as JSON-encoded text — decode it for the
-		// consumer so the registry / Tab can iterate keys naturally.
-		$metadata = null;
-		if ($this->metadata !== null && $this->metadata !== '') {
-			try {
-				$decoded = json_decode($this->metadata, true, 512, JSON_THROW_ON_ERROR);
-				if (is_array($decoded) === true) {
-					$metadata = $decoded;
-				}
-			} catch (\JsonException $e) {
-				// Corrupt row — surface as null rather than blowing up.
-				$metadata = null;
-			}
-		}
+		$values = get_object_vars($this);
+		$values['fieldTypes'] = $this->getFieldTypes();
 
-		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'contactUid' => $this->contactUid,
-			'addressbookId' => $this->addressbookId,
-			'contactUri' => $this->contactUri,
-			'displayName' => $this->displayName,
-			'email' => $this->email,
-			'phone' => $this->phone,
-			'org' => $this->org,
-			'avatarUrl' => $this->avatarUrl,
-			'role' => $this->role,
-			'metadata' => $metadata,
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
-			'kind' => $this->kind(),
-			'userId' => $this->userId,
-			'validFrom' => $this->validFrom?->format('Y-m-d'),
-			'validUntil' => $this->validUntil?->format('Y-m-d'),
-			'note' => $this->note,
-			'active' => $this->isActiveOn(),
-			'partyUuid' => $this->partyUuid,
-			'partyKind' => $this->partyKind,
-			'primaryParty' => ($this->primaryParty === true),
-		];
+		return (new ContactLinkJson())->serialise(values: $values, derived: ['kind' => $this->kind(), 'active' => $this->isActiveOn()]);
 	}//end jsonSerialize()
 
 	/**

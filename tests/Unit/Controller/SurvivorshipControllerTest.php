@@ -42,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SurvivorshipControllerFactory;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Controller\SurvivorshipController
@@ -67,7 +68,7 @@ class SurvivorshipControllerTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 
-		$this->controller = new SurvivorshipController(
+		$this->controller = SurvivorshipControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectService,

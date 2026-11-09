@@ -37,6 +37,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ShippedBaseline;
 
 use DateTime;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationWrite;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use Psr\Log\LoggerInterface;
@@ -155,17 +157,17 @@ class ShippedBaselineStore {
 	): bool {
 		try {
 			$this->values->write(
-				layer: ConfigurationLayer::SUBJECT,
-				layerRef: $subject,
-				configKey: $configKey,
-				value: [
-					'definition' => $definition,
-					'app' => $app,
-					'appVersion' => $appVersion,
-					'recordedAt' => (new DateTime())->format(DATE_ATOM),
-				],
-				deploymentUuid: null,
-				actor: null
+				address: new ConfigurationAddress(layer: ConfigurationLayer::SUBJECT, layerRef: $subject, configKey: $configKey),
+				write: new ConfigurationWrite(
+					value: [
+						'definition' => $definition,
+						'app' => $app,
+						'appVersion' => $appVersion,
+						'recordedAt' => (new DateTime())->format(DATE_ATOM),
+					],
+					deploymentUuid: null,
+					actor: null
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

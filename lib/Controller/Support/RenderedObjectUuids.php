@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Formats\UuidFormat;
+
 /**
  * Collects the uuids a rendered object refers to, in reading order.
  *
@@ -137,7 +139,7 @@ final class RenderedObjectUuids {
 			return;
 		}
 
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
+		if (UuidFormat::isCanonical(value: $value) === true) {
 			$this->uuids[] = $value;
 		}
 	}//end addUuid()

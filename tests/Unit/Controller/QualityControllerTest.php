@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Service\Quality\QualityListingWindow;
 use OCA\OpenRegister\Controller\QualityController;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
@@ -131,7 +132,7 @@ class QualityControllerTest extends TestCase {
 
 		$this->statistics->expects($this->once())
 			->method('lowestQuality')
-			->with('reg', 'sch', 'poor', 'qualityStatus', 'desc', 5, 10)
+			->with('reg', 'sch', 'poor', new QualityListingWindow('qualityStatus', 'desc', 5, 10))
 			->willReturn(['items' => [], 'total' => 0, 'limit' => 5, 'offset' => 10]);
 
 		$response = $this->controller->index('reg', 'sch');
@@ -152,7 +153,7 @@ class QualityControllerTest extends TestCase {
 
 		$this->statistics->expects($this->once())
 			->method('lowestQuality')
-			->with('reg', 'sch', null, 'qualityScore', 'asc', 20, 0)
+			->with('reg', 'sch', null, new QualityListingWindow('qualityScore', 'asc', 20, 0))
 			->willReturn(['items' => [], 'total' => 0, 'limit' => 20, 'offset' => 0]);
 
 		$response = $this->controller->index('reg', 'sch');

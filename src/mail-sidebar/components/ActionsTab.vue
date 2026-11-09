@@ -221,6 +221,43 @@ export default {
 		},
 
 		/**
+		 * The objects endpoint of a schema in a register.
+		 *
+		 * @param {object} register The register
+		 * @param {object} schema The schema
+		 * @return {string} The URL
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		objectsUrl(register, schema) {
+			return generateUrl(
+				'/apps/openregister/api/objects/{register}/{schema}',
+				{
+					register: register.id,
+					schema: schema.id,
+				},
+			)
+		},
+
+		/**
+		 * Fetch up to 20 objects of a schema, narrowed by the given query, and
+		 * keep them as the schema's results.
+		 *
+		 * @param {object} register The register
+		 * @param {object} schema The schema
+		 * @param {object} params Extra query parameters
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		async fetchResults(register, schema, params) {
+			const response = await axios.get(this.objectsUrl(register, schema), {
+				params: { ...params, _limit: 20 },
+				timeout: 10000,
+			})
+			const results = response.data?.results || response.data || []
+			this.searchResults[schema.id] = results
+		},
+
+		/**
 		 * @param {object} schema
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
@@ -229,19 +266,7 @@ export default {
 			if (!register) return
 
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/{register}/{schema}',
-					{
-						register: register.id,
-						schema: schema.id,
-					},
-				)
-				const response = await axios.get(url, {
-					params: { _limit: 20 },
-					timeout: 10000,
-				})
-				const results = response.data?.results || response.data || []
-				this.searchResults[schema.id] = results
+				await this.fetchResults(register, schema, {})
 			} catch (err) {
 				console.error(
 					'[ActionsTab] Initial load failed for',
@@ -290,19 +315,7 @@ export default {
 			this.searching[schema.id] = true
 			this.visibleResults[schema.id] = true
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/{register}/{schema}',
-					{
-						register: register.id,
-						schema: schema.id,
-					},
-				)
-				const response = await axios.get(url, {
-					params: { _search: term, _limit: 20 },
-					timeout: 10000,
-				})
-				const results = response.data?.results || response.data || []
-				this.searchResults[schema.id] = results
+				await this.fetchResults(register, schema, { _search: term })
 			} catch (err) {
 				console.error('[ActionsTab] Search failed:', err)
 			} finally {
@@ -469,14 +482,11 @@ export default {
 
 			this.createSaving = true
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/{register}/{schema}',
-					{
-						register: register.id,
-						schema: schema.id,
-					},
+				const response = await axios.post(
+					this.objectsUrl(register, schema),
+					data,
+					{ timeout: 15000 },
 				)
-				const response = await axios.post(url, data, { timeout: 15000 })
 				await this.linkObject(schema, response.data)
 				this.createDialog = { show: false, schema: null, data: {} }
 			} catch (err) {

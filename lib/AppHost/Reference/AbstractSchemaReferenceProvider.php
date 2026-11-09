@@ -30,9 +30,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Reference;
 
+use OCA\OpenRegister\AppHost\SchemaScopedProvider;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface;
 use OCP\Collaboration\Reference\ADiscoverableReferenceProvider;
 use OCP\Collaboration\Reference\IReference;
 use OCP\Collaboration\Reference\ISearchableReferenceProvider;
@@ -44,7 +45,7 @@ use Psr\Log\LoggerInterface;
  * A concrete subclass implements only {@see self::getRegisterSlug()} and
  * {@see self::getSchemaSlug()} — no id, title, icon, or constructor
  * boilerplate. Everything else (URL parsing, RBAC-safe resolution, rich
- * preview formatting) is reused from {@see ObjectPreviewFormatter}, the
+ * preview formatting) is reused from {@see ObjectPreviewFormatterInterface}, the
  * same service the generic `ObjectReferenceProvider` delegates to.
  *
  * Gated by the schema's `smartPickerEnabled` flag: when `false`,
@@ -58,26 +59,19 @@ use Psr\Log\LoggerInterface;
 abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferenceProvider implements
 	ISearchableReferenceProvider {
 
-	/**
-	 * Memoized resolved register database ID. `false` means resolution was
-	 * attempted and failed (distinct from `null`, meaning not yet attempted).
-	 *
-	 * @var int|false|null
-	 */
-	private int|false|null $registerId = null;
+	use SchemaScopedProvider;
 
 	/**
-	 * Memoized resolved schema database ID. `false` means resolution was
-	 * attempted and failed (distinct from `null`, meaning not yet attempted).
+	 * The name this provider's debug lines carry.
 	 *
-	 * @var int|false|null
+	 * @var string
 	 */
-	private int|false|null $schemaId = null;
+	private const LOG_NAME = 'AbstractSchemaReferenceProvider';
 
 	/**
 	 * Constructor for AbstractSchemaReferenceProvider.
 	 *
-	 * @param ObjectPreviewFormatter $formatter Shared preview-formatting/URL-parsing service
+	 * @param ObjectPreviewFormatterInterface $formatter Shared preview-formatting/URL-parsing service
 	 * @param RegisterMapperInterface $registerMapper Register mapper for slug-to-id resolution
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for slug-to-id resolution and the `smartPickerEnabled` flag
 	 * @param LoggerInterface $logger Logger
@@ -88,7 +82,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2
 	 */
 	public function __construct(
-		private readonly ObjectPreviewFormatter $formatter,
+		private readonly ObjectPreviewFormatterInterface $formatter,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
@@ -149,21 +143,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
 	 */
 	final public function getTitle(): string {
-		$schemaId = $this->resolveSchemaId();
-		if ($schemaId === false) {
-			return $this->getSchemaSlug();
-		}
-
-		try {
-			$title = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false)->getTitle();
-			if ($title !== null && $title !== '') {
-				return $title;
-			}
-		} catch (\Exception $e) {
-			// Fall through to slug fallback.
-		}
-
-		return $this->getSchemaSlug();
+		return $this->schemaTitle();
 	}//end getTitle()
 
 	/**
@@ -286,85 +266,4 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	public function getCacheKey(string $referenceId): ?string {
 		return $this->userId ?? '';
 	}//end getCacheKey()
-
-	/**
-	 * Whether this provider's configured schema has opted in to its own
-	 * Smart Picker entry's functionality. `false` for an unresolvable
-	 * schema slug, matching the fail-closed default.
-	 *
-	 * @return bool True when the schema's `smartPickerEnabled` flag is set
-	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2a
-	 */
-	protected function isSmartPickerEnabled(): bool {
-		$schemaId = $this->resolveSchemaId();
-		if ($schemaId === false) {
-			return false;
-		}
-
-		try {
-			return $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false)->isSmartPickerEnabled();
-		} catch (\Exception $e) {
-			return false;
-		}
-	}//end isSmartPickerEnabled()
-
-	/**
-	 * Lazily resolve {@see self::getRegisterSlug()} to its database ID,
-	 * memoized per-instance for the lifetime of the request — mirroring how
-	 * `DeepLinkRegistryService` resolves slugs lazily.
-	 *
-	 * @return int|false The resolved register ID, or `false` when the slug
-	 *                    could not be resolved
-	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2
-	 */
-	private function resolveRegisterId(): int|false {
-		if ($this->registerId === null) {
-			try {
-				$this->registerId = (int)$this->registerMapper->find(
-					$this->getRegisterSlug(),
-					_rbac: false,
-					_multitenancy: false
-				)->getId();
-			} catch (\Exception $e) {
-				$this->logger->debug(
-					'[AbstractSchemaReferenceProvider] Failed to resolve register slug "{slug}": {error}',
-					['slug' => $this->getRegisterSlug(), 'error' => $e->getMessage()]
-				);
-				$this->registerId = false;
-			}
-		}
-
-		return $this->registerId;
-	}//end resolveRegisterId()
-
-	/**
-	 * Lazily resolve {@see self::getSchemaSlug()} to its database ID,
-	 * memoized per-instance for the lifetime of the request.
-	 *
-	 * @return int|false The resolved schema ID, or `false` when the slug
-	 *                    could not be resolved
-	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2
-	 */
-	private function resolveSchemaId(): int|false {
-		if ($this->schemaId === null) {
-			try {
-				$this->schemaId = (int)$this->schemaMapper->find(
-					$this->getSchemaSlug(),
-					_multitenancy: false,
-					_rbac: false
-				)->getId();
-			} catch (\Exception $e) {
-				$this->logger->debug(
-					'[AbstractSchemaReferenceProvider] Failed to resolve schema slug "{slug}": {error}',
-					['slug' => $this->getSchemaSlug(), 'error' => $e->getMessage()]
-				);
-				$this->schemaId = false;
-			}
-		}
-
-		return $this->schemaId;
-	}//end resolveSchemaId()
 }//end class

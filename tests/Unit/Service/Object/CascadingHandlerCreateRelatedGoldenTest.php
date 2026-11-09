@@ -65,8 +65,8 @@ class CascadingHandlerCreateRelatedGoldenTest extends TestCase {
 			}
 		);
 		$save->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, $uuid, $folderId, $rbac, $multi): ObjectEntity {
-				$this->calls[] = ['save', $register, $schema->getSlug(), $data, $uuid, $folderId, $rbac, $multi];
+			function ($register, $schema, array $data, $uuid, $rbac, $multi): ObjectEntity {
+				$this->calls[] = ['save', $register, $schema->getSlug(), $data, $uuid, $rbac, $multi];
 				if (($data['fail'] ?? false) === true) {
 					throw new \RuntimeException('disk full');
 				}
@@ -131,7 +131,7 @@ class CascadingHandlerCreateRelatedGoldenTest extends TestCase {
 		$this->assertSame(
 			[
 				['assert', 'note'],
-				['save', 4, 'note', ['text' => 'x', '@self' => ['slug' => 's'], 'incident' => 'p-1'], null, null, true, true],
+				['save', 4, 'note', ['text' => 'x', '@self' => ['slug' => 's'], 'incident' => 'p-1'], null, true, true],
 				['track', 'new-uuid', 'stored'],
 			],
 			$this->calls
@@ -147,7 +147,7 @@ class CascadingHandlerCreateRelatedGoldenTest extends TestCase {
 		);
 
 		$this->assertNull($uuid);
-		$this->assertSame([['assert', 'note'], ['save', null, 'note', ['noUuid' => true], null, null, true, true]], $this->calls);
+		$this->assertSame([['assert', 'note'], ['save', null, 'note', ['noUuid' => true], null, true, true]], $this->calls);
 	}//end testWithoutInverseOrUuidNothingIsLinkedOrTracked()
 
 	public function testAFailedSaveIsLoggedAndCreatesNothing(): void {

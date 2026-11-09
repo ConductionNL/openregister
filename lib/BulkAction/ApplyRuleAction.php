@@ -33,11 +33,12 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
-use OCA\OpenRegister\Service\Rules\RuleInventoryService;
+use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\BulkAction\Support\ApplyRuleServices;
 
 /**
  * Applying a rule to objects that already exist.
@@ -59,22 +60,28 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class ApplyRuleAction implements BulkActionInterface {
+class ApplyRuleAction implements ApplyRuleActionInterface {
 
 	/**
-	 * The action id.
+	 * Finds the rule as declared.
 	 *
-	 * @var string
+	 * @var RuleInventoryServiceInterface
 	 */
-	public const ID = 'openregister:apply-rule';
+	private readonly RuleInventoryServiceInterface $inventory;
+
+	/**
+	 * The JSON-AST evaluator.
+	 *
+	 * @var CalculationEvaluatorInterface
+	 */
+	private readonly CalculationEvaluatorInterface $evaluator;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objectService The object write path.
 	 * @param SchemaMapperInterface $schemaMapper Resolves the schema the rule is declared on.
-	 * @param RuleInventoryService $inventory Finds the rule as declared.
-	 * @param CalculationEvaluatorInterface $evaluator The JSON-AST evaluator.
+	 * @param ApplyRuleServices $rules Rule inventory and calculation evaluator.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @return void
@@ -82,10 +89,11 @@ class ApplyRuleAction implements BulkActionInterface {
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RuleInventoryService $inventory,
-		private readonly CalculationEvaluatorInterface $evaluator,
+		ApplyRuleServices $rules,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->inventory = $rules->inventory;
+		$this->evaluator = $rules->evaluator;
 	}//end __construct()
 
 	/**

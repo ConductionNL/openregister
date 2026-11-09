@@ -5,11 +5,15 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'deleteSchemaObjects'"
 		name="Delete Schema Objects"
-		size="normal"
-		:canClose="false">
+		:loading="loading"
+		:closeLabel="success ? 'Close' : 'Cancel'"
+		confirmLabel="Delete All Objects"
+		:showConfirm="!success && !loading && !error && objectCount > 0"
+		@cancel="closeDialog"
+		@confirm="confirmDeletion()">
 		<!-- Confirmation State -->
 		<div v-if="!success && !loading">
 			<p>
@@ -95,7 +99,8 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				<SchemaStatsBlock
 					:objectCount="0"
 					:objectStats="null"
-					:loading="false"
+					:loading="countLoading"
+					:failed="countFailed"
 					:title="t('openregister', 'Objects in schema')" />
 			</div>
 		</div>
@@ -129,53 +134,32 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton
-				v-if="!success && !loading && !error && objectCount > 0"
-				:disabled="loading"
-				variant="error"
-				@click="confirmDeletion()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<DeleteSweep v-if="!loading" :size="20" />
-				</template>
-				Delete All Objects
-			</NcButton>
+		<template #confirmIcon>
+			<DeleteSweep :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcCheckboxRadioSwitch,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { NcCheckboxRadioSwitch, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { schemaObjectCount } from './schemaObjectCount.js'
 
 export default {
 	name: 'DeleteSchemaObjects',
 	components: {
-		NcDialog,
-		NcButton,
+		ConfirmDialogFrame,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
-		Cancel,
 		DeleteSweep,
 		AlertCircle,
 		SchemaStatsBlock,
 	},
+
+	mixins: [schemaObjectCount],
 
 	data() {
 		return {
@@ -183,55 +167,12 @@ export default {
 			error: false,
 			success: false,
 			deletionResult: null,
-			objectCount: 0,
-			objectStats: null,
 			hardDelete: [],
 		}
 	},
 
-	computed: {
-		// A <script setup> binding is not on `this`, and a watch path reads `this`.
-		navigationStore: () => navigationStore,
-		schemaStore: () => schemaStore,
-	},
-
-	watch: {
-		// Watch for changes in schemaItem and reload count if needed
-		'schemaStore.schemaItem': {
-			/**
-			 * @param {object|null} newSchemaItem
-			 * @spec exclude watcher reloading object count on schema change
-			 */
-			handler(newSchemaItem) {
-				if (newSchemaItem?.id && this.objectCount === 0) {
-					this.loadObjectCount()
-				}
-			},
-
-			immediate: true,
-		},
-
-		// Watch for dialog state changes to load count when dialog becomes visible
-		'navigationStore.dialog': {
-			/**
-			 * @param {string|boolean} newDialog
-			 * @spec exclude watcher loading object count when dialog opens
-			 */
-			handler(newDialog) {
-				if (
-					newDialog === 'deleteSchemaObjects'
-					&& schemaStore.schemaItem?.id
-				) {
-					this.loadObjectCount()
-				}
-			},
-
-			immediate: true,
-		},
-	},
-
 	/**
-	 * @spec exclude Vue lifecycle hook loading object count
+	 * @spec exclude Vue lifecycle hook — loads the object count on mount.
 	 */
 	async mounted() {
 		await this.loadObjectCount()
@@ -239,23 +180,13 @@ export default {
 
 	methods: {
 		/**
-		 * @spec exclude form-state loader for schema object count via schemaStore
+		 * Report a failed object count.
+		 *
+		 * @param {Error} err The failure
+		 * @spec exclude Modal data-load plumbing — logs a failed object count.
 		 */
-		async loadObjectCount() {
-			try {
-				if (schemaStore.schemaItem?.id) {
-					// Use the upgraded stats endpoint to get detailed object counts
-					const stats = await schemaStore.getSchemaStats(
-						schemaStore.schemaItem.id,
-					)
-					this.objectStats = stats.objects
-					this.objectCount = stats.objects?.total || 0
-				}
-			} catch (err) {
-				console.error('DeleteSchemaObjects error in loadObjectCount:', err)
-				this.objectCount = 0
-				this.objectStats = null
-			}
+		logCountFailure(err) {
+			console.error('DeleteSchemaObjects error in loadObjectCount:', err)
 		},
 
 		/**

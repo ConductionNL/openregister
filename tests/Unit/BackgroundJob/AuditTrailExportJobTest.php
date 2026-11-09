@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\AuditExportDelivery;
+use OCA\OpenRegister\BackgroundJob\AuditExportSource;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailPageQuery;
@@ -103,10 +105,8 @@ class AuditTrailExportJobTest extends TestCase {
 		$job = new AuditTrailExportJob(
 			$this->createMock(ITimeFactory::class),
 			$this->createMock(JobRunRecorder::class),
-			$pageQuery,
-			$logService,
-			$root,
-			$notifications
+			new AuditExportSource(pageQuery: $pageQuery, logService: $logService),
+			new AuditExportDelivery(rootFolder: $root, notifications: $notifications)
 		);
 
 		$path = $job->deliver(['actor' => 'admin', 'filters' => ['actor' => 'anna'], 'format' => 'csv']);
@@ -132,10 +132,8 @@ class AuditTrailExportJobTest extends TestCase {
 		$job = new AuditTrailExportJob(
 			$this->createMock(ITimeFactory::class),
 			$this->createMock(JobRunRecorder::class),
-			$this->createMock(AuditTrailPageQuery::class),
-			$this->createMock(LogService::class),
-			$this->createMock(IRootFolder::class),
-			$this->createMock(IManager::class)
+			new AuditExportSource(pageQuery: $this->createMock(AuditTrailPageQuery::class), logService: $this->createMock(LogService::class)),
+			new AuditExportDelivery(rootFolder: $this->createMock(IRootFolder::class), notifications: $this->createMock(IManager::class))
 		);
 
 		$this->expectException(\RuntimeException::class);

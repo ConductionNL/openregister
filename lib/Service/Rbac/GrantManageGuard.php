@@ -58,11 +58,11 @@ class GrantManageGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectScopeResolver $scopeResolver The one definition of who is admitted unconditionally.
+	 * @param ObjectScopeResolverInterface $scopeResolver The one definition of who is admitted unconditionally.
 	 * @param OrganisationSpecialRights $specialRights Reads the special right from the record's organisation.
 	 */
 	public function __construct(
-		private readonly ObjectScopeResolver $scopeResolver,
+		private readonly ObjectScopeResolverInterface $scopeResolver,
 		private readonly OrganisationSpecialRights $specialRights,
 	) {
 	}//end __construct()
@@ -113,27 +113,25 @@ class GrantManageGuard {
 	 * @param string|null $admittedAs What {@see admittedAs()} answered.
 	 * @param string|null $userId The caller.
 	 * @param string[] $userGroups The caller's group ids.
-	 * @param string|null $user The user being let in, or null.
-	 * @param string|null $group The group being let in, or null.
-	 * @param string|null $remote The remote user or remote group being let in, or null.
+	 * @param GrantedPrincipal $principal The user, group or remote principal being let in.
 	 *
 	 * @return bool True when the request must be refused.
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function letsItselfIn(?string $admittedAs, ?string $userId, array $userGroups, ?string $user, ?string $group, ?string $remote = null): bool {
+	public function letsItselfIn(?string $admittedAs, ?string $userId, array $userGroups, GrantedPrincipal $principal): bool {
 		if ($admittedAs !== self::AS_HOLDER) {
 			return false;
 		}
 
-		if ($remote !== null) {
+		if ($principal->remote !== null) {
 			return true;
 		}
 
-		if ($user !== null && $user === $userId) {
+		if ($principal->user !== null && $principal->user === $userId) {
 			return true;
 		}
 
-		return ($group !== null && in_array(needle: $group, haystack: $userGroups, strict: true) === true);
+		return ($principal->group !== null && in_array(needle: $principal->group, haystack: $userGroups, strict: true) === true);
 	}//end letsItselfIn()
 }//end class

@@ -28,9 +28,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
-use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
-use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
+use OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface;
+use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateStoreInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -38,6 +38,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Index, show, create, update, patch and destroy for record templates.
@@ -54,22 +55,20 @@ class RecordTemplatesController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                $appName   The app name.
 	 * @param IRequest              $request   The request.
-	 * @param RecordTemplateService $templates Decides and stores.
-	 * @param ViewerReachResolver   $viewers   Names the caller and their groups.
+	 * @param RecordTemplateStoreInterface $templates Decides and stores.
+	 * @param ViewerReachResolverInterface   $viewers   Names the caller and their groups.
 	 * @param LoggerInterface       $logger    Logger.
 	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly RecordTemplateService $templates,
-		private readonly ViewerReachResolver $viewers,
+		private readonly RecordTemplateStoreInterface $templates,
+		private readonly ViewerReachResolverInterface $viewers,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -202,18 +201,29 @@ class RecordTemplatesController extends Controller {
 		try {
 			return new JSONResponse(data: $action($this->viewers->reachOf(userId: $userId)), statusCode: $success);
 		} catch (RecordTemplateRefused $e) {
-			$body = ['error' => $e->getMessage()];
-			if ($e->getFindings() !== []) {
-				$body['findings'] = $e->getFindings();
-			}
-
-			return new JSONResponse(data: $body, statusCode: $e->getCode());
+			return $this->refused(refusal: $e);
 		} catch (Throwable $e) {
 			$this->logger->error('[RecordTemplatesController] Record template request failed', ['exception' => $e->getMessage()]);
 
 			return new JSONResponse(data: ['error' => 'The record template request failed.'], statusCode: 500);
 		}
 	}//end answer()
+
+	/**
+	 * A refusal answers its own status, with its findings when it has any.
+	 *
+	 * @param RecordTemplateRefused $refusal The refusal.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function refused(RecordTemplateRefused $refusal): JSONResponse {
+		$body = ['error' => $refusal->getMessage()];
+		if ($refusal->getFindings() !== []) {
+			$body['findings'] = $refusal->getFindings();
+		}
+
+		return new JSONResponse(data: $body, statusCode: $refusal->getCode());
+	}//end refused()
 
 	/**
 	 * The templates as the index answers them.

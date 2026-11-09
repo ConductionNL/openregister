@@ -34,7 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\TimeTrackerLinkService;
+use OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -51,12 +51,12 @@ class TimeReconcileCommand extends Command {
 	/**
 	 * Wire the time-tracker link service used by the command.
 	 *
-	 * @param TimeTrackerLinkService $service Tier-2 link-service facade.
+	 * @param TimeTrackerLinkServiceInterface $service Tier-2 link-service facade.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly TimeTrackerLinkService $service,
+		private readonly TimeTrackerLinkServiceInterface $service,
 	) {
 		parent::__construct();
 	}//end __construct()

@@ -39,7 +39,7 @@ use Throwable;
 /**
  * Discovers shareable-marked schemas and builds a type for each.
  */
-class SchemaShareableConfigScanner {
+class SchemaShareableConfigScanner implements SchemaShareableConfigScannerInterface {
 	/**
 	 * Constructor.
 	 *

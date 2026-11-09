@@ -19,7 +19,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit;
 
-use OCA\OpenRegister\Controller\SearchController;
+use OCA\OpenRegister\Search\Controller\SearchController;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;

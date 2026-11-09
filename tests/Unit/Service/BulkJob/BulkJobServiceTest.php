@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\BulkJobMemberMapper;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutor;
+use OCA\OpenRegister\Service\BulkJob\BulkJobPass;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCA\OpenRegister\Service\ObjectService;
@@ -45,6 +46,9 @@ use OCP\IAppConfig;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\BulkJob\BulkJobActions;
+use OCA\OpenRegister\Service\BulkJob\BulkJobEnvironment;
+use OCA\OpenRegister\Service\BulkJob\BulkJobStore;
 
 final class BulkJobServiceTest extends TestCase {
 
@@ -123,16 +127,22 @@ final class BulkJobServiceTest extends TestCase {
 		);
 
 		return new BulkJobService(
-			$this->jobMapper,
-			$this->memberMapper,
-			$this->registry,
-			$this->resolver,
-			$this->executor,
-			$this->createMock(ObjectService::class),
-			$this->createMock(IUserManager::class),
-			$this->jobList,
-			$this->appConfig,
-			new NullLogger()
+			new BulkJobStore(
+				$this->jobMapper,
+				$this->memberMapper,
+				$this->jobList,
+				new NullLogger()
+			),
+			new BulkJobActions(
+				$this->registry,
+				$this->resolver,
+				$this->executor
+			),
+			new BulkJobEnvironment(
+				$this->createMock(ObjectService::class),
+				$this->createMock(IUserManager::class),
+				$this->appConfig
+			)
 		);
 	}
 
@@ -196,6 +206,109 @@ final class BulkJobServiceTest extends TestCase {
 		$this->assertSame(BulkJob::STATE_PREVIEWED, $job->getState());
 	}
 
+	public function testCreateResolvesHydratesAndWritesThePreviewRowKeyForKey(): void {
+		$action = $this->action();
+		$action->expects($this->once())->method('validateParameters')->with(['assignee' => 'bob']);
+		$this->registry->method('get')->with('openregister:assign')->willReturn($action);
+
+		$resolved = [];
+		$this->resolver->method('resolveUuids')->willReturnCallback(
+			static function (...$args) use (&$resolved): array {
+				$resolved = $args;
+
+				return ['o1', 'o2'];
+			}
+		);
+		$objects = ['o1' => new \OCA\OpenRegister\Db\ObjectEntity()];
+		$this->resolver->method('hydrate')->with(['o1', 'o2'], 1, 2)->willReturn($objects);
+
+		$rows = [];
+		$this->jobMapper->method('createFromArray')->willReturnCallback(
+			static function (array $data) use (&$rows): BulkJob {
+				$rows[] = $data;
+				$job = new BulkJob();
+				$job->hydrate($data);
+				$job->setId(11);
+
+				return $job;
+			}
+		);
+
+		$previewed = [];
+		$this->executor->method('writePreviewMembers')->willReturnCallback(
+			static function (...$args) use (&$previewed): void {
+				$previewed = $args;
+			}
+		);
+		$this->executor->expects($this->once())->method('refreshCounts');
+
+		$job = $this->service(1000)->create('openregister:assign', ['assignee' => 'bob'], ['ids' => ['o1', 'o2']], 'why', 'coordinator', 1, 2);
+
+		$this->assertSame(['ids', ['ids' => ['o1', 'o2']], 1, 2, 1000], $resolved);
+		$this->assertSame(
+			[
+				[
+					'action' => 'openregister:assign',
+					'parameters' => ['assignee' => 'bob'],
+					'selectionType' => BulkJob::SELECTION_IDS,
+					'selection' => ['ids' => ['o1', 'o2']],
+					'registerId' => 1,
+					'schemaId' => 2,
+					'justification' => 'why',
+					'state' => BulkJob::STATE_PREVIEWED,
+					'total' => 2,
+					'report' => ['selection' => ['kind' => BulkJob::SELECTION_IDS, 'countAtCreation' => 2]],
+					'startedBy' => 'coordinator',
+					'reversalWindow' => null,
+					'reversibleUntil' => null,
+				],
+			],
+			$rows
+		);
+		$this->assertSame($job, $previewed[0]->job);
+		$this->assertSame(['o1', 'o2'], $previewed[1]);
+		$this->assertSame($objects, $previewed[0]->objects);
+		$this->assertSame($action, $previewed[0]->action);
+		$this->assertNull($previewed[0]->actor);
+		$this->assertCount(2, $previewed);
+	}
+
+	public function testCreateNamesTheReversalWindowOfAReversibleAction(): void {
+		$action = $this->createMock(\OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface::class);
+		$action->method('getId')->willReturn('openregister:assign');
+		$action->method('getGuards')->willReturn([]);
+		$action->method('getReversalWindow')->willReturn(3600);
+		$this->registry->method('get')->willReturn($action);
+		$this->resolver->method('resolveUuids')->willReturn(['o1']);
+		$this->resolver->method('hydrate')->willReturn([]);
+
+		$row = null;
+		$this->jobMapper->method('createFromArray')->willReturnCallback(
+			static function (array $data) use (&$row): BulkJob {
+				$row = $data;
+
+				return new BulkJob();
+			}
+		);
+
+		$before = new \DateTime();
+		$this->service(1000)->create('openregister:assign', [], ['ids' => ['o1']], null, 'coordinator', 1, 2);
+
+		$this->assertSame(3600, $row['reversalWindow']);
+		$this->assertInstanceOf(\DateTime::class, $row['reversibleUntil']);
+		$this->assertGreaterThanOrEqual($before->getTimestamp() + 3600, $row['reversibleUntil']->getTimestamp());
+		$this->assertSame(['reversalWindow', 'reversibleUntil'], array_slice(array_keys($row), -2));
+	}
+
+	public function testCreateRefusesAnUnscopedJobBeforeResolvingTheSelection(): void {
+		$this->registry->method('get')->willReturn($this->action());
+		$this->resolver->expects($this->never())->method('resolveUuids');
+		$this->jobMapper->expects($this->never())->method('createFromArray');
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->service(1000)->create('openregister:assign', [], ['ids' => ['o1']], null, 'coordinator', null, 2);
+	}
+
 	public function testACommitWithoutAReasonIsRefusedAndNothingIsQueued(): void {
 		$this->registry->method('get')->willReturn($this->action(true));
 		$this->jobList->expects($this->never())->method('add');
@@ -238,8 +351,8 @@ final class BulkJobServiceTest extends TestCase {
 		$this->resolver->method('hydrate')->willReturn([]);
 
 		$added = null;
-		$this->executor->method('writePreviewMembers')->willReturnCallback(
-			static function (BulkJob $job, array $uuids) use (&$added): void {
+		$this->executor->method('writeAddedMembers')->willReturnCallback(
+			static function (BulkJobPass $pass, array $uuids) use (&$added): void {
 				$added = $uuids;
 			}
 		);

@@ -38,8 +38,6 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -87,15 +85,13 @@ class MemberOfResolver {
 	 * parameter here closes that loop and `occ app:enable` dies in infinite recursion. It is
 	 * fetched from the container on first read instead (the CacheHandler / issue #1564 pattern).
 	 *
-	 * @param SchemaMapperInterface      $schemas   Loads the membership schema.
-	 * @param RegisterMapperInterface    $registers Finds the register that holds it.
+	 * @param SchemaRegisterLookup $lookup Loads the membership schema and finds the register that holds it.
 	 * @param ContainerInterface $container Resolves MagicMapper on first read, not at construction.
 	 * @param OperatorEvaluator $operators Evaluates the operand's `where` filters.
 	 * @param LoggerInterface   $logger    Logs a set that could not be read.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemas,
-		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaRegisterLookup $lookup,
 		private readonly ContainerInterface $container,
 		private readonly OperatorEvaluator $operators,
 		private readonly LoggerInterface $logger,
@@ -256,18 +252,18 @@ class MemberOfResolver {
 	 */
 	private function read(array $spec, string $userId): array {
 		try {
-			$schema = $this->schemas->find($spec['schema'], _rbac: false, _multitenancy: false);
+			$schema = $this->lookup->schemas->find($spec['schema'], _rbac: false, _multitenancy: false);
 
 			$registerId = $spec['register'];
 			if ($registerId === '') {
-				$registerId = (string)$this->registers->getFirstRegisterWithSchema((int)$schema->getId());
+				$registerId = (string)$this->lookup->registers->getFirstRegisterWithSchema((int)$schema->getId());
 			}
 
 			if ($registerId === '') {
 				return [];
 			}
 
-			$register = $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
+			$register = $this->lookup->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
 
 			$rows = $this->container->get(MagicMapperInterface::class)->searchObjects(
 				query: [

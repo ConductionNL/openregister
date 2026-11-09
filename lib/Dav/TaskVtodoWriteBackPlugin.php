@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Dav;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
-use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
+use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Sabre\DAV\Exception\Forbidden;
@@ -78,11 +78,11 @@ class TaskVtodoWriteBackPlugin extends ServerPlugin {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskVtodoWriteBackGate $gate The one gate.
+	 * @param TaskVtodoWriteBackGateInterface $gate The one gate.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly TaskVtodoWriteBackGate $gate,
+		private readonly TaskVtodoWriteBackGateInterface $gate,
 		private readonly LoggerInterface $logger,
 	) {
 

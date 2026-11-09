@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -38,9 +39,14 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionArm
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionScore
  */
 class MagicMapperUnionSelectPartGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/union-select-part-golden.json';
@@ -173,9 +179,14 @@ class MagicMapperUnionSelectPartGoldenTest extends TestCase {
 		$config = $this->createMock(IConfig::class);
 		$config->method('getSystemValue')->willReturn('oc_');
 
+		$probe = new MagicPgTrgmProbe(db: $db, logger: $logger);
+		$available = new \ReflectionProperty(MagicPgTrgmProbe::class, 'available');
+		$available->setAccessible(true);
+		$available->setValue($probe, $trgm);
+
 		$reflection = new ReflectionClass(MagicMapper::class);
 		$mapper = $reflection->newInstanceWithoutConstructor();
-		foreach (['db' => $db, 'logger' => $logger, 'config' => $config, 'searchHandler' => $search, 'hasPgTrgm' => $trgm] as $prop => $value) {
+		foreach (['db' => $db, 'logger' => $logger, 'config' => $config, 'searchHandler' => $search, 'pgTrgmProbe' => $probe] as $prop => $value) {
 			$property = $reflection->getProperty($prop);
 			$property->setAccessible(true);
 			$property->setValue($mapper, $value);

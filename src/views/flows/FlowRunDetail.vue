@@ -75,8 +75,8 @@
 						<div class="runPage__badges">
 							<CnStatusBadge
 								data-testid="run-detail-status"
-								:label="statusLabel(run.status)"
-								:variant="statusVariant(run.status)"
+								:label="statusLabel(shownStatus(run))"
+								:variant="statusVariant(shownStatus(run))"
 								size="small" />
 							<CnStatusBadge
 								v-if="versionLabel"
@@ -469,11 +469,13 @@ import {
 	RUN_TERMINAL_STATUSES,
 	runDuration,
 	shortUuid,
+	shownStatus,
 	statusLabel,
 	statusVariant,
 	stepRows,
 	triggerLabel,
 } from './flowDetail.js'
+import { flowPageMethods } from './flowPageMethods.js'
 
 export default {
 	name: 'FlowRunDetail',
@@ -694,9 +696,11 @@ export default {
 	},
 
 	methods: {
+		...flowPageMethods,
 		formatDateTime,
 		formatDuration,
 		shortUuid,
+		shownStatus,
 		statusLabel,
 		statusVariant,
 		triggerLabel,
@@ -757,26 +761,6 @@ export default {
 		},
 
 		/**
-		 * A GET whose failure leaves its panel empty.
-		 *
-		 * @param {string} path The app path.
-		 * @param {object} params Query parameters.
-		 * @return {Promise<object|null>} The response body, or null.
-		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
-		 */
-		async quietGet(path, params = undefined) {
-			try {
-				const response = await axios.get(
-					generateUrl(path),
-					params ? { params } : undefined,
-				)
-				return response?.data ?? null
-			} catch {
-				return null
-			}
-		},
-
-		/**
 		 * Start the run again from the beginning and open the new run.
 		 *
 		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-run-actions-follow-what-the-api-accepts
@@ -816,27 +800,6 @@ export default {
 				)
 				await this.load()
 			})
-		},
-
-		/**
-		 * Run one action, and show the server's refusal in its own words.
-		 *
-		 * @param {() => Promise<void>} action The action.
-		 * @return {Promise<void>}
-		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-run-actions-follow-what-the-api-accepts
-		 */
-		async act(action) {
-			this.busy = true
-			this.actionError = ''
-			try {
-				await action()
-			} catch (error) {
-				this.actionError =
-					error?.response?.data?.error
-					|| t('openregister', 'That did not work. Try again.')
-			} finally {
-				this.busy = false
-			}
 		},
 
 		/**

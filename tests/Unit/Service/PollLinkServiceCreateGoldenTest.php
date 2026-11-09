@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\PollLink;
@@ -78,6 +79,7 @@ class PollLinkServiceCreateGoldenTest extends TestCase {
 		);
 		$db->method('lastInsertId')->willReturnCallback(
 			function (string $table) use ($insertId) {
+				$this->assertSame('*PREFIX*polls_polls_id_seq', $table);
 				return $insertId;
 			}
 		);
@@ -98,7 +100,7 @@ class PollLinkServiceCreateGoldenTest extends TestCase {
 			}
 		);
 
-		$service = new PollLinkService($mapper, $db, $apps, $session, $logger);
+		$service = new PollLinkService($mapper, $db, new LinkServiceRuntime($apps, $session, $logger));
 		$deadlineValue = null;
 		if ($deadline !== null) {
 			$deadlineValue = new DateTimeImmutable($deadline);

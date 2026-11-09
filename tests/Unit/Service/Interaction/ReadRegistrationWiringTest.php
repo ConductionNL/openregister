@@ -72,8 +72,10 @@ class ReadRegistrationWiringTest extends TestCase {
 			$mapper,
 			$this->createMock(AuditTrailMapper::class),
 			$history,
-			$this->createMock(ObjectSourceRegistry::class),
-			$this->createMock(LoggerInterface::class)
+			new \OCA\OpenRegister\Service\Object\GetObjectSources(
+				$this->createMock(ObjectSourceRegistry::class),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$getObject->find(id: 'uuid-a');

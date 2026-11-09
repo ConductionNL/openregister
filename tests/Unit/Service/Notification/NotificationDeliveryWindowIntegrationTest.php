@@ -6,6 +6,8 @@ namespace Unit\Service\Notification;
 
 use DateTime;
 use OCA\OpenRegister\Notifications\BackgroundJob\NotificationQueueFlushJob;
+use OCA\OpenRegister\Notifications\BackgroundJob\QueueFlushDelivery;
+use OCA\OpenRegister\Notifications\BackgroundJob\QueueFlushTiming;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
@@ -199,12 +201,8 @@ class NotificationDeliveryWindowIntegrationTest extends TestCase {
 		// time in dispatch(), not at dispatchQueued() flush time).
 		$flushJob = new NotificationQueueFlushJob(
 			$this->time,
-			$this->queuedMapper,
-			$schemaMapper,
-			$dispatcher,
-			$windowService,
-			$digestEvaluator,
-			$this->createMock(LoggerInterface::class)
+			new QueueFlushTiming($schemaMapper, $windowService, $digestEvaluator),
+			new QueueFlushDelivery($this->queuedMapper, $dispatcher, $this->createMock(LoggerInterface::class))
 		);
 
 		$reflection = new \ReflectionClass($flushJob);

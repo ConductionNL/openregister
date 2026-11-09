@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskSequenceUndecidedEvent;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
+use OCA\OpenRegister\Service\Task\TaskSequenceServices;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -74,10 +75,12 @@ class TaskSequenceServiceTest extends TestCase {
 		);
 		$this->dispatcher = $this->createMock(IEventDispatcher::class);
 		$this->service = new TaskSequenceService(
-			sequences: $this->sequences,
-			taskReader: $this->taskReader,
-			tasks: $this->tasks,
-			dispatcher: $this->dispatcher,
+			services: new TaskSequenceServices(
+				sequences: $this->sequences,
+				taskReader: $this->taskReader,
+				tasks: $this->tasks,
+				dispatcher: $this->dispatcher
+			),
 			logger: new NullLogger()
 		);
 	}//end setUp()

@@ -110,7 +110,7 @@ class ContactsObjectSourceProvider implements ObjectSourceProvider {
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
 		foreach ($this->readContacts(search: $id) as $contact) {
 			if ((string)($contact['UID'] ?? '') === $id) {
-				return $this->toObjectEntity(register: $register, schema: $schema, contact: $contact);
+				return $this->toObjectEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), contact: $contact);
 			}
 		}
 
@@ -139,12 +139,12 @@ class ContactsObjectSourceProvider implements ObjectSourceProvider {
 		$limit = (int)($query['limit'] ?? 200);
 		$offset = (int)($query['offset'] ?? 0);
 
-		$contacts = $this->readContacts(search: $search);
-		$contacts = array_slice($contacts, $offset, $limit);
+		$contacts = array_slice($this->readContacts(search: $search), $offset, $limit);
+		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
 
 		$objects = [];
 		foreach ($contacts as $contact) {
-			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, contact: $contact);
+			$objects[] = $this->toObjectEntity(binding: $binding, contact: $contact);
 		}
 
 		return $objects;
@@ -211,15 +211,14 @@ class ContactsObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * Map a Nextcloud contact array onto a non-persisted virtual ObjectEntity.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedObjectBinding $binding The bound register and schema.
 	 * @param array<string, mixed> $contact The IManager contact array.
 	 *
 	 * @return ObjectEntity The virtual object (never saved).
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	private function toObjectEntity(Register $register, Schema $schema, array $contact): ObjectEntity {
+	private function toObjectEntity(SourcedObjectBinding $binding, array $contact): ObjectEntity {
 		$uid = (string)($contact['UID'] ?? '');
 
 		$data = [
@@ -229,12 +228,6 @@ class ContactsObjectSourceProvider implements ObjectSourceProvider {
 			'org' => (string)($contact['ORG'] ?? ''),
 		];
 
-		$entity = new ObjectEntity();
-		$entity->setUuid($uid);
-		$entity->setRegister((string)$register->getId());
-		$entity->setSchema((string)$schema->getId());
-		$entity->setObject($data);
-
-		return $entity;
+		return $binding->toEntity(uuid: $uid, data: $data);
 	}//end toObjectEntity()
 }//end class

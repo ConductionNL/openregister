@@ -10,14 +10,10 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load linked emails')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Mail app not installed (HTTP 501 graceful degradation) -->
 		<NcEmptyContent
@@ -75,14 +71,9 @@ SPDX-License-Identifier: EUPL-1.2
 						</span>
 					</div>
 				</div>
-				<NcButton
-					variant="tertiary"
-					:aria-label="t('openregister', 'Unlink email')"
-					@click="unlinkEmail(email)">
-					<template #icon>
-						<CloseCircleOutline :size="20" />
-					</template>
-				</NcButton>
+				<UnlinkButton
+					:label="t('openregister', 'Unlink email')"
+					@unlink="unlinkEmail(email)" />
 			</li>
 		</ul>
 	</div>
@@ -90,12 +81,11 @@ SPDX-License-Identifier: EUPL-1.2
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
-import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
+import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import EmailOffOutline from 'vue-material-design-icons/EmailOffOutline.vue'
 import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
+import UnlinkButton from './UnlinkButton.vue'
 import { relationTab } from './relationTab.js'
 
 /**
@@ -113,13 +103,12 @@ export default {
 	name: 'EmailsTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
-		NcButton,
-		AlertCircleOutline,
 		EmailOutline,
 		EmailOffOutline,
-		CloseCircleOutline,
+		UnlinkButton,
 	},
 
 	mixins: [relationTab],
@@ -142,14 +131,7 @@ export default {
 			this.mailUnavailable = false
 			this.errorMessage = ''
 
-			const url = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/emails',
-				{
-					register: this.register,
-					schema: this.schema,
-					id: this.objectId,
-				},
-			)
+			const url = this.objectApiUrl('/emails')
 
 			try {
 				const response = await axios.get(url)
@@ -170,15 +152,7 @@ export default {
 		 * @spec exclude API passthrough unlinking email + change emit; email-relations contract owned by integration-email capability
 		 */
 		async unlinkEmail(email) {
-			const url = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/emails/{emailId}',
-				{
-					register: this.register,
-					schema: this.schema,
-					id: this.objectId,
-					emailId: email.id,
-				},
-			)
+			const url = this.objectApiUrl('/emails/{emailId}', { emailId: email.id })
 
 			try {
 				await axios.delete(url)
@@ -192,58 +166,8 @@ export default {
 }
 </script>
 
-<style scoped>
-.emails-tab__loading {
-	display: flex;
-	justify-content: center;
-	padding: 2em 0;
-}
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
 
-.emails-tab__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-
-.emails-tab__item {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.emails-tab__item:last-child {
-	border-bottom: none;
-}
-
-.emails-tab__icon {
-	flex-shrink: 0;
-	color: var(--color-text-maxcontrast);
-}
-
-.emails-tab__content {
-	flex-grow: 1;
-	min-width: 0;
-}
-
-.emails-tab__subject {
-	font-weight: 500;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.emails-tab__meta {
-	display: flex;
-	gap: 6px;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.85em;
-}
-
-.emails-tab__from {
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
+@include relation-tab-list('emails-tab', 'subject', 'from', $toolbar: false);
 </style>

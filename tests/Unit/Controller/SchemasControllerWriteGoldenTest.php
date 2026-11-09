@@ -24,9 +24,11 @@ use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
+use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
@@ -36,7 +38,7 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
@@ -81,6 +83,7 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 			'calculation' => new CalculationDeclarationException($errors),
 			'consent' => new ConsentDeclarationException($errors),
 			'dependent value' => new DependentValueDeclarationException($errors),
+			'notification' => new NotificationDeclarationException($errors),
 			'invalid authorization rule' => new InvalidAuthorizationRuleException('Rule read.x has no operator'),
 			'db exception' => new DBException('Duplicate entry for key unique_slug'),
 			'database constraint' => new DatabaseConstraintException('Slug taken', 0, 418),
@@ -289,7 +292,7 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 				return $audit;
 			}
 
-			if ($id === FormDependentsCheck::class) {
+			if ($id === FormDependentsCheckInterface::class) {
 				$this->record(method: 'container.get', args: ['FormDependentsCheck']);
 				if (($case['forms'] ?? null) === 'throws') {
 					throw new Exception('No form check');

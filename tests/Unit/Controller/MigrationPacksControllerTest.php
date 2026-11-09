@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\MigrationPacksControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
 use DateTimeImmutable;
 use InvalidArgumentException;
@@ -129,7 +130,7 @@ class MigrationPacksControllerTest extends TestCase {
 	 * @return MigrationPacksController
 	 */
 	private function controllerFor(IRequest $request, ?MigrationPackService $service = null): MigrationPacksController {
-		return new MigrationPacksController(
+		return MigrationPacksControllerFactory::create(
 			'openregister',
 			$request,
 			$service ?? $this->service,
@@ -980,7 +981,9 @@ class MigrationPacksControllerTest extends TestCase {
 			'lib/Service/MigrationPack/MigrationPackErrorResponder.php',
 			'lib/Service/MigrationPack/MigrationPackRequestReader.php',
 			'lib/Service/MigrationPack/PackDefinitionValidator.php',
+			'lib/Service/MigrationPack/PackTransformValidator.php',
 			'lib/Service/MigrationPack/MappingEngine.php',
+			'lib/Service/MigrationPack/MappingTransformer.php',
 		] as $file) {
 			$source .= file_get_contents(__DIR__ . '/../../../' . $file);
 		}

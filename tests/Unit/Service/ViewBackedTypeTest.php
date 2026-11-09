@@ -58,6 +58,7 @@ use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\ViewObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\ViewSourceMappers;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -127,7 +128,11 @@ class ViewBackedTypeTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willReturn($sourceSchema);
 
-		return new ViewObjectSourceProvider($views, $registers, $schemas, $magic, $this->createMock(LoggerInterface::class));
+		return new ViewObjectSourceProvider(
+			new ViewSourceMappers(viewMapper: $views, registerMapper: $registers, schemaMapper: $schemas),
+			$magic,
+			$this->createMock(LoggerInterface::class)
+		);
 	}//end provider()
 
 	public function testTheSchemaDeclaresAViewAsItsReadOnlySource(): void {

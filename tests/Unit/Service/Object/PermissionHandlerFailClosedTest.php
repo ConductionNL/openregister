@@ -54,6 +54,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class PermissionHandlerFailClosedTest extends TestCase {
 
@@ -93,7 +95,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueBool')->willReturn(true);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,

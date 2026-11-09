@@ -66,6 +66,12 @@ use OCA\OpenRegister\Db\FlowRun;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
  * @uses \OCA\OpenRegister\Service\Task\TaskState
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRunCheck
  */
 class ExampleSetFlowRunsTest extends ExampleSetTestCase {
 	/**
@@ -286,7 +292,7 @@ class ExampleSetFlowRunsTest extends ExampleSetTestCase {
 			'a claim by someone else'         => [$wait, [self::hearingTask(extra: ['claimedBy' => '{{cast:sanne.uid}}'])], 'claimedBy is the assignee'],
 			'a claim in the future'           => [
 				$wait,
-				[self::hearingTask(extra: ['claimedAt' => '2099-01-01T09:00:00+01:00'])],
+				[self::hearingTask(extra: ['claimedAt' => date('c', strtotime('+10 years'))])],
 				'claimedAt lies in the future',
 			],
 			'a claim that is no date'         => [$wait, [self::hearingTask(extra: ['claimedAt' => 'gisteren'])], 'claimedAt "gisteren" is not a date'],
