@@ -75,7 +75,7 @@ class LifecycleTransitionResolver implements LifecycleTransitionResolverInterfac
 	public function resolve(array $transitions, string $uuid, string $oldValue, string $newValue): ?array {
 		foreach ($this->candidates(transitions: $transitions, uuid: $uuid) as $candidate) {
 			$spec = $candidate[1];
-			if (is_array($spec) === true && $this->moves(spec: $spec, oldValue: $oldValue, newValue: $newValue) === true) {
+			if (is_array($spec) === true && ($spec['to'] ?? null) === $newValue && self::leaves(spec: $spec, state: $oldValue) === true) {
 				return [(string)$candidate[0], $spec];
 			}
 		}
@@ -106,29 +106,24 @@ class LifecycleTransitionResolver implements LifecycleTransitionResolverInterfac
 	}//end candidates()
 
 	/**
-	 * Whether a transition moves the lifecycle value from `old` to `new`.
+	 * Whether a transition may leave the given state.
 	 *
 	 * `from` may be a single state or a list; a string is read as a one-element
 	 * list so both authoring shapes work.
 	 *
-	 * @param array<string, mixed> $spec The transition's spec.
-	 * @param string $oldValue The lifecycle value being moved away from.
-	 * @param string $newValue The lifecycle value being moved to.
+	 * @param array<string, mixed> $spec  The transition's spec.
+	 * @param string               $state The lifecycle value being moved away from.
 	 *
 	 * @return bool
 	 */
-	private function moves(array $spec, string $oldValue, string $newValue): bool {
-		if (($spec['to'] ?? null) !== $newValue) {
-			return false;
-		}
-
+	private static function leaves(array $spec, string $state): bool {
 		$from = ($spec['from'] ?? []);
 		if (is_string($from) === true) {
 			$from = [$from];
 		}
 
-		return is_array($from) === true && in_array($oldValue, $from, true) === true;
-	}//end moves()
+		return is_array($from) === true && in_array($state, $from, true) === true;
+	}//end leaves()
 
 	/**
 	 * Whether the write of this object in flight sets declared state (a seed or example-set refresh).

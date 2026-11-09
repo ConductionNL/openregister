@@ -186,8 +186,8 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
-@use '../avg/pillBadge' as *;
-@use '../entities/cardRules' as *;
+@use '../avg/pillBadge.scss' as *;
+@use '../entities/cardRules.scss' as *;
 
 @include view-container-rules;
 
