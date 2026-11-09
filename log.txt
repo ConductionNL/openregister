@@ -37,3 +37,4 @@
 2026-11-09T10:01:36Z fixerF2-20261109T083856-9ec52c22 FIXED #7531 d0e1263adbae merged main (SaveObjectUnwritablePreserveTest: PR's handler bundles kept, main's ConditionUserResolvers argument taken)
 2026-11-09T10:02:36Z integrator-20261109T092732-73c42b8a MERGED-TREE 43a27afd4d: 20 PRs, main now d57eb7de98 = tested tree
 2026-11-09T10:03:20Z integrator-20261109T092732-73c42b8a CONFLICT-DEV #7593 4bf35a24
+2026-11-09T10:06:03Z integrator-20261109T092732-73c42b8a RED tree fd13c28591 prs 20 front=skip: Tests: 50000, Assertions: 164371, Errors: 9, Failures: 11, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\Controller\HardeningControllerBehaviourTest::testUpdateControlsAnswersConflictBelo;OCA\OpenRegister\Tests\Unit\Controller\HardeningControllerBehaviourTest::testUpdateFloorsAnswersConflictAndBad
