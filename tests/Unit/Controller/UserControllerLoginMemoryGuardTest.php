@@ -144,7 +144,7 @@ class UserControllerLoginMemoryGuardTest extends TestCase {
 	 * @return void
 	 */
 	public function testNearTheMemoryLimitTheLoginIsRefused(): void {
-		$this->assertNotFalse(ini_set('memory_limit', (string) (int) ceil(memory_get_usage(true) * 1.1)));
+		$this->assertNotFalse(ini_set('memory_limit', (string) (int) ceil(memory_get_usage(true) * 1.24)));
 		$this->security->expects($this->never())->method('validateLoginCredentials');
 		$this->users->expects($this->never())->method('checkPassword');
 
