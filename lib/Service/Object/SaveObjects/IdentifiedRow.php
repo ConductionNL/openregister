@@ -20,6 +20,8 @@ namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
 /**
  * A row whose identifiers were generated, read by the required-field check and the database-row build.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class IdentifiedRow {
 

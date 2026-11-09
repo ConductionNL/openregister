@@ -20,6 +20,8 @@ namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
 /**
  * The outcome of persisting a chunk, read by the steps that classify it into results.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class PersistedChunk {
 
