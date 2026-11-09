@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Service\Hardening;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
+ *
+ * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
  */
 final class FloorBreach {
 	/**
