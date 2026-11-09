@@ -29,6 +29,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -89,7 +91,7 @@ class CountedRegisterImportGoldenTest extends TestCase {
 			}
 		);
 
-		return new CountedRegisterImport(registerMapper: $registers, schemaMapper: $schemas, decision: $this->decision);
+		return new CountedRegisterImport(catalog: new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $this->createMock(MagicMapperInterface::class)), decision: $this->decision);
 	}//end import()
 
 	/**
