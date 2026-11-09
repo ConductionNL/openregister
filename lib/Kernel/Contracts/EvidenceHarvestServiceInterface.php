@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Gdpr\Evidence;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use RuntimeException;
 

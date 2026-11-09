@@ -24,7 +24,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Edepot;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The methods of EdepotTransferService that callers outside its component use.

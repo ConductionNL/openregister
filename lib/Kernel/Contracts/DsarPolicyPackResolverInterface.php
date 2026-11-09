@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Gdpr\Policy;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Resolves the active DSAR policy pack of a case and the provider ids it names.

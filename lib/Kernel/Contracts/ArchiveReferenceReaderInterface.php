@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Archival;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Reading the reference a dependant's relation property holds, as the related-retention recalculation does. Only the method that caller calls.

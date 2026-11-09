@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Archival;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use InvalidArgumentException;
 

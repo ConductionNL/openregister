@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Gdpr\Case;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Decides whether the caller may act on a DSAR case.

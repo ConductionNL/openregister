@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Gdpr;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use DateTimeImmutable;
 

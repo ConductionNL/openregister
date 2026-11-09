@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Edepot;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The durable transfer-list record the transfer execution job reads and writes.

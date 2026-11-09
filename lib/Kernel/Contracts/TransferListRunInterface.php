@@ -20,10 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Edepot;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
  * Create a transfer list, find the objects already on one, and tell the archivists.
@@ -34,7 +33,7 @@ interface TransferListRunInterface {
 	/**
 	 * Create a new transfer list from eligible objects.
 	 *
-	 * @param array<int, ObjectEntity> $objects The objects eligible for transfer.
+	 * @param array<int, \OCA\OpenRegister\Db\ObjectEntity> $objects The objects eligible for transfer.
 	 *
 	 * @return array{
 	 *     uuid: string,

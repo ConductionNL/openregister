@@ -23,7 +23,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Edepot;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use InvalidArgumentException;
 

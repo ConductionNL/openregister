@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Gdpr\Retention;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Running one DSAR retention sweep, as the daily sweep job does. Only the method that caller calls.

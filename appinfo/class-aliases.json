@@ -1815,6 +1815,111 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Gdpr\\DataSubjectRequestServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DataSubjectRequestServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Edepot\\TransferListServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TransferListServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Gdpr\\Erasure\\ErasurePreviewServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ErasurePreviewServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Edepot\\TransferListRunInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TransferListRunInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Archival\\SelectielijstImportServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SelectielijstImportServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Archival\\RetentionEvaluatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RetentionEvaluatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Archival\\DestructionReviewReminderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DestructionReviewReminderInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Edepot\\EdepotTransferServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\EdepotTransferServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Gdpr\\Policy\\DsarPolicyPackResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DsarPolicyPackResolverInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Gdpr\\DpiaPatternDetectorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DpiaPatternDetectorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Gdpr\\Evidence\\EvidenceHarvestServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\EvidenceHarvestServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Edepot\\TransferRecordServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TransferRecordServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Gdpr\\Redaction\\RedactionWriteServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RedactionWriteServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Archival\\DestructionListCreatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DestructionListCreatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Archival\\ArchivalAnnotationValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ArchivalAnnotationValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Edepot\\TransferRecordStoreInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TransferRecordStoreInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Archival\\SelectielijstReferenceResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SelectielijstReferenceResolverInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Gdpr\\Case\\CaseAccessControlInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\CaseAccessControlInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Gdpr\\Retention\\RetentionSweepInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RetentionSweepInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Archival\\ArchiveReferenceReaderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ArchiveReferenceReaderInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Anonymisation\\BackendMethodsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\BackendMethodsInterface",
+			"eager": false,
+			"service": true
 		}
 	}
 }

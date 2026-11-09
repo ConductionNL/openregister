@@ -20,9 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Gdpr;
-
-use OCA\OpenRegister\Db\ObjectEntity;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The data-subject request operations the GDPR rights endpoints call.

@@ -20,9 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Gdpr\Erasure;
-
-use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The erasure preview the erasure endpoints build.
@@ -51,6 +49,6 @@ interface ErasurePreviewServiceInterface {
 	public function preview(
 		string $subjectId,
 		?string $type = null,
-		string $eraseMode = DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE,
+		string $eraseMode = DataSubjectRequestServiceInterface::ERASE_MODE_PSEUDONYMISE,
 	): array;
 }//end interface

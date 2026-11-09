@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Anonymisation;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The entity-recognition method values.
