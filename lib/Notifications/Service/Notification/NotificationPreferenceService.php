@@ -293,7 +293,9 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
 	public function getGroupDefault(string $groupId, string $schemaSlug, string $notificationKey, ?string $scope = null): ?array {
-		return $this->groupDefaultAt(groupId: $groupId, address: new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope));
+		$address = new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope);
+
+		return $this->groupDefaultAt(groupId: $groupId, address: $address);
 	}//end getGroupDefault()
 
 	/**
@@ -453,7 +455,9 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
 	public function getOverride(string $userId, string $schemaSlug, string $notificationKey, ?string $scope = null): ?array {
-		return $this->overrideAt(userId: $userId, address: new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope));
+		$address = new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope);
+
+		return $this->overrideAt(userId: $userId, address: $address);
 	}//end getOverride()
 
 	/**

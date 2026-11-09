@@ -51,6 +51,8 @@ final class PreferenceTopic {
 	 * @param array<int, string>|null $allowedChannels The channels a layer may choose; null leaves them unrestricted.
 	 *
 	 * @return PreferenceLookup The lookup.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
 	public function lookup(?array $allowedChannels): PreferenceLookup {
 		return new PreferenceLookup(
