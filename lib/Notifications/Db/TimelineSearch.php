@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Notifications\Db;
 
 /**
  * A search term, the objects and kind it runs over, and the visibility the caller is entitled to.
+ *
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 final class TimelineSearch {
 	/**

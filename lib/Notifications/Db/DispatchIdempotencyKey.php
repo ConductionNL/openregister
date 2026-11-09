@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Notifications\Db;
 
 /**
  * A notification and the idempotency key one dispatch of it resolved to.
+ *
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 final class DispatchIdempotencyKey {
 	/**

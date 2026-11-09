@@ -90,6 +90,8 @@ class NotificationSubscriptionMapper extends QBMapper {
 	 * @return NotificationSubscription
 	 *
 	 * @throws \InvalidArgumentException When both ids are null.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function subscribeTo(SubscriptionKey $key): NotificationSubscription {
 		if ($key->registerId === null && $key->schemaId === null) {
@@ -111,12 +113,9 @@ class NotificationSubscriptionMapper extends QBMapper {
 		$entity->setCreated(new DateTime());
 
 		try {
-			/*
-			 * @var NotificationSubscription $inserted
-			 */
-
-			$inserted = $this->insert(entity: $entity);
-			return $inserted;
+			// insert() fills in the id on the entity it is given and returns that same entity.
+			$this->insert(entity: $entity);
+			return $entity;
 		} catch (DbException) {
 			// Race: parallel insert won. Return the existing row.
 			return $this->findExisting(key: $key);
@@ -143,6 +142,8 @@ class NotificationSubscriptionMapper extends QBMapper {
 	 * @param SubscriptionKey $key The user and the register and/or schema.
 	 *
 	 * @return bool True when a row was deleted.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function unsubscribeFrom(SubscriptionKey $key): bool {
 		$qb = $this->db->getQueryBuilder();

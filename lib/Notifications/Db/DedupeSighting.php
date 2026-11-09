@@ -24,6 +24,8 @@ use DateTime;
 
 /**
  * The fingerprint an evaluation saw, when, and whether it dispatched.
+ *
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 final class DedupeSighting {
 	/**

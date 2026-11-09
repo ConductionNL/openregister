@@ -26,6 +26,8 @@ use DateTime;
  * One history list question: the filter map and the moment a snooze is judged against.
  *
  * A list and its count build the same filter, so a page never disagrees with its total.
+ *
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 final class HistoryListFilter {
 	/**

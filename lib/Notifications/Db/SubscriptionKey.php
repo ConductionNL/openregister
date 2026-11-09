@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Notifications\Db;
 
 /**
  * The (user, register, schema) identity of one subscription row.
+ *
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 final class SubscriptionKey {
 	/**
@@ -42,6 +44,8 @@ final class SubscriptionKey {
 	 * The scope columns of the row, register first.
 	 *
 	 * @return array{register_id: int|null, schema_id: int|null}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function scopeColumns(): array {
 		return ['register_id' => $this->registerId, 'schema_id' => $this->schemaId];

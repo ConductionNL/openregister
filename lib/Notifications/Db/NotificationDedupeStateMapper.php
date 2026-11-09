@@ -95,6 +95,8 @@ class NotificationDedupeStateMapper extends QBMapper {
 	 * @param NotificationDedupeKey $key The schema, rule and object.
 	 *
 	 * @return NotificationDedupeState|null Row when present, null when absent.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function findByKey(NotificationDedupeKey $key): ?NotificationDedupeState {
 		$qb = $this->selectWhereEquals(columns: ['schema_id' => $key->schemaId, 'rule_key' => $key->ruleKey, 'object_uuid' => $key->objectUuid]);

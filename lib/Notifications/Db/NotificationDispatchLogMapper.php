@@ -85,6 +85,8 @@ class NotificationDispatchLogMapper extends QBMapper {
 	 * @param int                    $windowSeconds Retention window. Default 86400 (24 h).
 	 *
 	 * @return bool True when a duplicate exists within the window.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function isDuplicate(DispatchIdempotencyKey $key, int $windowSeconds = self::DEFAULT_WINDOW_SECONDS): bool {
 		// Use UTC consistently: PHP server timezone may differ from the DB
