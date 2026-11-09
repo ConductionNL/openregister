@@ -1757,7 +1757,7 @@
 			"service": true
 		},
 		"OCA\\OpenRegister\\Tool\\ToolInterface": {
-			"class": "OCA\\OpenRegister\\Mcp\\Tool\\ToolInterface",
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ToolInterface",
 			"eager": true,
 			"service": true
 		},
