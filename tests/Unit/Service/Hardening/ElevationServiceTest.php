@@ -33,6 +33,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Hardening;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
+use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Service\Hardening\PlatformSecurityReader;
+use OCA\OpenRegister\Service\Hardening\HardeningSettingsStore;
+use OCA\OpenRegister\Service\Hardening\HardeningPosture;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
 use OCA\OpenRegister\Service\Hardening\ElevationService;
 use OCA\OpenRegister\Service\Hardening\ElevationIdentity;
@@ -103,8 +108,12 @@ class ElevationServiceTest extends TestCase {
 		$this->service = new ElevationService(
 			identity: new ElevationIdentity(session: $session, userSession: $userSession, users: $this->users),
 			time: $time,
-			policy: new HardeningPolicy($appConfig),
-			audit: $this->audit
+			posture: new HardeningPosture(
+				policy: new HardeningPolicy($appConfig),
+				store: new HardeningSettingsStore($appConfig, $this->createMock(AuditTrailMapperInterface::class), $this->createMock(LoggerInterface::class)),
+				audit: $this->audit,
+				platform: $this->createMock(PlatformSecurityReader::class),
+			)
 		);
 	}
 
