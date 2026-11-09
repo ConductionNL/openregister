@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\WorkflowEngine\RunFlowOperation;
+use OCA\OpenRegister\WorkflowEngine\RunFlowOperationFlows;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -94,7 +95,7 @@ final class RunFlowOperationTest extends TestCase {
 			}
 		);
 
-		return new RunFlowOperation($l10n, $urls, $mapper, $runner, $logger);
+		return new RunFlowOperation($l10n, $urls, new RunFlowOperationFlows($mapper, $runner), $logger);
 	}//end operation()
 
 	/**
