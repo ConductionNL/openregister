@@ -37,9 +37,9 @@ final class CalculationApplyRun {
 	/**
 	 * The save's calculation pass (object, schema slug, sequence context, payload).
 	 *
-	 * @var CalculationSaveRun
+	 * @var CalculationSaveRun|null
 	 */
-	public CalculationSaveRun $pass;
+	public ?CalculationSaveRun $pass = null;
 
 	/**
 	 * The calculation's name.

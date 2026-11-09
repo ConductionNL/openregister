@@ -37,9 +37,9 @@ final class ConsentApplyRun {
 	/**
 	 * The save: its event, the consent properties, the submitted and the persisted payload.
 	 *
-	 * @var ConsentSaveContext
+	 * @var ConsentSaveContext|null
 	 */
-	public ConsentSaveContext $context;
+	public ?ConsentSaveContext $context = null;
 
 	/**
 	 * The incoming payload, rewritten as properties are evaluated.
