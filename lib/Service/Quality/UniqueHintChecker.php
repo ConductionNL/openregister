@@ -90,23 +90,31 @@ class UniqueHintChecker {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function check(array $configuration, UniqueHintScope $scope, array $data, ?string $selfUuid = null): void {
-		$nominated = $this->annotation->nominated(configuration: $configuration);
-		if (count($nominated) === 0) {
+		$candidate = new UniqueHintCandidate(scope: $scope, data: $data, selfUuid: $selfUuid);
+		foreach ($this->annotation->nominated(configuration: $configuration) as $property) {
+			$this->checkProperty(candidate: $candidate, property: $property);
+		}
+	}//end check()
+
+	/**
+	 * Check one nominated property of the incoming write; an absent, empty or
+	 * non-scalar value is not checked.
+	 *
+	 * @param UniqueHintCandidate $candidate The scope, the incoming payload and the object's own uuid.
+	 * @param string              $property  The nominated property.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 */
+	private function checkProperty(UniqueHintCandidate $candidate, string $property): void {
+		$value = ($candidate->data[$property] ?? null);
+		if (is_scalar($value) === false || (string)$value === '') {
 			return;
 		}
 
-		foreach ($nominated as $property) {
-			$value = ($data[$property] ?? null);
-			if (is_scalar($value) === false || (string)$value === '') {
-				continue;
-			}
-
-			$this->checkOne(
-				lookup: $scope->lookup(property: $property, value: $value),
-				selfUuid: $selfUuid
-			);
-		}
-	}//end check()
+		$this->checkOne(lookup: $candidate->scope->lookup(property: $property, value: $value), selfUuid: $candidate->selfUuid);
+	}//end checkProperty()
 
 	/**
 	 * Check one nominated property.
