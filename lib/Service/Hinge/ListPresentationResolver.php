@@ -110,7 +110,7 @@ class ListPresentationResolver implements ListPresentationResolverInterface {
 			$definition = [];
 		}
 
-		$label = $this->columnLabel(column: $column, definition: $definition, property: $property);
+		$label = $this->columnLabel(column: $column, definition: $definition);
 
 		$type = ($definition['type'] ?? 'string');
 		if (is_string($type) === false) {
@@ -128,20 +128,19 @@ class ListPresentationResolver implements ListPresentationResolverInterface {
 	/**
 	 * The header of a declared column: its own label, the property's title, or the property name.
 	 *
-	 * @param array  $column     The declared column.
-	 * @param array  $definition The property's schema definition.
-	 * @param string $property   The column's property path.
+	 * @param array $column     The declared column, with its property path.
+	 * @param array $definition The property's schema definition.
 	 *
 	 * @return string The label, never empty.
 	 */
-	private function columnLabel(array $column, array $definition, string $property): string {
+	private function columnLabel(array $column, array $definition): string {
 		$label = ($column['label'] ?? null);
 		if (is_string($label) === false || $label === '') {
 			$label = ($definition['title'] ?? null);
 		}
 
 		if (is_string($label) === false || $label === '') {
-			$label = $property;
+			$label = $column['property'];
 		}
 
 		return $label;

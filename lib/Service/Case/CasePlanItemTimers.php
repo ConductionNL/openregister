@@ -163,29 +163,14 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	 * nothing for one whose term has already passed: that one is reported as
 	 * overdue for the caller to enforce.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param DateTimeInterface $now The clock.
-	 * @param string|null $actor The arming identity.
+	 * @param CaseItem     $item The item.
+	 * @param FlowTimerAct $act  The arming identity and the moment of the pass.
 	 *
 	 * @return string One of the REARM_* constants.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	public function rearmStatutoryExpiry(CaseItem $item, DateTimeInterface $now, ?string $actor = null): string {
-		return $this->rearmExpiry(item: $item, act: new FlowTimerAct(actor: $actor, now: DateTimeImmutable::createFromInterface($now)));
-	}//end rearmStatutoryExpiry()
-
-	/**
-	 * Arm the statutory expiry of an active item again: see {@see rearmStatutoryExpiry()}.
-	 *
-	 * @param CaseItem     $item The active item.
-	 * @param FlowTimerAct $act  The arming identity and the moment of the pass.
-	 *
-	 * @return string One of the REARM_* outcomes.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
-	 */
-	private function rearmExpiry(CaseItem $item, FlowTimerAct $act): string {
+	public function rearmStatutoryExpiry(CaseItem $item, FlowTimerAct $act): string {
 		if ($this->hasStatutoryExpiry(item: $item) === false) {
 			return self::REARM_NONE;
 		}
@@ -200,7 +185,8 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 		}
 
 		return self::REARM_FAILED;
-	}//end rearmExpiry()
+	}//end rearmStatutoryExpiry()
+
 
 	/**
 	 * Cancel the open timers of an item that reached a terminal state.
