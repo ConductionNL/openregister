@@ -29,6 +29,7 @@ use OCP\AppFramework\Services\IInitialState;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IL10N;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -144,4 +145,42 @@ class OpenRegisterAdminTest extends TestCase {
 
 		$this->assertInstanceOf(TemplateResponse::class, $result);
 	}//end testGetFormWithFalseSetting()
+
+	/**
+	 * The three push statuses and the platform state each is read from.
+	 *
+	 * @return array<string, array{0: bool, 1: string, 2: string}>
+	 */
+	public static function pushStatusCases(): array {
+		return [
+			'notify_push missing'   => [false, '', 'not_installed'],
+			'push confirmed'        => [true, '1', 'active'],
+			'push never confirmed'  => [true, '0', 'unreachable'],
+		];
+	}//end pushStatusCases()
+
+	/**
+	 * Characterisation: each push status reaches the initial state and the template.
+	 *
+	 * @param bool   $installed Whether notify_push is installed.
+	 * @param string $flag      The push_available app-config value.
+	 * @param string $expected  The push status the page must show.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('pushStatusCases')]
+	public function testPushStatusReachesInitialStateAndTemplate(bool $installed, string $flag, string $expected): void {
+		$this->appManager->method('isInstalled')->with('notify_push')->willReturn($installed);
+		$this->appConfig->method('getValueString')
+			->with('openregister', 'push_available', '')
+			->willReturn($flag);
+		$this->initialState->expects($this->once())
+			->method('provideInitialState')
+			->with('push_status', $expected);
+
+		$result = $this->admin->getForm();
+
+		$this->assertSame($expected, $result->getParams()['pushStatus']);
+		$this->assertSame('admin', $result->getRenderAs());
+	}//end testPushStatusReachesInitialStateAndTemplate()
 }//end class
