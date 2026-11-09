@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The methods of SchemaApplicationMigrator that callers outside its component use.

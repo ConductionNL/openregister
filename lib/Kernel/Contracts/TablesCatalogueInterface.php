@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\ObjectSource;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Says whether Tables can be read and lists the tables to reconcile.

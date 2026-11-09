@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Schemas;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Unique-constraint evaluation, as the unique-constraint listener uses it.

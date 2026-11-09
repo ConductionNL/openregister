@@ -34,7 +34,7 @@ use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesSearchInterface;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
-use OCA\OpenRegister\Service\ObjectSource\TablesCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\TablesCatalogueInterface;
 use OCA\OpenRegister\Service\ObjectSource\TablesSchemaReconcilerInterface;
 use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
 use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;

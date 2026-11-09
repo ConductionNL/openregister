@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The URN parsing and resolution the URN endpoint and capability call on UrnService.

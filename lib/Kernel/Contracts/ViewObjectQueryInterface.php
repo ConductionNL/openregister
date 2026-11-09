@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\View;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Turns a saved view's stored query into the search query that counts it,

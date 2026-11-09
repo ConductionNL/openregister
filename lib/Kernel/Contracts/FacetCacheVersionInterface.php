@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Object;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The write side of the facet cache version: the invalidation listener bumps

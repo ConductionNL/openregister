@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Schema;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The supported property type conversions and their preview, as the schema migration API asks for them.

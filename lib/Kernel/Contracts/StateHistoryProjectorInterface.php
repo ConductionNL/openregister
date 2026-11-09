@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\History;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The methods of StateHistoryProjector that callers outside its component use.

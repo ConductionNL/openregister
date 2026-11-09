@@ -11,7 +11,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\Bindings\RootBindings;
 use OCA\OpenRegister\Service\MdiIconSvg;
-use OCA\OpenRegister\Service\MdiIconSvgInterface;
+use OCA\OpenRegister\Kernel\Contracts\MdiIconSvgInterface;
 use PHPUnit\Framework\TestCase;
 
 /**

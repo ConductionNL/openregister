@@ -38,6 +38,6 @@ final class RootBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
-		\OCA\OpenRegister\Service\MdiIconSvgInterface::class => \OCA\OpenRegister\Service\MdiIconSvg::class,
+		\OCA\OpenRegister\Kernel\Contracts\MdiIconSvgInterface::class => \OCA\OpenRegister\Service\MdiIconSvg::class,
 	];
 }//end class

@@ -1815,6 +1815,106 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\DeepLinkResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DeepLinkResolverInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\LinkedEntityServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\LinkedEntityServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\UrnServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\UrnServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Schemas\\UniqueConstraintEvaluatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\UniqueConstraintEvaluatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Object\\ValidationErrorResponseInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ValidationErrorResponseInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Object\\ObjectCacheMaintenanceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectCacheMaintenanceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Schema\\PropertyConversionServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PropertyConversionServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\SharedSchemaDedupeServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SharedSchemaDedupeServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\SchemaApplicationMigratorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SchemaApplicationMigratorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\ObjectSource\\TablesCatalogueInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TablesCatalogueInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\UserTaskListInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\UserTaskListInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\RegisterSchemaLinkageRepairServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RegisterSchemaLinkageRepairServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Relation\\RelationGraphServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RelationGraphServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Object\\QueryHandlerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\QueryHandlerInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Quality\\UniqueHintWarningsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\UniqueHintWarningsInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Object\\FacetCacheVersionInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FacetCacheVersionInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\View\\ViewObjectQueryInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ViewObjectQueryInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\History\\StateHistoryProjectorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\StateHistoryProjectorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\MdiIconSvgInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\MdiIconSvgInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\ObjectRelationCleanupServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectRelationCleanupServiceInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }

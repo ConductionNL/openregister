@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Relation;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The bounded graph walk out from one object, as the object relations API asks for it.

@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Object;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The page-size cap the objects controller clamps to. Outside lib/Service only
