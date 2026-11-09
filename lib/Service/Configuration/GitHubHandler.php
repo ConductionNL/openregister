@@ -1462,21 +1462,31 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-10
 	 */
 	public function listIssues(
-		string $owner,
-		string $repo,
-		string $state = 'open',
-		string $sort = 'reactions-+1',
-		int $perPage = 30,
-		?array $labels = null,
+		string $owner, string $repo, string $state='open', string $sort='reactions-+1', int $perPage=30, ?array $labels=null
 	): array {
+		$query = (new GitHubIssueQuery(owner: $owner, repo: $repo))->filteredBy(state: $state, sort: $sort)->pagedBy(perPage: $perPage);
+		return $this->listIssuesFor(query: $query->withLabels(labels: $labels));
+	}//end listIssues()
+
+	/**
+	 * List the GitHub Issues a listing names, as listIssues() does.
+	 *
+	 * @param GitHubIssueQuery $query The repository, filters, page size and labels.
+	 *
+	 * @return array{items: array, hint?: string, github_status?: int, reset_at?: string}
+	 *
+	 * @throws GuzzleException When the HTTP client errors outside the structured mapping.
+	 *
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-1
+	 */
+	public function listIssuesFor(GitHubIssueQuery $query): array {
 		// PAT is optional for reads — GitHub's public Issues API serves anonymous
 		// requests at a lower rate limit (60/hr unauth vs 5000/hr authenticated).
 		// Supersedes the original D23 (add-features-roadmap-menu) decision to gate
 		// reads on a configured PAT.
 		$token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
-		$query = (new GitHubIssueQuery(owner: $owner, repo: $repo))->filteredBy(state: $state, sort: $sort)->pagedBy(perPage: $perPage);
-		return $this->issuesFor(query: $query->withLabels(labels: $labels)->withToken(token: $token));
-	}//end listIssues()
+		return $this->issuesFor(query: $query->withToken(token: $token));
+	}//end listIssuesFor()
 
 	/**
 	 * The issues of a listing: one request, or one per label merged (OR semantics) for two or more labels.
@@ -1529,21 +1539,31 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-8
 	 */
-	public function createIssue(
-		string $owner,
-		string $repo,
-		string $title,
-		string $body,
-		?string $specRef,
-		string $userId,
-	): array {
+	public function createIssue(string $owner, string $repo, string $title, string $body, ?string $specRef, string $userId): array {
 		$submission = new GitHubIssueSubmission(owner: $owner, repo: $repo, userId: $userId, specRef: $specRef);
+		return $this->fileIssue(submission: $submission, text: new GitHubIssueText(title: $title, body: $body));
+	}//end createIssue()
+
+	/**
+	 * Create a GitHub Issue for one submission, as createIssue() does.
+	 *
+	 * @param GitHubIssueSubmission $submission Where the issue goes, who submits it and its capability.
+	 * @param GitHubIssueText       $text       The validated title and body.
+	 *
+	 * @return array{number: int, html_url: string, state: string, specRef?: string, used_server_pat: bool}
+	 *
+	 * @throws \RuntimeException `github_pat_not_configured` when neither PAT is available
+	 * @throws GuzzleException Network errors not covered by structured mapping
+	 *
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
+	 */
+	public function fileIssue(GitHubIssueSubmission $submission, GitHubIssueText $text): array {
 		$delivery = $this->resolveCreateIssueDelivery(submission: $submission);
-		$effectiveBody = $this->buildIssueBody(delivery: $delivery, body: $body);
-		$payload = self::withSpecRefLabel(payload: ['title' => $title, 'body' => $effectiveBody], specRef: $specRef);
+		$effectiveBody = $this->buildIssueBody(delivery: $delivery, body: $text->body);
+		$payload = self::withSpecRefLabel(payload: ['title' => $text->title, 'body' => $effectiveBody], specRef: $submission->specRef);
 
 		return $this->dispatchCreateIssue(delivery: $delivery, payload: $payload);
-	}//end createIssue()
+	}//end fileIssue()
 
 	/**
 	 * The structured response shape of a created issue.
