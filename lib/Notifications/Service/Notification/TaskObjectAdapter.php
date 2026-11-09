@@ -66,29 +66,40 @@ class TaskObjectAdapter extends ObjectEntity {
 
 		$this->schema = TaskNotificationRules::SLUG;
 		$this->register = null;
-		if ($task === null) {
-			return;
+		if ($task !== null) {
+			$this->present(task: $task, options: new TaskPayloadOptions(row: $row, extra: $extra));
 		}
+	}//end __construct()
 
+	/**
+	 * Take the task's uuid, title and payload.
+	 *
+	 * @param Task               $task    The task row.
+	 * @param TaskPayloadOptions $options The inbox row and the event-scoped fields.
+	 *
+	 * @return void
+	 */
+	private function present(Task $task, TaskPayloadOptions $options): void {
 		$this->uuid = (string)$task->getUuid();
 
-		$payload = self::payload(task: $task, row: $row, extra: $extra);
+		$payload = self::payload(task: $task, options: $options);
 		$this->name = (string)$payload['title'];
 		$this->object = $payload;
-	}//end __construct()
+	}//end present()
 
 	/**
 	 * The flat payload a rule's recipients, filters and templates read.
 	 *
-	 * @param Task $task The task row.
-	 * @param array<string, mixed> $row The inbox row (display title, subject, derived fields).
-	 * @param array<string, mixed> $extra Event-scoped fields.
+	 * @param Task                    $task    The task row.
+	 * @param TaskPayloadOptions|null $options The inbox row (display title, subject, derived fields)
+	 *                                         and the event-scoped fields; null for neither.
 	 *
 	 * @return array<string, mixed> The payload, keyed by TaskNotificationRules::payloadProperties().
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
 	 */
-	public static function payload(Task $task, array $row = [], array $extra = []): array {
+	public static function payload(Task $task, ?TaskPayloadOptions $options = null): array {
+		$row = ($options->row ?? []);
 		$payload = array_merge(
 			self::stateFields(task: $task, row: $row),
 			self::peopleFields(task: $task),
@@ -96,7 +107,7 @@ class TaskObjectAdapter extends ObjectEntity {
 			self::originFields(task: $task, row: $row)
 		);
 
-		return self::withExtra(payload: $payload, extra: $extra);
+		return self::withExtra(payload: $payload, extra: ($options->extra ?? []));
 	}//end payload()
 
 	/**
