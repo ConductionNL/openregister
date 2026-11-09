@@ -278,7 +278,7 @@ class AutoTransitionRunnerTest extends TestCase {
 
 		$this->assertSame(
 			$moved,
-			$this->runner->fire(decision: $this->decision(), lineage: [], queueOnly: false)
+			$this->runner->fire(decision: $this->decision(), lineage: [])
 		);
 	}//end testASyncMoveIsAppliedThroughTheEngine()
 
@@ -305,7 +305,7 @@ class AutoTransitionRunnerTest extends TestCase {
 				)
 			);
 
-		$this->assertNull($this->runner->fire(decision: $this->decision(), lineage: [], queueOnly: false));
+		$this->assertNull($this->runner->fire(decision: $this->decision(), lineage: []));
 	}//end testARefusalIsLoggedWithItsCodeAndDoesNotPropagate()
 
 	/**
@@ -314,7 +314,7 @@ class AutoTransitionRunnerTest extends TestCase {
 	public function testAnArbitraryThrowableDoesNotPropagateEither(): void {
 		$this->engine->method('transition')->willThrowException(new RuntimeException('anything at all'));
 
-		$this->assertNull($this->runner->fire(decision: $this->decision(), lineage: [], queueOnly: false));
+		$this->assertNull($this->runner->fire(decision: $this->decision(), lineage: []));
 	}//end testAnArbitraryThrowableDoesNotPropagateEither()
 
 	/**
@@ -348,8 +348,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->assertNull(
 			$this->runner->fire(
 				decision: $this->decision(mode: 'async'),
-				lineage: ['moves' => 2, 'visited' => ['open' => true, 'besloten' => true], 'applied' => []],
-				queueOnly: false
+				lineage: ['moves' => 2, 'visited' => ['open' => true, 'besloten' => true], 'applied' => []]
 			)
 		);
 	}//end testAnAsyncMoveIsQueuedWithItsLineageAndDedupeKey()
@@ -366,7 +365,7 @@ class AutoTransitionRunnerTest extends TestCase {
 
 		$this->assertSame(
 			$moved,
-			$this->runner->fire(decision: $this->decision(mode: 'async'), lineage: [], queueOnly: false)
+			$this->runner->fire(decision: $this->decision(mode: 'async'), lineage: [])
 		);
 	}//end testTheKillSwitchAppliesAnAsyncMoveInline()
 
@@ -379,9 +378,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->engine->expects($this->never())->method('transition');
 		$this->deferral->expects($this->once())->method('defer');
 
-		$this->assertNull(
-			$this->runner->fire(decision: $this->decision(mode: 'sync'), lineage: [], queueOnly: true)
-		);
+		$this->runner->queueOutsideBoundary(decision: $this->decision(mode: 'sync'), lineage: []);
 	}//end testAMoveDecidedOutsideABoundaryIsQueuedEvenWhenSync()
 
 	/**
@@ -392,8 +389,6 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->engine->expects($this->never())->method('transition');
 		$this->deferral->expects($this->once())->method('defer');
 
-		$this->assertNull(
-			$this->runner->fire(decision: $this->decision(mode: 'async'), lineage: [], queueOnly: true)
-		);
+		$this->runner->queueOutsideBoundary(decision: $this->decision(mode: 'async'), lineage: []);
 	}//end testTheKillSwitchDoesNotPullAnOutsideMoveInline()
 }//end class
