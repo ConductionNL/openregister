@@ -561,10 +561,8 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	private function buildBackendInfo(string $method, ProbeResult $probe): BackendInfo {
 		return new BackendInfo(
 			name: $method,
-			available: $probe->reachable,
 			configured: $this->isConfigured(method: $method, probe: $probe),
-			lastProbedAt: $probe->probedAt,
-			latencyMs: $probe->latencyMs,
+			probe: $probe,
 		);
 	}//end buildBackendInfo()
 
@@ -585,10 +583,8 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 
 		return new BackendInfo(
 			name: BackendState::METHOD_HYBRID,
-			available: $available,
 			configured: $configured,
-			lastProbedAt: $this->now(),
-			latencyMs: null,
+			probe: new ProbeResult(reachable: $available, latencyMs: null, error: null, probedAt: $this->now()),
 		);
 	}//end buildHybridInfo()
 

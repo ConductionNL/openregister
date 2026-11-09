@@ -30,6 +30,7 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
 use OCA\OpenRegister\Controller\Support\BulkControllerServices;
 use OCA\OpenRegister\Controller\Support\BulkSaveBatch;
+use OCA\OpenRegister\Controller\Support\BulkSaveCounts;
 use OCA\OpenRegister\Controller\Support\BulkSaveSummary;
 use OCA\OpenRegister\Controller\Support\BulkStore;
 use OCA\OpenRegister\Db\Register;
@@ -594,10 +595,8 @@ class BulkController extends Controller {
 
 		$summary = new BulkSaveSummary(
 			successMessage: 'Bulk save operation completed (streaming)',
-			savedCount: $savedCount,
-			requestedCount: $requestedCount,
-			extra: ['saved_objects' => $status->toArray()],
-			accountedCount: $accounted
+			counts: new BulkSaveCounts(requested: $requestedCount, saved: $savedCount, accounted: $accounted),
+			extra: ['saved_objects' => $status->toArray()]
 		);
 
 		return $this->bulkSaveResponse(
@@ -639,10 +638,8 @@ class BulkController extends Controller {
 
 		$summary = new BulkSaveSummary(
 			successMessage: 'Bulk save operation completed successfully',
-			savedCount: $savedCount,
-			requestedCount: $requestedCount,
-			extra: ['saved_objects' => $savedObjects],
-			accountedCount: $accounted
+			counts: new BulkSaveCounts(requested: $requestedCount, saved: $savedCount, accounted: $accounted),
+			extra: ['saved_objects' => $savedObjects]
 		);
 
 		return $this->bulkSaveResponse(

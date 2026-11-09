@@ -76,7 +76,7 @@ class AnonymisationBackendControllerTest extends TestCase {
 			activeMethod: BackendState::METHOD_OPENANONYMISER,
 			effectiveMethod: BackendState::METHOD_OPENANONYMISER,
 			backends: [
-				BackendState::METHOD_REGEX => new BackendInfo(BackendState::METHOD_REGEX, true, true, '2026-06-15T00:00:00+00:00', 0),
+				BackendState::METHOD_REGEX => new BackendInfo(BackendState::METHOD_REGEX, true, new ProbeResult(true, 0, null, '2026-06-15T00:00:00+00:00')),
 			]
 		);
 	}
