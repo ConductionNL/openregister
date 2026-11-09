@@ -48,6 +48,7 @@ namespace Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Rbac\RevealFlusher;
 use PHPUnit\Framework\TestCase;
@@ -103,8 +104,8 @@ class RevealFlusherTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testEveryRevealBecomesOneSealedRow(): void {
-		$this->collector->record('alice', 'object-1', 'bsn', 24, 14);
-		$this->collector->record('alice', 'object-2', 'bsn', 24, 14);
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-1', 'bsn', 24), 14);
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-2', 'bsn', 24), 14);
 
 		$captured = [];
 		$this->mapper->expects($this->once())
