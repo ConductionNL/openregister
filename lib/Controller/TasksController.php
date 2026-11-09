@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
 use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskStateRules;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -229,7 +230,7 @@ class TasksController extends Controller {
 			$criteria = $this->criteria(uid: $uid, filter: $filter);
 
 			return new JSONResponse(
-				data: $this->inbox->inbox(criteria: $criteria, limit: $asked['limit'], offset: $asked['offset'])
+				data: $this->inbox->inbox(criteria: $criteria, page: new TaskInboxPage(limit: $asked['limit'], offset: $asked['offset']))
 			);
 		} catch (Throwable $failure) {
 			return new JSONResponse(

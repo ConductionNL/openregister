@@ -26,6 +26,7 @@ use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
 use OCA\OpenRegister\Service\Task\TaskFormInlineSave;
@@ -141,7 +142,7 @@ class TaskFormCompletionTest extends TestCase {
 	 * The task service authorizes and returns the open task, and records each call's order.
 	 */
 	private function openTask(Task $task): void {
-		$this->tasks->method('authorizedOpenTask')->with('complete', 't-7', 'alice')->willReturnCallback(
+		$this->tasks->method('authorizedOpenTask')->with(new TaskAct(verb: 'complete', actor: 'alice'), 't-7')->willReturnCallback(
 			function () use ($task): Task {
 				$this->calls[] = 'authorize';
 
@@ -182,7 +183,10 @@ class TaskFormCompletionTest extends TestCase {
 			->with([], ['reason' => 'x'], 'complete')
 			->willThrowException(new InvalidTransitionInputException('Transition "complete" does not accept input field(s): "reason".', ['reason']));
 		$this->tasks->expects($this->never())->method('complete');
-		$this->tasks->expects($this->once())->method('recordRefusedCompletion')->with($this->anything(), $this->stringContains('reason'), 'alice');
+		$this->tasks->expects($this->once())->method('recordRefusedCompletion')->with(
+			$this->anything(),
+			$this->callback(static fn (TaskAct $attempt): bool => str_contains((string)$attempt->reason, 'reason') && $attempt->actor === 'alice')
+		);
 
 		try {
 			$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 'x'], actor: 'alice');

@@ -109,45 +109,33 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * uid returns nothing rather than everything — no identity, no
 	 * visibility.
 	 *
-	 * @param TaskInboxCriteria $criteria Scope, filters, sort and identity.
-	 * @param int $limit Page size (clamped to 1..500).
-	 * @param int $offset Page offset.
+	 * @param TaskInboxCriteria  $criteria Scope, filters, sort and identity.
+	 * @param TaskInboxPage|null $page     The page window; the first 25 when null.
 	 *
 	 * @return array{results: array<int, array<string, mixed>>, total: int, limit: int, offset: int} The page.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	public function inbox(TaskInboxCriteria $criteria, int $limit = 25, int $offset = 0): array {
-		$limit = max(1, min($limit, 500));
-		$offset = max(0, $offset);
+	public function inbox(TaskInboxCriteria $criteria, ?TaskInboxPage $page = null): array {
+		$page = ($page ?? new TaskInboxPage());
 
 		if (trim($criteria->uid) === '') {
-			return [
-				'results' => [],
-				'total' => 0,
-				'limit' => $limit,
-				'offset' => $offset,
-			];
+			return $page->envelope(results: [], total: 0);
 		}
 
-		$page = $this->tasks->findInbox(criteria: $criteria, limit: $limit, offset: $offset);
+		$tasks = $this->tasks->findInbox(criteria: $criteria, limit: $page->limit, offset: $page->offset);
 		$total = $this->tasks->countInbox(criteria: $criteria);
-		$subjects = $this->subjectContexts(tasks: $page);
-		$openBlockers = $this->openBlockers(tasks: $page);
+		$subjects = $this->subjectContexts(tasks: $tasks);
+		$openBlockers = $this->openBlockers(tasks: $tasks);
 
 		$now = $this->temporal->now();
 		$results = [];
-		foreach ($page as $task) {
+		foreach ($tasks as $task) {
 			$results[] = $this->row(task: $task, subjects: $subjects, now: $now, openBlockers: $openBlockers);
 		}
 
-		return [
-			'results' => $results,
-			'total' => $total,
-			'limit' => $limit,
-			'offset' => $offset,
-		];
+		return $page->envelope(results: $results, total: $total);
 	}//end inbox()
 
 	/**

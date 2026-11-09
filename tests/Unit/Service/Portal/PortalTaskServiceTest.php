@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
@@ -149,7 +150,7 @@ class PortalTaskServiceTest extends TestCase {
 		$this->tasks->method('openFor')->willReturnCallback(
 			function (string $verb, string $uuid, ?string $actor) use ($task, $authorization): Task {
 				$this->trace[] = 'authorize:' . $actor;
-				$authorization->assertMay(verb: $verb, task: $task, uid: $actor);
+				$authorization->assertMay(act: new TaskAct(verb: $verb, actor: $actor), task: $task);
 
 				return $task;
 			}
@@ -284,7 +285,7 @@ class PortalTaskServiceTest extends TestCase {
 		$authorization = new TaskAuthorizationService(groupManager: $groups);
 		$this->tasks->method('openFor')->willReturnCallback(
 			static function (string $verb, string $uuid, ?string $actor) use ($task, $authorization): Task {
-				$authorization->assertMay(verb: $verb, task: $task, uid: $actor);
+				$authorization->assertMay(act: new TaskAct(verb: $verb, actor: $actor), task: $task);
 
 				return $task;
 			}

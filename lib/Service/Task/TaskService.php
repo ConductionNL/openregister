@@ -1441,9 +1441,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * byte reaches the subject. This is {@see openTaskFor()} made reachable
 	 * for that one caller: exists, authorized (a denial audited), open.
 	 *
-	 * @param string $verb The verb about to be attempted.
+	 * @param TaskAct $act The verb about to be attempted and the acting identity.
 	 * @param string $uuid The task uuid.
-	 * @param string|null $actor The acting identity.
 	 *
 	 * @return Task The open, authorized task.
 	 *
@@ -1452,8 +1451,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
-	public function authorizedOpenTask(string $verb, string $uuid, ?string $actor): Task {
-		return $this->openTaskFor(act: new TaskAct(verb: $verb, actor: $actor), uuid: $uuid);
+	public function authorizedOpenTask(TaskAct $act, string $uuid): Task {
+		return $this->openTaskFor(act: $act, uuid: $uuid);
 	}//end authorizedOpenTask()
 
 	/**
@@ -1466,20 +1465,19 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * times" is the signal that a form is wrong, which is why it is kept.
 	 *
 	 * @param Task $task The task the attempt was made on, unchanged.
-	 * @param string $reason Why the attempt was refused.
-	 * @param string|null $actor The attempting identity.
+	 * @param TaskAct $attempt The attempting identity and why the attempt was refused.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
 	 */
-	public function recordRefusedCompletion(Task $task, string $reason, ?string $actor): void {
+	public function recordRefusedCompletion(Task $task, TaskAct $attempt): void {
 		if ($task->getId() === null) {
 			return;
 		}
 
 		try {
-			$entry = $this->auditEntry(task: $task, act: new TaskAct(verb: 'complete-refused', actor: $actor, reason: $reason));
+			$entry = $this->auditEntry(task: $task, act: new TaskAct(verb: 'complete-refused', actor: $attempt->actor, reason: $attempt->reason));
 			$entry->setAuthorized(true);
 			$this->audits->insert($entry);
 		} catch (Throwable $auditFailure) {
@@ -1577,7 +1575,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 */
 	private function authorizeOrRecord(Task $task, TaskAct $act): void {
 		try {
-			$this->authorization->assertMay(verb: $act->verb, task: $task, uid: $act->actor);
+			$this->authorization->assertMay(act: $act, task: $task);
 		} catch (TaskAccessDeniedException $denial) {
 			$this->recordDenial(task: $task, act: new TaskAct(verb: $act->verb, actor: $act->actor, reason: $denial->getMessage()));
 

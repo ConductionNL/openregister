@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
 use OCA\OpenRegister\Service\Task\TaskForm;
@@ -697,7 +698,7 @@ class TaskServiceTest extends TestCase {
 		$this->db->expects($this->never())->method('beginTransaction');
 		$this->tasks->expects($this->never())->method('updateIfOpen');
 
-		$this->service()->recordRefusedCompletion(task: $this->openTask(), reason: 'missing required input field(s): "reason"', actor: 'alice');
+		$this->service()->recordRefusedCompletion(task: $this->openTask(), attempt: new TaskAct(verb: 'complete', actor: 'alice', reason: 'missing required input field(s): "reason"'));
 	}//end testARefusedCompletionIsAuditedDistinctlyFromACompletion()
 
 	/**
@@ -713,7 +714,7 @@ class TaskServiceTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($closed);
 
 		try {
-			$this->service()->authorizedOpenTask(verb: 'complete', uuid: 't-7', actor: 'alice');
+			$this->service()->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: 'alice'), uuid: 't-7');
 			$this->fail('Expected a conflict.');
 		} catch (TaskConflictException $conflict) {
 			$this->assertStringContainsString('completed', $conflict->getMessage());
@@ -723,7 +724,7 @@ class TaskServiceTest extends TestCase {
 		$this->audits->expects($this->once())->method('insert');
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$this->service()->authorizedOpenTask(verb: 'complete', uuid: 't-7', actor: 'mallory');
+		$this->service()->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: 'mallory'), uuid: 't-7');
 	}//end testAuthorizedOpenTaskRefusesATerminalTaskAndAuditsADenial()
 
 	/**

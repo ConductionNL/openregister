@@ -92,7 +92,7 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 	public function complete(string $uuid, TaskAnswer $answer, array $data, ?string $actor): Task {
 		// The task verb's authorization FIRST, fail-closed and audited on
 		// denial, before a single byte reaches the subject object.
-		$task = $this->tasks->authorizedOpenTask(verb: 'complete', uuid: $uuid, actor: $actor);
+		$task = $this->tasks->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: $actor), uuid: $uuid);
 
 		try {
 			$described = $this->forms->describe(task: $task);
@@ -102,7 +102,7 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 		} catch (TaskFormRefusedException | TaskSubjectWriteRefusedException $refused) {
 			// A refused attempt, distinguishable from a completion: the task
 			// keeps its pre-call state and the audit says somebody tried.
-			$this->tasks->recordRefusedCompletion(task: $task, reason: $refused->getMessage(), actor: $actor);
+			$this->tasks->recordRefusedCompletion(task: $task, attempt: new TaskAct(verb: 'complete', actor: $actor, reason: $refused->getMessage()));
 
 			throw $refused;
 		}

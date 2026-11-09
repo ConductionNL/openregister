@@ -54,6 +54,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
 
 /**
  * HTTP status and body translation for every task route.
@@ -182,7 +183,9 @@ class TaskControllerTest extends TestCase {
 	 */
 	public function testIndexReturnsTheInboxPageForTheSession(): void {
 		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
-			function (TaskInboxCriteria $criteria, int $limit, int $offset): array {
+			function (TaskInboxCriteria $criteria, TaskInboxPage $page): array {
+				$limit = $page->limit;
+				$offset = $page->offset;
 				$this->assertSame('alice', $criteria->uid);
 				$this->assertSame(['reviewers'], $criteria->groupIds);
 				$this->assertFalse($criteria->isAdmin);
@@ -211,7 +214,9 @@ class TaskControllerTest extends TestCase {
 	public function testIndexPassesOpenFirstIntoTheCriteria(): void {
 		$seen = [];
 		$this->inbox->expects($this->exactly(2))->method('inbox')->willReturnCallback(
-			function (TaskInboxCriteria $criteria, int $limit, int $offset) use (&$seen): array {
+			function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$seen): array {
+				$limit = $page->limit;
+				$offset = $page->offset;
 				$seen[] = $criteria->openFirst;
 
 				return ['results' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset];
