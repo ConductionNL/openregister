@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Controller\OperationsConsoleController;
+use OCA\OpenRegister\Controller\OperationsMaintenanceController;
 
 /**
  * The list of controllers that stay reachable while maintenance mode holds.
@@ -39,5 +40,11 @@ interface MaintenanceReachableControllersInterface {
 	 *
 	 * @var array<int, string>
 	 */
-	public const ALWAYS_REACHABLE = [OperationsConsoleController::class];
+	public const ALWAYS_REACHABLE = [
+		OperationsConsoleController::class,
+		// The verbs that enter and leave maintenance mode. Closed by the mode
+		// they administer, an administrator who entered it over the API could
+		// not leave it again without occ.
+		OperationsMaintenanceController::class,
+	];
 }//end interface
