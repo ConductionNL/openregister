@@ -80,30 +80,25 @@ class CasePlanEnsurer {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	public function ensure(CaseAnchor $anchor, array $definition, array $history, string $actor): array {
-		$objectUuid = $anchor->objectUuid;
-		$registerId = $anchor->registerId;
-		$schemaId   = $anchor->schemaId;
 		$normalised = $this->definitions->validate(definition: $definition);
 		$types      = [];
 		$this->checkStates(nodes: $normalised['items'], types: $types);
-		$context = ['object' => $objectUuid, 'register' => $registerId, 'schema' => $schemaId];
+		$context = ['object' => $anchor->objectUuid, 'register' => $anchor->registerId, 'schema' => $anchor->schemaId];
 		$context['settings'] = $normalised['settings'];
 		$context['actor'] = $actor;
 		$context['history'] = new CaseEnsuredHistory(history: $history, types: $types);
-		$context['existing'] = $this->existingRows(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, types: $types);
+		$context['existing'] = $this->existingRows(anchor: $anchor, types: $types);
 
 		$outcome = $this->write(nodes: $normalised['items'], context: $context);
 
-		return $this->settle(objectUuid: $objectUuid, outcome: $outcome, actor: $actor);
+		return $this->settle(context: $context, outcome: $outcome);
 	}//end ensure()
 
 	/**
 	 * The rows the object already has, by key, each checked against the call's
 	 * anchor and against the type the definition declares for its key.
 	 *
-	 * @param string $objectUuid The anchoring object.
-	 * @param int|null $registerId The call's register.
-	 * @param int|null $schemaId The call's schema.
+	 * @param CaseAnchor $anchor The anchoring object and the call's register and schema.
 	 * @param array<string, string> $types The definition's key => type.
 	 *
 	 * @return array<string, CaseItem> The existing rows by key.
@@ -112,10 +107,10 @@ class CasePlanEnsurer {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	private function existingRows(string $objectUuid, ?int $registerId, ?int $schemaId, array $types): array {
+	private function existingRows(CaseAnchor $anchor, array $types): array {
 		$existing = [];
-		foreach ($this->store->items->findByObject(objectUuid: $objectUuid) as $row) {
-			$this->checkAnchor(row: $row, registerId: $registerId, schemaId: $schemaId);
+		foreach ($this->store->items->findByObject(objectUuid: $anchor->objectUuid) as $row) {
+			$this->checkAnchor(row: $row, anchor: $anchor);
 			$existing[(string)$row->getItemKey()] = $row;
 		}
 
@@ -175,28 +170,6 @@ class CasePlanEnsurer {
 	/**
 	 * After the commit: arm the timers and report what the object now holds.
 	 *
-	 * @param string $objectUuid The anchoring object.
-	 * @param array{created: array<int, string>, kept: array<int, string>} $outcome What the write did.
-	 * @param string $actor The ensuring identity.
-	 *
-	 * @return array{created: array<int, string>, existing: array<int, string>, items: array<int, array<string, mixed>>}
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private function settle(string $objectUuid, array $outcome, string $actor): array {
-		$rows = $this->store->items->findByObject(objectUuid: $objectUuid);
-		$this->armTimers(rows: $rows, created: $outcome['created'], actor: $actor);
-
-		return [
-			'created' => $outcome['created'],
-			'existing' => $outcome['kept'],
-			'items' => array_map(static fn (CaseItem $row): array => $row->jsonSerialize(), $rows),
-		];
-	}//end settle()
-
-	/**
-	 * Arm the deadlines of the items this call created as active, and mark the rest.
-	 *
 	 * An item inserted in a state it carries goes through no state machine, so
 	 * no `CaseItemTransitionedEvent` reaches the timer listener, and an
 	 * item that is active with a `dueAt` or `expiresAt` (a statutory one
@@ -208,29 +181,57 @@ class CasePlanEnsurer {
 	 * again: its statutory expiry is marked, and the re-arm pass arms it or
 	 * drops the marker when a timer is already running.
 	 *
-	 * @param array<int, CaseItem> $rows Every row of the object, after the commit.
-	 * @param array<int, string> $created The keys this call created.
+	 * @param array<string, mixed> $context See {@see ensureLevel()}: the anchoring object and the ensuring identity.
+	 * @param array{created: array<int, string>, kept: array<int, string>} $outcome What the write did.
+	 *
+	 * @return array{created: array<int, string>, existing: array<int, string>, items: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	private function settle(array $context, array $outcome): array {
+		$rows = $this->store->items->findByObject(objectUuid: (string)$context['object']);
+		$active = array_filter($rows, static fn (CaseItem $row): bool => $row->getState() === CaseItem::STATE_ACTIVE);
+		$isNew = static fn (CaseItem $row): bool => in_array((string)$row->getItemKey(), $outcome['created'], true);
+		$this->armEntered(rows: array_filter($active, $isNew), actor: (string)$context['actor']);
+		$this->markStatutory(rows: array_filter($active, static fn (CaseItem $row): bool => $isNew($row) === false));
+
+		return [
+			'created' => $outcome['created'],
+			'existing' => $outcome['kept'],
+			'items' => array_map(static fn (CaseItem $row): array => $row->jsonSerialize(), $rows),
+		];
+	}//end settle()
+
+	/**
+	 * Arm the deadlines of the active items this call created.
+	 *
+	 * @param array<int, CaseItem> $rows The active rows this call created.
 	 * @param string $actor The ensuring identity.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	private function armTimers(array $rows, array $created, string $actor): void {
-		if ($this->timers === null) {
-			return;
+	private function armEntered(array $rows, string $actor): void {
+		foreach ($rows as $row) {
+			$this->timers?->onEntered(item: $row, actor: $actor);
 		}
+	}//end armEntered()
 
-		$active = array_filter($rows, static fn (CaseItem $row): bool => $row->getState() === CaseItem::STATE_ACTIVE);
-		$isNew = static fn (CaseItem $row): bool => in_array((string)$row->getItemKey(), $created, true);
-		foreach (array_filter($active, $isNew) as $row) {
-			$this->timers->onEntered(item: $row, actor: $actor);
+	/**
+	 * Mark the statutory expiry of the active items that already existed, for the re-arm pass.
+	 *
+	 * @param array<int, CaseItem> $rows The active rows that already existed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	private function markStatutory(array $rows): void {
+		foreach ($rows as $row) {
+			$this->timers?->markIfStatutory(item: $row);
 		}
-
-		foreach (array_filter($active, static fn (CaseItem $row): bool => $isNew($row) === false) as $row) {
-			$this->timers->markIfStatutory(item: $row);
-		}
-	}//end armTimers()
+	}//end markStatutory()
 
 	/**
 	 * Every node's state must be one its type can reach from `available`.
@@ -246,10 +247,8 @@ class CasePlanEnsurer {
 	 */
 	private function checkStates(array $nodes, array &$types): void {
 		foreach ($nodes as $node) {
-			$key = (string)$node['key'];
-			$type = (string)$node['type'];
-			$this->checkState(key: $key, type: $type, state: (string)($node['state'] ?? CaseItem::STATE_AVAILABLE));
-			$types[$key] = $type;
+			$this->checkState(node: $node);
+			$types[(string)$node['key']] = (string)$node['type'];
 			$this->checkStates(nodes: ($node['children'] ?? []), types: $types);
 		}
 	}//end checkStates()
@@ -257,9 +256,7 @@ class CasePlanEnsurer {
 	/**
 	 * One node's recorded state must be one its type can reach.
 	 *
-	 * @param string $key The item key.
-	 * @param string $type Its plan-item type.
-	 * @param string $state The state it carries.
+	 * @param array<string, mixed> $node A validated node: its key, its plan-item type and the state it carries.
 	 *
 	 * @return void
 	 *
@@ -267,7 +264,10 @@ class CasePlanEnsurer {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	private function checkState(string $key, string $type, string $state): void {
+	private function checkState(array $node): void {
+		$key = (string)$node['key'];
+		$type = (string)$node['type'];
+		$state = (string)($node['state'] ?? CaseItem::STATE_AVAILABLE);
 		$reachable = $this->reachable(type: $type);
 		if (in_array($state, $reachable, true) === false) {
 			throw new CaseValidationException(
@@ -307,8 +307,7 @@ class CasePlanEnsurer {
 	 * register or schema refuses the call.
 	 *
 	 * @param CaseItem $row An existing row.
-	 * @param int|null $registerId The call's register.
-	 * @param int|null $schemaId The call's schema.
+	 * @param CaseAnchor $anchor The call's register and schema.
 	 *
 	 * @return void
 	 *
@@ -316,7 +315,9 @@ class CasePlanEnsurer {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	private function checkAnchor(CaseItem $row, ?int $registerId, ?int $schemaId): void {
+	private function checkAnchor(CaseItem $row, CaseAnchor $anchor): void {
+		$registerId = $anchor->registerId;
+		$schemaId = $anchor->schemaId;
 		$registerDiffers = $registerId !== null && $row->getRegisterId() !== null && $row->getRegisterId() !== $registerId;
 		$schemaDiffers = $schemaId !== null && $row->getSchemaId() !== null && $row->getSchemaId() !== $schemaId;
 		if ($registerDiffers === true || $schemaDiffers === true) {
