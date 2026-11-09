@@ -99,7 +99,7 @@ class StoredRuleBlocks {
 	 *
 	 * @return array<int, array{authorization: array, context: string, stored: array|null}> The blocks.
 	 */
-	public function propertyBlocksOf(SchemaSave $save, string $name): array {
+	private function propertyBlocksOf(SchemaSave $save, string $name): array {
 		$storedProperties = ($save->stored?->getProperties() ?? []);
 		$blocks = [];
 

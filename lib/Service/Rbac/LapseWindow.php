@@ -44,6 +44,8 @@ final class LapseWindow {
 	 * The last timestamp inside the window.
 	 *
 	 * @return int The horizon, as a Unix timestamp.
+	 *
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function horizon(): int {
 		return ($this->now->getTimestamp() + ($this->days * 86400));

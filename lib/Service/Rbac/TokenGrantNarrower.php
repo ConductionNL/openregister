@@ -93,7 +93,9 @@ class TokenGrantNarrower {
 			return $this->withoutMarker(authorization: $authorization);
 		}
 
-		return $this->narrowed(authorization: $authorization, run: new TokenNarrowing(grant: $grant, target: $target, now: ($now ?? new DateTimeImmutable())));
+		$run = new TokenNarrowing(grant: $grant, target: $target, now: ($now ?? new DateTimeImmutable()));
+
+		return $this->narrowed(authorization: $authorization, run: $run);
 	}//end narrow()
 
 	/**
