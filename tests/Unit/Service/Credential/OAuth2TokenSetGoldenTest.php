@@ -216,10 +216,13 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 		}
 
 		$this->identity(broker: $broker)->record(
-			provider: $provider,
-			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'organisation'),
-			set: OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'AT']),
-			owner: 'alice'
+			connection: new \OCA\OpenRegister\Service\Credential\RedeemedConnection(
+				provider: $provider,
+				flow: new \OCA\OpenRegister\Service\Credential\OAuth2FlowClaims(claims: ['u' => 'alice']),
+				existing: null,
+				tokenSet: OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'AT'])
+			),
+			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'organisation')
 		);
 
 		if (trim((string)($identity['path'] ?? '')) === '') {
@@ -248,10 +251,13 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 		$logger->expects($this->once())->method('warning');
 
 		(new OAuth2AccountIdentity(broker: $broker, refresh: $refresh, logger: $logger))->record(
-			provider: ['identity' => ['method' => 'POST', 'path' => '/me', 'idField' => 'id']],
-			address: new TokenSetAddress(credentialId: 'c', scope: 'personal'),
-			set: OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'AT']),
-			owner: 'alice'
+			connection: new \OCA\OpenRegister\Service\Credential\RedeemedConnection(
+				provider: ['identity' => ['method' => 'POST', 'path' => '/me', 'idField' => 'id']],
+				flow: new \OCA\OpenRegister\Service\Credential\OAuth2FlowClaims(claims: ['u' => 'alice']),
+				existing: null,
+				tokenSet: OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'AT'])
+			),
+			address: new TokenSetAddress(credentialId: 'c', scope: 'personal')
 		);
 	}
 
@@ -264,8 +270,8 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 	 */
 	private function identity(CredentialBrokerService $broker): OAuth2AccountIdentity {
 		$refresh = $this->createMock(OAuth2RefreshService::class);
-		$refresh->method('persist')->willReturnCallback(function (string $credentialId, string $scope, OAuth2TokenSet $set): void {
-			$this->persisted[] = [$credentialId, $scope, $set];
+		$refresh->method('persist')->willReturnCallback(function (TokenSetAddress $address, OAuth2TokenSet $set): void {
+			$this->persisted[] = [$address->credentialId, $address->scope, $set];
 		});
 
 		return new OAuth2AccountIdentity(broker: $broker, refresh: $refresh, logger: $this->createMock(LoggerInterface::class));

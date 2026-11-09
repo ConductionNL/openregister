@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Export;
 
+use OCA\OpenRegister\Service\Export\ColumnRendering;
 use OCA\OpenRegister\Service\Export\ExportValueRenderer;
 use PHPUnit\Framework\TestCase;
 use stdClass;
@@ -61,12 +62,12 @@ class ExportValueRendererTest extends TestCase {
 		$object   = new stdClass();
 		$object->a = 1;
 
-		$this->assertSame('', $renderer->rendered(value: null, property: [], names: []));
-		$this->assertSame('yes', $renderer->rendered(value: true, property: [], names: []));
-		$this->assertSame('no', $renderer->rendered(value: false, property: [], names: []));
-		$this->assertSame('{"a":1}', $renderer->rendered(value: $object, property: [], names: []));
-		$this->assertSame('a; yes; Anna', $renderer->rendered(value: ['a', true, 'u-1'], property: [], names: ['u-1' => 'Anna']));
-		$this->assertSame('plain', $renderer->rendered(value: 'plain', property: [], names: []));
+		$this->assertSame('', $renderer->rendered(value: null, column: new ColumnRendering([], [])));
+		$this->assertSame('yes', $renderer->rendered(value: true, column: new ColumnRendering([], [])));
+		$this->assertSame('no', $renderer->rendered(value: false, column: new ColumnRendering([], [])));
+		$this->assertSame('{"a":1}', $renderer->rendered(value: $object, column: new ColumnRendering([], [])));
+		$this->assertSame('a; yes; Anna', $renderer->rendered(value: ['a', true, 'u-1'], column: new ColumnRendering([], ['u-1' => 'Anna'])));
+		$this->assertSame('plain', $renderer->rendered(value: 'plain', column: new ColumnRendering([], [])));
 	}//end testRenderedScalarsAndStructures()
 
 	/**
@@ -78,10 +79,10 @@ class ExportValueRendererTest extends TestCase {
 		$renderer = new ExportValueRenderer();
 		$names    = ['open' => 'Named open'];
 
-		$this->assertSame('Named open', $renderer->rendered(value: 'open', property: ['enum' => ['open'], 'enumNames' => ['Open']], names: $names));
-		$this->assertSame('Gesloten', $renderer->rendered(value: 'closed', property: ['enum' => ['open', 'closed'], 'enumNames' => ['Open', 'Gesloten']], names: []));
-		$this->assertSame('Dicht', $renderer->rendered(value: 'closed', property: ['enum' => ['open', 'closed'], 'enumLabels' => ['Open', 'Dicht']], names: []));
-		$this->assertSame('Open', $renderer->rendered(value: '1', property: ['enum' => ['1'], 'enumNames' => ['Open']], names: []));
+		$this->assertSame('Named open', $renderer->rendered(value: 'open', column: new ColumnRendering(['enum' => ['open'], 'enumNames' => ['Open']], $names)));
+		$this->assertSame('Gesloten', $renderer->rendered(value: 'closed', column: new ColumnRendering(['enum' => ['open', 'closed'], 'enumNames' => ['Open', 'Gesloten']], [])));
+		$this->assertSame('Dicht', $renderer->rendered(value: 'closed', column: new ColumnRendering(['enum' => ['open', 'closed'], 'enumLabels' => ['Open', 'Dicht']], [])));
+		$this->assertSame('Open', $renderer->rendered(value: '1', column: new ColumnRendering(['enum' => ['1'], 'enumNames' => ['Open']], [])));
 	}//end testNamesAndEnumLabels()
 
 	/**
@@ -92,11 +93,11 @@ class ExportValueRendererTest extends TestCase {
 	public function testEnumFallThrough(): void {
 		$renderer = new ExportValueRenderer();
 
-		$this->assertSame('open', $renderer->rendered(value: 'open', property: ['enum' => ['open']], names: []));
-		$this->assertSame('open', $renderer->rendered(value: 'open', property: ['enum' => 'open', 'enumNames' => ['Open']], names: []));
-		$this->assertSame('other', $renderer->rendered(value: 'other', property: ['enum' => ['open'], 'enumNames' => ['Open']], names: []));
-		$this->assertSame('open', $renderer->rendered(value: 'open', property: ['enum' => ['open'], 'enumNames' => [7]], names: []));
-		$this->assertSame('5', $renderer->rendered(value: 5, property: ['enum' => [5], 'enumNames' => ['Five']], names: []));
+		$this->assertSame('open', $renderer->rendered(value: 'open', column: new ColumnRendering(['enum' => ['open']], [])));
+		$this->assertSame('open', $renderer->rendered(value: 'open', column: new ColumnRendering(['enum' => 'open', 'enumNames' => ['Open']], [])));
+		$this->assertSame('other', $renderer->rendered(value: 'other', column: new ColumnRendering(['enum' => ['open'], 'enumNames' => ['Open']], [])));
+		$this->assertSame('open', $renderer->rendered(value: 'open', column: new ColumnRendering(['enum' => ['open'], 'enumNames' => [7]], [])));
+		$this->assertSame('5', $renderer->rendered(value: 5, column: new ColumnRendering(['enum' => [5], 'enumNames' => ['Five']], [])));
 	}//end testEnumFallThrough()
 
 	/**
@@ -107,9 +108,9 @@ class ExportValueRendererTest extends TestCase {
 	public function testIsoMomentsAreWrittenOut(): void {
 		$renderer = new ExportValueRenderer();
 
-		$this->assertSame('2026-01-02 10:30:00', $renderer->rendered(value: '2026-01-02T10:30:00+00:00', property: [], names: []));
-		$this->assertSame('2026-01-02 10:30:00', $renderer->rendered(value: '2026-01-02T10:30:00+05:00', property: [], names: []));
-		$this->assertSame('Total', $renderer->rendered(value: 'Total', property: [], names: []));
-		$this->assertSame('2026-01-02', $renderer->rendered(value: '2026-01-02', property: [], names: []));
+		$this->assertSame('2026-01-02 10:30:00', $renderer->rendered(value: '2026-01-02T10:30:00+00:00', column: new ColumnRendering([], [])));
+		$this->assertSame('2026-01-02 10:30:00', $renderer->rendered(value: '2026-01-02T10:30:00+05:00', column: new ColumnRendering([], [])));
+		$this->assertSame('Total', $renderer->rendered(value: 'Total', column: new ColumnRendering([], [])));
+		$this->assertSame('2026-01-02', $renderer->rendered(value: '2026-01-02', column: new ColumnRendering([], [])));
 	}//end testIsoMomentsAreWrittenOut()
 }//end class

@@ -18,7 +18,7 @@ final class RelationsControllerFactory {
 	/**
 	 * The constructor arguments of RelationsController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param ObjectService $objectService Constructor argument.
 	 * @param NoteService $noteService Constructor argument.
@@ -46,7 +46,6 @@ final class RelationsControllerFactory {
 		\Psr\Container\ContainerInterface $container,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\RelationsControllerServices(
 				records: new \OCA\OpenRegister\Controller\Support\RelationsRecords(

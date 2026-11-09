@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowRunMigrationControllerServices;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
@@ -83,16 +84,14 @@ class FlowRunMigrationController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                       $appName     The app id.
 	 * @param IRequest                     $request     The request.
 	 * @param FlowRunMigrationControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FlowRunMigrationControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->mapper = $services->mapper;
 		$this->userSession = $services->userSession;
 		$this->guard = $services->guard;
