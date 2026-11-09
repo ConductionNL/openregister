@@ -196,11 +196,21 @@ class BulkSaveOutcome implements BulkSaveOutcomeInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public static function fromBatchStatus(
-		BatchOperationStatusInterface $status,
-		int $requestedCount,
-		int $accountedCount
-	): self {
+	public static function fromBatchStatus(BatchOperationStatusInterface $status, int $requestedCount, int $accountedCount): self {
+		return self::fromStreamedBatch(status: $status, rows: new StreamedRowCount(requested: $requestedCount, accounted: $accountedCount));
+	}//end fromBatchStatus()
+
+	/**
+	 * Summarise a streaming batch status, given the rows asked for and accounted for.
+	 *
+	 * @param BatchOperationStatusInterface $status Per-row outcomes from the streaming save.
+	 * @param StreamedRowCount              $rows   Rows submitted and rows the status accounts for.
+	 *
+	 * @return self The summarised outcome.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public static function fromStreamedBatch(BatchOperationStatusInterface $status, StreamedRowCount $rows): self {
 		$failures = [];
 		foreach ($status->getFailed() as $failure) {
 			$failures[] = [
@@ -216,7 +226,7 @@ class BulkSaveOutcome implements BulkSaveOutcomeInterface {
 			];
 		}
 
-		$unaccounted = max(0, ($requestedCount - $accountedCount - count($failures)));
+		$unaccounted = max(0, ($rows->requested - $rows->accounted - count($failures)));
 		if ($unaccounted > 0) {
 			$failures[] = [
 				'index' => null,
@@ -234,7 +244,7 @@ class BulkSaveOutcome implements BulkSaveOutcomeInterface {
 			failures: $failures
 		);
 
-	}//end fromBatchStatus()
+	}//end fromStreamedBatch()
 
 	/**
 	 * Collect batch-level errors that are not already attributed to a row.

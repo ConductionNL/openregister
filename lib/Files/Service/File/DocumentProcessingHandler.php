@@ -250,11 +250,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
 	 */
 	public function replaceWords(
-		Node $node,
-		array $replacements,
-		?string $outputName = null,
-		bool $strict = false,
-		?bool $preserveStructure = null,
+		Node $node, array $replacements, ?string $outputName = null, bool $strict = false, ?bool $preserveStructure = null
 	): File {
 		$file = $this->requireFile(node: $node);
 		$job = new DocumentReplacement(node: $file, replacements: $replacements, outputName: $outputName ?? $this->replacedNameFor(file: $file));
@@ -355,11 +351,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
 	 */
 	public function anonymizeDocument(
-		Node $node,
-		array $entities,
-		string $scope = 'document',
-		?string $fileKey = null,
-		?bool $preserveStructure = null,
+		Node $node, array $entities, string $scope = 'document', ?string $fileKey = null, ?bool $preserveStructure = null
 	): File {
 		$options = new DocumentAnonymisationOptions(scope: $scope, fileKey: $fileKey, preserveStructure: $preserveStructure);
 		return $this->anonymize(request: new DocumentAnonymisationRequest(node: $node, entities: $entities, options: $options));

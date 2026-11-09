@@ -130,14 +130,8 @@ class ChatService implements ChatServiceInterface {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function processMessage(
-		int $conversationId,
-		string $userId,
-		string $userMessage,
-		array $selectedViews = [],
-		array $selectedTools = [],
-		array $ragSettings = [],
-		array $context = [],
-		?ChatStreamChannelInterface $channel = null,
+		int $conversationId, string $userId, string $userMessage, array $selectedViews = [],
+		array $selectedTools = [], array $ragSettings = [], array $context = [], ?ChatStreamChannelInterface $channel = null
 	): array {
 		$request = new ChatMessageRequest(conversationId: $conversationId, userId: $userId, userMessage: $userMessage);
 		$request->selectedViews = $selectedViews;
@@ -388,11 +382,7 @@ class ChatService implements ChatServiceInterface {
 	 * @spec exclude Facade plumbing: simplified stub returning a static result; real testing goes through
 	 *       ResponseGenerationHandler (chat-ai). No standalone contract.
 	 */
-	public function testChat(
-		string $provider,
-		array $config,
-		string $_testMessage = 'Hello! Please respond with a brief greeting.',
-	): array {
+	public function testChat(string $provider, array $config, string $_testMessage = 'Hello! Please respond with a brief greeting.'): array {
 		return $this->simplifiedChatTest(provider: $provider, config: $config);
 	}//end testChat()
 
