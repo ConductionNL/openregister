@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\BulkControllerServices;
 use OCA\OpenRegister\Controller\Support\BulkSaveBatch;
 use OCA\OpenRegister\Controller\Support\BulkSaveCounts;
@@ -136,18 +137,16 @@ class BulkController extends Controller {
 	/**
 	 * Constructor for the BulkController
 	 *
-	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param BulkControllerServices $services The bulk controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		BulkControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->store = $services->store;
 		$this->objectService = $services->store->objectService;
 		$this->registerMapper = $services->store->registerMapper;

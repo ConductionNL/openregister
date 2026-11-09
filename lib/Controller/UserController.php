@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\UserControllerServices;
 use OCA\OpenRegister\Controller\Support\UserResponses;
 use OCA\OpenRegister\Service\LoginSecurityInterface;
@@ -124,18 +125,16 @@ class UserController extends Controller {
 	 *
 	 * Initializes controller with required dependencies.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param UserControllerServices $services The user controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		UserControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->userService = $services->domain->userService;
 		$this->securityService = $services->domain->securityService;
 		$this->userManager = $services->domain->userManager;

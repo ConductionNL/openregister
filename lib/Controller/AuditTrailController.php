@@ -32,6 +32,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Controller\Support\AuditObjectRef;
 use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
@@ -131,16 +132,14 @@ class AuditTrailController extends Controller {
 	/**
 	 * Constructor for AuditTrailController
 	 *
-	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param AuditTrailControllerServices $services The audit trail controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		AuditTrailControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->logService = $services->log->logService;
 		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
 		$this->auditHashService = $services->log->auditHashService;
