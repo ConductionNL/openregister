@@ -196,7 +196,11 @@ class BulkSaveOutcome implements BulkSaveOutcomeInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public static function fromBatchStatus(BatchOperationStatusInterface $status, int $requestedCount, int $accountedCount): self {
+	public static function fromBatchStatus(
+		BatchOperationStatusInterface $status,
+		int $requestedCount,
+		int $accountedCount
+	): self {
 		return self::fromStreamedBatch(status: $status, rows: new StreamedRowCount(requested: $requestedCount, accounted: $accountedCount));
 	}//end fromBatchStatus()
 
