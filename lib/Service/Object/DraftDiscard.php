@@ -61,16 +61,16 @@ class DraftDiscard {
 	/**
 	 * Discard the owner's draft with this id.
 	 *
-	 * @param array{register?: mixed, schema?: mixed} $destination The destination pair (id, uuid, slug or entity).
-	 * @param string                                  $draftId     The draft's uuid.
-	 * @param DraftOwner                              $owner       The asserted owner.
+	 * @param DiscardDraftRequest $request The destination pair (id, uuid, slug or entity), the draft's uuid and the asserted owner.
 	 *
 	 * @return bool True when the draft was removed; false when it is unknown, not a draft,
 	 *              someone else's, its destination does not exist, or the delete failed.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-discarded-by-its-owner
 	 */
-	public function discard(array $destination, string $draftId, DraftOwner $owner): bool {
+	public function discard(DiscardDraftRequest $request): bool {
+		$destination = $request->destination;
+		$draftId     = $request->draftId;
 		if ($draftId === '') {
 			return false;
 		}
@@ -82,7 +82,7 @@ class DraftDiscard {
 			return false;
 		}
 
-		$draft = (new DraftFinder(objects: $this->objects))->own(register: $register, schema: $schema, draftId: $draftId, owner: $owner);
+		$draft = (new DraftFinder(objects: $this->objects))->own(register: $register, schema: $schema, draftId: $draftId, owner: $request->owner);
 		if ($draft === null) {
 			return false;
 		}
