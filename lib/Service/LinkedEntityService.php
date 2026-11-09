@@ -188,21 +188,37 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function addLink(string $objectUuid, string $type, string $entityId): array {
-		$this->validateType(type: $type);
+		return $this->linkObject(objectUuid: $objectUuid, link: new LinkedEntityLookup(type: $type, entityId: $entityId));
+	}//end addLink()
+
+	/**
+	 * Add a linked entity ID to an object's metadata column (see addLink()).
+	 *
+	 * @param string             $objectUuid The object UUID
+	 * @param LinkedEntityLookup $link       The linked entity type and the ID to add
+	 *
+	 * @throws Exception If the type is invalid or the object is not found
+	 *
+	 * @return array The updated linked IDs array
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
+	 */
+	public function linkObject(string $objectUuid, LinkedEntityLookup $link): array {
+		$this->validateType(type: $link->type);
 
 		$object = $this->magicMapper->find($objectUuid);
-		$existingIds = $this->linkedIds(entity: $object, type: $type);
+		$existingIds = $this->linkedIds(entity: $object, type: $link->type);
 
 		// Idempotent: an id already present is neither checked nor written.
-		if (in_array($entityId, $existingIds, true) === true) {
+		if (in_array($link->entityId, $existingIds, true) === true) {
 			return $existingIds;
 		}
 
-		$existingIds[] = $entityId;
-		$this->writeObjectIds(object: $object, type: $type, ids: $existingIds);
+		$existingIds[] = $link->entityId;
+		$this->writeObjectIds(object: $object, column: new LinkedIdsColumn(type: $link->type, ids: $existingIds));
 
 		return $existingIds;
-	}//end addLink()
+	}//end linkObject()
 
 	/**
 	 * Remove a linked entity ID from an object's metadata column.
@@ -219,20 +235,36 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function removeLink(string $objectUuid, string $type, string $entityId): array {
-		$this->validateType(type: $type);
+		return $this->unlinkObject(objectUuid: $objectUuid, link: new LinkedEntityLookup(type: $type, entityId: $entityId));
+	}//end removeLink()
+
+	/**
+	 * Remove a linked entity ID from an object's metadata column (see removeLink()).
+	 *
+	 * @param string             $objectUuid The object UUID
+	 * @param LinkedEntityLookup $link       The linked entity type and the ID to remove
+	 *
+	 * @throws Exception If the type is invalid or the object is not found
+	 *
+	 * @return array The updated linked IDs array
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
+	 */
+	public function unlinkObject(string $objectUuid, LinkedEntityLookup $link): array {
+		$this->validateType(type: $link->type);
 
 		$object = $this->magicMapper->find($objectUuid);
 		$existingIds = array_values(
 			array_filter(
-				$this->linkedIds(entity: $object, type: $type),
-				fn ($id) => $id !== $entityId
+				$this->linkedIds(entity: $object, type: $link->type),
+				fn ($id) => $id !== $link->entityId
 			)
 		);
 
-		$this->writeObjectIds(object: $object, type: $type, ids: $existingIds);
+		$this->writeObjectIds(object: $object, column: new LinkedIdsColumn(type: $link->type, ids: $existingIds));
 
 		return $existingIds;
-	}//end removeLink()
+	}//end unlinkObject()
 
 	/**
 	 * Store an object's new linked ids, after the write permission check.
@@ -240,17 +272,16 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 * SEC-CTRL-4: the update RBAC check runs before the object is mutated or
 	 * persisted; a refusal throws and nothing is written.
 	 *
-	 * @param ObjectEntity $object The object to update.
-	 * @param string       $type   The linked entity type (its column).
-	 * @param array        $ids    The new linked ids.
+	 * @param ObjectEntity    $object The object to update.
+	 * @param LinkedIdsColumn $column The linked-type column and its new ids.
 	 *
 	 * @throws Exception When the schema cannot be resolved or the user lacks write permission.
 	 *
 	 * @return void
 	 */
-	private function writeObjectIds(ObjectEntity $object, string $type, array $ids): void {
+	private function writeObjectIds(ObjectEntity $object, LinkedIdsColumn $column): void {
 		$this->assertCanWriteObject(object: $object);
-		$this->storeLinkedIds(entity: $object, type: $type, ids: $ids);
+		$this->storeLinkedIds(entity: $object, column: $column);
 		$this->magicMapper->update($object);
 	}//end writeObjectIds()
 
@@ -270,15 +301,14 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	/**
 	 * Set an entity's linked-type column.
 	 *
-	 * @param object $entity The object, register or schema.
-	 * @param string $type   The linked entity type (its column).
-	 * @param array  $ids    The linked ids.
+	 * @param object          $entity The object, register or schema.
+	 * @param LinkedIdsColumn $column The linked-type column and its ids.
 	 *
 	 * @return void
 	 */
-	private function storeLinkedIds(object $entity, string $type, array $ids): void {
-		$setter = 'set' . ucfirst($type);
-		$entity->$setter($ids);
+	private function storeLinkedIds(object $entity, LinkedIdsColumn $column): void {
+		$setter = 'set' . ucfirst($column->type);
+		$entity->$setter($column->ids);
 	}//end storeLinkedIds()
 
 	/**
@@ -295,23 +325,38 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
 	 */
 	public function addLinkToRegister(string $registerUuid, string $type, string $entityId): array {
-		$this->validateType(type: $type);
+		return $this->linkToRegister(registerUuid: $registerUuid, link: new LinkedEntityLookup(type: $type, entityId: $entityId));
+	}//end addLinkToRegister()
+
+	/**
+	 * Add a linked entity ID to a register's metadata column (see addLinkToRegister()).
+	 *
+	 * @param string             $registerUuid The register UUID
+	 * @param LinkedEntityLookup $link       The linked entity type and the ID to add
+	 *
+	 * @throws Exception If the type is invalid or the register is not found
+	 *
+	 * @return array The updated linked IDs array
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
+	 */
+	public function linkToRegister(string $registerUuid, LinkedEntityLookup $link): array {
+		$this->validateType(type: $link->type);
 
 		$registers = $this->registerMapper->findAll(filters: ['uuid' => $registerUuid]);
 		if (empty($registers) === true) {
 			throw new Exception("Register not found: $registerUuid");
 		}
 
-		$entity = $registers[0];
-		$existingIds = $this->linkedIds(entity: $entity, type: $type);
-		if (in_array($entityId, $existingIds, true) === false) {
-			$existingIds[] = $entityId;
-			$this->storeLinkedIds(entity: $entity, type: $type, ids: $existingIds);
-			$this->registerMapper->update($entity);
+		$column = $this->withLink(entity: $registers[0], link: $link);
+		if ($column !== null) {
+			$this->storeLinkedIds(entity: $registers[0], column: $column);
+			$this->registerMapper->update($registers[0]);
+			return $column->ids;
 		}
 
-		return $existingIds;
-	}//end addLinkToRegister()
+		return $this->linkedIds(entity: $registers[0], type: $link->type);
+	}//end linkToRegister()
 
 	/**
 	 * Add a linked entity ID to a schema's metadata column.
@@ -327,23 +372,57 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
 	 */
 	public function addLinkToSchema(string $schemaUuid, string $type, string $entityId): array {
-		$this->validateType(type: $type);
+		return $this->linkToSchema(schemaUuid: $schemaUuid, link: new LinkedEntityLookup(type: $type, entityId: $entityId));
+	}//end addLinkToSchema()
+
+	/**
+	 * Add a linked entity ID to a schema's metadata column (see addLinkToSchema()).
+	 *
+	 * @param string             $schemaUuid The schema UUID
+	 * @param LinkedEntityLookup $link       The linked entity type and the ID to add
+	 *
+	 * @throws Exception If the type is invalid or the schema is not found
+	 *
+	 * @return array The updated linked IDs array
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
+	 */
+	public function linkToSchema(string $schemaUuid, LinkedEntityLookup $link): array {
+		$this->validateType(type: $link->type);
 
 		$schemas = $this->schemaMapper->findAll(filters: ['uuid' => $schemaUuid]);
 		if (empty($schemas) === true) {
 			throw new Exception("Schema not found: $schemaUuid");
 		}
 
-		$entity = $schemas[0];
-		$existingIds = $this->linkedIds(entity: $entity, type: $type);
-		if (in_array($entityId, $existingIds, true) === false) {
-			$existingIds[] = $entityId;
-			$this->storeLinkedIds(entity: $entity, type: $type, ids: $existingIds);
-			$this->schemaMapper->update($entity);
+		$column = $this->withLink(entity: $schemas[0], link: $link);
+		if ($column !== null) {
+			$this->storeLinkedIds(entity: $schemas[0], column: $column);
+			$this->schemaMapper->update($schemas[0]);
+			return $column->ids;
 		}
 
-		return $existingIds;
-	}//end addLinkToSchema()
+		return $this->linkedIds(entity: $schemas[0], type: $link->type);
+	}//end linkToSchema()
+
+	/**
+	 * The column with the link appended, or null when the entity already carries it.
+	 *
+	 * @param object             $entity The register or schema.
+	 * @param LinkedEntityLookup $link   The linked entity type and the ID to add.
+	 *
+	 * @return LinkedIdsColumn|null
+	 */
+	private function withLink(object $entity, LinkedEntityLookup $link): ?LinkedIdsColumn {
+		$existingIds = $this->linkedIds(entity: $entity, type: $link->type);
+		if (in_array($link->entityId, $existingIds, true) === true) {
+			return null;
+		}
+
+		$existingIds[] = $link->entityId;
+
+		return new LinkedIdsColumn(type: $link->type, ids: $existingIds);
+	}//end withLink()
 
 	/**
 	 * Reverse lookup: find all objects and entities linked to a specific entity.
@@ -471,20 +550,23 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 			'schemaId' => $schemaId,
 			'schemaIcon' => $schema->getIcon(),
 			'register' => $registerId,
-			'url' => $this->deepLink(registerId: $registerId, schemaId: $schemaId, uuid: $object->getUuid()),
+			'url' => $this->deepLink(schema: $schema, object: $object),
 		];
 	}//end objectResult()
 
 	/**
 	 * The owning app's detail route for an object, or null when none is registered.
 	 *
-	 * @param int         $registerId The object's register id
-	 * @param int         $schemaId   The object's schema id
-	 * @param string|null $uuid       The object's uuid
+	 * @param Schema       $schema The object's schema
+	 * @param ObjectEntity $object The object: its register and uuid
 	 *
 	 * @return string|null
 	 */
-	private function deepLink(int $registerId, int $schemaId, ?string $uuid): ?string {
+	private function deepLink(Schema $schema, ObjectEntity $object): ?string {
+		$registerId = (int)$object->getRegister();
+		$schemaId   = (int)$schema->getId();
+		$uuid       = $object->getUuid();
+
 		return $this->deepLinkRegistry->resolveUrl(
 			registerId: $registerId,
 			schemaId: $schemaId,
