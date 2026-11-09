@@ -82,11 +82,23 @@ class StoreActionAuthorizer {
 	 * @return bool True only when the leaf app's own matrix says yes.
 	 */
 	public function can(string $appId, string $action, IUser $user): bool {
-		$check   = new StoreActionCheck(appId: $appId, action: $action, user: $user);
+		return $this->permits(check: new StoreActionCheck(appId: $appId, action: $action, user: $user));
+	}//end can()
+
+	/**
+	 * Whether the user may perform the action the store declared.
+	 *
+	 * @param StoreActionCheck $check The declaring leaf app id, the action and the signed-in user.
+	 *
+	 * @return bool True only when the leaf app's own matrix says yes.
+	 *
+	 * @spec openspec/changes/store-plane-action-auth/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
+	 */
+	public function permits(StoreActionCheck $check): bool {
 		$service = $this->leafService(check: $check);
 
 		return $service !== null && $this->leafPermits(service: $service, check: $check);
-	}//end can()
+	}//end permits()
 
 	/**
 	 * The leaf app's action service, or null (logged) when it cannot answer.

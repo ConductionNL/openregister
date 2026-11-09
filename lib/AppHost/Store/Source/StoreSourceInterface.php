@@ -62,4 +62,14 @@ interface StoreSourceInterface {
 	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
 	 */
 	public function search(StoreManifest $manifest, string $query, ?string $kind): array;
+
+	/**
+	 * Search this source for store items.
+	 *
+	 * @param StoreManifest $manifest The declaring app's store block.
+	 * @param StoreSearch   $search   The free text and the kind filter.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 */
+	public function find(StoreManifest $manifest, StoreSearch $search): array;
 }
