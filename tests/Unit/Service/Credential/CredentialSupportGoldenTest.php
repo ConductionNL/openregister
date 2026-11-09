@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkNotifier;
 use OCA\OpenRegister\Service\Credential\CredentialUpdateRequest;
+use OCA\OpenRegister\Service\Configuration\AppSettingsAccess;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -307,7 +308,7 @@ class CredentialSupportGoldenTest extends TestCase {
 			 * @param object|null $service The fake service.
 			 */
 			public function __construct(IAppConfig $appConfig, IAppManager $appManager, LoggerInterface $logger, private readonly ?object $service) {
-				parent::__construct(appConfig: $appConfig, appManager: $appManager, logger: $logger);
+				parent::__construct(settings: new AppSettingsAccess(appConfig: $appConfig, appManager: $appManager, logger: $logger));
 			}
 
 			/**
@@ -351,7 +352,7 @@ class CredentialSupportGoldenTest extends TestCase {
 			 * @param object $service The fake service.
 			 */
 			public function __construct(IAppConfig $appConfig, IAppManager $appManager, LoggerInterface $logger, private readonly object $service) {
-				parent::__construct(appConfig: $appConfig, appManager: $appManager, logger: $logger);
+				parent::__construct(settings: new AppSettingsAccess(appConfig: $appConfig, appManager: $appManager, logger: $logger));
 			}
 
 			/**

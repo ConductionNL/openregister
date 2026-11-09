@@ -62,7 +62,7 @@ class MdtoPreconditionsRefusalTest extends TestCase {
 		$config = $this->createMock(IAppConfig::class);
 		$config->method('getValueString')->willReturn('org-1');
 
-		return new MdtoPreconditions($config, $this->createMock(LoggerInterface::class), new MdtoInputReaders($source, $bestand, $resolver));
+		return new MdtoPreconditions(new MdtoInputReaders($source, $bestand, $resolver), new \OCA\OpenRegister\Service\Configuration\AppSettingsAccess($config, $this->createMock(\OCP\App\IAppManager::class), $this->createMock(LoggerInterface::class)));
 	}//end preconditions()
 
 	/**
