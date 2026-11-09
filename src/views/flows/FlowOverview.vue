@@ -457,20 +457,14 @@ import {
 	averageDuration,
 	catalogNames,
 	failedStep,
-	formatDateTime,
-	formatDuration,
 	matchesRunFilter,
 	nodeDetail,
 	nodeLabel,
 	orderedNodes,
 	runCounts,
 	runDuration,
-	shortUuid,
-	shownStatus,
-	statusLabel,
-	statusVariant,
-	triggerLabel,
 } from './flowDetail.js'
+import { flowPageHelpers, flowVersionLabel } from './flowPageHelpers.js'
 import { flowPageMethods } from './flowPageMethods.js'
 
 /**
@@ -638,16 +632,10 @@ export default {
 
 	methods: {
 		...flowPageMethods,
-		formatDateTime,
-		formatDuration,
+		...flowPageHelpers,
 		nodeDetail,
 		nodeLabel,
 		runDuration,
-		shortUuid,
-		shownStatus,
-		statusLabel,
-		statusVariant,
-		triggerLabel,
 
 		/**
 		 * Read the flow, its versions, the node names and its runs.
@@ -731,11 +719,7 @@ export default {
 		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
 		 */
 		versionLabel(version) {
-			if (version === null || version === undefined) {
-				return ''
-			}
-			const match = this.versions.find((row) => row.version === version)
-			return 'v' + (match?.semver || version)
+			return flowVersionLabel(this.versions, version)
 		},
 
 		/**

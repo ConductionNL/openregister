@@ -461,20 +461,15 @@ import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline.vue'
 import {
 	catalogNames,
 	failedStep,
-	formatDateTime,
-	formatDuration,
 	nodeLabel,
 	orderedNodes,
 	RUN_FAILED_STATUSES,
 	RUN_TERMINAL_STATUSES,
 	runDuration,
 	shortUuid,
-	shownStatus,
-	statusLabel,
-	statusVariant,
 	stepRows,
-	triggerLabel,
 } from './flowDetail.js'
+import { flowPageHelpers, flowVersionLabel } from './flowPageHelpers.js'
 import { flowPageMethods } from './flowPageMethods.js'
 
 export default {
@@ -586,12 +581,7 @@ export default {
 		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
 		 */
 		versionLabel() {
-			const version = this.run?.flowVersion
-			if (version === null || version === undefined) {
-				return ''
-			}
-			const match = this.versions.find((row) => row.version === version)
-			return 'v' + (match?.semver || version)
+			return flowVersionLabel(this.versions, this.run?.flowVersion)
 		},
 
 		/**
@@ -697,13 +687,7 @@ export default {
 
 	methods: {
 		...flowPageMethods,
-		formatDateTime,
-		formatDuration,
-		shortUuid,
-		shownStatus,
-		statusLabel,
-		statusVariant,
-		triggerLabel,
+		...flowPageHelpers,
 
 		/**
 		 * Read the run, then its flow, version names, objects and tasks.
