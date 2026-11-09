@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\FlowMapper;
 use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IFunctionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -62,6 +63,13 @@ class FlowMapperQueryGoldenTest extends TestCase {
 	private array $calls = [];
 
 	/**
+	 * Labels of the composite expressions built, by object id.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $composites = [];
+
+	/**
 	 * A mapper on a recording query builder.
 	 *
 	 * @return RecordingFlowMapper
@@ -85,6 +93,30 @@ class FlowMapperQueryGoldenTest extends TestCase {
 	}//end show()
 
 	/**
+	 * Render call arguments, dropping trailing nulls (defaults the double fills in).
+	 *
+	 * @param array<int, mixed> $args The arguments.
+	 *
+	 * @return string
+	 */
+	private function showArgs(array $args): string {
+		while ($args !== [] && end($args) === null) {
+			array_pop($args);
+		}
+
+		$shown = array_map(
+			fn ($arg): string => match (true) {
+				is_string($arg) => $arg,
+				is_object($arg) => ($this->composites[spl_object_id($arg)] ?? get_class($arg)),
+				default => self::show($arg),
+			},
+			$args
+		);
+
+		return implode(', ', $shown);
+	}//end showArgs()
+
+	/**
 	 * A query builder that records every call.
 	 *
 	 * @return IQueryBuilder
@@ -93,12 +125,16 @@ class FlowMapperQueryGoldenTest extends TestCase {
 		$expr = $this->createMock(IExpressionBuilder::class);
 		foreach (['eq', 'isNull', 'isNotNull', 'neq', 'gt'] as $method) {
 			$expr->method($method)->willReturnCallback(
-				static fn (...$args): string => $method . '(' . implode(', ', array_map([self::class, 'show'], $args)) . ')'
+				fn (...$args): string => $method . '(' . implode(', ', array_map([self::class, 'show'], array_slice($args, 0, 2))) . ')'
 			);
 		}
 
 		$expr->method('orX')->willReturnCallback(
-			static fn (...$args): string => 'orX(' . implode(' | ', $args) . ')'
+			function (...$args): ICompositeExpression {
+				$composite = $this->createMock(ICompositeExpression::class);
+				$this->composites[spl_object_id($composite)] = 'orX(' . implode(' | ', $args) . ')';
+				return $composite;
+			}
 		);
 
 		$func = $this->createMock(IFunctionBuilder::class);
@@ -113,11 +149,7 @@ class FlowMapperQueryGoldenTest extends TestCase {
 		foreach (['select', 'from', 'where', 'andWhere', 'orderBy', 'setMaxResults', 'setFirstResult'] as $chain) {
 			$qb->method($chain)->willReturnCallback(
 				function (...$args) use ($chain, &$qb) {
-					$shown = array_map(
-						static fn ($arg): string => is_string($arg) === true ? $arg : self::show($arg),
-						$args
-					);
-					$this->calls[] = $chain . '(' . implode(', ', $shown) . ')';
+					$this->calls[] = $chain . '(' . $this->showArgs(args: $args) . ')';
 					return $qb;
 				}
 			);
@@ -174,9 +206,9 @@ class FlowMapperQueryGoldenTest extends TestCase {
 				"orderBy(id, DESC)",
 				"setMaxResults(5)",
 				"setFirstResult(10)",
-				"andWhere(eq('app', ':\\'hydra\\'/NULL'))",
-				"andWhere(eq('application_slug', ':\\'build\\'/NULL'))",
-				"andWhere(eq('organisation', ':\\'org-1\\'/NULL'))",
+				"andWhere(eq('app', ':\\'hydra\\'/2'))",
+				"andWhere(eq('application_slug', ':\\'build\\'/2'))",
+				"andWhere(eq('organisation', ':\\'org-1\\'/2'))",
 				"andWhere(eq('enabled', ':false/\\'boolean\\''))",
 			],
 			$this->recorded()
@@ -209,8 +241,8 @@ class FlowMapperQueryGoldenTest extends TestCase {
 		$this->assertSame(
 			[
 				"from(openregister_flows)",
-				"andWhere(eq('app', ':\\'hydra\\'/NULL'))",
-				"andWhere(eq('organisation', ':\\'org-1\\'/NULL'))",
+				"andWhere(eq('app', ':\\'hydra\\'/2'))",
+				"andWhere(eq('organisation', ':\\'org-1\\'/2'))",
 			],
 			$this->recorded()
 		);
@@ -227,7 +259,7 @@ class FlowMapperQueryGoldenTest extends TestCase {
 		$this->assertSame(
 			[
 				"from(openregister_flows)",
-				"where(eq('trigger', ':\\'object.created\\'/NULL'))",
+				"where(eq('trigger', ':\\'object.created\\'/2'))",
 				"andWhere(eq('enabled', ':true/\\'boolean\\''))",
 			],
 			$this->recorded()
@@ -245,11 +277,11 @@ class FlowMapperQueryGoldenTest extends TestCase {
 		$this->assertSame(
 			[
 				"from(openregister_flows)",
-				"where(eq('trigger', ':\\'object.created\\'/NULL'))",
+				"where(eq('trigger', ':\\'object.created\\'/2'))",
 				"andWhere(eq('enabled', ':true/\\'boolean\\''))",
-				"andWhere(orX(isNull('trigger_register') | eq('trigger_register', ':\\'\\'/NULL') | eq('trigger_register', ':\\'reg\\'/NULL')))",
-				"andWhere(orX(isNull('trigger_schema') | eq('trigger_schema', ':\\'\\'/NULL') | eq('trigger_schema', ':\\'sch\\'/NULL')))",
-				"andWhere(eq('organisation', ':\\'org-1\\'/NULL'))",
+				"andWhere(orX(isNull('trigger_register') | eq('trigger_register', ':\\'\\'/2') | eq('trigger_register', ':\\'reg\\'/2')))",
+				"andWhere(orX(isNull('trigger_schema') | eq('trigger_schema', ':\\'\\'/2') | eq('trigger_schema', ':\\'sch\\'/2')))",
+				"andWhere(eq('organisation', ':\\'org-1\\'/2'))",
 			],
 			$this->recorded()
 		);
