@@ -196,6 +196,20 @@ class DelegationResolverTest extends TestCase {
 	}
 
 	/**
+	 * A refusal over dead grants names both parties in its detail.
+	 *
+	 * @return void
+	 */
+	public function testARefusalOverDeadGrantsNamesBothParties(): void {
+		$this->stored = [$this->grant(expires: '2026-08-01 00:00:00')];
+
+		$verdict = $this->resolver()->resolve(' alice ', 'mayor', $this->now);
+
+		$this->assertFalse($verdict->permitted);
+		$this->assertSame('"alice" holds no live grant to act as "mayor".', $verdict->detail);
+	}
+
+	/**
 	 * The expiry boundary is decided against the SUPPLIED clock.
 	 *
 	 * One second either side of the expiry is the case that must not depend on
