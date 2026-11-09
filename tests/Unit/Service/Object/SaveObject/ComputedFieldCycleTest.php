@@ -27,9 +27,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Twig\MappingExtension;
 use OCA\OpenRegister\Twig\MappingRuntimeLoader;
+use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Twig\Environment;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler
@@ -55,8 +57,7 @@ class ComputedFieldCycleTest extends TestCase {
 
 		return new ComputedFieldHandler(
 			objectMapper: $this->createMock(MagicMapperInterface::class),
-			mappingExtension: new MappingExtension(),
-			mappingRuntimeLoader: $this->createMock(MappingRuntimeLoader::class),
+			mappingTwig: $this->mappingTwig(),
 			logger: $this->logger
 		);
 	}//end handler()
@@ -163,4 +164,22 @@ class ComputedFieldCycleTest extends TestCase {
 			$this->assertNull($handler->evaluateComputedFields(data: ['n' => $n], schema: $schema, evaluateOn: 'read')['a']);
 		}
 	}//end testTheCycleIsAnalysedOncePerSchema()
+
+	/**
+	 * The mapping extension and a stand-in runtime loader, installed as before.
+	 *
+	 * @return MappingTwigInstallerInterface The installer.
+	 */
+	private function mappingTwig(): MappingTwigInstallerInterface {
+		$installer = $this->createMock(MappingTwigInstallerInterface::class);
+		$loader    = $this->createMock(MappingRuntimeLoader::class);
+		$installer->method('installOn')->willReturnCallback(
+			static function (Environment $twig) use ($loader): void {
+				$twig->addExtension(new MappingExtension());
+				$twig->addRuntimeLoader($loader);
+			}
+		);
+
+		return $installer;
+	}//end mappingTwig()
 }//end class
