@@ -75,6 +75,7 @@ class AuthorizationServiceConsumerGrantTest extends TestCase {
 	 */
 	private function service(TokenGrantSource $grants): AuthorizationService {
 		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
 		$user->method('getUID')->willReturn('leverancier');
 		$users = $this->createMock(IUserManager::class);
 		$users->method('get')->willReturn($user);

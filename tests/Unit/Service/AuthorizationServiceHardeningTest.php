@@ -101,12 +101,20 @@ PEM;
 	private bool $passesCsrf = true;
 
 	/**
+	 * Whether the accounts the doubles hand out are enabled.
+	 *
+	 * @var bool
+	 */
+	private bool $accountsEnabled = true;
+
+	/**
 	 * The real service over doubles for Nextcloud.
 	 *
 	 * @return AuthorizationService
 	 */
 	private function service(): AuthorizationService {
 		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturnCallback(fn (): bool => $this->accountsEnabled);
 		$user->method('getUID')->willReturn('api-user');
 		$users = $this->createMock(IUserManager::class);
 		$users->method('get')->willReturn($user);
@@ -182,6 +190,7 @@ PEM;
 	 */
 	private function userNamed(string $uid): IUser {
 		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturnCallback(fn (): bool => $this->accountsEnabled);
 		$user->method('getUID')->willReturn($uid);
 		$user->method('getEMailAddress')->willReturn(null);
 		return $user;
@@ -458,6 +467,63 @@ PEM;
 		$this->assertSame('portaal', $service->getResolvedConsumer()?->name);
 		$this->assertCount(1, $this->volatileUsers);
 	}//end testAConsumerApiKeyAuthenticatesAndIsReadBack()
+
+	/**
+	 * aud-f3: a consumer API key does not act as a disabled account.
+	 */
+	public function testAConsumerApiKeyOfADisabledAccountIsRefused(): void {
+		$consumer = new Consumer();
+		$consumer->setUuid('c0ffee00-0000-4000-8000-000000000003');
+		$consumer->setName('portaal');
+		$consumer->setUserId('api-user');
+		$consumer->setAuthorizationType('apiKey');
+		$consumer->setAuthorizationConfiguration(['apiKey' => 'k-123']);
+		$this->consumers[] = $consumer;
+		$this->accountsEnabled = false;
+
+		try {
+			$this->service()->authorizeApiKey('k-123', []);
+			$this->fail('A disabled account must not authenticate.');
+		} catch (AuthenticationException $e) {
+			$this->assertSame([], $this->volatileUsers);
+		}
+	}//end testAConsumerApiKeyOfADisabledAccountIsRefused()
+
+	/**
+	 * aud-f3: a consumer JWT does not act as a disabled account.
+	 */
+	public function testAJwtOfADisabledAccountIsRefused(): void {
+		$secret = str_repeat('k', 32);
+		$this->consumer('HS256', $secret);
+		$this->accountsEnabled = false;
+
+		try {
+			$this->service()->authorizeJwt('Bearer ' . $this->hmacToken('HS256', $secret));
+			$this->fail('A disabled account must not authenticate.');
+		} catch (AuthenticationException $e) {
+			$this->assertSame([], array_filter($this->volatileUsers));
+		}
+	}//end testAJwtOfADisabledAccountIsRefused()
+
+	/**
+	 * aud-f3: a static API key does not act as a disabled account.
+	 */
+	public function testAStaticApiKeyOfADisabledAccountIsRefused(): void {
+		$this->accountsEnabled = false;
+
+		$this->expectException(AuthenticationException::class);
+		$this->service()->authorizeApiKey('k-1', ['k-1' => 'api-user']);
+	}//end testAStaticApiKeyOfADisabledAccountIsRefused()
+
+	/**
+	 * aud-f3: Basic auth with a disabled account's correct password is refused.
+	 */
+	public function testBasicWithADisabledAccountIsRefused(): void {
+		$this->accountsEnabled = false;
+
+		$this->expectException(AuthenticationException::class);
+		$this->service()->authorizeBasic('Basic ' . base64_encode('piet:secret'));
+	}//end testBasicWithADisabledAccountIsRefused()
 
 	public function testAnUnknownApiKeyIsRefused(): void {
 		$this->expectException(AuthenticationException::class);
