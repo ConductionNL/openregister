@@ -62,10 +62,6 @@ class EmailSender implements EmailSenderInterface {
 		private readonly ?NotificationChannelPolicy $channelPolicy = null,
 		private ?UnsubscribeHeaders $unsubscribeHeaders = null,
 	) {
-		if ($this->unsubscribeHeaders === null) {
-			$this->unsubscribeHeaders = new UnsubscribeHeaders(logger: $logger);
-		}
-
 	}//end __construct()
 
 	/**
@@ -85,36 +81,11 @@ class EmailSender implements EmailSenderInterface {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function send(string $uid, string $subject, string $body): string {
-		if ($this->channelPolicy !== null && $this->channelPolicy->isChannelEnabled(channel: 'email') === false) {
+		if ($this->emailDisabled() === true) {
 			return self::OUTCOME_KILL_SWITCH;
 		}
 
-		try {
-			$user = $this->userManager->get($uid);
-			if ($user === null) {
-				return self::OUTCOME_NO_ADDRESS;
-			}
-
-			$to = $user->getEMailAddress();
-			if ($to === null || $to === '') {
-				return self::OUTCOME_NO_ADDRESS;
-			}
-
-			$msg = $this->mailer->createMessage();
-			$msg->setTo([$to => $user->getDisplayName()]);
-			$msg->setSubject($subject);
-			$msg->setPlainBody($body);
-			$this->mailer->send($msg);
-		} catch (\Throwable $e) {
-			// SMTP not configured is normal in dev containers; the caller
-			// decides whether this outcome escalates.
-			$this->logger->debug(
-				sprintf('[EmailSender] email to "%s" failed (%s)', $uid, $e->getMessage())
-			);
-			return self::OUTCOME_FAILED;
-		}//end try
-
-		return self::OUTCOME_DISPATCHED;
+		return $this->sendToUser(uid: $uid, content: new MailContent(subject: $subject, body: $body));
 	}//end send()
 
 	/**
@@ -139,32 +110,89 @@ class EmailSender implements EmailSenderInterface {
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
 	 */
 	public function sendToAddress(string $address, string $displayName, string $subject, string $body, ?array $unsubscribe = null): string {
-		if ($this->channelPolicy !== null && $this->channelPolicy->isChannelEnabled(channel: 'email') === false) {
+		if ($this->emailDisabled() === true) {
 			return self::OUTCOME_KILL_SWITCH;
 		}
 
 		$to = trim($address);
-		if ($to === '') {
+		$content = new MailContent(subject: $subject, body: $body, unsubscribe: $unsubscribe);
+
+		return $this->sendToParty(to: [$to => self::nameFor(address: $to, displayName: $displayName)], content: $content);
+	}//end sendToAddress()
+
+	/**
+	 * Whether the email channel's kill switch is set.
+	 *
+	 * @return bool True when the channel is switched off.
+	 */
+	private function emailDisabled(): bool {
+		return $this->channelPolicy !== null && $this->channelPolicy->isChannelEnabled(channel: 'email') === false;
+	}//end emailDisabled()
+
+	/**
+	 * Mail a Nextcloud user at the address their account holds.
+	 *
+	 * @param string      $uid     Recipient user UID.
+	 * @param MailContent $content The subject and body.
+	 *
+	 * @return string OUTCOME_NO_ADDRESS, OUTCOME_FAILED or OUTCOME_DISPATCHED.
+	 */
+	private function sendToUser(string $uid, MailContent $content): string {
+		try {
+			$to = $this->addressOf(uid: $uid);
+			if ($to === null) {
+				return self::OUTCOME_NO_ADDRESS;
+			}
+
+			$this->deliver(to: $to, content: $content);
+		} catch (\Throwable $e) {
+			// SMTP not configured is normal in dev containers; the caller
+			// decides whether this outcome escalates.
+			$this->logger->debug(
+				sprintf('[EmailSender] email to "%s" failed (%s)', $uid, $e->getMessage())
+			);
+			return self::OUTCOME_FAILED;
+		}
+
+		return self::OUTCOME_DISPATCHED;
+	}//end sendToUser()
+
+	/**
+	 * The address a user's account holds, mapped to their display name.
+	 *
+	 * @param string $uid The user UID.
+	 *
+	 * @return array<string, string>|null The address and name, or null when the user or the address is missing.
+	 */
+	private function addressOf(string $uid): ?array {
+		$user = $this->userManager->get($uid);
+		if ($user === null) {
+			return null;
+		}
+
+		$to = $user->getEMailAddress();
+		if ($to === null || $to === '') {
+			return null;
+		}
+
+		return [$to => $user->getDisplayName()];
+	}//end addressOf()
+
+	/**
+	 * Mail a party at a bare address.
+	 *
+	 * @param array<string, string> $to      The trimmed address mapped to the name to address it to.
+	 * @param MailContent           $content The subject, body and unsubscribe material.
+	 *
+	 * @return string OUTCOME_NO_ADDRESS, OUTCOME_FAILED or OUTCOME_DISPATCHED.
+	 */
+	private function sendToParty(array $to, MailContent $content): string {
+		if (array_key_first($to) === '') {
 			return self::OUTCOME_NO_ADDRESS;
 		}
 
 		try {
-			$name = $to;
-			if ($displayName !== '') {
-				$name = $displayName;
-			}
-
-			$msg = $this->mailer->createMessage();
-			$msg->setTo([$to => $name]);
-			$msg->setSubject($subject);
-			$msg->setPlainBody($body);
-			if ($unsubscribe !== null && $this->unsubscribeHeaders !== null) {
-				// Best effort: false means the headers could not be set, and
-				// the mail still goes out with the link in its body.
-				$this->unsubscribeHeaders->apply(message: $msg, unsubscribe: $unsubscribe);
-			}
-
-			$this->mailer->send($msg);
+			$this->deliver(to: $to, content: $content);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[EmailSender] email to the address of a party failed (%s)', $e->getMessage())
@@ -173,5 +201,56 @@ class EmailSender implements EmailSenderInterface {
 		}
 
 		return self::OUTCOME_DISPATCHED;
-	}//end sendToAddress()
+	}//end sendToParty()
+
+	/**
+	 * Compose the message and hand it to the mailer.
+	 *
+	 * @param array<string, string> $to      The recipient address mapped to its display name.
+	 * @param MailContent           $content The subject, body and unsubscribe material.
+	 *
+	 * @return void
+	 *
+	 * @throws \Throwable When the handoff fails.
+	 */
+	private function deliver(array $to, MailContent $content): void {
+		$msg = $this->mailer->createMessage();
+		$msg->setTo($to);
+		$msg->setSubject($content->subject);
+		$msg->setPlainBody($content->body);
+		if ($content->unsubscribe !== null) {
+			// Best effort: false means the headers could not be set, and
+			// the mail still goes out with the link in its body.
+			$this->unsubscribeHeaders()->apply(message: $msg, unsubscribe: $content->unsubscribe);
+		}
+
+		$this->mailer->send($msg);
+	}//end deliver()
+
+	/**
+	 * The unsubscribe header helper: the injected one, else one built on first use.
+	 *
+	 * @return UnsubscribeHeaders The helper.
+	 */
+	private function unsubscribeHeaders(): UnsubscribeHeaders {
+		$this->unsubscribeHeaders ??= new UnsubscribeHeaders(logger: $this->logger);
+
+		return $this->unsubscribeHeaders;
+	}//end unsubscribeHeaders()
+
+	/**
+	 * The name to address a bare address to: the display name, else the address.
+	 *
+	 * @param string $address     The trimmed address.
+	 * @param string $displayName The display name, '' for none.
+	 *
+	 * @return string The name.
+	 */
+	private static function nameFor(string $address, string $displayName): string {
+		if ($displayName === '') {
+			return $address;
+		}
+
+		return $displayName;
+	}//end nameFor()
 }//end class
