@@ -644,7 +644,13 @@ class ActiveOrganisationManagementTest extends TestCase {
 		$this->session->method('get')->willReturn(null);
 		$this->config->method('getUserValue')->willReturn('');
 		$this->appConfig->method('getValueString')->willReturnCallback(
-			fn (string $app, string $key, string $default = ''): string => $key === 'defaultOrganisation' ? 'default-org-uuid' : $default
+			function (string $app, string $key, string $default = ''): string {
+				if ($key === 'defaultOrganisation') {
+					return 'default-org-uuid';
+				}
+
+				return $default;
+			}
 		);
 
 		$defaultOrg = new Organisation();

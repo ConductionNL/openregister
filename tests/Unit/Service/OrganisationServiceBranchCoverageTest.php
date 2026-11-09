@@ -234,6 +234,11 @@ class OrganisationServiceBranchCoverageTest extends TestCase {
 		$this->assertSame('default-org-uuid', $this->service->ensureDefaultOrganisation()->getUuid());
 	}
 
+	/**
+	 * Without a clear, the cached default organisation keeps being served.
+	 *
+	 * @return void
+	 */
 	public function testWithoutClearingTheCachedDefaultOrganisationIsServed(): void {
 		// The pair of the test above: the same stale cache, not cleared.
 		$this->seedStaleDefaultOrganisation();

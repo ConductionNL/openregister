@@ -376,6 +376,11 @@ class AuthorizationServiceHardeningTest extends TestCase {
 		$this->assertNull($refusedWith, 'A 24 h token that has not expired must be accepted.');
 	}//end testALongLifetimeIsStillAccepted()
 
+	/**
+	 * The same 24 h lifetime, ended an hour ago, is refused as expired.
+	 *
+	 * @return void
+	 */
 	public function testTheSameLongLifetimeIsRefusedOnceItHasRunOut(): void {
 		// The pair of the test above: the same 24 h lifetime, ended an hour ago.
 		$this->expectException(AuthenticationException::class);
