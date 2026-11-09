@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
@@ -221,20 +223,67 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		$registerEntity = $this->registerMapper->find(id: $register);
-		$schemaEntity = $this->schemaMapper->find(id: $schema);
+		return $this->createTaskFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), payload: $payload);
+	}//end create()
 
-		// Object lookup is best-effort — the LINK label is cosmetic. A
-		// missing object still allows the task to be created with a
-		// synthetic fallback title; the linked-entity scan finds it via
-		// the X-OPENREGISTER-OBJECT uuid regardless.
+	/**
+	 * Create a task in the user's calendar, linked to the object.
+	 *
+	 * @param ObjectRef           $ref     The owning object.
+	 * @param array<string,mixed> $payload The task fields.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @throws RuntimeException When the task service answers nothing.
+	 */
+	private function createTaskFor(ObjectRef $ref, array $payload): array {
+		$table = new RegisterSchema(register: $this->registerMapper->find(id: $ref->register), schema: $this->schemaMapper->find(id: $ref->schema));
+		$task = $this->taskService->createTask(
+			registerId: $table->registerId(),
+			schemaId: $table->schemaId(),
+			objectUuid: $ref->id,
+			objectTitle: $this->objectTitle(table: $table, objectId: $ref->id),
+			data: self::taskData(payload: $payload)
+		);
+
+		if ($task === null) {
+			throw new RuntimeException('TaskService::createTask returned null — calendar invalid or auth failure.');
+		}
+
+		return $task;
+	}//end createTaskFor()
+
+	/**
+	 * The object's name, for the task's link label; the uuid when the object cannot be found.
+	 *
+	 * Object lookup is best-effort — the LINK label is cosmetic. A missing
+	 * object still allows the task to be created with a synthetic fallback
+	 * title; the linked-entity scan finds it via the X-OPENREGISTER-OBJECT
+	 * uuid regardless.
+	 *
+	 * @param RegisterSchema $table    The object's register and schema.
+	 * @param string         $objectId The object uuid.
+	 *
+	 * @return string
+	 */
+	private function objectTitle(RegisterSchema $table, string $objectId): string {
 		$objectEntity = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $objectId,
-			register: $registerEntity,
-			schema: $schemaEntity
+			register: $table->register,
+			schema: $table->schema
 		));
-		$objectTitle = $objectEntity?->getName() ?? $objectId;
 
+		return $objectEntity?->getName() ?? $objectId;
+	}//end objectTitle()
+
+	/**
+	 * The task fields the task service takes, with their defaults.
+	 *
+	 * @param array<string,mixed> $payload The caller's task fields.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function taskData(array $payload): array {
 		$data = [
 			'summary' => (string)($payload['summary'] ?? ''),
 			'description' => (string)($payload['description'] ?? ''),
@@ -245,20 +294,8 @@ class TasksProvider extends AbstractIntegrationProvider {
 			$data['due'] = (string)$payload['due'];
 		}
 
-		$task = $this->taskService->createTask(
-			registerId: $registerEntity->getId(),
-			schemaId: $schemaEntity->getId(),
-			objectUuid: $objectId,
-			objectTitle: $objectTitle,
-			data: $data
-		);
-
-		if ($task === null) {
-			throw new RuntimeException('TaskService::createTask returned null — calendar invalid or auth failure.');
-		}
-
-		return $task;
-	}//end create()
+		return $data;
+	}//end taskData()
 
 	/**
 	 * Update a VTODO task linked to the OR object.
@@ -274,16 +311,27 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
 	 */
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-		[$calendarId, $taskUri] = $this->splitEntityId(entityId: $entityId);
-		$this->taskService->requireTaskOf(objectUuid: $objectId, calendarId: $calendarId, taskUri: $taskUri);
-		$updated = $this->taskService->updateTask(calendarId: $calendarId, taskUri: $taskUri, data: $payload);
+		[$calendarId, $taskUri] = $this->ownedTask(objectId: $objectId, entityId: $entityId);
 
+		return self::updatedOrFail(updated: $this->taskService->updateTask(calendarId: $calendarId, taskUri: $taskUri, data: $payload));
+	}//end update()
+
+	/**
+	 * The task an update answered; an update that answers nothing is an error.
+	 *
+	 * @param array<string,mixed>|null $updated What the task service answered.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @throws RuntimeException When the task service answered nothing.
+	 */
+	private static function updatedOrFail(?array $updated): array {
 		if ($updated === null) {
 			throw new RuntimeException('TaskService::updateTask returned null — entity may not exist.');
 		}
 
 		return $updated;
-	}//end update()
+	}//end updatedOrFail()
 
 	/**
 	 * Delete a VTODO task linked to the OR object.
@@ -298,10 +346,27 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		[$calendarId, $taskUri] = $this->splitEntityId(entityId: $entityId);
-		$this->taskService->requireTaskOf(objectUuid: $objectId, calendarId: $calendarId, taskUri: $taskUri);
+		[$calendarId, $taskUri] = $this->ownedTask(objectId: $objectId, entityId: $entityId);
 		$this->taskService->deleteTask(calendarId: $calendarId, taskUri: $taskUri);
 	}//end delete()
+
+	/**
+	 * Split an entity id and check that the task belongs to the object.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 * @param string $entityId `{calendarId}/{taskUri}`.
+	 *
+	 * @return array{0: string, 1: string} The calendar id and the task uri.
+	 *
+	 * @throws NotImplementedException When the entity id is not in that shape.
+	 * @throws \Exception             When the task does not belong to the object.
+	 */
+	private function ownedTask(string $objectId, string $entityId): array {
+		[$calendarId, $taskUri] = $this->splitEntityId(entityId: $entityId);
+		$this->taskService->requireTaskOf(objectUuid: $objectId, calendarId: $calendarId, taskUri: $taskUri);
+
+		return [$calendarId, $taskUri];
+	}//end ownedTask()
 
 	/**
 	 * Split a composite `{calendarId}/{taskUri}` entity id into its
