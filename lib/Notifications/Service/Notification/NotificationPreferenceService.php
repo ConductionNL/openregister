@@ -129,7 +129,7 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 		$declared = (array)($spec['channels'] ?? self::DEFAULT_CHANNELS);
 		$optIn = [];
 		foreach ((array)($spec['optInChannels'] ?? []) as $channel) {
-			if (self::isOfferableOptIn(channel: $channel, declared: $declared, chosen: $optIn) === true) {
+			if (self::isOfferableOptIn(channel: $channel, declared: $declared) === true && in_array($channel, $optIn, true) === false) {
 				$optIn[] = $channel;
 			}
 		}
@@ -138,20 +138,18 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	}//end optInChannelsOf()
 
 	/**
-	 * Whether a listed opt-in channel is offered: a known per-recipient channel,
-	 * not already a default, and not already listed.
+	 * Whether a listed opt-in channel can be offered: a known per-recipient
+	 * channel that is not already a default. The caller skips duplicates.
 	 *
-	 * @param mixed              $channel  The listed value.
-	 * @param array<int, mixed>  $declared The default channels.
-	 * @param array<int, string> $chosen   The opt-in channels kept so far.
+	 * @param mixed             $channel  The listed value.
+	 * @param array<int, mixed> $declared The default channels.
 	 *
-	 * @return bool True when the channel is offered as an opt-in.
+	 * @return bool True when the channel is offerable as an opt-in.
 	 */
-	private static function isOfferableOptIn(mixed $channel, array $declared, array $chosen): bool {
+	private static function isOfferableOptIn(mixed $channel, array $declared): bool {
 		return is_string($channel) === true
 			&& in_array($channel, self::PER_RECIPIENT_CHANNELS, true) === true
-			&& in_array($channel, $declared, true) === false
-			&& in_array($channel, $chosen, true) === false;
+			&& in_array($channel, $declared, true) === false;
 	}//end isOfferableOptIn()
 
 	/**
