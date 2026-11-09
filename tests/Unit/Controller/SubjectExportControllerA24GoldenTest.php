@@ -56,7 +56,7 @@ final class SubjectExportControllerA24GoldenTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(static fn (string $key, $default = null) => ($params[$key] ?? $default));
 
-		return new SubjectExportController('openregister', $request, $this->exports);
+		return new SubjectExportController($request, $this->exports);
 	}//end controller()
 
 	private function export(): SubjectExport {
