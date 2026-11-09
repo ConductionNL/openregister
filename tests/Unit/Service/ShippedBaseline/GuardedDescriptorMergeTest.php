@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ShippedBaseline;
 
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
+use OCA\OpenRegister\Service\ShippedBaseline\DescriptorRevisions;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
@@ -90,7 +91,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming['properties']['zaaknummer']['title'] = 'Zaak-ID';
 		$incoming['properties']['toelichting']['maxLength'] = 1000;
 
-		$states = $this->comparator->states(baseline: $baseline, live: $live, incoming: $incoming);
+		$states = $this->comparator->states(descriptors: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertSame(
 			DivergenceComparator::UNCHANGED,
