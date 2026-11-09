@@ -1972,6 +1972,7 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
+@use './pillBadge' as *;
 
 @include view-container-rules;
 
@@ -2033,12 +2034,7 @@ export default {
 
 .badge {
 	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 12px;
-	background: var(--color-background-darker);
-	font-size: 11px;
-	font-weight: 600;
-	text-transform: uppercase;
+	@include pill-badge;
 }
 
 @include badge-status-published;
