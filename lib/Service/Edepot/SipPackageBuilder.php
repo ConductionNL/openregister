@@ -245,7 +245,7 @@ class SipPackageBuilder {
 		$this->mdtoGenerator->assertTransferPreconditions($object);
 
 		$mdtoXml = $this->mdtoGenerator->generate($object, $item['files']);
-		$contents->addMetadataDocument(uuid: $uuid, path: "{$objectDir}/mdto.xml", content: $mdtoXml);
+		$contents->listAsMetadata(uuid: $uuid, row: $contents->addDocument(path: "{$objectDir}/mdto.xml", content: $mdtoXml));
 		$metadataJson = json_encode($object->jsonSerialize(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 		$contents->addDocument(path: "{$objectDir}/metadata.json", content: $metadataJson);
 		$this->addContentFiles(contents: $contents, item: $item);
@@ -269,7 +269,8 @@ class SipPackageBuilder {
 			$filePath = "objects/{$object->getUuid()}/content/".SipLayout::subDir(file: $file)."/{$file['name']}";
 			$contents->addFile(path: $filePath, file: $file);
 			$sidecar = $this->mdtoGenerator->generateBestand($object, $file);
-			$contents->addMetadataDocument(uuid: $object->getUuid(), path: $filePath.MdtoBestandGenerator::SIDECAR_SUFFIX, content: $sidecar);
+			$row = $contents->addDocument(path: $filePath.MdtoBestandGenerator::SIDECAR_SUFFIX, content: $sidecar);
+			$contents->listAsMetadata(uuid: $object->getUuid(), row: $row);
 		}
 	}//end addContentFiles()
 
