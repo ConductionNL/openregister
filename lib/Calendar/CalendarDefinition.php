@@ -59,6 +59,8 @@ final class CalendarDefinition {
 	 * The name of the object field that holds the event start, if configured.
 	 *
 	 * @return string|null
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function dtstartField(): ?string {
 		return $this->config['dtstart'] ?? null;
