@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Where and when one pass of the grant constraints is judged.
+ * Where and when a grant constraint is judged: the area and the moment.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Rbac
@@ -27,13 +27,11 @@ use DateTimeInterface;
 /**
  * The area (register and schema) a question is asked in, and the moment.
  *
- * Built and consumed by GrantConstraints only; it never leaves that class.
- *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-final class ConstraintRun {
+final class ConstraintPoint {
 	/**
-	 * Fix the area and the moment.
+	 * Name the area and the moment.
 	 *
 	 * @param array<string, mixed> $area Keys `register` and `schema`, naming where the question is asked.
 	 * @param DateTimeInterface    $now  The moment.

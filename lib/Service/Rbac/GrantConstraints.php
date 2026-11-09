@@ -119,27 +119,28 @@ class GrantConstraints {
 	 * the same promise in the other direction, and a deny scoped to one register
 	 * has no business removing a verb in another.
 	 *
-	 * @param array|null            $authorization The cascaded block.
-	 * @param array<string, mixed>  $area          Keys `register` and `schema`, naming where the question is asked.
-	 * @param DateTimeInterface|null $now          The moment, or null for the real one.
+	 * @param array|null           $authorization The cascaded block.
+	 * @param array<string, mixed> $area          Keys `register` and `schema`, naming where the question is asked.
 	 *
-	 * @return array|null The block, with the entries that do not reach here removed.
+	 * @return array|null The block, with the entries that do not reach here now removed.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function apply(?array $authorization, array $area = [], ?DateTimeInterface $now = null): ?array {
-		return $this->applyIn(authorization: $authorization, run: new ConstraintRun(area: $area, now: ($now ?? new DateTimeImmutable())));
+	public function apply(?array $authorization, array $area = []): ?array {
+		return $this->applyAt(authorization: $authorization, point: new ConstraintPoint(area: $area, now: new DateTimeImmutable()));
 	}//end apply()
 
 	/**
-	 * The block with the entries that do not reach the run's area and moment removed.
+	 * The block with the entries that do not reach the point's area at its moment removed.
 	 *
-	 * @param array|null    $authorization The cascaded block.
-	 * @param ConstraintRun $run           Where and when the question is asked.
+	 * @param array|null      $authorization The cascaded block.
+	 * @param ConstraintPoint $point         Where and when the question is asked.
 	 *
-	 * @return array|null The block, with the entries that do not reach here removed.
+	 * @return array|null The block, with the entries that do not reach there and then removed.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function applyIn(?array $authorization, ConstraintRun $run): ?array {
+	public function applyAt(?array $authorization, ConstraintPoint $point): ?array {
 		if ($this->declaresAnyConstraint(authorization: $authorization) === false) {
 			return $authorization;
 		}
@@ -155,25 +156,25 @@ class GrantConstraints {
 			}
 
 			$filtered[$key] = match ($key) {
-				DenyResolverInterface::DENY_KEY => $this->applyIn(authorization: $value, run: $run),
-				self::ROLES_KEY => $this->applyToRoleAssignments(assignments: $value, run: $run),
-				default => $this->reachingEntries(entries: $value, run: $run),
+				DenyResolverInterface::DENY_KEY => $this->applyAt(authorization: $value, point: $point),
+				self::ROLES_KEY => $this->applyToRoleAssignments(assignments: $value, point: $point),
+				default => $this->reachingEntries(entries: $value, point: $point),
 			};
 		}
 
 		return $filtered;
-	}//end applyIn()
+	}//end applyAt()
 
 	/**
-	 * The entries of one rule list that still reach the run's area and moment.
+	 * The entries of one rule list that still reach the point's area at its moment.
 	 *
 	 * @param array<int|string, mixed> $entries The entries as written.
-	 * @param ConstraintRun            $run     Where and when the question is asked.
+	 * @param ConstraintPoint          $point   Where and when the question is asked.
 	 *
 	 * @return array<int, mixed> The entries that reach, reindexed.
 	 */
-	private function reachingEntries(array $entries, ConstraintRun $run): array {
-		return array_values(array_filter($entries, fn (mixed $entry): bool => $this->reachesIn(entry: $entry, run: $run)));
+	private function reachingEntries(array $entries, ConstraintPoint $point): array {
+		return array_values(array_filter($entries, fn (mixed $entry): bool => $this->reachesIn(entry: $entry, point: $point)));
 	}//end reachingEntries()
 
 	/**
@@ -204,27 +205,27 @@ class GrantConstraints {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function reaches(mixed $entry, array $area, DateTimeInterface $now): bool {
-		return $this->reachesIn(entry: $entry, run: new ConstraintRun(area: $area, now: $now));
+		return $this->reachesIn(entry: $entry, point: new ConstraintPoint(area: $area, now: $now));
 	}//end reaches()
 
 	/**
-	 * Whether one entry still reaches the run's area at the run's moment.
+	 * Whether one entry still reaches the point's area at its moment.
 	 *
-	 * @param mixed         $entry The entry as written.
-	 * @param ConstraintRun $run   Where and when the question is asked.
+	 * @param mixed           $entry The entry as written.
+	 * @param ConstraintPoint $point Where and when the question is asked.
 	 *
 	 * @return bool True when the entry answers here and now.
 	 */
-	private function reachesIn(mixed $entry, ConstraintRun $run): bool {
+	private function reachesIn(mixed $entry, ConstraintPoint $point): bool {
 		if (is_array($entry) === false) {
 			return true;
 		}
 
-		if ($this->stillRunning(entry: $entry, now: $run->now) === false) {
+		if ($this->stillRunning(entry: $entry, now: $point->now) === false) {
 			return false;
 		}
 
-		return $this->covers(entry: $entry, area: $run->area);
+		return $this->covers(entry: $entry, area: $point->area);
 	}//end reachesIn()
 
 	/**
@@ -360,12 +361,12 @@ class GrantConstraints {
 	 * on the holder rather than on the verb. A role granted to a group until
 	 * Friday is the same promise as a verb granted until Friday.
 	 *
-	 * @param array         $assignments The block's `roles` map.
-	 * @param ConstraintRun $run         Where and when the question is asked.
+	 * @param array           $assignments The block's `roles` map.
+	 * @param ConstraintPoint $point       Where and when the question is asked.
 	 *
 	 * @return array The assignments.
 	 */
-	private function applyToRoleAssignments(array $assignments, ConstraintRun $run): array {
+	private function applyToRoleAssignments(array $assignments, ConstraintPoint $point): array {
 		$filtered = [];
 		foreach ($assignments as $roleName => $holders) {
 			if (is_array($holders) === false) {
@@ -373,7 +374,7 @@ class GrantConstraints {
 				continue;
 			}
 
-			$kept = $this->reachingEntries(entries: $holders, run: $run);
+			$kept = $this->reachingEntries(entries: $holders, point: $point);
 
 			// A role nobody holds any more is dropped rather than kept empty:
 			// an empty holder list reads as "granted to nobody" further down,
