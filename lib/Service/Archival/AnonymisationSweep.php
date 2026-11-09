@@ -46,6 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use Closure;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -69,7 +70,28 @@ class AnonymisationSweep {
 	/**
 	 * Anonymise every candidate that may be anonymised.
 	 *
-	 * The caller supplies the candidates and the targets each record must reach.
+	 * A candidate is `['uuid' => string, 'payload' => array, 'annotation' =>
+	 * array, 'marker' => array, 'hasLegalHold' => bool, 'holdReason' => string,
+	 * 'profileName' => string]`, and the caller supplies the targets each record
+	 * must reach.
+	 *
+	 * Kept in this shape because another Conduction app names this class
+	 * (ADR-011 Rule 5); {@see sweep()} takes the batch as one object.
+	 *
+	 * @param array<int, array<string, mixed>> $candidates The records to consider.
+	 * @param callable                         $targetsFor Returns the targets for one candidate.
+	 * @param string                           $salt       The instance salt.
+	 *
+	 * @return array<string, mixed> The report: what was done, and what was refused and why.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
+	 */
+	public function run(array $candidates, callable $targetsFor, string $salt): array {
+		return $this->sweep(batch: new AnonymisationBatch(candidates: $candidates, targetsFor: Closure::fromCallable($targetsFor), salt: $salt));
+	}//end run()
+
+	/**
+	 * Anonymise every candidate of one batch that may be anonymised.
 	 *
 	 * @param AnonymisationBatch $batch The candidates, how to find their targets, and the instance salt.
 	 *
@@ -77,7 +99,7 @@ class AnonymisationSweep {
 	 *
 	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
-	public function run(AnonymisationBatch $batch): array {
+	public function sweep(AnonymisationBatch $batch): array {
 		$outcome = ['anonymised' => [], 'refused' => []];
 
 		foreach ($batch->candidates as $candidate) {
@@ -91,7 +113,7 @@ class AnonymisationSweep {
 			'anonymisedCount' => count($outcome['anonymised']),
 			'refusedCount' => count($outcome['refused']),
 		];
-	}//end run()
+	}//end sweep()
 
 	/**
 	 * Anonymise one candidate, or say why not.
