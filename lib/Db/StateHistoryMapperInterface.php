@@ -71,18 +71,13 @@ interface StateHistoryMapperInterface {
 	 * once at each side of the same moment.
 	 *
 	 * @param string            $property The declared lifecycle property.
-	 * @param DateTimeInterface $after    Start of the period, inclusive.
-	 * @param DateTimeInterface $before   End of the period, inclusive.
+	 * @param StateChangePeriod $period   The period, both ends inclusive.
 	 *
 	 * @return string[] Candidate object uuids.
 	 *
 	 * @psalm-return list<string>
 	 */
-	public function findObjectUuidsChangedBetween(
-		string $property,
-		DateTimeInterface $after,
-		DateTimeInterface $before,
-	): array;
+	public function findObjectUuidsChangedBetween(string $property, StateChangePeriod $period): array;
 
 	/**
 	 * Drop every interval of one object.
