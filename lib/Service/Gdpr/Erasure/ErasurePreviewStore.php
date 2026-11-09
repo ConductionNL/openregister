@@ -166,7 +166,6 @@ class ErasurePreviewStore implements ErasurePreviewStoreInterface {
 				rule: 'erasure-not-approved',
 				reason: 'This erasure preview has not been approved, so nothing was erased. '
 					. 'Approve the preview first, and check its protected records before you do.',
-				statusCode: 409,
 				context: ['status' => $preview->getStatus()]
 			);
 		}
@@ -227,12 +226,7 @@ class ErasurePreviewStore implements ErasurePreviewStoreInterface {
 	 * @return ErasureRefusedException The refusal.
 	 */
 	private function unknown(?Throwable $previous): ErasureRefusedException {
-		return new ErasureRefusedException(
-			rule: 'erasure-preview-unknown',
-			reason: 'No erasure preview with that identifier exists.',
-			statusCode: 404,
-			previous: $previous
-		);
+		return new ErasurePreviewUnknownException(previous: $previous);
 	}//end unknown()
 
 	/**
@@ -252,7 +246,6 @@ class ErasurePreviewStore implements ErasurePreviewStoreInterface {
 		throw new ErasureRefusedException(
 			rule: 'erasure-already-run',
 			reason: 'This preview has already been run. Take a new preview before erasing again.',
-			statusCode: 409,
 			context: ['consumedAt' => $preview->getConsumedAt()?->format(DateTime::ATOM)]
 		);
 	}//end refuseIfSpent()
