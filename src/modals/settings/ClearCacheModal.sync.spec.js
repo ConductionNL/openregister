@@ -4,12 +4,15 @@ import ClearCacheModal from './ClearCacheModal.vue'
 jest.mock('@nextcloud/vue', () => require('../../views/__mocks__/goldenDom.js').library())
 jest.mock('vue-material-design-icons/Cancel.vue', () =>
 	require('../../views/__mocks__/goldenDom.js').stubModule('Cancel'),
+	{ virtual: true },
 )
 jest.mock('vue-material-design-icons/Delete.vue', () =>
 	require('../../views/__mocks__/goldenDom.js').stubModule('Delete'),
+	{ virtual: true },
 )
 jest.mock('vue-material-design-icons/TrashCanOutline.vue', () =>
 	require('../../views/__mocks__/goldenDom.js').stubModule('TrashCanOutline'),
+	{ virtual: true },
 )
 
 /**
