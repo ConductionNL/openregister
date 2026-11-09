@@ -135,7 +135,7 @@ class StatementServiceTest extends TestCase {
 		$this->service->publish(version: '2', body: 'text', userId: 'admin');
 		$this->service->publish(version: '3', body: 'text, revised', userId: 'admin');
 
-		$this->audit->expects($this->atLeastOnce())->method('record');
+		$this->audit->expects($this->atLeastOnce())->method('refused');
 		$this->expectException(InvalidArgumentException::class);
 
 		$this->service->accept(userId: 'medewerker', version: '2');
