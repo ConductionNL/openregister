@@ -171,22 +171,13 @@ class ProvenanceResolver {
 	): array {
 		$provenance = [];
 		foreach ($actions as $action) {
-			$grant = $this->grantFor(
-				action: $action,
-				principals: $this->principals,
-				levels: $this->levelsOf(
-					objectAuthorization: ($blocks['object'] ?? null),
-					schemaAuthorization: ($blocks['schema'] ?? null),
-					registerAuth: ($blocks['register'] ?? null)
-				),
-				roleDefinitions: ($blocks['roleDefinitions'] ?? null)
-			);
+			$grant = $this->grantFor(action: $action, blocks: $blocks);
+			if ($enforced === true) {
+				$provenance[$action] = $this->withDenial(grant: $grant, denial: ($denials[$action] ?? null));
+				continue;
+			}
 
-			$provenance[$action] = $this->withDenial(
-				grant: $grant,
-				denial: ($denials[$action] ?? null),
-				denyEnforced: $enforced
-			);
+			$provenance[$action] = $this->withStagedDenial(grant: $grant, denial: ($denials[$action] ?? null));
 		}
 
 		return $provenance;
@@ -213,22 +204,33 @@ class ProvenanceResolver {
 	}//end levelsOf()
 
 	/**
-	 * Attach a denial to a grant record: the answer when enforced, staged beside it when not.
+	 * Attach an enforced denial to a grant record: the denial is the answer.
 	 *
-	 * @param array<string, mixed> $grant        The grant half of the record.
-	 * @param array|null           $denial       The denial the resolver found, or null.
-	 * @param bool                 $denyEnforced Whether a denial changes the answer yet.
+	 * @param array<string, mixed> $grant  The grant half of the record.
+	 * @param array|null           $denial The denial the resolver found, or null.
 	 *
 	 * @return array<string, mixed> The provenance record.
 	 */
-	private function withDenial(array $grant, ?array $denial, bool $denyEnforced): array {
+	private function withDenial(array $grant, ?array $denial): array {
 		// An enforced denial is the answer, whatever the grant said. Reporting
 		// the grant as the source with a deny attached would describe the rule
 		// that LOST, and an administrator reading it would go and edit that one.
-		if ($denial !== null && $denyEnforced === true) {
+		if ($denial !== null) {
 			return $this->deniedRecord(grant: $grant, denial: $denial);
 		}
 
+		return $this->withStagedDenial(grant: $grant, denial: null);
+	}//end withDenial()
+
+	/**
+	 * Attach a denial that does not change the answer yet: staged beside the grant.
+	 *
+	 * @param array<string, mixed> $grant  The grant half of the record.
+	 * @param array|null           $denial The denial the resolver found, or null.
+	 *
+	 * @return array<string, mixed> The provenance record.
+	 */
+	private function withStagedDenial(array $grant, ?array $denial): array {
 		// A staged denial rides beside the grant that still stands. This is the
 		// dry run made readable: the verb is there today and this is the rule
 		// that takes it away the day the switch moves (D15).
@@ -237,7 +239,7 @@ class ProvenanceResolver {
 		$grant['wouldHaveBeenGrantedBy'] = null;
 
 		return $grant;
-	}//end withDenial()
+	}//end withStagedDenial()
 
 	/**
 	 * The record of an action an enforced denial removed.
@@ -272,50 +274,54 @@ class ProvenanceResolver {
 	/**
 	 * The first level whose rules name this caller for this action.
 	 *
-	 * @param string                    $action          The verb.
-	 * @param array<int, string>        $principals      The caller's principal names.
-	 * @param array<string, array|null> $levels          Level name to block, most specific first.
-	 * @param mixed                     $roleDefinitions The register's role definitions.
+	 * @param string               $action The verb.
+	 * @param array<string, mixed> $blocks Keys: object, schema, register, roleDefinitions.
 	 *
 	 * @return array<string, mixed> The grant half of the record.
 	 */
-	private function grantFor(string $action, array $principals, array $levels, mixed $roleDefinitions): array {
-		$configured = $this->configuredLevels(levels: $levels);
+	private function grantFor(string $action, array $blocks): array {
+		$configured = $this->configuredLevels(
+			levels: $this->levelsOf(
+				objectAuthorization: ($blocks['object'] ?? null),
+				schemaAuthorization: ($blocks['schema'] ?? null),
+				registerAuth: ($blocks['register'] ?? null)
+			)
+		);
+		$carrying = $this->rolesCarrying(action: $action, roleDefinitions: ($blocks['roleDefinitions'] ?? null));
 
 		foreach ($configured as $source => $block) {
-			$direct = $this->directGrantIn(block: $block, action: $action, principals: $principals);
+			$direct = $this->directGrantIn(block: $block, action: $action);
 			if ($direct !== null) {
-				return [
-					'action' => $action,
-					'granted' => true,
-					'source' => $source,
-					'rule' => $direct['rule'],
-					'principal' => $direct['principal'],
-					'role' => null,
-				];
+				return ['action' => $action, 'granted' => true, 'source' => $source] + $direct + ['role' => null];
 			}
 
-			$viaRole = $this->roleGrantIn(
-				block: $block,
-				action: $action,
-				principals: $principals,
-				roleDefinitions: $roleDefinitions
-			);
+			$viaRole = $this->roleGrantIn(block: $block, carrying: $carrying);
 			if ($viaRole !== null) {
-				return [
-					'action' => $action,
-					'granted' => true,
-					'source' => self::SOURCE_ROLE,
-					'rule' => $viaRole['rule'],
-					'principal' => $viaRole['principal'],
-					'role' => $viaRole['role'],
-					'declaredAt' => $source,
-				];
+				return ['action' => $action, 'granted' => true, 'source' => self::SOURCE_ROLE] + $viaRole + ['declaredAt' => $source];
 			}
-		}//end foreach
+		}
 
 		return $this->ungranted(action: $action, anyBlock: ($configured !== []));
 	}//end grantFor()
+
+	/**
+	 * The names of the roles whose definition carries the action.
+	 *
+	 * @param string $action          The action asked about.
+	 * @param mixed  $roleDefinitions The register's role definitions.
+	 *
+	 * @return array<int, int|string> The role names, as the definitions key them.
+	 */
+	private function rolesCarrying(string $action, mixed $roleDefinitions): array {
+		$actionsByRole = (new RoleActionMap())->of(roleDefinitions: $roleDefinitions);
+
+		return array_keys(
+			array_filter(
+				$actionsByRole,
+				static fn (array $actions): bool => in_array(needle: $action, haystack: $actions, strict: true)
+			)
+		);
+	}//end rolesCarrying()
 
 	/**
 	 * The levels that carry a non-empty block, in order.
@@ -365,20 +371,19 @@ class ProvenanceResolver {
 	/**
 	 * A rule written directly under the action key that names this caller.
 	 *
-	 * @param array              $block      The block at one level.
-	 * @param string             $action     The verb.
-	 * @param array<int, string> $principals The caller's principal names.
+	 * @param array  $block  The block at one level.
+	 * @param string $action The verb.
 	 *
 	 * @return array{rule: mixed, principal: string}|null The rule, or null.
 	 */
-	private function directGrantIn(array $block, string $action, array $principals): ?array {
+	private function directGrantIn(array $block, string $action): ?array {
 		$entries = ($block[$action] ?? null);
 		if (is_array($entries) === false) {
 			return null;
 		}
 
 		foreach ($entries as $entry) {
-			$named = $this->denyResolver->entryNames(entry: $entry, principals: $principals);
+			$named = $this->denyResolver->entryNames(entry: $entry, principals: $this->principals);
 			if ($named !== null) {
 				return ['rule' => $entry, 'principal' => $named];
 			}
@@ -394,76 +399,53 @@ class ProvenanceResolver {
 	 * names. Reporting the group behind it would be true and useless: nobody
 	 * granted that group the verb, the role did.
 	 *
-	 * @param array              $block           The block at one level.
-	 * @param string             $action          The verb.
-	 * @param array<int, string> $principals      The caller's principal names.
-	 * @param mixed              $roleDefinitions The register's role definitions.
+	 * @param array                  $block    The block at one level.
+	 * @param array<int, int|string> $carrying The roles whose definition carries the action.
 	 *
-	 * @return array{rule: mixed, principal: string, role: string}|null The grant, or null.
+	 * @return array{rule: array, principal: string, role: string}|null The grant, or null.
 	 */
-	private function roleGrantIn(array $block, string $action, array $principals, mixed $roleDefinitions): ?array {
+	private function roleGrantIn(array $block, array $carrying): ?array {
 		$assignments = ($block[self::ROLES_KEY] ?? null);
 		if (is_array($assignments) === false) {
 			return null;
 		}
 
-		$actionsByRole = (new RoleActionMap())->of(roleDefinitions: $roleDefinitions);
-
-		return $this->grantingRole(assignments: $assignments, actionsByRole: $actionsByRole, action: $action, principals: $principals);
-	}//end roleGrantIn()
-
-	/**
-	 * The first role assignment that carries the action and names one of the caller's principals.
-	 *
-	 * @param array                             $assignments   The block's role assignments.
-	 * @param array<string, array<int, string>> $actionsByRole Role name to its actions.
-	 * @param string                            $action        The action asked about.
-	 * @param string[]                          $principals    The caller's principals.
-	 *
-	 * @return array{rule: array, principal: string, role: string}|null The granting rule, or null.
-	 */
-	private function grantingRole(array $assignments, array $actionsByRole, string $action, array $principals): ?array {
 		foreach ($assignments as $roleName => $holders) {
-			$actions = ($actionsByRole[$roleName] ?? null);
-			if ($this->roleCarries(roleName: $roleName, holders: $holders, actions: $actions, action: $action) === false) {
+			if (is_array($holders) === false || $this->carries(roleName: $roleName, carrying: $carrying) === false) {
 				continue;
 			}
 
-			$named = $this->firstNamed(holders: $holders, principals: $principals);
+			$named = $this->firstNamed(holders: $holders);
 			if ($named !== null) {
 				return ['rule' => $holders, 'principal' => $named, 'role' => $roleName];
 			}
 		}
 
 		return null;
-	}//end grantingRole()
+	}//end roleGrantIn()
 
 	/**
-	 * Whether one role assignment is well formed and its role carries the action.
+	 * Whether a role assignment's key names a role that carries the action.
 	 *
-	 * @param int|string              $roleName The assignment's key.
-	 * @param mixed                   $holders  Its holder list.
-	 * @param array<int, string>|null $actions  The role's actions, or null when no definition names it.
-	 * @param string                  $action   The action asked about.
+	 * @param int|string             $roleName The assignment's key.
+	 * @param array<int, int|string> $carrying The roles whose definition carries the action.
 	 *
 	 * @return bool
 	 */
-	private function roleCarries(int|string $roleName, mixed $holders, ?array $actions, string $action): bool {
-		return is_string($roleName) === true && is_array($holders) === true && $actions !== null
-			&& in_array(needle: $action, haystack: $actions, strict: true) === true;
-	}//end roleCarries()
+	private function carries(int|string $roleName, array $carrying): bool {
+		return is_string($roleName) === true && in_array(needle: $roleName, haystack: $carrying, strict: true) === true;
+	}//end carries()
 
 	/**
 	 * The first of the caller's principals a holder list names.
 	 *
-	 * @param array    $holders    The holder list.
-	 * @param string[] $principals The caller's principals.
+	 * @param array $holders The holder list.
 	 *
 	 * @return string|null The principal, or null when no holder names one.
 	 */
-	private function firstNamed(array $holders, array $principals): ?string {
+	private function firstNamed(array $holders): ?string {
 		foreach ($holders as $holder) {
-			$named = $this->denyResolver->entryNames(entry: $holder, principals: $principals);
+			$named = $this->denyResolver->entryNames(entry: $holder, principals: $this->principals);
 			if ($named !== null) {
 				return $named;
 			}
