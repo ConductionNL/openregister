@@ -1,0 +1,8 @@
+# Append-only ledgers merge with the union driver, so two writers never conflict on them.
+# Leases and queue/needs-review.tsv are NOT union: a lease race must conflict.
+verdicts.txt merge=union
+parked.txt merge=union
+merged.txt merge=union
+log.txt merge=union
+risky-debt.txt merge=union
+queue/red.txt merge=union

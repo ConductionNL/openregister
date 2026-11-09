@@ -1,0 +1,204 @@
+OCA\OpenRegister\Tests\Unit\AppHost\Scheduling\ManifestScheduleEndToEndTest::testDeletingTheApplicationRemovesItsFlows
+OCA\OpenRegister\Tests\Unit\AppHost\Scheduling\ManifestScheduleEndToEndTest::testDeletingTheSameSlugInAnotherOrganisationLeavesAFlow
+OCA\OpenRegister\Tests\Unit\Controller\ObjectsControllerShowGoldenTest::testReadMatchesTheRecording with data set "names" ([['_names']], [])
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperAssertDeletableTest::testAPermanentDeleteAsksTheGuardsBeforeItWrites
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperAssertDeletableTest::testTheGuardsSeeTheObject
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperInsertRaceGuardTest::testALiveRowOnlyWriteEndsWithItsUpdate
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperInsertRaceGuardTest::testALostClaimStillUpdatesASoftDeletedRow
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperInsertRaceGuardTest::testALostInsertAnnouncesAnUpdateNotACreate
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperInsertRaceGuardTest::testALostInsertRunsTheUpdateGuard
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperInsertRaceGuardTest::testARefusedClaimStaysRefused
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperInsertRaceGuardTest::testARefusedCreateIsNotWrittenWhenAnUpdatingListenerHardDeletesItsRow
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperInsertRaceGuardTest::testARefusedCreateIsNotWrittenWhenItsRowGoesAway
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperInsertRaceGuardTest::testARefusedCreateOverASoftDeletedRowStaysRefused
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperInsertRaceGuardTest::testARefusedCreateOverATakenIdentifierIsJudgedAsAnUpdate
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperInsertRaceGuardTest::testAStoppedUpdateLeavesNoReplacedRowBehind
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperInsertRaceGuardTest::testAnInsertAfterALostOneAnnouncesACreateAgain
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperInsertRaceGuardTest::testAnInsertThatMustNotUpdateStillRefuses
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperRefusedCreateComposedTest::testDeleteBeforeAnyRead with data set "hard before find 1" (1, 'hard')
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperRefusedCreateComposedTest::testDeleteBeforeAnyRead with data set "hard before find 2" (2, 'hard')
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperRefusedCreateComposedTest::testDeleteBeforeAnyRead with data set "hard before find 3" (3, 'hard')
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperRefusedCreateComposedTest::testEntryClearedAfterRefusedWrite
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperRefusedCreateComposedTest::testHardDeleteAfterLastRead
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperRefusedCreateComposedTest::testHardDeleteInUpdatingListener
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperRefusedCreateComposedTest::testNestedPlainWriteSameUuidIsUnconditional
+OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicMapperRefusedCreateComposedTest::testRefusedCreateOverLiveRowUpdates
+OCA\OpenRegister\Tests\Unit\Db\MapperColumnFiltersGoldenTest::testColumnFiltersMatchGolden
+OCA\OpenRegister\Tests\Unit\Db\OrganisationSlugConflictTest::testAnInsertFailureOnAnotherColumnIsPassedOn
+OCA\OpenRegister\Tests\Unit\Db\OrganisationSlugConflictTest::testSavingAnExistingOrganisationUpdatesIt
+OCA\OpenRegister\Tests\Unit\Db\OrganisationSlugConflictTest::testTheEndpointRefusesANameThatTakesAnExistingSlug
+OCA\OpenRegister\Tests\Unit\Db\OrganisationSlugConflictTest::testTheMapperRefusesATakenSlugWhateverTheDatabaseReports
+OCA\OpenRegister\Tests\Unit\Db\OrganisationSlugConflictTest::testTheProjectionDoesNotWriteOverAnExistingOrganisation
+OCA\OpenRegister\Tests\Unit\Db\SchemaMapperCompositionGoldenTest::testFlagReadsMatchGolden
+OCA\OpenRegister\Tests\Unit\Db\SchemaMapperCompositionGoldenTest::testPropertySourceMatchesGolden
+OCA\OpenRegister\Tests\Unit\Db\SchemaMapperCompositionGoldenTest::testResolveOnReadMatchesGolden
+OCA\OpenRegister\Tests\Unit\Db\SchemaMapperFindGoldenTest::testFindMatchesGolden
+OCA\OpenRegister\Tests\Unit\Db\SchemaMapperSaveGoldenTest::testFacetsMatchGolden
+OCA\OpenRegister\Tests\Unit\Db\SchemaMapperSaveGoldenTest::testFarSchemaLookupMatchesGolden
+OCA\OpenRegister\Tests\Unit\Db\TaskMapperTerminalityTest::testAWinningConditionalUpdateOfATerminalTaskDispatches
+OCA\OpenRegister\Tests\Unit\Event\ObjectWriteVetoEventsTest::testTheVetoStateIsKept with data set "creating" (Closure Object (...))
+OCA\OpenRegister\Tests\Unit\Event\ObjectWriteVetoEventsTest::testTheVetoStateIsKept with data set "deleting" (Closure Object (...))
+OCA\OpenRegister\Tests\Unit\Listener\AnnotationNotificationListenerGoldenTest::testListenerMatchesTheGolden
+OCA\OpenRegister\Tests\Unit\Listener\AuthorizationCacheInvalidationListenerTest::testARegisterDeleteEvictsEverySchema
+OCA\OpenRegister\Tests\Unit\Listener\AuthorizationCacheInvalidationListenerTest::testASchemaDeleteEvictsThatSchema
+OCA\OpenRegister\Tests\Unit\Listener\CaseListenersTest::testATerminalTaskDrivesItsPlan
+OCA\OpenRegister\Tests\Unit\Listener\FlowNodePreflightListenerTest::testANonFlowObjectIsUntouched
+OCA\OpenRegister\Tests\Unit\Listener\FlowNodePreflightListenerTest::testAnInternalFailureDoesNotBlockTheSave
+OCA\OpenRegister\Tests\Unit\Listener\FlowNodePreflightListenerTest::testCreationIsRefused
+OCA\OpenRegister\Tests\Unit\Listener\FlowTimerSubjectTerminalListenerTest::testAFailureIsLoggedNotRethrown
+OCA\OpenRegister\Tests\Unit\Listener\FlowTimerSubjectTerminalListenerTest::testATerminalTaskCancelsItsTimersWithTheReasonRecorded
+OCA\OpenRegister\Tests\Unit\Listener\FrozenObjectDeleteGuardListenerTest::testACascadeMeetingAFrozenChildIsStoppedAtThatChild
+OCA\OpenRegister\Tests\Unit\Listener\FrozenObjectDeleteGuardListenerTest::testAFrozenObjectRefusesItsDeleteNamingWhoAndWhen
+OCA\OpenRegister\Tests\Unit\Listener\LifecycleListenersGoldenTest::testACreateWithoutADeclaredInitialIsLeftAlone with data set "no block" ([])
+OCA\OpenRegister\Tests\Unit\Listener\LifecycleListenersGoldenTest::testACreateWithoutADeclaredInitialIsLeftAlone with data set "no field" ([['new']])
+OCA\OpenRegister\Tests\Unit\Listener\LifecycleListenersGoldenTest::testAFailedLookupWarnsForTheInitialState
+OCA\OpenRegister\Tests\Unit\Listener\LifecycleListenersGoldenTest::testAHalfReferenceResolvesNothing with data set "empty token" ('@ref.')
+OCA\OpenRegister\Tests\Unit\Listener\LifecycleListenersGoldenTest::testAHalfReferenceResolvesNothing with data set "map without field" (['x'])
+OCA\OpenRegister\Tests\Unit\Listener\LifecycleListenersGoldenTest::testAReferenceFillsTheField with data set "token" ('@ref.caseType.start.at')
+OCA\OpenRegister\Tests\Unit\Listener\LifecycleListenersGoldenTest::testAReferenceWithoutItsField
+OCA\OpenRegister\Tests\Unit\Listener\LifecycleListenersGoldenTest::testAnEmptyStateIsFilled
+OCA\OpenRegister\Tests\Unit\Listener\LifecycleListenersGoldenTest::testAnInitialOfAnotherTypeFillsNothing
+OCA\OpenRegister\Tests\Unit\Listener\LifecycleListenersGoldenTest::testAnObjectWithoutASchemaReferenceIsNotLookedUp
+OCA\OpenRegister\Tests\Unit\Listener\LifecycleListenersGoldenTest::testTheLookupIgnoresTenancy
+OCA\OpenRegister\Tests\Unit\Listener\TaskBlockerReleaseListenerTest::testAFailingLookupReleasesNothing
+OCA\OpenRegister\Tests\Unit\Listener\TaskBlockerReleaseListenerTest::testClosingTheBlockerReleasesEveryDependant
+OCA\OpenRegister\Tests\Unit\Listener\TaskBlockerReleaseListenerTest::testOneFailureDoesNotStopTheRest
+OCA\OpenRegister\Tests\Unit\Listener\TaskSequenceProgressListenerTest::testACommittedTerminalTaskProgressesItsSequence
+OCA\OpenRegister\Tests\Unit\Listener\TaskSequenceProgressListenerTest::testAProgressionFailureIsLoggedNotRethrown
+OCA\OpenRegister\Tests\Unit\Listener\WorkingCalendarGuardListenersTest::testACalendarWithAnArmedTimerSurvivesTheDelete
+OCA\OpenRegister\Tests\Unit\Listener\WorkingCalendarGuardListenersTest::testAValidCalendarIsSaved
+OCA\OpenRegister\Tests\Unit\Listener\WorkingCalendarGuardListenersTest::testAnObjectOfAnotherSchemaIsLeftAlone
+OCA\OpenRegister\Tests\Unit\Listener\WorkingCalendarGuardListenersTest::testTheCountIsReadFromTheDatabaseNotFromTheCappedSample
+OCA\OpenRegister\Tests\Unit\Listener\WrittenObjectOfEventTest::testEachListenerFindsTheWrittenObject
+OCA\OpenRegister\Tests\Unit\Service\Configuration\LocalConfigurationFileTest::testAFileIsRefusedWithItsReason with data set "a control character" (Binary String: 0x706c61696e012e6a736f6e, Binary String: 0x496e76616c696...a736f6e)
+OCA\OpenRegister\Tests\Unit\Service\Configuration\LocalConfigurationFileTest::testAFileIsRefusedWithItsReason with data set "a link out of the root" ('escape.json', 'Configuration file is outside...e.json')
+OCA\OpenRegister\Tests\Unit\Service\Configuration\LocalConfigurationFileTest::testAFileIsRefusedWithItsReason with data set "a number" ('number.json', 'Configuration file is not a J...r.json')
+OCA\OpenRegister\Tests\Unit\Service\Configuration\LocalConfigurationFileTest::testAFileIsRefusedWithItsReason with data set "a string as section" ('wording.json', 'Configuration file is not a J...g.json')
+OCA\OpenRegister\Tests\Unit\Service\Configuration\LocalConfigurationFileTest::testAFileIsRefusedWithItsReason with data set "an absolute path" ('/etc/passwd', 'Invalid configuration file pa...passwd')
+OCA\OpenRegister\Tests\Unit\Service\Configuration\LocalConfigurationFileTest::testAFileIsRefusedWithItsReason with data set "null" ('null.json', 'Configuration file is not a J...l.json')
+OCA\OpenRegister\Tests\Unit\Service\Configuration\LocalConfigurationFileTest::testAFileIsRefusedWithItsReason with data set "true" ('true.json', 'Configuration file is not a J...e.json')
+OCA\OpenRegister\Tests\Unit\Service\FileServiceObjectTagTest::testAnEntityWithAUuidUsesTheUuid
+OCA\OpenRegister\Tests\Unit\Service\Flow\FlowNodePreflightRegressionTest::testAnInstanceWithoutOpenconnectorStillAcceptsTheFlow
+OCA\OpenRegister\Tests\Unit\Service\Flow\FlowNodePreflightRegressionTest::testTheHydraFlowIsRefusedOnAnInstanceThatPredatesExplode
+OCA\OpenRegister\Tests\Unit\Service\Flow\ObjectWriteConfigGoldenTest::testGridsMatchTheRecording
+OCA\OpenRegister\Tests\Unit\Service\Form\FormDependentsCheckTest::testAChangeThatBreaksNoFormAffectsNothing
+OCA\OpenRegister\Tests\Unit\Service\Form\FormDependentsCheckTest::testANewRequiredPropertyUnpublishesTheFormThatLacksIt
+OCA\OpenRegister\Tests\Unit\Service\Form\FormDependentsCheckTest::testAnOwningAppSetToRefuseBlocksTheSave
+OCA\OpenRegister\Tests\Unit\Service\Form\FormSubmitServiceTest::testAPortalSubjectSavesReadsFindsAndSendsItsOwnDraft
+OCA\OpenRegister\Tests\Unit\Service\Form\FormSubmitServiceTest::testLeavingDraftRunsFullValidationAndStampsReceipt
+OCA\OpenRegister\Tests\Unit\Service\Notification\RuleMessageGoldenTest::testRenderingMatchesGolden
+OCA\OpenRegister\Tests\Unit\Service\Object\BulkWriteEventsTest::testACreatingHookValueIsWritten
+OCA\OpenRegister\Tests\Unit\Service\Object\BulkWriteEventsTest::testARegisterSettingFiresTheEvents
+OCA\OpenRegister\Tests\Unit\Service\Object\BulkWriteEventsTest::testARowNamingAnotherRegisterGetsItsUpdatedEvent
+OCA\OpenRegister\Tests\Unit\Service\Object\BulkWriteEventsTest::testARowNamingAnotherRegisterIsScreenedAgainstTheRoute
+OCA\OpenRegister\Tests\Unit\Service\Object\BulkWriteEventsTest::testARowNamingTheRouteRegisterIsUnchanged
+OCA\OpenRegister\Tests\Unit\Service\Object\BulkWriteEventsTest::testAStoppedUpdateRefusesOnlyThatRow
+OCA\OpenRegister\Tests\Unit\Service\Object\BulkWriteEventsTest::testASystemOperationRunsTheGuardButWithholdsTheUpdatedEvents
+OCA\OpenRegister\Tests\Unit\Service\Object\CacheHandlerMultipleNamesGoldenTest::testScenariosMatchTheGolden
+OCA\OpenRegister\Tests\Unit\Service\Object\CascadeCreateRightsTest::testANestedObjectTheCallerMayNotCreateIsRefused
+OCA\OpenRegister\Tests\Unit\Service\Object\CascadeCreateRightsTest::testAScopeWithRbacOnStillChecks
+OCA\OpenRegister\Tests\Unit\Service\Object\CascadeCreateRightsTest::testAnEnclosingSaveWithRbacOffSkipsTheCheck
+OCA\OpenRegister\Tests\Unit\Service\Object\CascadeCreateRightsTest::testAnotherFailureOfAnInlineObjectStillLeavesTheParentAsSent
+OCA\OpenRegister\Tests\Unit\Service\Object\CascadeCreateRightsTest::testTheRefusalOfAnInlineObjectPropertyRefusesTheParent
+OCA\OpenRegister\Tests\Unit\Service\Object\CascadingHandlerPreValidationGoldenTest::testNestedObjectsAreCreatedAndReplacedByTheirUuids
+OCA\OpenRegister\Tests\Unit\Service\Object\CascadingHandlerPreValidationGoldenTest::testOnlyEmptyOrAbsentInversedByValuesStillGetAParentUuid
+OCA\OpenRegister\Tests\Unit\Service\Object\CascadingHandlerPreValidationGoldenTest::testWithoutInversedByPropertiesNothingChangesAndNoUuidIsMade
+OCA\OpenRegister\Tests\Unit\Service\Object\DraftActivationTest::testAGeneratedRequiredIdentifierDoesNotBlockActivation
+OCA\OpenRegister\Tests\Unit\Service\Object\DraftActivationTest::testAScopeValueOwnerActivatesItsOwnDraft
+OCA\OpenRegister\Tests\Unit\Service\Object\DraftActivationTest::testAStoredNullIsAPropertyNobodyFilledIn
+OCA\OpenRegister\Tests\Unit\Service\Object\DraftActivationTest::testTheAllowanceDoesNotOutliveTheActivation
+OCA\OpenRegister\Tests\Unit\Service\Object\DraftActivationTest::testTheDraftIsReadInItsOwnRegisterAndSchema
+OCA\OpenRegister\Tests\Unit\Service\Object\DraftActivationTest::testTheOwnerMakesACompleteDraftDefinitive
+OCA\OpenRegister\Tests\Unit\Service\Object\ObjectEventGateTest::testADraftNeverReachesASideEffect
+OCA\OpenRegister\Tests\Unit\Service\Object\ObjectEventGateTest::testAnObjectThatIsNoDraftIsUnchanged with data set "a status that only looks like it" ('Draft')
+OCA\OpenRegister\Tests\Unit\Service\Object\ObjectEventGateTest::testAnObjectThatIsNoDraftIsUnchanged with data set "active" ('active')
+OCA\OpenRegister\Tests\Unit\Service\Object\RenderObjectExtendReadCheckTest::testALinkThatDeclaresAnExposureNarrowsWhatAReaderWithTheReadRightSees
+OCA\OpenRegister\Tests\Unit\Service\Object\RenderObjectExtendReadCheckTest::testAPageThroughALinkThatDeclaresAnExposureShowsNothingToAReaderWithoutTheReadRight
+OCA\OpenRegister\Tests\Unit\Service\Object\RenderObjectExtendReadCheckTest::testAReferenceRefusedUnderOneRuleIsAskedAgainUnderAnother
+OCA\OpenRegister\Tests\Unit\Service\Object\RenderObjectExtendReadCheckTest::testARenderAcrossOrganisationsAnswersToTheObjectRule
+OCA\OpenRegister\Tests\Unit\Service\Object\RenderObjectExtendReadCheckTest::testARenderedObjectIsNotRenderedAgainForSelfObjects
+OCA\OpenRegister\Tests\Unit\Service\Object\RenderObjectExtendReadCheckTest::testASingleReadKeepsTheIdentifierOfWhatTheCallerMayNotRead
+OCA\OpenRegister\Tests\Unit\Service\Object\RenderObjectExtendReadCheckTest::testASystemOperationKeepsEveryObject
+OCA\OpenRegister\Tests\Unit\Service\Object\RenderObjectExtendReadCheckTest::testATrustedReadKeepsItsRuleThroughANestedExtend
+OCA\OpenRegister\Tests\Unit\Service\Object\RenderObjectExtendReadCheckTest::testAnExposedNameStaysInTheEnvelope
+OCA\OpenRegister\Tests\Unit\Service\Object\RenderObjectExtendReadCheckTest::testAnExtendedObjectInSelfObjectsHasNoWriteOnlyValue
+OCA\OpenRegister\Tests\Unit\Service\Object\RenderObjectExtendReadCheckTest::testAnObjectInTheCacheHandlerIsCheckedToo
+OCA\OpenRegister\Tests\Unit\Service\Object\RenderObjectExtendReadCheckTest::testAnObjectThatWasOnlyLoadedIsRenderedForSelfObjects
+OCA\OpenRegister\Tests\Unit\Service\Object\RenderObjectExtendReadCheckTest::testEachTableIsAskedOnItsOwn
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectArchiveGuardTest::testAnOpenObjectIsNotRefusedByThisGuard
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectCascadeHelpersGoldenTest::testTheCascadeMatchesTheGolden
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectCascadeMultipleTest::testItemsWithoutARegisterAreSavedInTheParentsRegister
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectCascadeNestedIdentityTest::testACascadeWithoutAnInverseRelationDropsTheWholeSelf
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectCascadeNestedIdentityTest::testANestedIdGivenOnlyAsSelfIdIsNotWrittenOnto
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectCascadeNestedIdentityTest::testANestedIdUnderAnInverseRelationIsNotWrittenOnto
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectCascadeScopeTest::testASaveWithRbacOffAsksWithRbacOff
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectCascadeScopeTest::testASaveWithRbacOnChecksItsNestedCreates
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectCascadeScopeTest::testAnUpdateWithRbacOffAsksWithRbacOff
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectCascadeScopeTest::testAnUpdateWithRbacOnChecksItsNestedCreates
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectCreateObjectTest::testEveryCaseMatchesTheGoldenRecordedOnTheOldCode
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectDefaultValuesTest::testDefaultsApplyByBehaviourRenderAgainstStoredDataAndYieldToConstants
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testAConsumerOfASharedChildSchemaDeletesNothing
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testACreateNamingARowBySlugDeletesNothing
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testAPendingOrphanIsDroppedWhenTheSaveDoesNotPersist
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testAPlainPointerWithoutAnInverseRelationIsNotDeleted
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testARefusalOnALaterPropertyLeavesTheRowAlone
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testARestrictedRowIsNotDeleted
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testARowOthersDependOnIsNotDeleted with data set "nullify" (OCA\OpenRegister\Dto\DeletionAnalysis Object (...))
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testARowThatNamesTheParentInAListIsOwned
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testARowTheCallerMayNotDeleteOnlyLosesTheReference
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testASaveWithRbacOffKeepsToTheCallersOrganisations
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testAStaleOrphanOfARefusedSaveIsNotDeletedByTheNextSave
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testAStoredReferenceToAnOwnedRowIsDeletedWhenRemoved
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testAStoredSlugThatFindsARowIsNotDeleted
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testATransferredRowIsNotDeleted
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testAViewBackedChildIsNotDeleted
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testAnInverseRelationOnThePropertyCounts
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testAnotherSpellingOfAKeptReferenceIsKept with data set "prefixed" ('id-99999999-9999-9999-9999-99...999999')
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testTheDeletionNamesTheCaller
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testWithoutTheOptInARemovedReferenceOnlyLosesTheReference with data set "no flag" ([])
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectOrphanCleanupTest::testWithoutTheOptInASlugNamedInASaveTouchesNothing with data set "no flag" ([])
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectScanForRelationsTest::testTheSchemaDecidesWhichStringsAreRelations
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectSharedMasterDataContextTest::testASaveOutsideAContextWithMultitenancyOffIsNotGuarded
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectUpdateObjectTest::testEveryCaseMatchesTheGoldenRecordedOnTheOldCode
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectUpdatePathTest::testACreateMarksTheRowOfItsOwnObjectAndNotOfOneSavedBeforeIt
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectUpdatePathTest::testOnlyTheBooleanTheDoorSetsCounts
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\ReferenceValidatorTest::testAnExistingReferenceOutsideItsFilterIsRefused
+OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectsChunkSideEffectFailuresTest::testAFailedAuditSliceIsLoggedAndTheNextSliceStillWritten
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectImmutableTest::testAnUnsetImmutablePropertyCanStillBeSet
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectImmutableTest::testRewritingTheSameValueIsAccepted
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectPlannedUsersTest::testAPlannedAccountPassesOnlyForThatCall
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectPreparedSchemaTest::testACallersOwnSchemaObjectIsNotCached
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectPreparedSchemaTest::testTheSchemaEntitysOwnSchemaObjectIsUsedAndCached
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectValueFilterGoldenTest::testAnEmptySchemaAcceptsAnything
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectValueFilterGoldenTest::testValidationMatchesGolden with data set "empty array with minItems kept" (['T', []])
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectValueFilterGoldenTest::testValidationMatchesGolden with data set "empty array with uniqueItems kept" (['T', []])
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectValueFilterGoldenTest::testValidationMatchesGolden with data set "enum bad value" (['T', 'x'])
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectValueFilterGoldenTest::testValidationMatchesGolden with data set "enum null dropped" (['T', null])
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectValueFilterGoldenTest::testValidationMatchesGolden with data set "null non-enum kept" (['T', null])
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectValueFilterGoldenTest::testValidationMatchesGolden with data set "required missing" (['n'])
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectValueFilterGoldenTest::testValidationMatchesGolden with data set "unknown empty array dropped" (['T', []])
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectValueFilterGoldenTest::testValidationMatchesGolden with data set "valid" (['T'])
+OCA\OpenRegister\Tests\Unit\Service\Object\ValidateObjectValueFilterGoldenTest::testValidationMatchesGolden with data set "wrong type" (['T', 'x'])
+OCA\OpenRegister\Tests\Unit\Service\Task\TaskSequenceServiceTest::testADeclaredSetReplacesTheDefault
+OCA\OpenRegister\Tests\Unit\Service\Task\TaskSequenceServiceTest::testAnOutcomeThatNeitherApprovesNorRejectsDoesNotEnableTheNextPosition with data set "blank" ('   ')
+OCA\OpenRegister\Tests\Unit\Service\Task\TaskSequenceServiceTest::testAnOutcomeThatNeitherApprovesNorRejectsDoesNotEnableTheNextPosition with data set "null" (null)
+OCA\OpenRegister\Tests\Unit\Service\Task\TaskSequenceServiceTest::testAnOutcomeThatNeitherApprovesNorRejectsDoesNotEnableTheNextPosition with data set "unknown" ('looks-fine')
+OCA\OpenRegister\Tests\Unit\Service\Task\TaskSequenceServiceTest::testTheLastApprovingDecisionCompletesTheSequenceAndDispatches
+Unit\Listener\ApprovalChainAdvanceListenerTest::testAdvanceTransitionInvokesTransitionEngine
+Unit\Listener\ApprovalChainAdvanceListenerTest::testDifferentOnApproveValueDoesNotAdvance
+Unit\Listener\ContextChatSubmissionListenerTest::testObjectCreatedEventSubmits
+Unit\Listener\ContextChatSubmissionListenerTest::testObjectDeletedEventOnOptedOutSchemaIsNoop
+Unit\Listener\ContextChatSubmissionListenerTest::testSubmissionFailureNeverBreaksTheObjectWrite
+Unit\Listener\FlowTriggerListenerTest::testCreateStillCarriesNoExtraContext
+Unit\Listener\FlowTriggerListenerTest::testNumericIdsFireAsTheirSlugs
+Unit\Listener\FlowTriggerListenerTest::testUnlockFiresTheUnlockedTrigger
+Unit\Listener\ObjectMetricsListenerTest::testObjectCreatedEventWritesACreatedMetricRow
+Unit\Listener\ObjectMetricsListenerTest::testObjectDeletedEventWritesADeletedMetricRow
+Unit\Service\Flow\FlowNodeSubjectRecordingTest::testAMultiObjectWriteHandsOverEveryUuid
+Unit\Service\Flow\FlowNodeSubjectRecordingTest::testAWriteWithNoRoleRecordsNothing
+Unit\Service\Flow\FlowTriggerIdSlugMatchTest::testAnObjectSavedByIdQueuesARunForASlugDeclaredFlow
+Unit\Service\Object\ValidateObjectFlowGoldenTest::testEveryFlowRunsAsRecorded
+Unit\Service\Object\Wave12ReadOnlyEnforcementTest::testNonReadOnlyFieldChangesAreIgnored
+Unit\Service\Object\Wave12ReadOnlyEnforcementTest::testSchemaWithoutPropertiesReturnsNoViolations
+Unit\Service\Object\Wave12ReadOnlyEnforcementTest::testUpdateChangingReadOnlyFieldIsRejected
+Unit\Service\Object\Wave12ReadOnlyEnforcementTest::testUpdateOmittingReadOnlyFieldIsAllowed
