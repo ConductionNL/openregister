@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
+use OCA\OpenRegister\AppHost\Observability\MetricFamily;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityManifest;
@@ -99,7 +100,7 @@ class MetricsEngineTest extends TestCase {
 
 	public function testDeclarativeMetricRouted(): void {
 		$this->cacheFactory->method('isAvailable')->willReturn(false);
-		$descriptor = new MetricDescriptor('cases_total', 'gauge', 'objectCount', ['kind' => 'objectCount', 'schema' => 'zaak']);
+		$descriptor = new MetricDescriptor(new MetricFamily('cases_total', 'gauge'), ['kind' => 'objectCount', 'schema' => 'zaak']);
 
 		$this->objectSource->expects($this->once())
 			->method('collect')
@@ -149,7 +150,7 @@ class MetricsEngineTest extends TestCase {
 		$this->cacheFactory->method('isAvailable')->willReturn(true);
 		$this->cacheFactory->method('createDistributed')->willReturn($cache);
 
-		$descriptor = new MetricDescriptor('cached', 'gauge', 'tableCount', ['kind' => 'tableCount', 'table' => 't'], null, 60);
+		$descriptor = new MetricDescriptor(new MetricFamily('cached', 'gauge'), ['kind' => 'tableCount', 'table' => 't'], 60);
 
 		// Source must be hit exactly once across two renders within the TTL.
 		$this->tableSource->expects($this->once())

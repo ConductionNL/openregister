@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
+use OCA\OpenRegister\AppHost\Observability\MetricFamily;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityManifest;
@@ -144,13 +145,13 @@ class MetricsEngineGoldenTest extends TestCase {
 	 * @return array{array<int, MetricDescriptor>, bool, mixed} The setup.
 	 */
 	private function scenarioSetup(string $scenario): array {
-		$cachedOne = [new MetricDescriptor('hits', 'counter', 'objectCount', ['kind' => 'objectCount', 'schema' => 's'], 'Hits', 60)];
+		$cachedOne = [new MetricDescriptor(new MetricFamily('hits', 'counter', 'Hits'), ['kind' => 'objectCount', 'schema' => 's'], 60)];
 		$valid = '[{"name":"hits","type":"counter","help":"From cache","samples":[{"labels":{"a":"b"},"value":7}]}]';
 
 		return match ($scenario) {
 			'none' => [[], false, null],
 			'kinds' => [$this->everyKind(), false, null],
-			'unknown' => [[new MetricDescriptor('odd', 'gauge', 'bogus', ['kind' => 'bogus'])], false, null],
+			'unknown' => [[new MetricDescriptor(new MetricFamily('odd', 'gauge'), ['kind' => 'bogus'])], false, null],
 			'failing' => [$this->everyKind(), false, null],
 			'ttlNoCache' => [$cachedOne, false, null],
 			'miss' => [$cachedOne, true, null],
@@ -172,11 +173,11 @@ class MetricsEngineGoldenTest extends TestCase {
 	 */
 	private function everyKind(): array {
 		return [
-			new MetricDescriptor('cases', 'gauge', 'objectCount', ['kind' => 'objectCount', 'schema' => 'case']),
-			new MetricDescriptor('amount', 'gauge', 'objectSum', ['kind' => 'objectSum', 'schema' => 'case', 'field' => 'x']),
-			new MetricDescriptor('rows', 'gauge', 'tableCount', ['kind' => 'tableCount', 'table' => 't']),
-			new MetricDescriptor('flag', 'gauge', 'appConfig', ['kind' => 'appConfig', 'key' => 'k']),
-			new MetricDescriptor('custom', 'counter', 'provider', ['kind' => 'provider']),
+			new MetricDescriptor(new MetricFamily('cases', 'gauge'), ['kind' => 'objectCount', 'schema' => 'case']),
+			new MetricDescriptor(new MetricFamily('amount', 'gauge'), ['kind' => 'objectSum', 'schema' => 'case', 'field' => 'x']),
+			new MetricDescriptor(new MetricFamily('rows', 'gauge'), ['kind' => 'tableCount', 'table' => 't']),
+			new MetricDescriptor(new MetricFamily('flag', 'gauge'), ['kind' => 'appConfig', 'key' => 'k']),
+			new MetricDescriptor(new MetricFamily('custom', 'counter'), ['kind' => 'provider']),
 		];
 	}//end everyKind()
 
