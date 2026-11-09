@@ -40,11 +40,15 @@ use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
+use OCA\OpenRegister\Service\Task\TaskCommit;
 use OCA\OpenRegister\Service\Task\TaskForm;
 use OCA\OpenRegister\Service\Task\TaskFormFields;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
+use OCA\OpenRegister\Service\Task\TaskIntake;
+use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTables;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -120,15 +124,23 @@ class TaskServiceTest extends TestCase {
 	 */
 	private function service(): TaskService {
 		return new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->candidates,
-			relations: $this->relations,
-			audits: $this->audits,
 			authorization: $this->authorization,
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->db,
-			logger: new NullLogger(),
-			builder: new TaskBuilder()
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->candidates,
+					relations: $this->relations,
+					audits: $this->audits
+				),
+				commit: new TaskCommit(
+					db: $this->db,
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder()
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 	}//end service()
 
@@ -739,16 +751,24 @@ class TaskServiceTest extends TestCase {
 		$reader->method('fromRecord')->willReturn(new TaskForm(kind: 'fields', native: new TaskFormFields(schema: 'case', fields: [['field' => 'reasonn', 'required' => true]])));
 		$reader->method('validate')->willThrowException(new UnexpectedValueException('Field "reasonn" of schema "case" cannot be asked for: the schema has no such property.'));
 		$service = new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->candidates,
-			relations: $this->relations,
-			audits: $this->audits,
 			authorization: $this->authorization,
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->db,
-			logger: new NullLogger(),
-			builder: new TaskBuilder(),
-			forms: $reader
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->candidates,
+					relations: $this->relations,
+					audits: $this->audits
+				),
+				commit: new TaskCommit(
+					db: $this->db,
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder(),
+					forms: $reader
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 		$this->tasks->expects($this->never())->method('insert');
 
@@ -767,16 +787,24 @@ class TaskServiceTest extends TestCase {
 		$reader = $this->createMock(TaskFormReader::class);
 		$reader->expects($this->never())->method('validate');
 		$service = new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->candidates,
-			relations: $this->relations,
-			audits: $this->audits,
 			authorization: $this->authorization,
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->db,
-			logger: new NullLogger(),
-			builder: new TaskBuilder(),
-			forms: $reader
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->candidates,
+					relations: $this->relations,
+					audits: $this->audits
+				),
+				commit: new TaskCommit(
+					db: $this->db,
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder(),
+					forms: $reader
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 
 		$created = $service->create(data: ['title' => 'Approve'], actor: 'alice');
