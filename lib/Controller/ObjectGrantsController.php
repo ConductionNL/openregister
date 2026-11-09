@@ -121,19 +121,18 @@ class ObjectGrantsController extends Controller {
 
 		$types = array_values(array_filter(array_map('trim', explode(',', (string)$principalTypes))));
 
-		return $this->rows(object: $object, id: $id, types: $types);
+		return $this->rows(object: $object, types: $types);
 	}//end index()
 
 	/**
 	 * The rows of the object, or a 500 when a source could not be read.
 	 *
 	 * @param ObjectEntity  $object The object.
-	 * @param string        $id     Object uuid.
 	 * @param array<string> $types  The principal types to keep; all when empty.
 	 *
 	 * @return JSONResponse The rows, or 500.
 	 */
-	private function rows(ObjectEntity $object, string $id, array $types): JSONResponse {
+	private function rows(ObjectEntity $object, array $types): JSONResponse {
 		try {
 			return new JSONResponse(
 				$this->report->rowsFor(
@@ -146,7 +145,7 @@ class ObjectGrantsController extends Controller {
 		} catch (\Throwable $e) {
 			// An empty list means "nobody but the owner", so a source that
 			// could not be read must never turn into one.
-			return $this->unlisted(exception: $e, id: $id);
+			return $this->unlisted(exception: $e, id: (string)$object->getUuid());
 		}//end try
 	}//end rows()
 
