@@ -775,7 +775,8 @@ class CasePlanService implements CasePlanServiceInterface {
 			$placed = new CasePlanPlacement(node: $node, parentId: $parentId, position: (int)$position);
 			$row = $this->mechanics->definitions->rowFrom(placed: $placed, insertion: $insertion);
 			$persisted = $this->store->items->insert($row);
-			$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_IMPORT, causeRef: $insertion->provenance->flowUuid, actor: $insertion->actor, reason: null);
+			$flowUuid = $insertion->provenance->flowUuid;
+			$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_IMPORT, causeRef: $flowUuid, actor: $insertion->actor, reason: null);
 			$this->mechanics->machine->recordCreationOf(item: $persisted, why: $why);
 
 			$this->insertNodes(nodes: ($node['children'] ?? []), parentId: (int)$persisted->getId(), insertion: $insertion);
