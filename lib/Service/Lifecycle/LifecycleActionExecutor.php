@@ -74,12 +74,24 @@ class LifecycleActionExecutor implements LifecycleActionExecutorInterface {
 	 */
 	public function run(array $actions, array $objectData, array $previousData, string $transition): array {
 		$payload = new TransitionPayload(transition: $transition, objectData: $objectData, previousData: $previousData);
+		return $this->runActions(actions: $actions, payload: $payload)->objectData;
+	}//end run()
+
+	/**
+	 * Run the action envelopes in order, each on the payload the previous one left.
+	 *
+	 * @param array<int, mixed> $actions The transition's action envelopes.
+	 * @param TransitionPayload $payload The transition and the object data before the first action.
+	 *
+	 * @return TransitionPayload The payload after the last action.
+	 */
+	private function runActions(array $actions, TransitionPayload $payload): TransitionPayload {
 		foreach ($actions as $envelope) {
 			$payload = $this->runAction(envelope: $envelope, payload: $payload);
 		}
 
-		return $payload->objectData;
-	}//end run()
+		return $payload;
+	}//end runActions()
 
 	/**
 	 * Run one declared action, unless its condition says to skip it.
