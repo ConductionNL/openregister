@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListCreator;
 use OCA\OpenRegister\Service\Archival\DestructionListWriter;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\ApprovalChoice;
@@ -772,9 +773,7 @@ class DestructionGoldenTest extends TestCase {
 		$schemas->method('find')->willReturn(new Schema());
 
 		$repository = new DestructionListRepository(
-			objectMapper: $mapper,
-			registerMapper: $registers,
-			schemaMapper: $schemas,
+			mappers: new ArchivalRegisterMappers(registerMapper: $registers, schemaMapper: $schemas, objectMapper: $mapper),
 			settingsHandler: $handler,
 			logger: $this->createMock(LoggerInterface::class)
 		);
