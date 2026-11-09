@@ -30,6 +30,8 @@ use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Mcp\Service\ChatService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolCatalogueInterface;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -55,6 +57,17 @@ final class McpWiring
     ];
 
     /**
+     * Interface => the factory-registered service behind it.
+     *
+     * Kept apart from BINDINGS because McpToolsService is not autowired: its
+     * factory is registered by McpProviderDiscovery below, and the alias
+     * resolves to that same shared instance.
+     */
+    public const FACTORY_BINDINGS = [
+        McpToolCatalogueInterface::class => McpToolsService::class,
+    ];
+
+    /**
      * Register the Mcp component's bindings.
      *
      * @param IRegistrationContext $context The registration context.
@@ -65,7 +78,7 @@ final class McpWiring
      */
     public static function register(IRegistrationContext $context): void
     {
-        foreach (self::BINDINGS as $contract => $service) {
+        foreach ([...self::BINDINGS, ...self::FACTORY_BINDINGS] as $contract => $service) {
             $context->registerServiceAlias($contract, $service);
         }
 
