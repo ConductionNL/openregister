@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountTerms;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsInstall;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
 
 class ExampleSetPeopleAccountsGoldenTest extends ExampleSetTestCase {
@@ -38,7 +39,7 @@ class ExampleSetPeopleAccountsGoldenTest extends ExampleSetTestCase {
 		$record['users'] = ['recorded.one' => 'created', 'svc.raced.recorded' => 'created'];
 		$adopt           = ['adopted.one', 'recorded.one', 'svc.adopted', 'raced.one'];
 
-		$report = $this->people()->install(plan: $this->plan(), terms: new ExampleSetAccountTerms(set: (string) $this->plan()['set'], adopt: $adopt, password: 'pw'), report: $this->emptyReport(), record: $record);
+		$report = $this->people()->install(install: new ExampleSetAccountsInstall(plan: $this->plan(), terms: new ExampleSetAccountTerms(set: (string) $this->plan()['set'], adopt: $adopt, password: 'pw')), record: $record);
 
 		$this->assertSame(
 			[
@@ -96,7 +97,7 @@ class ExampleSetPeopleAccountsGoldenTest extends ExampleSetTestCase {
 		$plan['cast']['people'] = ['new' => ['uid' => 'new.one', 'displayName' => 'New']];
 		$plan['fragments'][0]['serviceAccounts'] = [['key' => 'svc', 'uid' => 'svc.new', 'displayName' => 'Svc new', 'groups' => []]];
 
-		$report = $this->people()->install(plan: $plan, terms: new ExampleSetAccountTerms(set: (string) $plan['set'], adopt: [], password: ''), report: $this->emptyReport(), record: $record);
+		$report = $this->people()->install(install: new ExampleSetAccountsInstall(plan: $plan, terms: new ExampleSetAccountTerms(set: (string) $plan['set'], adopt: [], password: '')), record: $record);
 
 		$this->assertSame(['new.one' => 'generated-1'], $report['passwords']);
 		$this->assertSame('generated-1', $this->accounts->users['new.one']['password']);
@@ -149,13 +150,4 @@ class ExampleSetPeopleAccountsGoldenTest extends ExampleSetTestCase {
 			],
 		];
 	}//end plan()
-
-	/**
-	 * The report parts the people step writes.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function emptyReport(): array {
-		return ['users' => [], 'groups' => [], 'memberships' => [], 'subAdmins' => [], 'dropped' => [], 'passwords' => []];
-	}//end emptyReport()
 }//end class
