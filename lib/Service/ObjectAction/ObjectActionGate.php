@@ -269,12 +269,13 @@ class ObjectActionGate {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
 	public function elevated(ObjectActionDefinition $definition, callable $operation): mixed {
-		return ObjectActionElevationScope::run(
+		$elevation = new ActionElevation(
 			action: $definition->key,
 			person: $this->userId(),
-			entries: $this->elevation->resolve(entries: $definition->elevate),
-			operation: $operation
+			entries: $this->elevation->resolve(entries: $definition->elevate)
 		);
+
+		return ObjectActionElevationScope::run(elevation: $elevation, operation: $operation);
 	}//end elevated()
 
 	/**
