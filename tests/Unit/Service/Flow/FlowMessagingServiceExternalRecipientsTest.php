@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityFactory;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
@@ -337,7 +338,8 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 				eventDispatcher: $this->dispatcher
 			),
 			overrides: new FlowMessagingOverrides(
-				runContext: $this->runContext
+				runContext: $this->runContext,
+				optOut: OptOutAuthorityFactory::create(eventDispatcher: $this->dispatcher, appConfig: $this->appConfig, logger: $logger)
 			)
 		);
 	}//end makeService()
