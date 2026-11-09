@@ -61,8 +61,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201])));",
-									"",
+									"pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
 									"const j = pm.response.json();",
 									"pm.test('register echoes its slug', () => pm.expect(j.slug).to.eql('t24-gdpr-' + pm.collectionVariables.get('run')));",
 									"pm.collectionVariables.set('registerId', String(j.id));",
@@ -79,6 +78,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -88,6 +91,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"title\": \"t24-gdpr-{{run}}\",\n  \"slug\": \"t24-gdpr-{{run}}\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -114,6 +120,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -121,8 +131,53 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"title\": \"t24-gdpr-{{run}}\",\n  \"slug\": \"t24-gdpr-{{run}}\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\"\n    },\n    \"bsn\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+							"raw": "{\n  \"title\": \"t24-gdpr-{{run}}\",\n  \"slug\": \"t24-gdpr-{{run}}\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\"\n    },\n    \"bsn\": {\n      \"type\": \"string\"\n    }\n  },\n  \"authorization\": {\n    \"read\": [\n      \"admin\"\n    ],\n    \"create\": [\n      \"admin\"\n    ],\n    \"update\": [\n      \"admin\"\n    ],\n    \"delete\": [\n      \"admin\"\n    ]\n  }\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "create open schema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+									"const j = pm.response.json();",
+									"pm.test('schema echoes its slug', () => pm.expect(j.slug).to.eql('t24-open-' + pm.collectionVariables.get('run')));",
+									"pm.collectionVariables.set('openSchemaId', String(j.id));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"t24-open-{{run}}\",\n  \"slug\": \"t24-open-{{run}}\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -147,6 +202,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -154,8 +213,11 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"title\": \"t24-gdpr-{{run}}\",\n  \"slug\": \"t24-gdpr-{{run}}\",\n  \"schemas\": [\n    \"{{schemaId}}\"\n  ]\n}"
+							"raw": "{\n  \"title\": \"t24-gdpr-{{run}}\",\n  \"slug\": \"t24-gdpr-{{run}}\",\n  \"schemas\": [\n    \"{{schemaId}}\",\n    \"{{openSchemaId}}\"\n  ]\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -184,6 +246,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -193,6 +259,51 @@
 							"mode": "raw",
 							"raw": "{\n  \"title\": \"t24 original\",\n  \"bsn\": \"t24-subject-{{run}}\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "create open object",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('object created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+									"const j = pm.response.json();",
+									"pm.test('object echoes its title', () => pm.expect(j.title).to.eql('t24 open'));",
+									"pm.collectionVariables.set('openObjectId', j.id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{openSchemaId}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"t24 open\"\n}"
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -233,6 +344,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"groupid\": \"content-reviewers\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -282,6 +396,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"userid\": \"{{plain_user}}\",\n  \"password\": \"{{user_password}}\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -319,6 +436,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"userid\": \"{{reviewer_user}}\",\n  \"password\": \"{{user_password}}\",\n  \"groups\": [\n    \"content-reviewers\"\n  ]\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -349,12 +469,19 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/health",
 						"auth": {
 							"type": "noauth"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -387,9 +514,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/urn/resolve"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -416,9 +550,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/urn/resolve?urn=not-a-urn"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -445,9 +586,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/urn/lookup"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -475,9 +623,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/urn/lookup?url=https%3A%2F%2Fexample.org%2Felsewhere"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -503,9 +658,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/urn/lookup?url={{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -530,6 +692,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/urn/resolve?urn={{objectUrn}}",
@@ -548,6 +714,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -576,6 +745,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -585,6 +758,9 @@
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -623,6 +799,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -632,6 +812,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"urns\": {{manyUrns}}\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -656,6 +839,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -665,6 +852,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"urns\": [\n    \"{{objectUrn}}\",\n    \"urn:nl-or:nowhere:r:s:00000000-0000-4000-8000-000000000924\"\n  ]\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -695,9 +885,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/scopes"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -722,6 +919,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/scopes",
@@ -740,6 +941,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -764,6 +968,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/permissions",
@@ -782,6 +990,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -806,9 +1017,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/permissions/deny-preview"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -835,6 +1053,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/permissions/deny-preview",
@@ -853,6 +1075,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -875,9 +1100,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/permissions/scope-audit"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -904,6 +1136,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/permissions/scope-audit",
@@ -922,6 +1158,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -948,9 +1187,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/permissions/compare-roles?register=t24-missing-{{run}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -973,9 +1219,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/permissions/compare-roles?register={{registerSlug}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1002,6 +1255,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/permissions/compare-roles?register={{registerSlug}}",
@@ -1020,6 +1277,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1044,6 +1304,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -1053,6 +1317,9 @@
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1075,6 +1342,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -1101,6 +1372,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -1135,6 +1409,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -1144,6 +1422,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"purpose\": \"t24\",\n  \"legalBasis\": \"consent\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1172,6 +1453,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -1181,6 +1466,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"t24 bad {{run}}\",\n  \"purpose\": \"t24\",\n  \"legalBasis\": \"whim\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1203,6 +1491,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -1229,6 +1521,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1256,6 +1551,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -1265,6 +1564,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"t24 activity {{run}}\",\n  \"purpose\": \"t24 test purpose\",\n  \"legalBasis\": \"consent\",\n  \"status\": \"concept\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1289,9 +1591,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/processing-activities"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1313,9 +1622,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/processing-activities/{{activityId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1342,9 +1658,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/processing-activities/00000000-0000-4000-8000-000000000924"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1367,6 +1690,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -1393,6 +1720,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1414,9 +1744,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/processing-activities/{{activityId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1445,6 +1782,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -1454,6 +1795,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"status\": \"bogus\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1481,6 +1825,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -1490,6 +1838,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"x\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1514,6 +1865,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -1523,6 +1878,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"status\": \"published\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1545,9 +1903,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/accountability"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1558,7 +1923,8 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('no 500 for a user without organisation', () => pm.expect(pm.response.code).to.be.oneOf([200, 403]));",
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"pm.test('a user without organisation sees no activities', () => { pm.expect(pm.response.json().count).to.eql(0); pm.expect(pm.response.json().activities).to.eql([]); });",
 									"pm.test('does not leak the admin activity', () => pm.expect(pm.response.text()).to.not.include('t24 activity ' + pm.collectionVariables.get('run')));"
 								]
 							}
@@ -1570,6 +1936,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/accountability",
@@ -1588,6 +1958,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1598,7 +1971,8 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('answered (filtered list or refusal)', () => pm.expect(pm.response.code).to.be.oneOf([200, 403]));",
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"pm.test('filtered to nothing', () => pm.expect(pm.response.json().count).to.eql(0));",
 									"pm.test('admin-only activity not visible', () => pm.expect(pm.response.text()).to.not.include('t24 activity ' + pm.collectionVariables.get('run')));"
 								]
 							}
@@ -1610,6 +1984,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/processing-activities",
@@ -1628,6 +2006,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1653,6 +2034,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/processing-activities/{{activityId}}",
@@ -1671,6 +2056,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1693,6 +2081,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/processing-activities/{{activityId}}",
@@ -1711,6 +2103,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1736,9 +2131,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/processing-activities/00000000-0000-4000-8000-000000000924"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1760,9 +2162,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/processing-activities/{{activityId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1785,9 +2194,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/processing-activities/{{activityId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -1822,6 +2238,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -1831,6 +2251,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"t24\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1859,6 +2282,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -1883,6 +2310,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1909,6 +2339,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -1918,6 +2352,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"code\": \"t24-{{run}}\",\n  \"name\": \"t24 purpose\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1946,6 +2383,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -1955,6 +2396,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"code\": \"t24-{{run}}\",\n  \"name\": \"dup\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1977,6 +2421,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/purposes",
@@ -1995,6 +2443,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2016,9 +2467,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/purposes/{{purposeId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2045,9 +2503,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/purposes/00000000-0000-4000-8000-000000000924"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2076,6 +2541,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -2100,6 +2569,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2121,9 +2593,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/purposes/{{purposeId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2151,6 +2630,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -2160,6 +2643,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"x\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2184,6 +2670,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -2193,6 +2683,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"description\": \"t24 changed\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2216,9 +2709,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/purposes/report"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2241,6 +2741,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/purposes/report",
@@ -2259,6 +2763,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2285,6 +2792,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/purposes/{{purposeId}}",
@@ -2303,6 +2814,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2324,9 +2838,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/purposes/{{purposeId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2352,9 +2873,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/purposes/00000000-0000-4000-8000-000000000924"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2376,9 +2904,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/purposes/{{purposeId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2401,9 +2936,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/purposes/{{purposeId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -2432,9 +2974,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/audit/sink"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2461,6 +3010,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/audit/sink",
@@ -2479,6 +3032,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2507,6 +3063,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -2531,6 +3091,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2555,6 +3118,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -2564,6 +3131,9 @@
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -2598,6 +3168,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -2622,6 +3196,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2650,6 +3227,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -2674,6 +3255,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2703,6 +3287,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -2727,6 +3315,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2739,7 +3330,7 @@
 								"exec": [
 									"pm.test('status 201', () => pm.response.to.have.status(201));",
 									"const j = pm.response.json();",
-									"pm.test('names the object', () => pm.expect(JSON.stringify(j)).to.include(pm.collectionVariables.get('objectId')));",
+									"pm.test('names the object', () => pm.expect(JSON.stringify(j)).to.include(pm.collectionVariables.get('openObjectId')));",
 									"pm.test('opens as open', () => pm.expect(j.status).to.eql('open'));",
 									"pm.collectionVariables.set('reportId', String(j.uuid || j.id));"
 								]
@@ -2754,6 +3345,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -2761,7 +3356,7 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/content-reports",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"object\": \"{{objectId}}\",\n  \"reason\": \"t24 report\"\n}"
+							"raw": "{\n  \"object\": \"{{openObjectId}}\",\n  \"reason\": \"t24 report\"\n}"
 						},
 						"auth": {
 							"type": "basic",
@@ -2778,6 +3373,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2804,6 +3402,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/content-reports",
@@ -2822,6 +3424,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2844,6 +3449,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/content-reports",
@@ -2862,6 +3471,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2884,6 +3496,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/content-reports/{{reportId}}",
@@ -2902,6 +3518,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2928,6 +3547,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/content-reports/{{reportId}}",
@@ -2946,6 +3569,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2972,6 +3598,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/content-reports/00000000-0000-4000-8000-000000000924",
@@ -2990,6 +3620,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3013,6 +3646,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/content-reports/{{reportId}}/copy",
@@ -3031,6 +3668,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3057,6 +3697,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/content-reports/{{reportId}}/copy",
@@ -3075,6 +3719,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3100,6 +3747,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/content-reports/00000000-0000-4000-8000-000000000924/copy",
@@ -3118,6 +3769,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3146,6 +3800,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -3170,6 +3828,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3191,6 +3852,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/content-reports/{{reportId}}",
@@ -3209,6 +3874,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3237,6 +3905,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -3261,6 +3933,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3288,6 +3963,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -3312,6 +3991,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3334,6 +4016,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -3360,6 +4046,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -3392,9 +4081,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/access"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3419,9 +4115,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/access?subject=t24-subject-{{run}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3444,6 +4147,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/access?subject=t24-subject-{{run}}",
@@ -3462,6 +4169,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3488,9 +4198,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/portability"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3513,9 +4230,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/portability?subject=t24-subject-{{run}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3538,6 +4262,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/portability?subject=t24-subject-{{run}}",
@@ -3556,6 +4284,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3583,6 +4314,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -3592,6 +4327,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"dryRun\": true\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3616,6 +4354,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -3625,6 +4367,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"subject\": \"t24-subject-{{run}}\",\n  \"dryRun\": true\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3647,6 +4392,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -3673,6 +4422,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3701,6 +4453,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -3710,6 +4466,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"changes\": {\n    \"title\": \"x\"\n  }\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3738,6 +4497,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -3747,6 +4510,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"objectId\": 999999999\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3776,6 +4542,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -3785,6 +4555,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"objectId\": 999999999,\n  \"changes\": {\n    \"title\": \"x\"\n  }\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3807,6 +4580,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -3833,6 +4610,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3855,9 +4635,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/compliance"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3880,6 +4667,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/compliance",
@@ -3898,6 +4689,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -3930,9 +4724,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/subject-data"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3957,9 +4758,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/subject-data?subject=t24-subject-{{run}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3982,6 +4790,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/subject-data?subject=t24-subject-{{run}}",
@@ -4000,6 +4812,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4026,9 +4841,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/access-export"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4051,9 +4873,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/access-export?subject=t24-subject-{{run}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4082,6 +4911,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4091,6 +4924,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"object\": \"{{objectId}}\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4119,6 +4955,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4128,6 +4968,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"object\": \"00000000-0000-4000-8000-000000000924\",\n  \"changes\": {\n    \"title\": \"x\"\n  }\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4156,6 +4999,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4180,6 +5027,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4201,9 +5051,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4232,6 +5089,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4241,6 +5102,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"restricted\": true\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4269,6 +5133,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4293,6 +5161,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4321,6 +5192,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4330,6 +5205,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"object\": \"00000000-0000-4000-8000-000000000924\",\n  \"restricted\": true,\n  \"reason\": \"t24\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4341,7 +5219,7 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"pm.test('object body', () => pm.expect(pm.response.json()).to.be.an('object').and.not.have.property('error'));"
+									"pm.test('restriction recorded', () => { const r = pm.response.json()._gdprRestriction; pm.expect(r.active).to.eql(true); pm.expect(r.reason).to.eql('t24'); });"
 								]
 							}
 						}
@@ -4352,6 +5230,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -4363,6 +5245,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"object\": \"{{objectId}}\",\n  \"restricted\": true,\n  \"reason\": \"t24\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4373,7 +5258,8 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status 200', () => pm.response.to.have.status(200));"
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"pm.test('restriction lifted', () => pm.expect(pm.response.json()._gdprRestriction.active).to.eql(false));"
 								]
 							}
 						}
@@ -4386,6 +5272,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4395,6 +5285,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"object\": \"{{objectId}}\",\n  \"restricted\": false,\n  \"reason\": \"t24 done\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4423,6 +5316,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4432,6 +5329,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"objected\": true\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4460,6 +5360,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4484,6 +5388,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4512,6 +5419,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4521,6 +5432,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"object\": \"00000000-0000-4000-8000-000000000924\",\n  \"objected\": true,\n  \"reason\": \"t24\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4532,7 +5446,7 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"pm.test('object body', () => pm.expect(pm.response.json()).to.be.an('object').and.not.have.property('error'));"
+									"pm.test('objection recorded', () => { const r = pm.response.json()._gdprObjection; pm.expect(r.active).to.eql(true); pm.expect(r.reason).to.eql('t24'); });"
 								]
 							}
 						}
@@ -4543,6 +5457,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -4554,6 +5472,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"object\": \"{{objectId}}\",\n  \"objected\": true,\n  \"reason\": \"t24\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4564,7 +5485,8 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status 200', () => pm.response.to.have.status(200));"
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"pm.test('objection withdrawn', () => pm.expect(pm.response.json()._gdprObjection.active).to.eql(false));"
 								]
 							}
 						}
@@ -4575,6 +5497,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -4586,6 +5512,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"object\": \"{{objectId}}\",\n  \"objected\": false,\n  \"reason\": \"t24 done\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4597,7 +5526,7 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"pm.test('object body', () => pm.expect(pm.response.json()).to.be.an('object').and.not.have.property('error'));"
+									"pm.test('returns the rectified object', () => pm.expect(pm.response.json().title).to.eql('t24 rectified'));"
 								]
 							}
 						}
@@ -4610,6 +5539,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4619,6 +5552,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"object\": \"{{objectId}}\",\n  \"changes\": {\n    \"title\": \"t24 rectified\"\n  }\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4641,9 +5577,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4672,6 +5615,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4681,6 +5628,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"dryRun\": true\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4692,7 +5642,7 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"pm.test('object body', () => pm.expect(pm.response.json()).to.be.an('object').and.not.have.property('error'));"
+									"pm.test('dry run reported, nothing erased', () => { const j = pm.response.json(); pm.expect(j.dryRun).to.eql(true); pm.expect(j.erased).to.eql([]); pm.expect(j.subject).to.eql('t24-subject-' + pm.collectionVariables.get('run')); });"
 								]
 							}
 						}
@@ -4705,6 +5655,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4714,6 +5668,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"subject\": \"t24-subject-{{run}}\",\n  \"dryRun\": true\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4735,9 +5692,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -4772,6 +5736,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4781,6 +5749,9 @@
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4808,6 +5779,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4817,6 +5792,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"subject\": \"t24-subject-{{run}}\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4839,9 +5817,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/erasure-previews/{{previewId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4867,9 +5852,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/erasure-previews/00000000-0000-4000-8000-000000000924"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4895,6 +5887,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/erasure-previews/{{previewId}}",
@@ -4913,6 +5909,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4941,6 +5940,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4950,6 +5953,9 @@
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4977,6 +5983,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -4986,6 +5996,9 @@
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5013,6 +6026,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -5022,6 +6039,9 @@
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5032,8 +6052,13 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('refused, never approved', () => pm.expect(pm.response.code).to.be.oneOf([404, 409]));",
-									"pm.test('error body', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"ERASURE_REFUSED\");",
+									"});",
+									"pm.test('answers unknown, not forbidden', () => pm.expect(pm.response.json().rule).to.eql('erasure-preview-unknown'));"
 								]
 							}
 						}
@@ -5044,6 +6069,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -5070,6 +6099,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5092,9 +6124,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/erasure-previews/{{previewId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5105,10 +6144,10 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('approved, or refused by the four-eyes rule', () => pm.expect(pm.response.code).to.be.oneOf([200, 409]));",
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
 									"const j = pm.response.json();",
-									"if (pm.response.code === 200) { pm.test('same preview', () => pm.expect(j.uuid).to.eql(pm.collectionVariables.get('previewId'))); }",
-									"else { pm.test('refusal names a rule', () => pm.expect(j.rule).to.be.a('string')); }"
+									"pm.test('same preview', () => pm.expect(j.uuid).to.eql(pm.collectionVariables.get('previewId')));",
+									"pm.test('same subject', () => pm.expect(j.subject).to.eql('t24-subject-' + pm.collectionVariables.get('run')));"
 								]
 							}
 						}
@@ -5121,6 +6160,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -5130,6 +6173,9 @@
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -5147,7 +6193,10 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"pm.test('names the principal', () => pm.expect(pm.response.text()).to.include(pm.collectionVariables.get('plain_user')));"
+									"const j = pm.response.json();",
+									"pm.test('names the principal', () => pm.expect(j.principal).to.eql(pm.collectionVariables.get('plain_user')));",
+									"pm.test('principal exists', () => pm.expect(j.exists).to.eql(true));",
+									"pm.test('total equals revocable plus retained', () => pm.expect(j.total).to.eql(j.revocable + j.retained));"
 								]
 							}
 						}
@@ -5158,9 +6207,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/rbac/reach/{{plain_user}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5187,9 +6243,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/rbac/reach/%20"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5212,6 +6275,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/rbac/reach/{{plain_user}}",
@@ -5230,6 +6297,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5252,6 +6322,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -5278,6 +6352,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5307,6 +6384,9 @@
 							}
 						],
 						"url": "{{base_url}}/ocs/v2.php/cloud/users/{{reviewer_user}}/groups"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5335,6 +6415,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -5344,6 +6428,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"reason\": \"t24\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5355,7 +6442,10 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"pm.test('object body', () => pm.expect(pm.response.json()).to.be.an('object').and.not.have.property('error'));"
+									"const j = pm.response.json();",
+									"pm.test('names the principal', () => pm.expect(j.principal).to.eql(pm.collectionVariables.get('plain_user')));",
+									"pm.test('records the reason', () => pm.expect(j.reason).to.eql('t24 leaver'));",
+									"pm.test('one-act rule', () => pm.expect(j.rule).to.eql('reach-revoked-in-one-act'));"
 								]
 							}
 						}
@@ -5368,6 +6458,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -5377,6 +6471,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"reason\": \"t24 leaver\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -5411,6 +6508,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -5420,6 +6521,9 @@
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5446,6 +6550,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -5455,6 +6563,9 @@
 							"mode": "raw",
 							"raw": "{\n  \"subject\": \"t24-subject-{{run}}\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5477,9 +6588,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/subject-exports/{{exportId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5502,9 +6620,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/subject-exports/00000000-0000-4000-8000-000000000924"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5527,6 +6652,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/subject-exports/{{exportId}}",
@@ -5545,6 +6674,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5571,9 +6703,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/subject-exports/00000000-0000-4000-8000-000000000924/download"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5600,6 +6739,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/subject-exports/{{exportId}}/download",
@@ -5618,6 +6761,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5641,9 +6787,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/subject-exports/{{exportId}}/download"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -5653,15 +6806,16 @@
 			"description": "",
 			"item": [
 				{
-					"name": "create set without name is refused",
+					"name": "create set without name is 400",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('refused with a 4xx', () => pm.expect(pm.response.code).to.be.oneOf([400, 404, 409, 422]));",
-									"pm.test('error body', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"pm.test('refusal kind invalid', () => { const j = pm.response.json(); pm.expect(j.error).to.eql('invalid'); pm.expect(j.applied).to.eql(0); });",
+									"pm.test('says a name is needed', () => pm.expect(pm.response.json().message).to.eql('a draft set needs a name'));"
 								]
 							}
 						}
@@ -5674,6 +6828,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -5683,6 +6841,9 @@
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5705,6 +6866,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -5731,6 +6896,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5744,7 +6912,8 @@
 									"pm.test('status 201', () => pm.response.to.have.status(201));",
 									"const j = pm.response.json();",
 									"pm.test('echoes name', () => pm.expect(j.name).to.eql('t24 set ' + pm.collectionVariables.get('run')));",
-									"pm.collectionVariables.set('setId', String(j.uuid || j.id));"
+									"pm.test('opens as open', () => pm.expect(j.state).to.eql('open'));",
+									"pm.collectionVariables.set('setId', j.uuid);"
 								]
 							}
 						}
@@ -5757,6 +6926,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -5766,6 +6939,50 @@
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"t24 set {{run}}\",\n  \"description\": \"t24\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "create second set (to discard)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 201', () => pm.response.to.have.status(201));",
+									"pm.collectionVariables.set('set2Id', pm.response.json().uuid);",
+									"pm.test('has uuid', () => pm.expect(pm.response.json().uuid).to.be.a('string'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"t24 discard {{run}}\"\n}"
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5777,7 +6994,7 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"pm.test('set listed', () => pm.expect(pm.response.text()).to.include('t24 set ' + pm.collectionVariables.get('run')));"
+									"pm.test('set listed', () => pm.expect(pm.response.json().results.map(r => r.uuid)).to.include(pm.collectionVariables.get('setId')));"
 								]
 							}
 						}
@@ -5788,9 +7005,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5813,6 +7037,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets",
@@ -5831,6 +7059,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5842,7 +7073,7 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"pm.test('same set', () => pm.expect(pm.response.json().name).to.eql('t24 set ' + pm.collectionVariables.get('run')));"
+									"pm.test('same set', () => { const j = pm.response.json(); pm.expect((j.set || j).name).to.eql('t24 set ' + pm.collectionVariables.get('run')); });"
 								]
 							}
 						}
@@ -5853,21 +7084,28 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "show unknown is refused",
+					"name": "show unknown is 404",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('refused with a 4xx', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
-									"pm.test('error body', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"pm.test('refusal kind unknown', () => { const j = pm.response.json(); pm.expect(j.error).to.eql('unknown'); pm.expect(j.applied).to.eql(0); });"
 								]
 							}
 						}
@@ -5878,21 +7116,76 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/00000000-0000-4000-8000-000000000924"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "draft value without key is refused",
+					"name": "show as plain user is 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('refused with a 4xx', () => pm.expect(pm.response.code).to.be.oneOf([400, 404, 409, 422]));",
-									"pm.test('error body', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('framework refuses a non-admin with 403', () => pm.response.to.have.status(403));",
+									"pm.test('no data in the refusal', () => pm.expect(pm.response.text()).to.not.include('\"results\"'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{plain_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "draft undeclared key is 400",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"pm.test('refusal kind invalid', () => { const j = pm.response.json(); pm.expect(j.error).to.eql('invalid'); pm.expect(j.applied).to.eql(0); });",
+									"pm.test('names the key', () => pm.expect(pm.response.json().message).to.include('t24_undeclared'));"
 								]
 							}
 						}
@@ -5903,6 +7196,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -5912,20 +7209,23 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}/values",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"value\": \"x\"\n}"
+							"raw": "{\n  \"key\": \"t24_undeclared\",\n  \"value\": \"x\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "draft value unknown set is refused",
+					"name": "draft value unknown set is 404",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('refused with a 4xx', () => pm.expect(pm.response.code).to.be.oneOf([400, 404, 409, 422]));",
-									"pm.test('error body', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"pm.test('refusal kind unknown', () => { const j = pm.response.json(); pm.expect(j.error).to.eql('unknown'); pm.expect(j.applied).to.eql(0); });"
 								]
 							}
 						}
@@ -5938,6 +7238,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -5945,8 +7249,11 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/00000000-0000-4000-8000-000000000924/values",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"key\": \"t24_key\",\n  \"value\": \"x\"\n}"
+							"raw": "{\n  \"key\": \"notification.t24_{{run}}\",\n  \"value\": \"x\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5971,6 +7278,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -5978,7 +7289,7 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}/values",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"key\": \"t24_key\",\n  \"value\": \"x\"\n}"
+							"raw": "{\n  \"key\": \"notification.t24_{{run}}\",\n  \"value\": \"x\"\n}"
 						},
 						"auth": {
 							"type": "basic",
@@ -5995,6 +7306,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6006,7 +7320,7 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status 201', () => pm.response.to.have.status(201));",
-									"pm.test('names the key', () => pm.expect(pm.response.text()).to.include('t24_key_' + pm.collectionVariables.get('run')));"
+									"pm.test('names the key', () => pm.expect(pm.response.json().key).to.eql('notification.t24_' + pm.collectionVariables.get('run')));"
 								]
 							}
 						}
@@ -6019,6 +7333,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -6026,8 +7344,11 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}/values",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"key\": \"t24_key_{{run}}\",\n  \"value\": \"on\"\n}"
+							"raw": "{\n  \"key\": \"notification.t24_{{run}}\",\n  \"value\": \"on\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6039,7 +7360,7 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"pm.test('preview names the drafted key', () => pm.expect(pm.response.text()).to.include('t24_key_' + pm.collectionVariables.get('run')));"
+									"pm.test('preview names the drafted key', () => pm.expect(pm.response.text()).to.include('notification.t24_' + pm.collectionVariables.get('run')));"
 								]
 							}
 						}
@@ -6050,21 +7371,28 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}/preview"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "preview unknown is refused",
+					"name": "preview unknown is 404",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('refused with a 4xx', () => pm.expect(pm.response.code).to.be.oneOf([400, 404, 409, 422]));",
-									"pm.test('error body', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"pm.test('refusal kind unknown', () => { const j = pm.response.json(); pm.expect(j.error).to.eql('unknown'); pm.expect(j.applied).to.eql(0); });"
 								]
 							}
 						}
@@ -6075,21 +7403,75 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/00000000-0000-4000-8000-000000000924/preview"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "deploy before approval is refused",
+					"name": "preview as plain user is 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('refused with a 4xx', () => pm.expect(pm.response.code).to.be.oneOf([400, 404, 409, 422]));",
-									"pm.test('error body', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('framework refuses a non-admin with 403', () => pm.response.to.have.status(403));",
+									"pm.test('no data in the refusal', () => pm.expect(pm.response.text()).to.not.include('\"results\"'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}/preview",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{plain_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "approve empty set is 409",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 409', () => pm.response.to.have.status(409));",
+									"pm.test('refusal kind empty', () => { const j = pm.response.json(); pm.expect(j.error).to.eql('empty'); pm.expect(j.applied).to.eql(0); });"
 								]
 							}
 						}
@@ -6102,27 +7484,34 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}/deploy",
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{set2Id}}/approve",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "approve unknown is refused",
+					"name": "approve unknown is 404",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('refused with a 4xx', () => pm.expect(pm.response.code).to.be.oneOf([400, 404, 409, 422]));",
-									"pm.test('error body', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"pm.test('refusal kind unknown', () => { const j = pm.response.json(); pm.expect(j.error).to.eql('unknown'); pm.expect(j.applied).to.eql(0); });"
 								]
 							}
 						}
@@ -6133,6 +7522,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -6144,6 +7537,9 @@
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6168,6 +7564,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -6192,18 +7592,53 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "approve as author",
+					"name": "set not approved by the refused call",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('approved, or refused by the four-eyes rule', () => pm.expect(pm.response.code).to.be.oneOf([200, 409]));",
-									"if (pm.response.code !== 200) { pm.test('refusal has an error', () => pm.expect(pm.response.json().error).to.be.a('string')); }"
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"pm.test('still open after the refusal', () => { const j = pm.response.json(); pm.expect((j.set || j).state).to.eql('open'); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "approve set",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"pm.test('approved by admin', () => pm.expect(pm.response.json().approvedBy).to.eql(pm.environment.get('admin_user') || pm.collectionVariables.get('admin_user')));"
 								]
 							}
 						}
@@ -6214,6 +7649,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							},
 							{
 								"key": "Content-Type",
@@ -6225,18 +7664,21 @@
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "deploy unknown is refused",
+					"name": "deploy unknown is 404",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('refused with a 4xx', () => pm.expect(pm.response.code).to.be.oneOf([400, 404, 409, 422]));",
-									"pm.test('error body', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"pm.test('refusal kind unknown', () => { const j = pm.response.json(); pm.expect(j.error).to.eql('unknown'); pm.expect(j.applied).to.eql(0); });"
 								]
 							}
 						}
@@ -6249,6 +7691,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -6258,6 +7704,107 @@
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "deploy as plain user is 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('framework refuses a non-admin with 403', () => pm.response.to.have.status(403));",
+									"pm.test('no data in the refusal', () => pm.expect(pm.response.text()).to.not.include('\"results\"'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}/deploy",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{plain_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "deploy set",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 201', () => pm.response.to.have.status(201));",
+									"const j = pm.response.json();",
+									"pm.test('deploys from the set', () => pm.expect(j.setUuid).to.eql(pm.collectionVariables.get('setId')));",
+									"pm.test('carries the drafted key', () => pm.expect(j.changes.map(c => c.key)).to.include('notification.t24_' + pm.collectionVariables.get('run')));",
+									"pm.collectionVariables.set('deploymentId', j.uuid);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}/deploy",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6269,7 +7816,7 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"pm.test('json body', () => pm.expect(pm.response.json()).to.not.have.property('error'));"
+									"pm.test('lists the deployment', () => pm.expect(pm.response.json().results.map(r => r.uuid)).to.include(pm.collectionVariables.get('deploymentId')));"
 								]
 							}
 						}
@@ -6280,9 +7827,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/deployments"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6305,6 +7859,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/deployments",
@@ -6323,18 +7881,21 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "deployment unknown is refused",
+					"name": "deployment",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('refused with a 4xx', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
-									"pm.test('error body', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"pm.test('same deployment', () => pm.expect(JSON.stringify(pm.response.json())).to.include(pm.collectionVariables.get('deploymentId')));"
 								]
 							}
 						}
@@ -6345,46 +7906,52 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/deployments/00000000-0000-4000-8000-000000000924"
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/deployments/{{deploymentId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "rollback unknown is refused",
+					"name": "deployment unknown is 404",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('refused with a 4xx', () => pm.expect(pm.response.code).to.be.oneOf([400, 404, 409, 422]));",
-									"pm.test('error body', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"pm.test('refusal kind unknown', () => { const j = pm.response.json(); pm.expect(j.error).to.eql('unknown'); pm.expect(j.applied).to.eql(0); });"
 								]
 							}
 						}
 					],
 					"request": {
-						"method": "POST",
+						"method": "GET",
 						"header": [
 							{
 								"key": "Accept",
 								"value": "application/json"
 							},
 							{
-								"key": "Content-Type",
-								"value": "application/json"
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/deployments/00000000-0000-4000-8000-000000000924/rollback",
-						"body": {
-							"mode": "raw",
-							"raw": "{}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/deployments/00000000-0000-4000-8000-000000000924"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "rollback as plain user is 403",
+					"name": "deployment as plain user is 403",
 					"event": [
 						{
 							"listen": "test",
@@ -6398,22 +7965,18 @@
 						}
 					],
 					"request": {
-						"method": "POST",
+						"method": "GET",
 						"header": [
 							{
 								"key": "Accept",
 								"value": "application/json"
 							},
 							{
-								"key": "Content-Type",
-								"value": "application/json"
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/deployments/00000000-0000-4000-8000-000000000924/rollback",
-						"body": {
-							"mode": "raw",
-							"raw": "{}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/deployments/{{deploymentId}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -6429,6 +7992,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6456,13 +8022,20 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/effective"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "effective for a key",
+					"name": "effective after deploy",
 					"event": [
 						{
 							"listen": "test",
@@ -6470,7 +8043,9 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"pm.test('names the key', () => pm.expect(pm.response.text()).to.include('t24_key_' + pm.collectionVariables.get('run')));"
+									"const j = pm.response.json();",
+									"pm.test('found', () => pm.expect(j.found).to.eql(true));",
+									"pm.test('deployed value', () => pm.expect(j.value).to.eql('on'));"
 								]
 							}
 						}
@@ -6481,9 +8056,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/effective?key=t24_key_{{run}}"
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/effective?key=notification.t24_{{run}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6506,9 +8088,13 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/effective?key=t24_key_{{run}}",
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/effective?key=notification.t24_{{run}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -6524,6 +8110,240 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "discard deployed set is 409",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 409', () => pm.response.to.have.status(409));",
+									"pm.test('refusal kind state', () => { const j = pm.response.json(); pm.expect(j.error).to.eql('state'); pm.expect(j.applied).to.eql(0); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "rollback unknown is 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"pm.test('refusal kind unknown', () => { const j = pm.response.json(); pm.expect(j.error).to.eql('unknown'); pm.expect(j.applied).to.eql(0); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/deployments/00000000-0000-4000-8000-000000000924/rollback",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "rollback as plain user is 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('framework refuses a non-admin with 403', () => pm.response.to.have.status(403));",
+									"pm.test('no data in the refusal', () => pm.expect(pm.response.text()).to.not.include('\"results\"'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/deployments/{{deploymentId}}/rollback",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{plain_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "value still deployed after refused rollback",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"pm.test('still on', () => pm.expect(pm.response.json().value).to.eql('on'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/effective?key=notification.t24_{{run}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "rollback deployment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 201', () => pm.response.to.have.status(201));",
+									"pm.test('is a rollback', () => pm.expect(pm.response.json().isRollback).to.eql(true));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/deployments/{{deploymentId}}/rollback",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "effective after rollback",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"pm.test('value gone', () => pm.expect(pm.response.json().found).to.eql(false));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/effective?key=notification.t24_{{run}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6546,9 +8366,13 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}",
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{set2Id}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -6564,10 +8388,13 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "set still there after refused discard",
+					"name": "second set still open after refused discard",
 					"event": [
 						{
 							"listen": "test",
@@ -6575,7 +8402,7 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"pm.test('same set', () => pm.expect(pm.response.json().name).to.eql('t24 set ' + pm.collectionVariables.get('run')));"
+									"pm.test('still open after the refusal', () => { const j = pm.response.json(); pm.expect((j.set || j).state).to.eql('open'); });"
 								]
 							}
 						}
@@ -6586,21 +8413,28 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}"
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{set2Id}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "discard unknown is refused",
+					"name": "discard unknown is 404",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('refused with a 4xx', () => pm.expect(pm.response.code).to.be.oneOf([400, 404, 409, 422]));",
-									"pm.test('error body', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"pm.test('refusal kind unknown', () => { const j = pm.response.json(); pm.expect(j.error).to.eql('unknown'); pm.expect(j.applied).to.eql(0); });"
 								]
 							}
 						}
@@ -6611,9 +8445,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/00000000-0000-4000-8000-000000000924"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6624,7 +8465,8 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('discarded, or refused because it already deployed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204, 409]));"
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"pm.test('discarded', () => pm.expect(pm.response.json().state).to.eql('discarded'));"
 								]
 							}
 						}
@@ -6635,9 +8477,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{setId}}"
+						"url": "{{base_url}}/index.php/apps/openregister/api/configuration/draft-sets/{{set2Id}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -6647,6 +8496,50 @@
 			"description": "",
 			"item": [
 				{
+					"name": "create case without required fields is 400",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"required properties\");",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subjectId\": \"t24-subject-{{run}}\"\n}"
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
 					"name": "create case",
 					"event": [
 						{
@@ -6654,10 +8547,12 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('created, or refused with a reason (no 500)', () => pm.expect(pm.response.code).to.be.oneOf([201, 400, 403]));",
+									"pm.test('status 201', () => pm.response.to.have.status(201));",
 									"const j = pm.response.json();",
-									"if (pm.response.code === 201) { pm.test('has a uuid', () => pm.expect(j.uuid || j.id).to.be.ok); }",
-									"else { pm.test('error body', () => pm.expect(j.error).to.be.a('string')); }"
+									"pm.test('echoes the subject', () => pm.expect(j.subjectId).to.eql('t24-subject-' + pm.collectionVariables.get('run')));",
+									"pm.test('starts received', () => pm.expect(j.status).to.eql('received'));",
+									"pm.test('assigned to the handler', () => pm.expect(j.handler).to.eql(pm.collectionVariables.get('reviewer_user')));",
+									"pm.collectionVariables.set('caseId', j.id || (j['@self'] && j['@self'].id));"
 								]
 							}
 						}
@@ -6670,6 +8565,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -6677,20 +8576,27 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"subject\": \"t24-subject-{{run}}\",\n  \"requestType\": \"access\"\n}"
+							"raw": "{\n  \"subjectId\": \"t24-subject-{{run}}\",\n  \"type\": \"access\",\n  \"status\": \"received\",\n  \"receivedAt\": \"2026-01-05T10:00:00+00:00\",\n  \"handler\": \"{{reviewer_user}}\"\n}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "create case as plain user",
+					"name": "transition without action is 400",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('refused or created, never 500', () => pm.expect(pm.response.code).to.be.oneOf([201, 400, 403]));",
-									"pm.test('json body', () => pm.expect(pm.response.json()).to.be.an('object'));"
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"A transition \\\"action\\\" is required.\");",
+									"});"
 								]
 							}
 						}
@@ -6703,14 +8609,136 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases",
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/transition",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"subject\": \"t24-subject-{{run}}\",\n  \"requestType\": \"access\"\n}"
+							"raw": "{}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{reviewer_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "transition with undeclared action is refused",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"is not declared on this schema\");",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/transition",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"action\": \"t24-bogus\"\n}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{reviewer_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "transition as plain user is 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"You are not authorised to act on this case.\");",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/transition",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"action\": \"verify\"\n}"
 						},
 						"auth": {
 							"type": "basic",
@@ -6727,18 +8755,25 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "transition on unknown case is 404",
+					"name": "transition as admin (not handler, not officer) is 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status 404', () => pm.response.to.have.status(404));",
-									"pm.test('not found or not authorised', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"You are not authorised to act on this case.\");",
+									"});"
 								]
 							}
 						}
@@ -6751,27 +8786,95 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/00000000-0000-4000-8000-000000000924/transition",
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/transition",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"action\": \"verify\"\n}"
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "evidence as handler",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const j = pm.response.json();",
+									"pm.test('names the case', () => pm.expect(j.caseUuid).to.eql(pm.collectionVariables.get('caseId')));",
+									"pm.test('no providers bound, nothing appended', () => { pm.expect(j.providers).to.eql([]); pm.expect(j.appended).to.eql(0); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/evidence",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{reviewer_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
-					"name": "evidence on unknown case is 404",
+					"name": "evidence as plain user is 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status 404', () => pm.response.to.have.status(404));",
-									"pm.test('not found or not authorised', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"You are not authorised to act on this case.\");",
+									"});"
 								]
 							}
 						}
@@ -6784,229 +8887,18 @@
 								"value": "application/json"
 							},
 							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/00000000-0000-4000-8000-000000000924/evidence",
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/evidence",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
-						}
-					}
-				},
-				{
-					"name": "redact on unknown case is 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 404', () => pm.response.to.have.status(404));",
-									"pm.test('not found or not authorised', () => pm.expect(pm.response.json().error).to.be.a('string'));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/00000000-0000-4000-8000-000000000924/redactions",
-						"body": {
-							"mode": "raw",
-							"raw": "{}"
-						}
-					}
-				},
-				{
-					"name": "bundle on unknown case is 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 404', () => pm.response.to.have.status(404));",
-									"pm.test('not found or not authorised', () => pm.expect(pm.response.json().error).to.be.a('string'));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/00000000-0000-4000-8000-000000000924/bundle",
-						"body": {
-							"mode": "raw",
-							"raw": "{}"
-						}
-					}
-				},
-				{
-					"name": "download bundle on unknown case is 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 404', () => pm.response.to.have.status(404));",
-									"pm.test('not found or not authorised', () => pm.expect(pm.response.json().error).to.be.a('string'));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/00000000-0000-4000-8000-000000000924/bundle/download"
-					}
-				},
-				{
-					"name": "dossier on unknown case is 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 404', () => pm.response.to.have.status(404));",
-									"pm.test('not found or not authorised', () => pm.expect(pm.response.json().error).to.be.a('string'));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/00000000-0000-4000-8000-000000000924/dossier"
-					}
-				},
-				{
-					"name": "verify identity on unknown case is 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 404', () => pm.response.to.have.status(404));",
-									"pm.test('not found or not authorised', () => pm.expect(pm.response.json().error).to.be.a('string'));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/00000000-0000-4000-8000-000000000924/verify-identity",
-						"body": {
-							"mode": "raw",
-							"raw": "{}"
-						}
-					}
-				},
-				{
-					"name": "escalate on unknown case is 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 404', () => pm.response.to.have.status(404));",
-									"pm.test('not found or not authorised', () => pm.expect(pm.response.json().error).to.be.a('string'));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/00000000-0000-4000-8000-000000000924/escalate",
-						"body": {
-							"mode": "raw",
-							"raw": "{}"
-						}
-					}
-				},
-				{
-					"name": "transition on unknown case as plain user is 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 404', () => pm.response.to.have.status(404));",
-									"pm.test('not found or not authorised', () => pm.expect(pm.response.json().error).to.be.a('string'));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/00000000-0000-4000-8000-000000000924/transition",
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"action\": \"close\"\n}"
 						},
 						"auth": {
 							"type": "basic",
@@ -7023,6 +8915,656 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "redact without field is 400",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"Both \\\"field\\\" and \\\"ground\\\" are required.\");",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/redactions",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"after\": \"x\"\n}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{reviewer_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "redact as plain user is 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"You are not authorised to act on this case.\");",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/redactions",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"field\": \"subjectId\",\n  \"after\": \"t24-redacted\",\n  \"ground\": \"art-15(4)\"\n}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{plain_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "bundle as plain user is 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"You are not authorised to act on this case.\");",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/bundle",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{plain_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "download bundle without token is 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"Invalid, expired, or already-used download token.\");",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/bundle/download",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{reviewer_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "download bundle as plain user is 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 404', () => pm.response.to.have.status(404));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"Not found or not authorised.\");",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/bundle/download?token=t24-not-a-token",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{plain_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "dossier as handler",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const j = pm.response.json();",
+									"pm.test('names the case', () => pm.expect(j.caseUuid).to.eql(pm.collectionVariables.get('caseId')));",
+									"pm.test('names the subject', () => pm.expect(j.subjectId).to.eql('t24-subject-' + pm.collectionVariables.get('run')));",
+									"pm.test('no redactions', () => pm.expect(j.redactions).to.eql([]));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/dossier",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{reviewer_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "dossier as plain user is 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"You are not authorised to act on this case.\");",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/dossier",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{plain_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "verify identity without provider fails closed",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const j = pm.response.json();",
+									"pm.test('not verified', () => pm.expect(j.status).to.eql('needs-more'));",
+									"pm.test('says no provider is bound', () => pm.expect(j.message).to.include('No identity-verify provider is bound'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/verify-identity",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{reviewer_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "verify identity as plain user is 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"You are not authorised to act on this case.\");",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/verify-identity",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{plain_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "escalate without provider fails closed",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const j = pm.response.json();",
+									"pm.test('refused', () => pm.expect(j.status).to.eql('refused'));",
+									"pm.test('no reference issued', () => pm.expect(j.reference).to.eql(''));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/escalate",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{reviewer_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "escalate as plain user is 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 403', () => pm.response.to.have.status(403));",
+									"pm.test('error body', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.error, 'error key').to.be.a('string');",
+									"    pm.expect(j.error).to.include(\"You are not authorised to act on this case.\");",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/gdpr/cases/{{caseId}}/escalate",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{plain_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{user_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "case unchanged by refused calls",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"const j = pm.response.json();",
+									"pm.test('still received', () => pm.expect(j.status).to.eql('received'));",
+									"pm.test('handler unchanged', () => pm.expect(j.handler).to.eql(pm.collectionVariables.get('reviewer_user')));",
+									"pm.test('no redaction recorded', () => pm.expect(JSON.stringify(j)).to.not.include('t24-redacted'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/data-subject-requests/dataSubjectRequest/{{caseId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -7052,9 +9594,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/verwerkingen"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7077,6 +9626,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/verwerkingen",
@@ -7095,6 +9648,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7121,9 +9677,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/verwerkingen/betrokkene"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7146,9 +9709,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/verwerkingen/betrokkene?subjectIdType=bsn&subjectIdValue=t24-subject-{{run}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7171,6 +9741,10 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/avg/verwerkingen/betrokkene?subjectIdType=bsn&subjectIdValue=t24-subject-{{run}}",
@@ -7189,6 +9763,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -7216,9 +9793,109 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "delete open object",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{openSchemaId}}/{{openObjectId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "delete dsar case",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/data-subject-requests/dataSubjectRequest/{{caseId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "delete open schema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{openSchemaId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7240,9 +9917,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7264,9 +9948,16 @@
 							{
 								"key": "Accept",
 								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7295,6 +9986,9 @@
 							}
 						],
 						"url": "{{base_url}}/ocs/v2.php/cloud/users/{{plain_user}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7323,6 +10017,9 @@
 							}
 						],
 						"url": "{{base_url}}/ocs/v2.php/cloud/users/{{reviewer_user}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
