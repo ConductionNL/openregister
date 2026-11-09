@@ -44,6 +44,12 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\TaskControllerServices;
+use OCA\OpenRegister\Db\TaskInboxAudience;
+use OCA\OpenRegister\Db\TaskInboxAnchor;
+use OCA\OpenRegister\Db\TaskInboxDueWindow;
+use OCA\OpenRegister\Db\TaskInboxFilter;
+use OCA\OpenRegister\Db\TaskInboxOrder;
+use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
@@ -326,23 +332,21 @@ class TaskController extends Controller {
 		$sortKey = ltrim($sort, '-');
 
 		$criteria = new TaskInboxCriteria(
-			uid: $uid,
-			groupIds: $this->groupIds(uid: $uid),
-			isAdmin: $this->isAdmin(uid: $uid),
-			scope: $scope,
-			states: $states,
-			isTerminal: $terminalFilter,
-			priority: $priority,
-			kind: $this->trimmedOrNull(value: $kind),
-			objectUuid: $objectUuid,
-			runUuid: $this->trimmedOrNull(value: $runUuid),
-			overdueAt: $overdueAt,
-			dueAfter: $dueAfterAt,
-			dueBefore: $dueBeforeAt,
-			sort: $sortKey,
-			sortDescending: $descending,
-			includeBlocked: ($includeBlocked !== null && filter_var($includeBlocked, FILTER_VALIDATE_BOOLEAN) === true),
-			openFirst: ($openFirst !== null && filter_var($openFirst, FILTER_VALIDATE_BOOLEAN) === true),
+			audience: new TaskInboxAudience(uid: $uid, groupIds: $this->groupIds(uid: $uid), isAdmin: $this->isAdmin(uid: $uid), scope: $scope),
+			selection: new TaskInboxSelection(
+				filter: new TaskInboxFilter(states: $states, isTerminal: $terminalFilter, priority: $priority, kind: $this->trimmedOrNull(value: $kind)),
+				window: new TaskInboxDueWindow(overdueAt: $overdueAt, dueAfter: $dueAfterAt, dueBefore: $dueBeforeAt),
+				anchor: new TaskInboxAnchor(
+					objectUuid: $objectUuid,
+					runUuid: $this->trimmedOrNull(value: $runUuid),
+					includeBlocked: ($includeBlocked !== null && filter_var($includeBlocked, FILTER_VALIDATE_BOOLEAN) === true)
+				)
+			),
+			order: new TaskInboxOrder(
+				sort: $sortKey,
+				sortDescending: $descending,
+				openFirst: ($openFirst !== null && filter_var($openFirst, FILTER_VALIDATE_BOOLEAN) === true)
+			),
 		);
 
 		return new JSONResponse($this->inbox->inbox(criteria: $criteria, limit: $limit, offset: $offset));

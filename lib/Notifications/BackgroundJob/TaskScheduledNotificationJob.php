@@ -40,6 +40,11 @@ use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Db\TaskInboxAudience;
+use OCA\OpenRegister\Db\TaskInboxDueWindow;
+use OCA\OpenRegister\Db\TaskInboxFilter;
+use OCA\OpenRegister\Db\TaskInboxOrder;
+use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
@@ -352,12 +357,12 @@ class TaskScheduledNotificationJob extends TimedJob {
 	 */
 	private function candidates(DateTime $now, int $offset): array {
 		$criteria = new TaskInboxCriteria(
-			uid: self::SWEEP_UID,
-			isAdmin: true,
-			scope: TaskInboxCriteria::SCOPE_ALL,
-			isTerminal: false,
-			overdueAt: $now,
-			sort: TaskInboxCriteria::SORT_CREATED
+			audience: new TaskInboxAudience(uid: self::SWEEP_UID, isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL),
+			selection: new TaskInboxSelection(
+				filter: new TaskInboxFilter(isTerminal: false),
+				window: new TaskInboxDueWindow(overdueAt: $now)
+			),
+			order: new TaskInboxOrder(sort: TaskInboxCriteria::SORT_CREATED)
 		);
 
 		try {
