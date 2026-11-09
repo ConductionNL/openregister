@@ -83,38 +83,10 @@
 							</div>
 
 							<!-- Entity Info -->
-							<table class="statisticsTable entityStats">
-								<tbody>
-									<tr>
-										<th scope="row">
-											<strong>{{
-												t('openregister', 'Category')
-											}}</strong>
-										</th>
-										<td>
-											<span class="badge badge-category">{{
-												entity.category
-											}}</span>
-										</td>
-									</tr>
-									<tr>
-										<th scope="row">
-											<strong>{{
-												t('openregister', 'Detected At')
-											}}</strong>
-										</th>
-										<td>{{ formatDate(entity.detectedAt) }}</td>
-									</tr>
-									<tr>
-										<th scope="row">
-											<strong>{{
-												t('openregister', 'Relations')
-											}}</strong>
-										</th>
-										<td>{{ entity.relationCount || 0 }}</td>
-									</tr>
-								</tbody>
-							</table>
+							<EntityStatsTable
+								class="statisticsTable entityStats"
+								:entity="entity"
+								:fields="['category', 'detectedAt', 'relations']" />
 						</div>
 					</div>
 				</template>
@@ -244,12 +216,12 @@ import {
 } from '@nextcloud/vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import ViewModeSwitch from '../../components/shared/ViewModeSwitch.vue'
+import EntityStatsTable from './EntityStatsTable.vue'
 import eventBus from '../../eventBus.js'
 import { displayDateTime } from '../../services/displayDateTime.js'
 import { refreshAction } from '../../services/menuActions.js'
@@ -269,6 +241,7 @@ import { navigationStore } from '../../store/store.js'
 export default {
 	name: 'EntitiesIndex',
 	components: {
+		EntityStatsTable,
 		ViewModeSwitch,
 		ActionMenu,
 		ListActionsBar,
@@ -652,33 +625,6 @@ export default {
 	font-size: 16px;
 	font-weight: 600;
 	flex-wrap: wrap;
-}
-
-/* Entity Stats Table */
-.entityStats {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.entityStats tbody tr {
-	border-bottom: 1px solid var(--color-border);
-}
-
-.entityStats tbody tr:last-child {
-	border-bottom: none;
-}
-
-.entityStats td,
-.entityStats th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: normal;
-}
-
-.entityStats td:first-child,
-.entityStats th:first-child {
-	width: 40%;
-	color: var(--color-text-maxcontrast);
 }
 
 /* Table View */
