@@ -63,14 +63,12 @@ class SystemEntityNotificationListener implements IEventListener {
 	 *
 	 * @param AnnotationNotificationDispatcher $dispatcher Dispatcher used to fire notifications.
 	 * @param SystemSchemaRules $rules Registry of declared system-schema rules.
-	 * @param SystemEntityChange $change Whether an update changed more than bookkeeping.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly AnnotationNotificationDispatcher $dispatcher,
 		private readonly SystemSchemaRules $rules,
-		private readonly SystemEntityChange $change = new SystemEntityChange(),
 	) {
 	}//end __construct()
 
@@ -121,7 +119,7 @@ class SystemEntityNotificationListener implements IEventListener {
 				// moved. An app re-import saves every entity it ships; one that
 				// differs only in its stamps, its version or the order of its
 				// keys is not news (Ruben, 7 October 2026).
-				if ($this->change->isReal(old: $oldData, new: $newData) === false) {
+				if ((new SystemEntityChange())->isReal(old: $oldData, new: $newData) === false) {
 					return;
 				}
 
