@@ -44,6 +44,10 @@ use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportH
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Import\DryRunBatch;
 use OCA\OpenRegister\Service\Import\ImportErrorsCsv;
+use OCA\OpenRegister\Service\Import\ImportMapping;
+use OCA\OpenRegister\Service\Import\ImportOptions;
+use OCA\OpenRegister\Service\Import\ImportRequest;
+use OCA\OpenRegister\Service\Import\ImportScope;
 use OCA\OpenRegister\Service\Import\ImportServiceCodecs;
 use OCA\OpenRegister\Service\Import\ImportServiceRuntime;
 use OCA\OpenRegister\Service\Import\ImportServiceStores;
@@ -338,26 +342,62 @@ class ImportService implements ObjectImporterInterface {
 		?IUser $currentUser = null,
 		bool $enrich = true,
 	): array {
-		$register = StoredEntity::register(register: $register);
-		$schema   = StoredEntity::schema(schema: $schema);
+		$scope   = new ImportScope(register: $register, schema: $schema, currentUser: $currentUser);
+		$options = new ImportOptions(validation: $validation, events: $events, enrich: $enrich, publish: $publish);
+		$request = new ImportRequest(filePath: $filePath, scope: $scope, options: $options);
+		return $this->importSpreadsheet(request: $request, _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end importFromExcel()
+
+	/**
+	 * Import a spreadsheet as requested; see {@see importFromExcel()}.
+	 *
+	 * @param ImportRequest $request       The file, scope and save options.
+	 * @param bool          $_rbac         Whether to enforce RBAC checks.
+	 * @param bool          $_multitenancy Whether to enable multi-tenancy.
+	 *
+	 * @return array The summaries by sheet title, plus `importJobId`.
+	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function importSpreadsheet(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array {
+		$import = $this->importSettings(request: $request) + ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
+
+		return $this->asImportJob(run: fn (): array => $this->importExcelFile(filePath: $request->filePath, import: $import));
+	}//end importSpreadsheet()
+
+	/**
+	 * The stored register and schema, and the save and mapping settings of one import.
+	 *
+	 * Clears the caches, so every import starts from fresh schema data.
+	 *
+	 * @param ImportRequest $request The import request.
+	 *
+	 * @return array<string, mixed> The import settings, without the guard flags.
+	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 */
+	private function importSettings(ImportRequest $request): array {
+		$register = StoredEntity::register(register: $request->scope->register);
+		$schema   = StoredEntity::schema(schema: $request->scope->schema);
 
 		// Clear caches at the start of each import to prevent stale data issues.
 		$this->clearCaches();
 
-		$import = [
+		return [
 			'register' => $register,
 			'schema' => $schema,
-			'validation' => $validation,
-			'events' => $events,
-			'_rbac' => $_rbac,
-			'_multitenancy' => $_multitenancy,
-			'publish' => $publish,
-			'currentUser' => $currentUser,
-			'enrich' => $enrich,
+			'validation' => $request->options->validation,
+			'events' => $request->options->events,
+			'publish' => $request->options->publish,
+			'currentUser' => $request->scope->currentUser,
+			'enrich' => $request->options->enrich,
+			'pack' => $request->mapping->pack,
+			'dryRun' => $request->mapping->dryRun,
+			'registerSlug' => $request->scope->registerSlug,
 		];
-
-		return $this->asImportJob(run: fn (): array => $this->importExcelFile(filePath: $filePath, import: $import));
-	}//end importFromExcel()
+	}//end importSettings()
 
 	/**
 	 * Import a spreadsheet, one schema per sheet when only a register is given.
@@ -470,33 +510,36 @@ class ImportService implements ObjectImporterInterface {
 		?array $pack = null,
 		bool $dryRun = false,
 	): array {
-		$register = StoredEntity::register(register: $register);
-		$schema   = StoredEntity::schema(schema: $schema);
+		$scope   = new ImportScope(register: $register, schema: $schema, currentUser: $currentUser);
+		$options = new ImportOptions(validation: $validation, events: $events, enrich: $enrich, publish: $publish);
+		$request = new ImportRequest(filePath: $filePath, scope: $scope, options: $options, mapping: new ImportMapping(pack: $pack, dryRun: $dryRun));
+		return $this->importCsv(request: $request, _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end importFromCsv()
 
-		// Clear caches at the start of each import to prevent stale data issues.
-		$this->clearCaches();
+	/**
+	 * Import a CSV file as requested; see {@see importFromCsv()}.
+	 *
+	 * @param ImportRequest $request       The file, scope, save options and mapping.
+	 * @param bool          $_rbac         Whether to enforce RBAC checks.
+	 * @param bool          $_multitenancy Whether to enable multi-tenancy.
+	 *
+	 * @return array The summary by sheet title, plus `importJobId`.
+	 *
+	 * @throws \InvalidArgumentException When no schema is given, or the register or schema is not a stored row.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 */
+	public function importCsv(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array {
+		$import = $this->importSettings(request: $request) + ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
 
 		// CSV can only handle a single schema.
-		if ($schema === null) {
+		if ($import['schema'] === null) {
 			throw new InvalidArgumentException('CSV import requires a specific schema');
 		}
 
-		$import = [
-			'schema' => $schema,
-			'validation' => $validation,
-			'events' => $events,
-			'_rbac' => $_rbac,
-			'_multitenancy' => $_multitenancy,
-			'publish' => $publish,
-			'currentUser' => $currentUser,
-			'enrich' => $enrich,
-			'pack' => $pack,
-			'dryRun' => $dryRun,
-			'register' => $register,
-		];
-
-		return $this->asImportJob(run: fn (): array => $this->importCsvFile(filePath: $filePath, import: $import));
-	}//end importFromCsv()
+		return $this->asImportJob(run: fn (): array => $this->importCsvFile(filePath: $request->filePath, import: $import));
+	}//end importCsv()
 
 	/**
 	 * Import a CSV file into one schema.
@@ -596,50 +639,83 @@ class ImportService implements ObjectImporterInterface {
 		bool $dryRun = false,
 		?string $registerSlug = null,
 	): array {
-		$register = StoredEntity::register(register: $register);
-		$schema   = StoredEntity::schema(schema: $schema);
+		$scope   = new ImportScope(register: $register, schema: $schema, currentUser: $currentUser, registerSlug: $registerSlug);
+		$options = new ImportOptions(validation: $validation, events: $events, enrich: $enrich, publish: $publish);
+		$request = new ImportRequest(filePath: $filePath, scope: $scope, options: $options, mapping: new ImportMapping(pack: $pack, dryRun: $dryRun));
+		return $this->importJson(request: $request, _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end importFromJson()
 
-		// Clear caches at the start of each import to prevent stale data issues.
-		$this->clearCaches();
-		$startTime = microtime(true);
+	/**
+	 * Import a JSON document as requested; see {@see importFromJson()}.
+	 *
+	 * @param ImportRequest $request       The file, scope, save options and mapping.
+	 * @param bool          $_rbac         Whether to apply RBAC permissions.
+	 * @param bool          $_multitenancy Whether to apply multi-tenancy filtering.
+	 *
+	 * @return array<string, mixed> Sheet-shaped summary (keyed 'JSON') plus importJobId
+	 *
+	 * @throws InvalidArgumentException  When no schema is given (and none is resolvable from a bundle) or the
+	 *                                   payload is not an array of objects
+	 * @throws RegisterNotFoundException When no register is given and the payload is not a creatable register-bundle
+	 *
+	 * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-auto-create-a-missing-register-from-a-bundle-req-imp-ac-01
+	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 */
+	public function importJson(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array {
+		$job = $this->importSettings(request: $request) + ['startTime' => microtime(true), '_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
+		$this->warnIfPublishing(publish: $job['publish']);
 
+		$decoded = $this->decodeJsonImportFile(filePath: $request->filePath);
+		$job     = $this->withJsonImportTarget(decoded: $decoded, job: $job);
+
+		return $this->runJsonImportJob(objects: $this->jsonImportObjects(decoded: $decoded), job: $job);
+	}//end importJson()
+
+	/**
+	 * The JSON import job with its register and schema settled.
+	 *
+	 * A null register could not be resolved by slug: a register bundle
+	 * auto-creates it with its schemas (REQ-IMP-AC-01/03), anything else
+	 * fails clearly, naming the missing slug (REQ-IMP-AC-02).
+	 *
+	 * @param array<mixed>         $decoded The decoded document.
+	 * @param array<string, mixed> $job     The import job.
+	 *
+	 * @return array<string, mixed> The job, with a register and a schema.
+	 *
+	 * @throws InvalidArgumentException  When no schema is given and none is resolvable from a bundle
+	 * @throws RegisterNotFoundException When no register is given and the payload is not a creatable register-bundle
+	 */
+	private function withJsonImportTarget(array $decoded, array $job): array {
+		if ($job['register'] === null) {
+			[$job['register'], $job['schema']] = $this->registerFromBundle(
+				decoded: $decoded,
+				target: ['schema' => $job['schema'], 'registerSlug' => $job['registerSlug']]
+			);
+		}
+
+		if ($job['schema'] === null) {
+			throw new InvalidArgumentException('JSON import requires a specific schema');
+		}
+
+		return $job;
+	}//end withJsonImportTarget()
+
+	/**
+	 * Log that the deprecated publish flag was set; it changes nothing.
+	 *
+	 * @param bool $publish The deprecated publish flag.
+	 *
+	 * @return void
+	 */
+	private function warnIfPublishing(bool $publish): void {
 		if ($publish === true) {
 			$this->runtime->logger->warning(
 				message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
-
-		$decoded = $this->decodeJsonImportFile(filePath: $filePath);
-
-		// A null register could not be resolved by slug: a register bundle
-		// auto-creates it with its schemas (REQ-IMP-AC-01/03), anything else
-		// fails clearly, naming the missing slug (REQ-IMP-AC-02).
-		if ($register === null) {
-			[$register, $schema] = $this->registerFromBundle(
-				decoded: $decoded,
-				target: ['schema' => $schema, 'registerSlug' => $registerSlug]
-			);
-		}
-
-		if ($schema === null) {
-			throw new InvalidArgumentException('JSON import requires a specific schema');
-		}
-
-		return $this->runJsonImportJob(
-			objects: $this->jsonImportObjects(decoded: $decoded),
-			job: [
-				'register' => $register,
-				'schema' => $schema,
-				'_rbac' => $_rbac,
-				'_multitenancy' => $_multitenancy,
-				'currentUser' => $currentUser,
-				'pack' => $pack,
-				'dryRun' => $dryRun,
-				'startTime' => $startTime,
-			]
-		);
-	}//end importFromJson()
+	}//end warnIfPublishing()
 
 	/**
 	 * Run a JSON import as one import job, tagging its audit rows with the job id.
@@ -1394,12 +1470,7 @@ class ImportService implements ObjectImporterInterface {
 	 * @return array The summary with created, updated, unchanged and validation errors
 	 */
 	private function saveImportedObjects(array $objects, array $import): array {
-		if ($import['publish'] === true) {
-			$this->runtime->logger->warning(
-				message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}
+		$this->warnIfPublishing(publish: $import['publish']);
 
 		$saveResult = $this->bulkSaveWithNotifyPush(objects: $objects, import: $import);
 		$summary = $this->withSaveOutcome(summary: $import['summary'], saveResult: $saveResult);
