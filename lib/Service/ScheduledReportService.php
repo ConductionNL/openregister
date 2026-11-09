@@ -32,11 +32,9 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use DateTimeInterface;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCA\OpenRegister\Notifications\Db\ScheduledReportMapperInterface;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
@@ -855,7 +853,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 				message: '[ScheduledReportService] Owner account not found — skipping run',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $report->getId(), 'owner' => $ownerUid]
 			);
-			$this->markOutcome(report: $report, status: 'failed', error: 'Owner account no longer exists.');
+			$this->markFailed(report: $report, error: 'Owner account no longer exists.');
 			return;
 		}
 
@@ -891,7 +889,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 				message: '[ScheduledReportService] Export too large',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $report->getId(), 'error' => $e->getMessage()]
 			);
-			$this->markOutcome(report: $report, status: 'failed', error: $e->getMessage());
+			$this->markFailed(report: $report, error: $e->getMessage());
 			$this->notifyFailed(report: $report, reason: $e->getMessage());
 		} catch (\Throwable $e) {
 			$this->logger->error(
@@ -903,7 +901,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 					'error' => $e->getMessage(),
 				]
 			);
-			$this->markOutcome(report: $report, status: 'failed', error: $e->getMessage());
+			$this->markFailed(report: $report, error: $e->getMessage());
 			$this->notifyFailed(report: $report, reason: $e->getMessage());
 		} finally {
 			$this->userSession->setUser($previousUser);
@@ -926,11 +924,10 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 */
 	private function finalizeOutcome(ScheduledReportRun $run): void {
 		$report = $run->report;
-		$filename = $run->filename;
 		$emailFailureReason = $run->emailFailureReason;
 		if ($emailFailureReason === null) {
-			$this->markOutcome(report: $report, status: 'success', error: null);
-			$this->notifyDelivered(report: $report, filename: $filename, emailFailureReason: null);
+			$this->markSucceeded(report: $report);
+			$this->notifyDelivered(run: $run);
 			return;
 		}
 
@@ -938,13 +935,13 @@ class ScheduledReportService implements ScheduledReportsInterface {
 			// Files delivery (the requested Files/both leg) succeeded —
 			// don't report a hard failure, but do surface the distinct
 			// email problem.
-			$this->markOutcome(report: $report, status: 'email_failed', error: $emailFailureReason);
-			$this->notifyDelivered(report: $report, filename: $filename, emailFailureReason: $emailFailureReason);
+			$this->markEmailFailed(report: $report, error: $emailFailureReason);
+			$this->notifyDelivered(run: $run);
 			return;
 		}
 
 		// Email-only mode and the email leg failed — nothing was delivered.
-		$this->markOutcome(report: $report, status: 'failed', error: $emailFailureReason);
+		$this->markFailed(report: $report, error: $emailFailureReason);
 		$this->notifyFailed(report: $report, reason: $emailFailureReason);
 	}//end finalizeOutcome()
 
@@ -985,9 +982,9 @@ class ScheduledReportService implements ScheduledReportsInterface {
 				$bytes = $this->exportService->exportToCsv(register: $register, schema: $schema, filters: $filters, currentUser: $owner);
 				return ['bytes' => $bytes, 'rowCount' => $this->countCsvRows(csv: $bytes)];
 			case 'pdf':
-				$bytes = $this->exportService->exportToPdf(register: $register, schema: $schema, filters: $filters, currentUser: $owner);
-				$rowCount = $this->bestEffortRowCount(register: $register, schema: $schema, filters: $filters, owner: $owner);
-				return ['bytes' => $bytes, 'rowCount' => $rowCount];
+				return $this->exportPdf(
+					query: new ScheduledReportExportQuery(register: $register, schema: $schema, filters: $filters, owner: $owner)
+				);
 			default:
 				$spreadsheet = $this->exportService->exportToExcel(register: $register, schema: $schema, filters: $filters, currentUser: $owner);
 				return [
@@ -1064,20 +1061,42 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	}//end countSpreadsheetRows()
 
 	/**
+	 * Render a pdf export, with a best-effort row count for the email body.
+	 *
+	 * @param ScheduledReportExportQuery $query What to export, and as whom.
+	 *
+	 * @return array{bytes: string, rowCount: int}
+	 *
+	 * @throws ExportTooLargeException When the pdf row cap is exceeded.
+	 */
+	private function exportPdf(ScheduledReportExportQuery $query): array {
+		$bytes = $this->exportService->exportToPdf(
+			register: $query->register,
+			schema: $query->schema,
+			filters: $query->filters,
+			currentUser: $query->owner
+		);
+
+		return ['bytes' => $bytes, 'rowCount' => $this->bestEffortRowCount(query: $query)];
+	}//end exportPdf()
+
+	/**
 	 * Best-effort row count for a pdf export, used only for the delivery
 	 * email body — never allowed to turn an otherwise-successful pdf export
 	 * into a failure.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema|null $schema The schema, if any.
-	 * @param array<string,mixed> $filters The filter map.
-	 * @param \OCP\IUser $owner The impersonated owner.
+	 * @param ScheduledReportExportQuery $query What was exported, and as whom.
 	 *
 	 * @return int
 	 */
-	private function bestEffortRowCount(Register $register, ?Schema $schema, array $filters, \OCP\IUser $owner): int {
+	private function bestEffortRowCount(ScheduledReportExportQuery $query): int {
 		try {
-			$spreadsheet = $this->exportService->exportToExcel(register: $register, schema: $schema, filters: $filters, currentUser: $owner);
+			$spreadsheet = $this->exportService->exportToExcel(
+				register: $query->register,
+				schema: $query->schema,
+				filters: $query->filters,
+				currentUser: $query->owner
+			);
 			return $this->countSpreadsheetRows(spreadsheet: $spreadsheet);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
@@ -1531,18 +1550,56 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	}//end humanFileSize()
 
 	/**
-	 * Persist the outcome of a run.
+	 * Persist that a run delivered everything it was asked to.
 	 *
 	 * @param ScheduledReport $report The report.
-	 * @param string $status success|failed|email_failed.
-	 * @param string|null $error The failure reason, if any.
 	 *
 	 * @return void
 	 */
-	private function markOutcome(ScheduledReport $report, string $status, ?string $error): void {
-		$report->setLastRunAt(new DateTime());
-		$report->setLastStatus($status);
+	private function markSucceeded(ScheduledReport $report): void {
+		$report->setLastStatus('success');
+		$report->setLastError(null);
+		$this->saveOutcome(report: $report);
+	}//end markSucceeded()
+
+	/**
+	 * Persist that a run failed: nothing was delivered.
+	 *
+	 * @param ScheduledReport $report The report.
+	 * @param string|null     $error  The failure reason.
+	 *
+	 * @return void
+	 */
+	private function markFailed(ScheduledReport $report, ?string $error): void {
+		$report->setLastStatus('failed');
 		$report->setLastError($error);
+		$this->saveOutcome(report: $report);
+	}//end markFailed()
+
+	/**
+	 * Persist that the Files leg delivered but the email leg failed.
+	 *
+	 * @param ScheduledReport $report The report.
+	 * @param string|null     $error  Why the email leg failed.
+	 *
+	 * @return void
+	 */
+	private function markEmailFailed(ScheduledReport $report, ?string $error): void {
+		$report->setLastStatus('email_failed');
+		$report->setLastError($error);
+		$this->saveOutcome(report: $report);
+	}//end markEmailFailed()
+
+	/**
+	 * Stamp and persist the outcome already set on the report; a failure to
+	 * persist is logged, never thrown.
+	 *
+	 * @param ScheduledReport $report The report, carrying its status and error.
+	 *
+	 * @return void
+	 */
+	private function saveOutcome(ScheduledReport $report): void {
+		$report->setLastRunAt(new DateTime());
 		$report->setUpdatedAt(new DateTime());
 
 		try {
@@ -1553,7 +1610,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $report->getId(), 'error' => $e->getMessage()]
 			);
 		}
-	}//end markOutcome()
+	}//end saveOutcome()
 
 	/**
 	 * Notify the report owner that a run failed.
@@ -1568,12 +1625,14 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	private function notifyFailed(ScheduledReport $report, ?string $reason): void {
 		$this->notifyOwner(
 			report: $report,
-			subject: 'scheduled_report_failed',
-			parameters: [
-				'reportId' => $report->getId(),
-				'reportName' => $report->getName(),
-				'reason' => ($reason ?? 'Unknown error'),
-			]
+			notice: new ScheduledReportNotice(
+				subject: 'scheduled_report_failed',
+				parameters: [
+					'reportId' => $report->getId(),
+					'reportName' => $report->getName(),
+					'reason' => ($reason ?? 'Unknown error'),
+				]
+			)
 		);
 	}//end notifyFailed()
 
@@ -1582,41 +1641,42 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * optional subject parameters so `Notifier` can render email-aware wording without a
 	 * new notification subject.
 	 *
-	 * @param ScheduledReport $report             The report.
-	 * @param string          $filename           The delivered filename.
-	 * @param string|null     $emailFailureReason Set when Files succeeded but the email leg failed (mode `both`).
+	 * @param ScheduledReportRun $run The run: its report, delivered filename, and the email leg's failure
+	 *                                reason (set when Files succeeded but the email leg failed, mode `both`).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	private function notifyDelivered(ScheduledReport $report, string $filename, ?string $emailFailureReason): void {
+	private function notifyDelivered(ScheduledReportRun $run): void {
+		$report = $run->report;
 		$this->notifyOwner(
 			report: $report,
-			subject: 'scheduled_report_delivered',
-			parameters: [
-				'reportId' => $report->getId(),
-				'reportName' => $report->getName(),
-				'folder' => $report->getDeliveryFolder(),
-				'filename' => $filename,
-				'mode' => ($report->getDeliveryMode() ?? 'files'),
-				'emailFailureReason' => $emailFailureReason,
-			]
+			notice: new ScheduledReportNotice(
+				subject: 'scheduled_report_delivered',
+				parameters: [
+					'reportId' => $report->getId(),
+					'reportName' => $report->getName(),
+					'folder' => $report->getDeliveryFolder(),
+					'filename' => $run->filename,
+					'mode' => ($report->getDeliveryMode() ?? 'files'),
+					'emailFailureReason' => $run->emailFailureReason,
+				]
+			)
 		);
 	}//end notifyDelivered()
 
 	/**
 	 * Send the report owner a notification; a failure to notify is logged, never thrown.
 	 *
-	 * @param ScheduledReport $report     The report.
-	 * @param string          $subject    The notification subject.
-	 * @param array           $parameters The subject parameters.
+	 * @param ScheduledReport       $report The report.
+	 * @param ScheduledReportNotice $notice The notification subject and its parameters.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	private function notifyOwner(ScheduledReport $report, string $subject, array $parameters): void {
+	private function notifyOwner(ScheduledReport $report, ScheduledReportNotice $notice): void {
 		$ownerUid = $report->getOwner();
 		if ($ownerUid === null) {
 			return;
@@ -1628,7 +1688,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 				->setUser($ownerUid)
 				->setDateTime(new DateTime())
 				->setObject(type: 'scheduled_report', id: (string)$report->getId())
-				->setSubject(subject: $subject, parameters: $parameters);
+				->setSubject(subject: $notice->subject, parameters: $notice->parameters);
 
 			$this->notificationManager->notify($notification);
 		} catch (\Throwable $e) {
