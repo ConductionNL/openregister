@@ -142,11 +142,7 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 							t('openregister', 'Active')
 						}}</span>
 					</div>
-					<span
-						v-if="row.description"
-						class="textDescription textEllipsis"
-						>{{ row.description }}</span
-					>
+					<IndexRowDescription :text="row.description" />
 				</div>
 			</template>
 
@@ -210,6 +206,7 @@ import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import SwitchOrganisationModal from '../../modals/organisation/SwitchOrganisationModal.vue'
+import IndexRowDescription from '../IndexRowDescription.vue'
 import { reloadAppData } from '../../services/AppInitializationService.js'
 import { deleteAction, editAction, viewAction } from '../../services/menuActions.js'
 import {
@@ -220,6 +217,7 @@ import {
 export default {
 	name: 'OrganisationsIndex',
 	components: {
+		IndexRowDescription,
 		ActionMenu,
 		NcActionButton,
 		NcAppContent,
