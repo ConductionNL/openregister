@@ -196,17 +196,17 @@ final class FlowItemPlacementTest extends TestCase {
 		$marked = $this->workflowMarking(places: ['left' => 1, 'right' => 1]);
 		$this->assertSame(
 			['left' => [['json' => ['n' => 'left']]], 'right' => $seed],
-			$this->placement->seedPlaceItems(workflow: $marked, subject: new \stdClass(), definition: $marked->getDefinition(), items: $seed, stored: $stored)
+			$this->placement->seedPlaceItems(workflow: $marked, subject: new \stdClass(), items: $seed, stored: $stored)
 		);
 		$this->assertSame(
 			['left' => $seed, 'right' => $seed],
-			$this->placement->seedPlaceItems(workflow: $marked, subject: new \stdClass(), definition: $marked->getDefinition(), items: $seed)
+			$this->placement->seedPlaceItems(workflow: $marked, subject: new \stdClass(), items: $seed)
 		);
 
 		$empty = $this->workflowMarking(places: []);
 		$this->assertSame(
 			['start' => $seed],
-			$this->placement->seedPlaceItems(workflow: $empty, subject: new \stdClass(), definition: $empty->getDefinition(), items: $seed, stored: $stored)
+			$this->placement->seedPlaceItems(workflow: $empty, subject: new \stdClass(), items: $seed, stored: $stored)
 		);
 	}//end testSeedingPrefersStoredItemsAndFallsBackToTheInitialPlaces()
 
