@@ -186,7 +186,7 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 		$method = new ReflectionMethod(SaveObject::class, 'prepareObjectForUpdate');
 		$method->setAccessible(true);
 
-		return $method->invokeArgs($handler, [$existing, $schema, $data, ['organisation' => 'org-a'], null, null])->getObject();
+		return $method->invokeArgs($handler, [$existing, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, ['organisation' => 'org-a']), null])->getObject();
 	}//end prepareUpdate()
 
 	/**

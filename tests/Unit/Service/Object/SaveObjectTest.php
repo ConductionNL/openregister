@@ -1725,7 +1725,7 @@ class SaveObjectTest extends TestCase {
 			->willThrowException(new DoesNotExistException('Not found'));
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 
 		$this->assertNull($result);
@@ -1739,7 +1739,7 @@ class SaveObjectTest extends TestCase {
 			->willReturn($entity);
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 
 		$this->assertSame($entity, $result);
@@ -1789,7 +1789,7 @@ class SaveObjectTest extends TestCase {
 		$this->expectExceptionMessage('Cannot update object: Object is locked by other-user');
 
 		$this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 	}
 
@@ -1804,7 +1804,7 @@ class SaveObjectTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 
 		$this->assertSame($entity, $result);
@@ -1834,7 +1834,7 @@ class SaveObjectTest extends TestCase {
 		$this->expectExceptionMessage($runUuid);
 
 		$this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 	}
 
@@ -1862,7 +1862,7 @@ class SaveObjectTest extends TestCase {
 		$this->runContext->push($runUuid, 'lock-object', 1);
 		try {
 			$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-				'test-uuid', null, null, false, false,
+				'test-uuid', null, null,
 			]);
 		} finally {
 			$this->runContext->pop();
@@ -1897,7 +1897,7 @@ class SaveObjectTest extends TestCase {
 		$refusal = null;
 		try {
 			$this->invokePrivateMethod('findAndValidateExistingObject', [
-				'test-uuid', null, null, false, false,
+				'test-uuid', null, null,
 			]);
 		} catch (Exception $refused) {
 			$refusal = $refused;
@@ -1932,7 +1932,7 @@ class SaveObjectTest extends TestCase {
 		$refusal = null;
 		try {
 			$this->invokePrivateMethod('findAndValidateExistingObject', [
-				'test-uuid', null, null, false, false,
+				'test-uuid', null, null,
 			]);
 		} catch (Exception $refused) {
 			$refusal = $refused;
@@ -1967,7 +1967,7 @@ class SaveObjectTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 
 		$this->assertSame($entity, $result);
@@ -3417,7 +3417,7 @@ class SaveObjectTest extends TestCase {
 			->willReturn($entity);
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 
 		$this->assertSame($entity, $result);
@@ -3432,7 +3432,7 @@ class SaveObjectTest extends TestCase {
 			->willReturn($entity);
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 
 		// Lock owner is null, so no lock conflict.
@@ -4823,7 +4823,7 @@ class SaveObjectTest extends TestCase {
 		[$entity, $schema] = $this->slugEntity('hello-world');
 		$data = ['title' => 'A Completely New Title'];
 
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, $data, []]);
+		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, [])]);
 		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [[], $data]]);
 
 		$this->assertSame('hello-world', $entity->getSlug(), 'the stored slug is the freeze reference');
