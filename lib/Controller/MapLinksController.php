@@ -35,6 +35,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\MapLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -55,20 +57,36 @@ class MapLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var MapLinkServiceInterface
+	 */
+	private readonly MapLinkServiceInterface $mapLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param MapLinkServiceInterface $mapLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param MapLinksControllerServices $services The map links controller services.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly MapLinkServiceInterface $mapLinkService,
-		private readonly ObjectOperationsInterface $objectService,
+		MapLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->mapLinkService = $services->mapLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**

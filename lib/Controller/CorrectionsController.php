@@ -26,9 +26,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\CorrectionsControllerServices;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Object\CorrectionServiceInterface;
 use OCA\OpenRegister\Service\Object\CorrectionTargetsInterface;
 use OCP\AppFramework\Controller;
@@ -49,12 +50,31 @@ use OCP\IUserSession;
 class CorrectionsController extends Controller {
 
 	/**
-	 * Constructor for the CorrectionsController.
+	 * The correction act.
 	 *
-	 * @param IRequest $request The request object.
-	 * @param CorrectionServiceInterface $corrections The correction act.
-	 * @param CorrectionTargetsInterface $targets Names the record a correction is made on.
-	 * @param IUserSession $userSession The user session.
+	 * @var CorrectionServiceInterface
+	 */
+	private readonly CorrectionServiceInterface $corrections;
+
+	/**
+	 * Names the record a correction is made on.
+	 *
+	 * @var CorrectionTargetsInterface
+	 */
+	private readonly CorrectionTargetsInterface $targets;
+
+	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest $request HTTP request.
+	 * @param CorrectionsControllerServices $services The corrections controller services.
 	 *
 	 * @return void
 	 *
@@ -62,11 +82,12 @@ class CorrectionsController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly CorrectionServiceInterface $corrections,
-		private readonly CorrectionTargetsInterface $targets,
-		private readonly IUserSession $userSession,
+		CorrectionsControllerServices $services,
 	) {
-		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->corrections = $services->corrections;
+		$this->targets = $services->targets;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**

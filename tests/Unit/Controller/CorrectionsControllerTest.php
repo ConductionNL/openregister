@@ -88,9 +88,11 @@ final class CorrectionsControllerTest extends TestCase {
 
 		return new CorrectionsController(
 			request: $this->request,
-			corrections: $this->corrections,
-			targets: new CorrectionTargets(),
-			userSession: $session
+			services: new \OCA\OpenRegister\Controller\Support\CorrectionsControllerServices(
+				corrections: $this->corrections,
+				targets: new CorrectionTargets(),
+				userSession: $session
+			)
 		);
 	}//end controller()
 
