@@ -56,9 +56,6 @@ use OCA\OpenRegister\Push\PushChannels;
 use OCA\OpenRegister\Service\Object\ObjectReadersInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use OCP\IAppConfig;
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Listener\Support\NotifyPushPlatform;
 
 /**
@@ -119,27 +116,6 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 	private static bool $queueUnavailable = false;
 
 	/**
-	 * PSR-3 logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * DI container for lazy IQueue resolution.
-	 *
-	 * @var ContainerInterface
-	 */
-	private readonly ContainerInterface $container;
-
-	/**
-	 * App config for push_available flag.
-	 *
-	 * @var IAppConfig
-	 */
-	private readonly IAppConfig $appConfig;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param NotifyPushPlatform $platform Logger, container and app config.
@@ -149,13 +125,11 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-4
 	 */
 	public function __construct(
-		NotifyPushPlatform $platform,
+		private readonly NotifyPushPlatform $platform,
 		private readonly ObjectReadersInterface $permissionHandler,
 		private readonly PushSlugResolver $slugs,
 	) {
-		$this->logger = $platform->logger;
-		$this->container = $platform->container;
-		$this->appConfig = $platform->appConfig;
+
 	}//end __construct()
 
 	/**
@@ -374,8 +348,8 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 	 * @return void
 	 */
 	private function markPushAvailable(bool $pushed): void {
-		if ($pushed === true && $this->appConfig->getValueString('openregister', 'push_available', '') !== '1') {
-			$this->appConfig->setValueString('openregister', 'push_available', '1');
+		if ($pushed === true && $this->platform->appConfig->getValueString('openregister', 'push_available', '') !== '1') {
+			$this->platform->appConfig->setValueString('openregister', 'push_available', '1');
 		}
 	}//end markPushAvailable()
 
@@ -542,7 +516,7 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 		}
 
 		try {
-			return $this->container->get('OCA\NotifyPush\Queue\IQueue');
+			return $this->platform->container->get('OCA\NotifyPush\Queue\IQueue');
 		} catch (\Throwable $e) {
 			$this->markQueueUnavailable(error: $e);
 			return null;
@@ -558,7 +532,7 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 	 */
 	private function markQueueUnavailable(\Throwable $error): void {
 		self::$queueUnavailable = true;
-		$this->logger->debug(
+		$this->platform->logger->debug(
 			message: '[NotifyPushListener] notify_push IQueue not available; push disabled for this request',
 			context: [
 				'file' => __FILE__,
