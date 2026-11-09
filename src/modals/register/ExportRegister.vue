@@ -41,26 +41,28 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 
 		<template #actions>
 			<CloseCancelButton :label="t('openregister', 'Cancel')" @click="closeModal" />
-			<NcButton :disabled="loading" variant="primary" @click="exportObjects">
+			<BusyButton
+				:busy="loading"
+				:disabled="loading"
+				variant="primary"
+				@click="exportObjects">
 				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Export v-else :size="20" />
+					<Export :size="20" />
 				</template>
 				{{ t('openregister', 'Export') }}
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
 import {
-	NcButton,
 	NcDialog,
-	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
 import Export from 'vue-material-design-icons/Export.vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 /**
@@ -89,12 +91,11 @@ export default {
 	name: 'ExportRegister',
 	components: {
 		NcDialog,
-		NcButton,
-		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
 		// Icons
 		Export,
+		BusyButton,
 		CloseCancelButton,
 	},
 
