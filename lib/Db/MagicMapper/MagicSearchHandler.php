@@ -1963,7 +1963,8 @@ class MagicSearchHandler {
 
 		// `like` first, for every column type; see applyObjectFilters().
 		if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
-			$likeCondition = $this->likeConditionSql(column: new QuotedSqlColumn(name: $field->quotedCol, connection: $field->connection), value: $value[LikeOperator::KEY]);
+			$quoted        = new QuotedSqlColumn(name: $field->quotedCol, connection: $field->connection);
+			$likeCondition = $this->likeConditionSql(column: $quoted, value: $value[LikeOperator::KEY]);
 			if ($likeCondition !== null) {
 				$fieldConditions[] = $likeCondition;
 			}
