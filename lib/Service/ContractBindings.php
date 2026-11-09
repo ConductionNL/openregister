@@ -112,7 +112,7 @@ use OCA\OpenRegister\Service\Calculation\PropertyCalculationsInterface;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
-use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresherInterface;
+use OCA\OpenRegister\Kernel\Contracts\ReferencedCalculationRefresherInterface;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;

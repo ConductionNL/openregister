@@ -36,7 +36,7 @@ use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
 use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
-use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresherInterface;
+use OCA\OpenRegister\Kernel\Contracts\ReferencedCalculationRefresherInterface;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;

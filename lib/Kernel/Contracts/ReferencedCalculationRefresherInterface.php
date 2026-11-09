@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Calculation;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 
 /**
  * Refresh the calculations that read a changed object through a reference.
@@ -35,12 +35,12 @@ interface ReferencedCalculationRefresherInterface {
 	/**
 	 * Re-save the objects in the updated object's register whose materialised calculations read a changed field of it.
 	 *
-	 * @param ObjectEntity      $updated The object as saved.
-	 * @param ObjectEntity|null $old     The object before the save, null when unknown (every field counts as changed).
+	 * @param ObjectEntityInterface      $updated The object as saved.
+	 * @param ObjectEntityInterface|null $old     The object before the save, null when unknown (every field counts as changed).
 	 *
 	 * @return integer The number of objects re-saved.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
 	 */
-	public function refresh(ObjectEntity $updated, ?ObjectEntity $old): int;
+	public function refresh(ObjectEntityInterface $updated, ?ObjectEntityInterface $old): int;
 }//end interface
