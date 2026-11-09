@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
+use OCA\OpenRegister\AppHost\Service\AppHostSettingsServices;
 use OCA\OpenRegister\AppHost\Exception\ConfigurationMissingException;
 use OCA\OpenRegister\AppHost\Exception\FoundationUnavailableException;
 use OCA\OpenRegister\AppHost\Service\GenericSettingsService;
@@ -117,12 +118,14 @@ class GenericSettingsServiceTest extends TestCase {
 
 		return new GenericSettingsService(
 			$appId,
-			$appConfig,
-			$appManager,
-			($container ?? $this->createMock(ContainerInterface::class)),
+			new AppHostSettingsServices(
+				$appConfig,
+				$appManager,
+				($container ?? $this->createMock(ContainerInterface::class)),
+				$this->createMock(LoggerInterface::class)
+			),
 			$groupManager,
-			$userSession,
-			$this->createMock(LoggerInterface::class)
+			$userSession
 		);
 	}//end service()
 
@@ -206,12 +209,9 @@ class GenericSettingsServiceTest extends TestCase {
 
 		$service = new GenericSettingsService(
 			'myapp',
-			$appConfig,
-			$appManager,
-			$container,
+			new AppHostSettingsServices($appConfig, $appManager, $container, $this->createMock(LoggerInterface::class)),
 			$groupManager,
-			$userSession,
-			$this->createMock(LoggerInterface::class)
+			$userSession
 		);
 
 		$result = $service->loadConfiguration(force: true);
