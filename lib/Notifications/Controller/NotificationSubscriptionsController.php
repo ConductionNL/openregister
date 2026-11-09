@@ -84,22 +84,28 @@ class NotificationSubscriptionsController extends Controller {
 	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest                                    $request     Request.
-	 * @param NotificationSubscriptionsControllerServices $services    The subscription stores.
-	 * @param IUserSession                                $userSession Current-user session.
+	 * @param IRequest                                    $request  Request.
+	 * @param NotificationSubscriptionsControllerServices $services The subscription stores and the session.
 	 */
 	public function __construct(
 		IRequest $request,
 		NotificationSubscriptionsControllerServices $services,
-		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->mapper         = $services->mapper;
 		$this->registerMapper = $services->registerMapper;
 		$this->schemaMapper   = $services->schemaMapper;
+		$this->userSession    = $services->userSession;
 	}//end __construct()
 
 	/**
