@@ -579,6 +579,7 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
+@use './cardRules' as *;
 
 @include view-container-2;
 
@@ -607,15 +608,7 @@ export default {
 /* Real button that carries the card's action. The ::after overlay restores
    whole-card mouse clickability while keyboard users get a genuine button. */
 .cardActivator {
-	appearance: none;
-	background: none;
-	border: none;
-	padding: 0;
-	margin: 0;
-	font: inherit;
-	color: inherit;
-	text-align: left;
-	cursor: pointer;
+	@include card-activator-reset;
 }
 
 .cardActivator::after {
@@ -637,11 +630,7 @@ export default {
 }
 
 .cardHeader {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
+	@include card-header-row;
 }
 
 .cardHeader h2 {

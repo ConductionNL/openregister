@@ -447,6 +447,7 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
+@use './cardRules' as *;
 
 @include view-container-2;
 
@@ -480,11 +481,8 @@ export default {
 }
 
 .cardHeader {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
+	@include card-header-row;
+
 	background: var(--color-background-hover);
 }
 
