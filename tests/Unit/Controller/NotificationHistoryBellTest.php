@@ -89,7 +89,6 @@ class NotificationHistoryBellTest extends TestCase {
 		$groups->method('isAdmin')->willReturn(false);
 
 		return new NotificationHistoryController(
-			'openregister',
 			$this->request,
 			new NotificationHistoryControllerServices(mapper: $this->mapper, userSession: $session, groupManager: $groups, clearing: $this->clearing)
 		);

@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
+use OCA\OpenRegister\Mcp\ToolScanSubject;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -76,7 +77,7 @@ class AttributeToolScannerBehaviourTest extends TestCase {
 	 */
 	private function scan(string $className): array {
 		$byName = [];
-		foreach ((new AttributeToolScanner())->scanClass('demo', $className, $this->logger) as $descriptor) {
+		foreach ((new AttributeToolScanner())->scanClass(new ToolScanSubject('demo', $className, $this->logger)) as $descriptor) {
 			$byName[$descriptor['name']] = $descriptor;
 		}
 

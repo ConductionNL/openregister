@@ -153,7 +153,6 @@ class ObjectWatchersControllerGoldenTest extends TestCase
         );
 
         return new ObjectWatchersController(
-            'openregister',
             $request,
             new ObjectWatchersControllerServices(objectService: $objects, watchers: $watchers, userManager: $users, logger: $logger)
         );

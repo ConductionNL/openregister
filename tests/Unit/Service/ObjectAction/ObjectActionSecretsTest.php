@@ -148,8 +148,10 @@ class ObjectActionSecretsTest extends TestCase {
 				return new \OCA\OpenRegister\Db\FlowState();
 			}
 		);
+		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowRunMapper::class);
+		$runs->method('update')->willReturnArgument(0);
 		$service = new \OCA\OpenRegister\Service\Flow\FlowRunService(
-			stores: new \OCA\OpenRegister\Service\Flow\FlowRunStores(mapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowRunMapper::class), stateMapper: $states),
+			stores: new \OCA\OpenRegister\Service\Flow\FlowRunStores(mapper: $runs, stateMapper: $states),
 			walk: new \OCA\OpenRegister\Service\Flow\FlowRunWalkServices(engine: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowEngine::class), registry: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class)),
 			logger: $this->createMock(originalClassName: \Psr\Log\LoggerInterface::class),
 			container: $this->createMock(originalClassName: \Psr\Container\ContainerInterface::class)
@@ -164,8 +166,14 @@ class ObjectActionSecretsTest extends TestCase {
 
 		$ref = ObjectActionSecrets::hold(values: ['pin' => '2026', 'digit' => '1']);
 		try {
-			$method = new \ReflectionMethod(objectOrMethod: \OCA\OpenRegister\Service\Flow\FlowRunService::class, method: 'persistFlowState');
-			$method->invoke($service, $run, [\OCA\OpenRegister\Service\Flow\FlowStateHandle::CONTEXT_KEY => $handle], $ref);
+			$method = new \ReflectionMethod(objectOrMethod: \OCA\OpenRegister\Service\Flow\FlowRunService::class, method: 'persistResult');
+			$result = [
+				'status' => \OCA\OpenRegister\Db\FlowRun::STATUS_SUSPENDED,
+				'log' => [],
+				'items' => [],
+				'context' => [ObjectActionSecrets::CONTEXT_KEY => $ref, \OCA\OpenRegister\Service\Flow\FlowStateHandle::CONTEXT_KEY => $handle],
+			];
+			$method->invoke($service, $run, $result);
 		} finally {
 			ObjectActionSecrets::release(ref: $ref);
 		}
