@@ -284,6 +284,7 @@ import TestTube from 'vue-material-design-icons/TestTube.vue'
 import Web from 'vue-material-design-icons/Web.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { saveMessageMethods } from './saveMessage.js'
 
 /**
  * API Token Configuration Component
@@ -372,6 +373,8 @@ export default {
 	},
 
 	methods: {
+		...saveMessageMethods,
+
 		/**
 		 * The current and stored token, test state and handlers of a provider.
 		 *
@@ -559,22 +562,6 @@ export default {
 		},
 
 		/**
-		 * Show save message
-		 *
-		 * @spec exclude UI plumbing — transient inline message with auto-clear timeout.
-		 * @param {string} message - The message to show
-		 * @param {string} type - The type of message ('success' or 'error')
-		 * @return {void}
-		 */
-		showSaveMessage(message, type = 'success') {
-			this.saveMessage = message
-			this.saveMessageType = type
-			setTimeout(() => {
-				this.saveMessage = ''
-			}, 3000)
-		},
-
-		/**
 		 * Test GitHub token validity
 		 *
 		 * @spec exclude UI plumbing — thin POST + result display; token validation contract owned by backend.
@@ -730,7 +717,8 @@ export default {
 	line-height: 1.5;
 }
 
-.scope-item code {
+.scope-item code,
+.scope-list code {
 	background: var(--color-background-dark);
 	padding: 2px 6px;
 	border-radius: 3px;
@@ -755,15 +743,6 @@ export default {
 	margin: 6px 0;
 	font-size: 14px;
 	line-height: 1.5;
-}
-
-.scope-list code {
-	background: var(--color-background-dark);
-	padding: 2px 6px;
-	border-radius: 3px;
-	font-family: monospace;
-	color: var(--color-primary-element);
-	font-weight: 600;
 }
 
 .scope-note {
@@ -869,7 +848,8 @@ export default {
 	flex: 1;
 }
 
-.saved-indicator {
+.saved-indicator,
+.test-result-success {
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -879,12 +859,6 @@ export default {
 }
 
 .test-result-success {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	color: var(--color-success);
-	font-weight: 500;
-	font-size: 14px;
 	padding: 8px 12px;
 	background-color: var(--color-success-light);
 	border-radius: var(--border-radius);
