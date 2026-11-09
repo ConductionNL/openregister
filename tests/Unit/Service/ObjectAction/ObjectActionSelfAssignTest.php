@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\MatrixRowsRequestedEvent;
 use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\IDBConnection;
 use ReflectionMethod;
@@ -239,7 +240,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$groups,
 			$schemas,
 			$this->createMock(MagicMapper::class),
-			new ConditionMatcher($session, $this->createMock(ContainerInterface::class), new OperatorEvaluator(new NullLogger()), new NullLogger()),
+			new ConditionMatcher(new ConditionUserResolvers($session), $this->createMock(ContainerInterface::class), new OperatorEvaluator(new NullLogger()), new NullLogger()),
 			$config,
 			new NullLogger(),
 			$this->createMock(ContainerInterface::class),
