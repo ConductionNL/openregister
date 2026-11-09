@@ -169,32 +169,50 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-			$list = $this->valueAt(json: $json, path: $path);
 
-			if ($list === null) {
-				continue;
+			$base = [];
+			if ($keep === true) {
+				$base = $json;
 			}
 
-			if (is_array($list) === false) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('The explode path "%s" is not a list.', [$path])
-				);
-			}
-
-			foreach ($list as $entry) {
-				$record = [];
-				if ($keep === true) {
-					$record = $json;
-				}
-
+			foreach ($this->listAt(json: $json, path: $path) as $entry) {
+				$record = $base;
 				$record[$under] = $entry;
 
 				$out[] = FlowItems::item(json: $record, fromItemIndex: $index);
 			}
-		}//end foreach
+		}
 
 		return $out;
 	}//end execute()
+
+	/**
+	 * The list at the path: empty when the path is absent, refused when it is not a list.
+	 *
+	 * @param array  $json The item's record.
+	 * @param string $path The dotted path.
+	 *
+	 * @return array The entries to explode into, possibly none.
+	 *
+	 * @throws UnexpectedValueException When the path holds something other than a list.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function listAt(array $json, string $path): array {
+		$list = $this->valueAt(json: $json, path: $path);
+
+		if ($list === null) {
+			return [];
+		}
+
+		if (is_array($list) === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('The explode path "%s" is not a list.', [$path])
+			);
+		}
+
+		return $list;
+	}//end listAt()
 
 	/**
 	 * The value at a dotted path, or null when absent.

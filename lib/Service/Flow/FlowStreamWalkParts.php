@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 
 /**
  * The claim protocol, the commit path and the stream rows of one stream walk.
@@ -35,14 +35,14 @@ final class FlowStreamWalkParts {
 	 *
 	 * @param FlowPlaceClaims  $claims       The claim protocol.
 	 * @param FlowRunCommit    $commit       The commit path.
-	 * @param FlowStreamMapper $streamMapper The stream rows.
+	 * @param FlowStreamMapperInterface $streamMapper The stream rows.
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function __construct(
 		public readonly FlowPlaceClaims $claims,
 		public readonly FlowRunCommit $commit,
-		public readonly FlowStreamMapper $streamMapper,
+		public readonly FlowStreamMapperInterface $streamMapper,
 	) {
 	}//end __construct()
 }//end class

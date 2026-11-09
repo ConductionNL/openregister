@@ -54,7 +54,7 @@ use OCP\IAppConfig;
  * predict the behaviour of. Refusing to store one is better than storing one
  * that means something different every five minutes.
  */
-class AuditAggregationService {
+class AuditAggregationService implements AuditAggregationServiceInterface {
 
 	/**
 	 * The app-config key holding the window, in seconds.
@@ -62,16 +62,6 @@ class AuditAggregationService {
 	 * @var string
 	 */
 	public const CONFIG_KEY = 'audit_aggregation_window_seconds';
-
-	/**
-	 * The longest window an administrator may set, in seconds.
-	 *
-	 * Equal to `AuditSealJob::INTERVAL_SECONDS`. See the class docblock for
-	 * why that is the ceiling rather than a round number.
-	 *
-	 * @var integer
-	 */
-	public const MAXIMUM_WINDOW_SECONDS = 300;
 
 	/**
 	 * Constructor.

@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
-use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
+use OCA\OpenRegister\Service\Portal\PortalTaskReminderInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -89,12 +89,12 @@ class PortalTaskReminderListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param PortalTaskDeliveryService $delivery Records the reminder for the portal.
+	 * @param PortalTaskReminderInterface $delivery Records the reminder for the portal.
 	 * @param TaskManagerInterface $tasks Reads the timer's subject task.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly PortalTaskDeliveryService $delivery,
+		private readonly PortalTaskReminderInterface $delivery,
 		private readonly TaskManagerInterface $tasks,
 		private readonly LoggerInterface $logger,
 	) {

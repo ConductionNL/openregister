@@ -502,6 +502,47 @@
             "created": "2026-09-01T09:00:00+02:00"
         }
     ],
+    "testAnExtensionRecordsItsActorReasonAndBasisAndRefusesANonPositiveAmountFirst ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "extended",
+            "actor": "carol",
+            "reason": "Verdaging (+3 calendarDays)",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": "2026-10-30T09:00:00+01:00",
+            "daysImpact": "3.0",
+            "basis": "Awb 4:14",
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-03T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "extended",
+            "actor": "supervisor",
+            "reason": "Override (+4 hours)",
+            "priorFireAt": "2026-10-30T09:00:00+01:00",
+            "newFireAt": "2026-10-30T13:00:00+01:00",
+            "daysImpact": "0.16666666666666666",
+            "basis": "override",
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-04T09:00:00+02:00"
+        }
+    ],
     "testAnUnknownCalendarIsRefusedNotDowngraded ": [],
     "testAnchorDatesArriveAsStringsOrDateTimesAndBadOnesAreNamed ": [
         {

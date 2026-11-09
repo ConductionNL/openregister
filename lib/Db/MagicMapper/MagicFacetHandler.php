@@ -42,11 +42,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use DateTime;
 use LogicException;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -397,9 +397,8 @@ class MagicFacetHandler {
 		}
 
 		$run   = new FacetResults(startTime: $startTime, config: $this->normaliseFacetConfig(facetConfig: $facetConfig, schema: $schema));
-		$table = new TableTermsFacet(
-			tableName: $tableName, field: '', baseQuery: $this->withoutFacets(query: $query),
-			isMetadata: false, register: $register, schema: $schema
+		$table = new TermsFacetTable(
+			tableName: $tableName, baseQuery: $this->withoutFacets(query: $query), register: $register, schema: $schema
 		);
 
 		$this->addTableSelfFacets(table: $table, run: $run);
@@ -424,14 +423,14 @@ class MagicFacetHandler {
 	/**
 	 * Compute the metadata (@self) facets of one table.
 	 *
-	 * @param TableTermsFacet $table The table and filters, without a field.
+	 * @param TermsFacetTable $table The table and filters, without a field.
 	 * @param FacetResults    $run   The facet configuration and the results so far.
 	 *
 	 * @return void
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs.
 	 */
-	private function addTableSelfFacets(TableTermsFacet $table, FacetResults $run): void {
+	private function addTableSelfFacets(TermsFacetTable $table, FacetResults $run): void {
 		$run->addSelfFacets(
 			compute: fn (int|string $field, mixed $config): ?array => $this->computeTableFacet(
 				facet: $table->forMetadataField(field: self::METADATA_PREFIX . $field),
@@ -443,7 +442,7 @@ class MagicFacetHandler {
 	/**
 	 * Compute the object field facets of one table that the caller may read.
 	 *
-	 * @param TableTermsFacet $table The table and filters, without a field.
+	 * @param TermsFacetTable $table The table and filters, without a field.
 	 * @param FacetResults    $run   The facet configuration and the results so far.
 	 *
 	 * @return void
@@ -452,7 +451,7 @@ class MagicFacetHandler {
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
-	private function addTablePropertyFacets(TableTermsFacet $table, FacetResults $run): void {
+	private function addTablePropertyFacets(TermsFacetTable $table, FacetResults $run): void {
 		foreach ($run->config as $field => $config) {
 			// 🔴 AN EXPLICITLY REQUESTED FACET OBEYS THE READ RULE TOO. The
 			// guard in expandFacetConfig() covers only the auto-discovered
@@ -1620,7 +1619,7 @@ class MagicFacetHandler {
 	private function callerMayFacet(Schema $schema, string $property): bool {
 		// An explicit-reveal value is shown only through the logged reveal; its
 		// distinct values in a facet would list it unmasked, for anyone.
-		if (in_array($property, ExplicitReveal::explicitProperties(schema: $schema), true) === true) {
+		if (in_array($property, ExplicitRevealMasks::explicitProperties(schema: $schema), true) === true) {
 			return false;
 		}
 
@@ -1666,7 +1665,7 @@ class MagicFacetHandler {
 	 */
 	private function readRuleAdmits(Schema $schema, string $property): bool {
 		try {
-			$rbac = $this->container->get(PropertyRbacHandler::class);
+			$rbac = $this->container->get(PropertyRbacHandlerInterface::class);
 
 			// The object is empty because a facet is not about one record: it
 			// asks whether this property is readable AT ALL for this caller, not
@@ -2640,13 +2639,10 @@ class MagicFacetHandler {
 	 * @param string $field The field name for cache key.
 	 * @param Schema $schema The current schema context.
 	 * @param Register $register The current register context.
-	 * @param string $tableName The magic mapper table name (optional, for cache key).
 	 *
 	 * @return array<string, string> Map of UUID to label.
-	 *
-	 * @psalm-suppress UnusedParam $tableName reserved for cache key usage in future optimization
 	 */
-	private function batchResolveUuidLabels(array $uuids, string $field, Schema $schema, Register $register, string $tableName = ''): array {
+	private function batchResolveUuidLabels(array $uuids, string $field, Schema $schema, Register $register): array {
 		if (empty($uuids) === true) {
 			return [];
 		}

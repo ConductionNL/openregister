@@ -17,13 +17,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 			:viewMode="applicationStore.viewMode"
 			:selectable="true"
 			:selectedIds="selectedApplications"
-			:showEditAction="false"
-			:showCopyAction="false"
-			:showDeleteAction="false"
-			:showMassImport="false"
-			:showMassExport="false"
-			:showMassCopy="false"
-			:showMassDelete="false"
+			v-bind="builtinActionsOff"
 			showViewToggle
 			:addLabel="t('openregister', 'Add Application')"
 			rowKey="id"
@@ -164,6 +158,10 @@ import { NcAppContent } from '@nextcloud/vue'
 import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import { deleteAction, editAction } from '../../services/menuActions.js'
+import {
+	BUILTIN_ACTIONS_OFF,
+	rowOpeners,
+} from '../indexPageOptions.js'
 
 export default {
 	name: 'ApplicationsIndex',
@@ -176,6 +174,7 @@ export default {
 
 	data() {
 		return {
+			builtinActionsOff: BUILTIN_ACTIONS_OFF,
 			selectedApplications: [],
 			isRefreshing: false,
 		}
@@ -278,31 +277,7 @@ export default {
 			]
 		},
 
-		/**
-		 * Select a row and open a modal on it.
-		 *
-		 * @spec exclude UI plumbing — store delegation.
-		 * @param {object} item - list row
-		 * @param {string} modal - modal name
-		 * @return {void}
-		 */
-		openModal(item, modal) {
-			applicationStore.setApplicationItem(item)
-			navigationStore.setModal(modal)
-		},
-
-		/**
-		 * Select a row and open a dialog on it.
-		 *
-		 * @spec exclude UI plumbing — store delegation.
-		 * @param {object} item - list row
-		 * @param {string} dialog - dialog name
-		 * @return {void}
-		 */
-		openDialog(item, dialog) {
-			applicationStore.setApplicationItem(item)
-			navigationStore.setDialog(dialog)
-		},
+		...rowOpeners((item) => applicationStore.setApplicationItem(item)),
 
 		/**
 		 * Reload the application list from the store.

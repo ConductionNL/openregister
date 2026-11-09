@@ -25,6 +25,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\RelationsCollaboration;
 use OCA\OpenRegister\Controller\Support\RelationsControllerServices;
 use OCA\OpenRegister\Controller\Support\RelationsObjectLookup;
+use OCA\OpenRegister\Controller\Support\RelationTypeLookup;
 use OCA\OpenRegister\Controller\Support\RelationsRecords;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCP\AppFramework\Controller;
@@ -404,11 +405,12 @@ class RelationsController extends Controller {
 	 * @return array{relation?: mixed, error?: array{message: string, exception: string}} The outcome, empty when skipped.
 	 */
 	private function relationOutcome(string $key, string $objectUuid): array {
+		$lookup = new RelationTypeLookup(key: $key, objectUuid: $objectUuid);
 		if (isset(self::CORE_RELATIONS[$key]) === true) {
-			return $this->coreRelation(key: $key, objectUuid: $objectUuid);
+			return $this->coreRelation(lookup: $lookup);
 		}
 
-		return $this->leafRelation(key: $key, objectUuid: $objectUuid);
+		return $this->leafRelation(lookup: $lookup);
 	}//end relationOutcome()
 
 	/**
@@ -419,38 +421,37 @@ class RelationsController extends Controller {
 	 * object either: that is a normal state, not a failure (#4165), as in
 	 * TasksController::index().
 	 *
-	 * @param string $key        The relation type, a key of CORE_RELATIONS.
-	 * @param string $objectUuid The object UUID.
+	 * @param RelationTypeLookup $lookup The relation type, a key of CORE_RELATIONS, and the object UUID.
 	 *
 	 * @return array{relation?: mixed, error?: array{message: string, exception: string}} The outcome, empty when skipped.
 	 */
-	private function coreRelation(string $key, string $objectUuid): array {
-		$spec    = self::CORE_RELATIONS[$key];
+	private function coreRelation(RelationTypeLookup $lookup): array {
+		$spec    = self::CORE_RELATIONS[$lookup->key];
 		$service = $this->{$spec['group']}->{$spec['service']};
 		if ($spec['available'] !== null && $service->{$spec['available']}() !== true) {
 			return [];
 		}
 
 		try {
-			return ['relation' => $this->coreItems(spec: $spec, service: $service, objectUuid: $objectUuid)];
+			return ['relation' => $this->coreItems(service: $service, lookup: $lookup)];
 		} catch (NoVtodoCalendarException $e) {
-			return $this->noVtodoOutcome(key: $key, objectUuid: $objectUuid, exception: $e);
+			return $this->noVtodoOutcome(lookup: $lookup, exception: $e);
 		} catch (Exception $e) {
-			return $this->coreFailure(type: $key, objectUuid: $objectUuid, exception: $e);
+			return $this->coreFailure(lookup: $lookup, exception: $e);
 		}
 	}//end coreRelation()
 
 	/**
 	 * The items one built-in service holds for an object, wrapped when the type is counted.
 	 *
-	 * @param array<string, mixed> $spec       The type's entry of CORE_RELATIONS.
-	 * @param object               $service    The service.
-	 * @param string               $objectUuid The object UUID.
+	 * @param object             $service The service.
+	 * @param RelationTypeLookup $lookup  The relation type, a key of CORE_RELATIONS, and the object UUID.
 	 *
 	 * @return mixed The relation.
 	 */
-	private function coreItems(array $spec, object $service, string $objectUuid): mixed {
-		$items = $service->{$spec['method']}($objectUuid);
+	private function coreItems(object $service, RelationTypeLookup $lookup): mixed {
+		$spec  = self::CORE_RELATIONS[$lookup->key];
+		$items = $service->{$spec['method']}($lookup->objectUuid);
 		if ($spec['counted'] === true) {
 			$items = ['results' => $items, 'total' => count($items)];
 		}
@@ -461,31 +462,29 @@ class RelationsController extends Controller {
 	/**
 	 * The outcome of a type whose lookup found no VTODO calendar: no tasks for `tasks`, a failure otherwise.
 	 *
-	 * @param string                    $key        The relation type.
-	 * @param string                    $objectUuid The object UUID.
-	 * @param NoVtodoCalendarException $exception  The exception.
+	 * @param RelationTypeLookup       $lookup    The relation type and the object UUID.
+	 * @param NoVtodoCalendarException $exception The exception.
 	 *
 	 * @return array{relation?: mixed, error?: array{message: string, exception: string}} The outcome.
 	 */
-	private function noVtodoOutcome(string $key, string $objectUuid, NoVtodoCalendarException $exception): array {
-		if ($key === 'tasks') {
+	private function noVtodoOutcome(RelationTypeLookup $lookup, NoVtodoCalendarException $exception): array {
+		if ($lookup->key === 'tasks') {
 			return ['relation' => ['results' => [], 'total' => 0]];
 		}
 
-		return $this->coreFailure(type: $key, objectUuid: $objectUuid, exception: $exception);
+		return $this->coreFailure(lookup: $lookup, exception: $exception);
 	}//end noVtodoOutcome()
 
 	/**
 	 * Log a failed built-in lookup and answer it as an `_errors` entry.
 	 *
-	 * @param string     $type       The relation type.
-	 * @param string     $objectUuid The object UUID.
-	 * @param \Throwable $exception  The failure.
+	 * @param RelationTypeLookup $lookup    The relation type and the object UUID.
+	 * @param \Throwable         $exception The failure.
 	 *
 	 * @return array{error: array{message: string, exception: string}} The outcome.
 	 */
-	private function coreFailure(string $type, string $objectUuid, \Throwable $exception): array {
-		$this->logRelationFailure(type: $type, objectUuid: $objectUuid, exception: $exception);
+	private function coreFailure(RelationTypeLookup $lookup, \Throwable $exception): array {
+		$this->logRelationFailure(lookup: $lookup, exception: $exception);
 
 		return self::errorOutcome(exception: $exception);
 	}//end coreFailure()
@@ -510,40 +509,39 @@ class RelationsController extends Controller {
 	 * no `_errors` key appears on a response whose requested lookups all succeeded. Only
 	 * a failure of an AVAILABLE service's own call is an error worth surfacing.
 	 *
-	 * @param string $key        The relation type, a key of LEAF_INTEGRATIONS.
-	 * @param string $objectUuid The object UUID.
+	 * @param RelationTypeLookup $lookup The relation type, a key of LEAF_INTEGRATIONS, and the object UUID.
 	 *
 	 * @return array{relation?: array, error?: array{message: string, exception: string}} The outcome, empty when skipped.
 	 */
-	private function leafRelation(string $key, string $objectUuid): array {
-		$spec = self::LEAF_INTEGRATIONS[$key];
+	private function leafRelation(RelationTypeLookup $lookup): array {
+		$spec = self::LEAF_INTEGRATIONS[$lookup->key];
 		$service = $this->leafService(class: $spec['class']);
 		if ($service === null) {
 			return [];
 		}
 
 		try {
-			return $this->leafItems(spec: $spec, service: $service, objectUuid: $objectUuid);
+			return $this->leafItems(service: $service, lookup: $lookup);
 		} catch (\Throwable $e) {
-			return $this->leafFailure(type: $key, objectUuid: $objectUuid, exception: $e);
+			return $this->leafFailure(lookup: $lookup, exception: $e);
 		}
 	}//end leafRelation()
 
 	/**
 	 * What one leaf link service holds for an object, or nothing when its app reports itself unavailable.
 	 *
-	 * @param array<string, mixed> $spec       The type's entry of LEAF_INTEGRATIONS.
-	 * @param object               $service    The service.
-	 * @param string               $objectUuid The object UUID.
+	 * @param object             $service The service.
+	 * @param RelationTypeLookup $lookup  The relation type, a key of LEAF_INTEGRATIONS, and the object UUID.
 	 *
 	 * @return array{relation?: array} The outcome, empty when skipped.
 	 */
-	private function leafItems(array $spec, object $service, string $objectUuid): array {
+	private function leafItems(object $service, RelationTypeLookup $lookup): array {
+		$spec = self::LEAF_INTEGRATIONS[$lookup->key];
 		if ($spec['available'] !== null && $service->{$spec['available']}() !== true) {
 			return [];
 		}
 
-		$items = $service->{$spec['method']}($objectUuid);
+		$items = $service->{$spec['method']}($lookup->objectUuid);
 		return ['relation' => ['results' => $items, 'total' => count($items)]];
 	}//end leafItems()
 
@@ -571,16 +569,15 @@ class RelationsController extends Controller {
 	/**
 	 * Log a failed leaf lookup as a warning and answer it as an `_errors` entry.
 	 *
-	 * @param string     $type       The relation type.
-	 * @param string     $objectUuid The object UUID.
-	 * @param \Throwable $exception  The failure.
+	 * @param RelationTypeLookup $lookup    The relation type and the object UUID.
+	 * @param \Throwable         $exception The failure.
 	 *
 	 * @return array{error: array{message: string, exception: string}} The outcome.
 	 */
-	private function leafFailure(string $type, string $objectUuid, \Throwable $exception): array {
+	private function leafFailure(RelationTypeLookup $lookup, \Throwable $exception): array {
 		$this->logger->warning(
 			'[RelationsController::gatherRelations] {type} lookup failed for object {uuid}: {error}',
-			['type' => $type, 'uuid' => $objectUuid, 'error' => $exception->getMessage()]
+			['type' => $lookup->key, 'uuid' => $lookup->objectUuid, 'error' => $exception->getMessage()]
 		);
 
 		return self::errorOutcome(exception: $exception);
@@ -613,18 +610,17 @@ class RelationsController extends Controller {
 	 * uuid. The Throwable is passed via the `exception` context key so the
 	 * Nextcloud logger preserves the original stack trace.
 	 *
-	 * @param string $type The relation type that failed (notes, tasks, emails, …).
-	 * @param string $objectUuid The object UUID being aggregated.
-	 * @param \Throwable $exception The caught exception.
+	 * @param RelationTypeLookup $lookup    The relation type that failed (notes, tasks, emails, …) and the object UUID being aggregated.
+	 * @param \Throwable         $exception The caught exception.
 	 *
 	 * @return void
 	 */
-	private function logRelationFailure(string $type, string $objectUuid, \Throwable $exception): void {
+	private function logRelationFailure(RelationTypeLookup $lookup, \Throwable $exception): void {
 		$this->logger->error(
 			'[RelationsController::gatherRelations] {type} lookup failed for object {uuid}: {error}',
 			[
-				'type' => $type,
-				'uuid' => $objectUuid,
+				'type' => $lookup->key,
+				'uuid' => $lookup->objectUuid,
 				'error' => $exception->getMessage(),
 				'exception' => $exception,
 			]

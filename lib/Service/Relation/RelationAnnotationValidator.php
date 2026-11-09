@@ -51,20 +51,13 @@ namespace OCA\OpenRegister\Service\Relation;
  *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
-final class RelationAnnotationValidator {
+final class RelationAnnotationValidator implements RelationAnnotationValidatorInterface {
 	/**
 	 * The per-property annotation naming both ends of a link.
 	 *
 	 * @var string
 	 */
 	public const PROPERTY_ANNOTATION = 'x-openregister-relation';
-
-	/**
-	 * The schema-level annotation holding the named relation vocabulary.
-	 *
-	 * @var string
-	 */
-	public const VOCABULARY_ANNOTATION = 'x-openregister-relation-types';
 
 	/**
 	 * What a relation type may declare a child inherits from its parent.

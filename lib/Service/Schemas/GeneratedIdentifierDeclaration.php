@@ -35,7 +35,7 @@ use DateTimeInterface;
 /**
  * A parsed, validated `x-openregister-generated` block.
  */
-final class GeneratedIdentifierDeclaration {
+final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclarationInterface {
 
 	/**
 	 * The annotation key a property carries.

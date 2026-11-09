@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Archival;
 use DateTimeImmutable;
 use DateTimeInterface;
 use InvalidArgumentException;
+use OCP\AppFramework\Utility\ITimeFactory;
 
 /**
  * Assignment, sign-off and the decision history of a destruction list.
@@ -59,33 +60,17 @@ use InvalidArgumentException;
  *              and take away the one thing a refused reviewer needs, which is
  *              WHICH rule refused them.
  */
-class DestructionReviewService {
+class DestructionReviewService implements DestructionReviewServiceInterface, DestructionReviewReminderInterface {
 
 	/**
-	 * Destroy the record. It has reached its disposal date and nothing holds it.
-	 */
-	public const ANSWER_DESTROY = 'destroy';
-
-	/**
-	 * Keep the record, on a new disposal date, for a recorded reason.
-	 */
-	public const ANSWER_RETAIN = 'retain';
-
-	/**
-	 * Hand the record to an e-Depot rather than destroy it.
-	 */
-	public const ANSWER_TRANSFER = 'transfer';
-
-	/**
-	 * The three answers a reviewer may give, and no others.
+	 * Constructor.
 	 *
-	 * @var string[]
+	 * @param ITimeFactory|null $clock Tells the moment a decision is recorded; the system clock when null.
 	 */
-	public const ANSWERS = [
-		self::ANSWER_DESTROY,
-		self::ANSWER_RETAIN,
-		self::ANSWER_TRANSFER,
-	];
+	public function __construct(
+		private readonly ?ITimeFactory $clock = null,
+	) {
+	}//end __construct()
 
 	/**
 	 * The entries of a destruction list, as a list.
@@ -220,54 +205,78 @@ class DestructionReviewService {
 	 * transfer list and nowhere else would leave this list saying the entry was
 	 * never decided, which is how a decision history becomes two.
 	 *
+	 * The moment of the decision is now, as the injected clock tells it.
+	 *
 	 * @param array<string, mixed> $listData    The destruction list's own data.
 	 * @param string               $entryUuid   The uuid of the object the entry is about.
-	 * @param string               $answer      One of self::ANSWERS.
-	 * @param string               $reviewer    The user id answering; must be the assigned reviewer.
-	 * @param string               $reason      Why. Required for every answer, not only a retention.
-	 * @param string|null          $newDate     The new archiefactiedatum, required by a retention.
+	 * @param ReviewerAnswer       $given       The answer (one of ANSWERS), its reason (required for every
+	 *                                          answer), the new archiefactiedatum a retention requires, and
+	 *                                          the reviewer, who must be the one assigned.
 	 * @param string|null          $transferRef The transfer list this entry was handed to, if any.
-	 * @param DateTimeInterface|null $decidedAt The moment of the decision; now when omitted.
 	 *
 	 * @return array<string, mixed> The list data, with the entry decided and the history appended.
 	 *
 	 * @throws InvalidArgumentException When the answer, the entry, the reviewer or the reason is wrong.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One decision, and every fact it records.
-	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function recordAnswer(
-		array $listData, string $entryUuid, string $answer, string $reviewer,
-		string $reason, ?string $newDate = null, ?string $transferRef = null, ?DateTimeInterface $decidedAt = null,
-	): array {
-		$this->guardAnswer(answer: $answer, reason: $reason, newDate: $newDate);
+	public function recordAnswer(array $listData, string $entryUuid, ReviewerAnswer $given, ?string $transferRef = null): array {
+		$answer = new ReviewAnswer(answer: $given->answer, reason: $given->reason, newDate: $given->newDate, transferRef: $transferRef);
+		$this->guardAnswer(given: $answer);
 
+		$reviewer = (string)$given->reviewer;
 		$index = $this->indexOf(listData: $listData, entryUuid: $entryUuid);
-		$this->guardReviewer(entry: $listData['objects'][$index], entryUuid: $entryUuid, reviewer: $reviewer);
+		$this->guardReviewer(entry: $listData['objects'][$index], reviewer: $reviewer);
 
-		$moment = ($decidedAt ?? new DateTimeImmutable())->format('c');
-		$listData['objects'][$index] = $this->decidedEntry(entry: $listData['objects'][$index], answer: $answer, reviewer: $reviewer, moment: $moment);
-		$decision = ['entry' => $entryUuid, 'answer' => $answer, 'reviewer' => $reviewer, 'decidedAt' => $moment, 'reason' => $reason];
-		$decision = $this->withAnswerFacts(decision: $decision, newDate: $newDate, transferRef: $transferRef);
+		$moment = $this->now()->format('c');
+		$decision = ['entry' => $entryUuid, 'answer' => $given->answer, 'reviewer' => $reviewer, 'decidedAt' => $moment, 'reason' => $given->reason];
+		$listData['objects'][$index] = $this->decidedEntry(entry: $listData['objects'][$index], decision: $decision);
+		$decision = $this->withAnswerFacts(decision: $decision, given: $answer);
 
 		return $this->appendDecision(listData: $listData, decision: $decision);
 	}//end recordAnswer()
 
 	/**
+	 * A reviewer's answer, as the reviewer gave it.
+	 *
+	 * @param string      $answer   One of the review answers.
+	 * @param string      $reason   Why the reviewer answered this way.
+	 * @param string|null $newDate  The new archiefactiedatum, for a retention.
+	 * @param string|null $reviewer Who answered.
+	 *
+	 * @return ReviewerAnswer The answer, to carry out and then record.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	public function reviewerAnswer(string $answer, string $reason, ?string $newDate, ?string $reviewer): ReviewerAnswer {
+		return new ReviewerAnswer(answer: $answer, reason: $reason, newDate: $newDate, reviewer: $reviewer);
+	}//end reviewerAnswer()
+
+	/**
+	 * The current moment, from the injected clock when there is one.
+	 *
+	 * @return DateTimeInterface Now.
+	 */
+	private function now(): DateTimeInterface {
+		if ($this->clock === null) {
+			return new DateTimeImmutable();
+		}
+
+		return $this->clock->now();
+	}//end now()
+
+	/**
 	 * An entry, stamped with the answer it was given.
 	 *
 	 * @param array<string, mixed> $entry    The entry.
-	 * @param string               $answer   The answer.
-	 * @param string               $reviewer Who answered.
-	 * @param string               $moment   When, as ISO 8601.
+	 * @param array<string, mixed> $decision The decision row: the answer, who answered and when (ISO 8601).
 	 *
 	 * @return array<string, mixed> The decided entry.
 	 */
-	private function decidedEntry(array $entry, string $answer, string $reviewer, string $moment): array {
-		$entry['decision'] = $answer;
-		$entry['decidedBy'] = $reviewer;
-		$entry['decidedAt'] = $moment;
+	private function decidedEntry(array $entry, array $decision): array {
+		$entry['decision'] = $decision['answer'];
+		$entry['decidedBy'] = $decision['reviewer'];
+		$entry['decidedAt'] = $decision['decidedAt'];
 
 		return $entry;
 	}//end decidedEntry()
@@ -275,19 +284,18 @@ class DestructionReviewService {
 	/**
 	 * A decision row with the facts its answer carries: a retention's new date, a transfer's list.
 	 *
-	 * @param array<string, mixed> $decision    The decision row.
-	 * @param string|null          $newDate     The new archiefactiedatum, for a retention.
-	 * @param string|null          $transferRef The transfer list this entry was handed to, if any.
+	 * @param array<string, mixed> $decision The decision row.
+	 * @param ReviewAnswer         $given    The answer as given, with its new date and transfer list.
 	 *
 	 * @return array<string, mixed> The decision row.
 	 */
-	private function withAnswerFacts(array $decision, string|null $newDate, string|null $transferRef): array {
+	private function withAnswerFacts(array $decision, ReviewAnswer $given): array {
 		if ($decision['answer'] === self::ANSWER_RETAIN) {
-			$decision['newArchiefactiedatum'] = $newDate;
+			$decision['newArchiefactiedatum'] = $given->newDate;
 		}
 
-		if ($decision['answer'] === self::ANSWER_TRANSFER && $transferRef !== null) {
-			$decision['transferListUuid'] = $transferRef;
+		if ($decision['answer'] === self::ANSWER_TRANSFER && $given->transferRef !== null) {
+			$decision['transferListUuid'] = $given->transferRef;
 		}
 
 		return $decision;
@@ -326,10 +334,11 @@ class DestructionReviewService {
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function pendingEntries(array $listData, string $listUuid, ?string $reviewer = null, ?DateTimeInterface $waitingSince = null): array {
+		$list    = ['list' => $listUuid, 'listStatus' => ($listData['status'] ?? null)];
 		$pending = [];
-		foreach ($this->entries(listData: $listData) as $entry) {
-			if ($this->isPendingFor(entry: $entry, reviewer: $reviewer, waitingSince: $waitingSince) === true) {
-				$pending[] = $this->pendingRow(listData: $listData, listUuid: $listUuid, entry: $entry);
+		foreach ($this->openEntries(listData: $listData, reviewer: $reviewer) as $entry) {
+			if ($this->waitedLongEnough(entry: $entry, waitingSince: $waitingSince) === true) {
+				$pending[] = $this->pendingRow(list: $list, entry: $entry);
 			}
 		}
 
@@ -337,42 +346,55 @@ class DestructionReviewService {
 	}//end pendingEntries()
 
 	/**
-	 * Is this entry assigned, unanswered, this reviewer's, and waiting long enough?
+	 * The entries that are assigned, unanswered and this reviewer's, in list order.
 	 *
-	 * @param array<string, mixed>   $entry        The entry.
-	 * @param string|null            $reviewer     Only this reviewer's entries, or every assigned entry when null.
-	 * @param DateTimeInterface|null $waitingSince Only entries assigned at or before this moment.
+	 * @param array<string, mixed> $listData The destruction list's own data.
+	 * @param string|null          $reviewer Only this reviewer's entries, or every assigned entry when null.
 	 *
-	 * @return bool True when the entry is pending.
+	 * @return array<int, array<string, mixed>> The open entries.
 	 */
-	private function isPendingFor(array $entry, string|null $reviewer, DateTimeInterface|null $waitingSince): bool {
+	private function openEntries(array $listData, string|null $reviewer): array {
+		$open = [];
+		foreach ($this->entries(listData: $listData) as $entry) {
+			if ($this->isOpenFor(entry: $entry, reviewer: $reviewer) === true) {
+				$open[] = $entry;
+			}
+		}
+
+		return $open;
+	}//end openEntries()
+
+	/**
+	 * Is this entry assigned, unanswered and this reviewer's?
+	 *
+	 * Whether it has waited long enough is asked separately, and only of an open entry.
+	 *
+	 * @param array<string, mixed> $entry    The entry.
+	 * @param string|null          $reviewer Only this reviewer's entries, or every assigned entry when null.
+	 *
+	 * @return bool True when the entry is open for the reviewer.
+	 */
+	private function isOpenFor(array $entry, string|null $reviewer): bool {
 		$assigned = $this->reviewerOf(entry: $entry);
 		if ($assigned === null || ($entry['decision'] ?? null) !== null) {
 			return false;
 		}
 
-		if ($reviewer !== null && $assigned !== $reviewer) {
-			return false;
-		}
-
-		return $this->waitedLongEnough(entry: $entry, waitingSince: $waitingSince);
-	}//end isPendingFor()
+		return ($reviewer === null || $assigned === $reviewer);
+	}//end isOpenFor()
 
 	/**
 	 * One pending entry, naming its list.
 	 *
-	 * @param array<string, mixed> $listData The destruction list's own data.
-	 * @param string               $listUuid The uuid of the list.
-	 * @param array<string, mixed> $entry    The pending entry.
+	 * @param array{list: string, listStatus: mixed} $list  The list's uuid and status.
+	 * @param array<string, mixed>                   $entry The pending entry.
 	 *
 	 * @return array<string, mixed> The pending row.
 	 */
-	private function pendingRow(array $listData, string $listUuid, array $entry): array {
+	private function pendingRow(array $list, array $entry): array {
 		$uuid = (string)($entry['uuid'] ?? '');
 
-		return [
-			'list' => $listUuid,
-			'listStatus' => ($listData['status'] ?? null),
+		return $list + [
 			'uuid' => $uuid,
 			'title' => (string)($entry['title'] ?? $uuid),
 			'reviewer' => $this->reviewerOf(entry: $entry),
@@ -496,27 +518,26 @@ class DestructionReviewService {
 	/**
 	 * Refuse an answer that is not one of the three, or that says nothing.
 	 *
-	 * @param string      $answer  The answer given.
-	 * @param string      $reason  The reason given.
-	 * @param string|null $newDate The new archiefactiedatum, for a retention.
+	 * @param ReviewAnswer $given The answer, reason and new archiefactiedatum given.
 	 *
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When the answer, the reason or the date is missing.
 	 */
-	private function guardAnswer(string $answer, string $reason, ?string $newDate): void {
+	private function guardAnswer(ReviewAnswer $given): void {
+		$answer = $given->answer;
 		if (in_array($answer, self::ANSWERS, true) === false) {
 			throw new InvalidArgumentException(
 				sprintf('"%s" is not a review answer; the answers are %s', $answer, implode(', ', self::ANSWERS))
 			);
 		}
 
-		if (trim($reason) === '') {
+		if (trim($given->reason) === '') {
 			throw new InvalidArgumentException('A review answer records why it was given, so a reason is required');
 		}
 
 		if ($answer === self::ANSWER_RETAIN) {
-			$this->guardRetentionDate(newDate: $newDate);
+			$this->guardRetentionDate(newDate: $given->newDate);
 		}
 	}//end guardAnswer()
 
@@ -547,15 +568,15 @@ class DestructionReviewService {
 	 * first passer-by answer an entry nobody was made accountable for gives back
 	 * exactly the group-addressed approval this change replaces.
 	 *
-	 * @param array<string, mixed> $entry     The entry.
-	 * @param string               $entryUuid The uuid, for the message.
-	 * @param string               $reviewer  The user id answering.
+	 * @param array<string, mixed> $entry    The entry, found by its uuid.
+	 * @param string               $reviewer The user id answering.
 	 *
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When nobody is accountable, somebody else is, or it is decided.
 	 */
-	private function guardReviewer(array $entry, string $entryUuid, string $reviewer): void {
+	private function guardReviewer(array $entry, string $reviewer): void {
+		$entryUuid = (string)$entry['uuid'];
 		$assigned = $this->reviewerOf(entry: $entry);
 		if ($assigned === null) {
 			throw new InvalidArgumentException(sprintf('Entry %s has no reviewer; assign one before it can be answered', $entryUuid));

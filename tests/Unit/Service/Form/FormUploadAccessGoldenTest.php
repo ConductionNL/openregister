@@ -23,6 +23,7 @@ use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\File\FilePropertyRules;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormFieldRules;
+use OCA\OpenRegister\Service\Form\FormFileStorage;
 use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
 use OCA\OpenRegister\Service\Form\FormUploadClaims;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
@@ -68,8 +69,8 @@ class FormUploadAccessGoldenTest extends TestCase {
 		);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
-		$this->store = new FormUploadStore(appData: $this->appData, time: $this->time, temp: $temp, rules: new FilePropertyRules(), l10n: $l10n);
-		$this->keys = new FormIdempotencyStore(appData: $this->appData, time: $this->time, locks: new MemoryLockingProvider(), l10n: $l10n);
+		$this->store = new FormUploadStore(storage: new FormFileStorage(appData: $this->appData, time: $this->time), temp: $temp, rules: new FilePropertyRules(), l10n: $l10n);
+		$this->keys = new FormIdempotencyStore(storage: new FormFileStorage(appData: $this->appData, time: $this->time), locks: new MemoryLockingProvider(), l10n: $l10n);
 	}//end setUp()
 
 	protected function tearDown(): void {

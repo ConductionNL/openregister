@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Listener\Support\ConflictVeto;
-use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuardInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -63,11 +63,11 @@ class WorkingCalendarDeleteGuardListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param WorkingCalendarWriteGuard $guard Recognises a calendar and counts its open timers.
+	 * @param WorkingCalendarWriteGuardInterface $guard Recognises a calendar and counts its open timers.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly WorkingCalendarWriteGuard $guard,
+		private readonly WorkingCalendarWriteGuardInterface $guard,
 		private readonly LoggerInterface $logger,
 	) {
 

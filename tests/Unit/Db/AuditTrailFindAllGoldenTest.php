@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -104,10 +105,9 @@ class AuditTrailFindAllGoldenTest extends TestCase {
 
 		$mapper = new AuditTrailMapper(
 			$db,
-			$this->createMock(ContainerInterface::class),
 			$this->createMock(IUserSession::class),
 			$this->createMock(IRequest::class),
-			new NullLogger()
+			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), new NullLogger())
 		);
 
 		$outcome = [];

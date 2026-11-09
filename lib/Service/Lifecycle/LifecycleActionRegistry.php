@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
-use OCA\OpenRegister\Lifecycle\Action\SetFieldsAction;
+use OCA\OpenRegister\Lifecycle\BuiltinLifecycleActionsInterface;
 use OCA\OpenRegister\Lifecycle\LifecycleActionInterface;
 use RuntimeException;
 
@@ -64,10 +64,7 @@ class LifecycleActionRegistry {
 	 *
 	 * @var array<string, class-string<LifecycleActionInterface>>
 	 */
-	private const BUILTINS = [
-		'set-fields' => SetFieldsAction::class,
-		'set-field' => SetFieldsAction::class,
-	];
+	private const BUILTINS = BuiltinLifecycleActionsInterface::BUILTINS;
 
 	/**
 	 * Per-request cache.

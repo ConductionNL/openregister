@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
-use OCA\OpenRegister\Service\Audit\AuditAggregationService;
+use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -49,12 +49,12 @@ class AuditSettingsController extends Controller {
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param AuditAggregationService $aggregation The window.
+	 * @param AuditAggregationServiceInterface $aggregation The window.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly AuditAggregationService $aggregation,
+		private readonly AuditAggregationServiceInterface $aggregation,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -125,7 +125,7 @@ class AuditSettingsController extends Controller {
 	private function aggregationWindow(int $stored): array {
 		return [
 			'windowSeconds' => $stored,
-			'maximumSeconds' => AuditAggregationService::MAXIMUM_WINDOW_SECONDS,
+			'maximumSeconds' => AuditAggregationServiceInterface::MAXIMUM_WINDOW_SECONDS,
 			'merging' => ($stored > 0),
 		];
 	}//end aggregationWindow()

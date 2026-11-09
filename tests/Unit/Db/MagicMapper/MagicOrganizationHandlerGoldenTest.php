@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\MagicMapper\DeletedLens;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeCondition;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeMembership;
+use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeTable;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -411,9 +412,8 @@ class MagicOrganizationHandlerGoldenTest extends TestCase {
 			$where = [];
 			$this->handler(caller: $caller)->applyOrganizationFilter(
 				$this->queryBuilder($where),
+				new OrganisationScopeTable(null, null),
 				($caller['user'] ?? '') === 'admin',
-				null,
-				null,
 				$withOrgless
 			);
 			$this->assertSame($expected, $where, 'case '.$index);

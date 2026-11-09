@@ -29,8 +29,6 @@ namespace OCA\OpenRegister\Service\Rules;
 
 use DateTime;
 use OCA\OpenRegister\Db\RuleRun;
-use OCA\OpenRegister\Db\RuleRunMapper;
-use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -92,8 +90,7 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RuleRunMapper $runs The detail log.
-	 * @param RuleRunSummaryMapperInterface $summaries Last run and last error per rule.
+	 * @param RuleRunStores $stores The rule run rows and their summaries.
 	 * @param IUserSession $userSession Names the actor whose write was evaluated.
 	 * @param IAppConfig $config Reads whether the detail log is on.
 	 * @param LoggerInterface $logger Reports a log write that failed.
@@ -101,8 +98,7 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RuleRunMapper $runs,
-		private readonly RuleRunSummaryMapperInterface $summaries,
+		private readonly RuleRunStores $stores,
 		private readonly IUserSession $userSession,
 		private readonly IAppConfig $config,
 		private readonly LoggerInterface $logger,
@@ -112,24 +108,20 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 	/**
 	 * Record one evaluation.
 	 *
-	 * @param string $ruleId The derived rule id.
-	 * @param string $schemaSlug The slug of the schema the rule is declared on.
+	 * @param RuleRunSubject $subject The rule evaluated and the object it was evaluated on.
 	 * @param RuleTrace $trace The verdict and the operand that decided it.
-	 * @param string|null $objectUuid The object evaluated, when there was one.
-	 * @param string|null $registerSlug The register the object lives in.
 	 * @param DateTime|null $moment The moment of evaluation; defaults to now.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function record(string $ruleId, string $schemaSlug, RuleTrace $trace,
-		?string $objectUuid = null, ?string $registerSlug = null, ?DateTime $moment = null): void {
+	public function record(RuleRunSubject $subject, RuleTrace $trace, ?DateTime $moment = null): void {
 		$run = new RuleRun();
-		$run->setRuleId($ruleId);
-		$run->setSchemaSlug($schemaSlug);
-		$run->setRegisterSlug($registerSlug);
-		$run->setObjectUuid($objectUuid);
+		$run->setRuleId($subject->ruleId);
+		$run->setSchemaSlug($subject->schemaSlug);
+		$run->setRegisterSlug($subject->registerSlug);
+		$run->setObjectUuid($subject->objectUuid);
 		$run->setCreated($moment ?? new DateTime());
 
 		$this->recordSummary(run: $run, trace: $trace);
@@ -148,7 +140,7 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 	 */
 	private function recordSummary(RuleRun $run, RuleTrace $trace): void {
 		try {
-			$this->summaries->record(
+			$this->stores->summaries->record(
 				ruleId: $run->getRuleId(),
 				schemaSlug: $run->getSchemaSlug(),
 				verdict: $trace->getVerdict(),
@@ -191,7 +183,7 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 			$run->setMessage($trace->getMessage());
 			$run->setActor($this->userSession->getUser()?->getUID());
 
-			$this->runs->insert($run);
+			$this->stores->runs->insert($run);
 		} catch (Throwable $e) {
 			$this->warn(what: 'write a run row', run: $run, failure: $e);
 		}

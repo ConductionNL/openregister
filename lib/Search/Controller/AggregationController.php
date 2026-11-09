@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -72,20 +73,18 @@ class AggregationController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The application name.
 	 * @param IRequest $request The current request.
 	 * @param AggregationRunnerInterface $runner The aggregation runner.
 	 * @param TimeseriesRequestValidator $validator Ad-hoc request validator.
 	 * @param LoggerInterface|null $logger Where the unknown-filter-key warning goes (optional).
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly AggregationRunnerInterface $runner,
 		private readonly TimeseriesRequestValidator $validator,
 		private readonly ?LoggerInterface $logger = null,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

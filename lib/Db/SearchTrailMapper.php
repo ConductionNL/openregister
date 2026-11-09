@@ -63,7 +63,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Search trail tracking requires integration with many components
  */
-class SearchTrailMapper extends QBMapper {
+class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, SearchTrailCleanupInterface {
 	/**
 	 * The search trail columns a filter may name.
 	 *
@@ -142,54 +142,69 @@ class SearchTrailMapper extends QBMapper {
 	/**
 	 * Find all search trails with optional filters
 	 *
+	 * @param SearchTrailCriteria|null $criteria Filters, search term and created window; null for all.
 	 * @param int|null $limit Maximum number of results to return
 	 * @param int|null $offset Number of results to skip
-	 * @param array $filters Filter criteria
 	 * @param array $sort Sort criteria
-	 * @param string|null $search Search term
-	 * @param DateTime|null $from Start date filter
-	 * @param DateTime|null $to End date filter
 	 *
 	 * @return SearchTrail[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\SearchTrail>
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		array $filters = [],
+		SearchTrailCriteria|null $criteria = null,
+		int|null $limit = null,
+		int|null $offset = null,
 		array $sort = [],
-		?string $search = null,
-		?DateTime $from = null,
-		?DateTime $to = null,
 	): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from($this->getTableName());
 
-		// Apply filters.
-		$this->applyFilters(qb: $qb, filters: $filters);
-
-		$this->filterBySearchTerm(qb: $qb, search: $search);
-
-		$this->filterByCreated(qb: $qb, range: [$from, $to]);
+		$this->applyCriteria(qb: $qb, criteria: ($criteria ?? new SearchTrailCriteria()));
 
 		// Apply sorting.
-		if (empty($sort) === true) {
-			$qb->orderBy('created', 'DESC');
-		}
-
-		if (empty($sort) === false) {
-			foreach ($sort as $field => $direction) {
-				// NC 35 types addOrderBy() as (string|..., string|SortDirection|null):
-				// an int key (a list-shaped sort) or a non-string direction is a
-				// TypeError there, so both are normalised here.
-				$qb->addOrderBy((string)$field, $this->normaliseSortDirection(direction: $direction));
-			}
-		}
+		$this->applySort(qb: $qb, sort: $sort);
 
 		// Apply pagination.
+		$this->applyPaging(qb: $qb, limit: $limit, offset: $offset);
+
+		return $this->findEntities(query: $qb);
+	}//end findAll()
+
+	/**
+	 * Order by the requested fields, or newest first when none are requested.
+	 *
+	 * @param IQueryBuilder $qb   The query.
+	 * @param array         $sort Field to direction.
+	 *
+	 * @return void
+	 */
+	private function applySort(IQueryBuilder $qb, array $sort): void {
+		if (empty($sort) === true) {
+			$qb->orderBy('created', 'DESC');
+			return;
+		}
+
+		foreach ($sort as $field => $direction) {
+			// NC 35 types addOrderBy() as (string|..., string|SortDirection|null):
+			// an int key (a list-shaped sort) or a non-string direction is a
+			// TypeError there, so both are normalised here.
+			$qb->addOrderBy((string)$field, $this->normaliseSortDirection(direction: $direction));
+		}
+	}//end applySort()
+
+	/**
+	 * Apply a limit and an offset, each only when given.
+	 *
+	 * @param IQueryBuilder $qb     The query.
+	 * @param int|null      $limit  Maximum rows, or null for no limit.
+	 * @param int|null      $offset Rows to skip, or null for none.
+	 *
+	 * @return void
+	 */
+	private function applyPaging(IQueryBuilder $qb, int|null $limit, int|null $offset): void {
 		if ($limit !== null) {
 			$qb->setMaxResults($limit);
 		}
@@ -197,37 +212,38 @@ class SearchTrailMapper extends QBMapper {
 		if ($offset !== null) {
 			$qb->setFirstResult($offset);
 		}
+	}//end applyPaging()
 
-		return $this->findEntities(query: $qb);
-	}//end findAll()
+	/**
+	 * Apply the column filters, the search term and the created window.
+	 *
+	 * @param IQueryBuilder       $qb       The query.
+	 * @param SearchTrailCriteria $criteria What the trails must match.
+	 *
+	 * @return void
+	 */
+	private function applyCriteria(IQueryBuilder $qb, SearchTrailCriteria $criteria): void {
+		$this->applyFilters(qb: $qb, filters: $criteria->filters);
+
+		$this->filterBySearchTerm(qb: $qb, search: $criteria->search);
+
+		$this->filterByCreated(qb: $qb, range: [$criteria->from, $criteria->to]);
+	}//end applyCriteria()
 
 	/**
 	 * Count search trails with optional filters
 	 *
-	 * @param array $filters Filter criteria
-	 * @param string|null $search Search term
-	 * @param DateTime|null $from Start date filter
-	 * @param DateTime|null $to End date filter
+	 * @param SearchTrailCriteria|null $criteria Filters, search term and created window; null for all.
 	 *
 	 * @return int Number of matching search trails
 	 */
-	public function count(
-		array $filters = [],
-		?string $search = null,
-		?DateTime $from = null,
-		?DateTime $to = null,
-	): int {
+	public function count(SearchTrailCriteria|null $criteria = null): int {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select($qb->func()->count('*'))
 			->from($this->getTableName());
 
-		// Apply filters.
-		$this->applyFilters(qb: $qb, filters: $filters);
-
-		$this->filterBySearchTerm(qb: $qb, search: $search);
-
-		$this->filterByCreated(qb: $qb, range: [$from, $to]);
+		$this->applyCriteria(qb: $qb, criteria: ($criteria ?? new SearchTrailCriteria()));
 
 		$result = $qb->executeQuery();
 		$count = $result->fetchOne();
@@ -239,27 +255,19 @@ class SearchTrailMapper extends QBMapper {
 	/**
 	 * Create a new search trail entry
 	 *
-	 * @param array $searchQuery The search query parameters
-	 * @param int $resultCount The number of results returned
-	 * @param int $totalResults The total number of matching results
-	 * @param float $responseTime The response time in milliseconds
-	 * @param string $executionType The execution type ('sync' or 'async')
+	 * @param array       $searchQuery   The search query parameters
+	 * @param SearchTrail $outcome       The unsaved trail carrying what the search
+	 *                                   returned: result count and total results.
+	 * @param float       $responseTime  The response time in milliseconds
+	 * @param string      $executionType The execution type ('sync' or 'async')
 	 *
 	 * @return SearchTrail The created search trail entity
 	 */
-	public function createSearchTrail(
-		array $searchQuery,
-		int $resultCount,
-		int $totalResults,
-		float $responseTime,
-		string $executionType = 'sync',
-	): SearchTrail {
-		$searchTrail = new SearchTrail();
+	public function createSearchTrail(array $searchQuery, SearchTrail $outcome, float $responseTime, string $executionType = 'sync'): SearchTrail {
+		$searchTrail = $outcome;
 		$searchTrail->setUuid(Uuid::v4()->toRfc4122());
 		$searchTrail->setCreated(new DateTime());
 		$searchTrail->setExecutionType($executionType);
-		$searchTrail->setResultCount($resultCount);
-		$searchTrail->setTotalResults($totalResults);
 		$searchTrail->setResponseTime((int)round($responseTime));
 
 		// Extract and set search parameters.

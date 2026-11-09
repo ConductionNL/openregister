@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Unit\Service\Config;
 
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
+use OCA\OpenRegister\Service\Config\FederatedConfigTransport;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
@@ -44,10 +45,12 @@ class FederatedConfigServiceTest extends TestCase {
 		$signer->method('sign')->willReturnArgument(0);
 
 		$this->service = new FederatedConfigService(
+			new FederatedConfigTransport(
+				$this->createMock(CredentialBrokerService::class),
+				$signer,
+				$this->createMock(\OCP\Http\Client\IClientService::class)
+			),
 			$this->registry,
-			$this->createMock(CredentialBrokerService::class),
-			$signer,
-			$this->createMock(\OCP\Http\Client\IClientService::class),
 			$this->config,
 			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
@@ -144,10 +147,12 @@ class FederatedConfigServiceTest extends TestCase {
 		$signer->method('sign')->willReturnArgument(0);
 
 		return new FederatedConfigService(
+			new FederatedConfigTransport(
+				$this->createMock(CredentialBrokerService::class),
+				$signer,
+				$this->createMock(\OCP\Http\Client\IClientService::class)
+			),
 			$this->registry,
-			$this->createMock(CredentialBrokerService::class),
-			$signer,
-			$this->createMock(\OCP\Http\Client\IClientService::class),
 			$this->config,
 			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
@@ -275,10 +280,12 @@ class FederatedConfigServiceTest extends TestCase {
 		$broker->method('request')->willReturn(['status' => 200, 'body' => (string)json_encode(['content' => $content, 'encoding' => 'base64'])]);
 
 		$service = new FederatedConfigService(
+			new FederatedConfigTransport(
+				$broker,
+				$this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
+				$this->createMock(\OCP\Http\Client\IClientService::class)
+			),
 			$this->registry,
-			$broker,
-			$this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
-			$this->createMock(\OCP\Http\Client\IClientService::class),
 			$this->config,
 			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
@@ -292,10 +299,12 @@ class FederatedConfigServiceTest extends TestCase {
 		$broker->method('request')->willReturn(['status' => 404, 'body' => '{"message":"Not Found"}']);
 
 		$service = new FederatedConfigService(
+			new FederatedConfigTransport(
+				$broker,
+				$this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
+				$this->createMock(\OCP\Http\Client\IClientService::class)
+			),
 			$this->registry,
-			$broker,
-			$this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
-			$this->createMock(\OCP\Http\Client\IClientService::class),
 			$this->config,
 			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
@@ -325,10 +334,12 @@ class FederatedConfigServiceTest extends TestCase {
 		$signer = $this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class);
 		$signer->method('sign')->willReturnArgument(0);
 		$service = new FederatedConfigService(
+			new FederatedConfigTransport(
+				$broker,
+				$signer,
+				$this->createMock(\OCP\Http\Client\IClientService::class)
+			),
 			$this->registry,
-			$broker,
-			$signer,
-			$this->createMock(\OCP\Http\Client\IClientService::class),
 			$this->config,
 			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
@@ -359,10 +370,12 @@ class FederatedConfigServiceTest extends TestCase {
 		);
 
 		$service = new FederatedConfigService(
+			new FederatedConfigTransport(
+				$this->createMock(CredentialBrokerService::class),
+				$this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
+				$this->createMock(\OCP\Http\Client\IClientService::class)
+			),
 			$this->registry,
-			$this->createMock(CredentialBrokerService::class),
-			$this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
-			$this->createMock(\OCP\Http\Client\IClientService::class),
 			$cfg,
 			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);

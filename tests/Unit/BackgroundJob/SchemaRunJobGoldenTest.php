@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\BackgroundJob\Support\SchemaRunServices;
 
 /**
  * Pins every call run() makes on the mapper, the engines, the job list and the logger.
@@ -108,7 +109,7 @@ class SchemaRunJobGoldenTest extends TestCase {
 			}
 		};
 
-		$job = new SchemaRunJob($this->createMock(ITimeFactory::class), $mapper, $revalidation, $migration, $jobList, $logger);
+		$job = new SchemaRunJob($this->createMock(ITimeFactory::class), new SchemaRunServices($mapper, $revalidation, $migration), $jobList, $logger);
 		(new ReflectionMethod($job, 'run'))->invoke($job, $argument);
 
 		return $this->trace;

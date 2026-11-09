@@ -105,18 +105,7 @@ class RelatedRowQueryApplier {
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function apply(IQueryBuilder $qb, array $query, Register $register, callable $organisationScopeFor): int {
-		$filters = [];
-		if (array_key_exists(RelatedRowFilterParser::KEY, $query) === true) {
-			$filters = (new RelatedRowFilterParser())->parse($query);
-		}
-
-		if (array_key_exists(RelatedRowFilterParser::FORWARD_KEY, $query) === true) {
-			$filters = array_merge(
-				$filters,
-				(new RelatedRowFilterParser(key: RelatedRowFilterParser::FORWARD_KEY))->parse($query)
-			);
-		}
-
+		$filters = $this->filtersIn(query: $query);
 		if ($filters === []) {
 			return 0;
 		}
@@ -149,34 +138,67 @@ class RelatedRowQueryApplier {
 				storage: RelatedRowExistsClause::STORAGE_COLUMNS
 			);
 
-			$rendered = $clause->render(
-				filter: $filter,
-				target: $target,
-				inner: new RelatedRowInnerRow(
-					alias: $alias,
-					// 🔴 THE ACCESS PREDICATE FOR THE RELATED SCHEMA, NOT THE OUTER
-					// ONE. The two schemas have different authorization blocks, and
-					// reusing the outer query's predicate would decide who may read
-					// case properties by asking who may read cases.
-					accessPredicate: $this->access->predicate(
-						qb: $qb,
-						source: new RelatedRowSource(schema: $schema, tableName: $relatedTable, alias: $alias),
-						scope: $organisationScopeFor($schema, $register->getId())
-					),
-					parameterPrefix: $alias
-				)
+			$inner = new RelatedRowInnerRow(
+				alias: $alias,
+				// 🔴 THE ACCESS PREDICATE FOR THE RELATED SCHEMA, NOT THE OUTER
+				// ONE. The two schemas have different authorization blocks, and
+				// reusing the outer query's predicate would decide who may read
+				// case properties by asking who may read cases.
+				accessPredicate: $this->access->predicate(
+					qb: $qb,
+					source: new RelatedRowSource(schema: $schema, tableName: $relatedTable, alias: $alias),
+					scope: $organisationScopeFor($schema, $register->getId())
+				),
+				parameterPrefix: $alias
 			);
 
-			foreach ($rendered['parameters'] as $name => $value) {
-				$qb->setParameter($name, $value);
-			}
-
-			$qb->andWhere($qb->createFunction($rendered['sql']));
+			$this->addClause(qb: $qb, rendered: $clause->render(filter: $filter, target: $target, inner: $inner));
 			$applied++;
 		}
 
 		return $applied;
 	}//end apply()
+
+	/**
+	 * Every `_related` and `_referenced` block in a query, inverse ones first.
+	 *
+	 * @param array<mixed> $query The request query.
+	 *
+	 * @return array<int, RelatedRowFilter> The filters.
+	 *
+	 * @throws InvalidArgumentException When a block is malformed.
+	 */
+	private function filtersIn(array $query): array {
+		$filters = [];
+		if (array_key_exists(RelatedRowFilterParser::KEY, $query) === true) {
+			$filters = (new RelatedRowFilterParser())->parse($query);
+		}
+
+		if (array_key_exists(RelatedRowFilterParser::FORWARD_KEY, $query) === true) {
+			$filters = array_merge(
+				$filters,
+				(new RelatedRowFilterParser(key: RelatedRowFilterParser::FORWARD_KEY))->parse($query)
+			);
+		}
+
+		return $filters;
+	}//end filtersIn()
+
+	/**
+	 * Bind a rendered clause's parameters, then narrow the query by it.
+	 *
+	 * @param IQueryBuilder                                         $qb       The query being built.
+	 * @param array{sql: string, parameters: array<string, mixed>} $rendered The clause and its bindings.
+	 *
+	 * @return void
+	 */
+	private function addClause(IQueryBuilder $qb, array $rendered): void {
+		foreach ($rendered['parameters'] as $name => $value) {
+			$qb->setParameter($name, $value);
+		}
+
+		$qb->andWhere($qb->createFunction($rendered['sql']));
+	}//end addClause()
 
 	/**
 	 * Resolve the schema a block names, or refuse the whole query.

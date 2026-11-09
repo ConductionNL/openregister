@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\File\FilePropertyRules;
+use OCA\OpenRegister\Service\Form\FormFileStorage;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryAppData;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -61,7 +62,7 @@ class FormUploadStoreTest extends TestCase {
 			static fn (string $text, array $parameters = []): string => $parameters === [] ? $text : vsprintf($text, $parameters)
 		);
 
-		$this->store = new FormUploadStore(appData: $this->appData, time: $time, temp: $temp, rules: new FilePropertyRules(), l10n: $l10n);
+		$this->store = new FormUploadStore(storage: new FormFileStorage(appData: $this->appData, time: $time), temp: $temp, rules: new FilePropertyRules(), l10n: $l10n);
 	}//end setUp()
 
 	protected function tearDown(): void {

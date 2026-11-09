@@ -40,7 +40,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Service\OrganisationContext;
-use OCA\OpenRegister\Service\SharedMasterDataService;
+use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
+use OCA\OpenRegister\Service\TenancyCollaborators;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -57,37 +58,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class MagicOrganizationHandler {
-
-	/**
-	 * Every row is visible — a trusted system context, or an admin with the
-	 * bypass enabled outside SaaS mode.
-	 */
-	public const SCOPE_ALL = 'all';
-
-	/**
-	 * No row is visible — a non-admin with no active organisation.
-	 */
-	public const SCOPE_NONE = 'none';
-
-	/**
-	 * Only rows with NO organisation — an admin with no active organisation.
-	 */
-	public const SCOPE_NULL_ONLY = 'null-only';
-
-	/**
-	 * Rows in the caller's active organisation(s).
-	 */
-	public const SCOPE_IN = 'in';
-
-	/**
-	 * Rows in the caller's active organisation(s), PLUS rows with no
-	 * organisation at all. Admins, or a caller whose register-cascade grant
-	 * admits org-less rows (see admitOrganisationless()). This is the mode the aggregation API
-	 * used to get wrong: it rendered only the `IN` half, and SQL `=` / `IN`
-	 * never match NULL, so org-less rows vanished from every KPI.
-	 */
-	public const SCOPE_IN_OR_NULL = 'in-or-null';
+class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 
 	/**
 	 * Constructor for MagicOrganizationHandler.
@@ -116,11 +87,10 @@ class MagicOrganizationHandler {
 	 * 3. Objects belonging to parent organizations are accessible
 	 * 4. Objects with null organization are accessible to all (legacy/global data)
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param bool $adminBypassEnabled Whether admin users can bypass org filtering
-	 * @param int|null $registerId The register this table belongs to, for shared master data
-	 * @param int|null $schemaId The schema this table belongs to, for shared master data
-	 * @param bool $withOrgless Whether the caller's RBAC grant also admits org-less rows
+	 * @param IQueryBuilder          $qb                 Query builder to modify
+	 * @param OrganisationScopeTable $table              The register and schema this table belongs to, for shared master data
+	 * @param bool                   $adminBypassEnabled Whether admin users can bypass org filtering
+	 * @param bool                   $withOrgless        Whether the caller's RBAC grant also admits org-less rows
 	 *
 	 * @return void
 	 *
@@ -132,12 +102,15 @@ class MagicOrganizationHandler {
 	 */
 	public function applyOrganizationFilter(
 		IQueryBuilder $qb,
+		OrganisationScopeTable $table,
 		bool $adminBypassEnabled = false,
-		?int $registerId = null,
-		?int $schemaId = null,
 		bool $withOrgless = false,
 	): void {
-		$scope = $this->resolveOrganizationScope(adminBypassEnabled: $adminBypassEnabled, registerId: $registerId, schemaId: $schemaId);
+		$scope = $this->resolveOrganizationScope(
+			adminBypassEnabled: $adminBypassEnabled,
+			registerId: $table->registerId,
+			schemaId: $table->schemaId
+		);
 		if ($withOrgless === true) {
 			$scope = self::admitOrganisationless(scope: $scope);
 		}
@@ -161,20 +134,11 @@ class MagicOrganizationHandler {
 	 * @return array{mode: string, uuids: array<int, string>} The widened scope.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationlessAdmission holds the rule so callers outside lib/Db reach it without naming this class.
 	 */
 	public static function admitOrganisationless(array $scope): array {
-		$mode = ($scope['mode'] ?? null);
-
-		if ($mode === self::SCOPE_IN) {
-			$scope['mode'] = self::SCOPE_IN_OR_NULL;
-		}
-
-		if ($mode === self::SCOPE_NONE) {
-			$scope['mode'] = self::SCOPE_NULL_ONLY;
-			$scope['uuids'] = [];
-		}
-
-		return $scope;
+		return OrganisationlessAdmission::admit(scope: $scope);
 	}//end admitOrganisationless()
 
 	/**
@@ -441,11 +405,11 @@ class MagicOrganizationHandler {
 	/**
 	 * The shared master data resolver, or null when the container cannot hand one out.
 	 *
-	 * @return SharedMasterDataService|null The resolver.
+	 * @return SharedMasterDataServiceInterface|null The resolver.
 	 */
-	private function sharedMasterDataResolver(): ?SharedMasterDataService {
+	private function sharedMasterDataResolver(): ?SharedMasterDataServiceInterface {
 		try {
-			$resolver = $this->container->get(SharedMasterDataService::class);
+			$resolver = TenancyCollaborators::sharedMasterDataFrom(container: $this->container);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				message: '[MagicOrganizationHandler] Shared master data resolver unavailable',
@@ -454,7 +418,7 @@ class MagicOrganizationHandler {
 			return null;
 		}
 
-		if (($resolver instanceof SharedMasterDataService) === false) {
+		if (($resolver instanceof SharedMasterDataServiceInterface) === false) {
 			return null;
 		}
 

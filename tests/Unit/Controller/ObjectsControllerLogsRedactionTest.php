@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -58,7 +59,7 @@ class ObjectsControllerLogsRedactionTest extends TestCase {
 		$this->history = $this->createMock(ObjectHistoryForReaders::class);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			fn (string $id): ?object => ($id === ObjectHistoryForReaders::class ? $this->history : null)
+			fn (string $id): ?object => ($id === ObjectHistoryForReadersInterface::class ? $this->history : null)
 		);
 
 		$user = $this->createMock(IUser::class);

@@ -29,9 +29,9 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent;
 use OCA\OpenRegister\Service\Config\SchemaShareableConfigScannerInterface;
-use OCA\OpenRegister\Service\Config\Types\ConfigSetShareableConfigType;
-use OCA\OpenRegister\Service\Config\Types\FlowShareableConfigType;
-use OCA\OpenRegister\Service\Config\Types\RegisterSchemaShareableConfigType;
+use OCA\OpenRegister\Service\Config\Types\ConfigSetShareableConfigTypeInterface;
+use OCA\OpenRegister\Service\Config\Types\FlowShareableConfigTypeInterface;
+use OCA\OpenRegister\Service\Config\Types\RegisterSchemaShareableConfigTypeInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -44,15 +44,15 @@ class ShareableConfigTypeRegistrationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowShareableConfigType               $flows     The built-in "Flows" type.
-	 * @param RegisterSchemaShareableConfigType     $registers The built-in "Registers & schemas" type.
-	 * @param ConfigSetShareableConfigType          $configSet The built-in "Configuration set" type.
+	 * @param FlowShareableConfigTypeInterface               $flows     The built-in "Flows" type.
+	 * @param RegisterSchemaShareableConfigTypeInterface     $registers The built-in "Registers & schemas" type.
+	 * @param ConfigSetShareableConfigTypeInterface          $configSet The built-in "Configuration set" type.
 	 * @param SchemaShareableConfigScannerInterface $scanner   Turns shareable-marked schemas into types.
 	 */
 	public function __construct(
-		private readonly FlowShareableConfigType $flows,
-		private readonly RegisterSchemaShareableConfigType $registers,
-		private readonly ConfigSetShareableConfigType $configSet,
+		private readonly FlowShareableConfigTypeInterface $flows,
+		private readonly RegisterSchemaShareableConfigTypeInterface $registers,
+		private readonly ConfigSetShareableConfigTypeInterface $configSet,
 		private readonly SchemaShareableConfigScannerInterface $scanner,
 	) {
 

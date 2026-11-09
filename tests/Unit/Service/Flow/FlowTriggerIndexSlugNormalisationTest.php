@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCA\OpenRegister\Service\Flow\FlowTriggerDerivation;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndex;
 use OCA\OpenRegister\Service\Flow\FlowTriggerSlugs;
+use OCA\OpenRegister\Service\Flow\FlowTriggerSources;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -113,10 +114,8 @@ class FlowTriggerIndexSlugNormalisationTest extends TestCase {
 
 		return new FlowTriggerIndex(
 			$mapper,
-			new FlowTriggerDerivation(),
-			new FlowTriggerSlugs($registers, $schemas, new NullLogger()),
-			new NullLogger(),
-			$published
+			new FlowTriggerSources(new FlowTriggerDerivation(), new FlowTriggerSlugs($registers, $schemas, new NullLogger()), $published),
+			new NullLogger()
 		);
 	}
 

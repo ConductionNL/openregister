@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Listener\ObjectEventProxyListener;
+use OCA\OpenRegister\Listener\ListenerClassesInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 
@@ -174,7 +174,7 @@ final class ObjectEventSubscription {
 		?array $schemas = null,
 	): void {
 		if (self::needsProxy(event: $event) === true) {
-			$context->registerEventListener($event, ObjectEventProxyListener::class);
+			$context->registerEventListener($event, ListenerClassesInterface::OBJECT_EVENT_PROXY);
 			self::$proxied[$event] = true;
 		}
 
@@ -215,7 +215,7 @@ final class ObjectEventSubscription {
 		?array $schemas = null,
 	): void {
 		if (self::needsProxy(event: $event) === true) {
-			$dispatcher->addServiceListener($event, ObjectEventProxyListener::class);
+			$dispatcher->addServiceListener($event, ListenerClassesInterface::OBJECT_EVENT_PROXY);
 			self::$proxied[$event] = true;
 		}
 

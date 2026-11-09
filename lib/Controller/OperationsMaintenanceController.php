@@ -30,6 +30,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Controller\Support\OperationsMaintenanceControllerServices;
 
 /**
  * Closing the instance, and saying what it is made of.
@@ -52,22 +53,36 @@ class OperationsMaintenanceController extends Controller {
 	private readonly OperationsActingRequest $acting;
 
 	/**
+	 * Maintenance mode.
+	 *
+	 * @var MaintenanceModeServiceInterface
+	 */
+	private readonly MaintenanceModeServiceInterface $maintenance;
+
+	/**
+	 * The support bundle and the instance facts.
+	 *
+	 * @var SupportBundleServiceInterface
+	 */
+	private readonly SupportBundleServiceInterface $bundle;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                 $appName     Application name.
 	 * @param IRequest               $request     HTTP request.
-	 * @param MaintenanceModeServiceInterface $maintenance Maintenance mode.
-	 * @param SupportBundleServiceInterface   $bundle      The support bundle and the instance facts.
+	 * @param OperationsMaintenanceControllerServices $services The services, bundled.
 	 * @param IUserSession           $userSession Names the administrator acting.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly MaintenanceModeServiceInterface $maintenance,
-		private readonly SupportBundleServiceInterface $bundle,
+		OperationsMaintenanceControllerServices $services,
 		IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->maintenance = $services->maintenance;
+		$this->bundle = $services->bundle;
 		$this->acting = new OperationsActingRequest(request: $request, userSession: $userSession);
 	}//end __construct()
 

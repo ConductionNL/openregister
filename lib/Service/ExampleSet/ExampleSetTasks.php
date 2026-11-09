@@ -183,15 +183,16 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	/**
 	 * Write a task through the engine's trusted path.
 	 *
-	 * @param string               $app  The app that ships the fragment.
-	 * @param string               $key  The task's key in the fragment.
-	 * @param array<string, mixed> $data The filled task fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$key = $row->key;
+		$data = $row->data;
 		$fields = $this->fields(app: $app, key: $key, data: $data);
 
 		// The task key is unique in the engine: a task that already holds it (the record lost track of it) is

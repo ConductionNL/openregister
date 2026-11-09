@@ -42,12 +42,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Controller\Support\ControllerSession;
+use JsonSerializable;
 use OCA\OpenRegister\Controller\Support\ApiSurfaceControllerServices;
-use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
-use OCA\OpenRegister\Service\ApiVersion\ApiContractService;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesServiceInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiContractServiceInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -81,23 +81,23 @@ class ApiSurfaceController extends Controller {
 	/**
 	 * Builds the capabilities answer.
 	 *
-	 * @var ApiCapabilitiesService
+	 * @var ApiCapabilitiesServiceInterface
 	 */
-	private readonly ApiCapabilitiesService $capabilities;
+	private readonly ApiCapabilitiesServiceInterface $capabilities;
 
 	/**
 	 * The declared contract versions.
 	 *
-	 * @var ApiVersionCatalogue
+	 * @var ApiVersionCatalogueInterface
 	 */
-	private readonly ApiVersionCatalogue $catalogue;
+	private readonly ApiVersionCatalogueInterface $catalogue;
 
 	/**
 	 * Builds one description per version.
 	 *
-	 * @var ApiContractService
+	 * @var ApiContractServiceInterface
 	 */
-	private readonly ApiContractService $contracts;
+	private readonly ApiContractServiceInterface $contracts;
 
 	/**
 	 * The session bundle; the user session and the logger come from it.
@@ -181,7 +181,7 @@ class ApiSurfaceController extends Controller {
 			data: [
 				'currentVersion' => $this->catalogue->current()->id,
 				'versions' => array_values(array_map(
-					static fn (ApiVersion $version): array => $version->jsonSerialize(),
+					static fn (JsonSerializable $version): array => $version->jsonSerialize(),
 					$this->catalogue->all()
 				)),
 			]

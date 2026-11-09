@@ -23,9 +23,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\FlowRunMigrationControllerServices;
+use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -33,6 +35,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 
 /**
@@ -65,9 +68,9 @@ class FlowRunMigrationController extends Controller {
 	/**
 	 * Whether the caller may run this flow at all.
 	 *
-	 * @var FlowRunnableGuard
+	 * @var FlowRunnableGuardInterface
 	 */
-	private readonly FlowRunnableGuard $guard;
+	private readonly FlowRunnableGuardInterface $guard;
 
 	/**
 	 * Moves runs onto another version. Nullable; absent, the endpoints report
@@ -132,13 +135,45 @@ class FlowRunMigrationController extends Controller {
 			);
 		}
 
+		$run = $this->findRun(uuid: $uuid);
+		if ($run instanceof JSONResponse) {
+			return $run;
+		}
+
+		$actor = $this->authorisedActor(flowId: (string)$run->getFlowId());
+		if ($actor instanceof JSONResponse) {
+			return $actor;
+		}
+
+		$outcome = $this->outcomeFor(uuid: $uuid, actorUid: $actor->getUID(), mapping: $this->nodeMappingParam());
+
+		return $this->outcomeResponse(outcome: $outcome);
+	}//end migrate()
+
+	/**
+	 * The run a migration names.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return FlowRun|JSONResponse The run, or 404.
+	 */
+	private function findRun(string $uuid): FlowRun|JSONResponse {
 		try {
-			$run = $this->mapper->findByUuid($uuid);
+			return $this->mapper->findByUuid($uuid);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
 		}
+	}//end findRun()
 
-		$refusal = $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId());
+	/**
+	 * The signed-in caller, once the runnable guard lets them act on the flow.
+	 *
+	 * @param string $flowId The flow the runs belong to.
+	 *
+	 * @return IUser|JSONResponse The caller, or the guard's refusal, or 401.
+	 */
+	private function authorisedActor(string $flowId): IUser|JSONResponse {
+		$refusal = $this->guard->refusalUnlessRunnable(flowId: $flowId);
 		if ($refusal !== null) {
 			return $refusal;
 		}
@@ -148,17 +183,35 @@ class FlowRunMigrationController extends Controller {
 			return new JSONResponse(['error' => 'Not authenticated'], Http::STATUS_UNAUTHORIZED);
 		}
 
+		return $actor;
+	}//end authorisedActor()
+
+	/**
+	 * The node mapping the request carries, or none when it is no list.
+	 *
+	 * @return array
+	 */
+	private function nodeMappingParam(): array {
 		$mapping = $this->request->getParam('mapping', []);
-		$nodeMapping = [];
 		if (is_array($mapping) === true) {
-			$nodeMapping = $mapping;
+			return $mapping;
 		}
 
-		$outcome = $this->outcomeFor(uuid: $uuid, actorUid: $actor->getUID(), mapping: $nodeMapping);
+		return [];
+	}//end nodeMappingParam()
 
-		// A dry run is not a refusal even though it did not migrate, so the two
-		// are told apart before the status is chosen: answering 422 for a
-		// successful preview would make every UI treat it as a failure.
+	/**
+	 * The answer to a single-run migration.
+	 *
+	 * A dry run is not a refusal even though it did not migrate, so the two
+	 * are told apart before the status is chosen: answering 422 for a
+	 * successful preview would make every UI treat it as a failure.
+	 *
+	 * @param array $outcome The preview or migration outcome.
+	 *
+	 * @return JSONResponse 200, or 422 when the run was not migrated.
+	 */
+	private function outcomeResponse(array $outcome): JSONResponse {
 		if ($outcome['dryRun'] === true) {
 			return new JSONResponse($outcome);
 		}
@@ -168,7 +221,7 @@ class FlowRunMigrationController extends Controller {
 		}
 
 		return new JSONResponse($outcome);
-	}//end migrate()
+	}//end outcomeResponse()
 
 	/**
 	 * Move every run pinned to one version of a flow onto another.
@@ -198,14 +251,9 @@ class FlowRunMigrationController extends Controller {
 			);
 		}
 
-		$refusal = $this->guard->refusalUnlessRunnable(flowId: $flow);
-		if ($refusal !== null) {
-			return $refusal;
-		}
-
-		$actor = $this->userSession->getUser();
-		if ($actor === null) {
-			return new JSONResponse(['error' => 'Not authenticated'], Http::STATUS_UNAUTHORIZED);
+		$actor = $this->authorisedActor(flowId: $flow);
+		if ($actor instanceof JSONResponse) {
+			return $actor;
 		}
 
 		$reason = trim((string)$this->request->getParam('reason', ''));
@@ -216,21 +264,18 @@ class FlowRunMigrationController extends Controller {
 			);
 		}
 
-		$mapping = $this->request->getParam('mapping', []);
-
-		$nodeMapping = [];
-		if (is_array($mapping) === true) {
-			$nodeMapping = $mapping;
-		}
+		$nodeMapping = $this->nodeMappingParam();
 
 		return new JSONResponse(
 			$this->migrations->migrateRunsOfVersion(
 				flowId: $flow,
 				sourceVersion: (int)$this->request->getParam('sourceVersion', 0),
-				targetVersion: (int)$this->request->getParam('targetVersion', 0),
-				reason: $reason,
-				actor: $actor->getUID(),
-				mapping: $nodeMapping,
+				target: new FlowRunMigrationTarget(
+					targetVersion: (int)$this->request->getParam('targetVersion', 0),
+					reason: $reason,
+					actor: $actor->getUID(),
+					mapping: $nodeMapping
+				),
 			)
 		);
 	}//end migrateRuns()
@@ -252,26 +297,18 @@ class FlowRunMigrationController extends Controller {
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
 	private function outcomeFor(string $uuid, string $actorUid, array $mapping): array {
-		$targetVersion = (int)$this->request->getParam('targetVersion', 0);
-		$reason = (string)$this->request->getParam('reason', '');
+		$target = new FlowRunMigrationTarget(
+			targetVersion: (int)$this->request->getParam('targetVersion', 0),
+			reason: (string)$this->request->getParam('reason', ''),
+			actor: $actorUid,
+			mapping: $mapping
+		);
 
 		if ($this->request->getParam('dryRun', false) === true) {
-			return $this->migrations->preview(
-				runUuid: $uuid,
-				targetVersion: $targetVersion,
-				reason: $reason,
-				actor: $actorUid,
-				mapping: $mapping,
-			);
+			return $this->migrations->preview(runUuid: $uuid, target: $target);
 		}
 
-		return $this->migrations->migrate(
-			runUuid: $uuid,
-			targetVersion: $targetVersion,
-			reason: $reason,
-			actor: $actorUid,
-			mapping: $mapping,
-		);
+		return $this->migrations->migrate(runUuid: $uuid, target: $target);
 	}//end outcomeFor()
 
 }//end class

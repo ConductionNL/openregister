@@ -125,46 +125,7 @@ class WebPushDispatchJob extends QueuedJob {
 		// showNotification() to render the buttons; `data.actions` is a
 		// { actionId: url } map used by notificationclick to route a clicked
 		// button, and `data.url` routes a click on the notification body.
-		$actions = [];
-		$actionUrls = [];
-		$topLevelUrl = '';
-		$rawActions = ($argument['actions'] ?? []);
-		if (is_array($rawActions) === true) {
-			foreach ($rawActions as $idx => $action) {
-				if (is_array($action) === false) {
-					continue;
-				}
-
-				$url = (string)($action['url'] ?? '');
-				if ($url === '') {
-					continue;
-				}
-
-				if ($topLevelUrl === '') {
-					// First (or primary) action drives the body-click deeplink.
-					$topLevelUrl = $url;
-				}
-
-				if (($action['primary'] ?? false) === true) {
-					$topLevelUrl = $url;
-				}
-
-				$label = '';
-				if (is_array($action['label'] ?? null) === true) {
-					$fallbackLabel = '';
-					$firstLabel = reset($action['label']);
-					if ($firstLabel !== false) {
-						$fallbackLabel = $firstLabel;
-					}
-
-					$label = (string)($action['label']['en'] ?? $fallbackLabel);
-				}
-
-				$actionKey = 'action-' . (string)$idx;
-				$actions[] = ['action' => $actionKey, 'title' => $label];
-				$actionUrls[$actionKey] = $url;
-			}//end foreach
-		}//end if
+		$buttons = $this->actionButtons(rawActions: ($argument['actions'] ?? []));
 
 		return [
 			'title' => $title,
@@ -172,11 +133,94 @@ class WebPushDispatchJob extends QueuedJob {
 			'icon' => '/index.php/apps/openregister/webpush/icon/' . rawurlencode($originApp),
 			'badge' => '/index.php/apps/openregister/webpush/badge/' . rawurlencode($originApp),
 			'tag' => $tag,
-			'actions' => $actions,
+			'actions' => $buttons['actions'],
 			'data' => [
-				'url' => $topLevelUrl,
-				'actions' => $actionUrls,
+				'url' => $buttons['url'],
+				'actions' => $buttons['urls'],
 			],
 		];
 	}//end buildPayload()
+
+	/**
+	 * The action buttons, their click routes and the body-click deeplink.
+	 *
+	 * @param mixed $rawActions The job argument's `actions`.
+	 *
+	 * @return array{actions: list<array{action: string, title: string}>, urls: array<string, string>, url: string}
+	 */
+	private function actionButtons(mixed $rawActions): array {
+		$buttons = ['actions' => [], 'urls' => [], 'url' => ''];
+		if (is_array($rawActions) === false) {
+			return $buttons;
+		}
+
+		foreach ($rawActions as $idx => $action) {
+			$url = $this->actionUrl(action: $action);
+			if ($url === '') {
+				continue;
+			}
+
+			// First (or primary) action drives the body-click deeplink.
+			$buttons['url'] = $this->bodyClickUrl(current: $buttons['url'], url: $url, action: $action);
+
+			$actionKey = 'action-' . (string)$idx;
+			$buttons['actions'][] = ['action' => $actionKey, 'title' => $this->actionLabel(action: $action)];
+			$buttons['urls'][$actionKey] = $url;
+		}
+
+		return $buttons;
+	}//end actionButtons()
+
+	/**
+	 * An action's URL; empty when the action is not an array or has none.
+	 *
+	 * @param mixed $action One declared action.
+	 *
+	 * @return string The URL.
+	 */
+	private function actionUrl(mixed $action): string {
+		if (is_array($action) === false) {
+			return '';
+		}
+
+		return (string)($action['url'] ?? '');
+	}//end actionUrl()
+
+	/**
+	 * The body-click deeplink after this action: the first URL, overridden by a primary action.
+	 *
+	 * @param string               $current The deeplink so far.
+	 * @param string               $url     This action's URL.
+	 * @param array<string, mixed> $action  This action.
+	 *
+	 * @return string The deeplink.
+	 */
+	private function bodyClickUrl(string $current, string $url, array $action): string {
+		if ($current === '' || ($action['primary'] ?? false) === true) {
+			return $url;
+		}
+
+		return $current;
+	}//end bodyClickUrl()
+
+	/**
+	 * An action's button title: the English label, else the first label, else empty.
+	 *
+	 * @param array<string, mixed> $action This action.
+	 *
+	 * @return string The title.
+	 */
+	private function actionLabel(array $action): string {
+		if (is_array($action['label'] ?? null) === false) {
+			return '';
+		}
+
+		$fallbackLabel = '';
+		$firstLabel = reset($action['label']);
+		if ($firstLabel !== false) {
+			$fallbackLabel = $firstLabel;
+		}
+
+		return (string)($action['label']['en'] ?? $fallbackLabel);
+	}//end actionLabel()
 }//end class

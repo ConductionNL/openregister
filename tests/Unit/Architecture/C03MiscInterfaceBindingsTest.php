@@ -83,21 +83,12 @@ final class C03MiscInterfaceBindingsTest extends TestCase {
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
-	 * This lane retypes only the controllers. The background jobs and the Service
-	 * files below still inject RuleRunMapper or SchemaMigrationService; they are left
-	 * for the lanes that own them.
+	 * None: main already retyped the background jobs and Service callers of
+	 * RuleRunMapper and SchemaMigrationService against their interfaces.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [
-		RuleRunMapper::class => [
-			'BackgroundJob/RuleRunRetentionJob.php',
-			'Service/OperationsConsoleRules.php',
-			'Service/OperationsConsoleService.php',
-			'Service/Rules/RuleRunRecorder.php',
-		],
-		SchemaMigrationService::class => ['BackgroundJob/SchemaRunJob.php'],
-	];
+	private const KEPT_CALLERS = [];
 
 	/**
 	 * One case per class.

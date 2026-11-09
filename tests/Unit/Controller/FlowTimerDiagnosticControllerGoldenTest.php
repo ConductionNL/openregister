@@ -29,6 +29,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Controller\FlowTimerDiagnosticController;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
+use OCA\OpenRegister\Service\Flow\Timer\TermQuery;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowTimerDiagnosticControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Service\Flow\Timer\WorkingCalendarTest;
@@ -158,10 +159,12 @@ class FlowTimerDiagnosticControllerGoldenTest extends TestCase {
 
 	public function testAdministratorGetsExactlyTheEngineWalk(): void {
 		$expected = (new TermDiagnostic(calculator: new SlaCalculator()))->explain(
-			calendar: WorkingCalendar::fromArray(definition: WorkingCalendarTest::nlNational()),
-			anchor: new DateTimeImmutable(self::ANCHOR),
-			sla: self::SLA,
-			ladder: []
+			query: new TermQuery(
+				calendar: WorkingCalendar::fromArray(definition: WorkingCalendarTest::nlNational()),
+				anchor: new DateTimeImmutable(self::ANCHOR),
+				sla: self::SLA,
+				ladder: []
+			)
 		);
 
 		$response = $this->controllerFor('admin')->explain(

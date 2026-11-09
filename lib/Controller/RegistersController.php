@@ -44,11 +44,11 @@ use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
-use OCA\OpenRegister\Service\Configuration\RegisterBundleBinding;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
+use OCA\OpenRegister\Service\Configuration\ConfigurationCollaborators;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
-use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
+use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use OCA\OpenRegister\Service\RegisterServiceInterface;
 use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
 use OCP\AppFramework\Controller;
@@ -1699,7 +1699,7 @@ class RegistersController extends Controller {
 			return null;
 		}
 
-		$reason = (new RegisterBundleBinding(schemaMapper: $this->schemaMapper))->refusalFor(register: $register, bundle: $bundle);
+		$reason = ConfigurationCollaborators::registerBundleBinding(schemaMapper: $this->schemaMapper)->refusalFor(register: $register, bundle: $bundle);
 		if ($reason === null) {
 			return null;
 		}
@@ -1849,7 +1849,7 @@ class RegistersController extends Controller {
 	 * @return JSONResponse|null The refusal, or null when no app owns the job.
 	 */
 	private function appImportRefusal(string $importJobId): ?JSONResponse {
-		$owningApp = $this->container->get(\OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class)
+		$owningApp = ConfigurationCollaborators::appImportJobsFrom(container: $this->container)
 			->appForJob(importJobId: $importJobId);
 		if ($owningApp === null) {
 			return null;
@@ -2105,7 +2105,7 @@ class RegistersController extends Controller {
 	 */
 	private function checkRegisterManagePermission(Register $register): bool {
 		try {
-			$rights = new DefinitionWriteRights(
+			$rights = RbacRuleChecks::definitionWriteRights(
 				userSession: $this->userSession,
 				groupManager: $this->container->get(\OCP\IGroupManager::class)
 			);

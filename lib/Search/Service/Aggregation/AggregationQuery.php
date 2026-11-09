@@ -56,35 +56,57 @@ class AggregationQuery {
 	/**
 	 * Constructor — use the static factory.
 	 *
-	 * @param string $metric Aggregation metric.
-	 * @param ?string $field Field for sum/avg/min/max; required when metric != count.
+	 * The layout's properties are declared after it so the properties keep their order:
+	 * metric, field, filter, groupBy, dateBucket, metrics, cumulative.
+	 *
+	 * @param string               $metric Aggregation metric.
+	 * @param ?string              $field  Field for sum/avg/min/max; required when metric != count.
 	 * @param array<string, mixed> $filter Filter conditions (see class docblock for shapes).
-	 * @param array<string, mixed>|null $groupBy Optional grouping spec. Accepts a single-field shape
-	 *                                           (`{field: 'status'}`), a multi-field cross-tab shape
-	 *                                           (`{fields: ['vendorId', 'dueDateBucket']}`), or a
-	 *                                           plain ordered list of field names (`['vendorId',
-	 *                                           'dueDateBucket']`).
-	 * @param array<string, mixed>|null $dateBucket Optional date-bucket spec; `{field, start, end, gap}`.
-	 * @param array<int, array{metric: string, field?: ?string}>|null $metrics Optional multi-metric list
-	 *                                                                         — see {@see getMetrics()}
-	 *                                                                         for the canonicalisation and
-	 *                                                                         response-shape contract.
-	 * @param bool $cumulative Optional running-total flag
-	 *                         (REQ-AGG-103) — only valid
-	 *                         alongside `$dateBucket`; see
-	 *                         {@see isCumulative()}.
+	 * @param AggregationLayout    $layout The grouping, date buckets, metric list and running-total flag.
 	 */
 	private function __construct(
 		public readonly string $metric,
 		public readonly ?string $field,
 		public readonly array $filter,
-		public readonly ?array $groupBy,
-		public readonly ?array $dateBucket = null,
-		public readonly ?array $metrics = null,
-		public readonly bool $cumulative = false,
+		AggregationLayout $layout,
 	) {
-
+		$this->groupBy    = $layout->groupBy;
+		$this->dateBucket = $layout->dateBucket;
+		$this->metrics    = $layout->metrics;
+		$this->cumulative = $layout->cumulative;
 	}//end __construct()
+
+	/**
+	 * Optional grouping spec. Accepts a single-field shape (`{field: 'status'}`), a multi-field
+	 * cross-tab shape (`{fields: ['vendorId', 'dueDateBucket']}`), or a plain ordered list of
+	 * field names (`['vendorId', 'dueDateBucket']`).
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	public readonly ?array $groupBy;
+
+	/**
+	 * Optional date-bucket spec; `{field, start, end, gap}`.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	public readonly ?array $dateBucket;
+
+	/**
+	 * Optional multi-metric list — see {@see getMetrics()} for the canonicalisation and
+	 * response-shape contract.
+	 *
+	 * @var array<int, array{metric: string, field?: ?string}>|null
+	 */
+	public readonly ?array $metrics;
+
+	/**
+	 * Optional running-total flag (REQ-AGG-103) — only valid alongside `$dateBucket`;
+	 * see {@see isCumulative()}.
+	 *
+	 * @var boolean
+	 */
+	public readonly bool $cumulative;
 
 	/**
 	 * Construct an aggregation query — fails fast on bad input.
@@ -156,10 +178,8 @@ class AggregationQuery {
 		AggregationQueryRules::assertValidTimeBucketing(dateBucket: $dateBucket, grouped: $groupBy !== null);
 		AggregationQueryRules::assertCumulativeIsTimeBucketed(cumulative: $cumulative, timeBucketed: $dateBucket !== null);
 
-		return new self(
-			metric: $metric, field: $field, filter: $filter, groupBy: $groupBy,
-			dateBucket: $dateBucket, metrics: $metrics, cumulative: $cumulative
-		);
+		$layout = new AggregationLayout(groupBy: $groupBy, dateBucket: $dateBucket, metrics: $metrics, cumulative: $cumulative);
+		return new self(metric: $metric, field: $field, filter: $filter, layout: $layout);
 	}//end create()
 
 	/**
@@ -186,12 +206,7 @@ class AggregationQuery {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public function getGroupByField(): ?string {
-		$fields = $this->getGroupByFields();
-		if (count($fields) === 0) {
-			return null;
-		}
-
-		return $fields[0];
+		return ($this->getGroupByFields()[0] ?? null);
 	}//end getGroupByField()
 
 	/**

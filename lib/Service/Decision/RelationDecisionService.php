@@ -45,7 +45,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The decision flow meets the relation, its mapper, the decision
  * store, the policies and the ownership check; the conflict exception is the compare-and-swap's one extra collaborator.
  */
-class RelationDecisionService {
+class RelationDecisionService implements RelationDecisionServiceInterface {
 
 	/**
 	 * The occurrence stays readable.

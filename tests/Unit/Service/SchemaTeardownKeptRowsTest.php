@@ -33,6 +33,7 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaDeletionStores;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IResult;
@@ -120,10 +121,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 
 		$this->service = new SchemaDeletionService(
 			$this->db,
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->auditTrailMapper,
+			new SchemaDeletionStores($this->magicMapper, $this->registerMapper, $this->schemaMapper, $this->auditTrailMapper),
 			$this->createMock(LoggerInterface::class)
 		);
 
@@ -572,10 +570,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 
 		$service = new SchemaDeletionService(
 			$this->db,
-			$mapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->auditTrailMapper,
+			new SchemaDeletionStores($mapper, $this->registerMapper, $this->schemaMapper, $this->auditTrailMapper),
 			$this->createMock(LoggerInterface::class)
 		);
 
@@ -600,10 +595,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 
 		$service = new SchemaDeletionService(
 			$this->db,
-			$mapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->auditTrailMapper,
+			new SchemaDeletionStores($mapper, $this->registerMapper, $this->schemaMapper, $this->auditTrailMapper),
 			$this->createMock(LoggerInterface::class)
 		);
 

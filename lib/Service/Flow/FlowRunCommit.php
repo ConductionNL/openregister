@@ -42,9 +42,9 @@ use OCA\OpenRegister\Db\FlowClaimMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStep;
-use OCA\OpenRegister\Db\FlowRunStepMapper;
+use OCA\OpenRegister\Db\FlowRunStepMapperInterface;
 use OCA\OpenRegister\Db\FlowStream;
-use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -77,18 +77,18 @@ class FlowRunCommit {
 	 *
 	 * @param IDBConnection $db The connection whose transaction is the critical section.
 	 * @param FlowRunMapperInterface $runs The run rows (locked for update).
-	 * @param FlowStreamMapper $streams The stream rows.
+	 * @param FlowStreamMapperInterface $streams The stream rows.
 	 * @param FlowClaimMapper $claims The claim rows.
-	 * @param FlowRunStepMapper $steps The step rows.
+	 * @param FlowRunStepMapperInterface $steps The step rows.
 	 * @param LoggerInterface $logger Logger for rollbacks.
 	 * @param FlowHopAudit|null $hopAudit Audits each committed firing.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly FlowRunMapperInterface $runs,
-		private readonly FlowStreamMapper $streams,
+		private readonly FlowStreamMapperInterface $streams,
 		private readonly FlowClaimMapper $claims,
-		private readonly FlowRunStepMapper $steps,
+		private readonly FlowRunStepMapperInterface $steps,
 		private readonly LoggerInterface $logger,
 		private readonly ?FlowHopAudit $hopAudit = null,
 	) {

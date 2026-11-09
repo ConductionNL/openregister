@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\RuleRunMapper;
+use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 
 /**
@@ -34,13 +34,13 @@ final class OperationsConsoleRules {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param RuleRunMapper        $ruleRuns      The rules engine's run log.
+	 * @param RuleRunMapperInterface        $ruleRuns      The rules engine's run log.
 	 * @param RuleRunSummaryMapperInterface $ruleSummaries One row per rule, with its last error.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	public function __construct(
-		public readonly RuleRunMapper $ruleRuns,
+		public readonly RuleRunMapperInterface $ruleRuns,
 		public readonly RuleRunSummaryMapperInterface $ruleSummaries,
 	) {
 	}//end __construct()

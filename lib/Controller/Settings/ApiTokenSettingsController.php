@@ -23,7 +23,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\ApiTokenProbe;
 use OCA\OpenRegister\Controller\Support\ApiTokenSettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
-use OCA\OpenRegister\Service\Connection\ConnectionReporter;
+use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Http\Client\IClientService;
@@ -96,9 +96,9 @@ class ApiTokenSettingsController extends Controller {
 	/**
 	 * Tells integriq's connection registry about saves and token tests.
 	 *
-	 * @var ConnectionReporter
+	 * @var ConnectionReporterInterface
 	 */
-	private readonly ConnectionReporter $connectionReporter;
+	private readonly ConnectionReporterInterface $connectionReporter;
 
 	/**
 	 * Constructor.

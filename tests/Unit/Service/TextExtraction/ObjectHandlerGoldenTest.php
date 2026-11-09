@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
@@ -180,10 +181,12 @@ class ObjectHandlerGoldenTest extends TestCase {
 		};
 
 		$handler = new ObjectHandler(
-			$this->objectMapper(scenario: $scenario),
+			new TextExtractionObjects(
+				$this->objectMapper(scenario: $scenario),
+				$this->schemaMapper(spec: ($scenario['schema'] ?? null)),
+				$this->registerMapper(spec: ($scenario['register'] ?? null))
+			),
 			$this->chunkMapper(scenario: $scenario),
-			$this->schemaMapper(spec: ($scenario['schema'] ?? null)),
-			$this->registerMapper(spec: ($scenario['register'] ?? null)),
 			$logger
 		);
 

@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\Search;
  * silent wrong answer this whole change exists to remove. Callers wrap each
  * column in COALESCE for that reason.
  */
-final class SearchTermSqlCompiler {
+final class SearchTermSqlCompiler implements SearchTermSqlCompilerInterface {
 	/**
 	 * Compile a node tree to one SQL boolean expression.
 	 *

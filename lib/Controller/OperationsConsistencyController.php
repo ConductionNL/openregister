@@ -33,6 +33,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Controller\Support\OperationsConsistencyControllerServices;
 
 /**
  * The consistency check, the repair plan and the repair.
@@ -57,22 +58,36 @@ class OperationsConsistencyController extends Controller {
 	private readonly OperationsActingRequest $acting;
 
 	/**
+	 * The read-only consistency check.
+	 *
+	 * @var ConsistencyCheckServiceInterface
+	 */
+	private readonly ConsistencyCheckServiceInterface $check;
+
+	/**
+	 * The repair, as a separate act.
+	 *
+	 * @var ConsistencyRepairServiceInterface
+	 */
+	private readonly ConsistencyRepairServiceInterface $repair;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                   $appName     Application name.
 	 * @param IRequest                 $request     HTTP request.
-	 * @param ConsistencyCheckServiceInterface  $check       The read-only consistency check.
-	 * @param ConsistencyRepairServiceInterface $repair      The repair, as a separate act.
+	 * @param OperationsConsistencyControllerServices $services The services, bundled.
 	 * @param IUserSession             $userSession Names the administrator acting.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ConsistencyCheckServiceInterface $check,
-		private readonly ConsistencyRepairServiceInterface $repair,
+		OperationsConsistencyControllerServices $services,
 		IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->check = $services->check;
+		$this->repair = $services->repair;
 		$this->acting = new OperationsActingRequest(request: $request, userSession: $userSession);
 	}//end __construct()
 

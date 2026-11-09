@@ -52,6 +52,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\ShareLinkService;
 use OCA\OpenRegister\Service\ShareDraft;
 use OCP\Files\FileInfo;
@@ -182,7 +183,7 @@ class ShareLinkServiceTest extends TestCase {
 	 * @return ContainerInterface
 	 */
 	private function buildContainer(array $services): ContainerInterface {
-		$services += [FileRestrictionGuard::class => $this->buildGuard(unreadable: [])];
+		$services += [FileRestrictionGuardInterface::class => $this->buildGuard(unreadable: [])];
 		return new class($services) implements ContainerInterface {
 			public function __construct(
 				private array $services,
@@ -558,7 +559,7 @@ class ShareLinkServiceTest extends TestCase {
 				'OCP\\IUserSession' => $this->buildUserSession('carol'),
 				'OCA\\OpenRegister\\Service\\FileService' => $this->buildFolderHandler($folder),
 				'OCA\\OpenRegister\\Db\\MagicMapper' => $this->buildObjectMapper(),
-				FileRestrictionGuard::class => $this->buildGuard(unreadable: [11]),
+				FileRestrictionGuardInterface::class => $this->buildGuard(unreadable: [11]),
 			]
 		);
 

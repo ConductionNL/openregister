@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -119,9 +120,7 @@ class MappingMapper extends QBMapper implements MappingMapperInterface {
 	 * Calls parent constructor to set up base mapper functionality.
 	 *
 	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy and RBAC
-	 * @param IUserSession $userSession User session
-	 * @param IGroupManager $groupManager Group manager
+	 * @param TenancyServices $tenancy Organisation mapper, session and groups for multi-tenancy and RBAC
 	 * @param ICacheFactory $cacheFactory Cache factory for distributed caching
 	 * @param LoggerInterface $logger Logger for cache diagnostics
 	 *
@@ -129,13 +128,11 @@ class MappingMapper extends QBMapper implements MappingMapperInterface {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		// A MAPPER, not a service. MultiTenancyTrait's RBAC check resolves the
+		// Its organisation mapper is a MAPPER, not a service. MultiTenancyTrait's RBAC check resolves the
 		// active organisation's membership through this; without it the check can
 		// only fail closed and would deny every non-admin write to mappings.
 		// openregister#2833.
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		TenancyServices $tenancy,
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {
@@ -143,9 +140,9 @@ class MappingMapper extends QBMapper implements MappingMapperInterface {
 		parent::__construct(db: $db, tableName: 'openregister_mappings', entityClass: Mapping::class);
 
 		// Store dependencies for use in mapper methods.
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
 
 		// Initialize distributed cache for invalidation on write operations.
 		try {

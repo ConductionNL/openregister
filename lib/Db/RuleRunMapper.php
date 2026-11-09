@@ -45,8 +45,6 @@ use OCP\IDBConnection;
  */
 class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 
-	// DEFAULT_LIMIT is declared on RuleRunMapperInterface.
-
 	/**
 	 * The most rows one run-log read will ever return.
 	 *

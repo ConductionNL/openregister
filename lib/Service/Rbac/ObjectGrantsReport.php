@@ -41,7 +41,7 @@ use OCP\Share\IShare;
  *
  * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
  */
-class ObjectGrantsReport {
+class ObjectGrantsReport implements ObjectGrantsReportInterface {
 
 	public const ORIGIN_OWNER = 'owner';
 

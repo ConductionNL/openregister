@@ -40,21 +40,41 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectHandler implements TextExtractionHandlerInterface {
 	/**
+	 * Object mapper.
+	 *
+	 * @var MagicObjectFinderInterface
+	 */
+	private readonly MagicObjectFinderInterface $objectMapper;
+
+	/**
+	 * Schema mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param MagicObjectFinderInterface $objectMapper Object mapper.
-	 * @param ChunkMapper $chunkMapper Chunk mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper.
-	 * @param RegisterMapperInterface $registerMapper Register mapper.
-	 * @param LoggerInterface $logger Logger.
+	 * @param TextExtractionObjects $objects     The object, schema and register mappers.
+	 * @param ChunkMapper           $chunkMapper Chunk mapper.
+	 * @param LoggerInterface       $logger      Logger.
 	 */
 	public function __construct(
-		private readonly MagicObjectFinderInterface $objectMapper,
+		TextExtractionObjects $objects,
 		private readonly ChunkMapper $chunkMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->objectMapper   = $objects->objectEntityMapper;
+		$this->schemaMapper   = $objects->schemaMapper;
+		$this->registerMapper = $objects->registerMapper;
 	}//end __construct()
 
 	/**

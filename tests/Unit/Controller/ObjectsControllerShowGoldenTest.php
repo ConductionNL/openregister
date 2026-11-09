@@ -24,10 +24,12 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -262,8 +264,8 @@ class ObjectsControllerShowGoldenTest extends TestCase {
 		$readState->method('unreadCounts')->willReturn(($setup['unread'] ?? []));
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(fn (string $id) => match ($id) {
-			ExplicitReveal::class => (($setup['noReveal'] ?? false) ? new \stdClass() : $reveal),
-			ReadStateService::class => $readState,
+			ExplicitRevealInterface::class => (($setup['noReveal'] ?? false) ? new \stdClass() : $reveal),
+			ReadStateServiceInterface::class => $readState,
 		});
 		return $container;
 	}

@@ -201,15 +201,9 @@ class ViewService {
 	 * Creates a new view entity with specified properties. If view is set as default,
 	 * clears any existing default view for the user. Validates and stores view in database.
 	 *
-	 * @param string $name The name of the view
-	 * @param string $description The description of the view
-	 * @param string $owner The owner user ID
-	 * @param bool $isPublic Whether the view is public (accessible to all users)
-	 * @param bool $isDefault Whether the view is the default view for the user
-	 * @param array<string, mixed> $query The query parameters (registers, schemas, filters)
-	 * @param array|null $presentation Presentation config (viewType + kanban/calendar config); null = table (default)
-	 * @param array|null $sharedWith Validated group shares, `[{group, mode}]`; null = none
-	 * @param array|null $alert The declared count alert; null or `[]` = none
+	 * @param ViewDefinition $definition The name, description, query and presentation of the view
+	 * @param ViewAudience   $audience   The owner, public and default flags and the group shares of the view
+	 * @param array|null     $alert      The declared count alert; null or `[]` = none
 	 *
 	 * @return View The created view entity
 	 *
@@ -219,38 +213,19 @@ class ViewService {
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
 	 */
-	public function create(
-		string $name,
-		string $description,
-		string $owner,
-		bool $isPublic,
-		bool $isDefault,
-		array $query,
-		?array $presentation = null,
-		?array $sharedWith = null,
-		?array $alert = null,
-	): View {
+	public function create(ViewDefinition $definition, ViewAudience $audience, ?array $alert = null): View {
 		try {
 			// Step 0: Reject a presentation config that cannot render before touching the DB.
-			$this->validatePresentationConfig(presentation: $presentation, query: $query);
+			$this->validatePresentationConfig(presentation: $definition->presentation, query: $definition->query);
 
 			// Step 1: If this view is set as default, clear any existing default for this user.
 			// Only one default view per user is allowed.
-			if ($isDefault === true) {
-				$this->clearDefaultForUser(owner: $owner);
+			if ($audience->isDefault === true) {
+				$this->clearDefaultForUser(owner: $audience->owner);
 			}
 
 			// Step 2: Create new view entity and set all properties.
-			$view = new View();
-			$view->setName($name);
-			$view->setDescription($description);
-			$view->setOwner($owner);
-			$view->setIsPublic($isPublic);
-			$view->setIsDefault($isDefault);
-			$view->setQuery($query);
-			$view->setPresentation($presentation);
-			$view->setFavoredBy([]);
-			$view->setSharedWith(array_values($sharedWith ?? []));
+			$view = $this->newView(definition: $definition, audience: $audience);
 			$this->applyAlert(view: $view, alert: $alert);
 
 			// Step 3: Insert view into database and return created entity.
@@ -264,6 +239,28 @@ class ViewService {
 			throw $e;
 		}//end try
 	}//end create()
+
+	/**
+	 * A new, unsaved view entity carrying a definition and an audience; nobody favours it yet.
+	 *
+	 * @param ViewDefinition $definition The name, description, query and presentation.
+	 * @param ViewAudience   $audience   The owner, public and default flags and the group shares.
+	 *
+	 * @return View
+	 */
+	private function newView(ViewDefinition $definition, ViewAudience $audience): View {
+		$view = new View();
+		$view->setName($definition->name);
+		$view->setDescription($definition->description);
+		$view->setOwner($audience->owner);
+		$view->setIsPublic($audience->isPublic);
+		$view->setIsDefault($audience->isDefault);
+		$view->setQuery($definition->query);
+		$view->setPresentation($definition->presentation);
+		$view->setFavoredBy([]);
+		$view->setSharedWith(array_values($audience->sharedWith ?? []));
+		return $view;
+	}//end newView()
 
 	/**
 	 * Update an existing view.
@@ -349,6 +346,7 @@ class ViewService {
 			throw $e;
 		}//end try
 	}//end update()
+
 
 	/**
 	 * Delete a view by ID.
@@ -463,42 +461,75 @@ class ViewService {
 
 		$viewType = $presentation['viewType'] ?? 'table';
 
-		if ($viewType === 'table') {
-			return;
-		}
-
-		if ($viewType === 'kanban') {
-			$groupByField = $presentation['kanban']['groupByField'] ?? null;
-			if (is_string($groupByField) === false || $groupByField === '') {
-				throw new InvalidArgumentException('A kanban presentation requires a non-empty kanban.groupByField');
-			}
-
-			$this->assertFieldExistsOnViewSchema(field: $groupByField, query: $query, label: 'kanban.groupByField');
-			return;
-		}
-
-		if ($viewType === 'calendar') {
-			$dateField = $presentation['calendar']['dateField'] ?? null;
-			if (is_string($dateField) === false || $dateField === '') {
-				throw new InvalidArgumentException('A calendar presentation requires a non-empty calendar.dateField');
-			}
-
-			$this->assertFieldExistsOnViewSchema(field: $dateField, query: $query, label: 'calendar.dateField');
-
-			$endDateField = $presentation['calendar']['endDateField'] ?? null;
-			if ($endDateField !== null) {
-				if (is_string($endDateField) === false || $endDateField === '') {
-					throw new InvalidArgumentException('calendar.endDateField must be a non-empty string when provided');
-				}
-
-				$this->assertFieldExistsOnViewSchema(field: $endDateField, query: $query, label: 'calendar.endDateField');
-			}
-
-			return;
-		}
-
-		throw new InvalidArgumentException('Unknown presentation viewType: ' . (string)$viewType);
+		match ($viewType) {
+			'table' => null,
+			'kanban' => $this->validateKanbanPresentation(presentation: $presentation, query: $query),
+			'calendar' => $this->validateCalendarPresentation(presentation: $presentation, query: $query),
+			default => throw new InvalidArgumentException('Unknown presentation viewType: ' . (string)$viewType),
+		};
 	}//end validatePresentationConfig()
+
+	/**
+	 * A kanban presentation must declare a groupByField on the view's schema.
+	 *
+	 * @param array $presentation The presentation config
+	 * @param array<string, mixed> $query The view's query (used to resolve its schema)
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the presentation cannot render
+	 */
+	private function validateKanbanPresentation(array $presentation, array $query): void {
+		$groupByField = $presentation['kanban']['groupByField'] ?? null;
+		if (is_string($groupByField) === false || $groupByField === '') {
+			throw new InvalidArgumentException('A kanban presentation requires a non-empty kanban.groupByField');
+		}
+
+		$this->assertFieldExistsOnViewSchema(field: $groupByField, query: $query, label: 'kanban.groupByField');
+	}//end validateKanbanPresentation()
+
+	/**
+	 * A calendar presentation must declare a dateField, and may declare an
+	 * endDateField, each on the view's schema.
+	 *
+	 * @param array $presentation The presentation config
+	 * @param array<string, mixed> $query The view's query (used to resolve its schema)
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the presentation cannot render
+	 */
+	private function validateCalendarPresentation(array $presentation, array $query): void {
+		$dateField = $presentation['calendar']['dateField'] ?? null;
+		if (is_string($dateField) === false || $dateField === '') {
+			throw new InvalidArgumentException('A calendar presentation requires a non-empty calendar.dateField');
+		}
+
+		$this->assertFieldExistsOnViewSchema(field: $dateField, query: $query, label: 'calendar.dateField');
+		$this->validateCalendarEndDateField(endDateField: $presentation['calendar']['endDateField'] ?? null, query: $query);
+	}//end validateCalendarPresentation()
+
+	/**
+	 * An optional calendar endDateField must, when given, be on the view's schema.
+	 *
+	 * @param mixed $endDateField The declared endDateField, or null when absent
+	 * @param array<string, mixed> $query The view's query (used to resolve its schema)
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the field is malformed or not on the schema
+	 */
+	private function validateCalendarEndDateField(mixed $endDateField, array $query): void {
+		if ($endDateField === null) {
+			return;
+		}
+
+		if (is_string($endDateField) === false || $endDateField === '') {
+			throw new InvalidArgumentException('calendar.endDateField must be a non-empty string when provided');
+		}
+
+		$this->assertFieldExistsOnViewSchema(field: $endDateField, query: $query, label: 'calendar.endDateField');
+	}//end validateCalendarEndDateField()
 
 	/**
 	 * Assert that a field name is a real property on the view's (first) schema.

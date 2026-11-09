@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
-use OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
@@ -40,13 +40,13 @@ final readonly class DataShapingFlowNodes {
 	 * Bundle the nodes.
 	 *
 	 * @param SetFieldsNodeInterface $setFields The built-in "Edit fields" node.
-	 * @param ActionInputsNode $actionInputs The built-in step that makes an action's inputs readable.
+	 * @param ActionInputsNodeInterface $actionInputs The built-in step that makes an action's inputs readable.
 	 * @param ExplodeNodeInterface $explode The built-in "Explode" node.
 	 * @param FilterNodeInterface $filter The built-in "Filter" node.
 	 */
 	public function __construct(
 		private SetFieldsNodeInterface $setFields,
-		private ActionInputsNode $actionInputs,
+		private ActionInputsNodeInterface $actionInputs,
 		private ExplodeNodeInterface $explode,
 		private FilterNodeInterface $filter,
 	) {

@@ -24,7 +24,7 @@
  * so there is no degraded path to get wrong.
  *
  * Security (ADR-005 / ADR-080):
- *   - Every outbound URL is SSRF-guarded by SecurityService::assertSafeFetchUrl
+ *   - Every outbound URL is SSRF-guarded by SafeFetchUrl::assert
  *     (rejects private/reserved/loopback hosts and non-http(s) schemes),
  *     fail-closed.
  *   - Redirects are NEVER followed. assertSafeFetchUrl validates the URL at one
@@ -57,10 +57,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Service;
 
 use OCA\OpenRegister\AppHost\Store\StorePublishRules;
-use OCA\OpenRegister\Service\SecurityService;
-use OCP\Http\Client\IClientService;
+use OCA\OpenRegister\Service\Security\SafeFetchUrl;
 use OCP\Http\Client\IResponse;
-use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -146,8 +144,7 @@ class GenericStoreService {
 	/**
 	 * Constructor.
 	 *
-	 * @param IClientService $clientService Nextcloud HTTP client factory.
-	 * @param IAppConfig $appConfig App config store (registry url / token / register).
+	 * @param StoreRegistryAccess $registry The HTTP client factory and the registry url / token / register config.
 	 * @param LoggerInterface $logger PSR logger — server-side diagnostics only.
 	 * @param StorePublishRules $publishRules The pure body and outcome rules of publish().
 	 * @param LocalStoreRegistry|null $localRegistry Reads a `local` registry from this instance.
@@ -155,8 +152,7 @@ class GenericStoreService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IClientService $clientService,
-		private readonly IAppConfig $appConfig,
+		private readonly StoreRegistryAccess $registry,
 		private readonly LoggerInterface $logger,
 		private readonly StorePublishRules $publishRules = new StorePublishRules(),
 		private readonly ?LocalStoreRegistry $localRegistry = null,
@@ -418,7 +414,7 @@ class GenericStoreService {
 	 */
 	private function registerSlug(StoreDescriptor $descriptor): string {
 		$register = trim(
-			$this->appConfig->getValueString($descriptor->appId, 'registry_register', $descriptor->defaultRegister)
+			$this->registry->appConfig->getValueString($descriptor->appId, 'registry_register', $descriptor->defaultRegister)
 		);
 
 		if ($register === '') {
@@ -444,7 +440,7 @@ class GenericStoreService {
 	 *
 	 * @return IResponse|null The answer, or null when the URL was refused or the request failed.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) SecurityService::assertSafeFetchUrl is
+	 * @SuppressWarnings(PHPMD.StaticAccess) SafeFetchUrl::assert is
 	 * static upstream, and calling it directly is the point of moving this client
 	 * into OpenRegister — the previous app-local copy reached it through a dynamic
 	 * class-string with a weaker fallback (ADR-080 Context).
@@ -454,7 +450,7 @@ class GenericStoreService {
 	private function send(StoreDescriptor $descriptor, string $method, array $options): ?IResponse {
 		try {
 			$url = $this->buildUrl(descriptor: $descriptor);
-			SecurityService::assertSafeFetchUrl($url);
+			SafeFetchUrl::assert(url: $url);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'AppHost store (' . $descriptor->appId . '): rejected unsafe/invalid registry URL: ' . $e->getMessage()
@@ -463,7 +459,7 @@ class GenericStoreService {
 		}
 
 		$headers = (array)($options['headers'] ?? []);
-		$token = trim($this->appConfig->getValueString($descriptor->appId, 'registry_token', ''));
+		$token = trim($this->registry->appConfig->getValueString($descriptor->appId, 'registry_token', ''));
 		if ($token !== '') {
 			$headers['Authorization'] = 'Bearer ' . $token;
 		}
@@ -475,7 +471,7 @@ class GenericStoreService {
 		$options['allow_redirects'] = false;
 
 		try {
-			$client = $this->clientService->newClient();
+			$client = $this->registry->clientService->newClient();
 			if ($method === 'POST') {
 				return $client->post($url, $options);
 			}
@@ -579,6 +575,6 @@ class GenericStoreService {
 	 * @return string
 	 */
 	private function registryUrl(StoreDescriptor $descriptor): string {
-		return $this->appConfig->getValueString($descriptor->appId, 'registry_url', '');
+		return $this->registry->appConfig->getValueString($descriptor->appId, 'registry_url', '');
 	}//end registryUrl()
 }//end class

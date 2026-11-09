@@ -44,7 +44,7 @@ use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Exception\CaseValidationException;
-use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
+use OCA\OpenRegister\Service\Case\CasePlanAuthorizationServiceInterface;
 use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
 use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
 use OCP\AppFramework\Controller;
@@ -89,9 +89,9 @@ class CaseController extends Controller {
 	/**
 	 * Identity checks for the anchorless route.
 	 *
-	 * @var CasePlanAuthorizationService
+	 * @var CasePlanAuthorizationServiceInterface
 	 */
-	private readonly CasePlanAuthorizationService $authorization;
+	private readonly CasePlanAuthorizationServiceInterface $authorization;
 
 	/**
 	 * Names the acting identity.

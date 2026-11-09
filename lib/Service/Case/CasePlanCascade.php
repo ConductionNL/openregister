@@ -248,7 +248,7 @@ class CasePlanCascade {
 
 		$tree = new CasePlanTree(items: $rows);
 		$object = $this->readers->anchor->read(objectUuid: $run->objectUuid, registerId: $rows[0]->getRegisterId(), schemaId: $rows[0]->getSchemaId());
-		$state = new CasePassState(tree: $tree, object: $object, event: $run->event, payload: $run->payload, actor: $run->actor);
+		$state = new CasePassState(tree: $tree, object: $object, run: $run);
 
 		return $this->applyRules(state: $state);
 	}//end pass()

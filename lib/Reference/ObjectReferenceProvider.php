@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Reference;
 
-use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface;
 use OCP\Collaboration\Reference\ADiscoverableReferenceProvider;
 use OCP\Collaboration\Reference\IPublicReferenceProvider;
 use OCP\Collaboration\Reference\IReference;
@@ -41,7 +41,7 @@ use OCP\IURLGenerator;
  * Supports hash-routed UI URLs, API object URLs, and direct object routes.
  *
  * URL parsing and rich-preview formatting are delegated to
- * {@see ObjectPreviewFormatter} (shared with the schema-scoped
+ * {@see ObjectPreviewFormatterInterface} (shared with the schema-scoped
  * `AbstractSchemaReferenceProvider`); this class only owns the parts that
  * are specific to the generic, fleet-wide `openregister-ref-objects`
  * provider identity (id, title, order, icon, cache key).
@@ -69,9 +69,9 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements
 	/**
 	 * Shared preview-formatting/URL-parsing service.
 	 *
-	 * @var ObjectPreviewFormatter
+	 * @var ObjectPreviewFormatterInterface
 	 */
-	private readonly ObjectPreviewFormatter $formatter;
+	private readonly ObjectPreviewFormatterInterface $formatter;
 
 	/**
 	 * The current user ID (nullable for public/anonymous access)
@@ -85,7 +85,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements
 	 *
 	 * @param IURLGenerator $urlGenerator The URL generator
 	 * @param IL10N $l10n The localization service
-	 * @param ObjectPreviewFormatter $formatter Shared preview-formatting service
+	 * @param ObjectPreviewFormatterInterface $formatter Shared preview-formatting service
 	 * @param string|null $userId Current user ID
 	 *
 	 * @return void
@@ -95,7 +95,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements
 	public function __construct(
 		IURLGenerator $urlGenerator,
 		IL10N $l10n,
-		ObjectPreviewFormatter $formatter,
+		ObjectPreviewFormatterInterface $formatter,
 		?string $userId,
 	) {
 		$this->urlGenerator = $urlGenerator;
@@ -230,7 +230,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements
 	 *
 	 * Delegates to the same {@see self::resolveReference()} logic: the
 	 * class is already constructed with a nullable `$userId` (`null` for an
-	 * anonymous request), so `ObjectPreviewFormatter::buildReference()`'s
+	 * anonymous request), so `ObjectPreviewFormatterInterface::buildReference()`'s
 	 * call into `ObjectService::find()` already runs the same RBAC decision
 	 * an authenticated anonymous read would. `$sharingToken` identifies the
 	 * public share context, not an object-level permission — no additional

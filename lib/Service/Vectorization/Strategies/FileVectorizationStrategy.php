@@ -28,7 +28,6 @@ use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 
 /**
  * FileVectorizationStrategy
@@ -42,7 +41,7 @@ use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrate
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  */
-class FileVectorizationStrategy implements VectorizationStrategyInterface {
+class FileVectorizationStrategy implements FileVectorizationStrategyInterface {
 
 	/**
 	 * Chunk mapper

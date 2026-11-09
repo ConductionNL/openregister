@@ -32,6 +32,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectGrantsControllerFactory;
 
 /**
  * Tasks 3.1, 3.2 and the 404 and 403 halves of 4.4.
@@ -71,7 +72,7 @@ class ObjectGrantsControllerTest extends TestCase {
 
 		$this->report = $this->createMock(ObjectGrantsReport::class);
 
-		return new ObjectGrantsController(
+		return ObjectGrantsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			objectService: $objectService,

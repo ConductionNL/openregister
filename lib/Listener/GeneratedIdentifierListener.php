@@ -41,7 +41,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
-use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
+use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationInterface;
+use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationReader;
 use OCA\OpenRegister\Service\SequenceServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -152,7 +153,7 @@ class GeneratedIdentifierListener implements IEventListener {
 	/**
 	 * Issue a number for every declared property the data leaves empty.
 	 *
-	 * @param array<string, GeneratedIdentifierDeclaration> $declarations Property name to its declaration.
+	 * @param array<string, GeneratedIdentifierDeclarationInterface> $declarations Property name to its declaration.
 	 * @param array<string, mixed>                          $data         The object's data.
 	 * @param ObjectCreatingEvent|ObjectUpdatingEvent       $event        The write; it carries a refusal.
 	 * @param DateTimeImmutable                             $now          The moment every number is issued at.
@@ -185,7 +186,7 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * counter past it so the next create cannot collide with what was just
 	 * imported.
 	 *
-	 * @param GeneratedIdentifierDeclaration $declaration The property's declaration.
+	 * @param GeneratedIdentifierDeclarationInterface $declaration The property's declaration.
 	 * @param string                         $supplied    The value the write carries, '' when none.
 	 * @param DateTimeImmutable              $now         The moment the number is issued at.
 	 *
@@ -193,7 +194,7 @@ class GeneratedIdentifierListener implements IEventListener {
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
 	 */
-	private function numberFor(GeneratedIdentifierDeclaration $declaration, string $supplied, DateTimeImmutable $now): ?string {
+	private function numberFor(GeneratedIdentifierDeclarationInterface $declaration, string $supplied, DateTimeImmutable $now): ?string {
 		if ($supplied !== '') {
 			$this->advancePast(declaration: $declaration, value: $supplied);
 			return null;
@@ -331,14 +332,14 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * annotation existed still has to be importable, and its old numbers are
 	 * not this counter's to reason about.
 	 *
-	 * @param GeneratedIdentifierDeclaration $declaration The property's declaration.
+	 * @param GeneratedIdentifierDeclarationInterface $declaration The property's declaration.
 	 * @param string $value The value that was supplied.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
-	private function advancePast(GeneratedIdentifierDeclaration $declaration, string $value): void {
+	private function advancePast(GeneratedIdentifierDeclarationInterface $declaration, string $value): void {
 		$parsed = $declaration->parse(value: $value);
 		if ($parsed === null) {
 			return;
@@ -362,14 +363,14 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * sentinel is also what lets two schemas share a counter by naming it,
 	 * which a per-schema scope cannot express.
 	 *
-	 * @param GeneratedIdentifierDeclaration $declaration The property's declaration.
+	 * @param GeneratedIdentifierDeclarationInterface $declaration The property's declaration.
 	 * @param string $period The period keying the counter.
 	 *
 	 * @return string The scope key.
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-two-schemas-may-share-one-sequence
 	 */
-	private function scopeKey(GeneratedIdentifierDeclaration $declaration, string $period): string {
+	private function scopeKey(GeneratedIdentifierDeclarationInterface $declaration, string $period): string {
 		return 'gen:'.$declaration->sequence().'|'.$period;
 
 	}//end scopeKey()
@@ -379,7 +380,7 @@ class GeneratedIdentifierListener implements IEventListener {
 	 *
 	 * @param ObjectEntity $object The object being written.
 	 *
-	 * @return array<string, GeneratedIdentifierDeclaration> Property name to its declaration; empty without a schema.
+	 * @return array<string, GeneratedIdentifierDeclarationInterface> Property name to its declaration; empty without a schema.
 	 */
 	private function declarationsFor(ObjectEntity $object): array {
 		$schema = $this->loadSchema(object: $object);
@@ -401,7 +402,7 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * @param Schema $schema The object's schema.
 	 * @param int $schemaId The schema's id, as the object carries it.
 	 *
-	 * @return array<string, GeneratedIdentifierDeclaration> Property name to its declaration.
+	 * @return array<string, GeneratedIdentifierDeclarationInterface> Property name to its declaration.
 	 */
 	private function declarationsOf(Schema $schema, int $schemaId): array {
 		$properties = ($schema->getProperties() ?? []);
@@ -433,7 +434,7 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * @param string $name     The property name.
 	 * @param int    $schemaId The schema's id, for the log.
 	 *
-	 * @return GeneratedIdentifierDeclaration|null The declaration.
+	 * @return GeneratedIdentifierDeclarationInterface|null The declaration.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) `fromProperty()` is a named constructor.
 	 *                                       Injecting a factory to build a value object
@@ -441,9 +442,9 @@ class GeneratedIdentifierListener implements IEventListener {
 	 *                                       collaborator that answers one question and
 	 *                                       holds no state.
 	 */
-	private function declarationOf(array $property, string $name, int $schemaId): ?GeneratedIdentifierDeclaration {
+	private function declarationOf(array $property, string $name, int $schemaId): ?GeneratedIdentifierDeclarationInterface {
 		try {
-			return GeneratedIdentifierDeclaration::fromProperty(property: $property, path: $name);
+			return GeneratedIdentifierDeclarationReader::fromProperty(property: $property, path: $name);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				message: '[GeneratedIdentifierListener] schema '.(string)$schemaId

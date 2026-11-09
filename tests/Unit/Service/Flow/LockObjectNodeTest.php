@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
@@ -94,8 +95,7 @@ final class LockObjectNodeTest extends TestCase {
 		$this->node = new LockObjectNode(
 			$this->objects,
 			$users,
-			$l10n,
-			$this->createMock(IURLGenerator::class)
+			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class))
 		);
 
 		$this->state = new FlowResumeState();

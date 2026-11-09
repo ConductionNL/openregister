@@ -58,7 +58,7 @@ use Throwable;
  *
  * @spec openspec/changes/archive/2026-10-05-per-app-doriath-application/tasks.md#1-per-app-doriath-registration-seam-d-2-d-6
  */
-class DoriathApplicationRegistrar {
+class DoriathApplicationRegistrar implements DoriathApplicationRegistrarInterface {
 	/**
 	 * The application service (registration seam), RELATIVE to the app namespace.
 	 *

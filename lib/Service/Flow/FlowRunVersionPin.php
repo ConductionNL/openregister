@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowVersion;
-use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\FlowVersionMapperInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -43,20 +43,8 @@ use Throwable;
  *
  * @spec openspec/specs/flow-definition-versioning/spec.md
  */
-class FlowRunVersionPin {
-	/**
-	 * The trigger an interactive test run carries.
-	 *
-	 * 🔑 THE ONE DISPATCH THAT MAY WALK A DRAFT. Every other path is a live
-	 * process acting on real data and must run a published version. A test run
-	 * is an author pressing "try this" on the graph in front of them — refusing
-	 * it would mean a flow could not be tried until it was published, which is
-	 * exactly backwards: publishing is the thing you do AFTER testing.
-	 *
-	 * @var string
-	 */
-	public const TRIGGER_TEST = 'test';
-
+class FlowRunVersionPin implements FlowRunVersionPinInterface {
+	
 	/**
 	 * Constructor.
 	 *
@@ -109,13 +97,13 @@ class FlowRunVersionPin {
 	 *
 	 * @param string $flowId The flow being dispatched, for the log.
 	 *
-	 * @return FlowVersionMapper|null The mapper.
+	 * @return FlowVersionMapperInterface|null The mapper.
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
-	private function versionMapper(string $flowId): ?FlowVersionMapper {
+	private function versionMapper(string $flowId): ?FlowVersionMapperInterface {
 		try {
-			$mapper = $this->container->get(FlowVersionMapper::class);
+			$mapper = $this->container->get(FlowVersionMapperInterface::class);
 		} catch (Throwable) {
 			$this->logger->error(
 				message: '[FlowRunVersionPin] Could not resolve the version mapper for flow "' . $flowId . '"; the dispatch is refused rather than run unpinned.',
@@ -124,7 +112,7 @@ class FlowRunVersionPin {
 			return null;
 		}
 
-		if ($mapper instanceof FlowVersionMapper === false) {
+		if ($mapper instanceof FlowVersionMapperInterface === false) {
 			return null;
 		}
 

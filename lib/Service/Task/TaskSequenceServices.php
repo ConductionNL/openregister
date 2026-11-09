@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Db\TaskSequenceMapper;
+use OCA\OpenRegister\Db\TaskSequenceMapperInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 
 /**
@@ -35,14 +35,14 @@ final class TaskSequenceServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param TaskSequenceMapper $sequences The sequence rows.
+	 * @param TaskSequenceMapperInterface $sequences The sequence rows.
 	 * @param TaskMapper $taskReader Reads a sequence's positions. Read-only
 	 *                               there; every write goes through the verbs.
 	 * @param TaskServiceInterface $tasks The authorized task lifecycle.
 	 * @param IEventDispatcher $dispatcher Announces sequence completion.
 	 */
 	public function __construct(
-		public readonly TaskSequenceMapper $sequences,
+		public readonly TaskSequenceMapperInterface $sequences,
 		public readonly TaskMapper $taskReader,
 		public readonly TaskServiceInterface $tasks,
 		public readonly IEventDispatcher $dispatcher,

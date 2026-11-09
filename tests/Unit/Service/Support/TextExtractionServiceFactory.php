@@ -23,6 +23,7 @@ use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionReaders;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionStorage;
+use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionSources;
 use OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
@@ -73,9 +74,11 @@ final class TextExtractionServiceFactory {
 		WordExtractor $wordExtractor,
 	): array {
 		return [
-			new TextExtractionStorage($fileMapper, $rootFolder, $db),
+			new TextExtractionSources(
+				new TextExtractionStorage($fileMapper, $rootFolder, $db),
+				new TextExtractionObjects($objectEntityMapper, $schemaMapper, $registerMapper)
+			),
 			$chunkMapper,
-			new TextExtractionObjects($objectEntityMapper, $schemaMapper, $registerMapper),
 			new TextExtractionAnalysis($entityHandler, $settingsService, $riskLevelService, $logger),
 			new TextExtractionReaders($emlParser, $spreadsheetExtractor, $pdfExtractor, $wordExtractor),
 		];

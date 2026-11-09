@@ -49,6 +49,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use OCA\OpenRegister\Command\Support\PurgeSwitches;
 
 /**
  * Permanently destroy object rows by UUID.
@@ -126,8 +127,7 @@ class PurgeObjectCommand extends Command {
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$uuids = array_map('strval', (array)$input->getArgument('uuid'));
-		$force = (bool)$input->getOption('force');
-		$apply = (bool)$input->getOption('apply');
+		$switches = new PurgeSwitches(force: (bool)$input->getOption('force'), apply: (bool)$input->getOption('apply'));
 		$fromJob = $this->importJobUuids(importJobId: (string)($input->getOption('import-job') ?? ''), output: $output);
 
 		if ($uuids === [] && $fromJob === null) {
@@ -137,16 +137,16 @@ class PurgeObjectCommand extends Command {
 
 		$failures = 0;
 		foreach ($uuids as $uuid) {
-			$failures += $this->purgeOne(uuid: $uuid, force: $force, apply: $apply, output: $output);
+			$failures += $this->purgeOne(uuid: $uuid, switches: $switches, output: $output);
 		}
 
 		// In job mode a missing object was removed already, so a re-run after
 		// a partial purge reports it rather than failing on it.
 		foreach (array_diff(($fromJob ?? []), $uuids) as $uuid) {
-			$failures += $this->purgeOne(uuid: $uuid, force: $force, apply: $apply, output: $output, fromJob: true);
+			$failures += $this->purgeOne(uuid: $uuid, switches: $switches, output: $output, fromJob: true);
 		}
 
-		if ($apply === false) {
+		if ($switches->apply === false) {
 			$output->writeln('');
 			$output->writeln('<comment>Dry run. Re-run with --apply to destroy these rows.</comment>');
 		}
@@ -183,10 +183,9 @@ class PurgeObjectCommand extends Command {
 	/**
 	 * Handle a single UUID.
 	 *
-	 * @param string          $uuid   The object UUID.
-	 * @param bool            $force  Whether archival and live rows may be purged.
-	 * @param bool            $apply  Whether to actually write.
-	 * @param OutputInterface $output Console output.
+	 * @param string          $uuid     The object UUID.
+	 * @param PurgeSwitches   $switches The operator's --force and --apply switches.
+	 * @param OutputInterface $output   Console output.
 	 * @param bool            $fromJob Whether the UUID came from --import-job, where a missing
 	 *                                 object was removed already rather than mistyped.
 	 *
@@ -194,7 +193,7 @@ class PurgeObjectCommand extends Command {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the command's own --force and --apply switches.
 	 */
-	private function purgeOne(string $uuid, bool $force, bool $apply, OutputInterface $output, bool $fromJob=false): int {
+	private function purgeOne(string $uuid, PurgeSwitches $switches, OutputInterface $output, bool $fromJob=false): int {
 		try {
 			$object = $this->objectMapper->find(
 				identifier: $uuid,
@@ -218,7 +217,7 @@ class PurgeObjectCommand extends Command {
 		$isArchival = ($schema !== null && $schema->hasArchivalAnnotation() === true);
 		$label = ($schema?->getSlug() ?? (string)$object->getSchema());
 
-		$refusal = $this->refusalReason(object: $object, isArchival: $isArchival, force: $force, label: $label);
+		$refusal = $this->refusalReason(object: $object, isArchival: $isArchival, switches: $switches, label: $label);
 		if ($refusal !== null) {
 			$output->writeln(sprintf('<error>%s: refused — %s</error>', $uuid, $refusal));
 			return 1;
@@ -229,7 +228,7 @@ class PurgeObjectCommand extends Command {
 			$note = ' <comment>(ARCHIVAL RECORD)</comment>';
 		}
 
-		if ($apply === false) {
+		if ($switches->apply === false) {
 			$output->writeln(sprintf('would purge %s from "%s"%s', $uuid, $label, $note));
 			return 0;
 		}
@@ -254,13 +253,13 @@ class PurgeObjectCommand extends Command {
 	 *
 	 * @param ObjectEntity $object     The object being purged.
 	 * @param bool         $isArchival Whether its schema declares the archival annotation.
-	 * @param bool         $force      Whether the operator passed --force.
+	 * @param PurgeSwitches $switches The operator's --force and --apply switches.
 	 * @param string       $label      The schema slug or id, for the message.
 	 *
 	 * @return string|null The refusal reason, or null when the purge may proceed.
 	 */
-	private function refusalReason(ObjectEntity $object, bool $isArchival, bool $force, string $label): ?string {
-		if ($force === true) {
+	private function refusalReason(ObjectEntity $object, bool $isArchival, PurgeSwitches $switches, string $label): ?string {
+		if ($switches->force === true) {
 			return null;
 		}
 

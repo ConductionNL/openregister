@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 
 /**
@@ -35,13 +35,13 @@ final class FlowRunMigrationTimers {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param FlowTimerMapper  $timers       Open timers of a run.
+	 * @param FlowTimerMapperInterface  $timers       Open timers of a run.
 	 * @param FlowTimerService $timerService Supersession.
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md
 	 */
 	public function __construct(
-		public readonly FlowTimerMapper $timers,
+		public readonly FlowTimerMapperInterface $timers,
 		public readonly FlowTimerService $timerService,
 	) {
 	}//end __construct()

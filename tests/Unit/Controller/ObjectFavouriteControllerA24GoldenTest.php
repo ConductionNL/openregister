@@ -75,7 +75,6 @@ class ObjectFavouriteControllerA24GoldenTest extends TestCase {
 		}
 
 		return new ObjectFavouriteController(
-			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			objectService: $objects,
 			favourites: $this->favourites,

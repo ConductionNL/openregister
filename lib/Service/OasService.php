@@ -380,30 +380,24 @@ class OasService implements OasServiceInterface {
 	/**
 	 * Constructor for OasService
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register mapper for database operations
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations
-	 * @param IURLGenerator $urlGenerator URL generator for absolute URLs
-	 * @param LoggerInterface|null $logger PSR-3 logger for surfacing validation issues
+	 * @param OasSources $sources Register and schema mappers, URL generator and the optional logger
 	 * @param ?OasRequestValidator $metaValidator Optional validator for the vendored OAS 3.1 meta-schema check.
 	 * @param PropertyRbacHandlerInterface|null $propertyRbac Withholds a property the caller may not read. Nullable and
 	 *                                               last so no construction site shifts; absent, a governed
 	 *                                               property is withheld, which is the safe direction.
 	 */
 	public function __construct(
-		RegisterMapperInterface $registerMapper,
-		SchemaMapperInterface $schemaMapper,
-		IURLGenerator $urlGenerator,
-		?LoggerInterface $logger = null,
+		OasSources $sources,
 		private readonly ?OasRequestValidator $metaValidator = null,
 		// LAST AND NULLABLE so every existing construction keeps working. The
 		// container always supplies it; null happens only in a hand-built test,
 		// and then a GOVERNED property is withheld, which is the safe direction.
 		?PropertyRbacHandlerInterface $propertyRbac = null,
 	) {
-		$this->registerMapper = $registerMapper;
-		$this->schemaMapper = $schemaMapper;
-		$this->urlGenerator = $urlGenerator;
-		$this->logger = $logger;
+		$this->registerMapper = $sources->registerMapper;
+		$this->schemaMapper = $sources->schemaMapper;
+		$this->urlGenerator = $sources->urlGenerator;
+		$this->logger = $sources->logger;
 		$this->propertySanitizer = new OasPropertySanitizer();
 		$this->wireCollaborators(propertyRbac: $propertyRbac);
 	}//end __construct()

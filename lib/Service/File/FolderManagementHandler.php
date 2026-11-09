@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\Files\Config\IUserMountCache;
 use OCP\Files\Folder;
@@ -99,7 +99,7 @@ class FolderManagementHandler {
 	 *                                    without setting up the owning user's mounts.
 	 * @param RegisterFolderRecorder $folderRecorder Records a register's folder id as bookkeeping, so a
 	 *                                               first upload needs no register-update permission.
-	 * @param FileService|null $fileService File service facade for cross-handler coordination
+	 * @param FileHandlerSupportInterface|null $fileService File service facade for cross-handler coordination
 	 *                                      (injected lazily to avoid circular dependency).
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
@@ -114,7 +114,7 @@ class FolderManagementHandler {
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserMountCache $mountCache,
 		private readonly RegisterFolderRecorder $folderRecorder,
-		private ?FileService $fileService = null,
+		private ?FileHandlerSupportInterface $fileService = null,
 	) {
 	}//end __construct()
 
@@ -124,14 +124,14 @@ class FolderManagementHandler {
 	 * This allows accessing other handlers (ownership, sharing) through the facade.
 	 * Called by FileService after construction to avoid circular dependencies.
 	 *
-	 * @param FileService $fileService The file service facade.
+	 * @param FileHandlerSupportInterface $fileService The file service facade.
 	 *
 	 * @return void
 	 *
 	 * @psalm-return   void
 	 * @phpstan-return void
 	 */
-	public function setFileService(FileService $fileService): void {
+	public function setFileService(FileHandlerSupportInterface $fileService): void {
 		$this->fileService = $fileService;
 	}//end setFileService()
 

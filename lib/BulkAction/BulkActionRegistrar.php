@@ -25,6 +25,9 @@ namespace OCA\OpenRegister\BulkAction;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
+ * The body and the binding map live in BulkActionWiring, in this component;
+ * this class keeps the entry points its callers use.
+ *
  * Binds the interfaces other components type against to the built-in bulk actions.
  */
 final class BulkActionRegistrar {
@@ -34,13 +37,7 @@ final class BulkActionRegistrar {
 	 *
 	 * @var array<class-string, class-string>
 	 */
-	public const BINDINGS = [
-		ApplyRuleActionInterface::class => ApplyRuleAction::class,
-		AssignActionInterface::class => AssignAction::class,
-		RestorePriorValuesActionInterface::class => RestorePriorValuesAction::class,
-		RunActionActionInterface::class => RunActionAction::class,
-		SetPropertiesActionInterface::class => SetPropertiesAction::class,
-	];
+	public const BINDINGS = BulkActionWiring::BINDINGS;
 
 	/**
 	 * Register the BulkAction component's bindings.
@@ -52,8 +49,6 @@ final class BulkActionRegistrar {
 	 * @spec exclude Container wiring; no behaviour of its own.
 	 */
 	public static function register(IRegistrationContext $context): void {
-		foreach (self::BINDINGS as $contract => $service) {
-			$context->registerServiceAlias($contract, $service);
-		}
+		BulkActionWiring::register(context: $context);
 	}//end register()
 }//end class

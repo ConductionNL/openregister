@@ -49,9 +49,9 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\DelegationControllerServices;
 use OCA\OpenRegister\Db\DelegationGrant;
-use OCA\OpenRegister\Db\DelegationGrantMapper;
-use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
-use OCA\OpenRegister\Service\Delegation\DelegationNotifier;
+use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
+use OCA\OpenRegister\Service\Delegation\DelegationConsentServiceInterface;
+use OCA\OpenRegister\Service\Delegation\DelegationNotifierInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -84,23 +84,23 @@ class DelegationController extends Controller {
 	/**
 	 * Reads the grant store.
 	 *
-	 * @var DelegationGrantMapper
+	 * @var DelegationGrantMapperInterface
 	 */
-	private readonly DelegationGrantMapper $grants;
+	private readonly DelegationGrantMapperInterface $grants;
 
 	/**
 	 * Owns the lifecycle and its rules.
 	 *
-	 * @var DelegationConsentService
+	 * @var DelegationConsentServiceInterface
 	 */
-	private readonly DelegationConsentService $consent;
+	private readonly DelegationConsentServiceInterface $consent;
 
 	/**
 	 * Tells a person they were asked.
 	 *
-	 * @var DelegationNotifier
+	 * @var DelegationNotifierInterface
 	 */
-	private readonly DelegationNotifier $notifier;
+	private readonly DelegationNotifierInterface $notifier;
 
 	/**
 	 * Names the caller.

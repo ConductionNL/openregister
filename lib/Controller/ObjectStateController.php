@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Object\ArchiveHandler;
+use OCA\OpenRegister\Service\Object\ArchiveHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -56,7 +56,7 @@ class ObjectStateController extends Controller {
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
-	 * @param ArchiveHandler $archiveHandler The archive and freeze verbs.
+	 * @param ArchiveHandlerInterface $archiveHandler The archive and freeze verbs.
 	 * @param IUserSession $userSession The user session.
 	 *
 	 * @return void
@@ -66,7 +66,7 @@ class ObjectStateController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ArchiveHandler $archiveHandler,
+		private readonly ArchiveHandlerInterface $archiveHandler,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);

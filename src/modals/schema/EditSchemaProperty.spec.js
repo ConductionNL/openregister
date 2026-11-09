@@ -22,6 +22,7 @@ jest.mock('@nextcloud/vue', () => ({ __esModule: true }))
 jest.mock('@nextcloud/axios', () => ({ __esModule: true, default: {} }))
 jest.mock('@nextcloud/router', () => ({ __esModule: true, generateUrl: (p) => p }))
 jest.mock('vue-material-design-icons/Cancel.vue', () => ({}), { virtual: true })
+jest.mock('../../components/shared/CloseCancelButton.vue', () => ({}))
 jest.mock('vue-material-design-icons/ContentSaveOutline.vue', () => ({}), {
 	virtual: true,
 })

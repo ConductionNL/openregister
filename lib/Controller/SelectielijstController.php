@@ -36,14 +36,15 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
-use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
+use OCA\OpenRegister\Service\Archival\SelectielijstImportServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
 use Throwable;
+use OCA\OpenRegister\Controller\Support\SelectielijstControllerServices;
 
 /**
  * Import, list and compare selectielijst versions.
@@ -71,22 +72,36 @@ class SelectielijstController extends Controller {
 	private readonly ControllerSession $session;
 
 	/**
+	 * Imports, versions and diffs a list.
+	 *
+	 * @var SelectielijstImportServiceInterface
+	 */
+	private readonly SelectielijstImportServiceInterface $selectielijst;
+
+	/**
+	 * Names the version in force.
+	 *
+	 * @var ArchivalSettingsReaderInterface
+	 */
+	private readonly ArchivalSettingsReaderInterface $settingsHandler;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                     $appName         The app name.
 	 * @param IRequest                   $request         The request.
-	 * @param SelectielijstImportService $selectielijst   Imports, versions and diffs a list.
-	 * @param ArchivalSettingsReaderInterface     $settingsHandler Names the version in force.
+	 * @param SelectielijstControllerServices $services The services, bundled.
 	 * @param ControllerSession $session Session, group manager and logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SelectielijstImportService $selectielijst,
-		private readonly ArchivalSettingsReaderInterface $settingsHandler,
+		SelectielijstControllerServices $services,
 		ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->selectielijst = $services->selectielijst;
+		$this->settingsHandler = $services->settingsHandler;
 
 		$this->session = $session;
 	}//end __construct()

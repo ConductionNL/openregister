@@ -51,7 +51,7 @@ use Psr\Log\LoggerInterface;
  * Calculates the archiefactiedatum: where a retention period starts counting
  * from, and what to do when that cannot be answered.
  */
-class ArchiveActionDateCalculator {
+class ArchiveActionDateCalculator implements ArchiveReferenceReaderInterface {
 
 	/**
 	 * Valid afleidingswijze methods.

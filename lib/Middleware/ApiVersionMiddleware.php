@@ -55,9 +55,9 @@ namespace OCA\OpenRegister\Middleware;
 
 use Exception;
 use OCA\OpenRegister\Middleware\Exception\ApiVersionRefusedException;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiation;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiationInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiatorInterface;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
 use OCP\IRequest;
@@ -99,13 +99,13 @@ class ApiVersionMiddleware extends Middleware {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming request.
-	 * @param ApiVersionNegotiator $negotiator Resolves the version a request speaks.
+	 * @param ApiVersionNegotiatorInterface $negotiator Resolves the version a request speaks.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly ApiVersionNegotiator $negotiator,
+		private readonly ApiVersionNegotiatorInterface $negotiator,
 	) {
 
 	}//end __construct()
@@ -141,19 +141,19 @@ class ApiVersionMiddleware extends Middleware {
 	/**
 	 * The refusal for a negotiation naming an undeclared or withdrawn version, or null.
 	 *
-	 * @param ApiVersionNegotiation $negotiation The negotiated version.
+	 * @param ApiVersionNegotiationInterface $negotiation The negotiated version.
 	 *
 	 * @return ApiVersionRefusedException|null The refusal, or null when the version may answer.
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
-	private function refusalFor(ApiVersionNegotiation $negotiation): ?ApiVersionRefusedException {
+	private function refusalFor(ApiVersionNegotiationInterface $negotiation): ?ApiVersionRefusedException {
 		if ($negotiation->isUnknown() === true) {
-			$requestedId = (string)$negotiation->requestedId;
+			$requestedId = (string)$negotiation->requestedIdentifier();
 			return ApiVersionRefusedException::unknown(requestedId: $requestedId, acceptable: $this->negotiator->acceptableIdentifiers());
 		}
 
-		$version = $negotiation->version;
+		$version = $negotiation->answeringVersion();
 		if ($version !== null && $version->isServed() === false) {
 			return ApiVersionRefusedException::withdrawn(version: $version, acceptable: $this->negotiator->acceptableIdentifiers());
 		}
@@ -204,12 +204,12 @@ class ApiVersionMiddleware extends Middleware {
 			return $response;
 		}
 
-		$version = $this->negotiator->negotiate(request: $this->request)->version;
+		$version = $this->negotiator->negotiate(request: $this->request)->answeringVersion();
 		if ($version === null) {
 			return $response;
 		}
 
-		$response->addHeader(ApiVersionNegotiator::RESPONSE_HEADER, $version->id);
+		$response->addHeader(ApiVersionNegotiatorInterface::RESPONSE_HEADER, $version->identifier());
 
 		if ($version->isDeprecated() === false) {
 			return $response;
@@ -223,26 +223,27 @@ class ApiVersionMiddleware extends Middleware {
 	 * Add the RFC 8594 deprecation headers for a deprecated version.
 	 *
 	 * @param Response $response The response to decorate.
-	 * @param ApiVersion $version The deprecated version that answered.
+	 * @param ApiVersionInterface $version The deprecated version that answered.
 	 *
 	 * @return Response The decorated response.
 	 */
-	private function addDeprecationHeaders(Response $response, ApiVersion $version): Response {
+	private function addDeprecationHeaders(Response $response, ApiVersionInterface $version): Response {
 		// RFC 8594 allows an HTTP-date or the bare token. A deprecation with no
 		// recorded start date still has to announce itself, so it falls back to
 		// the token rather than omitting the header.
-		$deprecatedOn = ApiVersion::toHttpDate(isoDate: $version->deprecatedOn);
+		$deprecatedOn = $version->deprecationHttpDate();
 		$response->addHeader('Deprecation', ($deprecatedOn ?? 'true'));
 
-		$sunset = ApiVersion::toHttpDate(isoDate: $version->sunset);
+		$sunset = $version->sunsetHttpDate();
 		if ($sunset !== null) {
 			$response->addHeader('Sunset', $sunset);
 		}
 
-		if ($version->successor !== null) {
+		$successor = $version->successorIdentifier();
+		if ($successor !== null) {
 			$response->addHeader(
 				'Link',
-				'<' . self::CONTRACT_PATH . $version->successor . '/oas>; rel="successor-version"'
+				'<' . self::CONTRACT_PATH . $successor . '/oas>; rel="successor-version"'
 			);
 		}
 

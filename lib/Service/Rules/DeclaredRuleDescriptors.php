@@ -198,16 +198,15 @@ final class DeclaredRuleDescriptors {
 	 */
 	private function describe(array $facts, array $declaration): RuleDescriptor {
 		return new RuleDescriptor(
-			kind: $facts['kind'],
-			schemaSlug: $this->slug,
-			key: $facts['key'],
+			origin: new RuleOrigin(kind: $facts['kind'], schemaSlug: $this->slug, key: $facts['key'], source: $facts['source']),
 			label: $facts['label'],
-			source: $facts['source'],
-			enabled: ($declaration['enabled'] ?? true) !== false,
-			actions: $facts['actions'],
-			condition: $facts['condition'],
-			maxObjects: $this->ceilingOf(declaration: $declaration),
-			scope: $this->scopes->fromDeclaration(declaration: $declaration)
+			effect: new RuleEffect(
+				actions: $facts['actions'],
+				condition: $facts['condition'],
+				maxObjects: $this->ceilingOf(declaration: $declaration),
+				scope: $this->scopes->fromDeclaration(declaration: $declaration)
+			),
+			enabled: ($declaration['enabled'] ?? true) !== false
 		);
 	}//end describe()
 

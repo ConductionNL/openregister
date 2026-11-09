@@ -130,17 +130,14 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 	/**
 	 * Merge the keys into the setting, recording what each held.
 	 *
-	 * @param string               $app  The app that ships the fragment.
-	 * @param string               $key  The row's key in the fragment.
-	 * @param array<string, mixed> $data The filled keys.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{hadSetting: bool, set: array<string, mixed>, had: array<string, bool>, old: array<string, mixed>}|null}
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the engine rows' contract.
-	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		$had     = $this->has();
 		$setting = $this->setting();
 		$entry   = ['hadSetting' => $had, 'set' => $data, 'had' => [], 'old' => []];

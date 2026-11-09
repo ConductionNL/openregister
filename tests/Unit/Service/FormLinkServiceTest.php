@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormLinkMapper;
 use OCA\OpenRegister\Db\FormSubmissionRef;
 use OCA\OpenRegister\Service\FormLinkService;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -99,10 +100,8 @@ class FormLinkServiceTest extends TestCase {
 		$this->service = new FormLinkService(
 			$this->formLinkMapper,
 			$this->container,
-			$this->appManager,
 			$this->db,
-			$this->userSession,
-			$this->logger
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger)
 		);
 
 	}//end setUp()

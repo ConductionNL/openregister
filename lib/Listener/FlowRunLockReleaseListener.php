@@ -43,7 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
-use OCA\OpenRegister\Service\Object\RunLockRegistry;
+use OCA\OpenRegister\Service\Object\RunLockReleaseInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -59,11 +59,11 @@ class FlowRunLockReleaseListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param RunLockRegistry $locks The run-lock lifecycle.
+	 * @param RunLockReleaseInterface $locks The run-lock lifecycle.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly RunLockRegistry $locks,
+		private readonly RunLockReleaseInterface $locks,
 		private readonly LoggerInterface $logger,
 	) {
 

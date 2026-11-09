@@ -163,15 +163,16 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 	/**
 	 * Write one audit entry by the named person, or find the one an earlier install wrote.
 	 *
-	 * @param string               $app  The fragment's app.
-	 * @param string               $key  The row key.
-	 * @param array<string, mixed> $data The row's fields, placeholders filled.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{id: int, object: string}|null} The record entry, or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$key = $row->key;
+		$data = $row->data;
 		$objectUuid = (string) $data['object'];
 		$object     = $this->container->get(PartyService::class)->findUnscoped(uuid: $objectUuid);
 		if ($object === null) {

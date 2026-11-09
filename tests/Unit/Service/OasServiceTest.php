@@ -9,6 +9,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Oas\OasNames;
 use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
 use OCA\OpenRegister\Service\OasService;
+use OCA\OpenRegister\Service\OasSources;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -25,9 +26,7 @@ class OasServiceTest extends TestCase {
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
 
 		$this->service = new OasService(
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->urlGenerator
+			new OasSources($this->registerMapper, $this->schemaMapper, $this->urlGenerator)
 		);
 	}
 
@@ -2123,10 +2122,7 @@ class OasServiceTest extends TestCase {
 		$rbac = $this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturn(true);
 		$service = new \OCA\OpenRegister\Service\OasService(
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->urlGenerator,
-			null,
+			new OasSources($this->registerMapper, $this->schemaMapper, $this->urlGenerator, null),
 			null,
 			$rbac
 		);

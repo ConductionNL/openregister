@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
 use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
 use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiation;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
@@ -55,6 +56,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Middleware\Support\ApiCallerServices;
+use OCA\OpenRegister\Middleware\Support\RateLimitPlatform;
 
 /**
  * Allowed and refused outcomes of the access middlewares.
@@ -230,14 +233,14 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 	 *
 	 * @return RateLimitMiddleware
 	 */
-	private function limiter(SecurityService $security, bool $public=false, ?IUser $user=null, string $auth=''): RateLimitMiddleware {
+	private function limiter(SecurityService $security, bool $public=false, ?IUser $user=null, string $auth='', ?LoggerInterface $logger=null): RateLimitMiddleware {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getHeader')->willReturnMap([['Authorization', $auth]]);
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$security->method('getTrustedClientIpAddress')->willReturn('10.0.0.1');
 
-		return new RateLimitMiddleware($request, $session, $this->reflector($public), $security, $this->createMock(LoggerInterface::class));
+		return new RateLimitMiddleware($request, new RateLimitPlatform($session, $this->reflector($public), $logger ?? $this->createMock(LoggerInterface::class)), $security);
 	}
 
 	/**
@@ -340,15 +343,17 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 	public function testRateLimitAllowsWhenTheCheckErrors(): void {
 		$security = $this->createMock(SecurityService::class);
 		$security->method('checkAuthRateLimit')->willThrowException(new RuntimeException('apcu'));
-		$this->limiter($security)->beforeController($this->controller(), 'm');
-		$this->addToAssertionCount(1);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with($this->stringContains('failed open'));
+
+		$this->limiter($security, logger: $logger)->beforeController($this->controller(), 'm');
 	}
 
 	public function testRateLimitTreatsAFailedReflectionAsProtected(): void {
 		$security = $this->createMock(SecurityService::class);
 		$security->method('getTrustedClientIpAddress')->willReturn('10.0.0.1');
 		$security->expects($this->once())->method('checkAuthRateLimit')->willReturn(['allowed' => true]);
-		$mw = new RateLimitMiddleware($this->createMock(IRequest::class), $this->createMock(IUserSession::class), $this->reflector(true, true), $security, $this->createMock(LoggerInterface::class));
+		$mw = new RateLimitMiddleware($this->createMock(IRequest::class), new RateLimitPlatform($this->createMock(IUserSession::class), $this->reflector(true, true), $this->createMock(LoggerInterface::class)), $security);
 		$mw->beforeController($this->controller(), 'm');
 	}
 
@@ -458,12 +463,12 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$negotiator = $this->createMock(ApiVersionNegotiator::class);
 		$served = null;
 		if ($version !== null) {
-			$served = new ApiVersion($version, ApiVersion::STATUS_SUPPORTED);
+			$served = new ApiVersion(id: $version, lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_SUPPORTED));
 		}
 
 		$negotiator->method('negotiate')->willReturn(new ApiVersionNegotiation(null, $served, ApiVersionNegotiation::SOURCE_DEFAULT));
 
-		return new ApiCallerMiddleware($request, $recorder, $limiter, $policy, $negotiator);
+		return new ApiCallerMiddleware($request, new ApiCallerServices($recorder, $negotiator), $limiter, $policy);
 	}
 
 	public function testCallerIgnoresANonApiRequest(): void {
@@ -543,7 +548,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$limiter = $this->createMock(CallerRateLimiter::class);
 		$limiter->method('consume')->willReturn($outcome);
 		$recorder = $this->createMock(ApiCallRecorder::class);
-		$recorder->expects($this->once())->method('record')->with('caller-1', '/api/objects', 'GET', '1');
+		$recorder->expects($this->once())->method('record')->with('/api/objects', 'GET', '1');
 		$mw = $this->caller('/api/objects', $policy, $limiter, $recorder);
 		$mw->beforeController(null, 'm');
 		$response = new Response();

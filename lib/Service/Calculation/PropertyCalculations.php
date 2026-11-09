@@ -43,7 +43,7 @@ namespace OCA\OpenRegister\Service\Calculation;
  *
  * @spec openspec/specs/computed-fields/spec.md
  */
-final class PropertyCalculations {
+final class PropertyCalculations implements PropertyCalculationsInterface {
 
 	/**
 	 * The property key an administration surface forwards a calculation under.

@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionQueue;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\IGroupManager;
 use OCP\IL10N;
@@ -132,8 +133,7 @@ class AutoTransitionRunnerTest extends TestCase {
 					new LifecycleConditionEvaluator(
 						$this->createMock(IUserSession::class),
 						$groupManager,
-						$l10n,
-						$this->logger,
+						new LifecycleConditionReporting($l10n, $this->logger),
 						$this->realConditionDialect()
 					),
 					$this->logger

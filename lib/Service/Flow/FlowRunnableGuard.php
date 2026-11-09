@@ -43,7 +43,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
  */
-class FlowRunnableGuard {
+class FlowRunnableGuard implements FlowRunnableGuardInterface {
 
 	/**
 	 * Constructor.

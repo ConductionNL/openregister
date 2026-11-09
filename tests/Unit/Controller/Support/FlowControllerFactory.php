@@ -50,6 +50,7 @@ final class FlowControllerFactory {
 					eventCatalog: $eventCatalog,
 					nodes: $nodes,
 					preflight: $preflight,
+					bpmn: new \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchange(),
 				),
 				definitions: new \OCA\OpenRegister\Controller\Support\FlowDefinitions(
 					flows: $flows,

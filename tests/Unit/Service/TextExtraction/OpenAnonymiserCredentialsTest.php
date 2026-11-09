@@ -40,6 +40,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
@@ -194,7 +195,7 @@ class OpenAnonymiserCredentialsTest extends TestCase {
 		);
 
 		$method = new ReflectionMethod(EntityRecognitionHandler::class, 'detectWithOpenAnonymiser');
-		$method->invoke($handler, 'Jan de Vries woont in Utrecht', null, 0.5);
+		$method->invoke($handler, new EntityDetectionQuery('Jan de Vries woont in Utrecht', null, 0.5));
 
 		$seen = $this->dir . '/seen.json';
 		$this->assertFileExists($seen, 'The request never reached the server. Logged: ' . implode(' | ', $this->logged));

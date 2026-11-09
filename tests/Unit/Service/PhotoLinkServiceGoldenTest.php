@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\PhotoLink;
@@ -154,7 +155,7 @@ class PhotoLinkServiceGoldenTest extends TestCase {
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('linkToRoute')->willReturn('/apps/photos/');
 
-		return new PhotoLinkService($this->mapper, $container, $apps, $session, $urls, $this->logger);
+		return new PhotoLinkService($this->mapper, $container, $urls, new LinkServiceRuntime($apps, $session, $this->logger));
 	}//end service()
 
 	private function target(): LinkTarget {

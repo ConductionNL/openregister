@@ -150,6 +150,31 @@ final class SearchDictionary {
 			return DictionaryExpansion::unchanged(term: $term);
 		}
 
+		[$kept, $removed] = $this->partitionStopwords(words: $words);
+
+		if ($kept === []) {
+			// Every word was a stopword. The original term stands.
+			return DictionaryExpansion::stopwordsWouldEmptyIt(term: $term, removed: $removed);
+		}
+
+		[$pieces, $added] = $this->expandWords(words: $kept, perGroupCap: $perGroupCap, perQueryCap: $perQueryCap);
+
+		return DictionaryExpansion::expanded(
+			term: implode(' ', $pieces),
+			original: $term,
+			added: $added,
+			removed: $removed
+		);
+	}//end expand()
+
+	/**
+	 * Split words into the ones kept and the stopwords removed, in order.
+	 *
+	 * @param string[] $words The words of the term.
+	 *
+	 * @return array{0: list<string>, 1: list<string>} The kept and the removed words.
+	 */
+	private function partitionStopwords(array $words): array {
 		$kept = [];
 		$removed = [];
 		foreach ($words as $word) {
@@ -161,38 +186,49 @@ final class SearchDictionary {
 			$kept[] = $word;
 		}
 
-		if ($kept === []) {
-			// Every word was a stopword. The original term stands.
-			return DictionaryExpansion::stopwordsWouldEmptyIt(term: $term, removed: $removed);
-		}
+		return [$kept, $removed];
+	}//end partitionStopwords()
 
+	/**
+	 * Write each kept word with its capped synonyms in the search grammar.
+	 *
+	 * @param string[] $words       The kept words.
+	 * @param int      $perGroupCap Most synonyms added per word.
+	 * @param int      $perQueryCap Most synonyms added across the whole term.
+	 *
+	 * @return array{0: list<string>, 1: list<string>} The pieces of the term and the synonyms added.
+	 */
+	private function expandWords(array $words, int $perGroupCap, int $perQueryCap): array {
 		$added = [];
 		$budget = max(0, $perQueryCap);
 		$pieces = [];
-		foreach ($kept as $word) {
+		foreach ($words as $word) {
 			$synonyms = array_slice($this->synonymsFor(word: $word), 0, max(0, $perGroupCap));
 			$synonyms = array_slice($synonyms, 0, $budget);
 			$budget -= count($synonyms);
 
-			if ($synonyms === []) {
-				$pieces[] = $word;
-				continue;
-			}
+			$pieces[] = $this->piece(word: $word, synonyms: $synonyms);
+			$added = array_merge($added, $synonyms);
+		}
 
-			foreach ($synonyms as $synonym) {
-				$added[] = $synonym;
-			}
+		return [$pieces, $added];
+	}//end expandWords()
 
-			$pieces[] = '(' . implode(' OR ', array_merge([$word], $synonyms)) . ')';
-		}//end foreach
+	/**
+	 * One word, alone or as `(word OR synonym ...)`.
+	 *
+	 * @param string   $word     The word.
+	 * @param string[] $synonyms Its synonyms, already capped.
+	 *
+	 * @return string The piece of the term.
+	 */
+	private function piece(string $word, array $synonyms): string {
+		if ($synonyms === []) {
+			return $word;
+		}
 
-		return DictionaryExpansion::expanded(
-			term: implode(' ', $pieces),
-			original: $term,
-			added: $added,
-			removed: $removed
-		);
-	}//end expand()
+		return '(' . implode(' OR ', array_merge([$word], $synonyms)) . ')';
+	}//end piece()
 
 	/**
 	 * The other terms in this word's group.
@@ -214,15 +250,32 @@ final class SearchDictionary {
 				continue;
 			}
 
-			foreach ($group as $term) {
-				if ($term !== $needle && in_array($term, $synonyms, true) === false) {
-					$synonyms[] = $term;
-				}
-			}
+			$synonyms = $this->withGroup(synonyms: $synonyms, group: $group, needle: $needle);
 		}
 
 		return $synonyms;
 	}//end synonymsFor()
+
+	/**
+	 * Append a group's terms not yet collected, leaving out the word itself.
+	 *
+	 * @param string[] $synonyms The synonyms collected so far.
+	 * @param string[] $group    The group the word belongs to.
+	 * @param string   $needle   The lowercased word.
+	 *
+	 * @return string[] The synonyms with the group's new terms appended.
+	 *
+	 * @psalm-return list<string>
+	 */
+	private function withGroup(array $synonyms, array $group, string $needle): array {
+		foreach ($group as $term) {
+			if ($term !== $needle && in_array($term, $synonyms, true) === false) {
+				$synonyms[] = $term;
+			}
+		}
+
+		return $synonyms;
+	}//end withGroup()
 
 	/**
 	 * Lowercase, trim and de-duplicate a term list.

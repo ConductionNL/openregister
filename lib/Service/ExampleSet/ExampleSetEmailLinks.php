@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTime;
 use OCA\OpenRegister\Db\EmailLink;
-use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -218,15 +218,16 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	/**
 	 * Link the mail to the object, on the object's register and schema.
 	 *
-	 * @param string               $app  The app that ships the fragment, the linker when the row names none.
-	 * @param string               $key  The link's key in the fragment, kept as its source.
-	 * @param array<string, mixed> $data The filled fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{id: string}|null} The record entry, or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$key = $row->key;
+		$data = $row->data;
 		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: (string) $data['object']);
 		if ($object === null) {
 			return ['error' => 'no object "'.(string) $data['object'].'" to link the mail to', 'entry' => null];
@@ -409,9 +410,9 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	/**
 	 * The email link mapper.
 	 *
-	 * @return EmailLinkMapper
+	 * @return EmailLinkMapperInterface
 	 */
-	private function mapper(): EmailLinkMapper {
-		return $this->container->get(EmailLinkMapper::class);
+	private function mapper(): EmailLinkMapperInterface {
+		return $this->container->get(EmailLinkMapperInterface::class);
 	}//end mapper()
 }//end class

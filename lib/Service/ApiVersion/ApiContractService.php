@@ -51,7 +51,7 @@ use OCA\OpenRegister\Service\OasService;
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiVersion
  */
-class ApiContractService {
+class ApiContractService implements ApiContractServiceInterface {
 
 	/**
 	 * The HTTP methods an OpenAPI path item may carry an operation under.

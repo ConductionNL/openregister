@@ -32,7 +32,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/row-field-level-security/spec.md
  */
-class MetadataConditionFindings {
+class MetadataConditionFindings implements MetadataConditionFindingsInterface {
 
 	/**
 	 * Reads which metadata keys a record carries.

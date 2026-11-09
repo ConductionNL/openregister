@@ -44,7 +44,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
-class ProcessingLogMapper extends QBMapper {
+class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -122,28 +122,17 @@ class ProcessingLogMapper extends QBMapper {
 	 *
 	 * @param string $idType Subject identifier type (e.g. `BSN`).
 	 * @param string $idValue Subject identifier value.
-	 * @param DateTime|null $from Inclusive lower bound.
-	 * @param DateTime|null $to Inclusive upper bound.
-	 * @param string|null $organisationId Tenant scope (null = all, admin only).
-	 * @param bool $includeConfidential Whether to include confidential entries (FG only).
+	 * @param ProcessingLogReadScope|null $scope Period, tenant scope and confidentiality; null for the defaults.
 	 *
 	 * @return ProcessingLogEntry[]
 	 */
-	public function findBySubject(
-		string $idType,
-		string $idValue,
-		?DateTime $from = null,
-		?DateTime $to = null,
-		?string $organisationId = null,
-		bool $includeConfidential = false,
-	): array {
+	public function findBySubject(string $idType, string $idValue, ?ProcessingLogReadScope $scope = null): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($this->subjectMatch(qb: $qb, idType: $idType, idValue: $idValue));
 
-		$this->applyPeriod(qb: $qb, from: $from, to: $to);
-		$this->applyScope(qb: $qb, organisationId: $organisationId, includeConfidential: $includeConfidential);
+		$this->applyReadScope(qb: $qb, scope: ($scope ?? new ProcessingLogReadScope()));
 
 		$qb->orderBy('created', 'ASC');
 
@@ -223,10 +212,7 @@ class ProcessingLogMapper extends QBMapper {
 	 * here: unlike the per-subject extract, it goes to the FG or the auditor.
 	 *
 	 * @param array<string, mixed> $filters register_id, schema_id, activity_id, actor, action, subject_id_type, subject_id_value.
-	 * @param DateTime|null $from Inclusive lower bound.
-	 * @param DateTime|null $to Inclusive upper bound.
-	 * @param string|null $organisationId Tenant scope (null = all, admin only).
-	 * @param bool $includeConfidential Whether to include confidential entries (FG only).
+	 * @param ProcessingLogReadScope|null $scope Period, tenant scope and confidentiality; null for the defaults.
 	 * @param int $limit Page size.
 	 * @param int $offset Page offset.
 	 *
@@ -236,31 +222,17 @@ class ProcessingLogMapper extends QBMapper {
 	 */
 	public function findFiltered(
 		array $filters = [],
-		?DateTime $from = null,
-		?DateTime $to = null,
-		?string $organisationId = null,
-		bool $includeConfidential = false,
+		ProcessingLogReadScope|null $scope = null,
 		int $limit = 100,
 		int $offset = 0,
 	): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from($this->getTableName());
 
-		foreach (['register_id', 'schema_id', 'activity_id', 'actor', 'action'] as $column) {
-			$value = ($filters[$column] ?? null);
-			if ($value !== null && $value !== '') {
-				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter((string)$value)));
-			}
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $filters);
+		$this->applySubjectFilter(qb: $qb, filters: $filters);
 
-		$idType = $this->subjectFilter(value: ($filters['subject_id_type'] ?? null));
-		$idValue = $this->subjectFilter(value: ($filters['subject_id_value'] ?? null));
-		if ($idType !== null || $idValue !== null) {
-			$qb->andWhere($this->subjectMatch(qb: $qb, idType: $idType, idValue: $idValue));
-		}
-
-		$this->applyPeriod(qb: $qb, from: $from, to: $to);
-		$this->applyScope(qb: $qb, organisationId: $organisationId, includeConfidential: $includeConfidential);
+		$this->applyReadScope(qb: $qb, scope: ($scope ?? new ProcessingLogReadScope()));
 
 		$qb->orderBy('created', 'DESC')
 			->setMaxResults($limit)
@@ -268,6 +240,53 @@ class ProcessingLogMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findFiltered()
+
+	/**
+	 * One equality per filled column filter, compared as a string.
+	 *
+	 * A null or empty-string value leaves the column unfiltered.
+	 *
+	 * @param IQueryBuilder        $qb      The query.
+	 * @param array<string, mixed> $filters The inquiry filters.
+	 *
+	 * @return void
+	 */
+	private function applyColumnFilters(IQueryBuilder $qb, array $filters): void {
+		foreach (['register_id', 'schema_id', 'activity_id', 'actor', 'action'] as $column) {
+			$this->applyEqualsWhenSet(qb: $qb, column: $column, value: ($filters[$column] ?? null));
+		}
+	}//end applyColumnFilters()
+
+	/**
+	 * Restrict to a subject when the filters name its id type, its id value, or both.
+	 *
+	 * @param IQueryBuilder        $qb      The query.
+	 * @param array<string, mixed> $filters The inquiry filters.
+	 *
+	 * @return void
+	 */
+	private function applySubjectFilter(IQueryBuilder $qb, array $filters): void {
+		$idType = $this->subjectFilter(value: ($filters['subject_id_type'] ?? null));
+		$idValue = $this->subjectFilter(value: ($filters['subject_id_value'] ?? null));
+		if ($idType !== null || $idValue !== null) {
+			$qb->andWhere($this->subjectMatch(qb: $qb, idType: $idType, idValue: $idValue));
+		}
+	}//end applySubjectFilter()
+
+	/**
+	 * An equality on a column, as a string, unless the value is null or the empty string.
+	 *
+	 * @param IQueryBuilder $qb     The query.
+	 * @param string        $column The column.
+	 * @param mixed         $value  The value, or null / '' for no condition.
+	 *
+	 * @return void
+	 */
+	private function applyEqualsWhenSet(IQueryBuilder $qb, string $column, mixed $value): void {
+		if ($value !== null && $value !== '') {
+			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter((string)$value)));
+		}
+	}//end applyEqualsWhenSet()
 
 	/**
 	 * A subject filter as a string, or null when it filters nothing.
@@ -294,20 +313,15 @@ class ProcessingLogMapper extends QBMapper {
 	 *
 	 * @return array<string, int> Map of activity uuid => entry count.
 	 */
-	public function countByActivity(?string $organisationId = null, ?string $registerId = null): array {
+	public function countByActivity(string|null $organisationId = null, string|null $registerId = null): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('activity_id')
 			->selectAlias($qb->func()->count('*'), 'cnt')
 			->from($this->getTableName())
 			->groupBy('activity_id');
 
-		if ($organisationId !== null && $organisationId !== '') {
-			$qb->andWhere($qb->expr()->eq('organisation_id', $qb->createNamedParameter($organisationId)));
-		}
-
-		if ($registerId !== null && $registerId !== '') {
-			$qb->andWhere($qb->expr()->eq('register_id', $qb->createNamedParameter($registerId)));
-		}
+		$this->applyEqualsWhenSet(qb: $qb, column: 'organisation_id', value: $organisationId);
+		$this->applyEqualsWhenSet(qb: $qb, column: 'register_id', value: $registerId);
 
 		$result = $qb->executeQuery();
 		$counts = [];
@@ -334,6 +348,19 @@ class ProcessingLogMapper extends QBMapper {
 
 		return $qb->executeStatement();
 	}//end deleteCreatedBefore()
+
+	/**
+	 * Apply a read's period, then its tenant and confidentiality scope.
+	 *
+	 * @param IQueryBuilder          $qb    Query under construction.
+	 * @param ProcessingLogReadScope $scope What the read may see.
+	 *
+	 * @return void
+	 */
+	private function applyReadScope(IQueryBuilder $qb, ProcessingLogReadScope $scope): void {
+		$this->applyPeriod(qb: $qb, from: $scope->from, to: $scope->to);
+		$this->applyScope(qb: $qb, organisationId: $scope->organisationId, includeConfidential: $scope->includeConfidential);
+	}//end applyReadScope()
 
 	/**
 	 * Apply the period filter shared by the read helpers.

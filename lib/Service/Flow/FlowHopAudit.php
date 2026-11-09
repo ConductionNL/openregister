@@ -42,7 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditFlowAttribution;
+use OCA\OpenRegister\Db\AuditFlowAttributionInterface;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\FlowMapper;
@@ -176,7 +176,7 @@ class FlowHopAudit {
 	private function rowFor(FlowRun $run, FlowRunStep $step): AuditTrail {
 		$row = new AuditTrail();
 		$row->setUuid(Uuid::v4()->toRfc4122());
-		$row->setAction(AuditFlowAttribution::ACTION_HOP);
+		$row->setAction(AuditFlowAttributionInterface::ACTION_HOP);
 		$row->setUser(($run->getRunAs() ?? $run->getTriggeredBy() ?? 'system'));
 		$row->setUserName(($run->getRunAs() ?? $run->getTriggeredBy() ?? 'System'));
 		$row->setChanged($this->summary(run: $run, step: $step));

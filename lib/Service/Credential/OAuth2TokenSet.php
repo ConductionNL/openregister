@@ -50,26 +50,14 @@ final class OAuth2TokenSet {
 	/**
 	 * Constructor. Private: instances come from the two named constructors only.
 	 *
-	 * @param string $accessToken The bearer token injected on every brokered call.
-	 * @param string|null $refreshToken The refresh token, or null when the provider issued none.
-	 * @param string $tokenType The token type the provider named (practically always `Bearer`).
-	 * @param DateTimeImmutable|null $expiresAt Absolute expiry, or null when the provider declared none.
-	 * @param array<int, string> $scopes The scopes the provider actually granted.
-	 * @param array<string, string> $account Non-secret account identity (`id`, `handle`, `displayName`).
-	 * @param array<string, mixed> $raw The raw token response, kept for provider-specific fields.
-	 * @param DateTimeImmutable $obtainedAt When this set was issued or rotated.
+	 * @param OAuth2Tokens   $tokens   The access and refresh tokens, their type and expiry.
+	 * @param OAuth2Issuance $issuance The granted scopes, the account, the raw response and when it was issued.
 	 *
 	 * @return void
 	 */
 	private function __construct(
-		private readonly string $accessToken,
-		private readonly ?string $refreshToken,
-		private readonly string $tokenType,
-		private readonly ?DateTimeImmutable $expiresAt,
-		private readonly array $scopes,
-		private readonly array $account,
-		private readonly array $raw,
-		private readonly DateTimeImmutable $obtainedAt,
+		private readonly OAuth2Tokens $tokens,
+		private readonly OAuth2Issuance $issuance,
 	) {
 	}//end __construct()
 
@@ -90,14 +78,18 @@ final class OAuth2TokenSet {
 		$obtainedAt = self::parseAtom(value: ($decoded['obtainedAt'] ?? null));
 
 		return new self(
-			accessToken: (string)$decoded['accessToken'],
-			refreshToken: self::nullableString(value: ($decoded['refreshToken'] ?? null)),
-			tokenType: (self::nullableString(value: ($decoded['tokenType'] ?? null)) ?? 'Bearer'),
-			expiresAt: self::parseAtom(value: ($decoded['expiresAt'] ?? null)),
-			scopes: self::stringList(value: ($decoded['scopes'] ?? [])),
-			account: self::accountOf(value: ($decoded['account'] ?? [])),
-			raw: self::arrayOf(value: ($decoded['raw'] ?? null)),
-			obtainedAt: ($obtainedAt ?? new DateTimeImmutable())
+			tokens: new OAuth2Tokens(
+				accessToken: (string)$decoded['accessToken'],
+				refreshToken: self::nullableString(value: ($decoded['refreshToken'] ?? null)),
+				tokenType: (self::nullableString(value: ($decoded['tokenType'] ?? null)) ?? 'Bearer'),
+				expiresAt: self::parseAtom(value: ($decoded['expiresAt'] ?? null))
+			),
+			issuance: new OAuth2Issuance(
+				scopes: self::stringList(value: ($decoded['scopes'] ?? [])),
+				account: self::accountOf(value: ($decoded['account'] ?? [])),
+				raw: self::arrayOf(value: ($decoded['raw'] ?? null)),
+				obtainedAt: ($obtainedAt ?? new DateTimeImmutable())
+			)
 		);
 	}//end fromStoredJson()
 
@@ -126,14 +118,18 @@ final class OAuth2TokenSet {
 		$now = ($now ?? new DateTimeImmutable());
 
 		return new self(
-			accessToken: $accessToken,
-			refreshToken: (self::nullableString(value: ($response['refresh_token'] ?? null)) ?? $previous?->refreshToken),
-			tokenType: (self::nullableString(value: ($response['token_type'] ?? null)) ?? 'Bearer'),
-			expiresAt: self::expiryOf(expiresIn: ($response['expires_in'] ?? null), now: $now),
-			scopes: self::grantedScopes(response: $response, requestedScopes: $requestedScopes, previous: $previous),
-			account: self::accountOf(value: $previous?->account),
-			raw: $response,
-			obtainedAt: $now
+			tokens: new OAuth2Tokens(
+				accessToken: $accessToken,
+				refreshToken: (self::nullableString(value: ($response['refresh_token'] ?? null)) ?? $previous?->tokens->refreshToken),
+				tokenType: (self::nullableString(value: ($response['token_type'] ?? null)) ?? 'Bearer'),
+				expiresAt: self::expiryOf(expiresIn: ($response['expires_in'] ?? null), now: $now)
+			),
+			issuance: new OAuth2Issuance(
+				scopes: self::grantedScopes(response: $response, requestedScopes: $requestedScopes, previous: $previous),
+				account: self::accountOf(value: $previous?->issuance->account),
+				raw: $response,
+				obtainedAt: $now
+			)
 		);
 	}//end fromTokenResponse()
 
@@ -150,14 +146,13 @@ final class OAuth2TokenSet {
 	 */
 	public function withAccount(string $id, string $handle, string $displayName): self {
 		return new self(
-			accessToken: $this->accessToken,
-			refreshToken: $this->refreshToken,
-			tokenType: $this->tokenType,
-			expiresAt: $this->expiresAt,
-			scopes: $this->scopes,
-			account: ['id' => $id, 'handle' => $handle, 'displayName' => $displayName],
-			raw: $this->raw,
-			obtainedAt: $this->obtainedAt
+			tokens: $this->tokens,
+			issuance: new OAuth2Issuance(
+				scopes: $this->issuance->scopes,
+				account: ['id' => $id, 'handle' => $handle, 'displayName' => $displayName],
+				raw: $this->issuance->raw,
+				obtainedAt: $this->issuance->obtainedAt
+			)
 		);
 	}//end withAccount()
 
@@ -173,14 +168,14 @@ final class OAuth2TokenSet {
 	public function toStoredJson(): string {
 		return (string)json_encode(
 			[
-				'accessToken' => $this->accessToken,
-				'refreshToken' => $this->refreshToken,
-				'tokenType' => $this->tokenType,
-				'expiresAt' => $this->expiresAt?->format(DATE_ATOM),
-				'scopes' => $this->scopes,
-				'account' => $this->account,
-				'raw' => $this->raw,
-				'obtainedAt' => $this->obtainedAt->format(DATE_ATOM),
+				'accessToken' => $this->tokens->accessToken,
+				'refreshToken' => $this->tokens->refreshToken,
+				'tokenType' => $this->tokens->tokenType,
+				'expiresAt' => $this->tokens->expiresAt?->format(DATE_ATOM),
+				'scopes' => $this->issuance->scopes,
+				'account' => $this->issuance->account,
+				'raw' => $this->issuance->raw,
+				'obtainedAt' => $this->issuance->obtainedAt->format(DATE_ATOM),
 			]
 		);
 	}//end toStoredJson()
@@ -193,7 +188,7 @@ final class OAuth2TokenSet {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
 	 */
 	public function getAccessToken(): string {
-		return $this->accessToken;
+		return $this->tokens->accessToken;
 	}//end getAccessToken()
 
 	/**
@@ -204,7 +199,7 @@ final class OAuth2TokenSet {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
 	public function getRefreshToken(): ?string {
-		return $this->refreshToken;
+		return $this->tokens->refreshToken;
 	}//end getRefreshToken()
 
 	/**
@@ -215,7 +210,7 @@ final class OAuth2TokenSet {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
 	 */
 	public function getExpiresAt(): ?DateTimeImmutable {
-		return $this->expiresAt;
+		return $this->tokens->expiresAt;
 	}//end getExpiresAt()
 
 	/**
@@ -226,7 +221,7 @@ final class OAuth2TokenSet {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
 	 */
 	public function getScopes(): array {
-		return $this->scopes;
+		return $this->issuance->scopes;
 	}//end getScopes()
 
 	/**
@@ -237,7 +232,7 @@ final class OAuth2TokenSet {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
 	 */
 	public function getAccount(): array {
-		return $this->account;
+		return $this->issuance->account;
 	}//end getAccount()
 
 	/**
@@ -255,13 +250,13 @@ final class OAuth2TokenSet {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
 	 */
 	public function needsRefresh(int $marginSeconds, ?DateTimeImmutable $now = null): bool {
-		if ($this->expiresAt === null) {
+		if ($this->tokens->expiresAt === null) {
 			return false;
 		}
 
 		$now = ($now ?? new DateTimeImmutable());
 
-		return ($this->expiresAt->getTimestamp() - $marginSeconds) <= $now->getTimestamp();
+		return ($this->tokens->expiresAt->getTimestamp() - $marginSeconds) <= $now->getTimestamp();
 	}//end needsRefresh()
 
 	/**
@@ -346,7 +341,7 @@ final class OAuth2TokenSet {
 		}
 
 		if ($scopes === [] && $previous !== null) {
-			$scopes = $previous->scopes;
+			$scopes = $previous->issuance->scopes;
 		}
 
 		return $scopes;

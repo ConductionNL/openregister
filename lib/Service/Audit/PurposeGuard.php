@@ -40,20 +40,13 @@ use Throwable;
  *
  * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
-class PurposeGuard {
+class PurposeGuard implements PurposeGuardInterface {
 	/**
 	 * The schema and register annotation that turns doelbinding on.
 	 *
 	 * @var string
 	 */
 	public const ANNOTATION = 'x-openregister-purpose-required';
-
-	/**
-	 * The audit action a refused read is recorded under.
-	 *
-	 * @var string
-	 */
-	public const ACTION_REFUSED = 'purpose.query-refused';
 
 	/**
 	 * Constructor.

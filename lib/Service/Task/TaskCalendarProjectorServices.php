@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\DAV\CalDAV\CalDavBackend;
-use OCA\OpenRegister\Db\TaskProjectionStateMapper;
+use OCA\OpenRegister\Db\TaskProjectionStateMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -37,13 +37,13 @@ final class TaskCalendarProjectorServices {
 	 *
 	 * @param CalDavBackend $calDavBackend The calendar store.
 	 * @param VtodoCalendarLocator $calendars Calendar selection by uid.
-	 * @param TaskProjectionStateMapper $states The per-task projection state.
+	 * @param TaskProjectionStateMapperInterface $states The per-task projection state.
 	 * @param LoggerInterface $logger Names skipped and failed tasks.
 	 */
 	public function __construct(
 		public readonly CalDavBackend $calDavBackend,
 		public readonly VtodoCalendarLocator $calendars,
-		public readonly TaskProjectionStateMapper $states,
+		public readonly TaskProjectionStateMapperInterface $states,
 		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

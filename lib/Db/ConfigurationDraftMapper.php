@@ -35,7 +35,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<ConfigurationDraft>
  */
-class ConfigurationDraftMapper extends QBMapper {
+class ConfigurationDraftMapper extends QBMapper implements ConfigurationDraftMapperInterface {
 
 	/**
 	 * Constructor.

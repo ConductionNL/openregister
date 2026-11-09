@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use Exception;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Service\LinkTarget;
@@ -90,9 +91,11 @@ class XwikiLinkServiceTest extends TestCase {
 		$this->service = new XwikiLinkService(
 			$this->mapper,
 			$this->container,
-			$this->appManager,
-			$this->userSession,
-			$this->logger
+			new LinkServiceRuntime(
+				$this->appManager,
+				$this->userSession,
+				$this->logger
+			)
 		);
 	}//end setUp()
 

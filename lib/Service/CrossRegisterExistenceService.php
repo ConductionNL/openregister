@@ -148,29 +148,80 @@ class CrossRegisterExistenceService {
 	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
 	 */
 	private function one(array $probe): array {
-		$register = trim((string)($probe['register'] ?? ''));
-		$schema = trim((string)($probe['schema'] ?? ''));
+		$target = [
+			'register' => trim((string)($probe['register'] ?? '')),
+			'schema' => trim((string)($probe['schema'] ?? '')),
+		];
 		$filters = ($probe['filters'] ?? []);
-		$reveal = ($probe['reveal'] ?? []);
 
-		if ($register === '' || $schema === '' || is_array($filters) === false || $filters === []) {
+		if ($this->isIncomplete(target: $target, filters: $filters) === true) {
 			return $this->answer(
-				register: $register,
-				schema: $schema,
-				refused: 'A probe names a register, a schema and at least one filter.',
+				target: $target,
+				outcome: ['refused' => 'A probe names a register, a schema and at least one filter.'],
 			);
 		}
 
-		$wanted = [];
-		if (is_array($reveal) === true) {
-			$wanted = $reveal;
-		}
-
 		[$allowed, $refusedFields] = $this->narrowReveal(
-			schema: $schema,
-			reveal: $wanted
+			schema: $target['schema'],
+			reveal: $this->wantedFields(probe: $probe)
 		);
 
+		$found = $this->search(target: $target, filters: $filters);
+		if ($found === null) {
+			return $this->answer(
+				target: $target,
+				outcome: [
+					'refusedFields' => $refusedFields,
+					'refused' => 'This probe was refused. It is not an answer about whether a row exists.',
+				],
+			);
+		}
+
+		$rows = $this->rowsOf(value: $found['value']);
+
+		return $this->answer(
+			target: $target,
+			outcome: $this->matched(rows: $rows, fields: $allowed) + ['refusedFields' => $refusedFields],
+		);
+	}//end one()
+
+	/**
+	 * Whether a probe lacks a register, a schema or a filter.
+	 *
+	 * @param array{register: string, schema: string} $target  The trimmed register and schema.
+	 * @param mixed                                   $filters The probe's filters.
+	 *
+	 * @return bool True when the probe cannot be asked.
+	 */
+	private function isIncomplete(array $target, mixed $filters): bool {
+		return $target['register'] === '' || $target['schema'] === '' || is_array($filters) === false || $filters === [];
+	}//end isIncomplete()
+
+	/**
+	 * The fields a probe asks to reveal; anything but a list asks for none.
+	 *
+	 * @param array<string, mixed> $probe The probe.
+	 *
+	 * @return array<int|string, mixed> The asked fields.
+	 */
+	private function wantedFields(array $probe): array {
+		$reveal = ($probe['reveal'] ?? []);
+		if (is_array($reveal) === true) {
+			return $reveal;
+		}
+
+		return [];
+	}//end wantedFields()
+
+	/**
+	 * Search the probed register and schema the way a search does, RBAC ON.
+	 *
+	 * @param array{register: string, schema: string} $target  The register and schema.
+	 * @param array<string, mixed>                    $filters The probe's filters.
+	 *
+	 * @return array{value: mixed}|null What the search answered, or null when it was refused.
+	 */
+	private function search(array $target, array $filters): ?array {
 		try {
 			// RBAC ON, which is the whole authorisation (D-4): this endpoint
 			// can never answer about a register the caller could not have
@@ -178,47 +229,43 @@ class CrossRegisterExistenceService {
 			$rows = $this->objects->searchObjects(
 				query: array_merge(
 					$filters,
-					['@self' => ['register' => $register, 'schema' => $schema], '_limit' => self::MAX_COUNT]
+					['@self' => ['register' => $target['register'], 'schema' => $target['schema']], '_limit' => self::MAX_COUNT]
 				),
 				_rbac: true,
 				_multitenancy: true,
 			);
 		} catch (Throwable $e) {
 			$this->logger->info(
-				message: '[CrossRegisterExistenceService] probe of ' . $register . '/' . $schema
+				message: '[CrossRegisterExistenceService] probe of ' . $target['register'] . '/' . $target['schema']
 					. ' was refused: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 
-			return $this->answer(
-				register: $register,
-				schema: $schema,
-				refusedFields: $refusedFields,
-				refused: 'This probe was refused. It is not an answer about whether a row exists.',
-			);
+			return null;
 		}//end try
 
-		$rows = $this->rowsOf(value: $rows);
+		return ['value' => $rows];
+	}//end search()
 
-		// FIELD BY FIELD, from the first match only. Nothing of the row travels
-		// but the values a caller named and the schema allowed.
+	/**
+	 * Whether rows matched, how many, and the allowed values of the first.
+	 *
+	 * FIELD BY FIELD, from the first match only. Nothing of the row travels
+	 * but the values a caller named and the schema allowed.
+	 *
+	 * @param array<int, array<string, mixed>> $rows   The matched rows.
+	 * @param array<int, string>               $fields The allowed fields.
+	 *
+	 * @return array{exists: bool, matches: int, revealed: array<string, mixed>}
+	 */
+	private function matched(array $rows, array $fields): array {
 		$revealed = [];
 		if ($rows !== []) {
-			$revealed = $this->reveal(row: $rows[0], fields: $allowed);
+			$revealed = $this->reveal(row: $rows[0], fields: $fields);
 		}
 
-		return [
-			'register' => $register,
-			'schema' => $schema,
-			'exists' => ($rows !== []),
-			'matches' => count($rows),
-			// FIELD BY FIELD, from the first match only. Nothing of the row
-			// travels but the values a caller named and the schema allowed.
-			'revealed' => $revealed,
-			'refusedFields' => $refusedFields,
-			'refused' => '',
-		];
-	}//end one()
+		return ['exists' => ($rows !== []), 'matches' => count($rows), 'revealed' => $revealed];
+	}//end matched()
 
 	/**
 	 * Narrow a caller's `reveal` to what the schema allows, naming the rest.
@@ -244,21 +291,47 @@ class CrossRegisterExistenceService {
 			return [[], []];
 		}
 
-		$declared = [];
-		$withheld = [];
-		try {
-			$found = $this->schemas->find($schema);
-			$declared = array_keys($found->getProperties());
-			$withheld = array_merge(
-				$found->getWriteOnlyProperties(),
-				array_keys($found->getPropertiesWithAuthorization())
-			);
-		} catch (Throwable $e) {
+		$rules = $this->fieldRules(schema: $schema);
+		if ($rules === null) {
 			// An unreadable schema allows NOTHING, which fails closed: the
 			// alternative is revealing a field nobody could check the rules for.
 			return [[], array_values(array_map(static fn ($f): string => (string)$f, $reveal))];
 		}
 
+		return $this->partition(reveal: $reveal, rules: $rules);
+	}//end narrowReveal()
+
+	/**
+	 * The declared and the withheld properties of a schema.
+	 *
+	 * @param string $schema The schema slug.
+	 *
+	 * @return array{declared: array<int, string>, withheld: array<int, string>}|null Null when the schema cannot be read.
+	 */
+	private function fieldRules(string $schema): ?array {
+		try {
+			$found = $this->schemas->find($schema);
+			return [
+				'declared' => array_keys($found->getProperties()),
+				'withheld' => array_merge(
+					$found->getWriteOnlyProperties(),
+					array_keys($found->getPropertiesWithAuthorization())
+				),
+			];
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end fieldRules()
+
+	/**
+	 * Split the asked fields into the allowed and the refused.
+	 *
+	 * @param array<int, string>                                                $reveal What the caller asked for.
+	 * @param array{declared: array<int, string>, withheld: array<int, string>} $rules  The schema's field rules.
+	 *
+	 * @return array{0: array<int, string>, 1: array<int, string>} The allowed and the refused.
+	 */
+	private function partition(array $reveal, array $rules): array {
 		$allowed = [];
 		$refused = [];
 		foreach ($reveal as $field) {
@@ -267,7 +340,7 @@ class CrossRegisterExistenceService {
 				continue;
 			}
 
-			if (in_array($field, $declared, true) === false || in_array($field, $withheld, true) === true) {
+			if (in_array($field, $rules['declared'], true) === false || in_array($field, $rules['withheld'], true) === true) {
 				$refused[] = $field;
 				continue;
 			}
@@ -276,7 +349,7 @@ class CrossRegisterExistenceService {
 		}
 
 		return [$allowed, $refused];
-	}//end narrowReveal()
+	}//end partition()
 
 	/**
 	 * Build the revealed block out of named values.
@@ -312,20 +385,14 @@ class CrossRegisterExistenceService {
 	 * @return array<int, array<string, mixed>> The rows.
 	 */
 	private function rowsOf(mixed $value): array {
-		if (is_array($value) === true && isset($value['results']) === true && is_array($value['results']) === true) {
-			$value = $value['results'];
-		}
-
+		$value = $this->unwrapResults(value: $value);
 		if (is_array($value) === false) {
 			return [];
 		}
 
 		$rows = [];
 		foreach ($value as $row) {
-			if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {
-				$row = $row->jsonSerialize();
-			}
-
+			$row = $this->plainRow(row: $row);
 			if (is_array($row) === true) {
 				$rows[] = $row;
 			}
@@ -335,33 +402,60 @@ class CrossRegisterExistenceService {
 	}//end rowsOf()
 
 	/**
-	 * A refused answer, shaped like every other one.
+	 * The `results` list of a paged envelope, or the value itself.
 	 *
-	 * `exists` is FALSE and `refused` is non-empty, and a caller must read the
-	 * second: the first is not a claim about the register, it is the absence of
-	 * one. The spec says so, and so does the sentence.
+	 * @param mixed $value The search answer.
 	 *
-	 * @param string             $register      The register.
-	 * @param string             $schema        The schema.
-	 * @param array<int, string> $refusedFields Fields narrowed out.
-	 * @param string             $refused       Why the probe was refused.
-	 *
-	 * @return array<string, mixed> The answer.
+	 * @return mixed The list to read rows from.
 	 */
-	private function answer(
-		string $register,
-		string $schema,
-		array $refusedFields = [],
-		string $refused = '',
-	): array {
-		return [
-			'register' => $register,
-			'schema' => $schema,
-			'exists' => false,
-			'matches' => 0,
-			'revealed' => [],
-			'refusedFields' => $refusedFields,
-			'refused' => $refused,
-		];
+	private function unwrapResults(mixed $value): mixed {
+		if (is_array($value) === true && isset($value['results']) === true && is_array($value['results']) === true) {
+			return $value['results'];
+		}
+
+		return $value;
+	}//end unwrapResults()
+
+	/**
+	 * A serialisable row as its array, anything else as it is.
+	 *
+	 * @param mixed $row One entry of the search answer.
+	 *
+	 * @return mixed The row.
+	 */
+	private function plainRow(mixed $row): mixed {
+		if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {
+			return $row->jsonSerialize();
+		}
+
+		return $row;
+	}//end plainRow()
+
+	/**
+	 * An answer, shaped like every other one.
+	 *
+	 * A refused answer has `exists` FALSE and `refused` non-empty, and a
+	 * caller must read the second: the first is not a claim about the
+	 * register, it is the absence of one. The spec says so, and so does the
+	 * sentence.
+	 *
+	 * @param array{register: string, schema: string} $target  The register and schema.
+	 * @param array<string, mixed>                    $outcome The fields that differ from a refused, empty answer.
+	 *
+	 * @return array<string, mixed> The answer, keys in ANSWER_FIELDS order.
+	 */
+	private function answer(array $target, array $outcome): array {
+		return array_replace(
+			[
+				'register' => $target['register'],
+				'schema' => $target['schema'],
+				'exists' => false,
+				'matches' => 0,
+				'revealed' => [],
+				'refusedFields' => [],
+				'refused' => '',
+			],
+			$outcome
+		);
 	}//end answer()
 }//end class

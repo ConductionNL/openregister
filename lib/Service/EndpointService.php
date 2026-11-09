@@ -101,6 +101,13 @@ class EndpointService implements EndpointServiceInterface {
 	private readonly IGroupManager $groupManager;
 
 	/**
+	 * Agent lookups for agent-type endpoints.
+	 *
+	 * @var AgentMapperInterface
+	 */
+	private readonly AgentMapperInterface $agentMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * WHY THIS EXISTS. All four properties above were declared `readonly` and
@@ -114,20 +121,19 @@ class EndpointService implements EndpointServiceInterface {
 	 * at lines 402/410/457 and the audit-log write at 487. Same defect as
 	 * NotificationService and UploadService in this repo.
 	 *
-	 * @param EndpointLogMapperInterface $endpointLogMapper Endpoint execution log mapper.
+	 * @param EndpointMappers $mappers Endpoint execution log and agent mappers.
 	 * @param LoggerInterface   $logger            Logger.
 	 * @param IUserSession      $userSession       Current user context.
 	 * @param IGroupManager     $groupManager      Group membership lookups.
-	 * @param AgentMapperInterface       $agentMapper       Agent lookups for agent-type endpoints.
 	 */
 	public function __construct(
-		EndpointLogMapperInterface $endpointLogMapper,
+		EndpointMappers $mappers,
 		LoggerInterface $logger,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
-		private readonly AgentMapperInterface $agentMapper,
 	) {
-		$this->endpointLogMapper = $endpointLogMapper;
+		$this->agentMapper = $mappers->agentMapper;
+		$this->endpointLogMapper = $mappers->endpointLogMapper;
 		$this->logger = $logger;
 		$this->userSession = $userSession;
 		$this->groupManager = $groupManager;

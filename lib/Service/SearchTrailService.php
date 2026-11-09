@@ -30,10 +30,9 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SearchTrail;
-use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\SearchTrailCriteria;
+use OCA\OpenRegister\Db\SearchTrailMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -104,9 +103,8 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 * Initializes service with required mappers and optional configuration.
 	 * Sets retention period and self-clearing flag if provided.
 	 *
-	 * @param SearchTrailMapper $searchTrailMapper Mapper for search trail database operations
-	 * @param RegisterMapperInterface $registerMapper Mapper for register database operations
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schema database operations
+	 * @param SearchTrailMapperInterface $searchTrailMapper Mapper for search trail database operations
+	 * @param RegisterSchemaMappers $mappers The register and schema mappers.
 	 * @param int|null $retentionDays Optional retention period in days (default: 365)
 	 * @param bool|null $selfClearing Optional flag to enable/disable self-clearing
 	 *                                (default: false, use cron jobs instead)
@@ -114,16 +112,15 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SearchTrailMapper $searchTrailMapper,
-		RegisterMapperInterface $registerMapper,
-		SchemaMapperInterface $schemaMapper,
+		private readonly SearchTrailMapperInterface $searchTrailMapper,
+		RegisterSchemaMappers $mappers,
 		?int $retentionDays = null,
 		?bool $selfClearing = null,
 	) {
 		$this->retentionDays = $retentionDays ?? $this->retentionDays;
 		$this->selfClearingEnabled = $selfClearing ?? $this->selfClearingEnabled;
 		$this->queryConfig = new SearchTrailQueryConfig();
-		$this->nameEnricher = new SearchTrailNameEnricher(registerMapper: $registerMapper, schemaMapper: $schemaMapper);
+		$this->nameEnricher = new SearchTrailNameEnricher(registerMapper: $mappers->registerMapper, schemaMapper: $mappers->schemaMapper);
 		$this->statistics = new SearchTrailStatistics();
 		$this->activityInsights = new SearchTrailActivityInsights();
 		$this->userAgentParser = new SearchTrailUserAgentParser();
@@ -161,15 +158,41 @@ class SearchTrailService implements SearchTrailServiceInterface {
 		string $executionType = 'sync',
 	): SearchTrail {
 		try {
-			// Mapper handles filtering of system parameters (starting with _); arguments in its own parameter order.
-			$trail = $this->searchTrailMapper->createSearchTrail($query, $resultCount, $totalResults, $responseTime, $executionType);
-			$this->selfClearIfEnabled();
-			return $trail;
+			// Mapper handles filtering of system parameters (starting with _).
+			$outcome = $this->outcome(resultCount: $resultCount, totalResults: $totalResults);
+			return $this->selfCleared(trail: $this->searchTrailMapper->createSearchTrail($query, $outcome, $responseTime, $executionType));
 		} catch (Exception $e) {
 			// Wrap exception with more context for debugging.
 			throw new Exception('Search trail creation failed: ' . $e->getMessage(), 0, $e);
 		}
 	}//end createSearchTrail()
+
+	/**
+	 * The unsaved trail carrying what a search returned.
+	 *
+	 * @param int $resultCount  The number of results returned
+	 * @param int $totalResults The total number of matching results
+	 *
+	 * @return SearchTrail
+	 */
+	private function outcome(int $resultCount, int $totalResults): SearchTrail {
+		$outcome = new SearchTrail();
+		$outcome->setResultCount($resultCount);
+		$outcome->setTotalResults($totalResults);
+		return $outcome;
+	}//end outcome()
+
+	/**
+	 * Run the self-clearing a new trail triggers, and hand the trail back.
+	 *
+	 * @param SearchTrail $trail The trail just created.
+	 *
+	 * @return SearchTrail The same trail.
+	 */
+	private function selfCleared(SearchTrail $trail): SearchTrail {
+		$this->selfClearIfEnabled();
+		return $trail;
+	}//end selfCleared()
 
 	/**
 	 * Clean up expired search trails
@@ -433,15 +456,28 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 */
 	private function findTrails(array $query): array {
 		return $this->searchTrailMapper->findAll(
+			criteria: $this->criteria(query: $query),
 			limit: $query['limit'],
 			offset: $query['offset'],
+			sort: $query['sort']
+		);
+	}//end findTrails()
+
+	/**
+	 * The filters, search term and created window of processed query parameters.
+	 *
+	 * @param array $query Processed configuration
+	 *
+	 * @return SearchTrailCriteria
+	 */
+	private function criteria(array $query): SearchTrailCriteria {
+		return new SearchTrailCriteria(
 			filters: $query['filters'],
-			sort: $query['sort'],
 			search: $query['search'],
 			from: $query['from'],
 			to: $query['to']
 		);
-	}//end findTrails()
+	}//end criteria()
 
 	/**
 	 * Count all trails matching processed query parameters.
@@ -451,12 +487,7 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 * @return int
 	 */
 	private function countTrails(array $query): int {
-		return $this->searchTrailMapper->count(
-			filters: $query['filters'],
-			search: $query['search'],
-			from: $query['from'],
-			to: $query['to']
-		);
+		return $this->searchTrailMapper->count(criteria: $this->criteria(query: $query));
 	}//end countTrails()
 
 	/**

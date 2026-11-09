@@ -85,29 +85,10 @@ class CloudEventFormatter implements CloudEventFormatterInterface {
 			$source = '/apps/openregister';
 		}
 
-		// Build CloudEvent payload according to CloudEvents 1.0 specification.
-		return [
-			// Required CloudEvent attributes.
-			'specversion' => '1.0',
-			'type' => $eventType,
-			'source' => $source,
-			'id' => Uuid::v4()->toRfc4122(),
-			'time' => date('c'),
-
-			// Optional CloudEvent attributes.
-			'datacontenttype' => 'application/json',
-			'subject' => $subject,
-			'dataschema' => null,
-
-			// Event data.
-			'data' => $payload,
-
-			// OpenRegister-specific extensions.
-			'openregister' => [
-				'app' => 'openregister',
-				'version' => $this->getAppVersion(),
-			],
-		];
+		return $this->envelope(
+			attributes: ['type' => $eventType, 'source' => $source, 'datacontenttype' => 'application/json', 'subject' => $subject],
+			data: $payload
+		);
 	}//end formatAsCloudEvent()
 
 	/**
@@ -137,6 +118,70 @@ class CloudEventFormatter implements CloudEventFormatterInterface {
 		string $eventType,
 		array $data = [],
 	): array {
+		$bodyData = $this->requestBody(request: $request);
+
+		return $this->envelope(
+			attributes: [
+				'type' => $eventType,
+				'source' => $this->getSource(request: $request),
+				'datacontenttype' => $this->getContentTypeHeader(request: $request),
+				'subject' => $this->getSubject(request: $request),
+			],
+			data: array_merge(
+				[
+					'method' => $request->getMethod(),
+					'path' => $request->getPathInfo(),
+					'queryParams' => $request->getParams(),
+					'headers' => $this->getRequestHeaders(request: $request),
+					'body' => $bodyData,
+				],
+				$data
+			)
+		);
+	}//end formatRequestAsCloudEvent()
+
+	/**
+	 * The CloudEvents 1.0 envelope around event data.
+	 *
+	 * @param array<string, string|null> $attributes The `type`, `source`, `datacontenttype` and `subject`.
+	 * @param array                      $data       The event data.
+	 *
+	 * @return array<string, mixed> CloudEvent-formatted payload
+	 */
+	private function envelope(array $attributes, array $data): array {
+		// Build CloudEvent payload according to CloudEvents 1.0 specification.
+		return [
+			// Required CloudEvent attributes.
+			'specversion' => '1.0',
+			'type' => $attributes['type'],
+			'source' => $attributes['source'],
+			'id' => Uuid::v4()->toRfc4122(),
+			'time' => date('c'),
+
+			// Optional CloudEvent attributes.
+			'datacontenttype' => $attributes['datacontenttype'],
+			'subject' => $attributes['subject'],
+			'dataschema' => null,
+
+			// Event data.
+			'data' => $data,
+
+			// OpenRegister-specific extensions.
+			'openregister' => [
+				'app' => 'openregister',
+				'version' => $this->getAppVersion(),
+			],
+		];
+	}//end envelope()
+
+	/**
+	 * The request's JSON body merged with its parameters (parameters win).
+	 *
+	 * @param IRequest $request The HTTP request
+	 *
+	 * @return array The body data.
+	 */
+	private function requestBody(IRequest $request): array {
 		// Get request body.
 		$requestBody = $request->getParams();
 		$rawBody = '';
@@ -154,41 +199,8 @@ class CloudEventFormatter implements CloudEventFormatterInterface {
 		}
 
 		// Merge parsed body with request params.
-		$bodyData = array_merge($parsedBody, $requestBody);
-
-		// Build CloudEvent payload.
-		return [
-			// Required CloudEvent attributes.
-			'specversion' => '1.0',
-			'type' => $eventType,
-			'source' => $this->getSource(request: $request),
-			'id' => Uuid::v4()->toRfc4122(),
-			'time' => date('c'),
-
-			// Optional CloudEvent attributes.
-			'datacontenttype' => $this->getContentTypeHeader(request: $request),
-			'subject' => $this->getSubject(request: $request),
-			'dataschema' => null,
-
-			// Request-specific data.
-			'data' => array_merge(
-				[
-					'method' => $request->getMethod(),
-					'path' => $request->getPathInfo(),
-					'queryParams' => $request->getParams(),
-					'headers' => $this->getRequestHeaders(request: $request),
-					'body' => $bodyData,
-				],
-				$data
-			),
-
-			// OpenRegister-specific extensions.
-			'openregister' => [
-				'app' => 'openregister',
-				'version' => $this->getAppVersion(),
-			],
-		];
-	}//end formatRequestAsCloudEvent()
+		return array_merge($parsedBody, $requestBody);
+	}//end requestBody()
 
 	/**
 	 * Get event source from request

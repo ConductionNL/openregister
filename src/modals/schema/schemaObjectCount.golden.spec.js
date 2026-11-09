@@ -47,6 +47,9 @@ jest.mock('vue-material-design-icons/DeleteSweep.vue', () =>
 jest.mock('vue-material-design-icons/Eye.vue', () =>
 	require('../../views/__mocks__/goldenDom.js').stubModule('Eye'),
 )
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () =>
+	require('../../views/__mocks__/goldenDom.js').stubModule('TrashCanOutline'),
+)
 
 const { normalise } = require('../../views/__mocks__/goldenDom.js')
 const { navigationStore, schemaStore } = jest.requireMock('../../store/store.js')

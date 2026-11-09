@@ -11,12 +11,7 @@
 		</p>
 
 		<template #actions>
-			<NcButton :disabled="removing" @click="$emit('cancel')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
+			<CloseCancelButton label="Cancel" :disabled="removing" @click="$emit('cancel')" />
 			<NcButton :disabled="removing" variant="error" @click="$emit('confirm')">
 				<template #icon>
 					<NcLoadingIcon v-if="removing" :size="20" />
@@ -31,7 +26,7 @@
 <script>
 import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'RemoveUserDialog',
@@ -39,7 +34,7 @@ export default {
 		NcDialog,
 		NcButton,
 		NcLoadingIcon,
-		Cancel,
+		CloseCancelButton,
 		AccountMinus,
 	},
 

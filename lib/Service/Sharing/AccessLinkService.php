@@ -48,7 +48,7 @@ use DateTime;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
-use OCA\OpenRegister\Db\AccessLinkMapper;
+use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCP\IURLGenerator;
 use OCP\Security\ISecureRandom;
 use Symfony\Component\Uid\Uuid;
@@ -65,7 +65,7 @@ use Throwable;
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
  */
-class AccessLinkService {
+class AccessLinkService implements AccessLinkServiceInterface {
 
 	/**
 	 * The length of the random anchor, in characters.
@@ -78,36 +78,15 @@ class AccessLinkService {
 	private const ANCHOR_LENGTH = 43;
 
 	/**
-	 * The audit action written when a link serves its subject.
-	 *
-	 * @var string
-	 */
-	public const ACT_READ = 'accesslink.read';
-
-	/**
-	 * The audit action written when a link leaves a comment.
-	 *
-	 * @var string
-	 */
-	public const ACT_COMMENT = 'accesslink.comment';
-
-	/**
-	 * The audit action written when a link adds a file.
-	 *
-	 * @var string
-	 */
-	public const ACT_UPLOAD = 'accesslink.upload';
-
-	/**
 	 * Constructor.
 	 *
-	 * @param AccessLinkMapper $mapper The link store.
+	 * @param AccessLinkMapperInterface $mapper The link store.
 	 * @param AccessLinkUseLog $useLog The audit trail every use is written to, and the log.
 	 * @param AccessLinkSecrets $secrets The RNG for the anchor and the password hasher.
 	 * @param IURLGenerator $urlGenerator The URL generator, for the link a holder is given.
 	 */
 	public function __construct(
-		private readonly AccessLinkMapper $mapper,
+		private readonly AccessLinkMapperInterface $mapper,
 		private readonly AccessLinkUseLog $useLog,
 		private readonly AccessLinkSecrets $secrets,
 		private readonly IURLGenerator $urlGenerator,

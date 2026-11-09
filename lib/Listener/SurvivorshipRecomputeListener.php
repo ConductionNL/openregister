@@ -46,11 +46,12 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
-use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
+use OCA\OpenRegister\Service\Survivorship\TrustTierResolverInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Listener\Support\SurvivorshipResolvers;
 
 /**
  * Materialises a declared golden record + provenance into the object payload
@@ -97,14 +98,33 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	private const TRUST_CONFIGURATION_SCHEMA = 'trustConfiguration';
 
 	/**
+	 * Pure golden-record resolver.
+	 *
+	 * @var SurvivorshipResolverInterface
+	 */
+	private readonly SurvivorshipResolverInterface $resolver;
+
+	/**
+	 * Pure trust-tier lookup + decay engine.
+	 *
+	 * @var TrustTierResolverInterface
+	 */
+	private readonly TrustTierResolverInterface $trustResolver;
+
+	/**
+	 * Mode-aware source-record resolver (embedded | reverseFk).
+	 *
+	 * @var SourceRecordResolverInterface
+	 */
+	private readonly SourceRecordResolverInterface $sourceRecordResolver;
+
+	/**
 	 * Wire collaborators used to look up the schema, load linked sources +
 	 * trust rows, and resolve the golden record.
 	 *
 	 * @param SchemaMapperInterface         $schemaMapper         Schema lookup mapper.
 	 * @param ObjectOperationsInterface     $objectService        Object read path (RBAC + tenant scoped).
-	 * @param SurvivorshipResolverInterface $resolver             Pure golden-record resolver.
-	 * @param TrustTierResolver             $trustResolver        Pure trust-tier lookup + decay engine.
-	 * @param SourceRecordResolverInterface $sourceRecordResolver Mode-aware source-record resolver (embedded | reverseFk).
+	 * @param SurvivorshipResolvers $resolvers Survivorship, trust-tier and source-record resolvers.
 	 * @param LoggerInterface               $logger               PSR logger for warnings.
 	 *
 	 * @return void
@@ -115,11 +135,12 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly SurvivorshipResolverInterface $resolver,
-		private readonly TrustTierResolver $trustResolver,
-		private readonly SourceRecordResolverInterface $sourceRecordResolver,
+		SurvivorshipResolvers $resolvers,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->resolver = $resolvers->resolver;
+		$this->trustResolver = $resolvers->trustResolver;
+		$this->sourceRecordResolver = $resolvers->sourceRecordResolver;
 	}//end __construct()
 
 	/**

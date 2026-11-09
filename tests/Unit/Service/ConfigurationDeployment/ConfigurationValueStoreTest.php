@@ -33,6 +33,8 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationWrite;
 
 final class ConfigurationValueStoreTest extends TestCase {
 
@@ -118,6 +120,83 @@ final class ConfigurationValueStoreTest extends TestCase {
 		$this->assertFalse($snapshot->present);
 	}//end testAnAddressWithNoRowBelowTheInstanceIsAbsent()
 
+	public function testReadSnapshotsCarryTheirAddressAndProvenance(): void {
+		$mapper = $this->createMock(ConfigurationValueMapper::class);
+		$mapper->method('findAtAddress')->willReturnCallback(
+			fn (string $layer, ?string $layerRef, string $configKey) => match ($layer) {
+				ConfigurationLayer::REGISTER => $this->row($layer, $layerRef, $configKey, ['relay' => 'smtp'], 'dep-3'),
+				default => null,
+			}
+		);
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('hasKey')->willReturn(false);
+
+		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
+
+		$below = $store->read(ConfigurationLayer::REGISTER, 'zaken', 'integration.mail');
+		$this->assertSame(
+			[ConfigurationLayer::REGISTER, 'zaken', 'integration.mail', ['relay' => 'smtp'], true, 'dep-3', 'admin'],
+			[$below->layer, $below->layerRef, $below->configKey, $below->value, $below->present, $below->deploymentUuid, $below->updatedBy]
+		);
+
+		$absent = $store->read(ConfigurationLayer::BUNDLE, 'b-1', 'integration.mail');
+		$this->assertSame([ConfigurationLayer::BUNDLE, 'b-1', false], [$absent->layer, $absent->layerRef, $absent->present]);
+
+		// The instance layer never carries a reference, even when one is passed.
+		$instance = $store->read(ConfigurationLayer::INSTANCE, 'ignored', 'rbac');
+		$this->assertSame([ConfigurationLayer::INSTANCE, null, false], [$instance->layer, $instance->layerRef, $instance->present]);
+	}//end testReadSnapshotsCarryTheirAddressAndProvenance()
+
+	public function testAWriteBelowTheInstanceUpdatesAnExistingRowInPlace(): void {
+		$row = $this->row(ConfigurationLayer::REGISTER, 'zaken', 'integration.mail', ['relay' => 'old'], 'dep-1');
+		$mapper = $this->createMock(ConfigurationValueMapper::class);
+		$mapper->method('findAtAddress')->willReturn($row);
+		$mapper->expects($this->once())->method('save')->with($row);
+		$mapper->expects($this->never())->method('createFromArray');
+
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->expects($this->never())->method('setValueString');
+
+		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
+		$undo = $store->write(new ConfigurationAddress(ConfigurationLayer::REGISTER, 'zaken', 'integration.mail'), new ConfigurationWrite(['relay' => 'new'], 'dep-2', 'bob'));
+
+		$this->assertSame(['value' => ['relay' => 'new']], $row->getConfigValue());
+		$this->assertSame('dep-2', $row->getDeploymentUuid());
+		$this->assertSame('bob', $row->getUpdatedBy());
+		$this->assertSame(ConfigurationLayer::REGISTER, $undo['layer']);
+	}//end testAWriteBelowTheInstanceUpdatesAnExistingRowInPlace()
+
+	public function testAWriteWithNoRowCreatesItKeyForKey(): void {
+		$created = [];
+		$mapper = $this->createMock(ConfigurationValueMapper::class);
+		$mapper->method('findAtAddress')->willReturn(null);
+		$mapper->expects($this->never())->method('save');
+		$mapper->method('createFromArray')->willReturnCallback(
+			function (array $data) use (&$created): ConfigurationValue {
+				$created[] = $data;
+
+				return $this->row(ConfigurationLayer::SUBJECT, 'zaak', 'permission.matrix', null, null);
+			}
+		);
+
+		$store = new ConfigurationValueStore($mapper, $this->createMock(IAppConfig::class), 'openregister');
+		$store->write(new ConfigurationAddress(ConfigurationLayer::SUBJECT, 'zaak', 'permission.matrix'), new ConfigurationWrite(['read' => ['*']], null, 'bob'));
+
+		$this->assertSame(
+			[
+				[
+					'layer' => ConfigurationLayer::SUBJECT,
+					'layerRef' => 'zaak',
+					'configKey' => 'permission.matrix',
+					'configValue' => ['value' => ['read' => ['*']]],
+					'deploymentUuid' => null,
+					'updatedBy' => 'bob',
+				],
+			],
+			$created
+		);
+	}//end testAWriteWithNoRowCreatesItKeyForKey()
+
 	public function testAWriteHandsBackWhatItTakesToUndoTheAppConfigSide(): void {
 		$mapper = $this->createMock(ConfigurationValueMapper::class);
 		$mapper->method('findAtAddress')->willReturn(null);
@@ -133,7 +212,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 			->with('openregister', 'rbac', '{"enabled":false}');
 
 		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
-		$undo = $store->write(ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => false], 'dep-8', 'admin');
+		$undo = $store->write(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac'), new ConfigurationWrite(['enabled' => false], 'dep-8', 'admin'));
 
 		$this->assertSame(ConfigurationLayer::INSTANCE, $undo['layer']);
 		$this->assertSame('rbac', $undo['key']);
@@ -202,6 +281,6 @@ final class ConfigurationValueStoreTest extends TestCase {
 			->with('openregister', 'flow_kill_switch', '1');
 
 		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
-		$store->write(ConfigurationLayer::INSTANCE, null, 'flow_kill_switch', true, 'dep-9', 'admin');
+		$store->write(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'flow_kill_switch'), new ConfigurationWrite(true, 'dep-9', 'admin'));
 	}//end testABooleanIsStoredTheWayTheSettingsReadersReadIt()
 }//end class

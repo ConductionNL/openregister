@@ -40,7 +40,7 @@ use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
 /**
  * A pass-through node whose outgoing edges carry the routing conditions.
  */
-class SwitchNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class SwitchNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree, SwitchNodeInterface {
 	/**
 	 * The step type.
 	 *

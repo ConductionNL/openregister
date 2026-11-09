@@ -32,7 +32,6 @@ class FileSearchControllerCoverageTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = new FileSearchController(
-			appName: 'openregister',
 			request: $this->request,
 			services: new FileSearchControllerServices(
 				vectorService: $this->vectorService,

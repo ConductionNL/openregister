@@ -26,7 +26,7 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<TalkLink>
  * @method list<TalkLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class TalkLinkMapper extends QBMapper {
+class TalkLinkMapper extends QBMapper implements TalkLinkMapperInterface {
 
 	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;

@@ -84,30 +84,24 @@ class ToolRegistrationListener implements IEventListener {
 	/**
 	 * Constructor
 	 *
-	 * @param RegisterTool $registerTool Register tool.
-	 * @param SchemaTool $schemaTool Schema tool.
-	 * @param ObjectsTool $objectsTool Objects tool.
-	 * @param ApplicationTool $applicationTool Application tool.
-	 * @param AgentTool $agentTool Agent tool.
-	 * @param McpToolsService $mcpToolsService MCP tools service used to register MCP-sourced tools.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param BuiltinDataTools     $dataTools       The register, schema and objects tools.
+	 * @param BuiltinPlatformTools $platformTools   The application and agent tools.
+	 * @param McpToolsService      $mcpToolsService MCP tools service used to register MCP-sourced tools.
+	 * @param LoggerInterface      $logger          PSR logger.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		RegisterTool $registerTool,
-		SchemaTool $schemaTool,
-		ObjectsTool $objectsTool,
-		ApplicationTool $applicationTool,
-		AgentTool $agentTool,
+		BuiltinDataTools $dataTools,
+		BuiltinPlatformTools $platformTools,
 		private readonly McpToolsService $mcpToolsService,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->registerTool = $registerTool;
-		$this->schemaTool = $schemaTool;
-		$this->objectsTool = $objectsTool;
-		$this->applicationTool = $applicationTool;
-		$this->agentTool = $agentTool;
+		$this->registerTool = $dataTools->registerTool;
+		$this->schemaTool = $dataTools->schemaTool;
+		$this->objectsTool = $dataTools->objectsTool;
+		$this->applicationTool = $platformTools->applicationTool;
+		$this->agentTool = $platformTools->agentTool;
 	}//end __construct()
 
 	/**

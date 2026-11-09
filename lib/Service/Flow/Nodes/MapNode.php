@@ -220,15 +220,7 @@ class MapNode extends LogicNodeBase implements IFlowNode, MapNodeInterface, IFlo
 	 */
 	private function resolve(string $reference) {
 		if (ctype_digit($reference) === true) {
-			try {
-				return $this->mapper->find((int)$reference);
-			} catch (DoesNotExistException $e) {
-				throw new RuntimeException(
-					sprintf('No mapping with id "%s".', $reference),
-					0,
-					$e
-				);
-			}
+			return $this->byId(reference: $reference);
 		}
 
 		// Resolving a uuid or a slug is find()'s job — it switches to matching those
@@ -242,6 +234,46 @@ class MapNode extends LogicNodeBase implements IFlowNode, MapNodeInterface, IFlo
 			// Fall through to the reference lookup below.
 		}
 
+		return $this->byReference(reference: $reference);
+
+	}//end resolve()
+
+	/**
+	 * The mapping with this numeric id.
+	 *
+	 * @param string $reference The mapping id, all digits.
+	 *
+	 * @return \OCA\OpenRegister\Db\Mapping The mapping.
+	 *
+	 * @throws RuntimeException When no mapping has that id.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	private function byId(string $reference) {
+		try {
+			return $this->mapper->find((int)$reference);
+		} catch (DoesNotExistException $e) {
+			throw new RuntimeException(
+				sprintf('No mapping with id "%s".', $reference),
+				0,
+				$e
+			);
+		}
+
+	}//end byId()
+
+	/**
+	 * The first mapping whose `reference` column matches.
+	 *
+	 * @param string $reference The mapping reference.
+	 *
+	 * @return \OCA\OpenRegister\Db\Mapping The mapping.
+	 *
+	 * @throws RuntimeException When no mapping matches.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	private function byReference(string $reference) {
 		try {
 			$byRef = $this->mapper->findByRef($reference);
 		} catch (Throwable $e) {
@@ -256,7 +288,7 @@ class MapNode extends LogicNodeBase implements IFlowNode, MapNodeInterface, IFlo
 			sprintf('No mapping matches "%s" by id, uuid, slug or reference.', $reference)
 		);
 
-	}//end resolve()
+	}//end byReference()
 
 	/**
 	 * What kind of step this is. Reshapes each item.

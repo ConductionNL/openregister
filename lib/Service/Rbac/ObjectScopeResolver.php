@@ -350,33 +350,22 @@ class ObjectScopeResolver implements ObjectScopeResolverInterface {
 	 * the rules would have allowed; it cannot admit somebody the schema refuses,
 	 * which is what the spec means by "`private` cannot widen access".
 	 *
-	 * @param string $authColumn The `_authorization` column, qualified by the caller.
-	 * @param bool $defaultPrivate Whether the schema makes its objects private by default.
-	 * @param bool $isPostgres Whether the connected platform is PostgreSQL.
+	 * The not-private term comes from {@see notPrivateSql()}; this adds the
+	 * granted disjunct beside it, and is the only place that does.
+	 *
+	 * @param string $notPrivateSql The not-private term for the row, from notPrivateSql().
 	 * @param string $uuidColumn The `_uuid` column, qualified by the caller.
 	 * @param string[] $quotedUuids Granted object UUIDs, ALREADY quoted as SQL literals.
 	 *
 	 * @return string A SQL predicate true for rows this caller may reach.
 	 */
-	public function notPrivateOrGrantedSql(
-		string $authColumn,
-		bool $defaultPrivate,
-		bool $isPostgres,
-		string $uuidColumn,
-		array $quotedUuids,
-	): string {
-		$notPrivate = $this->notPrivateSql(
-			columnName: $authColumn,
-			defaultPrivate: $defaultPrivate,
-			isPostgres: $isPostgres
-		);
-
+	public function notPrivateOrGrantedSql(string $notPrivateSql, string $uuidColumn, array $quotedUuids): string {
 		if (empty($quotedUuids) === true) {
-			return $notPrivate;
+			return $notPrivateSql;
 		}
 
 		$inList = implode(', ', $quotedUuids);
 
-		return "({$notPrivate} OR {$uuidColumn} IN ({$inList}))";
+		return "({$notPrivateSql} OR {$uuidColumn} IN ({$inList}))";
 	}//end notPrivateOrGrantedSql()
 }//end class

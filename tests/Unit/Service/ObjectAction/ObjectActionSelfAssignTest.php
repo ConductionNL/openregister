@@ -282,8 +282,8 @@ class ObjectActionSelfAssignTest extends TestCase {
 		);
 		$audit = $this->createMock(ObjectActionAudit::class);
 		$audit->method('record')->willReturnCallback(
-			function (...$args): void {
-				$this->audited[] = $args;
+			function ($object, $definition, $outcome, $digest, $userId): void {
+				$this->audited[] = [$object, $definition->key, (string)$definition->kind, $outcome->run, $digest, $outcome->changes, $outcome->outcome, $userId];
 			}
 		);
 

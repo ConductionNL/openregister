@@ -11,6 +11,19 @@ import { queriesEqual } from '../services/routeQuery.js'
 import { registerStore, schemaStore } from '../store/store.js'
 
 /**
+ * The register and schema picked in the scope filters.
+ *
+ * @spec exclude Client-side filter state of the list sidebars.
+ * @return {{register: (object|null), schema: (object|null)}} The picked scope
+ */
+export function selectedScope() {
+	return {
+		register: registerStore.registerItem,
+		schema: schemaStore.schemaItem,
+	}
+}
+
+/**
  * A mixin for a sidebar on one route. The sidebar supplies `applyFilters()`,
  * `buildQueryFromState()` and `applyQueryParamsFromRoute()`.
  *

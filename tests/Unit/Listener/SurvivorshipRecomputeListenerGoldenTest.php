@@ -24,6 +24,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Listener\Support\SurvivorshipResolvers;
 
 /**
  * Golden outcomes of the golden-record recompute: when an existing golden
@@ -101,9 +102,7 @@ class SurvivorshipRecomputeListenerGoldenTest extends TestCase {
 		return new SurvivorshipRecomputeListener(
 			$this->schemaMapper,
 			$this->objects,
-			$this->resolver,
-			new TrustTierResolver(),
-			$this->sources,
+			new SurvivorshipResolvers($this->resolver, new TrustTierResolver(), $this->sources),
 			$this->logger
 		);
 	}//end listener()

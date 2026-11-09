@@ -303,7 +303,7 @@ final class B15GuardedControllersGoldenTest extends TestCase {
 				$store->method('requireRunnable')->willReturn(new ErasurePreview());
 				$runner->expects($this->once())->method('run')->willReturn(['erased' => 1]);
 			} else {
-				$store->method('requireRunnable')->willThrowException(new ErasureRefusedException('approval', 'Not approved', 409));
+				$store->method('requireRunnable')->willThrowException(new ErasureRefusedException('approval', 'Not approved'));
 				$runner->expects($this->never())->method('run');
 			}
 

@@ -21,7 +21,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
+use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -69,7 +69,7 @@ class SaveObjectContainerServicesGoldenTest extends TestCase {
 			'shared master data' => ['resolveSharedMasterDataService', SharedMasterDataService::class, 'SharedMasterDataService'],
 			'retention' => ['resolveRetentionService', RetentionServiceInterface::class, 'RetentionService'],
 			'unique hints' => ['resolveUniqueHintChecker', UniqueHintChecker::class, 'UniqueHintChecker'],
-			'dedup policy' => ['resolveDedupCreatePolicy', DedupCreatePolicy::class, 'DedupCreatePolicy'],
+			'dedup policy' => ['resolveDedupCreatePolicy', DedupCreatePolicyInterface::class, 'DedupCreatePolicy'],
 		];
 	}//end resolvers()
 

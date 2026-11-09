@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\BookmarkLinkMapper;
 use OCA\OpenRegister\Service\BookmarkLinkService;
 use OCA\OpenRegister\Service\BookmarkDraft;
 use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -70,9 +71,7 @@ class BookmarkLinkServiceTest extends TestCase {
 
 		$this->service = new BookmarkLinkService(
 			$this->mapper,
-			$this->appManager,
-			$this->userSession,
-			$this->logger,
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger),
 			$this->createMock(ContainerInterface::class)
 		);
 	}

@@ -24,6 +24,8 @@ use OCA\OpenRegister\Search\Controller\Support\ViewPatch;
 use OCA\OpenRegister\Search\Db\View;
 use InvalidArgumentException;
 use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCA\OpenRegister\Exception\InvalidViewAlertException;
@@ -32,7 +34,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
+use OCA\OpenRegister\Service\Rbac\ViewerReachCheckInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -79,9 +81,9 @@ class ViewsController extends Controller {
 	/**
 	 * Who is asking, and how far they reach over views.
 	 *
-	 * @var ViewerReachResolver
+	 * @var ViewerReachCheckInterface
 	 */
-	private ViewerReachResolver $viewers;
+	private ViewerReachCheckInterface $viewers;
 
 	/**
 	 * Constructor.
@@ -448,14 +450,18 @@ class ViewsController extends Controller {
 		$data = $write->data;
 		$this->viewers->assertMayNameRecipients(view: ['owner' => $userId], reach: $this->viewers->reachOf(userId: $userId), data: $data);
 		$view = $this->viewService->create(
-			name: $data['name'],
-			description: $data['description'] ?? '',
-			owner: $userId,
-			isPublic: $data['isPublic'] ?? false,
-			isDefault: $data['isDefault'] ?? false,
-			query: $write->query(),
-			presentation: $write->presentation(),
-			sharedWith: $write->shares(),
+			definition: new ViewDefinition(
+				name: $data['name'],
+				description: $data['description'] ?? '',
+				query: $write->query(),
+				presentation: $write->presentation()
+			),
+			audience: new ViewAudience(
+				owner: $userId,
+				isPublic: $data['isPublic'] ?? false,
+				isDefault: $data['isDefault'] ?? false,
+				sharedWith: $write->shares()
+			),
 			alert: ViewAlert::declaredIn(body: $data)
 		);
 		return new JSONResponse(data: ['view' => $view->jsonSerialize()], statusCode: 201);

@@ -55,7 +55,7 @@ namespace OCA\OpenRegister\Service\ObjectAction;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
  */
-final class ObjectActionDefinition {
+final class ObjectActionDefinition implements ObjectActionDefinitionInterface {
 
 	/**
 	 * The configuration key holding declared actions.

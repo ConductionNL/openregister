@@ -3,16 +3,16 @@
 exports[`clear cache modal renders when hidden 1`] = `""`;
 
 exports[`clear cache modal renders with all selected 1`] = `
-"<x-ncdialog name="Clear Cache" noclose="false">
+"<x-ncdialog name="Clear Cache" size="small" noclose="false">
 <slot-actions>
-<x-ncbutton disabled="false">
+<x-ncbutton>
 <slot-default>Cancel</slot-default>
 <slot-icon>
 <x-cancel size="20">
 </x-cancel>
 </slot-icon>
 </x-ncbutton>
-<x-ncbutton variant="error" disabled="false">
+<x-ncbutton disabled="false" variant="error">
 <slot-default>Clear Cache</slot-default>
 <slot-icon>
 <x-delete size="20">
@@ -54,7 +54,7 @@ exports[`clear cache modal renders with all selected 1`] = `
 `;
 
 exports[`clear cache modal renders with the facet cache selected while clearing 1`] = `
-"<x-ncdialog name="Clear Cache" noclose="true">
+"<x-ncdialog name="Clear Cache" size="small" noclose="true">
 <slot-actions>
 <x-ncbutton disabled="true">
 <slot-default>Cancel</slot-default>
@@ -63,7 +63,7 @@ exports[`clear cache modal renders with the facet cache selected while clearing 
 </x-cancel>
 </slot-icon>
 </x-ncbutton>
-<x-ncbutton variant="error" disabled="true">
+<x-ncbutton disabled="true" variant="error">
 <slot-default>Clearing...</slot-default>
 <slot-icon>
 <x-ncloadingicon size="20">

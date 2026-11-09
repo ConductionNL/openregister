@@ -26,14 +26,14 @@ namespace OCA\OpenRegister\Mcp;
 
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
-use OCA\OpenRegister\Service\Capability\ToolReachResolver;
+use OCA\OpenRegister\Service\Capability\ToolReachLevels;
 
 /**
  * Finds the first closed-vocabulary declaration on a `#[McpTool]` that holds
  * a value outside its vocabulary.
  *
  * `scope` is checked against {@see McpAnnotationValidator::SCOPES}
- * (REQ-ATTR-005) and `reach` against {@see ToolReachResolver::ORDER}
+ * (REQ-ATTR-005) and `reach` against {@see ToolReachLevels::ORDER}
  * (REQ-ATTR-006), and every `annotations` entry must be a string key
  * holding a scalar (REQ-ATTR-007). A misspelt reach would otherwise resolve
  * to `external` in silence: safe, but the author would never learn why the
@@ -56,8 +56,8 @@ final class ToolDeclarationCheck {
 			return ['key' => 'scope', 'value' => (string) $attribute->scope, 'allowed' => McpAnnotationValidator::SCOPES];
 		}
 
-		if (self::outside(value: $attribute->reach, allowed: ToolReachResolver::ORDER) === true) {
-			return ['key' => 'reach', 'value' => (string) $attribute->reach, 'allowed' => ToolReachResolver::ORDER];
+		if (self::outside(value: $attribute->reach, allowed: ToolReachLevels::ORDER) === true) {
+			return ['key' => 'reach', 'value' => (string) $attribute->reach, 'allowed' => ToolReachLevels::ORDER];
 		}
 
 		return self::annotationProblem(annotations: $attribute->annotations);

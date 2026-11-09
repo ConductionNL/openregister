@@ -34,14 +34,14 @@ namespace OCA\OpenRegister\Service\Party;
 
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 
 /**
  * Evaluates the declared effect of every indicator on every party of an object.
  *
  * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
  */
-class PartyIndicatorGuard {
+class PartyIndicatorGuard implements PartyIndicatorGuardInterface, PartySendRefusalInterface {
 
 	/**
 	 * The effect refusing a publication.
@@ -56,11 +56,11 @@ class PartyIndicatorGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper $links The link rows, for the parties on an object.
+	 * @param ContactLinkMapperInterface $links The link rows, for the parties on an object.
 	 * @param PartyServiceInterface $parties The party records.
 	 */
 	public function __construct(
-		private readonly ContactLinkMapper $links,
+		private readonly ContactLinkMapperInterface $links,
 		private readonly PartyServiceInterface $parties,
 	) {
 	}//end __construct()

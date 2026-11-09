@@ -166,18 +166,34 @@ class AppImportJobRecorder {
 
 		$jobs = [];
 		foreach ((array)($stored['jobs'] ?? []) as $job) {
-			if (is_array($job) === true && is_string($job['jobId'] ?? null) === true) {
-				$jobs[] = [
-					'jobId' => $job['jobId'],
-					'version' => (string)($job['version'] ?? ''),
-					'created' => (int)($job['created'] ?? 0),
-					'importedAt' => (string)($job['importedAt'] ?? ''),
-				];
+			$row = self::jobRow(job: $job);
+			if ($row !== null) {
+				$jobs[] = $row;
 			}
 		}
 
 		return $jobs;
 	}//end jobs()
+
+	/**
+	 * One stored job entry in its returned shape, or null when it has no string job id.
+	 *
+	 * @param mixed $job The stored entry.
+	 *
+	 * @return array{jobId: string, version: string, created: int, importedAt: string}|null
+	 */
+	private static function jobRow(mixed $job): ?array {
+		if (is_array($job) === false || is_string($job['jobId'] ?? null) === false) {
+			return null;
+		}
+
+		return [
+			'jobId' => $job['jobId'],
+			'version' => (string)($job['version'] ?? ''),
+			'created' => (int)($job['created'] ?? 0),
+			'importedAt' => (string)($job['importedAt'] ?? ''),
+		];
+	}//end jobRow()
 
 	/**
 	 * Forget one job of an app id, after its objects were removed.
@@ -215,15 +231,31 @@ class AppImportJobRecorder {
 			}
 
 			$stored = $this->read(key: $key);
-			foreach ((array)($stored['jobs'] ?? []) as $job) {
-				if (is_array($job) === true && ($job['jobId'] ?? null) === $importJobId) {
-					return (string)($stored['appId'] ?? '');
-				}
+			if (self::listsJob(stored: $stored, importJobId: $importJobId) === true) {
+				return (string)($stored['appId'] ?? '');
 			}
 		}
 
 		return null;
 	}//end appForJob()
+
+	/**
+	 * Whether a stored job list holds the given job id.
+	 *
+	 * @param array<string, mixed>|null $stored      The decoded job list.
+	 * @param string                    $importJobId The import job id.
+	 *
+	 * @return bool
+	 */
+	private static function listsJob(?array $stored, string $importJobId): bool {
+		foreach ((array)($stored['jobs'] ?? []) as $job) {
+			if (is_array($job) === true && ($job['jobId'] ?? null) === $importJobId) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end listsJob()
 
 	/**
 	 * Warn when an import wrote objects and none of its audit rows carries the job id.

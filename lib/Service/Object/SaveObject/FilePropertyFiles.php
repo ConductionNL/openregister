@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use Exception;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCP\Files\File;
 
 /**
@@ -38,12 +38,12 @@ final class FilePropertyFiles {
 	/**
 	 * Constructor.
 	 *
-	 * @param FilePropertyLog $log         The file property log.
-	 * @param FileService     $fileService File service for file operations.
+	 * @param FilePropertyLog      $log         The file property log.
+	 * @param ObjectFilesInterface $fileService File service for file operations.
 	 */
 	public function __construct(
 		private readonly FilePropertyLog $log,
-		private readonly FileService $fileService,
+		private readonly ObjectFilesInterface $fileService,
 	) {
 	}//end __construct()
 

@@ -198,6 +198,25 @@ class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 			return null;
 		}
 
+		$resolved = $this->triggerNodeFor(registry: $registry, node: $node);
+		if ($resolved === null) {
+			return null;
+		}
+
+		return $this->stampedNode(node: $node, resolved: $resolved, savedBy: $savedBy);
+	}//end validateNode()
+
+	/**
+	 * The trigger node a stored node's type resolves to, or null when it is not one.
+	 *
+	 * @param object               $registry The node registry.
+	 * @param array<string, mixed> $node     The stored node.
+	 *
+	 * @return IFlowNode|null The trigger node.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function triggerNodeFor(object $registry, array $node): ?IFlowNode {
 		$type = trim((string)($node['type'] ?? ''));
 		if ($type === '') {
 			return null;
@@ -217,12 +236,38 @@ class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 		// it says "this node is an entry point" and declares no methods — so
 		// narrowing on it alone leaves `validateConfig()` unproven, which is
 		// exactly what PHPStan flagged. `IFlowNode` is what declares the method.
-		if (($resolved instanceof IFlowTriggerNode) === false
-			|| ($resolved instanceof IFlowNode) === false
-		) {
-			return null;
+		return $this->asTriggerNode(resolved: $resolved);
+	}//end triggerNodeFor()
+
+	/**
+	 * A resolved node, when it is BOTH an entry point and a validating node.
+	 *
+	 * @param mixed $resolved What the registry returned.
+	 *
+	 * @return IFlowNode|null The node, or null for anything else.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function asTriggerNode(mixed $resolved): ?IFlowNode {
+		if ($resolved instanceof IFlowTriggerNode && $resolved instanceof IFlowNode) {
+			return $resolved;
 		}
 
+		return null;
+	}//end asTriggerNode()
+
+	/**
+	 * Let the trigger refuse its config, then check its delegation; the node when its config changed.
+	 *
+	 * @param array<string, mixed> $node     The stored node.
+	 * @param IFlowNode            $resolved The trigger node.
+	 * @param string|null          $savedBy  The saving user, null for a code-initiated save.
+	 *
+	 * @return array<string, mixed>|null The node with its stamped config, or null when unchanged.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function stampedNode(array $node, IFlowNode $resolved, ?string $savedBy): ?array {
 		$config = ($node['config'] ?? []);
 		if (is_array($config) === false) {
 			$config = [];
@@ -241,7 +286,7 @@ class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 		$node['config'] = $stamped;
 
 		return $node;
-	}//end validateNode()
+	}//end stampedNode()
 
 	/**
 	 * Refuse a trigger that names someone the saver holds no grant for.
@@ -282,7 +327,7 @@ class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 	 */
 	private function validateDelegation(array $config, ?string $savedBy): array {
 		$runAs = trim((string)($config['runAs'] ?? ''));
-		if ($runAs === '' || $savedBy === null || $runAs === $savedBy) {
+		if ($this->assertsDelegation(runAs: $runAs, savedBy: $savedBy) === false) {
 			// No delegation is being asserted, so no stamp may survive. A value
 			// left here from a previous save — or supplied by a client that
 			// noticed the field — would be read at fire time as an assertion
@@ -297,24 +342,7 @@ class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 		// because a container could not build a service most saves never touch
 		// would turn an infrastructure fault into an editing outage — the same
 		// reasoning that makes registry() return null rather than throw.
-		try {
-			$delegation = $this->container->get(DelegationService::class);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[FlowTriggerValidator] Could not resolve the delegation service; refusing the delegation: '
-					. $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'savedBy' => $savedBy, 'runAs' => $runAs]
-			);
-
-			throw new InvalidArgumentException(
-				sprintf(
-					'Cannot verify that "%s" may schedule runs as "%s": the delegation store is unavailable. '
-					. 'The trigger has not been saved.',
-					$savedBy,
-					$runAs
-				)
-			);
-		}//end try
+		$delegation = $this->delegationService(savedBy: $savedBy, runAs: $runAs);
 
 		$verdict = $delegation->verdictFor(principal: $savedBy, actingAs: $runAs);
 		if ($verdict->permitted === true) {
@@ -336,6 +364,55 @@ class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 			)
 		);
 	}//end validateDelegation()
+
+	/**
+	 * Whether a trigger asserts a delegation: it names someone other than the saving user.
+	 *
+	 * @param string      $runAs   The trimmed `runAs`.
+	 * @param string|null $savedBy The saving user, null for a code-initiated save.
+	 *
+	 * @return bool True when the delegation has to be checked.
+	 *
+	 * @phpstan-assert-if-true string $savedBy
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function assertsDelegation(string $runAs, ?string $savedBy): bool {
+		return $runAs !== '' && $savedBy !== null && $runAs !== $savedBy;
+	}//end assertsDelegation()
+
+	/**
+	 * The delegation service; failing to resolve it refuses the delegation (fail closed).
+	 *
+	 * @param string $savedBy The saving user.
+	 * @param string $runAs   The identity the trigger names.
+	 *
+	 * @return DelegationService The service.
+	 *
+	 * @throws InvalidArgumentException When the service cannot be resolved.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function delegationService(string $savedBy, string $runAs): DelegationService {
+		try {
+			return $this->container->get(DelegationService::class);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[FlowTriggerValidator] Could not resolve the delegation service; refusing the delegation: '
+					. $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'savedBy' => $savedBy, 'runAs' => $runAs]
+			);
+
+			throw new InvalidArgumentException(
+				sprintf(
+					'Cannot verify that "%s" may schedule runs as "%s": the delegation store is unavailable. '
+					. 'The trigger has not been saved.',
+					$savedBy,
+					$runAs
+				)
+			);
+		}//end try
+	}//end delegationService()
 
 	/**
 	 * The node registry, or null when it cannot be built.

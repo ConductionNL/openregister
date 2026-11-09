@@ -49,14 +49,14 @@ namespace OCA\OpenRegister\Service;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\BackgroundJob\RecordsItsRuns;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapperInterface;
 use OCA\OpenRegister\Db\RuleRun;
-use OCA\OpenRegister\Db\RuleRunMapper;
+use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Db\RuleRunSummary;
 use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
@@ -114,7 +114,7 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 *
 	 * @var array<int, string>
 	 */
-	public const OBSERVED_JOBS = [BulkJobRunner::class];
+	public const OBSERVED_JOBS = [JobHandles::BULK_JOB_RUNNER];
 
 	/**
 	 * The job-list page the console reads.
@@ -186,9 +186,9 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	/**
 	 * The rules engine's run log.
 	 *
-	 * @var RuleRunMapper
+	 * @var RuleRunMapperInterface
 	 */
-	private readonly RuleRunMapper $ruleRuns;
+	private readonly RuleRunMapperInterface $ruleRuns;
 
 	/**
 	 * One row per rule, with its last error.

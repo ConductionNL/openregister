@@ -35,7 +35,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\Support\ConsentSaveContext;
-use OCA\OpenRegister\Service\Consent\ConsentEnvelopeEvaluator;
+use OCA\OpenRegister\Service\Consent\ConsentEnvelopeEvaluatorInterface;
+use OCA\OpenRegister\Service\Consent\ConsentEnvelopeEvaluators;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IRequest;
@@ -69,9 +70,9 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	 * Nextcloud dependency, so it needs no DI registration — this listener
 	 * owns the one instance it needs.
 	 *
-	 * @var ConsentEnvelopeEvaluator
+	 * @var ConsentEnvelopeEvaluatorInterface
 	 */
-	private readonly ConsentEnvelopeEvaluator $evaluator;
+	private readonly ConsentEnvelopeEvaluatorInterface $evaluator;
 
 	/**
 	 * Constructor.
@@ -82,6 +83,10 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	 * @param LoggerInterface $logger The logger.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `ConsentEnvelopeEvaluators::evaluator()` builds the pure
+	 *                                       evaluator this listener owns, as `new` did before; the
+	 *                                       evaluator has no Nextcloud dependency to inject.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemas,
@@ -89,7 +94,7 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 		private readonly IRequest $request,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->evaluator = new ConsentEnvelopeEvaluator();
+		$this->evaluator = ConsentEnvelopeEvaluators::evaluator();
 	}//end __construct()
 
 	/**
@@ -310,7 +315,7 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	/**
 	 * Evaluate one consent-shaped property: resolves the NC-coupled inputs
 	 * (acting identity, IP, user agent) and delegates the pure append-only
-	 * check + evidence fill to {@see ConsentEnvelopeEvaluator}.
+	 * check + evidence fill to {@see ConsentEnvelopeEvaluatorInterface}.
 	 *
 	 * @param ConsentSaveContext $context The save: its event, the property's declaration and its persisted value.
 	 * @param string $name The property name (for error messages).

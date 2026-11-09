@@ -43,6 +43,8 @@ use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Credential\OAuth2RefreshStores;
+use OCA\OpenRegister\Service\Credential\OAuth2RefreshSteps;
 
 /**
  * Golden outcomes of the OAuth2 token refresh.
@@ -581,12 +583,16 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 		CredentialRelinkNotifier $notifier,
 	): OAuth2RefreshService {
 		return new OAuth2RefreshService(
-			credentialStore: $store,
-			objectService: $objects,
+			stores: new OAuth2RefreshStores(
+				credentialStore: $store,
+				objectService: $objects,
+			),
 			lock: $lock,
-			exchange: new OAuth2RefreshExchange(clients: $clients, clientService: $http),
-			relinkNotifier: $notifier,
-			logger: $this->createMock(LoggerInterface::class)
+			steps: new OAuth2RefreshSteps(
+				exchange: new OAuth2RefreshExchange(clients: $clients, clientService: $http),
+				relinkNotifier: $notifier,
+			),
+			logger: $this->createMock(LoggerInterface::class),
 		);
 	}
 }

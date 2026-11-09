@@ -4,7 +4,8 @@
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
-            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy"
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ActionInputsNodeInterface"
         ],
         "id": "openregister.action-inputs",
         "name": "Action inputs",
@@ -1410,7 +1411,8 @@
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
-            "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree"
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SwitchNodeInterface"
         ],
         "id": "openregister.switch",
         "name": "Switch",

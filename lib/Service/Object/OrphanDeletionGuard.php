@@ -47,7 +47,7 @@ class OrphanDeletionGuard {
 	 * Constructor.
 	 *
 	 * @param MagicMapperInterface             $objectMapper      Organisation boundary and delete guards.
-	 * @param PermissionHandlerInterface       $permissionHandler The caller's delete right.
+	 * @param PermissionCheckInterface       $permissionHandler The caller's delete right.
 	 * @param IUserSession            $userSession       The caller.
 	 * @param ContainerInterface|null $container         Resolves the shared-data and integrity services lazily.
 	 *
@@ -55,7 +55,7 @@ class OrphanDeletionGuard {
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly PermissionHandlerInterface $permissionHandler,
+		private readonly PermissionCheckInterface $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly ?ContainerInterface $container,
 	) {
@@ -78,14 +78,31 @@ class OrphanDeletionGuard {
 		}
 
 		try {
-			return $this->objectMapper->callerOrganisationsHold(row: $row) === true
-				&& $this->mayWriteSharedData(register: $register, schema: $schema) === true
-				&& $this->permissionHandler->hasPermission(schema: $schema, action: 'delete', objectOwner: $row->getOwner(), object: $row) === true
-				&& $this->passesDeleteChecks(row: $row) === true;
+			return $this->callerMayDelete(row: $row, register: $register, schema: $schema);
 		} catch (Throwable $e) {
 			return false;
 		}
 	}//end allows()
+
+	/**
+	 * Whether the caller holds the row's organisation, may write the shared data, may delete, and the delete passes.
+	 *
+	 * Asked in that order; the first refusal stops the questions.
+	 *
+	 * @param ObjectEntity $row      The row.
+	 * @param Register     $register The register.
+	 * @param Schema       $schema   The schema.
+	 *
+	 * @return bool True when every check passes
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function callerMayDelete(ObjectEntity $row, Register $register, Schema $schema): bool {
+		return $this->objectMapper->callerOrganisationsHold(row: $row) === true
+			&& $this->mayWriteSharedData(register: $register, schema: $schema) === true
+			&& $this->permissionHandler->hasPermission(schema: $schema, action: 'delete', objectOwner: $row->getOwner(), object: $row) === true
+			&& $this->passesDeleteChecks(row: $row) === true;
+	}//end callerMayDelete()
 
 	/**
 	 * Whether the row's schema or state refuses every delete.

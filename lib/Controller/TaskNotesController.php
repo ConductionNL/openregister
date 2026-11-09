@@ -69,8 +69,6 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\TaskLeafGuard;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
-use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
-use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -78,6 +76,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Controller\Support\TaskNotesControllerServices;
 
 /**
  * REST surface for the notes leaf on a task.
@@ -97,13 +96,18 @@ class TaskNotesController extends Controller {
 	private readonly TaskLeafGuard $guard;
 
 	/**
+	 * The same note storage the object leaf uses.
+	 *
+	 * @var NoteServiceInterface
+	 */
+	private readonly NoteServiceInterface $notes;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param TaskManagerInterface $tasks Resolves a task by uuid.
-	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
-	 * @param NoteServiceInterface $notes The same note storage the object leaf uses.
+	 * @param TaskNotesControllerServices $services The services, bundled.
 	 * @param IUserSession $userSession Names the acting identity.
 	 *
 	 * @return void
@@ -111,13 +115,12 @@ class TaskNotesController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		TaskManagerInterface $tasks,
-		TaskAuthorizationService $authorization,
-		private readonly NoteServiceInterface $notes,
+		TaskNotesControllerServices $services,
 		IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->guard = new TaskLeafGuard(tasks: $tasks, authorization: $authorization, userSession: $userSession);
+		$this->notes = $services->notes;
+		$this->guard = new TaskLeafGuard(tasks: $services->tasks, authorization: $services->authorization, userSession: $userSession);
 
 	}//end __construct()
 

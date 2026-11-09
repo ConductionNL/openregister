@@ -52,14 +52,7 @@ use OCA\OpenRegister\Support\OrderParameter;
  *
  * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
  */
-class ExplicitReveal {
-
-	/**
-	 * The authorization key and value that make a property explicit-reveal.
-	 */
-	public const KEY = 'reveal';
-
-	public const EXPLICIT = 'explicit';
+class ExplicitReveal implements ExplicitRevealInterface {
 
 	/**
 	 * How many characters of the value the mask keeps.

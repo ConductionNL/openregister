@@ -132,7 +132,6 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
  */
 import {
 	NcActionButton,
-	NcActions,
 	NcAppContent,
 	NcDateTime,
 	NcEmptyContent,
@@ -149,6 +148,7 @@ import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import eventBus from '../../eventBus.js'
 import { AUDIT_SORT_FIELDS, headerSortOf } from '../../services/listSort.js'
+import { storePaging } from '../storePaging.js'
 
 export default {
 	name: 'AuditTrailIndex',
@@ -167,6 +167,14 @@ export default {
 		Plus,
 		Pencil,
 	},
+
+	mixins: [
+		storePaging({
+			fetch: (options) => auditTrailStore.fetchAuditTrails(options),
+			limit: () => auditTrailStore.auditTrailPagination.limit,
+			selection: 'selectedAuditTrails',
+		}),
+	],
 
 	data() {
 		return {
@@ -687,48 +695,6 @@ export default {
 				})
 			} catch {
 				showError(t('openregister', 'Error loading audit trails'))
-			}
-		},
-
-		/**
-		 * Handle page change from pagination component
-		 *
-		 * @param {number} page - The page number to change to
-		 * @return {Promise<void>}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		async onPageChanged(page) {
-			try {
-				await auditTrailStore.fetchAuditTrails({
-					page,
-					limit: auditTrailStore.auditTrailPagination.limit,
-				})
-				// Clear selection when page changes
-				this.selectedAuditTrails = []
-			} catch (error) {
-				console.error('Error loading page:', error)
-			}
-		},
-
-		/**
-		 * Handle page size change from pagination component
-		 *
-		 * @param {number} pageSize - The new page size
-		 * @return {Promise<void>}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		async onPageSizeChanged(pageSize) {
-			try {
-				await auditTrailStore.fetchAuditTrails({
-					page: 1,
-					limit: pageSize,
-				})
-				// Clear selection when page size changes
-				this.selectedAuditTrails = []
-			} catch (error) {
-				console.error('Error changing page size:', error)
 			}
 		},
 

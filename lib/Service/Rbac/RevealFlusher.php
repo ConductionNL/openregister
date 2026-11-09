@@ -61,7 +61,7 @@ use Throwable;
  *
  * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
  */
-class RevealFlusher {
+class RevealFlusher implements RevealFlusherInterface {
 
 	/**
 	 * How many rows go into one insert.

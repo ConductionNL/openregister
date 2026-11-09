@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Service\Form\FormDependentsCheck;
+use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerInterface;
@@ -101,8 +101,8 @@ class FormDestinationSchemaListener implements IEventListener {
 	 * @return void
 	 */
 	private function recheck(Schema $schema): void {
-		$check = $this->container->get(FormDependentsCheck::class);
-		if ($check instanceof FormDependentsCheck === false || $check->isClaimed(schemaId: (int)$schema->getId()) === true) {
+		$check = $this->container->get(FormDependentsCheckInterface::class);
+		if ($check instanceof FormDependentsCheckInterface === false || $check->isClaimed(schemaId: (int)$schema->getId()) === true) {
 			return;
 		}
 

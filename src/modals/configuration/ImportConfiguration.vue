@@ -359,12 +359,7 @@ import {
 		</div>
 
 		<template #actions>
-			<NcButton :disabled="loading" @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<CloseCancelButton :label="t('openregister', 'Cancel')" :disabled="loading" @click="closeModal" />
 			<NcButton
 				:disabled="loading || !canImport"
 				variant="primary"
@@ -402,6 +397,7 @@ import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import { checkConfigurationVersion } from '../../services/configurationDisplay.js'
@@ -478,6 +474,7 @@ export default {
 		ConfigurationCard,
 		// Icons
 		Cancel,
+		CloseCancelButton,
 		Import,
 		Magnify,
 		Github,

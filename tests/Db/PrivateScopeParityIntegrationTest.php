@@ -318,12 +318,10 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 					objectOwner: $entity->getOwner(),
 					object: $entity
 				),
-				'hasPermission' => $this->rbacHandler->hasPermission(
+				'hasPermission' => $this->rbacHandler->hasRowPermission(
 					schema: $schema,
 					action: 'read',
-					objectOwner: $entity->getOwner(),
-					objectData: ($entity->getObject() ?? []),
-					objectAuthorization: $entity->getAuthorization()
+					row: $entity
 				),
 				'list (QueryBuilder)' => in_array($key, $queryBuilderVisible, true),
 				'list (raw SQL UNION)' => in_array($key, $unionVisible, true),
@@ -634,13 +632,10 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 		);
 
 		$this->assertTrue(
-			$this->rbacHandler->hasPermission(
+			$this->rbacHandler->hasRowPermission(
 				schema: $schema,
 				action: 'read',
-				objectOwner: $entities['granted']->getOwner(),
-				objectData: ($entities['granted']->getObject() ?? []),
-				objectAuthorization: $entities['granted']->getAuthorization(),
-				objectUuid: $entities['granted']->getUuid()
+				row: $entities['granted']
 			),
 			'the relation-path verdict must honour the grant'
 		);

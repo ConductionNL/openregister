@@ -1,54 +1,16 @@
 <template>
 	<NcAppContent>
 		<div class="viewContainer">
-			<div class="viewHeader">
-				<h1>{{ t('openregister', 'Duplicate Candidates') }}</h1>
-				<p>
-					{{
-						t(
-							'openregister',
-							'Candidate duplicate pairs detected for a register and schema. Launch the merge wizard on a pair to review and execute a reversible merge.',
-						)
-					}}
-				</p>
-			</div>
-
-			<RegisterSchemaSelector />
-
-			<NcEmptyContent
-				v-if="!hasSelection"
-				:name="t('openregister', 'Select a register and schema')"
-				:description="
-					t(
-						'openregister',
-						'Choose a register and schema above to see its duplicate candidates.',
-					)
-				">
+			<QualityPageFrame
+				:title="t('openregister', 'Duplicate Candidates')"
+				:description="t('openregister', 'Candidate duplicate pairs detected for a register and schema. Launch the merge wizard on a pair to review and execute a reversible merge.')"
+				:selectDescription="t('openregister', 'Choose a register and schema above to see its duplicate candidates.')"
+				:empty="duplicates.length === 0"
+				:emptyName="t('openregister', 'No duplicate candidates found')"
+				:emptyDescription="t('openregister', 'No candidate pairs were detected for this register and schema.')">
 				<template #icon>
 					<ContentDuplicate :size="64" />
 				</template>
-			</NcEmptyContent>
-
-			<template v-else-if="loading">
-				<NcLoadingIcon :size="32" />
-			</template>
-
-			<template v-else-if="duplicates.length === 0">
-				<NcEmptyContent
-					:name="t('openregister', 'No duplicate candidates found')"
-					:description="
-						t(
-							'openregister',
-							'No candidate pairs were detected for this register and schema.',
-						)
-					">
-					<template #icon>
-						<ContentDuplicate :size="64" />
-					</template>
-				</NcEmptyContent>
-			</template>
-
-			<template v-else>
 				<table class="duplicatesTable">
 					<thead>
 						<tr>
@@ -95,7 +57,7 @@
 					:total="duplicatesTotal"
 					@previous="previousPage"
 					@next="nextPage" />
-			</template>
+			</QualityPageFrame>
 		</div>
 
 		<MdmMergeWizardModal
@@ -111,14 +73,13 @@
 import {
 	NcAppContent,
 	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
 } from '@nextcloud/vue'
 import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
 import MdmMergeWizardModal from '../../modals/mdm/MdmMergeWizardModal.vue'
+import QualityPageFrame from './QualityPageFrame.vue'
 import RangePager from './RangePager.vue'
-import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import { qualityStore } from '../../store/store.js'
+import { qualityPaging } from './qualityPaging.js'
 import { qualitySelection } from './qualitySelection.js'
 
 export default {
@@ -127,15 +88,13 @@ export default {
 	components: {
 		RangePager,
 		NcAppContent,
-		NcEmptyContent,
-		NcLoadingIcon,
 		NcButton,
 		ContentDuplicate,
-		RegisterSchemaSelector,
+		QualityPageFrame,
 		MdmMergeWizardModal,
 	},
 
-	mixins: [qualitySelection],
+	mixins: [qualitySelection, qualityPaging('fetchDuplicates', 'duplicates')],
 
 	data() {
 		return {
@@ -192,30 +151,6 @@ export default {
 		},
 
 		/**
-		 * @spec exclude UI pagination handler — delegates to fetchDuplicates
-		 */
-		async previousPage() {
-			const offset = Math.max(0, this.duplicatesOffset - this.duplicatesLimit)
-			await qualityStore.fetchDuplicates(
-				qualityStore.selectedRegister,
-				qualityStore.selectedSchema,
-				{ limit: this.duplicatesLimit, offset },
-			)
-		},
-
-		/**
-		 * @spec exclude UI pagination handler — delegates to fetchDuplicates
-		 */
-		async nextPage() {
-			const offset = this.duplicatesOffset + this.duplicatesLimit
-			await qualityStore.fetchDuplicates(
-				qualityStore.selectedRegister,
-				qualityStore.selectedSchema,
-				{ limit: this.duplicatesLimit, offset },
-			)
-		},
-
-		/**
 		 * Open the merge wizard for a candidate pair, mapping the survivor
 		 * (`objectA`) to the merge `into` and the merged-away object
 		 * (`objectB`) to `from`.
@@ -244,11 +179,7 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
 
-@include view-container-3;
-
-.viewHeader h1 {
-	margin-bottom: 4px;
-}
+@include view-container-3-subtitled;
 
 .duplicatesTable {
 	width: 100%;

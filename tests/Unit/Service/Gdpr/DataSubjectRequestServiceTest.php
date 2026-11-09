@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectDeadline;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\SubjectRecords;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectEntityIndex;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectLoader;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectWriter;
@@ -135,25 +136,18 @@ class DataSubjectRequestServiceTest extends TestCase {
 			fn ($id) => $this->makeSchema(identifier: (string)$id, archival: false)
 		);
 
-		$this->service = new DataSubjectRequestService(
-			index: new SubjectEntityIndex(db: $this->db, logger: $this->createMock(LoggerInterface::class)),
-			loader: new SubjectObjectLoader(objectMapper: $this->objectMapper, logger: $this->createMock(LoggerInterface::class)),
-			writer: new SubjectObjectWriter(
+		$this->service = new DataSubjectRequestService(records: new SubjectRecords(index: new SubjectEntityIndex(db: $this->db, logger: $this->createMock(LoggerInterface::class)), loader: new SubjectObjectLoader(objectMapper: $this->objectMapper, logger: $this->createMock(LoggerInterface::class)), writer: new SubjectObjectWriter(
 				objectService: $this->objectService,
 				dsarService: $this->dsarService,
 				userSession: $this->userSession,
 				logger: $this->createMock(LoggerInterface::class)
-			),
-			retentionGate: new SubjectRetentionGate(
+			)), retentionGate: new SubjectRetentionGate(
 				retentionService: $this->retentionService,
 				archivalGuard: new ArchivalRetentionGuard(
 					$this->schemaMapper,
 					$this->createMock(LoggerInterface::class)
 				)
-			),
-			deadline: new DataSubjectDeadline(),
-			logger: $this->createMock(LoggerInterface::class)
-		);
+			), deadline: new DataSubjectDeadline(), logger: $this->createMock(LoggerInterface::class));
 
 	}//end setUp()
 
@@ -431,25 +425,18 @@ class DataSubjectRequestServiceTest extends TestCase {
 	 * @return void
 	 */
 	private function rebuildServiceWithSchemaMapper(): void {
-		$this->service = new DataSubjectRequestService(
-			index: new SubjectEntityIndex(db: $this->db, logger: $this->createMock(LoggerInterface::class)),
-			loader: new SubjectObjectLoader(objectMapper: $this->objectMapper, logger: $this->createMock(LoggerInterface::class)),
-			writer: new SubjectObjectWriter(
+		$this->service = new DataSubjectRequestService(records: new SubjectRecords(index: new SubjectEntityIndex(db: $this->db, logger: $this->createMock(LoggerInterface::class)), loader: new SubjectObjectLoader(objectMapper: $this->objectMapper, logger: $this->createMock(LoggerInterface::class)), writer: new SubjectObjectWriter(
 				objectService: $this->objectService,
 				dsarService: $this->dsarService,
 				userSession: $this->userSession,
 				logger: $this->createMock(LoggerInterface::class)
-			),
-			retentionGate: new SubjectRetentionGate(
+			)), retentionGate: new SubjectRetentionGate(
 				retentionService: $this->retentionService,
 				archivalGuard: new ArchivalRetentionGuard(
 					$this->schemaMapper,
 					$this->createMock(LoggerInterface::class)
 				)
-			),
-			deadline: new DataSubjectDeadline(),
-			logger: $this->createMock(LoggerInterface::class)
-		);
+			), deadline: new DataSubjectDeadline(), logger: $this->createMock(LoggerInterface::class));
 	}//end rebuildServiceWithSchemaMapper()
 
 	/**

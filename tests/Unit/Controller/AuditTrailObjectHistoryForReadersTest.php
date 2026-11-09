@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryServices;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
@@ -145,9 +146,11 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 			),
 			new ObjectHistoryForReaders(
 				$this->readAccess,
-				$this->auditTrailMapper,
-				new HistoryEntryRedactor($properties),
-				$this->registerMapper,
+				new ObjectHistoryServices(
+					$this->auditTrailMapper,
+					new HistoryEntryRedactor($properties),
+					$this->registerMapper
+				),
 				$this->purposeGuard,
 				new ReadEventVisibility($appConfig, $this->groupManager, $this->userSession)
 			)

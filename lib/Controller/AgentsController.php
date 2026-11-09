@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\AgentsControllerServices;
+use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -61,7 +62,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/openapi-generation/spec.md
  */
-class AgentsController extends Controller {
+class AgentsController extends Controller implements ChatFamilyControllerInterface {
 
 	/**
 	 * Agent flags that default to true on create, keyed camelCase => snake_case

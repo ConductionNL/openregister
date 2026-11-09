@@ -237,27 +237,21 @@ class WatcherMapper extends QBMapper implements WatcherMapperInterface {
 	 * duplicate. `$notify` null means "leave it": a new row notifies, an
 	 * existing row keeps its setting. A bool sets it either way.
 	 *
-	 * @param string $userId The subscribing user's uid.
-	 * @param string $objectUuid The watched object's uuid.
-	 * @param string|null $register The object's register, as the caller addressed it.
-	 * @param string|null $schema The object's schema, as the caller addressed it.
+	 * @param Watcher $watcher The unsaved follow: the subscribing user's uid, the watched
+	 *                         object's uuid, and its register and schema as the caller
+	 *                         addressed it. It is inserted only when no row exists yet.
 	 * @param bool|null $notify The notification switch, or null to keep it.
 	 *
 	 * @return Watcher The stored row.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
-	public function subscribe(string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?bool $notify = null): Watcher {
-		$existing = $this->findOne(userId: $userId, objectUuid: $objectUuid);
+	public function subscribe(Watcher $watcher, ?bool $notify = null): Watcher {
+		$existing = $this->findOne(userId: $watcher->getUserId(), objectUuid: $watcher->getObjectUuid());
 		if ($existing !== null) {
 			return $this->applyNotify(watcher: $existing, notify: $notify);
 		}
 
-		$watcher = new Watcher();
-		$watcher->setUserId($userId);
-		$watcher->setObjectUuid($objectUuid);
-		$watcher->setRegister($register);
-		$watcher->setSchema($schema);
 		$watcher->setNotify($notify ?? true);
 		$watcher->setCreated(new DateTime());
 

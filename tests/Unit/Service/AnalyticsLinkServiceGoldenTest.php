@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\AnalyticsLink;
 use OCA\OpenRegister\Db\AnalyticsLinkMapper;
 use OCA\OpenRegister\Service\AnalyticsLinkService;
 use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -153,9 +154,7 @@ class AnalyticsLinkServiceGoldenTest extends TestCase {
 		);
 		$service = new AnalyticsLinkService(
 			$this->mapper($options),
-			$this->appManager($options['analytics']),
-			$this->session($options['user']),
-			$this->logger(),
+			new LinkServiceRuntime($this->appManager($options['analytics']), $this->session($options['user']), $this->logger()),
 			$this->container($options)
 		);
 

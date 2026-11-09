@@ -275,9 +275,7 @@ class TimelineWriteService {
 	private function applyMentions(WrittenEntry $written, array $data): void {
 		try {
 			$this->mentions->apply(
-				object: $written->object,
-				entryUuid: $written->uuid(),
-				text: $written->message,
+				written: $written,
 				register: $this->stringOrNull(data: $data, key: 'register'),
 				schema: $this->stringOrNull(data: $data, key: 'schema')
 			);

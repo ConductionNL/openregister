@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 
 /**
  * Counts what an erasure would touch, split three ways, writing nothing.
@@ -52,24 +53,20 @@ use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
  *
  * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
-class ErasurePreviewService {
+class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	/**
 	 * Wire the authorities the preview asks.
 	 *
 	 * @param DataSubjectRequestService $subjects     Cross-register discovery.
 	 * @param ErasureProtectionResolver $protection   Legal hold, retention and immutable status, in that order.
-	 * @param CoSubjectProbe            $coSubjects   Other subjects on a record, from the PII index.
-	 * @param ErasureScopeCounter       $scopeCounter What goes with an erasable object.
-	 * @param SubjectPartyCounter       $parties      Party records naming the subject.
+	 * @param ErasureCounters $counters Co-subjects, the destruction scope and the party records.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly DataSubjectRequestService $subjects,
 		private readonly ErasureProtectionResolver $protection,
-		private readonly CoSubjectProbe $coSubjects,
-		private readonly ErasureScopeCounter $scopeCounter,
-		private readonly SubjectPartyCounter $parties,
+		private readonly ErasureCounters $counters,
 	) {
 	}//end __construct()
 
@@ -159,7 +156,7 @@ class ErasurePreviewService {
 	 */
 	private function classifyAll(string $subjectId, ?string $type, string $eraseMode): array {
 		$items = [];
-		foreach ($this->subjects->findSubjectObjects($subjectId, $type, 'exact') as $hit) {
+		foreach ($this->subjects->findSubjectObjects(new SubjectQuery(subjectId: $subjectId, type: $type)) as $hit) {
 			$items[] = $this->classify(
 				object: $hit['object'],
 				subjectId: $subjectId,
@@ -293,7 +290,7 @@ class ErasurePreviewService {
 	 * @return array<string, mixed> The bucket, any downgrade ground, and the counts.
 	 */
 	private function wholeObject(ObjectEntity $object, string $subjectId, array $matched, int $parties): array {
-		$shared = $this->coSubjects->otherSubjectsOn(object: $object, subjectId: $subjectId, matched: $matched);
+		$shared = $this->counters->coSubjects->otherSubjectsOn(object: $object, subjectId: $subjectId, matched: $matched);
 		if ($shared !== []) {
 			return [
 				'bucket' => ErasureBucket::PSEUDONYMISED,
@@ -316,7 +313,7 @@ class ErasurePreviewService {
 	 * @return array<string, int> The counts.
 	 */
 	private function destroyCounts(ObjectEntity $object, int $parties): array {
-		$scope = $this->scopeCounter->scopeCounts(object: $object);
+		$scope = $this->counters->scopeCounter->scopeCounts(object: $object);
 
 		return [
 			ErasureBucket::OBJECTS => 1,
@@ -350,9 +347,9 @@ class ErasurePreviewService {
 	 * @return int The number of party records naming the subject.
 	 */
 	private function countPartyRecords(ObjectEntity $object, string $subjectId, array $matched): int {
-		return $this->parties->count(
+		return $this->counters->parties->count(
 			payload: ($object->getObject() ?? []),
-			needles: $this->parties->needles(subjectId: $subjectId, matched: $matched)
+			needles: $this->counters->parties->needles(subjectId: $subjectId, matched: $matched)
 		);
 	}//end countPartyRecords()
 

@@ -37,7 +37,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
-use OCA\OpenRegister\Service\History\StateHistoryProjector;
+use OCA\OpenRegister\Service\History\StateHistoryRecorderInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -54,12 +54,12 @@ class StateHistoryProjectionListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param StateHistoryProjector $projector    Writes the interval.
+	 * @param StateHistoryRecorderInterface $projector    Writes the interval.
 	 * @param SchemaMapperInterface          $schemaMapper Resolves the object's schema.
 	 * @param LoggerInterface       $logger       Diagnostics.
 	 */
 	public function __construct(
-		private readonly StateHistoryProjector $projector,
+		private readonly StateHistoryRecorderInterface $projector,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {

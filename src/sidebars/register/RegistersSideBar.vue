@@ -1,10 +1,6 @@
 <script setup>
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
-import {
-	dashboardStore,
-	navigationStore,
-	registerStore,
-} from '../../store/store.js'
+import { dashboardStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -28,49 +24,13 @@ import {
 				<ChartBar :size="20" />
 			</template>
 
-			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openregister', 'Filter Statistics') }}</h3>
-				<div class="filterGroup">
-					<label for="registerSelect">{{
-						t('openregister', 'Register')
-					}}</label>
-					<NcSelect
-						v-bind="registerOptions"
-						id="registerSelect"
-						:modelValue="selectedRegisterValue"
-						:loading="registerLoading"
-						:disabled="registerLoading"
-						:aria-label-combobox="t('openregister', 'Select a register')"
-						:placeholder="t('openregister', 'Select a register')"
-						@update:modelValue="handleRegisterChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="schemaSelect">{{
-						t('openregister', 'Schema')
-					}}</label>
-					<NcSelect
-						v-bind="schemaOptions"
-						id="schemaSelect"
-						:modelValue="selectedSchemaValue"
-						:loading="schemaLoading"
-						:disabled="!registerStore.registerItem || schemaLoading"
-						:aria-label-combobox="t('openregister', 'Select a schema')"
-						:placeholder="t('openregister', 'Select a schema')"
-						@update:modelValue="handleSchemaChange" />
-				</div>
-			</div>
+			<StatisticsScopeFilter comboboxLabels />
 
 			<!-- System Totals Section -->
-			<div class="section">
-				<h3 class="sectionTitle">
-					{{ t('openregister', 'Register Totals') }}
-				</h3>
-				<div v-if="dashboardStore.loading" class="loadingContainer">
-					<NcLoadingIcon :size="20" />
-					<span>{{ t('openregister', 'Loading statistics...') }}</span>
-				</div>
-				<div v-else-if="systemTotals" class="statsStack">
+			<SidebarStatsSection
+				:title="t('openregister', 'Register Totals')"
+				:loading="dashboardStore.loading">
+				<div v-if="systemTotals" class="statsStack">
 					<CnStatsBlock
 						:title="t('openregister', 'Registers')"
 						:count="filteredRegisters.length"
@@ -145,18 +105,13 @@ import {
 							sizeBreakdown(systemTotals.stats?.files?.size)
 						" />
 				</div>
-			</div>
+			</SidebarStatsSection>
 
 			<!-- Orphaned Items Section -->
-			<div class="section">
-				<h3 class="sectionTitle">
-					{{ t('openregister', 'Orphaned Items') }}
-				</h3>
-				<div v-if="dashboardStore.loading" class="loadingContainer">
-					<NcLoadingIcon :size="20" />
-					<span>{{ t('openregister', 'Loading statistics...') }}</span>
-				</div>
-				<div v-else-if="orphanedItems" class="statsStack">
+			<SidebarStatsSection
+				:title="t('openregister', 'Orphaned Items')"
+				:loading="dashboardStore.loading">
+				<div v-if="orphanedItems" class="statsStack">
 					<CnStatsBlock
 						:title="t('openregister', 'Objects')"
 						:count="orphanedItems.stats?.objects?.total || 0"
@@ -210,27 +165,23 @@ import {
 							sizeBreakdown(orphanedItems.stats?.files?.size)
 						" />
 				</div>
-			</div>
+			</SidebarStatsSection>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
 
 <script>
 import { CnStatsBlock } from '@conduction/nextcloud-vue'
-import {
-	NcAppSidebar,
-	NcAppSidebarTab,
-	NcLoadingIcon,
-	NcSelect,
-} from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab } from '@nextcloud/vue'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
 import TableIcon from 'vue-material-design-icons/Table.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import SidebarStatsSection from '../SidebarStatsSection.vue'
+import StatisticsScopeFilter from '../StatisticsScopeFilter.vue'
 import formatBytes from '../../services/formatBytes.js'
-import { scopePickers } from '../../services/scopePickers.js'
 import { dashboardScope } from '../dashboardScope.js'
 // Ensure data is loaded
 dashboardStore.preload()
@@ -255,13 +206,13 @@ export default {
 	components: {
 		NcAppSidebar,
 		NcAppSidebarTab,
-		NcLoadingIcon,
-		NcSelect,
 		CnStatsBlock,
 		ChartBar,
+		SidebarStatsSection,
+		StatisticsScopeFilter,
 	},
 
-	mixins: [scopePickers, dashboardScope],
+	mixins: [dashboardScope],
 
 	data() {
 		return {
@@ -273,8 +224,6 @@ export default {
 				till: null,
 			},
 
-			registerLoading: false,
-			schemaLoading: false,
 			ignoreNextPageWatch: false,
 			searchQuery: '',
 			// Icon components for CnStatsBlock
@@ -353,13 +302,5 @@ export default {
 <style lang="scss" scoped>
 @use '../../styles/sidebars.scss' as *;
 
-@include sidebar-section;
-
-@include section-title;
-
-@include sidebar-loading;
-
 @include stats-stack;
-
-@include filter-section-block;
 </style>

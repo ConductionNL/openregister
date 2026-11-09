@@ -60,6 +60,14 @@ class VectorSearchHandler {
 	private const RRF_K = 60;
 
 	/**
+	 * KNN filter columns and the SQL parameter name each one binds.
+	 */
+	private const KNN_PARAMETER_NAMES = [
+		'entity_type' => 'entityType',
+		'entity_id' => 'entityId',
+	];
+
+	/**
 	 * The scoring fields of a fused result before either side ranks it.
 	 *
 	 * @var array<string, mixed>
@@ -323,19 +331,16 @@ class VectorSearchHandler {
 			return null;
 		}
 
-		$where  = [];
-		$params = ['qvec' => $this->pgVector->formatVector($queryEmbedding)];
-		$types  = [];
-		foreach (['entity_type' => 'entityType', 'entity_id' => 'entityId'] as $column => $name) {
-			$clause = $this->knnFilter(column: $column, name: $name, value: ($filters[$column] ?? null));
-			if ($clause !== null) {
-				$where[] = $clause['where'];
-				$params += $clause['params'];
-				$types  += $clause['types'];
-			}
-		}
+		$qvec    = $this->pgVector->formatVector($queryEmbedding);
+		$clauses = $this->knnClauses(filters: $filters);
 
-		$rows = $this->knnRows(sql: $this->knnSql(where: $where, limit: $limit), params: $params, types: $types);
+		$rows = $this->knnRows(
+			statement: new KnnStatement(
+				sql: $this->knnSql(where: $clauses['where'], limit: $limit),
+				params: ['qvec' => $qvec] + $clauses['params'],
+				types: $clauses['types']
+			)
+		);
 		if ($rows === null) {
 			return null;
 		}
@@ -344,20 +349,42 @@ class VectorSearchHandler {
 	}//end knnSearch()
 
 	/**
+	 * The KNN WHERE clauses, parameters and types of the entity filters.
+	 *
+	 * @param array $filters Additional filters (entity_type, entity_id).
+	 *
+	 * @return array{where: array<int, string>, params: array<string, mixed>, types: array<string, mixed>}
+	 */
+	private function knnClauses(array $filters): array {
+		$clauses = ['where' => [], 'params' => [], 'types' => []];
+		foreach (array_keys(self::KNN_PARAMETER_NAMES) as $column) {
+			$clause = $this->knnFilter(column: $column, value: ($filters[$column] ?? null));
+			if ($clause !== null) {
+				$clauses['where'][] = $clause['where'];
+				$clauses['params'] += $clause['params'];
+				$clauses['types']  += $clause['types'];
+			}
+		}
+
+		return $clauses;
+	}//end knnClauses()
+
+	/**
 	 * The KNN WHERE clause of one filter: IN for a list, = for a value,
 	 * none for null.
 	 *
 	 * @param string $column The vector column (entity_type or entity_id).
-	 * @param string $name   The parameter name; a list takes it plural.
 	 * @param mixed  $value  The filter value.
 	 *
 	 * @return array{where: string, params: array<string, mixed>, types: array<string, mixed>}|null
 	 */
-	private function knnFilter(string $column, string $name, mixed $value): ?array {
+	private function knnFilter(string $column, mixed $value): ?array {
 		if ($value === null) {
 			return null;
 		}
 
+		// The parameter name; a list takes it plural.
+		$name = self::KNN_PARAMETER_NAMES[$column];
 		if (is_array($value) === true) {
 			return [
 				'where' => 'v.' . $column . ' IN (:' . $name . 's)',
@@ -396,15 +423,13 @@ class VectorSearchHandler {
 	/**
 	 * Run the KNN statement; a failure is logged and yields null.
 	 *
-	 * @param string               $sql    The SQL.
-	 * @param array<string, mixed> $params The parameters.
-	 * @param array<string, mixed> $types  The parameter types.
+	 * @param KnnStatement $statement The SQL, parameters and parameter types.
 	 *
 	 * @return array<int, array<string, mixed>>|null The rows, or null on failure.
 	 */
-	private function knnRows(string $sql, array $params, array $types): ?array {
+	private function knnRows(KnnStatement $statement): ?array {
 		try {
-			$result = $this->db->executeQuery($sql, $params, $types);
+			$result = $this->db->executeQuery($statement->sql, $statement->params, $statement->types);
 			$rows   = $result->fetchAll();
 			$result->closeCursor();
 		} catch (Exception $e) {
@@ -491,12 +516,16 @@ class VectorSearchHandler {
 		try {
 			$weight = $this->normalisedWeights(weights: $weights);
 
+			// No vector side when its weight is zero.
+			$vectorResults = [];
+			if ($weight['vector'] > 0) {
+				$vectorResults = $this->hybridVectorResults(queryEmbedding: $queryEmbedding, limit: $limit);
+			}
+
 			// Combine results using Reciprocal Rank Fusion (RRF).
 			$combined = $this->reciprocalRankFusion(
-				vectorResults: $this->hybridVectorResults(queryEmbedding: $queryEmbedding, limit: $limit, vectorWeight: $weight['vector']),
-				keywordResults: $keywordResults,
-				vectorWeight: $weight['vector'],
-				keywordWeight: $weight['keyword']
+				vector: new RankedResults(results: $vectorResults, weight: $weight['vector']),
+				keyword: new RankedResults(results: $keywordResults, weight: $weight['keyword'])
 			);
 
 			// Return top N results.
@@ -547,20 +576,15 @@ class VectorSearchHandler {
 	}//end normalisedWeights()
 
 	/**
-	 * The vector side of a hybrid search: twice the limit, none when the
-	 * vector weight is zero, and none (logged) when the search fails.
+	 * The vector side of a hybrid search: twice the limit, and none (logged)
+	 * when the search fails.
 	 *
 	 * @param array $queryEmbedding Query embedding vector
 	 * @param int   $limit          The hybrid limit.
-	 * @param mixed $vectorWeight   The normalised vector weight.
 	 *
 	 * @return array<int, array<string, mixed>> The vector results.
 	 */
-	private function hybridVectorResults(array $queryEmbedding, int $limit, mixed $vectorWeight): array {
-		if ($vectorWeight <= 0) {
-			return [];
-		}
-
+	private function hybridVectorResults(array $queryEmbedding, int $limit): array {
 		try {
 			return $this->semanticSearch(queryEmbedding: $queryEmbedding, limit: $limit * 2, filters: []);
 		} catch (Exception $e) {
@@ -586,12 +610,9 @@ class VectorSearchHandler {
 	private function sourceBreakdown(array $results): array {
 		$breakdown = ['vector_only' => 0, 'keyword_only' => 0, 'both' => 0];
 		foreach ($results as $result) {
-			if ($result['in_vector'] === true && $result['in_keyword'] === true) {
-				$breakdown['both']++;
-			} elseif ($result['in_vector'] === true) {
-				$breakdown['vector_only']++;
-			} elseif ($result['in_keyword'] === true) {
-				$breakdown['keyword_only']++;
+			$source = self::fusedSource(result: $result);
+			if ($source !== null) {
+				$breakdown[$source]++;
 			}
 		}
 
@@ -599,12 +620,33 @@ class VectorSearchHandler {
 	}//end sourceBreakdown()
 
 	/**
+	 * Which side(s) one fused result came from.
+	 *
+	 * @param array<string, mixed> $result The fused result.
+	 *
+	 * @return string|null `both`, `vector_only`, `keyword_only`, or null for neither.
+	 */
+	private static function fusedSource(array $result): ?string {
+		if ($result['in_vector'] === true) {
+			if ($result['in_keyword'] === true) {
+				return 'both';
+			}
+
+			return 'vector_only';
+		}
+
+		if ($result['in_keyword'] === true) {
+			return 'keyword_only';
+		}
+
+		return null;
+	}//end fusedSource()
+
+	/**
 	 * Combine search results using Reciprocal Rank Fusion (RRF)
 	 *
-	 * @param array $vectorResults Results from vector search
-	 * @param array $keywordResults Results from keyword search
-	 * @param float $vectorWeight Weight for vector results (0-1)
-	 * @param float $keywordWeight Weight for keyword results (0-1)
+	 * @param RankedResults $vector  Results from vector search, with the vector weight (0-1)
+	 * @param RankedResults $keyword Results from keyword search, with the keyword weight (0-1)
 	 *
 	 * @return (array|bool|float|int|mixed|null)[][]
 	 *
@@ -615,16 +657,27 @@ class VectorSearchHandler {
 	 *     keyword_score: mixed|null, vector_rank: int|null,
 	 *     vector_similarity: mixed|null}>
 	 */
-	private function reciprocalRankFusion(
-		array $vectorResults,
-		array $keywordResults,
-		float $vectorWeight = 0.5,
-		float $keywordWeight = 0.5,
-	): array {
-		$combinedScores = [];
+	private function reciprocalRankFusion(RankedResults $vector, RankedResults $keyword): array {
+		$combinedScores = $this->addVectorRanks(combinedScores: [], vector: $vector);
+		$combinedScores = $this->addKeywordRanks(combinedScores: $combinedScores, keyword: $keyword);
 
-		// Process vector results.
-		foreach ($vectorResults as $rank => $result) {
+		// Convert to array and sort by combined score.
+		$results = array_values($combinedScores);
+		usort($results, fn ($a, $b) => $b['combined_score'] <=> $a['combined_score']);
+
+		return $results;
+	}//end reciprocalRankFusion()
+
+	/**
+	 * Add the vector ranks to the fused scores.
+	 *
+	 * @param array<string, array<string, mixed>> $combinedScores The fused scores so far, keyed by entity.
+	 * @param RankedResults                       $vector         The vector results and weight.
+	 *
+	 * @return array<string, array<string, mixed>> The fused scores.
+	 */
+	private function addVectorRanks(array $combinedScores, RankedResults $vector): array {
+		foreach ($vector->results as $rank => $result) {
 			$key = $result['entity_type'] . '_' . $result['entity_id'];
 
 			if (isset($combinedScores[$key]) === false) {
@@ -639,13 +692,24 @@ class VectorSearchHandler {
 				] + self::UNRANKED;
 			}
 
-			$combinedScores[$key]['combined_score'] += $vectorWeight / (self::RRF_K + (int)$rank + 1);
+			$combinedScores[$key]['combined_score'] += $vector->weight / (self::RRF_K + (int)$rank + 1);
 			$combinedScores[$key]['in_vector']       = true;
 			$combinedScores[$key]['vector_rank']     = (int)$rank + 1;
 		}//end foreach
 
-		// Process keyword results.
-		foreach ($keywordResults as $rank => $result) {
+		return $combinedScores;
+	}//end addVectorRanks()
+
+	/**
+	 * Add the keyword ranks to the fused scores.
+	 *
+	 * @param array<string, array<string, mixed>> $combinedScores The fused scores so far, keyed by entity.
+	 * @param RankedResults                       $keyword        The keyword results and weight.
+	 *
+	 * @return array<string, array<string, mixed>> The fused scores.
+	 */
+	private function addKeywordRanks(array $combinedScores, RankedResults $keyword): array {
+		foreach ($keyword->results as $rank => $result) {
 			$key = $result['entity_type'] . '_' . $result['entity_id'];
 
 			if (isset($combinedScores[$key]) === false) {
@@ -660,18 +724,14 @@ class VectorSearchHandler {
 				] + self::UNRANKED;
 			}
 
-			$combinedScores[$key]['combined_score'] += $keywordWeight / (self::RRF_K + (int)$rank + 1);
+			$combinedScores[$key]['combined_score'] += $keyword->weight / (self::RRF_K + (int)$rank + 1);
 			$combinedScores[$key]['in_keyword']      = true;
 			$combinedScores[$key]['keyword_rank']    = (int)$rank + 1;
 			$combinedScores[$key]['keyword_score']   = $result['score'] ?? null;
 		}//end foreach
 
-		// Convert to array and sort by combined score.
-		$results = array_values($combinedScores);
-		usort($results, fn ($a, $b) => $b['combined_score'] <=> $a['combined_score']);
-
-		return $results;
-	}//end reciprocalRankFusion()
+		return $combinedScores;
+	}//end addKeywordRanks()
 
 	/**
 	 * Fetch vectors from database with optional filters

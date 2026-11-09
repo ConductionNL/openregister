@@ -31,7 +31,6 @@ class FileSettingsControllerCoverageTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = new FileSettingsController(
-			'openregister',
 			$this->request,
 			$this->container,
 			$this->settingsService,

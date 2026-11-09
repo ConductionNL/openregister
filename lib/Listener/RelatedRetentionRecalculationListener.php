@@ -25,10 +25,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\RelatedRetentionRecalculationJob;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
+use OCA\OpenRegister\Service\Archival\DependantRetentionIndexInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -46,13 +46,13 @@ class RelatedRetentionRecalculationListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface            $schemaMapper Resolves the saved record's schema
-	 * @param DependantRetentionIndex $index        Knows which schemas read a date off it
+	 * @param DependantRetentionIndexInterface $index        Knows which schemas read a date off it
 	 * @param IJobList                $jobList      The background job queue
 	 * @param LoggerInterface         $logger       The logger
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly DependantRetentionIndex $index,
+		private readonly DependantRetentionIndexInterface $index,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
 	) {
@@ -105,11 +105,11 @@ class RelatedRetentionRecalculationListener implements IEventListener {
 		}
 
 		$argument = ['uuid' => $uuid];
-		if ($this->jobList->has(RelatedRetentionRecalculationJob::class, $argument) === true) {
+		if ($this->jobList->has(JobHandles::RELATED_RETENTION_RECALCULATION, $argument) === true) {
 			return;
 		}
 
-		$this->jobList->add(RelatedRetentionRecalculationJob::class, $argument);
+		$this->jobList->add(JobHandles::RELATED_RETENTION_RECALCULATION, $argument);
 	}//end queueWhenWatchedChanged()
 
 	/**

@@ -221,67 +221,38 @@
 						{{ t('openregister', 'Available Filters') }}
 					</h4>
 
-					<!-- Metadata Facets -->
-					<div v-if="facetableFields['@self']" class="facet-category">
-						<h5 class="facet-category-title">
-							{{ t('openregister', 'Metadata Filters') }}
-						</h5>
-						<div class="facet-checkboxes">
-							<div
-								v-for="(field, fieldName) in facetableFields[
-									'@self'
-								]"
-								:key="`@self.${fieldName}`"
-								class="facet-checkbox">
-								<input
-									:id="`facet-@self-${fieldName}`"
-									v-model="enabledFacets[`@self.${fieldName}`]"
-									type="checkbox"
-									@change="
-										toggleFacet(`@self.${fieldName}`, field)
-									" />
-								<label
-									:for="`facet-@self-${fieldName}`"
-									class="facet-checkbox-label">
-									{{ field.description || fieldName }}
-									<span class="facet-types"
-										>({{ field.facet_types.join(', ') }})</span
-									>
-								</label>
+					<!-- Metadata and Object Field Facets -->
+					<template
+						v-for="category in facetCategories"
+						:key="category.key">
+						<div v-if="category.entries" class="facet-category">
+							<h5 class="facet-category-title">
+								{{ category.title }}
+							</h5>
+							<div class="facet-checkboxes">
+								<div
+									v-for="entry in category.entries"
+									:key="entry.key"
+									class="facet-checkbox">
+									<input
+										:id="entry.id"
+										v-model="enabledFacets[entry.key]"
+										type="checkbox"
+										@change="
+											toggleFacet(entry.key, entry.field)
+										" />
+									<label
+										:for="entry.id"
+										class="facet-checkbox-label">
+										{{ entry.label }}
+										<span class="facet-types"
+											>({{ entry.types }})</span
+										>
+									</label>
+								</div>
 							</div>
 						</div>
-					</div>
-
-					<!-- Object Field Facets -->
-					<div v-if="facetableFields.object_fields" class="facet-category">
-						<h5 class="facet-category-title">
-							{{ t('openregister', 'Content Filters') }}
-						</h5>
-						<div class="facet-checkboxes">
-							<div
-								v-for="(
-									field, fieldName
-								) in facetableFields.object_fields"
-								:key="fieldName"
-								class="facet-checkbox">
-								<input
-									:id="`facet-${fieldName}`"
-									v-model="enabledFacets[fieldName]"
-									type="checkbox"
-									@change="toggleFacet(fieldName, field)" />
-								<label
-									:for="`facet-${fieldName}`"
-									class="facet-checkbox-label">
-									{{
-										field.title || field.description || fieldName
-									}}
-									<span class="facet-types"
-										>({{ field.facet_types.join(', ') }})</span
-									>
-								</label>
-							</div>
-						</div>
-					</div>
+					</template>
 
 					<!-- Info about loaded facets -->
 					<div
@@ -617,6 +588,28 @@ function pickerOptions(options) {
 	}
 }
 
+/**
+ * The checkboxes of one facet group, in the order the schema lists the fields.
+ *
+ * @param {object|undefined} fields The group's facetable fields, by name
+ * @param {function(string): string[]} keys The facet key and input id of a field name
+ * @param {function(object, string): string} label The label of a field
+ * @return {Array<object>|null} The checkboxes, or null without fields
+ */
+function facetEntries(fields, keys, label) {
+	if (!fields) return null
+	return Object.entries(fields).map(([fieldName, field]) => {
+		const [key, id] = keys(fieldName)
+		return {
+			key,
+			id,
+			field,
+			label: label(field, fieldName),
+			types: field.facet_types.join(', '),
+		}
+	})
+}
+
 export default {
 	name: 'SearchSideBar',
 	components: {
@@ -655,6 +648,40 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The facet checkbox groups: metadata (`@self`) fields, then object
+		 * fields. A group's `entries` is null when the schema has none of them.
+		 *
+		 * @spec exclude Presentational grouping of the facetable fields.
+		 * @return {Array<object>} The groups, in display order
+		 */
+		facetCategories() {
+			return [
+				{
+					key: '@self',
+					title: t('openregister', 'Metadata Filters'),
+					entries: facetEntries(
+						this.facetableFields['@self'],
+						(fieldName) => [
+							`@self.${fieldName}`,
+							`facet-@self-${fieldName}`,
+						],
+						(field, fieldName) => field.description || fieldName,
+					),
+				},
+				{
+					key: 'object_fields',
+					title: t('openregister', 'Content Filters'),
+					entries: facetEntries(
+						this.facetableFields.object_fields,
+						(fieldName) => [fieldName, `facet-${fieldName}`],
+						(field, fieldName) =>
+							field.title || field.description || fieldName,
+					),
+				},
+			]
+		},
+
 		/**
 		 * Search string for CnIndexSidebar; synced to store and used for fetch.
 		 *
@@ -2133,7 +2160,8 @@ export default {
 	flex: 1;
 }
 
-.activeViewButtons {
+.activeViewButtons,
+.saveViewFormActions {
 	display: flex;
 	gap: 8px;
 
@@ -2147,15 +2175,6 @@ export default {
 	flex-direction: column;
 	gap: 12px;
 	width: 100%;
-}
-
-.saveViewFormActions {
-	display: flex;
-	gap: 8px;
-
-	button {
-		flex: 1;
-	}
 }
 
 .saveViewHint {

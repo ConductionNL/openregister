@@ -85,17 +85,10 @@ final class D14InterfaceBindingsTest extends TestCase {
 	 * object created, updated and deleted events. Moving those three lines would change
 	 * the order listeners run in, so the registration is kept as it is.
 	 *
-	 * ConfigurationServiceRegistrar and ImportHandler are being changed by an open
-	 * configuration export/import PR; their setter wiring is left for after it lands.
-	 * Application only imports NoteService (an unused import); Application is also
-	 * changed by open PRs, so the line is left for a later pass.
-	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
 		ContextChatSubmissionListener::class => ['Listener/ListenerRegistrar.php'],
-		RegisterFolderProvisioner::class => ['Service/Configuration/ConfigurationServiceRegistrar.php', 'Service/Configuration/ImportHandler.php'],
-		NoteService::class => ['AppInfo/Application.php', 'Service/Configuration/ConfigurationServiceRegistrar.php'],
 	];
 
 	/**

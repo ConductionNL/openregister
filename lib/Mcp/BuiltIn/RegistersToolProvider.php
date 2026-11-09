@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface;
 use OCA\OpenRegister\Service\RegisterServiceInterface;
 use RuntimeException;
 
@@ -54,12 +54,12 @@ class RegistersToolProvider extends AbstractBuiltInToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param RegisterServiceInterface $registerService Register service for CRUD operations
-	 * @param DefinitionWriteRights    $rights          The rights of the signed-in user
+	 * @param RegisterServiceInterface       $registerService Register service for CRUD operations
+	 * @param DefinitionWriteRightsInterface $rights          The rights of the signed-in user
 	 */
 	public function __construct(
 		private readonly RegisterServiceInterface $registerService,
-		private readonly DefinitionWriteRights $rights,
+		private readonly DefinitionWriteRightsInterface $rights,
 	) {
 	}//end __construct()
 

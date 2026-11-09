@@ -43,7 +43,7 @@ use RuntimeException;
 /**
  * Field-level redaction write path (distinct from erase pseudonymise).
  */
-class RedactionWriteService {
+class RedactionWriteService implements RedactionWriteServiceInterface {
 
 	/**
 	 * Marker distinguishing a redaction record from an erase pseudonymise.

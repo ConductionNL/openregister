@@ -1,0 +1,947 @@
+array (
+  'formats' => 
+  array (
+    '2024-02-29' => 'date',
+    '2024-02-30' => NULL,
+    '2024-01-15T10:20:30+0100' => 'date-time',
+    '2024-01-15T10:20:30+01:00' => 'date-time',
+    '2024-01-15T10:20:30' => NULL,
+    '550e8400-e29b-41d4-a716-446655440000' => 'uuid',
+    'jan@example.org' => 'email',
+    'https://example.org/a' => 'url',
+    '12:30:00' => 'time',
+    'PT1H30M' => 'duration',
+    'P' => 'duration',
+    '#a1B2c3' => 'color',
+    'example.org' => 'hostname',
+    '10.0.0.1' => 'ipv4',
+    '::1' => 'ipv6',
+    'fe80::1' => 'ipv6',
+    42 => NULL,
+    '4.2' => NULL,
+    -3 => NULL,
+    'true' => NULL,
+    'No' => NULL,
+    0 => NULL,
+    'camelCase' => NULL,
+    'PascalCase' => NULL,
+    'Pascal' => NULL,
+    'snake_case_x' => NULL,
+    'SCREAMING_SNAKE' => NULL,
+    'A' => NULL,
+    'report.pdf' => 'hostname',
+    'dir/file.txt' => NULL,
+    'C:\\temp' => NULL,
+    'plain text' => NULL,
+    '' => NULL,
+    'ON' => NULL,
+  ),
+  'patterns' => 
+  array (
+    '2024-02-29' => 
+    array (
+    ),
+    '2024-02-30' => 
+    array (
+    ),
+    '2024-01-15T10:20:30+0100' => 
+    array (
+    ),
+    '2024-01-15T10:20:30+01:00' => 
+    array (
+    ),
+    '2024-01-15T10:20:30' => 
+    array (
+    ),
+    '550e8400-e29b-41d4-a716-446655440000' => 
+    array (
+    ),
+    'jan@example.org' => 
+    array (
+      0 => 'filename',
+    ),
+    'https://example.org/a' => 
+    array (
+      0 => 'path',
+    ),
+    '12:30:00' => 
+    array (
+    ),
+    'PT1H30M' => 
+    array (
+    ),
+    'P' => 
+    array (
+      0 => 'PascalCase',
+      1 => 'SCREAMING_SNAKE_CASE',
+    ),
+    '#a1B2c3' => 
+    array (
+    ),
+    'example.org' => 
+    array (
+      0 => 'filename',
+    ),
+    '10.0.0.1' => 
+    array (
+      0 => 'filename',
+    ),
+    '::1' => 
+    array (
+    ),
+    'fe80::1' => 
+    array (
+    ),
+    42 => 
+    array (
+      0 => 'integer_string',
+    ),
+    '4.2' => 
+    array (
+      0 => 'float_string',
+      1 => 'filename',
+    ),
+    -3 => 
+    array (
+      0 => 'float_string',
+    ),
+    'true' => 
+    array (
+      0 => 'boolean_string',
+      1 => 'snake_case',
+    ),
+    'No' => 
+    array (
+      0 => 'boolean_string',
+      1 => 'PascalCase',
+    ),
+    0 => 
+    array (
+      0 => 'integer_string',
+      1 => 'boolean_string',
+    ),
+    'camelCase' => 
+    array (
+      0 => 'camelCase',
+    ),
+    'PascalCase' => 
+    array (
+      0 => 'PascalCase',
+    ),
+    'Pascal' => 
+    array (
+      0 => 'PascalCase',
+    ),
+    'snake_case_x' => 
+    array (
+      0 => 'snake_case',
+    ),
+    'SCREAMING_SNAKE' => 
+    array (
+      0 => 'SCREAMING_SNAKE_CASE',
+    ),
+    'A' => 
+    array (
+      0 => 'PascalCase',
+      1 => 'SCREAMING_SNAKE_CASE',
+    ),
+    'report.pdf' => 
+    array (
+      0 => 'filename',
+    ),
+    'dir/file.txt' => 
+    array (
+      0 => 'path',
+    ),
+    'C:\\temp' => 
+    array (
+      0 => 'path',
+    ),
+    'plain text' => 
+    array (
+    ),
+    '' => 
+    array (
+    ),
+    'ON' => 
+    array (
+      0 => 'boolean_string',
+      1 => 'PascalCase',
+      2 => 'SCREAMING_SNAKE_CASE',
+    ),
+  ),
+  'values' => 
+  array (
+    'string' => 
+    array (
+      'types' => 
+      array (
+        0 => 'string',
+      ),
+      'examples' => 
+      array (
+        0 => 'hello.txt',
+      ),
+      'max_length' => 9,
+      'min_length' => 9,
+      'object_structure' => NULL,
+      'array_structure' => NULL,
+      'detected_format' => 'hostname',
+      'numeric_range' => NULL,
+      'string_patterns' => 
+      array (
+        0 => 'filename',
+      ),
+    ),
+    'empty string' => 
+    array (
+      'types' => 
+      array (
+        0 => 'string',
+      ),
+      'examples' => 
+      array (
+        0 => '',
+      ),
+      'max_length' => 0,
+      'min_length' => 0,
+      'object_structure' => NULL,
+      'array_structure' => NULL,
+      'detected_format' => NULL,
+      'numeric_range' => NULL,
+      'string_patterns' => 
+      array (
+      ),
+    ),
+    'int' => 
+    array (
+      'types' => 
+      array (
+        0 => 'integer',
+      ),
+      'examples' => 
+      array (
+        0 => 7,
+      ),
+      'max_length' => 0,
+      'min_length' => 'PHP_INT_MAX',
+      'object_structure' => NULL,
+      'array_structure' => NULL,
+      'detected_format' => NULL,
+      'numeric_range' => 
+      array (
+        'min' => 7,
+        'max' => 7,
+        'type' => 'integer',
+      ),
+      'string_patterns' => 
+      array (
+      ),
+    ),
+    'float' => 
+    array (
+      'types' => 
+      array (
+        0 => 'double',
+      ),
+      'examples' => 
+      array (
+        0 => 2.5,
+      ),
+      'max_length' => 0,
+      'min_length' => 'PHP_INT_MAX',
+      'object_structure' => NULL,
+      'array_structure' => NULL,
+      'detected_format' => NULL,
+      'numeric_range' => 
+      array (
+        'min' => 2.5,
+        'max' => 2.5,
+        'type' => 'number',
+      ),
+      'string_patterns' => 
+      array (
+      ),
+    ),
+    'true' => 
+    array (
+      'types' => 
+      array (
+        0 => 'boolean',
+      ),
+      'examples' => 
+      array (
+        0 => true,
+      ),
+      'max_length' => 0,
+      'min_length' => 'PHP_INT_MAX',
+      'object_structure' => NULL,
+      'array_structure' => NULL,
+      'detected_format' => NULL,
+      'numeric_range' => NULL,
+      'string_patterns' => 
+      array (
+      ),
+    ),
+    'false' => 
+    array (
+      'types' => 
+      array (
+        0 => 'boolean',
+      ),
+      'examples' => 
+      array (
+        0 => false,
+      ),
+      'max_length' => 0,
+      'min_length' => 'PHP_INT_MAX',
+      'object_structure' => NULL,
+      'array_structure' => NULL,
+      'detected_format' => NULL,
+      'numeric_range' => NULL,
+      'string_patterns' => 
+      array (
+      ),
+    ),
+    'null' => 
+    array (
+      'types' => 
+      array (
+        0 => 'NULL',
+      ),
+      'examples' => 
+      array (
+        0 => NULL,
+      ),
+      'max_length' => 0,
+      'min_length' => 'PHP_INT_MAX',
+      'object_structure' => NULL,
+      'array_structure' => NULL,
+      'detected_format' => NULL,
+      'numeric_range' => NULL,
+      'string_patterns' => 
+      array (
+      ),
+    ),
+    'empty array' => 
+    array (
+      'types' => 
+      array (
+        0 => 'array',
+      ),
+      'examples' => 
+      array (
+        0 => 
+        array (
+        ),
+      ),
+      'max_length' => 0,
+      'min_length' => 'PHP_INT_MAX',
+      'object_structure' => NULL,
+      'array_structure' => NULL,
+      'detected_format' => NULL,
+      'numeric_range' => NULL,
+      'string_patterns' => 
+      array (
+      ),
+    ),
+    'list' => 
+    array (
+      'types' => 
+      array (
+        0 => 'array',
+      ),
+      'examples' => 
+      array (
+        0 => 
+        array (
+          0 => 1,
+          1 => 'a',
+          2 => 
+          array (
+            0 => 2,
+          ),
+        ),
+      ),
+      'max_length' => 0,
+      'min_length' => 'PHP_INT_MAX',
+      'object_structure' => NULL,
+      'array_structure' => 
+      array (
+        'type' => 'list',
+        'length' => 3,
+        'item_types' => 
+        array (
+          'integer' => 1,
+          'string' => 1,
+          'array' => 1,
+        ),
+        'sample_item' => 1,
+      ),
+      'detected_format' => NULL,
+      'numeric_range' => NULL,
+      'string_patterns' => 
+      array (
+      ),
+    ),
+    'assoc' => 
+    array (
+      'types' => 
+      array (
+        0 => 'array',
+      ),
+      'examples' => 
+      array (
+        0 => 
+        array (
+          'a' => 1,
+          'b' => 
+          array (
+            0 => 2,
+          ),
+        ),
+      ),
+      'max_length' => 0,
+      'min_length' => 'PHP_INT_MAX',
+      'object_structure' => 
+      array (
+        'type' => 'object',
+        'keys' => 
+        array (
+          0 => 'a',
+          1 => 'b',
+        ),
+        'key_count' => 2,
+      ),
+      'array_structure' => NULL,
+      'detected_format' => NULL,
+      'numeric_range' => NULL,
+      'string_patterns' => 
+      array (
+      ),
+    ),
+    'object' => 
+    array (
+      'types' => 
+      array (
+        0 => 'object',
+      ),
+      'examples' => 
+      array (
+        0 => 
+        (object) array(
+           'x' => 1,
+           'y' => 2,
+        ),
+      ),
+      'max_length' => 0,
+      'min_length' => 'PHP_INT_MAX',
+      'object_structure' => 
+      array (
+        'type' => 'object',
+        'keys' => 
+        array (
+          0 => 'x',
+          1 => 'y',
+        ),
+        'key_count' => 2,
+      ),
+      'array_structure' => NULL,
+      'detected_format' => NULL,
+      'numeric_range' => NULL,
+      'string_patterns' => 
+      array (
+      ),
+    ),
+    'date' => 
+    array (
+      'types' => 
+      array (
+        0 => 'string',
+      ),
+      'examples' => 
+      array (
+        0 => '2024-02-29',
+      ),
+      'max_length' => 10,
+      'min_length' => 10,
+      'object_structure' => NULL,
+      'array_structure' => NULL,
+      'detected_format' => 'date',
+      'numeric_range' => NULL,
+      'string_patterns' => 
+      array (
+      ),
+    ),
+  ),
+  'ranges' => 
+  array (
+    'first' => 
+    array (
+      'min' => 1,
+      'max' => 1,
+      'type' => 'integer',
+    ),
+    'same int' => 
+    array (
+      'type' => 'integer',
+      'min' => -2,
+      'max' => 5,
+    ),
+    'promote' => 
+    array (
+      'type' => 'number',
+      'min' => 0.5,
+      'max' => 9.5,
+    ),
+    'keep number' => 
+    array (
+      'type' => 'number',
+      'min' => 1.5,
+      'max' => 7,
+    ),
+    'weird existing' => 
+    array (
+      'type' => 'number',
+      'min' => 0,
+      'max' => 9,
+    ),
+    'weird equal' => 
+    array (
+      'type' => 'string',
+      'min' => 0,
+      'max' => 9,
+    ),
+    'int then weird' => 
+    array (
+      'type' => 'integer',
+      'min' => 0,
+      'max' => 9,
+    ),
+  ),
+  'objects' => 
+  array (
+    'discovered' => 
+    array (
+      'name' => 
+      array (
+        'name' => 'name',
+        'types' => 
+        array (
+          0 => 'string',
+        ),
+        'examples' => 
+        array (
+          0 => 'Alpha',
+          1 => 'Bo',
+          2 => 'Charlotte-Long-Name',
+          3 => 'Dee',
+          4 => 'Eve',
+        ),
+        'nullable' => true,
+        'enum_values' => 
+        array (
+        ),
+        'max_length' => 19,
+        'min_length' => 2,
+        'object_structure' => NULL,
+        'array_structure' => NULL,
+        'detected_format' => NULL,
+        'string_patterns' => 
+        array (
+          0 => 'PascalCase',
+        ),
+        'numeric_range' => NULL,
+        'usage_count' => 12,
+        'usage_percentage' => 100.0,
+      ),
+      'age' => 
+      array (
+        'name' => 'age',
+        'types' => 
+        array (
+          0 => 'integer',
+          1 => 'string',
+        ),
+        'examples' => 
+        array (
+          0 => 30,
+          1 => 41,
+          2 => 19,
+          3 => '22',
+        ),
+        'nullable' => true,
+        'enum_values' => 
+        array (
+        ),
+        'max_length' => 2,
+        'min_length' => 2,
+        'object_structure' => NULL,
+        'array_structure' => NULL,
+        'detected_format' => NULL,
+        'string_patterns' => 
+        array (
+          0 => 'integer_string',
+        ),
+        'numeric_range' => 
+        array (
+          'type' => 'integer',
+          'min' => 19,
+          'max' => 41,
+        ),
+        'usage_count' => 4,
+        'usage_percentage' => 33.33,
+      ),
+      'score' => 
+      array (
+        'name' => 'score',
+        'types' => 
+        array (
+          0 => 'double',
+          1 => 'integer',
+        ),
+        'examples' => 
+        array (
+          0 => 1.5,
+          1 => 3,
+          2 => -2,
+        ),
+        'nullable' => true,
+        'enum_values' => 
+        array (
+        ),
+        'max_length' => 0,
+        'min_length' => 'PHP_INT_MAX',
+        'object_structure' => NULL,
+        'array_structure' => NULL,
+        'detected_format' => NULL,
+        'string_patterns' => 
+        array (
+        ),
+        'numeric_range' => 
+        array (
+          'type' => 'number',
+          'min' => -2,
+          'max' => 3,
+        ),
+        'usage_count' => 3,
+        'usage_percentage' => 25.0,
+      ),
+      'email' => 
+      array (
+        'name' => 'email',
+        'types' => 
+        array (
+          0 => 'string',
+        ),
+        'examples' => 
+        array (
+          0 => 'a@example.org',
+          1 => 'not-an-email',
+        ),
+        'nullable' => true,
+        'enum_values' => 
+        array (
+        ),
+        'max_length' => 13,
+        'min_length' => 12,
+        'object_structure' => NULL,
+        'array_structure' => NULL,
+        'detected_format' => 'email',
+        'string_patterns' => 
+        array (
+          0 => 'filename',
+        ),
+        'numeric_range' => NULL,
+        'usage_count' => 2,
+        'usage_percentage' => 16.67,
+      ),
+      'tags' => 
+      array (
+        'name' => 'tags',
+        'types' => 
+        array (
+          0 => 'array',
+        ),
+        'examples' => 
+        array (
+          0 => 
+          array (
+            0 => 'x',
+            1 => 'y',
+          ),
+          1 => 
+          array (
+          ),
+          2 => 
+          array (
+            0 => 'z',
+          ),
+        ),
+        'nullable' => true,
+        'enum_values' => 
+        array (
+        ),
+        'max_length' => 0,
+        'min_length' => 'PHP_INT_MAX',
+        'object_structure' => NULL,
+        'array_structure' => NULL,
+        'detected_format' => NULL,
+        'string_patterns' => 
+        array (
+        ),
+        'numeric_range' => NULL,
+        'usage_count' => 3,
+        'usage_percentage' => 25.0,
+      ),
+      'meta' => 
+      array (
+        'name' => 'meta',
+        'types' => 
+        array (
+          0 => 'array',
+          1 => 'string',
+        ),
+        'examples' => 
+        array (
+          0 => 
+          array (
+            'k' => 1,
+          ),
+          1 => 
+          array (
+            'k' => 2,
+            'j' => 3,
+          ),
+          2 => 'scalar now',
+        ),
+        'nullable' => true,
+        'enum_values' => 
+        array (
+        ),
+        'max_length' => 10,
+        'min_length' => 10,
+        'object_structure' => 
+        array (
+          'type' => 'object',
+          'keys' => 
+          array (
+            0 => 'k',
+            2 => 'j',
+          ),
+          'key_count' => 2,
+        ),
+        'array_structure' => NULL,
+        'detected_format' => NULL,
+        'string_patterns' => 
+        array (
+        ),
+        'numeric_range' => NULL,
+        'usage_count' => 3,
+        'usage_percentage' => 25.0,
+      ),
+      'when' => 
+      array (
+        'name' => 'when',
+        'types' => 
+        array (
+          0 => 'string',
+        ),
+        'examples' => 
+        array (
+          0 => '2024-02-29',
+          1 => '2024-01-15T10:20:30+01:00',
+          2 => '12:30:00',
+        ),
+        'nullable' => true,
+        'enum_values' => 
+        array (
+        ),
+        'max_length' => 25,
+        'min_length' => 8,
+        'object_structure' => NULL,
+        'array_structure' => NULL,
+        'detected_format' => 'date-time',
+        'string_patterns' => 
+        array (
+        ),
+        'numeric_range' => NULL,
+        'usage_count' => 3,
+        'usage_percentage' => 25.0,
+      ),
+      'flag' => 
+      array (
+        'name' => 'flag',
+        'types' => 
+        array (
+          0 => 'boolean',
+        ),
+        'examples' => 
+        array (
+          0 => true,
+          1 => false,
+        ),
+        'nullable' => true,
+        'enum_values' => 
+        array (
+        ),
+        'max_length' => 0,
+        'min_length' => 'PHP_INT_MAX',
+        'object_structure' => NULL,
+        'array_structure' => NULL,
+        'detected_format' => NULL,
+        'string_patterns' => 
+        array (
+        ),
+        'numeric_range' => NULL,
+        'usage_count' => 2,
+        'usage_percentage' => 16.67,
+      ),
+      'status' => 
+      array (
+        'name' => 'status',
+        'types' => 
+        array (
+          0 => 'string',
+        ),
+        'examples' => 
+        array (
+          0 => 'open',
+          1 => 'closed',
+          2 => 'pending',
+        ),
+        'nullable' => true,
+        'enum_values' => 
+        array (
+        ),
+        'max_length' => 7,
+        'min_length' => 4,
+        'object_structure' => NULL,
+        'array_structure' => NULL,
+        'detected_format' => NULL,
+        'string_patterns' => 
+        array (
+          0 => 'snake_case',
+        ),
+        'numeric_range' => NULL,
+        'usage_count' => 5,
+        'usage_percentage' => 41.67,
+      ),
+      'extra' => 
+      array (
+        'name' => 'extra',
+        'types' => 
+        array (
+          0 => 'object',
+        ),
+        'examples' => 
+        array (
+          0 => 
+          (object) array(
+             'z' => 1,
+          ),
+          1 => 
+          (object) array(
+             'q' => 2,
+          ),
+        ),
+        'nullable' => true,
+        'enum_values' => 
+        array (
+        ),
+        'max_length' => 0,
+        'min_length' => 'PHP_INT_MAX',
+        'object_structure' => 
+        array (
+          'type' => 'object',
+          'keys' => 
+          array (
+            0 => 'z',
+            1 => 'q',
+          ),
+          'key_count' => 2,
+        ),
+        'array_structure' => NULL,
+        'detected_format' => NULL,
+        'string_patterns' => 
+        array (
+        ),
+        'numeric_range' => NULL,
+        'usage_count' => 2,
+        'usage_percentage' => 16.67,
+      ),
+      'n1' => 
+      array (
+        'name' => 'n1',
+        'types' => 
+        array (
+          0 => 'string',
+        ),
+        'examples' => 
+        array (
+          0 => 'a',
+          1 => 'b',
+          2 => 'c',
+          3 => 'd',
+          4 => 'e',
+        ),
+        'nullable' => true,
+        'enum_values' => 
+        array (
+        ),
+        'max_length' => 1,
+        'min_length' => 1,
+        'object_structure' => NULL,
+        'array_structure' => NULL,
+        'detected_format' => NULL,
+        'string_patterns' => 
+        array (
+          0 => 'snake_case',
+        ),
+        'numeric_range' => NULL,
+        'usage_count' => 10,
+        'usage_percentage' => 83.33,
+      ),
+    ),
+    'usage_stats' => 
+    array (
+      'counts' => 
+      array (
+        'id' => 12,
+        'name' => 12,
+        'age' => 4,
+        'score' => 3,
+        'email' => 2,
+        'tags' => 3,
+        'meta' => 3,
+        'when' => 3,
+        'nothing' => 1,
+        'blank' => 1,
+        'flag' => 2,
+        'status' => 5,
+        'extra' => 2,
+        'n1' => 10,
+      ),
+      'percentages' => 
+      array (
+        'id' => 100.0,
+        'name' => 100.0,
+        'age' => 33.33,
+        'score' => 25.0,
+        'email' => 16.67,
+        'tags' => 25.0,
+        'meta' => 25.0,
+        'when' => 25.0,
+        'nothing' => 8.33,
+        'blank' => 8.33,
+        'flag' => 16.67,
+        'status' => 41.67,
+        'extra' => 16.67,
+        'n1' => 83.33,
+      ),
+    ),
+    'data_types' => 
+    array (
+    ),
+  ),
+)

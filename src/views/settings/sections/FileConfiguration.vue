@@ -165,13 +165,7 @@
 
 						<NcButton variant="secondary" @click="testDolphinConnection">
 							<template #icon>
-								<CheckIcon
-									v-if="dolphinConnectionTested === 'success'"
-									:size="20" />
-								<AlertCircleIcon
-									v-else-if="dolphinConnectionTested === 'error'"
-									:size="20" />
-								<RefreshIcon v-else :size="20" />
+								<ConnectionTestIcon :result="dolphinConnectionTested" />
 							</template>
 							Test Connection
 						</NcButton>
@@ -469,22 +463,10 @@
 								"
 								@click="testBackend(backend.name)">
 								<template #icon>
-									<NcLoadingIcon
-										v-if="testingBackendMethod === backend.name"
-										:size="20" />
-									<CheckIcon
-										v-else-if="
-											backendTestResults[backend.name]
-											=== 'success'
-										"
-										:size="20" />
-									<AlertCircleIcon
-										v-else-if="
-											backendTestResults[backend.name]
-											=== 'error'
-										"
-										:size="20" />
-									<RefreshIcon v-else :size="20" />
+									<ConnectionTestIcon
+										:result="backendTestResults[backend.name]"
+										:testing="testingBackendMethod === backend.name"
+										testingFirst />
 								</template>
 								{{ t('openregister', 'Test connection') }}
 							</NcButton>
@@ -534,16 +516,9 @@
 							variant="secondary"
 							@click="testPresidioConnection">
 							<template #icon>
-								<CheckIcon
-									v-if="presidioConnectionTested === 'success'"
-									:size="20" />
-								<AlertCircleIcon
-									v-else-if="presidioConnectionTested === 'error'"
-									:size="20" />
-								<NcLoadingIcon
-									v-else-if="testingPresidio"
-									:size="20" />
-								<RefreshIcon v-else :size="20" />
+								<ConnectionTestIcon
+									:result="presidioConnectionTested"
+									:testing="testingPresidio" />
 							</template>
 							Test Connection
 						</NcButton>
@@ -606,24 +581,10 @@
 								:disabled="testingBackendMethod === 'openanonymiser'"
 								@click="testBackend('openanonymiser')">
 								<template #icon>
-									<NcLoadingIcon
-										v-if="
-											testingBackendMethod === 'openanonymiser'
-										"
-										:size="20" />
-									<CheckIcon
-										v-else-if="
-											backendTestResults.openanonymiser
-											=== 'success'
-										"
-										:size="20" />
-									<AlertCircleIcon
-										v-else-if="
-											backendTestResults.openanonymiser
-											=== 'error'
-										"
-										:size="20" />
-									<RefreshIcon v-else :size="20" />
+									<ConnectionTestIcon
+										:result="backendTestResults.openanonymiser"
+										:testing="testingBackendMethod === 'openanonymiser'"
+										testingFirst />
 								</template>
 								{{ t('openregister', 'Test connection') }}
 							</NcButton>
@@ -728,22 +689,9 @@
 								variant="secondary"
 								@click="testOpenAnonymiserConnection">
 								<template #icon>
-									<CheckIcon
-										v-if="
-											openAnonymiserConnectionTested
-											=== 'success'
-										"
-										:size="20" />
-									<AlertCircleIcon
-										v-else-if="
-											openAnonymiserConnectionTested
-											=== 'error'
-										"
-										:size="20" />
-									<NcLoadingIcon
-										v-else-if="testingOpenAnonymiser"
-										:size="20" />
-									<RefreshIcon v-else :size="20" />
+									<ConnectionTestIcon
+										:result="openAnonymiserConnectionTested"
+										:testing="testingOpenAnonymiser" />
 								</template>
 								{{ t('openregister', 'Test connection') }}
 							</NcButton>
@@ -908,6 +856,7 @@ import RefreshIcon from 'vue-material-design-icons/Refresh.vue'
 import LabeledOption from '../../../components/shared/LabeledOption.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import ConnectionTestIcon from './ConnectionTestIcon.vue'
 import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
 
@@ -1339,6 +1288,7 @@ export default {
 		KeyIcon,
 		CheckIcon,
 		AlertCircleIcon,
+		ConnectionTestIcon,
 		DotsVertical,
 		LabeledOption,
 	},

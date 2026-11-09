@@ -162,32 +162,47 @@ class PerAppMcpProviderProbe {
 		}
 
 		// COLD — run the full probe once and record the outcome per app.
-		$map = $this->probeApps(container: $container, logger: $logger, appManager: $appManager, appIds: $appIds, providers: $providers);
+		$hits      = $this->probeApps(container: $container, logger: $logger, appManager: $appManager, appIds: $appIds);
+		$providers = [...$providers, ...self::providersOf(hits: $hits)];
+		$map       = array_map(static fn (array $hit): ?string => array_key_first($hit), $hits);
 		$this->writeMcpDiscoveryMap(container: $container, cache: $cache, cacheKey: $cacheKey, map: $map);
 		$this->logRebuild(logger: $logger, map: $map, cached: ($cache !== null));
 	}//end collect()
 
 	/**
-	 * Probe every installed app, appending each app's first resolving provider.
+	 * Probe every installed app for its first resolving provider.
 	 *
-	 * @param ContainerInterface       $container  The DI container.
-	 * @param LoggerInterface $logger     PSR logger.
-	 * @param mixed                    $appManager The IAppManager instance.
-	 * @param string[]                 $appIds     The installed app ids.
-	 * @param array<IMcpToolProvider>  $providers  Providers array (modified in place by reference).
+	 * @param ContainerInterface $container  The DI container.
+	 * @param LoggerInterface    $logger     PSR logger.
+	 * @param mixed              $appManager The IAppManager instance.
+	 * @param string[]           $appIds     The installed app ids.
 	 *
-	 * @return array<string, string|null> appId => winning candidate key, or null for none.
+	 * @return array<string, array<string, IMcpToolProvider>> appId => its winning key => provider, or empty.
 	 */
-	private function probeApps(ContainerInterface $container, LoggerInterface $logger, $appManager, array $appIds, array &$providers): array {
-		$map = [];
+	private function probeApps(ContainerInterface $container, LoggerInterface $logger, $appManager, array $appIds): array {
+		$hits = [];
 		foreach ($appIds as $appId) {
-			$hit         = $this->probeApp(container: $container, logger: $logger, appManager: $appManager, appId: $appId);
-			$map[$appId] = array_key_first($hit);
-			$providers   = [...$providers, ...array_values($hit)];
+			$hits[$appId] = $this->probeApp(container: $container, logger: $logger, appManager: $appManager, appId: $appId);
 		}
 
-		return $map;
+		return $hits;
 	}//end probeApps()
+
+	/**
+	 * The providers of a probe, in app order.
+	 *
+	 * @param array<string, array<string, IMcpToolProvider>> $hits appId => its winning key => provider, or empty.
+	 *
+	 * @return array<int, IMcpToolProvider> The providers found.
+	 */
+	private static function providersOf(array $hits): array {
+		$providers = [];
+		foreach ($hits as $hit) {
+			$providers = [...$providers, ...array_values($hit)];
+		}
+
+		return $providers;
+	}//end providersOf()
 
 	/**
 	 * The first candidate of an app that resolves to a provider.

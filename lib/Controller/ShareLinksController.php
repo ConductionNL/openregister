@@ -5,8 +5,8 @@
  * linked to an OpenRegister object.
  *
  * NO LINK TABLE / NO CACHE: every endpoint delegates straight to
- * `ShareLinkService`, which wraps `OCP\Share\IManager` (the single
- * source of truth). See `ShareLinkService` for the rationale.
+ * `ShareLinkServiceInterface`, which wraps `OCP\Share\IManager` (the single
+ * source of truth). See `ShareLinkServiceInterface` for the rationale.
  *
  * Endpoints:
  *   - GET    /api/objects/{register}/{schema}/{id}/file-shares     — list
@@ -33,12 +33,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\ShareLinkService;
 use OCA\OpenRegister\Service\ShareDraft;
+use OCA\OpenRegister\Service\ShareLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -58,7 +58,7 @@ class ShareLinksController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param ShareLinkService $shareLinkService Backing service.
+	 * @param ShareLinkServiceInterface $shareLinkService Backing service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 *
 	 * @return void
@@ -66,7 +66,7 @@ class ShareLinksController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ShareLinkService $shareLinkService,
+		private readonly ShareLinkServiceInterface $shareLinkService,
 		private readonly ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(appName: $appName, request: $request);

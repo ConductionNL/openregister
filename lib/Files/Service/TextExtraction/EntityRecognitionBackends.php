@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
-use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\AnonymiserRequestInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Container\ContainerInterface;
 
@@ -36,14 +36,14 @@ final class EntityRecognitionBackends {
 	 * Bundle the backends.
 	 *
 	 * @param SettingsServiceInterface    $settingsService             Settings service.
-	 * @param AnonymisationBackendService $anonymisationBackendService Backend state + ExApp client.
+	 * @param AnonymiserRequestInterface $anonymisationBackendService Backend state + ExApp client.
 	 * @param ContainerInterface|null     $container                   App container, consulted lazily for the object mapper.
 	 *
 	 * @spec openspec/specs/text-extraction/spec.md#requirement-file-and-object-chunk-extraction-lifecycle
 	 */
 	public function __construct(
 		public readonly SettingsServiceInterface $settingsService,
-		public readonly AnonymisationBackendService $anonymisationBackendService,
+		public readonly AnonymiserRequestInterface $anonymisationBackendService,
 		public readonly ?ContainerInterface $container = null,
 	) {
 	}//end __construct()

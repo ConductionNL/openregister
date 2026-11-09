@@ -211,13 +211,14 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	 */
 	private function draft(Schema $schema, ?RuleDescriptor $declared, mixed $expression): RuleDescriptor {
 		return new RuleDescriptor(
-			kind: ($declared?->getKind() ?? RuleVocabulary::KIND_CALCULATION),
-			schemaSlug: (string)($schema->getSlug() ?? ''),
-			key: ($declared?->getKey() ?? 'draft'),
+			origin: new RuleOrigin(
+				kind: ($declared?->getKind() ?? RuleVocabulary::KIND_CALCULATION),
+				schemaSlug: (string)($schema->getSlug() ?? ''),
+				key: ($declared?->getKey() ?? 'draft'),
+				source: 'draft'
+			),
 			label: ($declared?->getKey() ?? 'draft'),
-			source: 'draft',
-			actions: [RuleVocabulary::ACTION_SET_VALUE],
-			condition: $expression
+			effect: new RuleEffect(actions: [RuleVocabulary::ACTION_SET_VALUE], condition: $expression)
 		);
 	}//end draft()
 

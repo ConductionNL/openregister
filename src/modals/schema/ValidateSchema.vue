@@ -222,12 +222,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ validationResults ? 'Close' : 'Cancel' }}
-			</NcButton>
+			<CloseCancelButton :label="validationResults ? 'Close' : 'Cancel'" @click="closeDialog" />
 			<NcButton
 				v-if="!validationResults && !loading && !error"
 				:disabled="loading"
@@ -253,10 +248,10 @@ import {
 	NcNoteCard,
 } from '@nextcloud/vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { schemaObjectCount } from './schemaObjectCount.js'
 
 export default {
@@ -270,7 +265,7 @@ export default {
 		NcCheckboxRadioSwitch,
 		CheckCircle,
 		AlertCircle,
-		Cancel,
+		CloseCancelButton,
 		Eye,
 		DatabaseOutline,
 		SchemaStatsBlock,

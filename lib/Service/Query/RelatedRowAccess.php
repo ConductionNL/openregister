@@ -25,8 +25,8 @@ namespace OCA\OpenRegister\Service\Query;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
-use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeResolverInterface;
+use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
@@ -51,11 +51,11 @@ class RelatedRowAccess {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicRbacHandler       $rbac   Builds the related schema's row predicate.
-	 * @param LoggerInterface        $logger The logger, for the default guard.
-	 * @param PropertyReadGuard|null $guard  The property read guard; defaults to one without a container, which fails closed on a governed schema.
+	 * @param RelatedRowRbacInterface $rbac   Builds the related schema's row predicate.
+	 * @param LoggerInterface         $logger The logger, for the default guard.
+	 * @param PropertyReadGuard|null  $guard  The property read guard; defaults to one without a container, which fails closed on a governed schema.
 	 */
-	public function __construct(private readonly MagicRbacHandler $rbac, LoggerInterface $logger, ?PropertyReadGuard $guard = null) {
+	public function __construct(private readonly RelatedRowRbacInterface $rbac, LoggerInterface $logger, ?PropertyReadGuard $guard = null) {
 		$this->guard = ($guard ?? new PropertyReadGuard(container: null, logger: $logger));
 	}//end __construct()
 
@@ -108,11 +108,11 @@ class RelatedRowAccess {
 		$column        = $alias . '._organisation';
 		$mode   = ($scope['mode'] ?? null);
 
-		if ($mode === MagicOrganizationHandler::SCOPE_ALL) {
+		if ($mode === OrganisationScopeResolverInterface::SCOPE_ALL) {
 			return $rbacPredicate;
 		}
 
-		if ($mode === MagicOrganizationHandler::SCOPE_NULL_ONLY) {
+		if ($mode === OrganisationScopeResolverInterface::SCOPE_NULL_ONLY) {
 			return '(' . $rbacPredicate . ') AND ' . $column . ' IS NULL';
 		}
 
@@ -120,7 +120,7 @@ class RelatedRowAccess {
 			($scope['uuids'] ?? []),
 			static fn ($uuid): bool => is_string($uuid) === true && $uuid !== ''
 		));
-		$scoped = [MagicOrganizationHandler::SCOPE_IN, MagicOrganizationHandler::SCOPE_IN_OR_NULL];
+		$scoped = [OrganisationScopeResolverInterface::SCOPE_IN, OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL];
 		if (in_array($mode, $scoped, true) === false || $uuids === []) {
 			// SCOPE_NONE, an unknown mode, or "in these organisations" naming none.
 			return '(' . $rbacPredicate . ') AND 1 = 0';
@@ -134,7 +134,7 @@ class RelatedRowAccess {
 		}
 
 		$term = $column . ' IN (' . implode(', ', $placeholders) . ')';
-		if ($mode === MagicOrganizationHandler::SCOPE_IN_OR_NULL) {
+		if ($mode === OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL) {
 			$term = '(' . $term . ' OR ' . $column . ' IS NULL)';
 		}
 

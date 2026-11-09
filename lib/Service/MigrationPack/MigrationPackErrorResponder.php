@@ -43,7 +43,7 @@ use Throwable;
  *
  * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-pack-changes-must-be-limited-to-administrators-and-logged
  */
-class MigrationPackErrorResponder {
+class MigrationPackErrorResponder implements MigrationPackErrorResponderInterface {
 	/**
 	 * Constructor.
 	 *

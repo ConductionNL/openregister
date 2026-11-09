@@ -40,11 +40,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use JsonSerializable;
 use OCA\OpenRegister\Controller\Support\ApiCallersControllerServices;
-use OCA\OpenRegister\Db\ApiCallRecord;
-use OCA\OpenRegister\Db\ApiCallRecordMapper;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
+use OCA\OpenRegister\Db\ApiCallRecordMapperInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -117,16 +116,16 @@ class ApiCallersController extends Controller {
 	/**
 	 * Reads the caller record.
 	 *
-	 * @var ApiCallRecordMapper
+	 * @var ApiCallRecordMapperInterface
 	 */
-	private readonly ApiCallRecordMapper $records;
+	private readonly ApiCallRecordMapperInterface $records;
 
 	/**
 	 * The declared contract versions.
 	 *
-	 * @var ApiVersionCatalogue
+	 * @var ApiVersionCatalogueInterface
 	 */
-	private readonly ApiVersionCatalogue $catalogue;
+	private readonly ApiVersionCatalogueInterface $catalogue;
 
 	/**
 	 * Reads and writes the declaration.
@@ -217,7 +216,7 @@ class ApiCallersController extends Controller {
 				'total' => count($rows),
 				'truncated' => (count($rows) === self::MAX_ROWS),
 				'callers' => array_map(
-					static fn (ApiCallRecord $record): array => $record->jsonSerialize(),
+					static fn (JsonSerializable $record): array => $record->jsonSerialize(),
 					$rows
 				),
 			]
@@ -247,7 +246,7 @@ class ApiCallersController extends Controller {
 		return new JSONResponse(
 			data: [
 				'versions' => array_values(array_map(
-					static fn (ApiVersion $version): array => $version->jsonSerialize(),
+					static fn (JsonSerializable $version): array => $version->jsonSerialize(),
 					$this->catalogue->all()
 				)),
 				'currentVersion' => $this->catalogue->current()->id,
@@ -306,7 +305,7 @@ class ApiCallersController extends Controller {
 		try {
 			$this->appConfig->setValueString(
 				'openregister',
-				ApiVersionCatalogue::CONFIG_KEY,
+				ApiVersionCatalogueInterface::CONFIG_KEY,
 				(string)json_encode(array_values($declared))
 			);
 		} catch (Throwable $e) {
@@ -349,7 +348,7 @@ class ApiCallersController extends Controller {
 	 */
 	private function storedDeclaration(): string {
 		try {
-			return trim((string)$this->appConfig->getValueString('openregister', ApiVersionCatalogue::CONFIG_KEY, ''));
+			return trim((string)$this->appConfig->getValueString('openregister', ApiVersionCatalogueInterface::CONFIG_KEY, ''));
 		} catch (Throwable) {
 			return '';
 		}

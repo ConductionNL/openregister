@@ -48,7 +48,7 @@ namespace OCA\OpenRegister\Service\Relation;
  *
  * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
  */
-class LinkExposure {
+class LinkExposure implements LinkExposureInterface {
 
 	/**
 	 * The key a relation type declares its field set under.

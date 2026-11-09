@@ -35,7 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
+use OCA\OpenRegister\Service\Hardening\AllowedOriginsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
@@ -57,12 +57,12 @@ class PublicApiCorsMiddleware extends Middleware {
 	 *
 	 * @param IRequest $request The current request
 	 * @param IControllerMethodReflector $reflector Reflector for controller annotations
-	 * @param HardeningPolicy $policy Reads the administered origin allowlist
+	 * @param AllowedOriginsInterface $policy Reads the administered origin allowlist
 	 */
 	public function __construct(
 		private readonly IRequest $request,
 		private readonly IControllerMethodReflector $reflector,
-		private readonly HardeningPolicy $policy,
+		private readonly AllowedOriginsInterface $policy,
 	) {
 	}//end __construct()
 

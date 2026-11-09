@@ -47,7 +47,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
  */
-class RecordTemplateMapper extends QBMapper {
+class RecordTemplateMapper extends QBMapper implements RecordTemplateMapperInterface {
 
 	/**
 	 * The table.

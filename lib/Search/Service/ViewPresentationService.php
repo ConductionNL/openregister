@@ -30,7 +30,8 @@ namespace OCA\OpenRegister\Search\Service;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
-use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
+use OCA\OpenRegister\Service\Rbac\AggregateVisibilityInterface;
+use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use OCA\OpenRegister\Search\Db\View;
 use OCP\AppFramework\Db\Entity;
 use Psr\Log\LoggerInterface;
@@ -99,10 +100,10 @@ class ViewPresentationService {
 	/**
 	 * The shared answer to "may a summary over this property be shown".
 	 *
-	 * @return AggregateVisibility The answer.
+	 * @return AggregateVisibilityInterface The answer.
 	 */
-	private function aggregateVisibility(): AggregateVisibility {
-		return new AggregateVisibility(rbac: $this->propertyRbac, logger: $this->logger);
+	private function aggregateVisibility(): AggregateVisibilityInterface {
+		return RbacRuleChecks::aggregateVisibility(rbac: $this->propertyRbac, logger: $this->logger);
 	}//end aggregateVisibility()
 
 	/**

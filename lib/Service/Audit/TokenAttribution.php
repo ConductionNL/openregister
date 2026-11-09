@@ -54,7 +54,7 @@ use Throwable;
  *
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
-class TokenAttribution {
+class TokenAttribution implements TokenAttributionInterface {
 	/**
 	 * Keys that would each be a stored request or response payload.
 	 *

@@ -219,16 +219,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 			// The schema's author chose the view; readers of the type need not
 			// hold a share on it. Their access to the source ROWS is checked by
 			// the search below (_rbac on).
-			$view = $this->viewMapper->find($config['view'] ?? '', _rbac: false, _multitenancy: false);
-			$viewQuery = ($view->getQuery() ?? []);
-			$registers = array_values((array) ($viewQuery['registers'] ?? []));
-			$schemas = array_values((array) ($viewQuery['schemas'] ?? []));
-			if (count($registers) !== 1 || count($schemas) !== 1) {
-				throw new InvalidArgumentException('the view must name exactly one register and one schema');
-			}
-
-			$sourceRegister = $this->registerMapper->find($registers[0]);
-			$sourceSchema = $this->schemaMapper->find($schemas[0]);
+			[$viewQuery, $sourceRegister, $sourceSchema] = $this->readView(config: $config);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[ViewObjectSource] a view-backed schema cannot read its view: ' . $e->getMessage(),
@@ -246,23 +237,63 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	}//end resolve()
 
 	/**
+	 * Read the view and the one register and schema it names.
+	 *
+	 * @param array $config The object-source config (`view`).
+	 *
+	 * @return array{0: array<string, mixed>, 1: Register, 2: Schema} [view query, source register, source schema].
+	 *
+	 * @throws Throwable When the view cannot be read or does not name exactly one register and one schema.
+	 */
+	private function readView(array $config): array {
+		$view = $this->viewMapper->find($config['view'] ?? '', _rbac: false, _multitenancy: false);
+		$viewQuery = ($view->getQuery() ?? []);
+		$registers = array_values((array) ($viewQuery['registers'] ?? []));
+		$schemas = array_values((array) ($viewQuery['schemas'] ?? []));
+		if (count($registers) !== 1 || count($schemas) !== 1) {
+			throw new InvalidArgumentException('the view must name exactly one register and one schema');
+		}
+
+		$sourceRegister = $this->registerMapper->find($registers[0]);
+		$sourceSchema = $this->schemaMapper->find($schemas[0]);
+
+		return [$viewQuery, $sourceRegister, $sourceSchema];
+	}//end readView()
+
+	/**
 	 * The view's filters AND the caller's, as a MagicMapper query; null when they exclude each other.
+	 *
+	 * The search always runs with `_rbac` and `_multitenancy` on: a caller key
+	 * starting with `_` or `@` never reaches the filter, so it cannot turn them off.
 	 *
 	 * @param array $viewQuery The view's stored query.
 	 * @param array $query     The caller's query.
 	 *
 	 * @return array<string, mixed>|null
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per query part; splitting hides the AND.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      One branch per query part; splitting hides the AND.
 	 */
 	private function combine(array $viewQuery, array $query): ?array {
-		$filter = ['_rbac' => true, '_multitenancy' => true];
+		$filter = self::withCallerFilters(filter: ['_rbac' => true, '_multitenancy' => true], query: $query);
 
-		// The caller's field filters (top-level keys, as the search query holds them).
+		$filter = self::withFacetFilters(filter: $filter, viewQuery: $viewQuery);
+		if ($filter === null) {
+			return null;
+		}
+
+		return self::withSearch(filter: $filter, viewQuery: $viewQuery, query: $query);
+	}//end combine()
+
+	/**
+	 * Add the caller's field filters (top-level keys, as the search query holds them) and `_ids`.
+	 *
+	 * @param array<string, mixed> $filter The filter so far.
+	 * @param array                $query  The caller's query.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function withCallerFilters(array $filter, array $query): array {
 		foreach ($query as $key => $value) {
 			$key = (string) $key;
-			if ($key === '' || $key[0] === '_' || $key[0] === '@' || in_array($key, self::RESERVED, true) === true) {
+			if (self::isCallerField(key: $key) === false) {
 				continue;
 			}
 
@@ -273,30 +304,80 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 			$filter['_ids'] = $query['_ids'];
 		}
 
-		// The view's facet filters. An empty selection is no filter. A field
-		// both name keeps only the values both allow.
+		return $filter;
+	}//end withCallerFilters()
+
+	/**
+	 * Whether a caller query key is a field filter: not empty, not `_`/`@`-prefixed, not reserved.
+	 *
+	 * @param string $key The caller query key.
+	 *
+	 * @return bool
+	 */
+	private static function isCallerField(string $key): bool {
+		return ($key === '' || $key[0] === '_' || $key[0] === '@' || in_array($key, self::RESERVED, true) === true) === false;
+	}//end isCallerField()
+
+	/**
+	 * Add the view's facet filters; an empty selection is no filter.
+	 *
+	 * @param array<string, mixed> $filter    The filter so far.
+	 * @param array                $viewQuery The view's stored query.
+	 *
+	 * @return array<string, mixed>|null Null when a facet and a caller filter exclude each other.
+	 */
+	private static function withFacetFilters(array $filter, array $viewQuery): ?array {
 		foreach ((array) ($viewQuery['facetFilters'] ?? []) as $field => $values) {
 			$values = array_values((array) $values);
 			if ($values === []) {
 				continue;
 			}
 
-			$field = (string) $field;
-			if (str_starts_with($field, '@self.') === true) {
-				$filter['@self'][substr($field, 6)] = $values;
-				continue;
+			$filter = self::withFacet(filter: $filter, field: (string) $field, values: $values);
+			if ($filter === null) {
+				return null;
 			}
+		}
 
-			if (array_key_exists($field, $filter) === true) {
-				$values = array_values(array_intersect(array_map('strval', (array) $filter[$field]), array_map('strval', $values)));
-				if ($values === []) {
-					return null;
-				}
+		return $filter;
+	}//end withFacetFilters()
+
+	/**
+	 * Add one non-empty facet: `@self.` facets nest; a field both name keeps only the values both allow.
+	 *
+	 * @param array<string, mixed> $filter The filter so far.
+	 * @param string               $field  The facet field.
+	 * @param array<int, mixed>    $values The facet's values.
+	 *
+	 * @return array<string, mixed>|null Null when no value is allowed by both.
+	 */
+	private static function withFacet(array $filter, string $field, array $values): ?array {
+		if (str_starts_with($field, '@self.') === true) {
+			$filter['@self'][substr($field, 6)] = $values;
+			return $filter;
+		}
+
+		if (array_key_exists($field, $filter) === true) {
+			$values = array_values(array_intersect(array_map('strval', (array) $filter[$field]), array_map('strval', $values)));
+			if ($values === []) {
+				return null;
 			}
+		}
 
-			$filter[$field] = $values;
-		}//end foreach
+		$filter[$field] = $values;
+		return $filter;
+	}//end withFacet()
 
+	/**
+	 * Add the caller's `_search` and the view's search terms as one `_search`, when not empty.
+	 *
+	 * @param array<string, mixed> $filter    The filter so far.
+	 * @param array                $viewQuery The view's stored query.
+	 * @param array                $query     The caller's query.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function withSearch(array $filter, array $viewQuery, array $query): array {
 		$terms = ($viewQuery['searchTerms'] ?? []);
 		if (is_array($terms) === true) {
 			$terms = implode(' ', $terms);
@@ -308,5 +389,5 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 		}
 
 		return $filter;
-	}//end combine()
+	}//end withSearch()
 }//end class

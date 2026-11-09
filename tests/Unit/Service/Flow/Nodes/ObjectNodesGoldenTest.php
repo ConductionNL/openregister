@@ -28,11 +28,14 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeSources;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
@@ -92,13 +95,9 @@ final class ObjectNodesGoldenTest extends TestCase {
 				urls: $urls
 			),
 			new ObjectWriteNode(
-				objects: $objects,
-				registers: $registers,
-				schemas: $schemas,
-				userManager: $users,
-				appConfig: $this->createMock(IAppConfig::class),
-				l10n: $l10n,
-				urls: $urls
+				stores: new ObjectWriteStores(objects: $objects, registers: $registers, schemas: $schemas),
+				platform: new ObjectWritePlatform(userManager: $users, appConfig: $this->createMock(IAppConfig::class)),
+				presentation: new FlowNodePresentation(l10n: $l10n, urls: $urls)
 			),
 			new LoopNode(l10n: $l10n, urls: $urls),
 		];

@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
-use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuardInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -67,11 +67,11 @@ class WorkingCalendarValidationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param WorkingCalendarWriteGuard $guard Recognises and validates a calendar write.
+	 * @param WorkingCalendarWriteGuardInterface $guard Recognises and validates a calendar write.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly WorkingCalendarWriteGuard $guard,
+		private readonly WorkingCalendarWriteGuardInterface $guard,
 		private readonly LoggerInterface $logger,
 	) {
 

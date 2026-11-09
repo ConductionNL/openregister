@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTimeImmutable;
+use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -162,28 +163,52 @@ class ExampleSetProfiles {
 
 		try {
 			$account = $this->profiles->getAccount($user);
-			$missing = [];
-			foreach ($this->propertyValues(profile: $profile) as $name => $value) {
-				if ($value !== '' && trim((string) $account->getProperty($name)->getValue()) === '') {
-					$missing[$name] = $value;
-				}
-			}
-
-			if ($missing === []) {
-				return [];
-			}
-
-			foreach ($missing as $name => $value) {
-				$account->setProperty($name, $value, IAccountManager::SCOPE_LOCAL, IAccountManager::NOT_VERIFIED);
-			}
-
-			$this->profiles->updateAccount($account);
+			$this->fillIn(account: $account, missing: $this->missing(account: $account, profile: $profile));
 		} catch (Throwable $e) {
 			return ['profile of '.$uid.': '.$e->getMessage()];
 		}
 
 		return [];
 	}//end fillMissing()
+
+	/**
+	 * The declared headline, role and organisation the account holds empty.
+	 *
+	 * @param IAccount             $account The account's profile.
+	 * @param array<string, mixed> $profile What the cast declares.
+	 *
+	 * @return array<string, string> The values to write, by property name.
+	 */
+	private function missing(IAccount $account, array $profile): array {
+		$missing = [];
+		foreach ($this->propertyValues(profile: $profile) as $name => $value) {
+			if ($value !== '' && trim((string) $account->getProperty($name)->getValue()) === '') {
+				$missing[$name] = $value;
+			}
+		}
+
+		return $missing;
+	}//end missing()
+
+	/**
+	 * Write the missing values on the account and store it; nothing at all when none is missing.
+	 *
+	 * @param IAccount              $account The account's profile.
+	 * @param array<string, string> $missing The values to write, by property name.
+	 *
+	 * @return void
+	 */
+	private function fillIn(IAccount $account, array $missing): void {
+		if ($missing === []) {
+			return;
+		}
+
+		foreach ($missing as $name => $value) {
+			$account->setProperty($name, $value, IAccountManager::SCOPE_LOCAL, IAccountManager::NOT_VERIFIED);
+		}
+
+		$this->profiles->updateAccount($account);
+	}//end fillIn()
 
 	/**
 	 * The profile properties a cast person fills: function as headline, roles
@@ -277,12 +302,7 @@ class ExampleSetProfiles {
 			$service = $this->container->get(self::STATUS_SERVICE);
 			$service->setStatus($uid, $status['status'], null, true);
 			if ($status['message'] !== '') {
-				$icon = null;
-				if ($status['icon'] !== '') {
-					$icon = $status['icon'];
-				}
-
-				$service->setCustomMessage($uid, $icon, $status['message'], null);
+				$service->setCustomMessage($uid, $this->icon(status: $status), $status['message'], null);
 			}
 		} catch (Throwable $e) {
 			return 'status of '.$uid.': '.$e->getMessage();
@@ -290,4 +310,19 @@ class ExampleSetProfiles {
 
 		return '';
 	}//end writeStatus()
+
+	/**
+	 * The status message's icon, or null when it has none.
+	 *
+	 * @param array<string, string> $status The status.
+	 *
+	 * @return string|null
+	 */
+	private function icon(array $status): ?string {
+		if ($status['icon'] !== '') {
+			return $status['icon'];
+		}
+
+		return null;
+	}//end icon()
 }//end class

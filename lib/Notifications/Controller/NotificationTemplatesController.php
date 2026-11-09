@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -53,20 +54,18 @@ class NotificationTemplatesController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param NotificationTemplatesInterface $registry The catalogue of platform events and their texts.
 	 * @param IGroupManager $groupManager The authority on who is an administrator.
 	 * @param IUserSession $userSession Current-user session.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly NotificationTemplatesInterface $registry,
 		private readonly IGroupManager $groupManager,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
@@ -129,8 +130,7 @@ class LifecycleConditionTest extends TestCase {
 			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guardContainer, $serverContainer, $this->logger), new LifecycleConditionEvaluator(
 				$this->userSession,
 				$this->groupManager,
-				$this->l10n,
-				$this->logger,
+				new LifecycleConditionReporting($this->l10n, $this->logger),
 				$this->realConditionDialect()
 			), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
 				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
@@ -248,8 +248,7 @@ class LifecycleConditionTest extends TestCase {
 			), new LifecycleConditionEvaluator(
 				$this->userSession,
 				$this->groupManager,
-				$this->l10n,
-				$this->logger,
+				new LifecycleConditionReporting($this->l10n, $this->logger),
 				$this->realConditionDialect()
 			), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
 				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
@@ -513,7 +512,7 @@ class LifecycleConditionTest extends TestCase {
 				$this->guardContainer,
 				$this->createMock(originalClassName: IServerContainer::class),
 				$this->logger
-			), new LifecycleConditionEvaluator($this->userSession, $this->groupManager, $this->l10n, $this->logger, $this->realConditionDialect()), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+			), new LifecycleConditionEvaluator($this->userSession, $this->groupManager, new LifecycleConditionReporting($this->l10n, $this->logger), $this->realConditionDialect()), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
 				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
 						placeholders: new \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver(

@@ -126,9 +126,7 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	/**
 	 * Write one page, in a collective found by name or created.
 	 *
-	 * @param string               $app  The fragment's app.
-	 * @param string               $key  The row key.
-	 * @param array<string, mixed> $data The row's fields, placeholders filled.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{
 	 *     error: string,
@@ -137,7 +135,8 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		$store = $this->store();
 		if ($store->available() === false) {
 			return ['error' => 'Collectives is not installed', 'entry' => null];

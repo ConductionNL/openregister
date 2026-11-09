@@ -34,9 +34,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Hardening;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -45,25 +42,21 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class HardeningSettingsService {
+class HardeningSettingsService implements HardeningSettingsServiceInterface {
 
 	/**
 	 * Constructor.
 	 *
 	 * @param HardeningPolicy $policy Reads what is in force now.
 	 * @param HardeningFloorGuard $guard Refuses a change that would weaken a control.
-	 * @param IAppConfig $appConfig Stores the administered values and the floors.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Records the change, and the refusal.
-	 * @param LoggerInterface $logger Records an audit write that could not be made.
+	 * @param HardeningSettingsStore $store The stored settings, their audit trail and the log.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly HardeningPolicy $policy,
 		private readonly HardeningFloorGuard $guard,
-		private readonly IAppConfig $appConfig,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly LoggerInterface $logger,
+		private readonly HardeningSettingsStore $store,
 	) {
 
 	}//end __construct()
@@ -96,7 +89,7 @@ class HardeningSettingsService {
 		}
 
 		[$key] = HardeningPolicy::CONTROLS[$control];
-		$this->appConfig->setValueInt(HardeningPolicy::APP_ID, $key, $value);
+		$this->store->appConfig->setValueInt(HardeningPolicy::APP_ID, $key, $value);
 		$this->record(control: $control, before: $before, after: $value, accepted: true);
 
 		return $value;
@@ -143,7 +136,7 @@ class HardeningSettingsService {
 			throw $refusal;
 		}
 
-		$this->appConfig->setValueString(HardeningPolicy::APP_ID, HardeningPolicy::ORIGINS_KEY, implode(',', $cleaned));
+		$this->store->appConfig->setValueString(HardeningPolicy::APP_ID, HardeningPolicy::ORIGINS_KEY, implode(',', $cleaned));
 		$this->record(control: 'origins.allowlistEntries', before: $before, after: $cleaned, accepted: true);
 
 		return $cleaned;
@@ -189,7 +182,7 @@ class HardeningSettingsService {
 
 		$declared = $this->policy->declaredFloors();
 		$declared[$control] = $floor;
-		$this->appConfig->setValueString(
+		$this->store->appConfig->setValueString(
 			HardeningPolicy::APP_ID,
 			HardeningPolicy::FLOORS_KEY,
 			(string)json_encode($declared)
@@ -261,7 +254,7 @@ class HardeningSettingsService {
 	 */
 	private function record(string $control, int|string|array $before, int|string|array $after, bool $accepted, string $refusal = ''): void {
 		try {
-			$this->auditTrailMapper->createHardeningChangeEntry(
+			$this->store->auditTrailMapper->createHardeningChangeEntry(
 				control: $control,
 				before: $before,
 				after: $after,
@@ -269,7 +262,7 @@ class HardeningSettingsService {
 				refusal: $refusal,
 			);
 		} catch (Throwable $failure) {
-			$this->logger->error(
+			$this->store->logger->error(
 				'HardeningSettingsService: the audit entry for ' . $control . ' could not be written: ' . $failure->getMessage()
 			);
 		}

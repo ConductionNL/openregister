@@ -20,8 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\AnonymisationBackendControllerServices;
-use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
-use OCA\OpenRegister\Service\Anonymisation\BackendState;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
+use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -53,9 +53,9 @@ class AnonymisationBackendController extends Controller {
 	/**
 	 * Backend state service (single source of truth).
 	 *
-	 * @var AnonymisationBackendService
+	 * @var AnonymisationBackendServiceInterface
 	 */
-	private readonly AnonymisationBackendService $service;
+	private readonly AnonymisationBackendServiceInterface $service;
 
 	/**
 	 * Constructor.
@@ -119,9 +119,9 @@ class AnonymisationBackendController extends Controller {
 		}
 
 		$method = (string)$this->request->getParam('method', '');
-		if (in_array($method, BackendState::METHODS, true) === false) {
+		if (in_array($method, BackendMethodsInterface::METHODS, true) === false) {
 			return new JSONResponse(
-				data: ['error' => 'Invalid method; expected one of: ' . implode(', ', BackendState::METHODS)],
+				data: ['error' => 'Invalid method; expected one of: ' . implode(', ', BackendMethodsInterface::METHODS)],
 				statusCode: Http::STATUS_BAD_REQUEST
 			);
 		}

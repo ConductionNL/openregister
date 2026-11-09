@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Listener\FormDestinationSchemaListener;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
+use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -153,7 +154,7 @@ class FormDestinationSchemaListenerGoldenTest extends TestCase {
 			newSchema: $this->schema(self::PROPS, ['a', 'b']),
 			oldSchema: $this->schema(self::PROPS, ['b', 'a'])
 		);
-		$this->assertSame([['get', FormDependentsCheck::class]], $this->act($event, new stdClass()));
+		$this->assertSame([['get', FormDependentsCheckInterface::class]], $this->act($event, new stdClass()));
 	}
 
 	public function testPropertiesOnlyChangeIsChecked(): void {
@@ -162,23 +163,23 @@ class FormDestinationSchemaListenerGoldenTest extends TestCase {
 			oldSchema: $this->schema(['y' => []], ['r'])
 		);
 		$check = $this->stub(true, []);
-		$this->assertSame([['get', FormDependentsCheck::class], ['isClaimed', 12]], $this->act($event, $check));
+		$this->assertSame([['get', FormDependentsCheckInterface::class], ['isClaimed', 12]], $this->act($event, $check));
 	}
 
 	public function testNonCheckFromContainerStops(): void {
-		$this->assertSame([['get', FormDependentsCheck::class]], $this->act($this->changed(), new stdClass()));
+		$this->assertSame([['get', FormDependentsCheckInterface::class]], $this->act($this->changed(), new stdClass()));
 	}
 
 	public function testClaimedStops(): void {
 		$this->assertSame(
-			[['get', FormDependentsCheck::class], ['isClaimed', 12]],
+			[['get', FormDependentsCheckInterface::class], ['isClaimed', 12]],
 			$this->act($this->changed(), $this->stub(true, []))
 		);
 	}
 
 	public function testNothingAffectedStops(): void {
 		$this->assertSame(
-			[['get', FormDependentsCheck::class], ['isClaimed', 12], ['assess', 'aanvraag']],
+			[['get', FormDependentsCheckInterface::class], ['isClaimed', 12], ['assess', 'aanvraag']],
 			$this->act($this->changed(), $this->stub(false, ['refused' => true, 'schema' => 's', 'affected' => []]))
 		);
 	}
@@ -186,7 +187,7 @@ class FormDestinationSchemaListenerGoldenTest extends TestCase {
 	public function testAffectedFormsAreApplied(): void {
 		$assessment = ['refused' => false, 'schema' => 's', 'affected' => [['id' => 'f1']]];
 		$this->assertSame(
-			[['get', FormDependentsCheck::class], ['isClaimed', 12], ['assess', 'aanvraag'], ['apply', $assessment]],
+			[['get', FormDependentsCheckInterface::class], ['isClaimed', 12], ['assess', 'aanvraag'], ['apply', $assessment]],
 			$this->act($this->changed(), $this->stub(false, $assessment))
 		);
 	}
@@ -195,7 +196,7 @@ class FormDestinationSchemaListenerGoldenTest extends TestCase {
 		$assessment = ['refused' => true, 'schema' => 's', 'affected' => [['id' => 'f1'], ['id' => 'f2']]];
 		$this->assertSame(
 			[
-				['get', FormDependentsCheck::class],
+				['get', FormDependentsCheckInterface::class],
 				['isClaimed', 12],
 				['assess', 'aanvraag'],
 				[
@@ -214,7 +215,7 @@ class FormDestinationSchemaListenerGoldenTest extends TestCase {
 	public function testContainerFailureIsLogged(): void {
 		$this->assertSame(
 			[
-				['get', FormDependentsCheck::class],
+				['get', FormDependentsCheckInterface::class],
 				[
 					'log',
 					'warning',

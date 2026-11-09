@@ -39,7 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Service\SecurityService;
+use OCA\OpenRegister\Service\InboundAuthRateLimitInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -51,6 +51,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use Throwable;
+use OCA\OpenRegister\Middleware\Support\RateLimitPlatform;
 
 /**
  * Middleware that rate-limits failed inbound-API authentication attempts.
@@ -66,21 +67,41 @@ use Throwable;
  */
 class RateLimitMiddleware extends Middleware {
 	/**
+	 * The user session
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Reflector for controller annotations
+	 *
+	 * @var IControllerMethodReflector
+	 */
+	private readonly IControllerMethodReflector $reflector;
+
+	/**
+	 * Logger for security events
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current request
-	 * @param IUserSession $userSession The user session
-	 * @param IControllerMethodReflector $reflector Reflector for controller annotations
-	 * @param SecurityService $securityService The security service
-	 * @param LoggerInterface $logger Logger for security events
+	 * @param RateLimitPlatform $platform Session, method reflector and logger.
+	 * @param InboundAuthRateLimitInterface $securityService The security service
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly IUserSession $userSession,
-		private readonly IControllerMethodReflector $reflector,
-		private readonly SecurityService $securityService,
-		private readonly LoggerInterface $logger,
+		RateLimitPlatform $platform,
+		private readonly InboundAuthRateLimitInterface $securityService,
 	) {
+		$this->userSession = $platform->userSession;
+		$this->reflector = $platform->reflector;
+		$this->logger = $platform->logger;
 	}//end __construct()
 
 	/**

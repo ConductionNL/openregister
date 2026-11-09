@@ -128,6 +128,23 @@ function sharedOption() {
 }
 
 /**
+ * The shared labelled form fields the modals render their selects with, as
+ * bindings, when the codebase has them.
+ *
+ * @return {object} The bindings, or nothing
+ */
+function sharedFields() {
+	try {
+		return {
+			FormSelectField: require('../components/shared/FormSelectField.vue').default,
+			FormCheckboxField: require('../components/shared/FormCheckboxField.vue').default,
+		}
+	} catch {
+		return {}
+	}
+}
+
+/**
  * The configuration modal with its setup bindings supplied. Under jest the
  * compiled bindings of an SFC with both a setup and a plain script resolve
  * the library components to undefined, so they are given here.
@@ -158,6 +175,7 @@ function configurationModal() {
 		t: (app, text) => text,
 		...stores,
 		...sharedOption(),
+		...sharedFields(),
 	}
 	return { ...EditConfiguration, setup: () => bindings }
 }
@@ -180,6 +198,7 @@ async function optionsOf(component) {
 				AppTabs: PASS,
 				AppTab: PASS,
 				SelectOption: false,
+				FormSelectField: false,
 			},
 			mocks: { t: (app, text) => text },
 		},

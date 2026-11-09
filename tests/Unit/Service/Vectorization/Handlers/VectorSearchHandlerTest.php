@@ -23,6 +23,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\RankedResults;
 
 /**
  * Unit tests for VectorSearchHandler.
@@ -855,7 +856,7 @@ class VectorSearchHandlerTest extends TestCase {
 			['entity_type' => 'object', 'entity_id' => 'v2', 'chunk_index' => 0, 'chunk_text' => 't2', 'metadata' => [], 'similarity' => 0.5],
 		];
 
-		$result = $method->invoke($this->handler, $vectorResults, [], 0.5, 0.5);
+		$result = $method->invoke($this->handler, new RankedResults($vectorResults, 0.5), new RankedResults([], 0.5));
 
 		$this->assertCount(2, $result);
 		$this->assertTrue($result[0]['in_vector']);
@@ -879,7 +880,7 @@ class VectorSearchHandlerTest extends TestCase {
 			['entity_type' => 'object', 'entity_id' => 's2', 'score' => 0.5, 'chunk_index' => 0, 'chunk_text' => null, 'metadata' => []],
 		];
 
-		$result = $method->invoke($this->handler, [], $solrResults, 0.5, 0.5);
+		$result = $method->invoke($this->handler, new RankedResults([], 0.5), new RankedResults($solrResults, 0.5));
 
 		$this->assertCount(2, $result);
 		$this->assertTrue($result[0]['in_keyword']);
@@ -903,7 +904,7 @@ class VectorSearchHandlerTest extends TestCase {
 			['entity_type' => 'object', 'entity_id' => 'shared', 'score' => 0.9, 'chunk_index' => 0, 'chunk_text' => null, 'metadata' => []],
 		];
 
-		$result = $method->invoke($this->handler, $vectorResults, $solrResults, 0.5, 0.5);
+		$result = $method->invoke($this->handler, new RankedResults($vectorResults, 0.5), new RankedResults($solrResults, 0.5));
 
 		$this->assertCount(1, $result);
 		$this->assertTrue($result[0]['in_vector']);
@@ -922,7 +923,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$method = $ref->getMethod('reciprocalRankFusion');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->handler, [], [], 0.5, 0.5);
+		$result = $method->invoke($this->handler, new RankedResults([], 0.5), new RankedResults([], 0.5));
 
 		$this->assertSame([], $result);
 	}//end testReciprocalRankFusionEmptyInputs()

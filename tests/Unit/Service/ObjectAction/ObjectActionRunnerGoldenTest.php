@@ -97,8 +97,11 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 		$this->steps->method('flowFor')->willReturn('steps-flow');
 		$this->audit = $this->createMock(ObjectActionAudit::class);
 		$this->audit->method('record')->willReturnCallback(
-			function (...$args): void {
-				$this->audited[] = array_combine(['object', 'action', 'kind', 'run', 'inputsDigest', 'changes', 'outcome', 'userId'], $args);
+			function ($object, $definition, $outcome, $digest, $userId): void {
+				$this->audited[] = array_combine(
+					['object', 'action', 'kind', 'run', 'inputsDigest', 'changes', 'outcome', 'userId'],
+					[$object, $definition->key, (string)$definition->kind, $outcome->run, $digest, $outcome->changes, $outcome->outcome, $userId]
+				);
 			}
 		);
 		$this->transitions = $this->createMock(TransitionEngine::class);

@@ -32,6 +32,7 @@ use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCA\OpenRegister\Files\Service\File\FileReadScopeRules;
 use OCA\OpenRegister\Files\Service\File\FileReadScopeTree;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser;
 use OCA\OpenRegister\Service\FileService;
@@ -297,7 +298,7 @@ class FileRestrictionPathsTest extends TestCase {
 		$guard = $this->guard(admitted: false);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static fn (string $id): object => $id === FileRestrictionGuard::class ? $guard : $mapper
+			static fn (string $id): object => $id === FileRestrictionGuardInterface::class ? $guard : $mapper
 		);
 		$this->fileService->method('getFilesForEntity')->willReturn([$this->restricted, $this->open]);
 

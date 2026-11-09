@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\Service\AppRegisterImportRunner;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
@@ -124,7 +125,8 @@ class AppRegisterImportRunnerGoldenTest extends TestCase {
 		);
 		$this->writeFiles($options['files']);
 
-		$runner = new AppRegisterImportRunner($this->appManager($options['namespace']), $this->locator($options), $this->importer($options['import']));
+		$appManager = $this->appManager($options['namespace']);
+		$runner = new AppRegisterImportRunner($appManager, $this->locator($options), $this->importer($options['import']), new RegisterDocumentLoader(appManager: $appManager));
 		$actual = ['document' => $runner->document(self::APP), 'run' => $runner->run(self::APP), 'log' => $this->log];
 		$actual = json_decode(str_replace($this->appRoot, '<app>', json_encode($actual, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)), true);
 

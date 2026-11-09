@@ -46,24 +46,49 @@ use UnexpectedValueException;
  */
 class FlowMcpToolProvider extends AbstractBuiltInToolProvider {
 	/**
+	 * Queues a flow run.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runner;
+
+	/**
+	 * Reads recent runs (for listing / status).
+	 *
+	 * @var FlowRunMapperInterface
+	 */
+	private readonly FlowRunMapperInterface $mapper;
+
+	/**
+	 * Authors flows, with the organisation scoping.
+	 *
+	 * @var FlowServiceInterface
+	 */
+	private readonly FlowServiceInterface $flows;
+
+	/**
+	 * Reports what a saved document is missing.
+	 *
+	 * @var FlowNodePreflightInterface
+	 */
+	private readonly FlowNodePreflightInterface $preflight;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunServiceInterface $runner Queues a flow run.
-	 * @param FlowRunMapperInterface $mapper Reads recent runs (for listing / status).
-	 * @param FlowServiceInterface $flows Authors flows, with the organisation scoping.
-	 * @param FlowNodePreflightInterface $preflight Reports what a saved document is missing.
-	 * @param IUserSession $userSession The invoking session — an MCP tool call
-	 *                                  always arrives inside one, and its user is
-	 *                                  the actor a queued run is attributed to.
+	 * @param FlowToolServices $services    The flow run, run-reading, authoring and preflight services.
+	 * @param IUserSession     $userSession The invoking session — an MCP tool call
+	 *                                      always arrives inside one, and its user is
+	 *                                      the actor a queued run is attributed to.
 	 */
 	public function __construct(
-		private readonly FlowRunServiceInterface $runner,
-		private readonly FlowRunMapperInterface $mapper,
-		private readonly FlowServiceInterface $flows,
-		private readonly FlowNodePreflightInterface $preflight,
+		FlowToolServices $services,
 		private readonly IUserSession $userSession,
 	) {
-
+		$this->runner = $services->runner;
+		$this->mapper = $services->mapper;
+		$this->flows = $services->flows;
+		$this->preflight = $services->preflight;
 	}//end __construct()
 
 	/**
