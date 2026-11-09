@@ -54,7 +54,7 @@ class SeedZgwZakenMigrationPackBehaviourTest extends TestCase {
 
 	public function testAPackAlreadyPresentIsNotSeededAgain(): void {
 		$this->packs->expects($this->once())->method('findByPackSlug')->with('zgw-zaken-json');
-		$this->packs->expects($this->never())->method('create');
+		$this->packs->expects($this->never())->method('seedBuiltin');
 		$this->output->expects($this->once())->method('info')->with('Migration pack "zgw-zaken-json" already present, skipping seed');
 
 		$this->step()->run($this->output);
@@ -62,15 +62,13 @@ class SeedZgwZakenMigrationPackBehaviourTest extends TestCase {
 
 	public function testAMissingPackIsSeededAsABuiltinWithoutOwner(): void {
 		$this->packs->method('findByPackSlug')->willThrowException(new DoesNotExistException('none'));
-		$this->packs->expects($this->once())->method('create')
+		$this->packs->expects($this->once())->method('seedBuiltin')
 			->with(
 				$this->callback(
 					static fn (array $definition): bool => $definition['id'] === 'zgw-zaken-json'
 						&& $definition['sourceFormat'] === 'json'
 						&& count($definition['fieldMappings']) === 7
-				),
-				null,
-				true
+				)
 			);
 		$this->output->expects($this->once())->method('info')->with('Seeded built-in migration pack "zgw-zaken-json"');
 		$this->output->expects($this->never())->method('warning');
@@ -80,7 +78,7 @@ class SeedZgwZakenMigrationPackBehaviourTest extends TestCase {
 
 	public function testAFailingSeedIsAWarningNotAFailure(): void {
 		$this->packs->method('findByPackSlug')->willThrowException(new DoesNotExistException('none'));
-		$this->packs->method('create')->willThrowException(new RuntimeException('invalid definition'));
+		$this->packs->method('seedBuiltin')->willThrowException(new RuntimeException('invalid definition'));
 		$this->logger->expects($this->once())->method('warning')->with('[SeedZgwZakenMigrationPack] seed failed: invalid definition');
 		$this->output->expects($this->once())->method('warning')->with('Migration pack seed skipped: invalid definition');
 		$this->output->expects($this->never())->method('info');
