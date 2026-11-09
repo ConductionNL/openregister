@@ -30,9 +30,8 @@ namespace OCA\OpenRegister\Service\Sync;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SyncExecution;
-use OCA\OpenRegister\Db\SyncFailure;
 use OCA\OpenRegister\Db\SyncRecord;
+use OCA\OpenRegister\Db\SyncRecordInputs;
 use OCA\OpenRegister\Db\SyncRecordMapperInterface;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -164,7 +163,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	): array {
 		$externalIds = $fetcher->gather(source: $source, since: $since);
 
-		$execution = new SyncExecution(source: $source, executionId: $executionId);
+		$execution = SyncRecordInputs::execution(source: $source, executionId: $executionId);
 		$records   = [];
 		foreach ($externalIds as $externalId) {
 			$records[] = $this->syncRecordMapper->createPending(execution: $execution, externalId: (string)$externalId);
@@ -205,7 +204,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 				$record->setAttempts((int)$record->getAttempts() + 1);
 				$this->syncRecordMapper->recordFailure(
 					record: $record,
-					failure: new SyncFailure(status: SyncRecordStatus::FETCH_ERROR, message: $e->getMessage())
+					failure: SyncRecordInputs::failure(status: SyncRecordStatus::FETCH_ERROR, message: $e->getMessage())
 				);
 				$this->logger->warning(
 					message: sprintf('[HarvestPipeline] Fetch failed for %s: %s', $record->getExternalId(), $e->getMessage())
@@ -247,7 +246,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 				$summary['errors']++;
 				$this->syncRecordMapper->recordFailure(
 					record: $record,
-					failure: new SyncFailure(status: SyncRecordStatus::IMPORT_ERROR, message: $e->getMessage())
+					failure: SyncRecordInputs::failure(status: SyncRecordStatus::IMPORT_ERROR, message: $e->getMessage())
 				);
 				$this->logger->warning(
 					message: sprintf('[HarvestPipeline] Import failed for %s: %s', $record->getExternalId(), $e->getMessage())
