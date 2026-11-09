@@ -471,7 +471,7 @@ exports[`dialog clearCacheModal shows the busy state 1`] = `
 `;
 
 exports[`dialog clearTableDialog asks 1`] = `
-"<x-ncdialog open="true" name="N">
+"<x-ncdialog name="N" size="small" noclose="false" class="" open="true">
   <slot-default>
     <div class="clear-dialog-content">
       <h3>⚠️ H</h3>
@@ -507,7 +507,7 @@ exports[`dialog clearTableDialog cancels 1`] = `
 `;
 
 exports[`dialog clearTableDialog confirms 1`] = `
-"<x-ncdialog open="true" name="N">
+"<x-ncdialog name="N" size="small" noclose="false" class="" open="true">
   <slot-default>
     <div class="clear-dialog-content">
       <h3>⚠️ H</h3>
@@ -555,7 +555,7 @@ exports[`dialog clearTableDialog dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog clearTableDialog shows the busy state 1`] = `
-"<x-ncdialog open="true" name="N">
+"<x-ncdialog name="N" size="small" noclose="false" class="" open="true">
   <slot-default>
     <div class="clear-dialog-content">
       <h3>⚠️ H</h3>
