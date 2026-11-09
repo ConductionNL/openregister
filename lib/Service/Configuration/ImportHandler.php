@@ -55,6 +55,7 @@ use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
+use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -321,6 +322,16 @@ class ImportHandler {
 	 * @var FlowVersionService|null
 	 */
 	private ?FlowVersionService $flowVersionService = null;
+
+	/**
+	 * Runs each imported trigger node's own config check and the delegation
+	 * check on `runAs`, as the authoring API does on save. Null refuses every
+	 * imported flow: writing one without this check would let a bundle
+	 * schedule runs as any user.
+	 *
+	 * @var FlowTriggerValidator|null
+	 */
+	private ?FlowTriggerValidator $flowTriggerValidator = null;
 
 	/**
 	 * The shipped version of each seed object, built on first use from the app config.
@@ -605,6 +616,22 @@ class ImportHandler {
 	public function setFlowVersionService(?FlowVersionService $flowVersionService): void {
 		$this->flowVersionService = $flowVersionService;
 	}//end setFlowVersionService()
+
+	/**
+	 * Inject the validator that checks imported trigger nodes and their delegation.
+	 *
+	 * Optional to wire, but not to have: when null, `components.flows` entries
+	 * are refused and counted in `skipped['flows']`.
+	 *
+	 * @param FlowTriggerValidator|null $flowTriggerValidator The trigger validator.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function setFlowTriggerValidator(?FlowTriggerValidator $flowTriggerValidator): void {
+		$this->flowTriggerValidator = $flowTriggerValidator;
+	}//end setFlowTriggerValidator()
 
 	/**
 	 * Lazily resolve the dependency-free RBAC group collector.
@@ -1349,9 +1376,9 @@ class ImportHandler {
 	 *
 	 * @return Flow|null The imported flow entity, or null if skipped.
 	 *
-	 * @throws Exception When the uuid belongs to a flow of another organisation, a new
-	 *                   flow would have no owner or no organisation, or a draft cannot
-	 *                   be opened on a published flow.
+	 * @throws Exception When the uuid belongs to a flow of another organisation, a trigger
+	 *                   node or its delegation is refused, a new flow would have no owner
+	 *                   or no organisation, or a draft cannot be opened on a published flow.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override the unchanged-graph skip
 	 *
@@ -1398,12 +1425,55 @@ class ImportHandler {
 			return $existingFlow;
 		}
 
+		// Validated before anything is written, so a refused flow leaves no draft behind.
+		if (array_key_exists('nodes', $data) === true) {
+			$data['nodes'] = $this->validatedImportNodes(uuid: $uuid, nodes: (array)($data['nodes'] ?? []));
+		}
+
 		$flow = $this->flowToMutate(existingFlow: $existingFlow, uuid: $uuid, owner: $owner, configuration: $configuration);
 		$this->applyImportedFlowFields(flow: $flow, data: $data);
 		$flow->setUpdated(new DateTime());
 
 		return $this->publishImportedFlow(flow: $this->persistFlow(flow: $flow, isNew: ($existingFlow === null)));
 	}//end importFlow()
+
+	/**
+	 * The imported node list, checked the way FlowService::save() checks it.
+	 *
+	 * Any incoming `runAsDeclaredBy` is stripped first: it names a uid on the
+	 * source instance, or is forged, and the fire-time delegation re-check
+	 * trusts it. {@see FlowTriggerValidator::validate()} then lets each
+	 * trigger node reject its config and stamps the delegation against the
+	 * importing session, or refuses a `runAs` that session holds no grant for.
+	 *
+	 * @param string $uuid  The flow uuid, for the probe entity and messages.
+	 * @param array  $nodes The imported nodes.
+	 *
+	 * @return array The nodes, with the delegation stamp the validator wrote.
+	 *
+	 * @throws Exception When no validator is wired.
+	 * @throws \InvalidArgumentException When a trigger node or its delegation is refused.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function validatedImportNodes(string $uuid, array $nodes): array {
+		if ($this->flowTriggerValidator === null) {
+			throw new Exception('Flow "' . $uuid . '" not imported: no trigger validator is available to check it');
+		}
+
+		foreach ($nodes as $index => $node) {
+			if (is_array($node) === true && is_array($node['config'] ?? null) === true) {
+				unset($nodes[$index]['config'][FlowTriggerValidator::CONFIG_DECLARED_BY]);
+			}
+		}
+
+		$probe = new Flow();
+		$probe->setUuid($uuid);
+		$probe->setNodes($nodes);
+		$this->flowTriggerValidator->validate(flow: $probe);
+
+		return ($probe->getNodes() ?? []);
+	}//end validatedImportNodes()
 
 	/**
 	 * The flow an import writes fields onto: a fresh one, or the caller's existing one opened for editing.

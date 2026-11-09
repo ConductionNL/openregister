@@ -33,8 +33,13 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
+use OCA\OpenRegister\Service\Delegation\DelegationService;
+use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
+use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowTriggerNode;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -42,8 +47,10 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use UnexpectedValueException;
 
 /**
  * Unit tests for ImportHandler's Flow import support.
@@ -91,6 +98,7 @@ class ImportHandlerFlowTest extends TestCase {
 
 		$this->handler->setFlowMapper($this->flowMapper);
 		$this->handler->setFlowVersionService($this->flowVersionService);
+		$this->handler->setFlowTriggerValidator($this->triggerValidator());
 
 		$this->flowMapper->method('insert')->willReturnArgument(0);
 		$this->flowMapper->method('update')->willReturnArgument(0);
@@ -105,6 +113,88 @@ class ImportHandlerFlowTest extends TestCase {
 		$m->setAccessible(true);
 		return $m->invokeArgs($object, $args);
 	}//end invokeMethod()
+
+	/**
+	 * A real FlowTriggerValidator over a fake node registry, session and delegation store.
+	 *
+	 * @param string|null            $savedBy      The uid the session reports, or null for none.
+	 * @param array<int, string>     $triggerTypes Node types the registry resolves to an accepting trigger node.
+	 * @param DelegationVerdict|null $verdict      What the delegation store answers; refused by default.
+	 */
+	private function triggerValidator(
+		?string $savedBy = null,
+		array $triggerTypes = [],
+		?DelegationVerdict $verdict = null,
+	): FlowTriggerValidator {
+		$trigger = new class implements IFlowNode, IFlowTriggerNode {
+			public function getId(): string {
+				return 'trigger.double';
+			}
+
+			public function getDisplayName(): string {
+				return 'Trigger double';
+			}
+
+			public function getDescription(): string {
+				return 'Accepts any config.';
+			}
+
+			public function getIcon(): string {
+				return '/icon.svg';
+			}
+
+			public function isAvailableForScope(int $scope): bool {
+				return true;
+			}
+
+			public function validateConfig(array $config): void {
+			}
+
+			public function execute(array $items, array $config, array $context): array {
+				return $items;
+			}
+		};
+
+		$registry = new class(array_fill_keys($triggerTypes, $trigger)) {
+			public function __construct(private readonly array $nodes) {
+			}
+
+			public function get(string $type): object {
+				if (isset($this->nodes[$type]) === false) {
+					throw new UnexpectedValueException('Unknown node type: ' . $type);
+				}
+
+				return $this->nodes[$type];
+			}
+		};
+
+		$session = $this->createMock(IUserSession::class);
+		$user = null;
+		if ($savedBy !== null) {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($savedBy);
+		}
+
+		$session->method('getUser')->willReturn($user);
+
+		$delegation = $this->createMock(DelegationService::class);
+		$delegation->method('verdictFor')->willReturn(
+			($verdict ?? DelegationVerdict::refused(DelegationVerdict::REASON_NONE, 'no grant'))
+		);
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			static function (string $id) use ($registry, $session, $delegation): object {
+				return match ($id) {
+					IUserSession::class => $session,
+					DelegationService::class => $delegation,
+					default => $registry,
+				};
+			}
+		);
+
+		return new FlowTriggerValidator($container, $this->createMock(LoggerInterface::class));
+	}//end triggerValidator()
 
 	/**
 	 * A configuration in the given organisation, the scope an import writes flows into.
@@ -471,6 +561,84 @@ class ImportHandlerFlowTest extends TestCase {
 		$this->assertSame(['old'], $existing->getNodes());
 		$this->assertSame(FlowVersion::STATUS_PUBLISHED, $existing->getLifecycleStatus());
 	}//end testImportFromJsonSkipsFlowWhenCreateDraftFails()
+
+	/**
+	 * importFromJson() refuses a schedule trigger naming a user the importing admin holds no grant for.
+	 */
+	public function testImportFromJsonRefusesRunAsWithoutDelegationGrant(): void {
+		$this->handler->setFlowTriggerValidator(
+			$this->triggerValidator(savedBy: 'admin', triggerTypes: ['trigger.schedule'])
+		);
+
+		$this->flowMapper->method('findByUuid')
+			->willThrowException(new DoesNotExistException('not found'));
+		$this->flowMapper->expects($this->never())->method('insert');
+		$this->flowVersionService->expects($this->never())->method('publish');
+
+		$nodes = [[
+			'id' => 'n1',
+			'type' => 'trigger.schedule',
+			'config' => ['cron' => '*/5 * * * *', 'runAs' => 'someone-else'],
+		]];
+
+		$result = $this->handler->importFromJson(
+			data: ['components' => ['flows' => ['flow-uuid-1' => ['nodes' => $nodes]]]],
+			configuration: $this->configuration(),
+			owner: 'admin'
+		);
+
+		$this->assertSame(1, $result['skipped']['flows']);
+		$this->assertSame([], $result['flows']);
+	}//end testImportFromJsonRefusesRunAsWithoutDelegationGrant()
+
+	/**
+	 * importFlow() drops a delegation stamp the bundle carried, even on a node this instance cannot resolve.
+	 */
+	public function testImportFlowStripsAnIncomingDelegationStamp(): void {
+		$this->flowMapper->method('findByUuid')
+			->willThrowException(new DoesNotExistException('not found'));
+
+		$stored = null;
+		$this->flowMapper->expects($this->once())->method('insert')
+			->with($this->callback(static function (Flow $flow) use (&$stored): bool {
+				$stored = $flow->getNodes();
+				return true;
+			}));
+
+		$this->invokeMethod($this->handler, 'importFlow', [
+			['uuid' => 'flow-uuid-1', 'nodes' => [[
+				'id' => 'n1',
+				'type' => 'leafapp.trigger',
+				'config' => ['runAs' => 'bob', FlowTriggerValidator::CONFIG_DECLARED_BY => 'bob'],
+			]]],
+			$this->configuration(),
+			'admin',
+			false,
+		]);
+
+		$this->assertSame(['runAs' => 'bob'], $stored[0]['config']);
+	}//end testImportFlowStripsAnIncomingDelegationStamp()
+
+	/**
+	 * importFlow() refuses to write a flow when no trigger validator was wired.
+	 */
+	public function testImportFlowRefusedWithoutTriggerValidator(): void {
+		$this->handler->setFlowTriggerValidator(null);
+
+		$this->flowMapper->method('findByUuid')
+			->willThrowException(new DoesNotExistException('not found'));
+		$this->flowMapper->expects($this->never())->method('insert');
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('no trigger validator');
+
+		$this->invokeMethod($this->handler, 'importFlow', [
+			['uuid' => 'flow-uuid-1', 'nodes' => ['n1']],
+			$this->configuration(),
+			'admin',
+			false,
+		]);
+	}//end testImportFlowRefusedWithoutTriggerValidator()
 
 	/**
 	 * applyImportedFlowFields() carries every inheritable setting FlowService does, oversightEnabled included.

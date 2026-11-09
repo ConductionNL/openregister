@@ -339,6 +339,12 @@ final class ConfigurationServiceRegistrar {
 				\OCA\OpenRegister\Service\Flow\FlowVersionService::class,
 				'FlowVersionService',
 			],
+			// Checks imported trigger nodes and their runAs delegation, as the
+			// authoring API does on save; without it imported flows are refused.
+			'setFlowTriggerValidator' => [
+				\OCA\OpenRegister\Service\Flow\FlowTriggerValidator::class,
+				'FlowTriggerValidator',
+			],
 		];
 
 		foreach ($optional as $setter => $service) {
