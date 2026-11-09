@@ -37,8 +37,18 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 final class PartyIndicatorGuardMutationTest extends TestCase {
+	/**
+	 * Test double or fixture for links.
+	 *
+	 * @var ContactLinkMapperInterface&MockObject
+	 */
 	private ContactLinkMapperInterface&MockObject $links;
 
+	/**
+	 * Test double or fixture for parties.
+	 *
+	 * @var PartyServiceInterface&MockObject
+	 */
 	private PartyServiceInterface&MockObject $parties;
 
 	protected function setUp(): void {
@@ -68,7 +78,9 @@ final class PartyIndicatorGuardMutationTest extends TestCase {
 	}//end party()
 
 	/**
-	 * @param array<string, list<array<string, string>>> $indicatorsByParty
+	 * @param array<string, list<array<string, string>>> $indicatorsByParty Indicators keyed by party uuid.
+	 *
+	 * @return void
 	 */
 	private function partiesCarry(array $indicatorsByParty): void {
 		$this->parties->method('find')

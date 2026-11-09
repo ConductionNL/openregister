@@ -41,10 +41,25 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 final class DeletedObjectAuthorizerMutationTest extends TestCase {
+	/**
+	 * Test double or fixture for schemas.
+	 *
+	 * @var SchemaMapperInterface&MockObject
+	 */
 	private SchemaMapperInterface&MockObject $schemas;
 
+	/**
+	 * Test double or fixture for groups.
+	 *
+	 * @var IGroupManager&MockObject
+	 */
 	private IGroupManager&MockObject $groups;
 
+	/**
+	 * Test double or fixture for permissions.
+	 *
+	 * @var PermissionCheckInterface&MockObject
+	 */
 	private PermissionCheckInterface&MockObject $permissions;
 
 	protected function setUp(): void {

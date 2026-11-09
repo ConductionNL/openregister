@@ -38,6 +38,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 final class DestroyRightServiceMutationTest extends TestCase {
+	/**
+	 * Test double or fixture for permissions.
+	 *
+	 * @var PermissionHandlerInterface&MockObject
+	 */
 	private PermissionHandlerInterface&MockObject $permissions;
 
 	protected function setUp(): void {

@@ -49,7 +49,7 @@ final class TokenGrantValidatorMutationTest extends TestCase {
 	}//end validator()
 
 	/**
-	 * @param array<string, mixed> $overrides
+	 * @param array<string, mixed> $overrides Fields that replace the valid defaults.
 	 *
 	 * @return array<string, mixed>
 	 */

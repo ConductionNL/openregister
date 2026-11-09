@@ -37,6 +37,11 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 final class HistoryEntryRedactorMutationTest extends TestCase {
+	/**
+	 * Test double or fixture for properties.
+	 *
+	 * @var PropertyRbacHandlerInterface&MockObject
+	 */
 	private PropertyRbacHandlerInterface&MockObject $properties;
 
 	/**
@@ -117,7 +122,10 @@ final class HistoryEntryRedactorMutationTest extends TestCase {
 	}//end testAPropertyKnownOnlyFromTheHistoryIsProbedAndHidden()
 
 	public function testTheCascadeDropsAHiddenTriggerProperty(): void {
-		$hiddenTrigger = $this->changed(['bsn' => ['old' => '1', 'new' => '2'], 'cascadeContext' => ['property' => 'bsn.nummer', 'triggerObject' => 'x', 'triggerSchema' => 'y']]);
+		$hiddenTrigger = $this->changed([
+			'bsn' => ['old' => '1', 'new' => '2'],
+			'cascadeContext' => ['property' => 'bsn.nummer', 'triggerObject' => 'x', 'triggerSchema' => 'y'],
+		]);
 		$visibleTrigger = $this->changed(['cascadeContext' => ['property' => 'naam', 'triggerObject' => 'x']]);
 
 		$this->assertSame(['property' => null, 'triggerObject' => null, 'triggerSchema' => null], $hiddenTrigger['cascadeContext']);

@@ -39,8 +39,18 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 final class ObjectReadAccessMutationTest extends TestCase {
+	/**
+	 * Test double or fixture for objects.
+	 *
+	 * @var ObjectOperationsInterface&MockObject
+	 */
 	private ObjectOperationsInterface&MockObject $objects;
 
+	/**
+	 * Test double or fixture for schemas.
+	 *
+	 * @var SchemaMapperInterface&MockObject
+	 */
 	private SchemaMapperInterface&MockObject $schemas;
 
 	protected function setUp(): void {

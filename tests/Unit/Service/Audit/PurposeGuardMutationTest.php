@@ -45,10 +45,25 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 final class PurposeGuardMutationTest extends TestCase {
+	/**
+	 * Test double or fixture for registry.
+	 *
+	 * @var PurposeRegistry&MockObject
+	 */
 	private PurposeRegistry&MockObject $registry;
 
+	/**
+	 * Test double or fixture for audit.
+	 *
+	 * @var AuditTrailMapperInterface&MockObject
+	 */
 	private AuditTrailMapperInterface&MockObject $audit;
 
+	/**
+	 * Test double or fixture for logger.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
 	private LoggerInterface&MockObject $logger;
 
 	protected function setUp(): void {

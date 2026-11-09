@@ -39,12 +39,32 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 final class InheritedGrantListerMutationTest extends TestCase {
+	/**
+	 * Test double or fixture for hierarchy.
+	 *
+	 * @var HierarchyDescender&MockObject
+	 */
 	private HierarchyDescender&MockObject $hierarchy;
 
+	/**
+	 * Test double or fixture for mapper.
+	 *
+	 * @var MagicMapperInterface&MockObject
+	 */
 	private MagicMapperInterface&MockObject $mapper;
 
+	/**
+	 * Test double or fixture for shares.
+	 *
+	 * @var ObjectShareReader&MockObject
+	 */
 	private ObjectShareReader&MockObject $shares;
 
+	/**
+	 * Test double or fixture for logger.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
 	private LoggerInterface&MockObject $logger;
 
 	protected function setUp(): void {
@@ -88,7 +108,10 @@ final class InheritedGrantListerMutationTest extends TestCase {
 				function (string $identifier, $register, $schema, bool $deleted, bool $rbac, bool $tenancy) use ($dossier, $zaak): ObjectEntity {
 					$this->assertFalse($rbac, 'the ancestor is the grant source, not a caller read');
 					$this->assertFalse($tenancy, 'the ancestor is the grant source, not a caller read');
-					return ($identifier === 'dossier-1' ? $dossier : $zaak);
+					return match ($identifier) {
+						'dossier-1' => $dossier,
+						default => $zaak,
+					};
 				}
 			);
 		$this->shares->method('sharesOn')->willReturnCallback(
@@ -97,7 +120,10 @@ final class InheritedGrantListerMutationTest extends TestCase {
 					['type' => 'user', 'share' => $this->share('s1', 'jan')],
 					['type' => 'group', 'share' => $this->share('s2', 'redactie')],
 				],
-				'zaak-1' => ($sharers === ['eigenaar-b'] ? [['type' => 'user', 'share' => $this->share('s3', 'piet')]] : []),
+				'zaak-1' => match ($sharers) {
+					['eigenaar-b'] => [['type' => 'user', 'share' => $this->share('s3', 'piet')]],
+					default => [],
+				},
 			}
 		);
 
