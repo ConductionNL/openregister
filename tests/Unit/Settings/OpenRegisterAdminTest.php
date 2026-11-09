@@ -22,13 +22,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Settings;
 
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
+use OCA\OpenRegister\Settings\PushStatusPublisher;
 use OCA\OpenRegister\Settings\PushStatusSources;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IAppConfig;
 use OCP\IConfig;
-use OCP\IL10N;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -46,11 +46,6 @@ class OpenRegisterAdminTest extends TestCase {
 	 * @var IConfig&MockObject
 	 */
 	private IConfig $config;
-
-	/**
-	 * @var IL10N&MockObject
-	 */
-	private IL10N $l10n;
 
 	/**
 	 * @var IAppManager&MockObject
@@ -76,16 +71,16 @@ class OpenRegisterAdminTest extends TestCase {
 		parent::setUp();
 
 		$this->config = $this->createMock(IConfig::class);
-		$this->l10n = $this->createMock(IL10N::class);
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->initialState = $this->createMock(IInitialState::class);
 
 		$this->admin = new OpenRegisterAdmin(
 			$this->config,
-			$this->l10n,
-			new PushStatusSources(appManager: $this->appManager, appConfig: $this->appConfig),
-			$this->initialState
+			new PushStatusPublisher(
+				new PushStatusSources(appManager: $this->appManager, appConfig: $this->appConfig),
+				$this->initialState
+			)
 		);
 	}//end setUp()
 

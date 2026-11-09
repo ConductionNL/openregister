@@ -25,9 +25,7 @@
 namespace OCA\OpenRegister\Settings;
 
 use OCP\AppFramework\Http\TemplateResponse;
-use OCP\AppFramework\Services\IInitialState;
 use OCP\IConfig;
-use OCP\IL10N;
 use OCP\Settings\IDelegatedSettings;
 use OCP\Settings\ISettings;
 
@@ -42,82 +40,19 @@ use OCP\Settings\ISettings;
 class OpenRegisterAdmin implements IDelegatedSettings {
 
 	/**
-	 * Localization helper
-	 *
-	 * @var IL10N $l Localization helper
-	 */
-	private IL10N $l;
-
-	/**
-	 * Config service
-	 *
-	 * @var IConfig $config Config service
-	 */
-	private IConfig $config;
-
-	/**
-	 * App manager and app config the push status is read from
-	 *
-	 * @var PushStatusSources $pushStatus Push status sources
-	 */
-	private PushStatusSources $pushStatus;
-
-	/**
-	 * Initial state service for providing data to Vue
-	 *
-	 * @var IInitialState $initialState Initial state service
-	 */
-	private IInitialState $initialState;
-
-	/**
 	 * Constructor
 	 *
-	 * @param IConfig $config Config service
-	 * @param IL10N $l Localization helper
-	 * @param PushStatusSources $pushStatus App manager and app config for the push status
-	 * @param IInitialState $initialState Initial state service for Vue data
+	 * @param IConfig             $config     Config service
+	 * @param PushStatusPublisher $pushStatus Works out the push status and provides it to Vue
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-10
 	 */
 	public function __construct(
-		IConfig $config,
-		IL10N $l,
-		PushStatusSources $pushStatus,
-		IInitialState $initialState,
+		private readonly IConfig $config,
+		private readonly PushStatusPublisher $pushStatus,
 	) {
-		$this->config = $config;
-		$this->l = $l;
-		$this->pushStatus = $pushStatus;
-		$this->initialState = $initialState;
 	}//end __construct()
-
-	/**
-	 * Get the push notification status for the admin UI.
-	 *
-	 * Returns one of three statuses:
-	 *   - `not_installed` — the notify_push app is not installed
-	 *   - `active`        — installed and at least one push has been confirmed
-	 *   - `unreachable`   — installed but no push confirmed yet
-	 *
-	 * This method MUST NOT instantiate IQueue to avoid exceptions in the UI
-	 * when notify_push is partially installed or misconfigured.
-	 *
-	 * @return string One of `not_installed`, `active`, or `unreachable`
-	 *
-	 * @spec openspec/changes/add-live-updates/tasks.md#task-10
-	 */
-	private function getPushStatus(): string {
-		if ($this->pushStatus->appManager->isInstalled('notify_push') === false) {
-			return 'not_installed';
-		}
-
-		if ($this->pushStatus->appConfig->getValueString('openregister', 'push_available', '') === '1') {
-			return 'active';
-		}
-
-		return 'unreachable';
-	}//end getPushStatus()
 
 	/**
 	 * Get the admin settings form
@@ -130,10 +65,8 @@ class OpenRegisterAdmin implements IDelegatedSettings {
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-10
 	 */
 	public function getForm() {
-		$pushStatus = $this->getPushStatus();
-
-		// Provide pushStatus as initial state for the Vue admin settings app.
-		$this->initialState->provideInitialState('push_status', $pushStatus);
+		// Also provides pushStatus as initial state for the Vue admin settings app.
+		$pushStatus = $this->pushStatus->publish();
 
 		$parameters = [
 			'mySetting' => $this->config->getSystemValue('open_register_setting', true),
