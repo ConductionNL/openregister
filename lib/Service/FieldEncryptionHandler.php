@@ -29,7 +29,6 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\FieldDecryptionException;
-use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCP\Security\ICrypto;
 use Psr\Log\LoggerInterface;
 
@@ -146,13 +145,13 @@ class FieldEncryptionHandler implements FieldEncryptionHandlerInterface {
 	 * operates on strings (documented v1 limitation in design.md).
 	 *
 	 * @param array $data The object data about to be persisted.
-	 * @param SchemaInterface $schema The object's schema (source of the encrypted-property list).
+	 * @param Schema $schema The object's schema (source of the encrypted-property list).
 	 *
 	 * @return array The data with flagged properties replaced by their envelope form.
 	 *
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
 	 */
-	public function encryptProperties(array $data, SchemaInterface $schema): array {
+	public function encryptProperties(array $data, Schema $schema): array {
 		if ($schema->hasEncryptedProperties() === false) {
 			return $data;
 		}

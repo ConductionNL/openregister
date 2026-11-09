@@ -101,11 +101,6 @@
 			"eager": false,
 			"service": true
 		},
-		"OCA\\OpenRegister\\Service\\FieldEncryptionHandlerInterface": {
-			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FieldEncryptionHandlerInterface",
-			"eager": false,
-			"service": true
-		},
 		"OCA\\OpenRegister\\Service\\Flow\\FlowRunContextInterface": {
 			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowRunContextInterface",
 			"eager": false,
