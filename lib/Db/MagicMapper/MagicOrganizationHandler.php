@@ -106,7 +106,11 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 		bool $adminBypassEnabled = false,
 		bool $withOrgless = false,
 	): void {
-		$scope = $this->scopeOf(adminBypassEnabled: $adminBypassEnabled, table: $table);
+		$scope = $this->resolveOrganizationScope(
+			adminBypassEnabled: $adminBypassEnabled,
+			registerId: $table->registerId,
+			schemaId: $table->schemaId
+		);
 		if ($withOrgless === true) {
 			$scope = self::admitOrganisationless(scope: $scope);
 		}
