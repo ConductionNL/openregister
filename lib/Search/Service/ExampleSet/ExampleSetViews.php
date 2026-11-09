@@ -32,6 +32,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\ExampleSet;
 
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use Psr\Container\ContainerInterface;
@@ -184,14 +186,17 @@ class ExampleSetViews extends ExampleSetEngineRows {
 
 		try {
 			$view = $this->service()->create(
-				name: (string) $data['name'],
-				description: (string) ($data['description'] ?? ''),
-				owner: (string) $data['owner'],
-				isPublic: ($data['isPublic'] ?? false) === true,
-				isDefault: false,
-				query: (array) ($data['query'] ?? []),
-				presentation: $this->optional(data: $data, field: 'presentation'),
-				sharedWith: $this->shares(declared: ($data['sharedWith'] ?? [])),
+				definition: new ViewDefinition(
+					name: (string) $data['name'],
+					description: (string) ($data['description'] ?? ''),
+					query: (array) ($data['query'] ?? []),
+					presentation: $this->optional(data: $data, field: 'presentation')
+				),
+				audience: new ViewAudience(
+					owner: (string) $data['owner'],
+					isPublic: ($data['isPublic'] ?? false) === true,
+					sharedWith: $this->shares(declared: ($data['sharedWith'] ?? []))
+				),
 				alert: $this->optional(data: $data, field: 'alert'),
 			);
 			$view->setUuid($uuid);

@@ -118,6 +118,8 @@ use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
@@ -592,15 +594,15 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function viewService(): ViewService {
 		$service = $this->createMock(ViewService::class);
 		$service->method('create')->willReturnCallback(
-			function (string $name, string $description, string $owner, bool $isPublic, bool $isDefault, array $query, ?array $presentation = null, ?array $sharedWith = null, ?array $alert = null): View {
+			function (ViewDefinition $definition, ViewAudience $audience, ?array $alert = null): View {
 				$view = new View();
 				$view->setUuid('view-'.(++$this->viewsCreated));
-				$view->setName($name);
-				$view->setOwner($owner);
-				$view->setIsPublic($isPublic);
-				$view->setQuery($query);
+				$view->setName($definition->name);
+				$view->setOwner($audience->owner);
+				$view->setIsPublic($audience->isPublic);
+				$view->setQuery($definition->query);
 				$view->setAlert($alert);
-				$view->setSharedWith($sharedWith ?? []);
+				$view->setSharedWith($audience->sharedWith ?? []);
 				$this->savedViews[(string) $view->getUuid()] = $view;
 				return $view;
 			}
