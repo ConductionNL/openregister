@@ -43,7 +43,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Survey;
 
 use DateTimeImmutable;
-use DateTimeInterface;
 
 /**
  * The survey vocabulary and the refusals that go with it.
@@ -158,16 +157,15 @@ class SurveyRules {
 	/**
 	 * Why this invitation may not be followed, if it may not.
 	 *
-	 * @param array<string, mixed>   $invitation The invitation as stored.
-	 * @param array<string, mixed>   $survey     Its survey.
-	 * @param DateTimeInterface|null $now        The moment, for a frozen clock.
+	 * @param InvitationVisit $visit The invitation, its survey and the moment.
 	 *
 	 * @return string|null The refusal, or null when the link works.
 	 *
 	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
-	public function refuseInvitation(array $invitation, array $survey, ?DateTimeInterface $now = null): ?string {
-		$moment = ($now ?? new DateTimeImmutable());
+	public function refuseInvitation(InvitationVisit $visit): ?string {
+		$invitation = $visit->invitation;
+		$moment = ($visit->now ?? new DateTimeImmutable());
 		$state = (string)($invitation['state'] ?? self::SENT);
 
 		if ($state === self::BLOCKED) {
@@ -190,7 +188,7 @@ class SurveyRules {
 			}
 		}
 
-		if ($state === self::ANSWERED && ($survey['allowReopening'] ?? false) !== true) {
+		if ($state === self::ANSWERED && ($visit->survey['allowReopening'] ?? false) !== true) {
 			return 'This survey has already been answered from this link.';
 		}
 
@@ -286,24 +284,23 @@ class SurveyRules {
 	 * survey. Somebody asked four times in a month does not care that it was
 	 * four different surveys.
 	 *
-	 * @param int $recentInvitations How many they have had inside the period.
-	 * @param int $maximum           The most they may have.
-	 * @param int $periodDays        The period, in days, for the sentence.
+	 * @param int          $recentInvitations How many they have had inside the period.
+	 * @param FatigueLimit $limit             The most they may have, and the period.
 	 *
 	 * @return string|null The block reason, or null when they may be asked.
 	 *
 	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
-	public function refuseForFatigue(int $recentInvitations, int $maximum, int $periodDays): ?string {
-		if ($recentInvitations < $maximum) {
+	public function refuseForFatigue(int $recentInvitations, FatigueLimit $limit): ?string {
+		if ($recentInvitations < $limit->maximum) {
 			return null;
 		}
 
 		return sprintf(
 			'This person has already been sent %d of a maximum %d surveys in the last %d days.',
 			$recentInvitations,
-			$maximum,
-			$periodDays
+			$limit->maximum,
+			$limit->periodDays
 		);
 	}//end refuseForFatigue()
 
