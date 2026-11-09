@@ -8,6 +8,7 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\BackgroundJob\SyncConfigurationsJob;
+use OCA\OpenRegister\Service\Config\ConfigurationRecords;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
@@ -42,8 +43,7 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$this->job = new SyncConfigurationsJob(
 			$timeFactory,
-			$this->configurationMapper,
-			$this->configurationService,
+			new ConfigurationRecords($this->configurationMapper, $this->configurationService),
 			$this->githubService,
 			$this->gitlabService,
 			$this->httpClient,
