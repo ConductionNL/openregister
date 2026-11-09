@@ -208,23 +208,12 @@ final class BuiltinIntegrationServices {
 			'logger'       => \Psr\Log\LoggerInterface::class,
 			'container'    => self::CONTAINER,
 		],
-		\OCA\OpenRegister\Controller\CaseTokenController::class => [
-			'request'      => \OCP\IRequest::class,
-			'tokenService' => \OCA\OpenRegister\Service\CaseTokenService::class,
-			'throttler'    => \OCP\Security\Bruteforce\IThrottler::class,
-			'logger'       => \Psr\Log\LoggerInterface::class,
-		],
 		// @spec openspec/specs/integration-leaf-foundation/spec.md
 		\OCA\OpenRegister\Service\AnalyticsSeriesService::class => [
 			'mapper'       => \OCA\OpenRegister\Db\AnalyticsSeriesMapperInterface::class,
 			'registry'     => \OCA\OpenRegister\Service\Integration\IntegrationRegistry::class,
 			'userSession'  => \OCP\IUserSession::class,
 			'groupManager' => \OCP\IGroupManager::class,
-		],
-		\OCA\OpenRegister\Controller\AnalyticsSeriesController::class => [
-			'appName'       => self::APP_NAME,
-			'request'       => \OCP\IRequest::class,
-			'seriesService' => \OCA\OpenRegister\Service\AnalyticsSeriesService::class,
 		],
 		// @spec openspec/specs/integration-bookmarks/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider::class => [
