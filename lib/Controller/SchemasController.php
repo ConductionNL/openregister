@@ -1641,6 +1641,15 @@ class SchemasController extends Controller {
 			);
 		}
 
+		// The cascade removes the rows of every organisation in the table, which a `manage`
+		// rule does not answer for.
+		if ($deleteObjects === true && $this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(
+				data: ['error' => 'Deleting a schema with its objects is for administrators.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
 		try {
 			// Find the schema first (also validates existence and access).
 			$schemaToDelete = $this->schemaMapper->find(id: $id);
