@@ -131,7 +131,11 @@ final class ClassAliasMap {
 	}//end apply()
 
 	/**
-	 * Alias every eager entry now and hand the lazy ones to the autoloader.
+	 * Hand the lazy entries to the autoloader, then alias every eager entry.
+	 *
+	 * The lazy names go first: aliasing an eager entry loads its new class, and a
+	 * class that still implements or extends a moved type by its old name asks the
+	 * autoloader for that name while it loads.
 	 *
 	 * Safe to call more than once: a name that already exists is left alone.
 	 *
@@ -139,17 +143,20 @@ final class ClassAliasMap {
 	 */
 	public function aliasClasses(): void {
 		foreach ($this->entries as $old => $entry) {
-			if ($entry['eager'] === true) {
-				self::alias(old: $old, new: $entry['class']);
-				continue;
+			if ($entry['eager'] === false) {
+				self::$lazy[$old] = $entry['class'];
 			}
-
-			self::$lazy[$old] = $entry['class'];
 		}
 
 		if (self::$lazy !== [] && self::$autoloaderRegistered === false) {
 			spl_autoload_register([self::class, 'autoload']);
 			self::$autoloaderRegistered = true;
+		}
+
+		foreach ($this->entries as $old => $entry) {
+			if ($entry['eager'] === true) {
+				self::alias(old: $old, new: $entry['class']);
+			}
 		}
 	}//end aliasClasses()
 
