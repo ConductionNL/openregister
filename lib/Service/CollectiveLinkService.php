@@ -234,21 +234,39 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function createAndLinkPage(LinkTarget $target, int $collectiveId, string $title): CollectiveLink {
+		return $this->createAndLinkDraft(target: $target, draft: new CollectivePageDraft(collectiveId: $collectiveId, title: $title));
+	}//end createAndLinkPage()
+
+	/**
+	 * Create the drafted page in its collective and link it to an OR object.
+	 *
+	 * @param LinkTarget          $target The object to link to.
+	 * @param CollectivePageDraft $draft  The target collective id and the new page title.
+	 *
+	 * @return CollectiveLink The persisted link row.
+	 *
+	 * @throws Exception On missing user (401), empty title (400),
+	 *                   missing collective (400), Collectives unavailable (503).
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function createAndLinkDraft(LinkTarget $target, CollectivePageDraft $draft): CollectiveLink {
 		$uid = $this->requireUid();
 
-		$title = trim($title);
+		$title = trim($draft->title);
 		if ($title === '') {
 			throw new Exception('Page title is required', 400);
 		}
 
-		$pageId = $this->createPage(collectiveId: $collectiveId, title: $title);
-		$info   = ($this->fetchPageInfo(pageId: $pageId, uid: $uid) ?? $this->draftPageInfo(collectiveId: $collectiveId, title: $title));
+		$collectiveId = $draft->collectiveId;
+		$pageId       = $this->createPage(collectiveId: $collectiveId, title: $title);
+		$info         = ($this->fetchPageInfo(pageId: $pageId, uid: $uid) ?? $this->draftPageInfo(collectiveId: $collectiveId, title: $title));
 
 		$link = $this->hydrateLink(pageId: $pageId, info: $info);
 		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->collectiveLinkMapper->insert($link);
-	}//end createAndLinkPage()
+	}//end createAndLinkDraft()
 
 	/**
 	 * Create a page at the root of a collective, as the current user.
