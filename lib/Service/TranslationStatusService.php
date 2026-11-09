@@ -204,10 +204,8 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
 	 */
-	public function search(
-		?string $query = null, ?string $language = null, ?string $status = null, ?string $objectUuid = null,
-		int $limit = 100, ?string $sourceLanguage = null, bool $isOutOfDate = false,
-	): array {
+	public function search(?string $query = null, ?string $language = null, ?string $status = null, ?string $objectUuid = null,
+		int $limit = 100, ?string $sourceLanguage = null, bool $isOutOfDate = false): array {
 		$filter = new TranslationFilter(language: $language, status: $status, objectUuid: $objectUuid, sourceLanguage: $sourceLanguage);
 		return $this->find(search: new TranslationSearch(filter: $filter, query: $query, limit: $limit, isOutOfDate: $isOutOfDate));
 	}//end search()
@@ -244,10 +242,8 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
 	 */
-	public function searchWithSourceValues(
-		?string $query = null, ?string $language = null, ?string $status = null, ?string $objectUuid = null,
-		int $limit = 100, ?string $sourceLanguage = null, bool $isOutOfDate = false,
-	): array {
+	public function searchWithSourceValues(?string $query = null, ?string $language = null, ?string $status = null, ?string $objectUuid = null,
+		int $limit = 100, ?string $sourceLanguage = null, bool $isOutOfDate = false): array {
 		$filter = new TranslationFilter(language: $language, status: $status, objectUuid: $objectUuid, sourceLanguage: $sourceLanguage);
 		return $this->findWithSourceValues(search: new TranslationSearch(filter: $filter, query: $query, limit: $limit, isOutOfDate: $isOutOfDate));
 	}//end searchWithSourceValues()
