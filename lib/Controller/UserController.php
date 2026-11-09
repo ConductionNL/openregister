@@ -331,10 +331,14 @@ class UserController extends Controller {
 					reason: 'account_disabled'
 				);
 
+				// The same body as a wrong password, and throttled like one: this
+				// branch is only reached after checkPassword() succeeded, so a
+				// distinct, unthrottled answer confirmed a disabled account's password.
 				$response = new JSONResponse(
-					data: ['error' => 'Account is disabled'],
+					data: ['error' => 'Invalid username or password'],
 					statusCode: 401
 				);
+				$response->throttle(['action' => 'openregister_login']);
 				return $this->securityService->addSecurityHeaders(response: $response);
 			}
 

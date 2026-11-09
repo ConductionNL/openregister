@@ -281,8 +281,12 @@ class UserControllerTest extends TestCase {
 
 		$result = $this->controller->login();
 
+		// obj-f6: the same body as a wrong password, and throttled like one, so a
+		// correct password for a disabled account is no unthrottled oracle.
 		$this->assertEquals(401, $result->getStatus());
-		$this->assertEquals('Account is disabled', $result->getData()['error']);
+		$this->assertEquals('Invalid username or password', $result->getData()['error']);
+		$this->assertTrue($result->isThrottled());
+		$this->assertSame(['action' => 'openregister_login'], $result->getThrottleMetadata());
 	}
 
 	public function testLoginRefusesAUserWithASecondFactor(): void {
