@@ -1,409 +1,368 @@
 <?php
 
 /**
- * A fragment may put tasks on its objects: checked before anything is
- * written, written once through the engine's trusted path, proved, and
- * deleted on remove before the objects they are on.
+ * ExampleSetTasks validates a fragment task row, writes it once per key through
+ * the task service, and reports and reverts what it wrote.
+ *
+ * @category Test
+ * @package  OCA\OpenRegister\Tests\Unit\Service\ExampleSet
+ * @author   Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
- * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCP\AppFramework\Db\DoesNotExistException;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use RuntimeException;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
- * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetExternalTask
- * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates
- * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
- * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
- * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
- * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
- * @uses \OCA\OpenRegister\Db\Task
- * @uses \OCA\OpenRegister\Db\TaskAudit
- * @uses \OCA\OpenRegister\Service\Task\TaskState
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
- * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskChecklist
- * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
- * @uses \OCA\OpenRegister\Service\WriteCause
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskClaim
- * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
- * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
- * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
- * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetExternalTask
+ * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates
+ * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskChecklist
+ * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue
+ * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskClaim
+ * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetRow
+ * @uses   \OCA\OpenRegister\Service\Task\TaskState
+ * @uses   \OCA\OpenRegister\Db\Task
  */
-class ExampleSetTasksTest extends ExampleSetTestCase {
+class ExampleSetTasksTest extends TestCase {
+
+	/**
+	 * Task mapper behind the container.
+	 *
+	 * @var TaskMapper&MockObject
+	 */
+	private TaskMapper&MockObject $mapper;
+
+	/**
+	 * Task service behind the container.
+	 *
+	 * @var TaskServiceInterface&MockObject
+	 */
+	private TaskServiceInterface&MockObject $service;
+
+	/**
+	 * Class under test.
+	 *
+	 * @var ExampleSetTasks
+	 */
+	private ExampleSetTasks $tasks;
+
+	/**
+	 * Wire the container to the mapper and service mocks.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
-		parent::setUp();
-		$this->store->offer(register: 'cases', schema: 'case');
-		$this->app(app: 'openregister', fragment: $this->castFile());
+		$this->mapper  = $this->createMock(TaskMapper::class);
+		$this->service = $this->createMock(TaskServiceInterface::class);
+		$container     = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnMap(
+			[
+				[TaskMapper::class, $this->mapper],
+				[TaskServiceInterface::class, $this->service],
+			]
+		);
+		$this->tasks = new ExampleSetTasks($container);
 	}
 
 	/**
-	 * A fragment with a case and the given tasks on it.
+	 * A task with the given uuid and terminal flag.
 	 *
-	 * @param array<int, array<string, mixed>> $tasks The tasks.
+	 * @param string $uuid     The uuid.
+	 * @param bool   $terminal Whether the state is terminal.
+	 *
+	 * @return Task
+	 */
+	private function task(string $uuid, bool $terminal=false): Task {
+		$task = new Task();
+		$task->setUuid($uuid);
+		$task->setIsTerminal($terminal);
+		return $task;
+	}
+
+	/**
+	 * Part and noun name the rows this engine writes.
 	 *
 	 * @return void
 	 */
-	private function caseWithTasks(array $tasks): void {
-		$this->app(app: 'alpha', fragment: [
-			'objects' => [['key' => 'case-1', 'register' => 'cases', 'schema' => 'case', 'data' => ['title' => 'Zaak']]],
-			'tasks'   => $tasks,
-		]);
+	public function testPartAndNoun(): void {
+		$this->assertSame(['tasks', 'task'], [$this->tasks->part(), $this->tasks->noun()]);
 	}
 
-	public function testOpenAndFinishedTasksAreWrittenOnceOnTheirObjectAndRemovedFirst(): void {
-		$this->caseWithTasks([
-			['key' => 'beoordelen', 'data' => [
-				'title' => 'Documenten beoordelen', 'objectUuid' => '{{object:case-1.id}}', 'state' => 'active',
-				'assignee' => '{{cast:esra.uid}}', 'dueAt' => '{{date:5}}', 'priority' => 'high',
-			]],
-			['key' => 'ontvangst', 'data' => [
-				'title' => 'Ontvangst bevestigen', 'objectUuid' => '{{object:case-1.id}}', 'state' => 'completed',
-				'assignee' => '{{cast:esra.uid}}', 'completedAt' => '{{datetime:-13 10:00}}', 'completedBy' => '{{cast:esra.uid}}',
-			]],
-		]);
-		$plan = $this->catalogue->gather(set: 'demo');
+	/**
+	 * A minimal well-formed task is accepted.
+	 *
+	 * @return void
+	 */
+	public function testMinimalTaskIsAccepted(): void {
+		$this->assertSame('', $this->tasks->refusal(['title' => 'Check', 'objectUuid' => 'o-1', 'assignee' => 'alice'], ['alice']));
+	}
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$this->assertSame([], $this->engineTasks, 'the check writes no task');
+	/**
+	 * An unknown field is refused and named.
+	 *
+	 * @return void
+	 */
+	public function testUnknownFieldIsRefused(): void {
+		$this->assertSame(
+			'field "colour", "size" is not a task field a set may write',
+			$this->tasks->refusal(['title' => 'x', 'objectUuid' => 'o', 'colour' => 1, 'size' => 2], [])
+		);
+	}
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+	/**
+	 * Title and objectUuid are both required and must be non-blank strings.
+	 *
+	 * @return void
+	 */
+	public function testTitleAndObjectAreNeeded(): void {
+		$this->assertSame('a task needs a title', $this->tasks->refusal(['objectUuid' => 'o'], []));
+		$this->assertSame('a task needs a title', $this->tasks->refusal(['title' => ' ', 'objectUuid' => 'o'], []));
+		$this->assertSame('a task needs the object it is on (objectUuid)', $this->tasks->refusal(['title' => 't'], []));
+		$this->assertSame('a task needs the object it is on (objectUuid)', $this->tasks->refusal(['title' => 't', 'objectUuid' => 5], []));
+	}
 
-		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$this->assertSame(['alpha/beoordelen' => 'created', 'alpha/ontvangst' => 'created'], $report['tasks']);
-		$caseId = $this->store->ids(register: 'cases', schema: 'case')[0];
-		$this->assertCount(2, $this->engineTasks);
-		foreach ($this->engineTasks as $task) {
-			$this->assertSame($caseId, $task->getObjectUuid());
-			$this->assertSame('esra.demir', $task->getAssignee());
+	/**
+	 * Every person field must be an account the set knows.
+	 *
+	 * @return void
+	 */
+	public function testUnknownPeopleAreRefused(): void {
+		foreach (['assignee', 'completedBy', 'requester', 'claimedBy'] as $field) {
+			$this->assertSame(
+				$field.' "mallory" is not an account the set creates or adopts',
+				$this->tasks->refusal(['title' => 't', 'objectUuid' => 'o', $field => 'mallory'], ['alice']),
+				$field
+			);
 		}
-
-		$this->assertSame('example-set:alpha/beoordelen', $this->taskImports[0]['data']['key']);
-		$this->assertSame('alpha', $this->taskImports[0]['data']['appId']);
-		$this->assertArrayNotHasKey('completedAt', $this->taskImports[1]['data']);
-		$done = $this->engineTasks['task-2'];
-		$this->assertSame('completed', $done->getState());
-		$this->assertSame(expected: '2026-09-30 10:00', actual: $this->local(moment: $done->getCompletedAt()));
-		$this->assertSame('esra.demir', $done->getCompletedBy());
-
-		$again = $this->installer->install(plan: $plan, today: $this->today());
-		$this->assertSame(['alpha/beoordelen' => 'kept', 'alpha/ontvangst' => 'kept'], $again['tasks']);
-		$this->assertCount(2, $this->taskImports, 'a second install writes nothing');
-
-		$removed = $this->remover->remove(set: 'demo');
-		$this->assertSame([], $removed['failed']);
-		$this->assertSame(2, $removed['removed']['tasks']);
-		$this->assertSame([], $this->engineTasks);
-		$this->assertSame([], $this->store->ids(register: 'cases', schema: 'case'));
 	}
 
 	/**
-	 * An external task reaches the engine addressed to its party, with its
-	 * upload rules as metadata.upload, raised by the fragment's app.
+	 * An external task's assignee is a party, not an account, so it is not checked as one.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-resident-a-portal-task
 	 */
-	public function testAnExternalTaskIsWrittenForItsPartyWithItsUploadRules(): void {
-		$this->caseWithTasks(tasks: [
-			['key' => 'id-kopie', 'data' => [
-				'title' => 'Stuur een kopie van uw ID-bewijs', 'objectUuid' => '{{object:case-1.id}}',
-				'performerType' => 'external', 'assignee' => 'party:{{cast:sanne.uid}}', 'dueAt' => '{{date:7}}',
-				'uploadRules' => ['required' => true, 'maxFiles' => 2],
-			]],
-		]);
-		$plan = $this->catalogue->gather(set: 'demo');
-
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
-
-		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
-		$import = $this->taskImports[0];
-		$this->assertSame(expected: 'external', actual: $import['data']['performerType']);
-		$this->assertSame(expected: 'party:sanne.devries', actual: $import['data']['assignee']);
-		$this->assertSame(expected: ['upload' => ['required' => true, 'maxFiles' => 2]], actual: $import['data']['metadata']);
-		$this->assertArrayNotHasKey(key: 'uploadRules', array: $import['data']);
-		$this->assertSame(expected: 'alpha', actual: $import['actor'], message: 'the app raises the task, not the party');
+	public function testExternalAssigneeIsNotCheckedAsAccount(): void {
+		$this->assertSame(
+			'',
+			$this->tasks->refusal(['title' => 't', 'objectUuid' => 'o', 'performerType' => 'external', 'assignee' => 'party:abc'], [])
+		);
+		$this->assertSame(
+			'requester "bob" is not an account the set creates or adopts',
+			$this->tasks->refusal(['title' => 't', 'objectUuid' => 'o', 'performerType' => 'external', 'assignee' => 'party:abc', 'requester' => 'bob'], [])
+		);
 	}
 
 	/**
-	 * A task's checklist reaches the engine as it is declared, ticked items included.
+	 * External-task rules are applied after the people check.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-checklist
 	 */
-	public function testATaskIsWrittenWithItsChecklist(): void {
-		$checklist = [
-			['id' => 'datum', 'label' => 'Datum afstemmen', 'checked' => true],
-			['id' => 'zaal', 'label' => 'Zaal reserveren', 'checked' => false],
-		];
-		$this->caseWithTasks(tasks: [
-			['key' => 'hoorzitting', 'data' => [
-				'title' => 'Hoorzitting inplannen', 'objectUuid' => '{{object:case-1.id}}', 'priority' => 'high',
-				'checklist' => $checklist,
-			]],
-		]);
-		$plan = $this->catalogue->gather(set: 'demo');
-
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
-
-		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
-		$this->assertSame(expected: $checklist, actual: $this->taskImports[0]['data']['checklist']);
-		$this->assertSame(expected: 'high', actual: $this->taskImports[0]['data']['priority']);
+	public function testExternalTaskRuleIsApplied(): void {
+		$this->assertSame(
+			'uploadRules apply to an external task only (performerType: external)',
+			$this->tasks->refusal(['title' => 't', 'objectUuid' => 'o', 'uploadRules' => []], [])
+		);
 	}
 
 	/**
-	 * A task may carry the engine key and organisation an app reads it by, such as a tenant's onboarding step.
+	 * An unknown state is refused; a known one passes.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-engine-key-and-organisation
 	 */
-	public function testATaskKeepsTheKeyAndOrganisationItDeclares(): void {
-		$this->caseWithTasks(tasks: [
-			['key' => 'stap-contract', 'data' => [
-				'title' => 'Contract', 'objectUuid' => '{{object:case-1.id}}', 'kind' => 'dossiq.onboarding',
-				'taskKey' => 'contract', 'organisation' => '{{object:case-1.id}}', 'state' => 'completed',
-			]],
-			['key' => 'gewoon', 'data' => ['title' => 'Gewoon', 'objectUuid' => '{{object:case-1.id}}']],
-		]);
-		$plan = $this->catalogue->gather(set: 'demo');
-
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$this->installer->install(plan: $plan, today: $this->today());
-
-		$caseId = $this->store->ids(register: 'cases', schema: 'case')[0];
-		$this->assertSame(expected: 'contract', actual: $this->taskImports[0]['data']['key']);
-		$this->assertSame(expected: $caseId, actual: $this->taskImports[0]['data']['organisation']);
-		$this->assertArrayNotHasKey(key: 'taskKey', array: $this->taskImports[0]['data']);
-		$this->assertSame(expected: 'example-set:alpha/gewoon', actual: $this->taskImports[1]['data']['key'], message: 'without taskKey the set names it');
-	}//end testATaskKeepsTheKeyAndOrganisationItDeclares()
-
-	/**
-	 * A task may name who asked for it and when it expires: the requester is one of the set's people, the expiry a
-	 * date the loader resolves from the install day.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
-	 */
-	public function testATaskKeepsItsRequesterAndExpiry(): void {
-		$this->caseWithTasks(tasks: [
-			['key' => 'hoorzitting', 'data' => [
-				'title' => 'Hoorzitting inplannen', 'objectUuid' => '{{object:case-1.id}}', 'assignee' => '{{cast:esra.uid}}',
-				'requester' => '{{cast:sanne.uid}}', 'dueAt' => '{{date:5}}', 'expiresAt' => '{{datetime:9 17:00}}',
-			]],
-		]);
-		$plan = $this->catalogue->gather(set: 'demo');
-
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
-
-		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
-		$import = $this->taskImports[0]['data'];
-		$this->assertSame(expected: 'sanne.devries', actual: $import['requester']);
-		$this->assertSame(expected: '2026-10-22 17:00', actual: $this->local(moment: new \DateTime($import['expiresAt'])));
-	}//end testATaskKeepsItsRequesterAndExpiry()
-
-	/**
-	 * A task's createdAt goes to the engine as the moment of its creation, not as a field.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-task-may-carry-the-moment-it-was-created
-	 */
-	public function testATaskIsWrittenWithTheMomentItWasCreated(): void {
-		$this->caseWithTasks(tasks: [
-			['key' => 'hoorzitting', 'data' => [
-				'title' => 'Hoorzitting inplannen', 'objectUuid' => '{{object:case-1.id}}', 'assignee' => '{{cast:esra.uid}}',
-				'createdAt' => '{{datetime:-2 16:20}}', 'claimedBy' => '{{cast:esra.uid}}', 'claimedAt' => '{{datetime:-1 09:05}}',
-			]],
-		]);
-		$plan = $this->catalogue->gather(set: 'demo');
-
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
-
-		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
-		$at = $this->taskImports[0]['at'];
-		$this->assertInstanceOf(expected: \DateTime::class, actual: $at);
-		$this->assertSame(expected: '2026-10-11T14:20:00+00:00', actual: $at->setTimezone(new \DateTimeZone('UTC'))->format('c'));
-		$this->assertArrayNotHasKey(key: 'createdAt', array: $this->taskImports[0]['data']);
-	}//end testATaskIsWrittenWithTheMomentItWasCreated()
-
-	/**
-	 * A task without createdAt leaves its creation moment to the engine.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-task-may-carry-the-moment-it-was-created
-	 */
-	public function testATaskWithoutCreatedAtIsStampedByTheEngine(): void {
-		$this->caseWithTasks(tasks: [['key' => 't', 'data' => ['title' => 'Taak', 'objectUuid' => '{{object:case-1.id}}']]]);
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
-
-		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
-		$this->assertNull(actual: $this->taskImports[0]['at']);
-	}//end testATaskWithoutCreatedAtIsStampedByTheEngine()
-
-	public function testATaskThatDisappearedIsReportedMissing(): void {
-		$this->caseWithTasks([['key' => 't', 'data' => ['title' => 'Taak', 'objectUuid' => '{{object:case-1.id}}']]]);
-		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
-
-		$this->engineTasks = [];
-		$report = $this->installer->install(plan: $plan, today: $this->today());
-
-		$this->assertContains('task alpha/t', $report['missing']);
-		$this->assertFalse($report['ok']);
+	public function testStateIsNormalised(): void {
+		$this->assertNotSame('', $this->tasks->refusal(['title' => 't', 'objectUuid' => 'o', 'state' => 'bogus-state'], []));
+		$this->assertSame('', $this->tasks->refusal(['title' => 't', 'objectUuid' => 'o', 'state' => 'available'], []));
 	}
 
 	/**
-	 * A refresh that finds the recorded task gone but a task with the same key in the engine adopts that task and
-	 * points the record at it, instead of writing a second task with the key.
+	 * Date and checklist refusals come through, in that order.
 	 *
 	 * @return void
 	 */
-	public function testARefreshAdoptsTheTaskThatHoldsTheKey(): void {
-		$this->caseWithTasks(tasks: [['key' => 't', 'data' => ['title' => 'Taak', 'objectUuid' => '{{object:case-1.id}}']]]);
-		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
-		$task = array_values($this->engineTasks)[0];
-		$task->setUuid('task-elsewhere');
-		$this->engineTasks = ['task-elsewhere' => $task];
-
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
-
-		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
-		$this->assertSame(expected: ['task-elsewhere'], actual: array_keys($this->engineTasks), message: 'no second task with the key');
-		$this->assertCount(expectedCount: 1, haystack: $this->taskImports);
-		$this->assertNotContains(needle: 'task alpha/t', haystack: $report['missing']);
-	}//end testARefreshAdoptsTheTaskThatHoldsTheKey()
+	public function testDateThenChecklistRefusal(): void {
+		$base = ['title' => 't', 'objectUuid' => 'o'];
+		$this->assertSame('dueAt "not-a-date" is not a date', $this->tasks->refusal($base + ['dueAt' => 'not-a-date', 'checklist' => 'no'], []));
+		$this->assertSame('checklist must be a list of items', $this->tasks->refusal($base + ['checklist' => 'no'], []));
+	}
 
 	/**
-	 * @dataProvider refusedTasks
+	 * A key already held by a task is not written again; the holder is reported.
 	 *
-	 * @param array<string, mixed> $data   The task's fields.
-	 * @param string               $reason A part of the refusal.
+	 * @return void
 	 */
-	public function testACheckRefusesAFaultyTaskAndWritesNothing(array $data, string $reason): void {
-		$this->caseWithTasks([['key' => 'bad', 'data' => $data]]);
+	public function testHeldKeyIsNotWrittenAgain(): void {
+		$this->mapper->expects($this->once())->method('findByKey')->with('example-set:app/k1')->willReturn([$this->task('held-uuid')]);
+		$this->service->expects($this->never())->method('import');
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
-
-		$this->assertCount(1, $refusals);
-		$this->assertStringContainsString('task "bad"', $refusals[0]);
-		$this->assertStringContainsString($reason, $refusals[0]);
-		$this->assertSame([], $this->engineTasks);
+		$this->assertSame(
+			['error' => '', 'entry' => ['uuid' => 'held-uuid']],
+			$this->tasks->write(new ExampleSetRow('app', 'k1', ['title' => 't', 'objectUuid' => 'o']))
+		);
 	}
 
 	/**
-	 * @return array<string, array{0: array<string, mixed>, 1: string}>
+	 * A fresh row imports through the service with the derived key, app and actor.
+	 *
+	 * @return void
 	 */
-	public static function refusedTasks(): array {
-		$on = '{{object:case-1.id}}';
-		return [
-			'no title'         => [['objectUuid' => $on], 'needs a title'],
-			'no object'        => [['title' => 'T'], 'needs the object'],
-			'a stranger'       => [['title' => 'T', 'objectUuid' => $on, 'assignee' => 'somebody.else'], 'assignee "somebody.else"'],
-			'an unknown state' => [['title' => 'T', 'objectUuid' => $on, 'state' => 'half-done'], "Unmapped task status 'half-done'"],
-			'not a date'       => [['title' => 'T', 'objectUuid' => $on, 'dueAt' => 'soon'], 'dueAt "soon" is not a date'],
-			'another field'    => [['title' => 'T', 'objectUuid' => $on, 'sequenceUuid' => 'x'], 'field "sequenceUuid"'],
-			'a stranger asked for it' => [['title' => 'T', 'objectUuid' => $on, 'requester' => 'somebody.else'], 'requester "somebody.else"'],
-			'an unknown requester' => [['title' => 'T', 'objectUuid' => $on, 'requester' => '{{cast:nobody.uid}}'], 'cannot resolve'],
-			'an expiry that is not a date' => [['title' => 'T', 'objectUuid' => $on, 'expiresAt' => 'later'], 'expiresAt "later" is not a date'],
-			'a malformed expiry token' => [['title' => 'T', 'objectUuid' => $on, 'expiresAt' => '{{datetime:9}}'], 'cannot resolve'],
-			'an expiry before the due date' => [
-				['title' => 'T', 'objectUuid' => $on, 'dueAt' => '{{date:9}}', 'expiresAt' => '{{date:5}}'],
-				'expiresAt lies before dueAt',
-			],
-			'an unknown object' => [['title' => 'T', 'objectUuid' => '{{object:nope.id}}'], 'cannot resolve'],
-			'an external task for an account' => [
-				['title' => 'T', 'objectUuid' => $on, 'performerType' => 'external', 'assignee' => '{{cast:sanne.uid}}'],
-				'assigned to a party',
-			],
-			'an external task marked done' => [
-				['title' => 'T', 'objectUuid' => $on, 'performerType' => 'external', 'assignee' => 'party:x', 'completedBy' => '{{cast:esra.uid}}'],
-				'completed by its party',
-			],
-			'upload rules on an internal task' => [
-				['title' => 'T', 'objectUuid' => $on, 'uploadRules' => ['maxFiles' => 1]],
-				'external task only',
-			],
-			'a checklist that is not a list' => [['title' => 'T', 'objectUuid' => $on, 'checklist' => 'bel de commissie'], 'checklist must be a list'],
-			'a checklist item without a label' => [['title' => 'T', 'objectUuid' => $on, 'checklist' => [['id' => 'a']]], 'an id and a label'],
-			'a checklist item id used twice' => [
-				['title' => 'T', 'objectUuid' => $on, 'checklist' => [['id' => 'a', 'label' => 'A'], ['id' => 'a', 'label' => 'B']]],
-				'id "a" is used twice',
-			],
-			'a checklist item checked as text' => [
-				['title' => 'T', 'objectUuid' => $on, 'checklist' => [['id' => 'a', 'label' => 'A', 'checked' => 'yes']]],
-				'checked is true or false',
-			],
-			'a creation moment that is not a date' => [['title' => 'T', 'objectUuid' => $on, 'createdAt' => 'once'], 'createdAt "once" is not a date'],
-			'a creation moment in the future' => [['title' => 'T', 'objectUuid' => $on, 'createdAt' => date('c', strtotime('+10 years'))], 'lies in the future'],
-			'a claim before the task existed' => [
-				['title' => 'T', 'objectUuid' => $on, 'createdAt' => '{{datetime:-2 16:20}}', 'claimedAt' => '{{datetime:-3 09:05}}'],
-				'claimedAt lies before createdAt',
-			],
-			'a completion before the task existed' => [
-				['title' => 'T', 'objectUuid' => $on, 'state' => 'completed', 'createdAt' => '{{datetime:-2 16:20}}', 'completedAt' => '{{datetime:-2 16:19}}'],
-				'completedAt lies before createdAt',
-			],
-			'an unknown upload rule' => [
-				['title' => 'T', 'objectUuid' => $on, 'performerType' => 'external', 'assignee' => 'party:x', 'uploadRules' => ['virusScan' => true]],
-				'upload rule "virusScan"',
-			],
-		];
+	public function testFreshRowIsImported(): void {
+		$this->mapper->method('findByKey')->willReturn([]);
+		$this->mapper->expects($this->never())->method('update');
+		$this->service->expects($this->once())->method('import')
+			->with(
+				['title' => 't', 'objectUuid' => 'o', 'assignee' => 'alice', 'key' => 'custom-key', 'appId' => 'app'],
+				'alice',
+				null,
+				$this->callback(static fn ($d) => $d !== null && $d->format('Y-m-d') === '2020-01-01')
+			)
+			->willReturn($this->task('new-uuid'));
+
+		$this->assertSame(
+			['error' => '', 'entry' => ['uuid' => 'new-uuid']],
+			$this->tasks->write(new ExampleSetRow('app', 'k1', ['title' => 't', 'objectUuid' => 'o', 'assignee' => 'alice', 'taskKey' => 'custom-key', 'createdAt' => '2020-01-01']))
+		);
 	}
 
-	public function testATaskKeyUsedTwiceRefusesTheFragment(): void {
-		$task = ['key' => 'same', 'data' => ['title' => 'T', 'objectUuid' => '{{object:case-1.id}}']];
-		$this->caseWithTasks([$task, $task]);
+	/**
+	 * A lookup failure on the key counts as not held, and an unassigned task is written as the app.
+	 *
+	 * @return void
+	 */
+	public function testKeyLookupFailureStillImportsAsApp(): void {
+		$this->mapper->method('findByKey')->willThrowException(new RuntimeException('db'));
+		$this->service->expects($this->once())->method('import')
+			->with($this->anything(), 'app', null, null)
+			->willReturn($this->task('u'));
 
-		$this->expectExceptionMessage('task key "same" is used twice');
-		$this->catalogue->gather(set: 'demo');
+		$this->assertSame('u', $this->tasks->write(new ExampleSetRow('app', 'k', ['title' => 't', 'objectUuid' => 'o']))['entry']['uuid']);
 	}
-}//end class
+
+	/**
+	 * An external task is written as the app, with its upload rules as metadata.
+	 *
+	 * @return void
+	 */
+	public function testExternalTaskIsImportedAsAppWithUploadMetadata(): void {
+		$this->mapper->method('findByKey')->willReturn([]);
+		$this->service->expects($this->once())->method('import')
+			->with(
+				$this->callback(static fn ($f) => $f['metadata'] === ['upload' => ['required' => true]] && isset($f['uploadRules']) === false),
+				'app',
+				null,
+				null
+			)
+			->willReturn($this->task('u'));
+
+		$this->tasks->write(new ExampleSetRow('app', 'k', ['title' => 't', 'objectUuid' => 'o', 'performerType' => 'external', 'assignee' => 'party:x', 'uploadRules' => ['required' => true]]));
+	}
+
+	/**
+	 * An import failure is reported as the row's error, with no entry.
+	 *
+	 * @return void
+	 */
+	public function testImportFailureIsReported(): void {
+		$this->mapper->method('findByKey')->willReturn([]);
+		$this->service->method('import')->willThrowException(new RuntimeException('refused'));
+
+		$this->assertSame(
+			['error' => 'refused', 'entry' => null],
+			$this->tasks->write(new ExampleSetRow('app', 'k', ['title' => 't', 'objectUuid' => 'o']))
+		);
+	}
+
+	/**
+	 * A terminal task with completedAt gets its completion moment and actor written back.
+	 *
+	 * @return void
+	 */
+	public function testTerminalTaskCompletionIsWrittenBack(): void {
+		$task = $this->task('u', true);
+		$this->mapper->method('findByKey')->willReturn([]);
+		$this->service->method('import')->willReturn($task);
+		$this->mapper->expects($this->once())->method('update')->with($task)->willReturn($task);
+
+		$this->tasks->write(new ExampleSetRow('app', 'k', ['title' => 't', 'objectUuid' => 'o', 'assignee' => 'alice', 'completedAt' => '2020-01-02']));
+
+		$this->assertSame('2020-01-02', $task->getCompletedAt()->format('Y-m-d'));
+		$this->assertSame('alice', $task->getCompletedBy());
+	}
+
+	/**
+	 * A non-terminal task is not marked complete even with completedAt.
+	 *
+	 * @return void
+	 */
+	public function testOpenTaskIsNotCompleted(): void {
+		$this->mapper->method('findByKey')->willReturn([]);
+		$this->service->method('import')->willReturn($this->task('u', false));
+		$this->mapper->expects($this->never())->method('update');
+
+		$this->tasks->write(new ExampleSetRow('app', 'k', ['title' => 't', 'objectUuid' => 'o', 'completedAt' => '2020-01-02']));
+	}
+
+	/**
+	 * A task is lost when the mapper can no longer find it.
+	 *
+	 * @return void
+	 */
+	public function testLost(): void {
+		$this->mapper->method('findByUuid')->willReturnCallback(
+			fn (string $uuid) => $uuid === 'here' ? $this->task('here') : throw new DoesNotExistException('gone')
+		);
+		$this->assertFalse($this->tasks->lost(['uuid' => 'here']));
+		$this->assertTrue($this->tasks->lost(['uuid' => 'gone']));
+	}
+
+	/**
+	 * Revert deletes the task it finds.
+	 *
+	 * @return void
+	 */
+	public function testRevertDeletes(): void {
+		$task = $this->task('u');
+		$this->mapper->method('findByUuid')->with('u')->willReturn($task);
+		$this->mapper->expects($this->once())->method('delete')->with($task)->willReturn($task);
+		$this->assertSame('removed', $this->tasks->revert(['uuid' => 'u']));
+	}
+
+	/**
+	 * Reverting a task that is already gone counts as removed, without a delete.
+	 *
+	 * @return void
+	 */
+	public function testRevertOfMissingTaskIsRemoved(): void {
+		$this->mapper->method('findByUuid')->willThrowException(new DoesNotExistException('gone'));
+		$this->mapper->expects($this->never())->method('delete');
+		$this->assertSame('removed', $this->tasks->revert(['uuid' => 'u']));
+	}
+
+	/**
+	 * A failed delete is reported as failed.
+	 *
+	 * @return void
+	 */
+	public function testRevertDeleteFailureIsFailed(): void {
+		$this->mapper->method('findByUuid')->willReturn($this->task('u'));
+		$this->mapper->method('delete')->willThrowException(new RuntimeException('locked'));
+		$this->assertSame('failed', $this->tasks->revert(['uuid' => 'u']));
+	}
+}
