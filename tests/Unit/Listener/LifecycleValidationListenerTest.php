@@ -140,12 +140,7 @@ class LifecycleValidationListenerTest extends TestCase {
 
 		$this->listener = new LifecycleValidationListener(
 			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $logger), $this->userSession, $this->permissionHandler),
-			new LifecycleTransitionChecks($this->guardRegistry, new LifecycleConditionEvaluator(
-				$this->userSession,
-				$this->groupManager,
-				new LifecycleConditionReporting($this->l10n, $this->logger),
-				$this->realConditionDialect()
-			), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+			new LifecycleTransitionChecks($this->guardRegistry, new LifecycleConditionEvaluator(new LifecycleConditionReporting($this->l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->userSession, $this->groupManager))), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
 				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
 						placeholders: new \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver(

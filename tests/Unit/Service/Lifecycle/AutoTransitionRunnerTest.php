@@ -131,12 +131,7 @@ class AutoTransitionRunnerTest extends TestCase {
 				$this->container,
 				$this->schemaMapper,
 				new AutoTransitionSelector(
-					new LifecycleConditionEvaluator(
-						$this->createMock(IUserSession::class),
-						$groupManager,
-						new LifecycleConditionReporting($l10n, $this->logger),
-						$this->realConditionDialect()
-					),
+					new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->createMock(IUserSession::class), $groupManager))),
 					$this->logger
 				),
 				$this->logger
