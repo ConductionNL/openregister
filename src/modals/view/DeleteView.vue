@@ -1,8 +1,17 @@
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		:name="t('openregister', 'Delete View')"
-		size="normal"
-		noClose>
+		:success="success"
+		:successText="t('openregister', 'View successfully deleted')"
+		:error="error"
+		:loading="loading"
+		:showConfirm="!success"
+		:closeLabel="
+			success ? t('openregister', 'Close') : t('openregister', 'Cancel')
+		"
+		:confirmLabel="t('openregister', 'Delete View')"
+		@cancel="closeDialog"
+		@confirm="deleteView()">
 		<p v-if="!success">
 			{{ t('openregister', 'Are you sure you want to permanently delete') }}
 			<b>{{ view?.name || t('openregister', 'Untitled View') }}</b
@@ -16,74 +25,30 @@
 				{{ t('openregister', 'This will permanently delete:') }}
 			</p>
 			<ul>
-				<li>
-					{{
-						t(
-							'openregister',
-							'The saved view and all its search configuration',
-						)
-					}}
-				</li>
-				<li>
-					{{
-						t(
-							'openregister',
-							'Any favorites and sharing settings for this view',
-						)
-					}}
+				<li v-for="item in deletedParts" :key="item">
+					{{ item }}
 				</li>
 			</ul>
 		</NcNoteCard>
 
-		<NcNoteCard v-if="success" type="success">
-			<p>{{ t('openregister', 'View successfully deleted') }}</p>
-		</NcNoteCard>
-
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Close :size="20" />
-				</template>
-				{{
-					success
-						? t('openregister', 'Close')
-						: t('openregister', 'Cancel')
-				}}
-			</NcButton>
-			<NcButton
-				v-if="!success"
-				:disabled="loading"
-				variant="error"
-				@click="deleteView()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Delete v-if="!loading" :size="20" />
-				</template>
-				{{ t('openregister', 'Delete View') }}
-			</NcButton>
+		<template #confirmIcon>
+			<Delete :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Close from 'vue-material-design-icons/Close.vue'
+import { NcNoteCard } from '@nextcloud/vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 import { viewsStore } from '../../store/store.js'
 
 export default {
 	name: 'DeleteView',
 	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
+		ConfirmDialogFrame,
 		NcNoteCard,
-		Close,
 		Delete,
 	},
 
@@ -101,6 +66,20 @@ export default {
 			error: null,
 			closeModalTimeout: null,
 		}
+	},
+
+	computed: {
+		/**
+		 * What deleting the view removes, one line each.
+		 *
+		 * @return {string[]} The translated lines.
+		 */
+		deletedParts() {
+			return [
+				t('openregister', 'The saved view and all its search configuration'),
+				t('openregister', 'Any favorites and sharing settings for this view'),
+			]
+		},
 	},
 
 	methods: {
