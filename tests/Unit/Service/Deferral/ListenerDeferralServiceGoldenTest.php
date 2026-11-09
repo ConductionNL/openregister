@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Deferral;
 
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralPlatform;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Tests\Support\ShutdownFunctionSpy;
@@ -170,9 +171,11 @@ class ListenerDeferralServiceGoldenTest extends TestCase {
 		$service = new ListenerDeferralService(
 			userSession: $userSession,
 			organisation: $organisations,
-			jobList: $jobList,
-			appConfig: $this->createMock(IAppConfig::class),
-			logger: $logger,
+			platform: new ListenerDeferralPlatform(
+				jobList: $jobList,
+				appConfig: $this->createMock(IAppConfig::class),
+				logger: $logger
+			),
 			argumentLimit: ($scenario['limit'] ?? 4000),
 		);
 

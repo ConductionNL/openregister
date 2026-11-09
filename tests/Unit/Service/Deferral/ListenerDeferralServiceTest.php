@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service\Deferral;
 
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralPlatform;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Tests\Support\ShutdownFunctionSpy;
@@ -46,9 +47,11 @@ class ListenerDeferralServiceTest extends TestCase {
 		return new ListenerDeferralService(
 			userSession: $this->userSession,
 			organisation: $this->organisation,
-			jobList: $this->jobList,
-			appConfig: $this->appConfig,
-			logger: $this->logger,
+			platform: new ListenerDeferralPlatform(
+				jobList: $this->jobList,
+				appConfig: $this->appConfig,
+				logger: $this->logger
+			),
 		);
 	}
 
