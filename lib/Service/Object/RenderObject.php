@@ -3890,7 +3890,9 @@ class RenderObject implements RenderObjectInterface {
 
 		foreach ($data as $key => $date) {
 			$tmpExtends = $run->keyExtends;
-			$data[$key] = $this->handleExtendDot(data: $date, _extend: $tmpExtends, depth: $run->depth);
+			$nested = new ExtendDotRun();
+			$nested->depth = $run->depth;
+			$data[$key] = $this->handleExtendDot(data: $date, _extend: $tmpExtends, run: $nested);
 		}
 
 		$run->data->set($run->key, $data);
@@ -3899,12 +3901,11 @@ class RenderObject implements RenderObjectInterface {
 	/**
 	 * Handle extends on a dot array
 	 *
-	 * @param array $data The data to extend.
-	 * @param array $_extend The fields to extend.
-	 * @param int $depth The current depth.
-	 * @param bool $allFlag If we extend all or not.
-	 * @param array $visitedIds All ids we already handled.
-	 * @param array $exposures The relation descriptors that declare a field set, keyed by
+	 * @param array        $data      The data to extend.
+	 * @param array        $_extend   The fields to extend.
+	 * @param ExtendDotRun $run       The extend pass: its depth, whether all relations
+	 *                                extend, and the ids already handled on this path.
+	 * @param array        $exposures The relation descriptors that declare a field set, keyed by
 	 *                         the property the link hangs on. Empty for every schema that
 	 *                         declares none, which is every schema written so far.
 	 *
@@ -3912,25 +3913,11 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * @throws \OCP\DB\Exception
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   All flag controls extension behavior
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function handleExtendDot(
-		array $data,
-		array &$_extend,
-		int $depth,
-		bool $allFlag = false,
-		array $visitedIds = [],
-		array $exposures = [],
-	): array {
-		$data = $this->handleWildcardExtends(objectData: $data, _extend: $_extend, depth: $depth + 1);
-
-		$run = new ExtendDotRun();
+	private function handleExtendDot(array $data, array &$_extend, ExtendDotRun $run, array $exposures = []): array {
+		$data      = $this->handleWildcardExtends(objectData: $data, _extend: $_extend, depth: $run->depth + 1);
 		$run->data = new Dot($data);
-		$run->depth = $depth;
-		$run->allFlag = $allFlag;
-		$run->visitedIds = $visitedIds;
 
 		foreach ($_extend as $override => $key) {
 			// Skip keys that are absent, and special '@' fields.
@@ -4344,12 +4331,15 @@ class RenderObject implements RenderObjectInterface {
 
 		$this->preloadOwnExtendTargets(run: $run);
 
+		$dotRun = new ExtendDotRun();
+		$dotRun->depth      = $context->depth;
+		$dotRun->allFlag    = in_array('all', $run->extend, true);
+		$dotRun->visitedIds = $context->visitedIds;
+
 		return $this->handleExtendDot(
 			data: $run->objectData,
 			_extend: $run->extend,
-			depth: $context->depth,
-			allFlag: in_array('all', $run->extend, true),
-			visitedIds: $context->visitedIds,
+			run: $dotRun,
 			exposures: $this->exposuresFor(schema: $this->getSchema(id: $entity->getSchema()))
 		);
 	}//end extendObject()
