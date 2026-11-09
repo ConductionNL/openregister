@@ -18,7 +18,7 @@ final class ApiSurfaceControllerFactory {
 	/**
 	 * The constructor arguments of ApiSurfaceController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param ApiCapabilitiesService $capabilities Constructor argument.
 	 * @param ApiVersionCatalogue $catalogue Constructor argument.
@@ -36,7 +36,6 @@ final class ApiSurfaceControllerFactory {
 		\OCA\OpenRegister\Controller\Support\ControllerSession $session,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ApiSurfaceControllerServices(
 				capabilities: $capabilities,
