@@ -199,11 +199,11 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 */
 	private function linkedOrSourced(ObjectRef $ref, array $filters): array {
 		if ($this->xwikiLinkMapper !== null && $ref->id !== '') {
-			$scope = $this->contextQuery(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, filters: []);
+			$scope = $this->contextQuery(ref: $ref, filters: []);
 			return $this->listLinkedPages(mapper: $this->xwikiLinkMapper, scope: $scope);
 		}
 
-		$query = $this->contextQuery(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, filters: $filters);
+		$query = $this->contextQuery(ref: $ref, filters: $filters);
 		return $this->listFromSource(query: $query);
 	}//end linkedOrSourced()
 
