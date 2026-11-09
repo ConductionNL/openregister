@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Files\Service;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Exception\NoteLockedException;
@@ -165,11 +166,25 @@ class NoteService implements NoteServiceInterface {
 		int $offset = 0,
 		?string $visibility = null,
 	): array {
+		$page = new ListQuery(limit: $limit, offset: $offset);
+		return $this->listNotes(query: new ObjectNotesQuery(objectUuid: $objectUuid, page: $page, visibility: $visibility));
+	}//end getNotesForObject()
+
+	/**
+	 * One page of the notes on an object, with their edit summaries, filtered by visibility.
+	 *
+	 * @param ObjectNotesQuery $query The object, the page and the visibility filter.
+	 *
+	 * @return array<int, array<string, mixed>> The notes.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function listNotes(ObjectNotesQuery $query): array {
 		$comments = $this->commentsManager->getForObject(
 			self::OBJECT_TYPE,
-			$objectUuid,
-			$limit,
-			$offset
+			$query->objectUuid,
+			$query->page->limit,
+			($query->page->offset ?? 0)
 		);
 
 		$notes = [];
@@ -182,8 +197,8 @@ class NoteService implements NoteServiceInterface {
 		// round trips to draw.
 		$notes = $this->withEditSummaries(notes: $notes);
 
-		return $this->visibility->filterRows(rows: $notes, filter: $visibility);
-	}//end getNotesForObject()
+		return $this->visibility->filterRows(rows: $notes, filter: $query->visibility);
+	}//end listNotes()
 
 	/**
 	 * Read one note by its id.
