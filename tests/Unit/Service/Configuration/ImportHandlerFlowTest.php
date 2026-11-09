@@ -38,6 +38,8 @@ use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -348,7 +350,7 @@ class ImportHandlerFlowTest extends TestCase {
 		$result = $this->invokeMethod($this->handler, 'importFlow', [
 			['uuid' => 'flow-uuid-1', 'nodes' => ['n1']],
 			$this->configuration(),
-			null,
+			'alice',
 			false,
 		]);
 
@@ -381,6 +383,67 @@ class ImportHandlerFlowTest extends TestCase {
 			true,
 		]);
 	}//end testImportFlowRefusesExistingFlowOfAnotherOrganisation()
+
+	/**
+	 * importFromJson() skips (and counts) a new flow when the configuration has no organisation.
+	 */
+	public function testImportFromJsonSkipsNewFlowWithoutOrganisation(): void {
+		$this->flowMapper->method('findByUuid')
+			->willThrowException(new DoesNotExistException('not found'));
+		$this->flowMapper->expects($this->never())->method('insert');
+		$this->flowVersionService->expects($this->never())->method('publish');
+
+		$result = $this->handler->importFromJson(
+			data: ['components' => ['flows' => ['flow-uuid-1' => ['name' => 'Orphan', 'nodes' => ['n1']]]]],
+			configuration: $this->configuration(null),
+			owner: 'alice'
+		);
+
+		$this->assertSame(1, $result['skipped']['flows']);
+		$this->assertSame([], $result['flows']);
+	}//end testImportFromJsonSkipsNewFlowWithoutOrganisation()
+
+	/**
+	 * importFlow() stamps the signed-in user as owner when the caller passed none.
+	 */
+	public function testImportFlowFallsBackToSessionUserAsOwner(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$this->handler->setUserSession($session);
+
+		$this->flowMapper->method('findByUuid')
+			->willThrowException(new DoesNotExistException('not found'));
+		$this->flowMapper->expects($this->once())->method('insert')
+			->with($this->callback(static fn (Flow $flow): bool => $flow->getOwner() === 'admin'));
+
+		$this->invokeMethod($this->handler, 'importFlow', [
+			['uuid' => 'flow-uuid-1', 'nodes' => ['n1']],
+			$this->configuration(),
+			null,
+			false,
+		]);
+	}//end testImportFlowFallsBackToSessionUserAsOwner()
+
+	/**
+	 * importFlow() refuses a new flow when there is neither an owner argument nor a session user.
+	 */
+	public function testImportFlowRefusesNewFlowWithoutAnyOwner(): void {
+		$this->flowMapper->method('findByUuid')
+			->willThrowException(new DoesNotExistException('not found'));
+		$this->flowMapper->expects($this->never())->method('insert');
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('belongs to nobody');
+
+		$this->invokeMethod($this->handler, 'importFlow', [
+			['uuid' => 'flow-uuid-1', 'nodes' => ['n1']],
+			$this->configuration(),
+			null,
+			false,
+		]);
+	}//end testImportFlowRefusesNewFlowWithoutAnyOwner()
 
 	/**
 	 * applyImportedFlowFields() carries every inheritable setting FlowService does, oversightEnabled included.

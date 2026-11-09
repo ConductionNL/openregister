@@ -1349,7 +1349,8 @@ class ImportHandler {
 	 *
 	 * @return Flow|null The imported flow entity, or null if skipped.
 	 *
-	 * @throws Exception When the uuid belongs to a flow of another organisation.
+	 * @throws Exception When the uuid belongs to a flow of another organisation, or a new
+	 *                   flow would have no owner or no organisation.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override the unchanged-graph skip
 	 *
@@ -1415,16 +1416,33 @@ class ImportHandler {
 	 * @param string|null $owner The owner stamped on a newly created flow.
 	 * @param Configuration|null $configuration Supplies the organisation stamped on a newly created flow.
 	 *
+	 * A new flow takes the caller's owner, falling back to the signed-in user
+	 * (the same fallback the configuration created alongside it gets). It is
+	 * REFUSED, not stamped with nulls, when either owner or organisation is
+	 * still missing, as {@see \OCA\OpenRegister\Service\Flow\FlowService}
+	 * `flowToSave()` does: `Flow::belongsTo()` is fail-closed, so such a flow
+	 * could never be listed, edited or run again.
+	 *
 	 * @return Flow The flow to apply imported fields to.
+	 *
+	 * @throws Exception When a new flow would have no owner or no organisation.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function flowToMutate(?Flow $existingFlow, string $uuid, ?string $owner, ?Configuration $configuration): Flow {
 		if ($existingFlow === null) {
+			$owner        = ($owner ?? $this->userSession?->getUser()?->getUID());
+			$organisation = $configuration?->getOrganisation();
+			if ($owner === null || $owner === '' || $organisation === null || $organisation === '') {
+				throw new Exception(
+					'Flow "' . $uuid . '" needs an owner and an organisation; refusing to create one that belongs to nobody'
+				);
+			}
+
 			$flow = new Flow();
 			$flow->setUuid($uuid);
 			$flow->setOwner($owner);
-			$flow->setOrganisation($configuration?->getOrganisation());
+			$flow->setOrganisation($organisation);
 			$flow->setCreated(new DateTime());
 			return $flow;
 		}
