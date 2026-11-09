@@ -50,16 +50,14 @@ final class AuthorizationControlKeys {
 	/**
 	 * Validate one reserved authorization key, if this is one.
 	 *
-	 * @param string $action  The authorization key.
-	 * @param mixed  $value   Its value.
-	 * @param string $context Context for error messages.
+	 * @param AuthorizationEntry $entry The authorization key, its value and the context for error messages.
 	 *
 	 * @throws InvalidAuthorizationRuleException When a reserved key carries the wrong shape.
 	 *
 	 * @return bool TRUE when the key was reserved and has been validated.
 	 */
-	public function isControlKey(string $action, mixed $value, string $context): bool {
-		if ($this->validatesKnownKey(action: $action, value: $value, context: $context) === true) {
+	public function isControlKey(AuthorizationEntry $entry): bool {
+		if ($this->validatesKnownKey(entry: $entry) === true) {
 			return true;
 		}
 
@@ -88,7 +86,7 @@ final class AuthorizationControlKeys {
 		// they come out of the list here rather than being tested twice. Psalm
 		// reads the constant and calls the second test a paradox otherwise,
 		// and it is right: the branch could never be taken for those two.
-		return in_array($action, $this->unvalidatedKeys(), true);
+		return in_array((string)$entry->key, $this->unvalidatedKeys(), true);
 	}//end isControlKey()
 
 	/**
@@ -111,19 +109,18 @@ final class AuthorizationControlKeys {
 	/**
 	 * Validate a cascade flag or the scope, when the key is one of them.
 	 *
-	 * @param string $action  The authorization key.
-	 * @param mixed  $value   Its value.
-	 * @param string $context Context for error messages.
+	 * @param AuthorizationEntry $entry The authorization key, its value and the context for error messages.
 	 *
 	 * @throws InvalidAuthorizationRuleException When the flag or scope carries the wrong shape.
 	 *
 	 * @return bool TRUE when the key was one of these and has been validated.
 	 */
-	private function validatesKnownKey(string $action, mixed $value, string $context): bool {
+	private function validatesKnownKey(AuthorizationEntry $entry): bool {
+		$action = (string)$entry->key;
 		if (in_array($action, self::RESERVED_FLAGS, true) === true) {
-			if (is_bool($value) === false) {
+			if (is_bool($entry->value) === false) {
 				throw new InvalidAuthorizationRuleException(
-					message: "Authorization flag '{$action}' in {$context} must be a boolean"
+					message: "Authorization flag '{$action}' in {$entry->context} must be a boolean"
 				);
 			}
 
@@ -131,32 +128,31 @@ final class AuthorizationControlKeys {
 		}
 
 		if ($action === ObjectScopeResolverInterface::SCOPE_KEY) {
-			$this->validateScopeValue(scope: $value, context: $context);
+			$this->validateScopeValue(scope: $entry->value, context: $entry->context);
 			return true;
 		}
 
-		return $this->validatesAssignmentKey(action: $action, value: $value, context: $context);
+		return $this->validatesAssignmentKey(entry: $entry);
 	}//end validatesKnownKey()
 
 	/**
 	 * Validate the role assignment or the reveal marker, when the key is one of them.
 	 *
-	 * @param string $action  The authorization key.
-	 * @param mixed  $value   Its value.
-	 * @param string $context Context for error messages.
+	 * @param AuthorizationEntry $entry The authorization key, its value and the context for error messages.
 	 *
 	 * @throws InvalidAuthorizationRuleException When the assignment or marker carries the wrong shape.
 	 *
 	 * @return bool TRUE when the key was one of these and has been validated.
 	 */
-	private function validatesAssignmentKey(string $action, mixed $value, string $context): bool {
+	private function validatesAssignmentKey(AuthorizationEntry $entry): bool {
+		$action = (string)$entry->key;
 		if ($action === Schema::ROLES_KEY) {
-			$this->validateRolesAssignment(roles: $value, context: $context);
+			$this->validateRolesAssignment(roles: $entry->value, context: $entry->context);
 			return true;
 		}
 
 		if ($action === ExplicitRevealInterface::KEY) {
-			$this->validateRevealValue(reveal: $value, context: $context);
+			$this->validateRevealValue(reveal: $entry->value, context: $entry->context);
 			return true;
 		}
 
@@ -187,48 +183,46 @@ final class AuthorizationControlKeys {
 				);
 			}
 
-			$this->validateRoleGroups(roleName: $roleName, groups: $groups, context: $context);
+			$this->validateRoleGroups(groups: $groups, role: "Role '{$roleName}' in {$context}");
 		}
 	}//end validateRolesAssignment()
 
 	/**
 	 * Refuse a role that lists no group, or a group id that is not a non-empty string.
 	 *
-	 * @param string $roleName The role.
-	 * @param mixed  $groups   The groups it lists.
-	 * @param string $context  Context for error messages.
+	 * @param mixed  $groups The groups it lists.
+	 * @param string $role   The role and its context, for error messages.
 	 *
 	 * @throws InvalidAuthorizationRuleException When the groups carry the wrong shape.
 	 *
 	 * @return void
 	 */
-	private function validateRoleGroups(string $roleName, mixed $groups, string $context): void {
+	private function validateRoleGroups(mixed $groups, string $role): void {
 		if (is_array($groups) === false || $groups === []) {
 			throw new InvalidAuthorizationRuleException(
-				message: "Role '{$roleName}' in {$context} must list at least one group id"
+				message: "{$role} must list at least one group id"
 			);
 		}
 
 		foreach ($groups as $group) {
-			$this->validateRoleGroup(roleName: $roleName, group: $group, context: $context);
+			$this->validateRoleGroup(group: $group, role: $role);
 		}
 	}//end validateRoleGroups()
 
 	/**
 	 * Refuse a group id that is not a non-empty string.
 	 *
-	 * @param string $roleName The role.
-	 * @param mixed  $group    One group it lists.
-	 * @param string $context  Context for error messages.
+	 * @param mixed  $group One group it lists.
+	 * @param string $role  The role and its context, for error messages.
 	 *
 	 * @throws InvalidAuthorizationRuleException When the group id carries the wrong shape.
 	 *
 	 * @return void
 	 */
-	private function validateRoleGroup(string $roleName, mixed $group, string $context): void {
+	private function validateRoleGroup(mixed $group, string $role): void {
 		if (is_string($group) === false || trim($group) === '') {
 			throw new InvalidAuthorizationRuleException(
-				message: "Role '{$roleName}' in {$context} lists a group id that is not a non-empty string"
+				message: "{$role} lists a group id that is not a non-empty string"
 			);
 		}
 	}//end validateRoleGroup()
