@@ -218,6 +218,8 @@ describe('EditSchema', () => {
 				{ id: 3, uuid: 'u3', name: 'Named', summary: 'Sum' },
 				{ id: 4, uuid: 'u4' },
 				{ id: 5, uuid: 'u1' },
+				{ id: 1, uuid: 'other', slug: 'other' },
+				{ id: 6, uuid: 'u6', slug: 's1' },
 			]
 			const wrapper = await mountModal()
 			expect(formProps(wrapper).availableSchemas).toEqual([
