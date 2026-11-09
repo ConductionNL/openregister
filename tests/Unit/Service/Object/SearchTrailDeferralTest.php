@@ -73,7 +73,6 @@ class SearchTrailDeferralTest extends TestCase {
 			schemaMapper: $this->schemaMapper,
 			settingsService: $this->settingsService,
 			logger: $this->logger,
-			request: $this->request,
 			searchTrailService: $this->searchTrailService
 		);
 	}//end setUp()
