@@ -583,7 +583,6 @@ class RelationCascadeHandler {
 	 * This method handles the creation of related objects before the main object
 	 * is validated and saved (pre-validation cascading).
 	 *
-	 * @param ObjectEntity $objectEntity The parent object entity.
 	 * @param Schema $schema The schema of the parent object.
 	 * @param array $data The object data containing nested objects.
 	 *
@@ -591,14 +590,14 @@ class RelationCascadeHandler {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data): array {
+	public function cascadeObjects(Schema $schema, array $data): array {
 		foreach ($schema->getProperties() as $propertyName => $property) {
 			// Only a non-empty value of an inversedBy property cascades.
 			if (isset($property['inversedBy']) === false || empty($data[$propertyName]) === true) {
 				continue;
 			}
 
-			$data[$propertyName] = $this->cascadedValue(objectEntity: $objectEntity, property: $property, propData: $data[$propertyName]);
+			$data[$propertyName] = $this->cascadedValue(property: $property, propData: $data[$propertyName]);
 		}
 
 		return $data;
@@ -608,22 +607,21 @@ class RelationCascadeHandler {
 	 * The value an inversedBy property holds after cascading: the created UUIDs of an array property, the created
 	 * UUID of a single nested object, or the value itself.
 	 *
-	 * @param ObjectEntity $objectEntity The parent object entity.
-	 * @param array        $property     The property definition.
-	 * @param mixed        $propData     The property's non-empty value.
+	 * @param array $property The property definition.
+	 * @param mixed $propData The property's non-empty value.
 	 *
 	 * @return mixed
 	 */
-	private function cascadedValue(ObjectEntity $objectEntity, array $property, mixed $propData): mixed {
+	private function cascadedValue(array $property, mixed $propData): mixed {
 		if (isset($property['type']) === true && $property['type'] === 'array') {
-			return $this->cascadeMultipleObjects(objectEntity: $objectEntity, property: $property, propData: $propData);
+			return $this->cascadeMultipleObjects(propData: $propData);
 		}
 
 		if ($this->isNestedObject(value: $propData) === false) {
 			return $propData;
 		}
 
-		return $this->cascadeSingleObject(_objectEntity: $objectEntity, _definition: $property, _object: $propData) ?? $propData;
+		return $this->cascadeSingleObject() ?? $propData;
 	}//end cascadedValue()
 
 	/**
@@ -648,8 +646,6 @@ class RelationCascadeHandler {
 	/**
 	 * Cascades creation of multiple related objects.
 	 *
-	 * @param ObjectEntity $objectEntity The parent object entity.
-	 * @param array $property The property definition.
 	 * @param array $propData The property data (array of objects).
 	 *
 	 * @return string[] Array of created object UUIDs.
@@ -660,7 +656,7 @@ class RelationCascadeHandler {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array {
+	public function cascadeMultipleObjects(array $propData): array {
 		$createdUuids = [];
 		foreach ($propData as $object) {
 			// An item that already is a UUID reference is kept.
@@ -669,7 +665,7 @@ class RelationCascadeHandler {
 				continue;
 			}
 
-			$created = $this->createdFrom(objectEntity: $objectEntity, property: $property, object: $object);
+			$created = $this->createdFrom(object: $object);
 			$createdUuids = array_merge($createdUuids, $created);
 		}
 
@@ -679,18 +675,16 @@ class RelationCascadeHandler {
 	/**
 	 * The UUID of the object created from a nested-object list item; nothing for any other item.
 	 *
-	 * @param ObjectEntity $objectEntity The parent object entity.
-	 * @param array        $property     The property definition.
-	 * @param mixed        $object       The list item.
+	 * @param mixed $object The list item.
 	 *
 	 * @return list<string>
 	 */
-	private function createdFrom(ObjectEntity $objectEntity, array $property, mixed $object): array {
+	private function createdFrom(mixed $object): array {
 		if ($this->isNestedObject(value: $object) === false) {
 			return [];
 		}
 
-		$uuid = $this->cascadeSingleObject(_objectEntity: $objectEntity, _definition: $property, _object: $object);
+		$uuid = $this->cascadeSingleObject();
 		if ($uuid !== null) {
 			return [$uuid];
 		}
@@ -712,15 +706,16 @@ class RelationCascadeHandler {
 	/**
 	 * Cascades creation of a single related object.
 	 *
-	 * @param ObjectEntity $_objectEntity The parent object entity.
-	 * @param array $_definition The property definition containing $ref and inversedBy.
-	 * @param array $_object The nested object data to create.
+	 * Not implemented in this extracted handler (see the TODO below): it takes
+	 * none of the parent, the property definition or the nested object, because
+	 * it reads none of them. The implementation that does is
+	 * SaveObject::cascadeSingleObject().
 	 *
 	 * @return null The UUID of the created object or null.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function cascadeSingleObject(ObjectEntity $_objectEntity, array $_definition, array $_object) {
+	public function cascadeSingleObject() {
 		// TODO: Implement actual cascading logic.
 		// This requires access to ObjectService which would create circular dependency.
 		// Need to refactor this to use event system or separate coordination service.
@@ -738,15 +733,16 @@ class RelationCascadeHandler {
 	 * After an object is saved, this method updates related objects to maintain
 	 * bidirectional relationship integrity (inversedBy properties).
 	 *
-	 * @param ObjectEntity $_objectEntity The saved object entity.
-	 * @param Schema $_schema The schema of the object.
+	 * Not implemented in this extracted handler (see the TODO below), so it
+	 * reads neither the saved object nor its schema.
+	 *
 	 * @param array $data The object data.
 	 *
 	 * @return array The updated data after write-back operations.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function handleInverseRelationsWriteBack(ObjectEntity $_objectEntity, Schema $_schema, array $data): array {
+	public function handleInverseRelationsWriteBack(array $data): array {
 		// TODO: Implement inverse relation write-back.
 		// This requires access to ObjectService which would create circular dependency.
 		// Need to refactor this to use event system or separate coordination service.
