@@ -264,16 +264,10 @@ class TransitionEngineAsSystemTest extends TestCase {
 	 */
 	private function engine(): TransitionEngine {
 		return new TransitionEngine(
-			$this->objectService,
-			$this->schemaMapper,
-			$this->createMock(IEventDispatcher::class),
-			$this->userSession,
-			$this->permission,
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(IAppConfig::class),
-			$this->logger,
-			new LifecycleWriteBoundary($this->actions),
-			$this->createMock(LifecycleActionProviderRegistry::class)
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->createMock(RegisterMapper::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->createMock(IEventDispatcher::class), new LifecycleWriteBoundary($this->actions), $this->createMock(LifecycleActionProviderRegistry::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->userSession, $this->createMock(IAppConfig::class), $this->logger),
+			$this->permission
 		);
 	}//end engine()
 

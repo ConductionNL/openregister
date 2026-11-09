@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\Archival\AnonymisedPayload;
 use OCA\OpenRegister\Service\Archival\AnonymisationPlan;
 use OCA\OpenRegister\Service\Archival\AuditDiffRedactionTarget;
 use PHPUnit\Framework\TestCase;
@@ -109,10 +110,7 @@ class AuditDiffRedactionTest extends TestCase {
 		$plan = new AnonymisationPlan(
 			objectUuid: 'obj-1',
 			profileName: 'zaak-statistiek',
-			before: [],
-			after: [],
-			changedProperties: ['naam'],
-			keptProperties: ['zaaknummer'],
+			payload: new AnonymisedPayload(before: [], after: [], changedProperties: ['naam'], keptProperties: ['zaaknummer']),
 			saltFingerprint: 'abc123'
 		);
 
