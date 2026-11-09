@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration;
 
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
-use OCA\OpenRegister\Repair\LogDanglingLinkedTypes;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
@@ -157,7 +156,6 @@ final class IntegrationWiring {
 	public static function register(IRegistrationContext $context): void {
 		self::registerRegistryAndRouter(context: $context);
 		self::registerValidators(context: $context);
-		self::registerRepairStep(context: $context);
 		self::registerLeafRegistry(context: $context);
 		self::registerBuiltinIntegrationProviders(context: $context);
 		IntegrationControllersRegistrar::register(context: $context);
@@ -216,28 +214,6 @@ final class IntegrationWiring {
 			)
 		);
 	}//end registerValidators()
-
-	/**
-	 * Register the LogDanglingLinkedTypes repair step.
-	 *
-	 * It runs on install and post-migration to surface schemas whose
-	 * linkedTypes hold ids the registry can no longer resolve; it never
-	 * throws and never modifies data.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private static function registerRepairStep(IRegistrationContext $context): void {
-		$context->registerService(
-			LogDanglingLinkedTypes::class,
-			static fn (ContainerInterface $container) => new LogDanglingLinkedTypes(
-				registry: $container->get(IntegrationRegistry::class),
-				container: $container,
-				logger: $container->get('Psr\Log\LoggerInterface')
-			)
-		);
-	}//end registerRepairStep()
 
 	/**
 	 * Register the LeafRegistry, the cross-app leaf catalogue (ADR-066).
