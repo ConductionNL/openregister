@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use DateTimeZone;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowRunControllerServices;
 use OCA\OpenRegister\Db\AuditFlowAttributionInterface;
 use OCA\OpenRegister\Db\FlowActivityWindow;
@@ -160,16 +161,14 @@ class FlowRunController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param FlowRunControllerServices $services The flow run controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FlowRunControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->mapper = $services->runs->mapper;
 		$this->runner = $services->runs->runner;
 		$this->resolvers = $services->runs->resolvers;
