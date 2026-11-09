@@ -4636,7 +4636,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		array $uuids,
 		bool $includeDeleted = false,
 	): array {
-		return $this->findByUuidsIn(table: new RegisterSchema(register: $register, schema: $schema), lookup: new UuidBatchLookup(uuids: $uuids, includeDeleted: $includeDeleted));
+		$lookup = new UuidBatchLookup(uuids: $uuids, includeDeleted: $includeDeleted);
+		return $this->findByUuidsIn(table: new RegisterSchema(register: $register, schema: $schema), lookup: $lookup);
 	}//end findObjectsByUuidsInRegisterSchema()
 
 	/**
@@ -6114,9 +6115,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$query['_order'] = $sort;
 		}
 
-		if ($filters !== null) {
-			$query = array_merge($query, $filters);
-		}
+		$query = array_merge($query, $filters);
 
 		return $this->searchObjectsInRegisterSchemaTable(query: $query, register: $register, schema: $schema);
 	}//end findAllIn()
@@ -8396,7 +8395,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	): array {
 		$listing = new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filters ?? []), sort: $sort, search: $search);
 		$table   = $this->registerSchemaOrNull(register: $register, schema: $schema);
-		return $this->findAllListed(new MagicListRequest(table: $table, query: $listing, ids: $ids, uses: $uses));
+		return $this->findAllListed(request: new MagicListRequest(table: $table, query: $listing, ids: $ids, uses: $uses));
 	}//end findAll()
 
 	/**
@@ -8809,7 +8808,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			throw new Exception('Entity must be an instance of ObjectEntity');
 		}
 
-		return $this->updateChange(change: new MagicObjectChange(entity: $entity, oldEntity: $oldEntity), table: $this->registerSchemaOrNull(register: $register, schema: $schema));
+		$change = new MagicObjectChange(entity: $entity, oldEntity: $oldEntity);
+		return $this->updateChange(change: $change, table: $this->registerSchemaOrNull(register: $register, schema: $schema));
 	}//end update()
 
 	/**
