@@ -39,7 +39,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-every-run-is-audited-once-and-the-objects-action-history-can-be-read
  */
-class ObjectActionHistory {
+class ObjectActionHistory implements ObjectActionHistoryInterface {
 
 	/**
 	 * The most entries one read answers.

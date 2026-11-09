@@ -43,7 +43,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
@@ -51,6 +51,8 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Controller\Support\ObjectReadStateControllerServices;
 
 /**
  * Read an object's read state, mark it read, and mark it back to unread.
@@ -69,24 +71,36 @@ class ObjectReadStateController extends Controller {
 	private readonly ObjectSharingEndpoint $endpoint;
 
 	/**
+	 * The read-state primitive.
+	 *
+	 * @var ReadStateServiceInterface
+	 */
+	private readonly ReadStateServiceInterface $readState;
+
+	/**
+	 * Empties the bell when the work is opened.
+	 *
+	 * @var NotificationClearingServiceInterface
+	 */
+	private readonly NotificationClearingServiceInterface $clearing;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
-	 * @param ReadStateService $readState The read-state primitive.
-	 * @param NotificationClearingServiceInterface $clearing Empties the bell when the work is opened.
+	 * @param ObjectReadStateControllerServices $services Read-state store and notification clearing.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectOperationsInterface $objectService,
-		private readonly ReadStateService $readState,
-		private readonly NotificationClearingServiceInterface $clearing,
+		ObjectReadStateControllerServices $services,
 		LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		$this->readState = $services->readState;
+		$this->clearing = $services->clearing;
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$failure = 'Could not complete the read state request';
 		$this->endpoint = new ObjectSharingEndpoint(objectService: $objectService, logger: $logger, file: __FILE__, failure: $failure);
 	}//end __construct()
@@ -146,7 +160,8 @@ class ObjectReadStateController extends Controller {
 		}
 
 		$subResource = $this->requestedSubResource();
-		$mark = fn (): array => $this->markAndClear(object: $object, register: $register, schema: $schema, subResource: $subResource);
+		$where = ['register' => $register, 'schema' => $schema, 'subResource' => $subResource];
+		$mark = fn (): array => $this->markAndClear(object: $object, where: $where);
 		$marked = $this->endpoint->run(operation: $mark, context: 'markRead');
 		if ($marked instanceof JSONResponse) {
 			return $marked;
@@ -226,22 +241,21 @@ class ObjectReadStateController extends Controller {
 	/**
 	 * Store the read state, then clear the notices the opened work was about.
 	 *
-	 * @param ObjectEntity $object      The object that was opened.
-	 * @param string       $register    Register slug or id.
-	 * @param string       $schema      Schema slug or id.
-	 * @param string|null  $subResource The sub-resource, when one was opened.
+	 * @param ObjectEntity                                                     $object The object that was opened.
+	 * @param array{register: string, schema: string, subResource: ?string} $where  Register slug or id, schema slug or id,
+	 *                                                                              and the sub-resource, when one was opened.
 	 *
 	 * @return array{state: ObjectReadState, cleared: int} The stored state and how many notices were cleared.
 	 */
-	private function markAndClear(ObjectEntity $object, string $register, string $schema, ?string $subResource): array {
+	private function markAndClear(ObjectEntity $object, array $where): array {
 		$state = $this->readState->markRead(
 			object: $object,
-			register: $register,
-			schema: $schema,
-			subResource: $subResource
+			register: $where['register'],
+			schema: $where['schema'],
+			subResource: $where['subResource']
 		);
 
-		return ['state' => $state, 'cleared' => $this->clearNotices(object: $object, subResource: $subResource)];
+		return ['state' => $state, 'cleared' => $this->clearNotices(object: $object, subResource: $where['subResource'])];
 
 	}//end markAndClear()
 

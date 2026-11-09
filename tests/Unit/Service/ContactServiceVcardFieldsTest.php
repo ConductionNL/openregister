@@ -10,6 +10,7 @@ namespace Unit\Service;
 use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Service\ContactService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -82,8 +83,7 @@ class ContactServiceVcardFieldsTest extends TestCase {
 		$service = new ContactService(
 			$this->createMock(ContactLinkMapper::class),
 			$cardDav,
-			$this->createMock(IUserSession::class),
-			$this->createMock(LoggerInterface::class),
+			new LinkSessionRuntime($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)),
 			$this->createMock(IURLGenerator::class)
 		);
 

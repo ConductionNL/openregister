@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\PrincipalReach;
 use OCA\OpenRegister\Service\Rbac\PrincipalReachService;
 use OCA\OpenRegister\Service\Rbac\ReachRevocationService;
+use OCA\OpenRegister\Service\Rbac\ReachRevocationLog;
 use OCA\OpenRegister\Service\Rbac\ReachSources;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -146,9 +147,8 @@ final class ReachRevocationServiceTest extends TestCase {
 		return new ReachRevocationService(
 			reach: $reach,
 			sources: new ReachSources(schemaMapper: $schemaMapper, derived: $store, delegations: $delegations),
-			audit: $this->createMock(AuthorizationAuditService::class),
-			userSession: $session,
-			logger: new NullLogger()
+			log: new ReachRevocationLog(audit: $this->createMock(AuthorizationAuditService::class), logger: new NullLogger()),
+			userSession: $session
 		);
 	}//end service()
 

@@ -24,6 +24,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Listener\Support\SourceRecordChangeServices;
 
 /**
  * The reverse-FK index behind the source-record listener: how it is built,
@@ -98,7 +99,7 @@ class SourceRecordChangeListenerIndexTest extends TestCase {
 		$deferral = $this->createMock(ListenerDeferralService::class);
 		$deferral->method('isDeferralEnabled')->willReturn(false);
 
-		return new SourceRecordChangeListener($this->schemaMapper, $this->logger, $factory, $deferral, $this->recompute);
+		return new SourceRecordChangeListener(new SourceRecordChangeServices($this->schemaMapper, $deferral, $this->recompute), $this->logger, $factory);
 	}//end listener()
 
 	/**

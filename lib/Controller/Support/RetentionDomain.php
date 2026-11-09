@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Archival\DestructionService;
+use OCA\OpenRegister\Service\Archival\DestructionServiceInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 
 /**
  * The domain services of the retention API.
@@ -37,17 +37,17 @@ final class RetentionDomain {
 	 * Bundle the services.
 	 *
 	 * @param RetentionServiceInterface       $retentionService   Retention service
-	 * @param ObjectRetentionHandler $settingsHandler    Settings handler
+	 * @param ArchivalSettingsReaderInterface $settingsHandler    Settings handler
 	 * @param SaveObjectWriterInterface    $saveObject         Save object service
-	 * @param DestructionService     $destructionService Withholds entries a reviewer decided against
+	 * @param DestructionServiceInterface $destructionService Withholds entries a reviewer decided against
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function __construct(
 		public readonly RetentionServiceInterface $retentionService,
-		public readonly ObjectRetentionHandler $settingsHandler,
+		public readonly ArchivalSettingsReaderInterface $settingsHandler,
 		public readonly SaveObjectWriterInterface $saveObject,
-		public readonly DestructionService $destructionService,
+		public readonly DestructionServiceInterface $destructionService,
 	) {
 	}//end __construct()
 }//end class

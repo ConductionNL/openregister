@@ -5,7 +5,7 @@
  *
  * WHO MAY ASK, CHECKED BEFORE ANYTHING IS READ. The object is resolved through
  * `ObjectService` first, so a caller who cannot read it gets 404 and learns
- * nothing. Then {@see AccessReviewGate::mayReadGrants()} decides whether the
+ * nothing. Then {@see AccessReviewGateInterface::mayReadGrants()} decides whether the
  * caller may see the people on it, and a refusal answers 403 without a single
  * share, ancestor or rule having been read.
  *
@@ -31,8 +31,8 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
-use OCA\OpenRegister\Service\Rbac\ObjectGrantsReport;
+use OCA\OpenRegister\Service\Rbac\AccessReviewGateInterface;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantsReportInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -40,6 +40,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Controller\Support\ObjectGrantsControllerServices;
 
 /**
  * The grants list of one object.
@@ -49,24 +50,44 @@ use Psr\Log\LoggerInterface;
 class ObjectGrantsController extends Controller {
 
 	/**
+	 * Names the register and schema the request resolved.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Resolves the object and decides who may ask.
+	 *
+	 * @var AccessReviewGateInterface
+	 */
+	private readonly AccessReviewGateInterface $gate;
+
+	/**
+	 * Assembles the rows.
+	 *
+	 * @var ObjectGrantsReportInterface
+	 */
+	private readonly ObjectGrantsReportInterface $report;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string             $appName       Application identifier.
 	 * @param IRequest           $request       Active HTTP request.
-	 * @param ObjectOperationsInterface      $objectService Names the register and schema the request resolved.
-	 * @param AccessReviewGate   $gate          Resolves the object and decides who may ask.
-	 * @param ObjectGrantsReport $report        Assembles the rows.
+	 * @param ObjectGrantsControllerServices $services The services, bundled.
 	 * @param LoggerInterface    $logger        Records why the rows could not be assembled.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly AccessReviewGate $gate,
-		private readonly ObjectGrantsReport $report,
+		ObjectGrantsControllerServices $services,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objectService = $services->objectService;
+		$this->gate = $services->gate;
+		$this->report = $services->report;
 	}//end __construct()
 
 	/**

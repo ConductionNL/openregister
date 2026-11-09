@@ -1,7 +1,7 @@
 <?php
 
 /**
- * FederatedShareMapperInterface: what callers outside the Db component use of FederatedShareMapper.
+ * FederatedShareMapperInterface: what callers outside the component use of FederatedShareMapper.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -9,7 +9,7 @@
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -23,10 +23,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 /**
- * The methods of FederatedShareMapper that callers outside the Db component use.
+ * The federated share lookup the federation endpoints use.
  *
- * Callers type against this interface and resolve it from the container; the
- * registrar binds it to FederatedShareMapper. Guarded by C04InterfaceBindingsTest.
+ * Declares only what callers outside the component use; the rest of the
+ * class stays its own.
  */
 interface FederatedShareMapperInterface {
 

@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\AuditQueryService;
+use OCA\OpenRegister\Service\AuditQueryServiceInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 
@@ -35,14 +35,14 @@ final class AuditQueryControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param AuditQueryService $auditQueryService Cross-schema audit-entry query service.
+	 * @param AuditQueryServiceInterface $auditQueryService Cross-schema audit-entry query service.
 	 * @param IUserSession $userSession Active user session for the admin gate.
 	 * @param IGroupManager $groupManager Group manager for the admin gate.
 	 *
 	 * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-2.1
 	 */
 	public function __construct(
-		public readonly AuditQueryService $auditQueryService,
+		public readonly AuditQueryServiceInterface $auditQueryService,
 		public readonly IUserSession $userSession,
 		public readonly IGroupManager $groupManager,
 	) {

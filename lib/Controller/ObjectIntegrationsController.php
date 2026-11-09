@@ -45,12 +45,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\RelationsObjectLookup;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
-use OCA\OpenRegister\Service\Integration\PaginatedResult;
+use OCA\OpenRegister\Service\Integration\PaginatedResults;
 use OCA\OpenRegister\Service\Integration\QueryTimeContract;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
@@ -59,7 +60,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -104,9 +105,9 @@ class ObjectIntegrationsController extends Controller {
 	/**
 	 * Answers the object update right for integration writes.
 	 *
-	 * @var PermissionHandlerInterface
+	 * @var PermissionCheckInterface
 	 */
-	private PermissionHandlerInterface $permissions;
+	private PermissionCheckInterface $permissions;
 
 	/**
 	 * Resolves the target object through the object service's RBAC boundary.
@@ -197,15 +198,13 @@ class ObjectIntegrationsController extends Controller {
 	 * has already succeeded, so the catch was placed one line past the throw it
 	 * needed to cover.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $id Object uuid.
+	 * @param ObjectLinkRoute $route Register slug or numeric id, schema slug or numeric id, and object uuid.
 	 *
 	 * @return JSONResponse|null 404 response when access is denied, null when allowed.
 	 */
-	private function guardObjectAccess(string $register, string $schema, string $id): ?JSONResponse {
+	private function guardObjectAccess(ObjectLinkRoute $route): ?JSONResponse {
 		try {
-			$object = $this->lookup->find(register: $register, schema: $schema, id: $id);
+			$object = $this->lookup->find(register: $route->register, schema: $route->schema, id: $route->id);
 		} catch (\Throwable $e) {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
 		}
@@ -224,14 +223,12 @@ class ObjectIntegrationsController extends Controller {
 	 * (404 otherwise) and the caller must hold the `update` right editing the
 	 * object requires (403 otherwise).
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $id Object uuid.
+	 * @param ObjectLinkRoute $route Register slug or numeric id, schema slug or numeric id, and object uuid.
 	 *
 	 * @return JSONResponse|null The refusal, or null when the write may proceed.
 	 */
-	private function guardObjectUpdate(string $register, string $schema, string $id): ?JSONResponse {
-		$denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
+	private function guardObjectUpdate(ObjectLinkRoute $route): ?JSONResponse {
+		$denial = $this->guardObjectAccess(route: $route);
 		if ($denial !== null) {
 			return $denial;
 		}
@@ -318,11 +315,11 @@ class ObjectIntegrationsController extends Controller {
 		// tabs render cleanly. The result is a constant empty set, so skipping the
 		// per-object RBAC guard leaks nothing.
 		if ($this->isObjectSourcedSchema(register: $register, schema: $schema) === true) {
-			return new JSONResponse(PaginatedResult::fromMixed([])->toArray());
+			return new JSONResponse(PaginatedResults::envelope([]));
 		}
 
 		return $this->dispatchGuarded(
-			denial: $this->guardObjectAccess(register: $register, schema: $schema, id: $id),
+			denial: $this->guardObjectAccess(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)),
 			integrationId: $integrationId,
 			callback: fn ($provider) => $this->listed(provider: $provider, register: $register, schema: $schema, integrationId: $integrationId)
 		);
@@ -341,9 +338,9 @@ class ObjectIntegrationsController extends Controller {
 	private function listed($provider, string $register, string $schema, string $integrationId): array {
 		$rows = $provider->list($register, $schema, $this->guardedUuid(), $this->collectFilters());
 
-		return PaginatedResult::fromMixed(
+		return PaginatedResults::envelope(
 			$this->applyTimelineVisibility(integrationId: $integrationId, rows: $rows)
-		)->toArray();
+		);
 	}//end listed()
 
 	/**
@@ -395,7 +392,7 @@ class ObjectIntegrationsController extends Controller {
 	#[NoAdminRequired]
 	public function show(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
 		return $this->dispatchGuarded(
-			denial: $this->guardObjectAccess(register: $register, schema: $schema, id: $id),
+			denial: $this->guardObjectAccess(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)),
 			integrationId: $integrationId,
 			callback: fn ($provider) => $provider->get($register, $schema, $this->guardedUuid(), $entityId)
 		);
@@ -418,7 +415,7 @@ class ObjectIntegrationsController extends Controller {
 	#[NoAdminRequired]
 	public function create(string $register, string $schema, string $id, string $integrationId): JSONResponse {
 		return $this->dispatchGuarded(
-			denial: $this->guardObjectUpdate(register: $register, schema: $schema, id: $id),
+			denial: $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)),
 			integrationId: $integrationId,
 			callback: fn ($provider) => $provider->create($register, $schema, $this->guardedUuid(), $this->collectPayload()),
 			okStatus: Http::STATUS_CREATED
@@ -443,7 +440,7 @@ class ObjectIntegrationsController extends Controller {
 	#[NoAdminRequired]
 	public function update(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
 		return $this->dispatchGuarded(
-			denial: $this->guardObjectUpdate(register: $register, schema: $schema, id: $id),
+			denial: $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)),
 			integrationId: $integrationId,
 			callback: fn ($provider) => $provider->update($register, $schema, $this->guardedUuid(), $entityId, $this->collectPayload())
 		);
@@ -466,7 +463,7 @@ class ObjectIntegrationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function destroy(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
-		$denial = $this->guardObjectUpdate(register: $register, schema: $schema, id: $id);
+		$denial = $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 		if ($denial !== null) {
 			return $denial;
 		}

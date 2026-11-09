@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapperInterface;
-use OCA\OpenRegister\Service\Federation\ShareGrantor;
+use OCA\OpenRegister\Service\Federation\ShareGrantorInterface;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Symfony\Component\Console\Command\Command;
@@ -44,13 +44,13 @@ class FederationShareRightsCommand extends Command {
 	 * Constructor.
 	 *
 	 * @param FederatedShareMapperInterface $shareMapper Reads every live outgoing share.
-	 * @param ShareGrantor         $grantor     Judges a share for the signed-in user.
-	 * @param IUserManager         $userManager Finds a share's creator.
-	 * @param IUserSession         $userSession Signs the creator in while their share is judged.
+	 * @param ShareGrantorInterface         $grantor     Judges a share for the signed-in user.
+	 * @param IUserManager                  $userManager Finds a share's creator.
+	 * @param IUserSession                  $userSession Signs the creator in while their share is judged.
 	 */
 	public function __construct(
 		private readonly FederatedShareMapperInterface $shareMapper,
-		private readonly ShareGrantor $grantor,
+		private readonly ShareGrantorInterface $grantor,
 		private readonly IUserManager $userManager,
 		private readonly IUserSession $userSession,
 	) {

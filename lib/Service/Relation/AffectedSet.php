@@ -47,7 +47,7 @@ namespace OCA\OpenRegister\Service\Relation;
  *
  * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
  */
-class AffectedSet {
+class AffectedSet implements AffectedSetInterface {
 
 	/**
 	 * A reached node that is a record.

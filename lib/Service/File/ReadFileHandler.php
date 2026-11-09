@@ -24,8 +24,8 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
+use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -58,41 +58,66 @@ class ReadFileHandler {
 	/**
 	 * Reference to FileService for cross-handler coordination (circular dependency break).
 	 *
-	 * @var FileService|null
+	 * @var FileHandlerSupportInterface|null
 	 */
-	private ?FileService $fileService = null;
+	private ?FileHandlerSupportInterface $fileService = null;
+
+	/**
+	 * Root folder for file operations.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * Folder management handler.
+	 *
+	 * @var FolderManagementHandler
+	 */
+	private readonly FolderManagementHandler $folderMgmtHandler;
+
+	/**
+	 * Object mapper for magic table operations.
+	 *
+	 * @var MagicObjectFinderInterface
+	 */
+	private readonly MagicObjectFinderInterface $objectMapper;
+
+	/**
+	 * Optional OR-side metadata mapper for category-based filtering. Null-safe so legacy fixtures keep working.
+	 *
+	 * @var FileMapperInterface|null
+	 */
+	private readonly ?FileMapperInterface $fileMapper;
 
 	/**
 	 * Constructor for ReadFileHandler.
 	 *
-	 * @param IRootFolder                $rootFolder           Root folder for file operations.
-	 * @param FolderManagementHandler    $folderMgmtHandler    Folder management handler.
-	 * @param FileValidationHandler      $fileValidHandler     File validation handler.
-	 * @param FileOwnershipHandler       $fileOwnershipHandler File ownership handler.
-	 * @param MagicObjectFinderInterface $objectMapper         Object mapper for magic table operations.
-	 * @param LoggerInterface            $logger               Logger for logging operations.
-	 * @param FileMapperInterface|null   $fileMapper           Optional OR-side metadata mapper for category-based
-	 *                                                         filtering. Null-safe so legacy fixtures keep working.
+	 * @param ReadFileSources               $sources              The root folder, folders, objects and file metadata a read looks in.
+	 * @param FileValidationHandler         $fileValidHandler     File validation handler.
+	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler File ownership handler.
+	 * @param LoggerInterface               $logger               Logger for logging operations.
 	 */
 	public function __construct(
-		private readonly IRootFolder $rootFolder,
-		private readonly FolderManagementHandler $folderMgmtHandler,
+		ReadFileSources $sources,
 		private readonly FileValidationHandler $fileValidHandler,
-		private readonly FileOwnershipHandler $fileOwnershipHandler,
-		private readonly MagicObjectFinderInterface $objectMapper,
+		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
 		private readonly LoggerInterface $logger,
-		private readonly ?FileMapperInterface $fileMapper = null,
 	) {
+		$this->rootFolder = $sources->rootFolder;
+		$this->folderMgmtHandler = $sources->folderMgmtHandler;
+		$this->objectMapper = $sources->objectMapper;
+		$this->fileMapper = $sources->fileMapper;
 	}//end __construct()
 
 	/**
 	 * Set the FileService instance for cross-handler coordination.
 	 *
-	 * @param FileService $fileService The file service instance.
+	 * @param FileHandlerSupportInterface $fileService The file service instance.
 	 *
 	 * @return void
 	 */
-	public function setFileService(FileService $fileService): void {
+	public function setFileService(FileHandlerSupportInterface $fileService): void {
 		$this->fileService = $fileService;
 	}//end setFileService()
 

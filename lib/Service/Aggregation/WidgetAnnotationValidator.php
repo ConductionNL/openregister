@@ -49,7 +49,7 @@ namespace OCA\OpenRegister\Service\Aggregation;
  * a target is missing; this validator only catches local shape bugs
  * the operator can fix on the spot.
  */
-final class WidgetAnnotationValidator {
+final class WidgetAnnotationValidator implements WidgetAnnotationValidatorInterface {
 
 	/**
 	 * Widget types supported by the Vue renderer (kept in sync with

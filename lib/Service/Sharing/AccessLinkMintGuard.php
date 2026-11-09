@@ -47,7 +47,7 @@ use Throwable;
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
  */
-class AccessLinkMintGuard {
+class AccessLinkMintGuard implements AccessLinkMintGuardInterface {
 
 	/**
 	 * Constructor.

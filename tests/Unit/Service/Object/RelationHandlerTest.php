@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -89,11 +90,13 @@ class RelationHandlerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new RelationHandler(
-			objectEntityMapper: $this->objectMapper,
-			schemaMapper: $this->schemaMapper,
+			stores: new RelationHandlerStores(
+				objects: $this->objectMapper,
+				schemas: $this->schemaMapper,
+				registers: $this->registerMapper
+			),
 			rbacHandler: $this->rbacHandler,
-			logger: $this->logger,
-			registerMapper: $this->registerMapper
+			logger: $this->logger
 		);
 	}//end setUp()
 

@@ -49,15 +49,12 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\XwikiLink;
-use OCA\OpenRegister\Db\XwikiLinkMapper;
+use OCA\OpenRegister\Db\XwikiLinkMapperInterface;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 use OCA\OpenRegister\Support\FleetAppId;
-use OCP\App\IAppManager;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -89,18 +86,14 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param XwikiLinkMapper $xwikiLinkMapper Persistence for link rows.
+	 * @param XwikiLinkMapperInterface $xwikiLinkMapper Persistence for link rows.
 	 * @param ContainerInterface $container Container for late-bound provider/router.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 */
 	public function __construct(
-		private readonly XwikiLinkMapper $xwikiLinkMapper,
+		private readonly XwikiLinkMapperInterface $xwikiLinkMapper,
 		private readonly ContainerInterface $container,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		private readonly LinkServiceRuntime $runtime,
 	) {
 	}//end __construct()
 
@@ -112,7 +105,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	 * @return bool
 	 */
 	public function isOpenConnectorAvailable(): bool {
-		return FleetAppId::isInstalled($this->appManager, self::REQUIRED_APP);
+		return FleetAppId::isInstalled($this->runtime->appManager(), self::REQUIRED_APP);
 	}//end isOpenConnectorAvailable()
 
 	/**
@@ -132,7 +125,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 
 			return null;
 		} catch (Throwable $e) {
-			$this->logger->debug('XwikiLinkService: XwikiProvider unavailable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('XwikiLinkService: XwikiProvider unavailable: ' . $e->getMessage());
 			return null;
 		}
 	}//end getProvider()
@@ -145,7 +138,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	 * @throws Exception When there is no active user.
 	 */
 	private function requireUid(): string {
-		return $this->userSession->getUser()?->getUID() ?? throw new Exception('No user logged in', 401);
+		return $this->runtime->userSession()->getUser()?->getUID() ?? throw new Exception('No user logged in', 401);
 	}//end requireUid()
 
 	/**
@@ -313,7 +306,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 		} catch (ProviderUnavailableException $e) {
 			throw $this->toServiceException(exception: $e);
 		} catch (Throwable $e) {
-			$this->logger->warning('XwikiLinkService::createAndLinkPage failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('XwikiLinkService::createAndLinkPage failed: ' . $e->getMessage());
 			throw new Exception('Failed to create xWiki page', 500);
 		}
 
@@ -480,7 +473,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 		} catch (ProviderUnavailableException $e) {
 			return ['cause' => $e->getCause(), 'results' => []];
 		} catch (Throwable $e) {
-			$this->logger->warning('XwikiLinkService::' . $caller . ' failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('XwikiLinkService::' . $caller . ' failed: ' . $e->getMessage());
 			return ['cause' => ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, 'results' => []];
 		}
 
@@ -610,7 +603,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 		} catch (Throwable $e) {
 			// Non-classified failure — keep the user-supplied reference and
 			// empty metadata so the link still persists.
-			$this->logger->debug('XwikiLinkService::resolveRemotePage soft-failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('XwikiLinkService::resolveRemotePage soft-failed: ' . $e->getMessage());
 			return ['reference' => $pageReference, 'title' => $pageReference, 'space' => '', 'url' => null];
 		}
 
@@ -690,7 +683,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 		try {
 			return $this->xwikiLinkMapper->update($link);
 		} catch (Throwable $e) {
-			$this->logger->debug('XwikiLinkService::refreshLink update failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('XwikiLinkService::refreshLink update failed: ' . $e->getMessage());
 			return $link;
 		}
 	}//end refreshLink()
@@ -713,7 +706,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 		try {
 			return $provider->get($register, $schema, (string)$link->getObjectUuid(), (string)$link->getPageReference());
 		} catch (Throwable $e) {
-			$this->logger->debug('XwikiLinkService::refreshLink fetch failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('XwikiLinkService::refreshLink fetch failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end fetchLinkedRow()

@@ -208,7 +208,7 @@ class PartyLinkAccessGoldenTest extends TestCase {
 	 */
 	public function testTheTrustedImportReadsWithoutRbac(): void {
 		$link = $this->service(signedIn: null, rbacSeesIt: false, kinds: [['key' => 'person']])
-			->importParty('case-1', 3, 9, ['partyUuid' => 'party-a'], 'dossiq');
+			->importParty($this->objectOn('case-1', 3, 9), ['partyUuid' => 'party-a'], 'dossiq');
 
 		$this->assertSame('dossiq', $link->getLinkedBy());
 		$this->assertSame(['unscoped', 'unscoped'], $this->reads);
@@ -223,7 +223,7 @@ class PartyLinkAccessGoldenTest extends TestCase {
 	public function testAnImportWhileSignedInUsesTheCallersRights(): void {
 		try {
 			$this->service(signedIn: 'pieter', rbacSeesIt: false, kinds: [['key' => 'person']])
-				->importParty('case-1', 3, 9, ['partyUuid' => 'party-a'], 'dossiq');
+				->importParty($this->objectOn('case-1', 3, 9), ['partyUuid' => 'party-a'], 'dossiq');
 			$this->fail('Expected a refusal.');
 		} catch (Exception $e) {
 			$this->assertSame(404, $e->getCode());
@@ -243,6 +243,26 @@ class PartyLinkAccessGoldenTest extends TestCase {
 		$this->expectExceptionCode(400);
 
 		$this->service(signedIn: null, rbacSeesIt: true, kinds: [['key' => 'organisation']])
-			->importParty('case-1', 3, 9, ['partyUuid' => 'party-a'], 'dossiq');
+			->importParty($this->objectOn('case-1', 3, 9), ['partyUuid' => 'party-a'], 'dossiq');
 	}//end testAnUnacceptedKindIsRefusedOnImport()
+
+	/**
+	 * The object a trusted import puts the party on.
+	 *
+	 * @param string $uuid The object uuid.
+	 * @param int $registerId The register id.
+	 * @param int|string|null $schemaId The object's schema id.
+	 *
+	 * @return ObjectEntity The object.
+	 */
+	private function objectOn(string $uuid, int $registerId, int|string|null $schemaId): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid($uuid);
+		$object->setRegister((string) $registerId);
+		if ($schemaId !== null) {
+			$object->setSchema((string) $schemaId);
+		}
+
+		return $object;
+	}//end objectOn()
 }//end class

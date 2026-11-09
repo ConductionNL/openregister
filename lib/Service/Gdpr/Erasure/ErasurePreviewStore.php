@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 
 use DateTime;
 use OCA\OpenRegister\Db\ErasurePreview;
-use OCA\OpenRegister\Db\ErasurePreviewMapper;
+use OCA\OpenRegister\Db\ErasurePreviewMapperInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -50,11 +50,11 @@ use Throwable;
  *
  * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
-class ErasurePreviewStore {
+class ErasurePreviewStore implements ErasurePreviewStoreInterface {
 	/**
 	 * Wire the store.
 	 *
-	 * @param ErasurePreviewMapper $mapper       The preview rows.
+	 * @param ErasurePreviewMapperInterface $mapper       The preview rows.
 	 * @param IUserSession         $userSession  The acting principal.
 	 * @param IGroupManager        $groupManager Administrator reach.
 	 * @param LoggerInterface      $logger       PSR logger.
@@ -62,7 +62,7 @@ class ErasurePreviewStore {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ErasurePreviewMapper $mapper,
+		private readonly ErasurePreviewMapperInterface $mapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
@@ -166,7 +166,6 @@ class ErasurePreviewStore {
 				rule: 'erasure-not-approved',
 				reason: 'This erasure preview has not been approved, so nothing was erased. '
 					. 'Approve the preview first, and check its protected records before you do.',
-				statusCode: 409,
 				context: ['status' => $preview->getStatus()]
 			);
 		}
@@ -227,12 +226,7 @@ class ErasurePreviewStore {
 	 * @return ErasureRefusedException The refusal.
 	 */
 	private function unknown(?Throwable $previous): ErasureRefusedException {
-		return new ErasureRefusedException(
-			rule: 'erasure-preview-unknown',
-			reason: 'No erasure preview with that identifier exists.',
-			statusCode: 404,
-			previous: $previous
-		);
+		return new ErasurePreviewUnknownException(previous: $previous);
 	}//end unknown()
 
 	/**
@@ -252,7 +246,6 @@ class ErasurePreviewStore {
 		throw new ErasureRefusedException(
 			rule: 'erasure-already-run',
 			reason: 'This preview has already been run. Take a new preview before erasing again.',
-			statusCode: 409,
 			context: ['consumedAt' => $preview->getConsumedAt()?->format(DateTime::ATOM)]
 		);
 	}//end refuseIfSpent()

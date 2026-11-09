@@ -51,7 +51,7 @@ use OCP\IRequest;
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiVersion
  */
-class ApiVersionNegotiator {
+class ApiVersionNegotiator implements ApiVersionNegotiatorInterface {
 
 	/**
 	 * The request header a consumer sets to name the contract it speaks.
@@ -60,16 +60,6 @@ class ApiVersionNegotiator {
 	 */
 	public const REQUEST_HEADER = 'API-Version';
 
-	/**
-	 * The response header naming the contract that answered.
-	 *
-	 * Sent on every answer, including one the caller did not ask a version
-	 * for, because a consumer that can read which contract served it can
-	 * notice a default moving under it before its parser does.
-	 *
-	 * @var string
-	 */
-	public const RESPONSE_HEADER = 'API-Version';
 
 	/**
 	 * Constructor.

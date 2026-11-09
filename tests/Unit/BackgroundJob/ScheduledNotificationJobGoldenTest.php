@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use DateTime;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationDelivery;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationJob;
@@ -263,9 +264,9 @@ class ScheduledNotificationJobGoldenTest extends TestCase
             }
         );
         $mapper->method('upsert')->willReturnCallback(
-            function (int $schemaId, string $ruleKey, string $objectUuid, string $fingerprint, DateTime $now, bool $dispatched): NotificationDedupeState {
-                $this->record('upsert', [$schemaId, $ruleKey, $objectUuid, $fingerprint, $dispatched]);
-                if ($objectUuid === 'touch-fails') {
+            function (NotificationDedupeKey $key, string $fingerprint, DateTime $now, bool $dispatched): NotificationDedupeState {
+                $this->record('upsert', [$key->schemaId, $key->ruleKey, $key->objectUuid, $fingerprint, $dispatched]);
+                if ($key->objectUuid === 'touch-fails') {
                     throw new RuntimeException('touch failed');
                 }
 

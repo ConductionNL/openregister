@@ -59,6 +59,7 @@ jest.mock('@nextcloud/auth', () => ({
 jest.mock('@conduction/nextcloud-vue', () => ({
 	__esModule: true,
 	CnAppNav: { name: 'CnAppNav', render: () => null },
+	CnDataTable: jest.requireActual('../../../tests/unit/support/tableGolden.js').CnDataTableStub,
 }))
 jest.mock('vue-codemirror6', () => ({
 	__esModule: true,

@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob\Support;
 
-use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport;
-use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransport;
-use OCA\OpenRegister\Service\Edepot\Transport\SftpTransport;
+use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransportInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransportInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\SftpTransportInterface;
 
 /**
  * The transports a transfer can be sent over; the configured one is picked per attempt.
@@ -35,16 +35,16 @@ final class TransferExecutionTransports {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param SftpTransport          $sftpTransport SFTP transport.
-	 * @param RestApiTransport       $restTransport REST API transport (the default).
-	 * @param OpenConnectorTransport $ocTransport   OpenConnector transport.
+	 * @param SftpTransportInterface          $sftpTransport SFTP transport.
+	 * @param RestApiTransportInterface       $restTransport REST API transport (the default).
+	 * @param OpenConnectorTransportInterface $ocTransport   OpenConnector transport.
 	 *
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
 	 */
 	public function __construct(
-		public readonly SftpTransport $sftpTransport,
-		public readonly RestApiTransport $restTransport,
-		public readonly OpenConnectorTransport $ocTransport,
+		public readonly SftpTransportInterface $sftpTransport,
+		public readonly RestApiTransportInterface $restTransport,
+		public readonly OpenConnectorTransportInterface $ocTransport,
 	) {
 	}//end __construct()
 }//end class

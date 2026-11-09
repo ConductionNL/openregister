@@ -77,7 +77,6 @@ class FileSearchReadScopeTest extends TestCase {
 		$rootFolder->method('getUserFolder')->with('user-b')->willReturn($userFolder);
 
 		$this->controller = new FileSearchController(
-			appName: 'openregister',
 			request: $this->request,
 			services: new FileSearchControllerServices(
 				vectorService: $this->vectorService,

@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Decision;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Decision;
-use OCA\OpenRegister\Db\DecisionMapper;
+use OCA\OpenRegister\Db\DecisionMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -47,10 +47,10 @@ class DecisionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param DecisionMapper $decisionMapper Stores decisions.
+	 * @param DecisionMapperInterface $decisionMapper Stores decisions.
 	 */
 	public function __construct(
-		private readonly DecisionMapper $decisionMapper,
+		private readonly DecisionMapperInterface $decisionMapper,
 	) {
 	}//end __construct()
 

@@ -111,50 +111,39 @@ class NotificationDedupeStateMapper extends QBMapper {
 	 * only `seen_at` is touched (the engine matched again but the fingerprint
 	 * has not changed, so no dispatch happened).
 	 *
-	 * @param int $schemaId Schema identifier.
-	 * @param string $ruleKey Notification annotation key.
-	 * @param string $objectUuid Target ObjectEntity UUID.
-	 * @param string $fingerprint SHA-1 of watched-field values.
-	 * @param DateTime $now Logical "now" for the scan pass (UTC).
-	 * @param bool $dispatched True when this call recorded an actual dispatch.
+	 * @param NotificationDedupeKey $key         The schema, rule and object the row belongs to.
+	 * @param string                $fingerprint SHA-1 of watched-field values.
+	 * @param DateTime              $now         Logical "now" for the scan pass (UTC).
+	 * @param bool                  $dispatched  True when this call recorded an actual dispatch.
 	 *
 	 * @return NotificationDedupeState The persisted entity.
 	 */
-	public function upsert(
-		int $schemaId,
-		string $ruleKey,
-		string $objectUuid,
-		string $fingerprint,
-		DateTime $now,
-		bool $dispatched,
-	): NotificationDedupeState {
-		$existing = $this->findOne(schemaId: $schemaId, ruleKey: $ruleKey, objectUuid: $objectUuid);
+	public function upsert(NotificationDedupeKey $key, string $fingerprint, DateTime $now, bool $dispatched): NotificationDedupeState {
+		$existing = $this->findOne(schemaId: $key->schemaId, ruleKey: $key->ruleKey, objectUuid: $key->objectUuid);
 		if ($existing !== null) {
 			return $this->refresh(existing: $existing, fingerprint: $fingerprint, now: $now, dispatched: $dispatched);
 		}
 
-		$entity = $this->newState(schemaId: $schemaId, ruleKey: $ruleKey, objectUuid: $objectUuid, fingerprint: $fingerprint, now: $now);
+		$entity = $this->newState(key: $key, fingerprint: $fingerprint, now: $now);
 
-		return $this->insertOrReadWinner(entity: $entity, schemaId: $schemaId, ruleKey: $ruleKey, objectUuid: $objectUuid);
+		return $this->insertOrReadWinner(entity: $entity, key: $key);
 	}//end upsert()
 
 
 	/**
 	 * A new row, seen and dispatched now.
 	 *
-	 * @param int      $schemaId    The schema.
-	 * @param string   $ruleKey     The rule.
-	 * @param string   $objectUuid  The object.
-	 * @param string   $fingerprint The fingerprint.
-	 * @param DateTime $now         The evaluation moment.
+	 * @param NotificationDedupeKey $key         The schema, rule and object.
+	 * @param string                $fingerprint The fingerprint.
+	 * @param DateTime              $now         The evaluation moment.
 	 *
 	 * @return NotificationDedupeState The unsaved row.
 	 */
-	private function newState(int $schemaId, string $ruleKey, string $objectUuid, string $fingerprint, DateTime $now): NotificationDedupeState {
+	private function newState(NotificationDedupeKey $key, string $fingerprint, DateTime $now): NotificationDedupeState {
 		$entity = new NotificationDedupeState();
-		$entity->setSchemaId($schemaId);
-		$entity->setRuleKey($ruleKey);
-		$entity->setObjectUuid($objectUuid);
+		$entity->setSchemaId($key->schemaId);
+		$entity->setRuleKey($key->ruleKey);
+		$entity->setObjectUuid($key->objectUuid);
 		$entity->setFingerprint($fingerprint);
 		$entity->setDispatchedAt($now);
 		$entity->setSeenAt($now);
@@ -192,16 +181,14 @@ class NotificationDedupeStateMapper extends QBMapper {
 	/**
 	 * Insert a new row, or answer with the one a concurrent dispatcher wrote.
 	 *
-	 * @param NotificationDedupeState $entity     The row to insert.
-	 * @param int                     $schemaId   Its schema.
-	 * @param string                  $ruleKey    Its rule.
-	 * @param string                  $objectUuid Its object.
+	 * @param NotificationDedupeState $entity The row to insert.
+	 * @param NotificationDedupeKey   $key    Its schema, rule and object.
 	 *
 	 * @return NotificationDedupeState The stored row.
 	 *
 	 * @throws DbException When the insert fails for another reason, or no winning row exists.
 	 */
-	private function insertOrReadWinner(NotificationDedupeState $entity, int $schemaId, string $ruleKey, string $objectUuid): NotificationDedupeState {
+	private function insertOrReadWinner(NotificationDedupeState $entity, NotificationDedupeKey $key): NotificationDedupeState {
 		try {
 			return $this->insert(entity: $entity);
 		} catch (DbException $e) {
@@ -211,7 +198,7 @@ class NotificationDedupeStateMapper extends QBMapper {
 
 			// Concurrent dispatcher won the race — re-read and treat the
 			// row as authoritative.
-			return ($this->findOne(schemaId: $schemaId, ruleKey: $ruleKey, objectUuid: $objectUuid) ?? throw $e);
+			return ($this->findOne(schemaId: $key->schemaId, ruleKey: $key->ruleKey, objectUuid: $key->objectUuid) ?? throw $e);
 		}
 
 	}//end insertOrReadWinner()

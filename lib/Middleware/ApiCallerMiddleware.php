@@ -43,13 +43,14 @@ namespace OCA\OpenRegister\Middleware;
 
 use Exception;
 use OCA\OpenRegister\Middleware\Exception\CallerRefusedException;
-use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
-use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
-use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorderInterface;
+use OCA\OpenRegister\Service\ApiCaller\CallerPolicyInterface;
+use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiterInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiatorInterface;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
 use OCP\IRequest;
+use OCA\OpenRegister\Middleware\Support\ApiCallerServices;
 
 /**
  * Applies the per-caller bounds and writes the caller record.
@@ -84,23 +85,37 @@ class ApiCallerMiddleware extends Middleware {
 	private ?string $servedVersion = null;
 
 	/**
+	 * Writes the caller record.
+	 *
+	 * @var ApiCallRecorderInterface
+	 */
+	private readonly ApiCallRecorderInterface $recorder;
+
+	/**
+	 * Names the contract that will answer.
+	 *
+	 * @var ApiVersionNegotiatorInterface
+	 */
+	private readonly ApiVersionNegotiatorInterface $negotiator;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming request.
-	 * @param ApiCallRecorder $recorder Writes the caller record.
-	 * @param CallerRateLimiter $limiter Applies the administered ceiling.
-	 * @param CallerPolicy $policy Resolves the address binding.
-	 * @param ApiVersionNegotiator $negotiator Names the contract that will answer.
+	 * @param ApiCallerServices $services Call recorder and version negotiator.
+	 * @param CallerRateLimiterInterface $limiter Applies the administered ceiling.
+	 * @param CallerPolicyInterface $policy Resolves the address binding.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly ApiCallRecorder $recorder,
-		private readonly CallerRateLimiter $limiter,
-		private readonly CallerPolicy $policy,
-		private readonly ApiVersionNegotiator $negotiator,
+		ApiCallerServices $services,
+		private readonly CallerRateLimiterInterface $limiter,
+		private readonly CallerPolicyInterface $policy,
 	) {
+		$this->recorder = $services->recorder;
+		$this->negotiator = $services->negotiator;
 
 	}//end __construct()
 
@@ -150,7 +165,6 @@ class ApiCallerMiddleware extends Middleware {
 		$path = $this->request->getPathInfo();
 		if (is_string($path) === true && $path !== '') {
 			$this->recorder->record(
-				principal: $this->recorder->principal(),
 				path: $path,
 				method: $this->request->getMethod(),
 				apiVersion: $this->servedVersion,

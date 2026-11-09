@@ -22,7 +22,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\File\ExecutableContentDetector;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Service\SecurityService;
 use Psr\Log\LoggerInterface;
 
@@ -237,14 +237,14 @@ class FilePropertyHandler {
 	 * Constructor for FilePropertyHandler.
 	 *
 	 * @param LoggerInterface $logger Logger for logging operations
-	 * @param FileService $fileService File service for file operations
+	 * @param ObjectFilesInterface $fileService File service for file operations
 	 * @param ExecutableContentDetector $executableDetector Shared executable-content detection
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function __construct(
 		LoggerInterface $logger,
-		private readonly FileService $fileService,
+		private readonly ObjectFilesInterface $fileService,
 		ExecutableContentDetector $executableDetector = new ExecutableContentDetector(),
 	) {
 		$this->parts = new FilePropertyParts(

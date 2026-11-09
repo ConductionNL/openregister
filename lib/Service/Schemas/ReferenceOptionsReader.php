@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\Schema;
  *
  * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
  */
-class ReferenceOptionsReader {
+class ReferenceOptionsReader implements ReferenceOptionsReaderInterface {
 
 	/**
 	 * The default page size.

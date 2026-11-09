@@ -111,9 +111,7 @@ final class D9InterfaceBindingsTest extends TestCase {
 		PlaceholderResolver::class => [
 			PlaceholderResolverInterface::class,
 			SearchRegistrar::class,
-			[
-				'lib/Service/Object/SaveObject.php',
-			],
+			[],
 		],
 		RestorePriorValuesAction::class => [
 			RestorePriorValuesActionInterface::class,
@@ -153,9 +151,7 @@ final class D9InterfaceBindingsTest extends TestCase {
 		UniqueHintAnnotationValidator::class => [
 			UniqueHintAnnotationValidatorInterface::class,
 			SearchRegistrar::class,
-			[
-				'lib/Db/SchemaMapper/RecordAnnotationRefusals.php',
-			],
+			[],
 		],
 		UploadService::class => [
 			UploadServiceInterface::class,

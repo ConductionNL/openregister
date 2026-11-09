@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Resolves the seam provider selectors from a case's active policy pack.
  */
-class DsarPolicyPackResolver {
+class DsarPolicyPackResolver implements DsarPolicyPackResolverInterface {
 
 	/**
 	 * Register slug the policy packs live under (declared by the head change).

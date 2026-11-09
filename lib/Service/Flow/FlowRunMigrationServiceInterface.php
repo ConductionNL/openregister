@@ -31,44 +31,32 @@ interface FlowRunMigrationServiceInterface {
 	/**
 	 * Move one run onto another version.
 	 *
-	 * @param string                $runUuid       The run.
-	 * @param integer               $targetVersion The version to move onto.
-	 * @param string                $reason        Why, recorded on the run.
-	 * @param string                $actor         Who asked.
-	 * @param array<string, string> $mapping       Old node id to new node id.
+	 * @param string                 $runUuid The run.
+	 * @param FlowRunMigrationTarget $target  The version to move onto, why, who asked and the node mapping.
 	 *
 	 * @return array<string, mixed> The migration answer.
 	 */
-	public function migrate(string $runUuid, int $targetVersion, string $reason, string $actor, array $mapping = []): array;
+	public function migrate(string $runUuid, FlowRunMigrationTarget $target): array;
 
 	/**
 	 * Move every run of one version onto another, bounded.
 	 *
-	 * @param string                $flowId        The flow.
-	 * @param integer               $sourceVersion The version to move off.
-	 * @param integer               $targetVersion The version to move onto.
-	 * @param string                $reason        Why.
-	 * @param string                $actor         Who asked.
-	 * @param array<string, string> $mapping       One mapping for all of them.
-	 * @param integer               $limit         The batch bound.
+	 * @param string                 $flowId        The flow.
+	 * @param integer                $sourceVersion The version to move off.
+	 * @param FlowRunMigrationTarget $target        The version to move onto, why, who asked and one mapping for all of them.
+	 * @param integer                $limit         The batch bound.
 	 *
 	 * @return array{migrated: int, skipped: int, results: array<int, array<string, mixed>>}
 	 */
-	public function migrateRunsOfVersion(
-		string $flowId, int $sourceVersion, int $targetVersion, string $reason,
-		string $actor, array $mapping = [], int $limit = 100,
-	): array;
+	public function migrateRunsOfVersion(string $flowId, int $sourceVersion, FlowRunMigrationTarget $target, int $limit = 100): array;
 
 	/**
 	 * Answer what migrating one run would do, without moving it.
 	 *
-	 * @param string                $runUuid       The run.
-	 * @param integer               $targetVersion The version to move onto.
-	 * @param string                $reason        Why, for the answer's own record.
-	 * @param string                $actor         Who asked.
-	 * @param array<string, string> $mapping       Old node id to new node id.
+	 * @param string                 $runUuid The run.
+	 * @param FlowRunMigrationTarget $target  The version to move onto, why (for the answer's own record), who asked and the mapping.
 	 *
 	 * @return array<string, mixed> The dry-run answer.
 	 */
-	public function preview(string $runUuid, int $targetVersion, string $reason, string $actor, array $mapping = []): array;
+	public function preview(string $runUuid, FlowRunMigrationTarget $target): array;
 }//end interface

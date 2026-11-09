@@ -162,10 +162,11 @@ class ReadStateServiceTest extends TestCase {
 		$this->mapper->expects($this->once())
 			->method('markSeen')
 			->with(
-				$this->equalTo('alice'),
-				$this->equalTo('uuid-case-1'),
-				$this->equalTo('cases'),
-				$this->equalTo('case')
+				$this->callback(
+					fn (ObjectReadState $sighting): bool => [$sighting->getUserId(), $sighting->getObjectUuid(), $sighting->getRegister(), $sighting->getSchema(), $sighting->getSubSeen()]
+						=== ['alice', 'uuid-case-1', 'cases', 'case', null]
+						&& $sighting->getLastSeenAt() instanceof DateTime
+				)
 			)
 			->willReturn($this->makeRow());
 
@@ -176,6 +177,26 @@ class ReadStateServiceTest extends TestCase {
 		);
 
 	}//end testMarkingReadWritesTheCallersOwnRow()
+
+	/**
+	 * Opening a sub-resource records its own seen moment, at the moment of the sighting.
+	 *
+	 * @return void
+	 */
+	public function testMarkingASubResourceReadRecordsItsMoment(): void {
+		$this->mapper->expects($this->once())
+			->method('markSeen')
+			->with(
+				$this->callback(
+					fn (ObjectReadState $sighting): bool => array_keys((array)$sighting->getSubSeen()) === ['files']
+						&& $sighting->getSubSeen()['files'] === $sighting->getLastSeenAt()->format(\DateTimeInterface::ATOM)
+				)
+			)
+			->willReturn($this->makeRow());
+
+		$this->serviceAs('alice')->markRead(object: $this->makeObject(), subResource: 'files');
+
+	}//end testMarkingASubResourceReadRecordsItsMoment()
 
 	/**
 	 * Marking back to unread removes the caller's row and nobody else's.

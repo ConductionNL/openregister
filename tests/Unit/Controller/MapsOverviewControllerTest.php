@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Search\Controller\MapsOverviewController;
+use OCA\OpenRegister\Search\Service\MapMarkerSource;
 use OCA\OpenRegister\Search\Service\MapsOverviewService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -91,7 +92,7 @@ class MapsOverviewControllerTest extends TestCase {
 
 		$this->overviews->expects($this->once())
 			->method('ensureReadablePoints')
-			->with('zaken', 'zaak', [], 'locatie', 25)
+			->with($this->equalTo(new MapMarkerSource('zaken', 'zaak', 'locatie', [])), 25)
 			->willReturn($points);
 
 		$response = $this->controller->points('zaken', 'zaak');
@@ -110,7 +111,7 @@ class MapsOverviewControllerTest extends TestCase {
 
 		$this->overviews->expects($this->once())
 			->method('ensureReadablePoints')
-			->with('zaken', 'zaak', ['status' => 'open'], null, null)
+			->with($this->equalTo(new MapMarkerSource('zaken', 'zaak', null, ['status' => 'open'])), null)
 			->willReturn([]);
 
 		$response = $this->controller->points('zaken', 'zaak');

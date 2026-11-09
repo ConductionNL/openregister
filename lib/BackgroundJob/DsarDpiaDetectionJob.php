@@ -47,15 +47,16 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
-use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectionService;
-use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
+use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
+use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectorInterface;
+use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolverInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\DsarDpiaDetectionServices;
 
 /**
  * Daily DPIA pattern-detection sweep over DSAR cases.
@@ -100,25 +101,51 @@ class DsarDpiaDetectionJob extends TimedJob {
 	public const AUDIT_ACTION = 'dpia.detected';
 
 	/**
+	 * Object read/write path.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Active-pack resolution per jurisdiction.
+	 *
+	 * @var DsarPolicyPackResolverInterface
+	 */
+	private readonly DsarPolicyPackResolverInterface $packResolver;
+
+	/**
+	 * Pure grouping/threshold engine.
+	 *
+	 * @var DpiaPatternDetectorInterface
+	 */
+	private readonly DpiaPatternDetectorInterface $detectionService;
+
+	/**
+	 * Immutable detection audit rows.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory required by parent.
 	 * @param IAppConfig $appConfig App-config reader.
-	 * @param ObjectOperationsInterface $objectService Object read/write path.
-	 * @param DsarPolicyPackResolver $packResolver Active-pack resolution per jurisdiction.
-	 * @param DpiaPatternDetectionService $detectionService Pure grouping/threshold engine.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Immutable detection audit rows.
+	 * @param DsarDpiaDetectionServices $services Object path, policy packs, pattern detector and audit trail.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly IAppConfig $appConfig,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly DsarPolicyPackResolver $packResolver,
-		private readonly DpiaPatternDetectionService $detectionService,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
+		DsarDpiaDetectionServices $services,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->objectService = $services->objectService;
+		$this->packResolver = $services->packResolver;
+		$this->detectionService = $services->detectionService;
+		$this->auditTrailMapper = $services->auditTrailMapper;
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::RUN_INTERVAL_SECONDS);
 
@@ -246,8 +273,8 @@ class DsarDpiaDetectionJob extends TimedJob {
 			try {
 				$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 					id: $uuid,
-					register: CaseObjectAccessor::REGISTER_SLUG,
-					schema: CaseObjectAccessor::SCHEMA_SLUG,
+					register: CaseObjectAccessorInterface::REGISTER_SLUG,
+					schema: CaseObjectAccessorInterface::SCHEMA_SLUG,
 					_rbac: false,
 					_multitenancy: false
 				));
@@ -266,8 +293,8 @@ class DsarDpiaDetectionJob extends TimedJob {
 
 				$saved = $this->objectService->saveObject(
 					object: $data,
-					register: CaseObjectAccessor::REGISTER_SLUG,
-					schema: CaseObjectAccessor::SCHEMA_SLUG,
+					register: CaseObjectAccessorInterface::REGISTER_SLUG,
+					schema: CaseObjectAccessorInterface::SCHEMA_SLUG,
 					uuid: $entity->getUuid(),
 					_rbac: false,
 					_multitenancy: false
@@ -308,8 +335,8 @@ class DsarDpiaDetectionJob extends TimedJob {
 			$rows = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => CaseObjectAccessor::REGISTER_SLUG,
-						'schema' => CaseObjectAccessor::SCHEMA_SLUG,
+						'register' => CaseObjectAccessorInterface::REGISTER_SLUG,
+						'schema' => CaseObjectAccessorInterface::SCHEMA_SLUG,
 					],
 				],
 				_rbac: false,

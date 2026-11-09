@@ -82,7 +82,7 @@ class RecordTemplatesControllerA24GoldenTest extends TestCase {
 			groups: [],
 			isAdmin: false
 		));
-		return new RecordTemplatesController('openregister', $request, $this->templates, $viewers, $this->logger);
+		return new RecordTemplatesController($request, $this->templates, $viewers, $this->logger);
 	}//end controller()
 
 	/**

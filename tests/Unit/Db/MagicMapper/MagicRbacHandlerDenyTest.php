@@ -162,6 +162,26 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	}//end schemaWith()
 
 	/**
+	 * A stored row carrying the facts of one check.
+	 *
+	 * @param string     $owner         The row owner.
+	 * @param array      $data          The row's object data.
+	 * @param array|null $authorization The row's own `_authorization`.
+	 * @param string     $uuid          The row's uuid.
+	 *
+	 * @return ObjectEntity The row.
+	 */
+	private function row(string $owner, array $data, ?array $authorization, string $uuid): ObjectEntity {
+		$row = new ObjectEntity();
+		$row->setUuid($uuid);
+		$row->setOwner($owner);
+		$row->setObject($data);
+		$row->setAuthorization($authorization);
+
+		return $row;
+	}//end row()
+
+	/**
 	 * Reset the shared match evaluator before every case.
 	 *
 	 * @return void
@@ -321,26 +341,20 @@ class MagicRbacHandlerDenyTest extends TestCase {
 
 		// The object read refuses the denied row.
 		$this->assertFalse(
-			$handler->hasPermission(
+			$handler->hasRowPermission(
 				schema: $schema,
 				action: 'read',
-				objectOwner: 'ana',
-				objectData: ['title' => 'geheim'],
-				objectAuthorization: ['deny' => ['read' => ['behandelaars']]],
-				objectUuid: 'aaaaaaaa-0000-0000-0000-000000000001'
+				row: $this->row('ana', ['title' => 'geheim'], ['deny' => ['read' => ['behandelaars']]], 'aaaaaaaa-0000-0000-0000-000000000001')
 			)
 		);
 
 		// And the same caller reads an undenied row of the same schema, so the
 		// refusal above is about the deny and not about the caller.
 		$this->assertTrue(
-			$handler->hasPermission(
+			$handler->hasRowPermission(
 				schema: $schema,
 				action: 'read',
-				objectOwner: 'ana',
-				objectData: ['title' => 'gewoon'],
-				objectAuthorization: null,
-				objectUuid: 'aaaaaaaa-0000-0000-0000-000000000002'
+				row: $this->row('ana', ['title' => 'gewoon'], null, 'aaaaaaaa-0000-0000-0000-000000000002')
 			)
 		);
 
@@ -359,13 +373,10 @@ class MagicRbacHandlerDenyTest extends TestCase {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
 
 		$this->assertFalse(
-			$handler->hasPermission(
+			$handler->hasRowPermission(
 				schema: $this->schemaWith(['delete' => ['behandelaars']]),
 				action: 'delete',
-				objectOwner: 'ana',
-				objectData: ['title' => 'van mij'],
-				objectAuthorization: ['deny' => ['delete' => ['user:ana']]],
-				objectUuid: 'aaaaaaaa-0000-0000-0000-000000000003'
+				row: $this->row('ana', ['title' => 'van mij'], ['deny' => ['delete' => ['user:ana']]], 'aaaaaaaa-0000-0000-0000-000000000003')
 			)
 		);
 	}//end testTheRowDenyBeatsTheOwnerBypassOnTheObjectPath()
@@ -457,13 +468,10 @@ class MagicRbacHandlerDenyTest extends TestCase {
 		$schema = $this->schemaWith(['read' => ['behandelaars']]);
 
 		$this->assertTrue(
-			$handler->hasPermission(
+			$handler->hasRowPermission(
 				schema: $schema,
 				action: 'read',
-				objectOwner: 'ana',
-				objectData: ['title' => 'geheim'],
-				objectAuthorization: ['deny' => ['read' => ['behandelaars']]],
-				objectUuid: 'bbbbbbbb-0000-0000-0000-000000000001'
+				row: $this->row('ana', ['title' => 'geheim'], ['deny' => ['read' => ['behandelaars']]], 'bbbbbbbb-0000-0000-0000-000000000001')
 			)
 		);
 	}//end testTheObjectPathAlsoStagesRatherThanRefusing()
@@ -479,13 +487,10 @@ class MagicRbacHandlerDenyTest extends TestCase {
 		$schema = $this->schemaWith(['read' => ['behandelaars']]);
 
 		$this->assertFalse(
-			$handler->hasPermission(
+			$handler->hasRowPermission(
 				schema: $schema,
 				action: 'read',
-				objectOwner: 'ana',
-				objectData: ['title' => 'geheim'],
-				objectAuthorization: ['deny' => ['read' => ['behandelaars']]],
-				objectUuid: 'bbbbbbbb-0000-0000-0000-000000000002'
+				row: $this->row('ana', ['title' => 'geheim'], ['deny' => ['read' => ['behandelaars']]], 'bbbbbbbb-0000-0000-0000-000000000002')
 			)
 		);
 	}//end testTheSameObjectCallRefusesWhenEnforcing()

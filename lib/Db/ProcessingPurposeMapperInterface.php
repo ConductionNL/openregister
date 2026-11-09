@@ -1,21 +1,21 @@
 <?php
 
 /**
- * ProcessingPurposeMapperInterface: what callers outside the Db component use of ProcessingPurposeMapper.
+ * ProcessingPurposeMapperInterface: the part of ProcessingPurposeMapper that the processing purpose controller uses.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Db
+ * @category Database
  * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
- *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -25,10 +25,8 @@ namespace OCA\OpenRegister\Db;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
- * The methods of ProcessingPurposeMapper that callers outside the Db component use.
- *
- * Callers type against this interface and resolve it from the container; the
- * registrar binds it to ProcessingPurposeMapper. Guarded by C04InterfaceBindingsTest.
+ * The methods of ProcessingPurposeMapper that callers outside its component use.
+ * Callers depend on this interface, not on the class.
  */
 interface ProcessingPurposeMapperInterface {
 
@@ -75,9 +73,22 @@ interface ProcessingPurposeMapperInterface {
 	 *
 	 * @return ProcessingPurpose The persisted purpose.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
+	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function insert($entity): ProcessingPurpose;
+
+	/**
+	 * Update a purpose, moving its change time.
+	 *
+	 * @param ProcessingPurpose $entity The purpose to update.
+	 *
+	 * @return ProcessingPurpose The persisted purpose.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function update($entity): ProcessingPurpose;
 
 	/**
 	 * Resolve a reference that may be a code or a uuid.
@@ -92,15 +103,4 @@ interface ProcessingPurposeMapperInterface {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function resolveReference(string $reference): ?ProcessingPurpose;
-
-	/**
-	 * Update a purpose, moving its change time.
-	 *
-	 * @param ProcessingPurpose $entity The purpose to update.
-	 *
-	 * @return ProcessingPurpose The persisted purpose.
-	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
-	 */
-	public function update($entity): ProcessingPurpose;
 }//end interface

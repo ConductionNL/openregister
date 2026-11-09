@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TalkLink;
-use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\Party\PartyService;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -127,9 +127,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	/**
 	 * Write one conversation, its held call and its link to the object.
 	 *
-	 * @param string               $app  The fragment's app.
-	 * @param string               $key  The row key.
-	 * @param array<string, mixed> $data The row's fields, placeholders filled.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{
 	 *     error: string,
@@ -138,7 +136,9 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$data = $row->data;
 		$found = $this->target(data: $data);
 		if ($found['error'] !== '') {
 			return ['error' => $found['error'], 'entry' => null];
@@ -247,7 +247,10 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 */
 	public function revert(array $entry): string {
 		try {
-			$this->container->get(TalkLinkMapper::class)->deleteByObjectAndRoom(objectUuid: (string) $entry['object'], roomToken: (string) $entry['token']);
+			$this->container->get(TalkLinkMapperInterface::class)->deleteByObjectAndRoom(
+				objectUuid: (string) $entry['object'],
+				roomToken: (string) $entry['token']
+			);
 			if (($entry['createdRoom'] ?? false) === true && $this->store()->roomExists(token: (string) $entry['token']) === true) {
 				$this->store()->deleteRoom(token: (string) $entry['token']);
 			}
@@ -267,7 +270,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 * @return int The link id.
 	 */
 	private function link(ObjectEntity $object, array $conversation): int {
-		$mapper   = $this->container->get(TalkLinkMapper::class);
+		$mapper   = $this->container->get(TalkLinkMapperInterface::class);
 		$existing = $mapper->findByObjectAndRoom((string) $conversation['data']['object'], $conversation['room']['token']);
 		if ($existing !== null) {
 			return (int) $existing->getId();

@@ -26,14 +26,15 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\TasksControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
-use OCA\OpenRegister\Service\Task\TaskState;
+use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskStateRules;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCP\AppFramework\Controller;
@@ -79,9 +80,9 @@ class TasksController extends Controller {
 	/**
 	 * The engine inbox the aggregate answers from;
 	 *
-	 * @var ?TaskInboxService
+	 * @var ?TaskInboxServiceInterface
 	 */
-	private readonly ?TaskInboxService $inbox;
+	private readonly ?TaskInboxServiceInterface $inbox;
 
 	/**
 	 * Names the caller for the aggregate
@@ -172,7 +173,7 @@ class TasksController extends Controller {
 			return new JSONResponse(data: ['error' => $refused->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
 		}
 
-		return $this->inboxPage(uid: $uid, window: $window, filter: ['scope' => $scope, 'states' => $states]);
+		return $this->inboxPage(uid: $uid, asked: $window + ['scope' => $scope, 'states' => $states]);
 	}//end allUserTasks()
 
 	/**
@@ -207,21 +208,24 @@ class TasksController extends Controller {
 	/**
 	 * Answer one inbox page for the caller.
 	 *
-	 * @param string                                          $uid    The caller.
-	 * @param array{limit: int, offset: int}                  $window The page window.
-	 * @param array{scope: string, states: array<int, string>} $filter The requested scope and states.
+	 * @param string                                                                     $uid   The caller.
+	 * @param array{limit: int, offset: int, scope: string, states: array<int, string>} $asked The page window, scope and states.
 	 *
 	 * @return JSONResponse The page, or 500 with the failure's message.
 	 */
-	private function inboxPage(string $uid, array $window, array $filter): JSONResponse {
-		$overdueAt = $this->overdueAt();
-		$sort = (string)($this->request->getParam('sort') ?? TaskInboxCriteria::SORT_DUE);
+	private function inboxPage(string $uid, array $asked): JSONResponse {
+		$filter = [
+			'scope' => $asked['scope'],
+			'states' => $asked['states'],
+			'overdueAt' => $this->overdueAt(),
+			'sort' => (string)($this->request->getParam('sort') ?? TaskInboxCriteria::SORT_DUE),
+		];
 
 		try {
-			$criteria = $this->criteria(uid: $uid, filter: $filter, overdueAt: $overdueAt, sort: $sort);
+			$criteria = $this->criteria(uid: $uid, filter: $filter);
 
 			return new JSONResponse(
-				data: $this->inbox->inbox(criteria: $criteria, limit: $window['limit'], offset: $window['offset'])
+				data: $this->inbox->inbox(criteria: $criteria, limit: $asked['limit'], offset: $asked['offset'])
 			);
 		} catch (Throwable $failure) {
 			return new JSONResponse(
@@ -234,14 +238,17 @@ class TasksController extends Controller {
 	/**
 	 * The inbox query for the caller, with the caller's groups and admin fact.
 	 *
-	 * @param string                                          $uid       The caller.
-	 * @param array{scope: string, states: array<int, string>} $filter    The requested scope and states.
-	 * @param DateTime|null                                   $overdueAt The overdue cutoff, when filtered.
-	 * @param string                                          $sort      The sort key, `-` prefixed for descending.
+	 * The filter carries the requested scope and states, the overdue cutoff
+	 * (null when not filtered) and the sort key (`-` prefixed for descending).
+	 *
+	 * @param string                                                                                  $uid    The caller.
+	 * @param array{scope: string, states: array<int, string>, overdueAt: ?DateTime, sort: string} $filter The requested filter and sort.
 	 *
 	 * @return TaskInboxCriteria The criteria.
 	 */
-	private function criteria(string $uid, array $filter, ?DateTime $overdueAt, string $sort): TaskInboxCriteria {
+	private function criteria(string $uid, array $filter): TaskInboxCriteria {
+		$sort = $filter['sort'];
+
 		return new TaskInboxCriteria(
 			uid: $uid,
 			groupIds: $this->groupIds(),
@@ -249,7 +256,7 @@ class TasksController extends Controller {
 			scope: $filter['scope'],
 			states: $filter['states'],
 			isTerminal: $this->requestedTerminal(),
-			overdueAt: $overdueAt,
+			overdueAt: $filter['overdueAt'],
 			sort: ltrim($sort, '-'),
 			sortDescending: str_starts_with($sort, '-'),
 		);
@@ -286,7 +293,7 @@ class TasksController extends Controller {
 
 		$states = [];
 		foreach (array_filter(array_map('trim', explode(',', $raw))) as $value) {
-			$states[] = TaskState::normalise(value: $value)['state'];
+			$states[] = TaskStateRules::normalise(value: $value)['state'];
 		}
 
 		return array_values(array_unique($states));
@@ -355,7 +362,7 @@ class TasksController extends Controller {
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		return $this->onObject(
-			path: [$register, $schema, $id],
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
 			action: fn (ObjectEntity $object): JSONResponse => $this->listing(
 				tasks: $this->taskService->getTasksForObject($object->getUuid())
 			),
@@ -379,7 +386,7 @@ class TasksController extends Controller {
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
 		return $this->onObject(
-			path: [$register, $schema, $id],
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
 			action: $this->createFor(...),
 			failure: fn (Exception $e): JSONResponse => $this->failure(e: $e, status: Http::STATUS_BAD_REQUEST)
 		);
@@ -402,7 +409,7 @@ class TasksController extends Controller {
 	 */
 	public function update(string $register, string $schema, string $id, string $taskId): JSONResponse {
 		return $this->onObject(
-			path: [$register, $schema, $id],
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
 			action: fn (ObjectEntity $object): JSONResponse => $this->updateFor(object: $object, taskId: $taskId),
 			failure: $this->writeFailure(...)
 		);
@@ -425,7 +432,7 @@ class TasksController extends Controller {
 	 */
 	public function destroy(string $register, string $schema, string $id, string $taskId): JSONResponse {
 		return $this->onObject(
-			path: [$register, $schema, $id],
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
 			action: fn (ObjectEntity $object): JSONResponse => $this->destroyFor(object: $object, taskId: $taskId),
 			failure: $this->writeFailure(...)
 		);
@@ -437,15 +444,15 @@ class TasksController extends Controller {
 	 * An absent object (null or DoesNotExistException) is answered 404 before
 	 * any task is touched; any other Exception goes to the verb's own mapping.
 	 *
-	 * @param array{0: string, 1: string, 2: string} $path    Register, schema and object id.
-	 * @param callable                               $action  Receives the ObjectEntity.
-	 * @param callable                               $failure Maps an Exception to the response.
+	 * @param ObjectLinkRoute $route   The object as the route names it.
+	 * @param callable        $action  Receives the ObjectEntity.
+	 * @param callable        $failure Maps an Exception to the response.
 	 *
 	 * @return JSONResponse The response.
 	 */
-	private function onObject(array $path, callable $action, callable $failure): JSONResponse {
+	private function onObject(ObjectLinkRoute $route, callable $action, callable $failure): JSONResponse {
 		try {
-			$object = $this->validateObject(register: $path[0], schema: $path[1], id: $path[2]);
+			$object = $this->validateObject(route: $route);
 			if ($object === null) {
 				return $this->objectNotFound();
 			}
@@ -633,9 +640,7 @@ class TasksController extends Controller {
 	/**
 	 * Validate that the object exists and return it.
 	 *
-	 * @param string $register The register slug or identifier
-	 * @param string $schema The schema slug or identifier
-	 * @param string $id The object ID
+	 * @param ObjectLinkRoute $route The register, schema and object id the route names.
 	 *
 	 * @return ObjectEntity|null The object or null
 	 *
@@ -646,14 +651,10 @@ class TasksController extends Controller {
 	 *                               Swallowing it here would collapse "no such object" into the same null this method
 	 *                               returns for other reasons, which the caller could no longer tell apart.
 	 */
-	private function validateObject(
-		string $register,
-		string $schema,
-		string $id,
-	): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+	private function validateObject(ObjectLinkRoute $route): ?ObjectEntity {
+		$this->objectService->setRegister($route->register);
+		$this->objectService->setSchema($route->schema);
+		$this->objectService->setObject($route->id);
 
 		return $this->objectService->getObject();
 	}//end validateObject()

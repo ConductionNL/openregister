@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\OasService;
+use OCA\OpenRegister\Service\OasSources;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 
@@ -57,7 +58,7 @@ class OasServiceUpsertParameterTest extends TestCase {
 		$urlGenerator = $this->createMock(IURLGenerator::class);
 		$urlGenerator->method('getAbsoluteURL')->willReturn('http://localhost/api');
 
-		$oas = (new OasService($registerMapper, $schemaMapper, $urlGenerator))->createOas('1');
+		$oas = (new OasService(new OasSources($registerMapper, $schemaMapper, $urlGenerator)))->createOas('1');
 
 		foreach ($oas['paths'] as $path) {
 			if (($path['post']['operationId'] ?? null) === 'createZaak') {

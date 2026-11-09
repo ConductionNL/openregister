@@ -50,7 +50,7 @@ use OCA\OpenRegister\Controller\Support\ObjectShareLinkControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectShareLinkThrottle;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCP\AppFramework\Controller;
@@ -77,7 +77,7 @@ class ObjectShareLinkController extends Controller {
 	 *
 	 * @var string
 	 */
-	public const THROTTLE_ACTION = ThrottledSurfaces::OBJECT_SHARE_LINK;
+	public const THROTTLE_ACTION = ThrottledSurfacesInterface::OBJECT_SHARE_LINK;
 
 
 	/**

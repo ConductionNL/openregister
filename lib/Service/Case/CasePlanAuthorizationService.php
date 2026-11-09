@@ -49,7 +49,7 @@ use OCP\IGroupManager;
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
  */
-class CasePlanAuthorizationService {
+class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterface {
 
 	/**
 	 * The group backend, read fail-closed.

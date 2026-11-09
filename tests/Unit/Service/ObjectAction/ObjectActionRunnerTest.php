@@ -259,12 +259,13 @@ class ObjectActionRunnerTest extends TestCase {
 			->willReturn($this->flowRun(FlowRun::STATUS_COMPLETED));
 		$this->audit->expects($this->once())->method('record')->with(
 			$this->anything(),
-			'publish',
-			'steps',
-			'run-9',
+			$this->callback(fn ($definition): bool => $definition->key === 'publish' && $definition->kind === 'steps'),
+			$this->callback(
+				fn ($outcome): bool => $outcome->run === 'run-9'
+					&& $outcome->changes === [['step' => 'Datum gezet', 'kind' => 'write']]
+					&& $outcome->outcome === 'completed'
+			),
 			$this->stringStartsWith('sha256:'),
-			[['step' => 'Datum gezet', 'kind' => 'write']],
-			'completed',
 			'anna'
 		);
 
@@ -311,7 +312,11 @@ class ObjectActionRunnerTest extends TestCase {
 	public function testATransitionRunsSyncAndAnswersTheObject(): void {
 		$saved = $this->object('done');
 		$this->transitions->expects($this->once())->method('transition')->willReturn($saved);
-		$this->audit->expects($this->once())->method('record')->with($saved, 'finish', 'transition', null);
+		$this->audit->expects($this->once())->method('record')->with(
+			$saved,
+			$this->callback(fn ($definition): bool => $definition->key === 'finish' && $definition->kind === 'transition'),
+			$this->callback(fn ($outcome): bool => $outcome->run === null)
+		);
 
 		$answer = $this->invoke('finish');
 
@@ -407,7 +412,7 @@ class ObjectActionRunnerTest extends TestCase {
 		);
 		$digests = [];
 		$this->audit->method('record')->willReturnCallback(
-			function ($object, $action, $kind, $run, string $digest) use (&$digests): void {
+			function ($object, $definition, $outcome, string $digest) use (&$digests): void {
 				$digests[] = $digest;
 			}
 		);

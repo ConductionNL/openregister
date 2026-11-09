@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Db\TimeTrackerLinkMapper;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -45,10 +46,7 @@ final class TimeTrackerLinkMapperFindByEntryGoldenTest extends TestCase {
 	public function testEveryComponentGiven(): void {
 		$link = $this->mapper()->findByObjectAndEntry(
 			objectUuid: 'obj-1',
-			entryType: 'time',
-			clientId: 'c-1',
-			taskId: 't-1',
-			timeId: 'e-1'
+			entry: $this->entry('time', 'c-1', 't-1', 'e-1')
 		);
 
 		$this->assertNull($link);
@@ -85,10 +83,7 @@ final class TimeTrackerLinkMapperFindByEntryGoldenTest extends TestCase {
 	public function testNullComponentsAreIsNull(): void {
 		$this->mapper()->findByObjectAndEntry(
 			objectUuid: 'obj-2',
-			entryType: 'client',
-			clientId: 'c-2',
-			taskId: null,
-			timeId: null
+			entry: $this->entry('client', 'c-2', null, null)
 		);
 
 		$this->assertSame(
@@ -114,10 +109,7 @@ final class TimeTrackerLinkMapperFindByEntryGoldenTest extends TestCase {
 	public function testAnEmptyComponentIsCompared(): void {
 		$this->mapper()->findByObjectAndEntry(
 			objectUuid: 'obj-3',
-			entryType: 'task',
-			clientId: null,
-			taskId: '',
-			timeId: null
+			entry: $this->entry('task', null, '', null)
 		);
 
 		$this->assertSame(
@@ -195,4 +187,24 @@ final class TimeTrackerLinkMapperFindByEntryGoldenTest extends TestCase {
 
 		return $expr;
 	}//end expressions()
+
+	/**
+	 * An unsaved row carrying one entry kind and its ids.
+	 *
+	 * @param string      $entryType The entry kind.
+	 * @param string|null $clientId  The client uuid.
+	 * @param string|null $taskId    The task uuid.
+	 * @param string|null $timeId    The time-entry uuid.
+	 *
+	 * @return TimeTrackerLink
+	 */
+	private function entry(string $entryType, ?string $clientId, ?string $taskId, ?string $timeId): TimeTrackerLink {
+		$entry = new TimeTrackerLink();
+		$entry->setEntryType($entryType);
+		$entry->setClientId($clientId);
+		$entry->setTaskId($taskId);
+		$entry->setTimeId($timeId);
+
+		return $entry;
+	}//end entry()
 }//end class

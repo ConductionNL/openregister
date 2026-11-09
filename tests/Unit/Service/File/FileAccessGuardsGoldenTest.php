@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
@@ -304,7 +305,7 @@ class FileAccessGuardsGoldenTest extends TestCase {
 			return array_values(array_filter($nodes, fn ($node): bool => $node->getName() !== 'secret.txt'));
 		});
 		$container = $this->createMock(IServerContainer::class);
-		$container->method('get')->willReturnCallback(fn (string $id): object => $id === FileRestrictionGuard::class ? $restrictions : $guard);
+		$container->method('get')->willReturnCallback(fn (string $id): object => $id === FileRestrictionGuardInterface::class ? $restrictions : $guard);
 
 		$handler = new FilePublishingHandler($this->createMock(MagicMapper::class), $this->shareMapper(), $this->createMock(LoggerInterface::class), $container);
 		$handler->setFileService($this->fileService());

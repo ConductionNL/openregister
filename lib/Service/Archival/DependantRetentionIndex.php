@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 /**
  * The schemas whose destruction date reads a date off another record.
  */
-class DependantRetentionIndex {
+class DependantRetentionIndex implements DependantRetentionIndexInterface {
 
 	/**
 	 * Every schema with a relation-based derivation, memoised per request.

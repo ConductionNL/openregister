@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
+use OCA\OpenRegister\Service\Archival\ApprovalChoice;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
@@ -59,6 +60,9 @@ class ArchivalControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->destructionService = $this->createMock(DestructionService::class);
+		$this->destructionService->method('approvalChoice')->willReturnCallback(
+			static fn (string $action, array $excludedIds, array $exclusionReasons): ApprovalChoice => new ApprovalChoice($action, $excludedIds, $exclusionReasons)
+		);
 		$this->legalHoldService = $this->createMock(LegalHoldService::class);
 		// `update` must be stubbed: approveDestructionList now PERSISTS the approved
 		// list (openregister#393 D3). Without it the real MagicMapper::update() runs.

@@ -23,8 +23,8 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 use Closure;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Flow\MacroActionBinding;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarations;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use Psr\Log\LoggerInterface;
 
@@ -96,8 +96,8 @@ final class DeclaredActionCheck {
 		$configuration = ($schema->getConfiguration() ?? []);
 		$this->refuse(
 			refusals: array_merge(
-				ObjectActionDefinition::refusals(configuration: $configuration, authorization: ($schema->getAuthorization() ?? [])),
-				MacroActionBinding::refusals(configuration: $configuration)
+				ObjectActionDeclarations::refusals(configuration: $configuration, authorization: ($schema->getAuthorization() ?? [])),
+				ObjectActionDeclarations::macroRefusals(configuration: $configuration)
 			)
 		);
 
@@ -111,14 +111,14 @@ final class DeclaredActionCheck {
 	 *
 	 * @param array<string, mixed> $configuration The schema configuration.
 	 *
-	 * @return array<ObjectActionDefinition>
+	 * @return array<ObjectActionDefinitionInterface>
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionDefinition::parse is the named constructor of a value object.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionDeclarations::parse is the named constructor of the value objects.
 	 */
 	private function runnable(array $configuration): array {
 		return array_filter(
-			ObjectActionDefinition::parse(configuration: $configuration),
-			static fn (ObjectActionDefinition $definition): bool => $definition->isRunnable()
+			ObjectActionDeclarations::parse(configuration: $configuration),
+			static fn (ObjectActionDefinitionInterface $definition): bool => $definition->isRunnable()
 		);
 	}//end runnable()
 

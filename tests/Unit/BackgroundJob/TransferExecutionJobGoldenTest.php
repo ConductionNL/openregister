@@ -22,12 +22,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\TransferExecutionJob;
+use OCA\OpenRegister\Service\Edepot\EdepotTransferAttemptInterface;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
+use OCA\OpenRegister\Service\Edepot\TransferListRunInterface;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
+use OCA\OpenRegister\Service\Edepot\TransferRecordStoreInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport;
+use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransportInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransport;
+use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransportInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\SftpTransport;
+use OCA\OpenRegister\Service\Edepot\Transport\SftpTransportInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\TransportInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
@@ -144,12 +150,12 @@ class TransferExecutionJobGoldenTest extends TestCase {
 
 		$this->deps = [
 			ITimeFactory::class           => $time,
-			EdepotTransferService::class  => $transfer,
-			TransferRecordService::class  => $records,
-			TransferListService::class    => $lists,
-			SftpTransport::class          => $this->createMock(SftpTransport::class),
-			RestApiTransport::class       => $this->createMock(RestApiTransport::class),
-			OpenConnectorTransport::class => $this->createMock(OpenConnectorTransport::class),
+			EdepotTransferAttemptInterface::class  => $transfer,
+			TransferRecordStoreInterface::class    => $records,
+			TransferListRunInterface::class        => $lists,
+			SftpTransportInterface::class          => $this->createMock(SftpTransport::class),
+			RestApiTransportInterface::class       => $this->createMock(RestApiTransport::class),
+			OpenConnectorTransportInterface::class => $this->createMock(OpenConnectorTransport::class),
 			IJobList::class               => $jobList,
 			IAppConfig::class             => $config,
 			LoggerInterface::class        => $logger,
@@ -166,7 +172,7 @@ class TransferExecutionJobGoldenTest extends TestCase {
 	 * @return string
 	 */
 	private function transportName(TransportInterface $transport): string {
-		foreach ([SftpTransport::class => 'sftp', RestApiTransport::class => 'rest', OpenConnectorTransport::class => 'oc'] as $class => $name) {
+		foreach ([SftpTransportInterface::class => 'sftp', RestApiTransportInterface::class => 'rest', OpenConnectorTransportInterface::class => 'oc'] as $class => $name) {
 			if ($this->deps[$class] === $transport) {
 				return $name;
 			}

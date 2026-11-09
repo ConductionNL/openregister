@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTime;
 use OCA\OpenRegister\Db\DeckLink;
-use OCA\OpenRegister\Db\DeckLinkMapper;
+use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCP\IUserManager;
@@ -131,9 +131,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	/**
 	 * Write the card on its board and list, and link it to the object.
 	 *
-	 * @param string               $app  The app that ships the fragment, recorded as the linker.
-	 * @param string               $key  The card's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled card fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{
 	 *     error: string,
@@ -146,7 +144,9 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$data = $row->data;
 		$store = $this->store();
 		if ($store->available() === false) {
 			return ['error' => 'Deck is not installed', 'entry' => null];
@@ -227,7 +227,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 * @return void
 	 */
 	private function deleteCard(ExampleSetDeckStore $store, array $entry): void {
-		$this->container->get(DeckLinkMapper::class)->deleteByObjectAndCard(objectUuid: (string) $entry['object'], cardId: (int) $entry['card']);
+		$this->container->get(DeckLinkMapperInterface::class)->deleteByObjectAndCard(objectUuid: (string) $entry['object'], cardId: (int) $entry['card']);
 		$store->deleteCard(card: (int) $entry['card']);
 		foreach ((array) ($entry['createdLabels'] ?? []) as $label) {
 			$store->deleteLabel(label: (int) $label);
@@ -346,7 +346,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 		$link->setLinkedBy($app);
 		$link->setLinkedAt(new DateTime());
 
-		return (int) $this->container->get(DeckLinkMapper::class)->insert($link)->getId();
+		return (int) $this->container->get(DeckLinkMapperInterface::class)->insert($link)->getId();
 	}//end link()
 
 	/**

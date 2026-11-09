@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Hardening\ElevationService;
-use OCA\OpenRegister\Service\Hardening\StatementService;
+use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
+use OCA\OpenRegister\Service\Hardening\StatementServiceInterface;
 use OCP\IUserSession;
 
 /**
@@ -35,15 +35,15 @@ final class HardeningStatementControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param StatementService $statements Publishes the statement, and records an acceptance.
-	 * @param ElevationService $elevation Guards the administration writes with a fresh sign-in.
+	 * @param StatementServiceInterface $statements Publishes the statement, and records an acceptance.
+	 * @param ElevationServiceInterface $elevation Guards the administration writes with a fresh sign-in.
 	 * @param IUserSession $userSession Names the account, which is never read from the request.
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-published-statement-is-accepted-before-use-per-version-req-ihc-001
 	 */
 	public function __construct(
-		public readonly StatementService $statements,
-		public readonly ElevationService $elevation,
+		public readonly StatementServiceInterface $statements,
+		public readonly ElevationServiceInterface $elevation,
 		public readonly IUserSession $userSession,
 	) {
 	}//end __construct()

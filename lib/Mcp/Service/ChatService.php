@@ -33,8 +33,9 @@ use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
-use OCA\OpenRegister\Notifications\Db\Message;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
 use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
@@ -138,34 +139,24 @@ class ChatService implements ChatServiceInterface {
 	/**
 	 * Constructor
 	 *
-	 * @param ConversationMapper $conversationMapper Conversation mapper.
-	 * @param MessageMapperInterface $messageMapper Message mapper.
-	 * @param AgentMapper $agentMapper Agent mapper.
-	 * @param ContextRetrievalHandler $contextHandler Context handler.
-	 * @param ResponseGenerationHandler $responseHandler Response handler.
-	 * @param ConversationManagementHandler $conversationHandler Conversation handler.
-	 * @param MessageHistoryHandler $historyHandler History handler.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ChatServiceStores   $stores   Conversation, message and agent rows.
+	 * @param ChatServiceHandlers $handlers The handlers a chat turn is delegated to.
+	 * @param LoggerInterface     $logger   Logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ConversationMapper $conversationMapper,
-		MessageMapperInterface $messageMapper,
-		AgentMapper $agentMapper,
-		ContextRetrievalHandler $contextHandler,
-		ResponseGenerationHandler $responseHandler,
-		ConversationManagementHandler $conversationHandler,
-		MessageHistoryHandler $historyHandler,
+		ChatServiceStores $stores,
+		ChatServiceHandlers $handlers,
 		LoggerInterface $logger,
 	) {
-		$this->conversationMapper = $conversationMapper;
-		$this->messageMapper = $messageMapper;
-		$this->agentMapper = $agentMapper;
-		$this->contextHandler = $contextHandler;
-		$this->responseHandler = $responseHandler;
-		$this->conversationHandler = $conversationHandler;
-		$this->historyHandler = $historyHandler;
+		$this->conversationMapper = $stores->conversationMapper;
+		$this->messageMapper = $stores->messageMapper;
+		$this->agentMapper = $stores->agentMapper;
+		$this->contextHandler = $handlers->contextHandler;
+		$this->responseHandler = $handlers->responseHandler;
+		$this->conversationHandler = $handlers->conversationHandler;
+		$this->historyHandler = $handlers->historyHandler;
 		$this->logger = $logger;
 	}//end __construct()
 
@@ -306,13 +297,7 @@ class ChatService implements ChatServiceInterface {
 	 * @return void
 	 */
 	private function recordUserMessage(ChatMessageRequest $request, Conversation $conversation): void {
-		$this->historyHandler->storeMessage(
-			conversationId: $request->conversationId,
-			role: Message::ROLE_USER,
-			content: $request->userMessage,
-			sources: null,
-			context: $request->cnAiContext
-		);
+		$this->historyHandler->storeUserMessage(request: $request);
 
 		$this->conversationHandler->checkAndSummarize($conversation);
 	}//end recordUserMessage()
@@ -344,13 +329,10 @@ class ChatService implements ChatServiceInterface {
 
 		$started = microtime(true);
 		$aiResponse = $this->responseHandler->generateResponse(
-			userMessage: $request->userMessage,
+			request: $request,
 			context: $context,
 			messageHistory: $messageHistory,
-			agent: $agent,
-			selectedTools: $request->selectedTools,
-			channel: $request->channel,
-			cnAiContext: $request->cnAiContext
+			agent: $agent
 		);
 		$llmTime = microtime(true) - $started;
 
@@ -376,9 +358,8 @@ class ChatService implements ChatServiceInterface {
 	 * @return array The reply, its stored message id, sources and timings.
 	 */
 	private function storeAnswer(ChatMessageRequest $request, array $answer): array {
-		$assistantStored = $this->historyHandler->storeMessage(
+		$assistantStored = $this->historyHandler->storeAssistantMessage(
 			conversationId: $request->conversationId,
-			role: Message::ROLE_ASSISTANT,
 			content: $answer['message'],
 			sources: $answer['sources']
 		);

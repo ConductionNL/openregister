@@ -40,7 +40,7 @@ use OCA\OpenRegister\Exception\SchemaImportException;
  *
  * @spec openspec/specs/schema-import/spec.md
  */
-class SchemaImportService {
+class SchemaImportService implements SchemaImportServiceInterface {
 
 	/**
 	 * Registered importers keyed by dialect.
@@ -219,11 +219,7 @@ class SchemaImportService {
 	 */
 	public function resolveUploadDialect(array $document, ?string $explicitDialect): string {
 		if ($explicitDialect !== null && $explicitDialect !== '') {
-			if (in_array($explicitDialect, DialectDetector::supportedDialects(), true) === false) {
-				throw SchemaImportException::undetectableDialect(DialectDetector::supportedDialects());
-			}
-
-			return $explicitDialect;
+			return $this->supportedExplicitDialect(explicitDialect: $explicitDialect);
 		}
 
 		$detected = $this->detector->detect($document);
@@ -233,6 +229,23 @@ class SchemaImportService {
 
 		return $detected;
 	}//end resolveUploadDialect()
+
+	/**
+	 * Return an explicit upload dialect when it is one of the supported ones.
+	 *
+	 * @param string $explicitDialect The explicit, non-empty dialect parameter.
+	 *
+	 * @return string The dialect.
+	 *
+	 * @throws SchemaImportException When the dialect is not supported (422).
+	 */
+	private function supportedExplicitDialect(string $explicitDialect): string {
+		if (in_array($explicitDialect, DialectDetector::supportedDialects(), true) === false) {
+			throw SchemaImportException::undetectableDialect(DialectDetector::supportedDialects());
+		}
+
+		return $explicitDialect;
+	}//end supportedExplicitDialect()
 
 	/**
 	 * Compute the classified update-from-source diff for an imported schema.

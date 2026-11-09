@@ -34,7 +34,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<SubjectExport>
  */
-class SubjectExportMapper extends QBMapper {
+class SubjectExportMapper extends QBMapper implements SubjectExportMapperInterface {
 	/**
 	 * Constructor.
 	 *

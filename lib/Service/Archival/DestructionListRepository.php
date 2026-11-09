@@ -41,10 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -54,14 +51,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  */
-class DestructionListRepository {
-
-	/**
-	 * The statuses of a list that still has review work on it.
-	 *
-	 * @var string[]
-	 */
-	public const OPEN_STATUSES = ['in_review', 'awaiting_second_approval'];
+class DestructionListRepository implements DestructionListRepositoryInterface {
 
 	/**
 	 * The status DestructionExecutionJob gives a list it has carried out.
@@ -71,16 +61,12 @@ class DestructionListRepository {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface            $objectMapper    Destruction lists are register objects.
-	 * @param RegisterMapperInterface         $registerMapper  Resolves the configured register.
-	 * @param SchemaMapperInterface           $schemaMapper    Resolves the configured schema.
+	 * @param ArchivalRegisterMappers         $mappers         Resolve the configured register and schema; lists are register objects.
 	 * @param ArchivalSettingsReaderInterface $settingsHandler Says which register and schema they live in.
-	 * @param LoggerInterface        $logger          Logger for a lookup that fails.
+	 * @param LoggerInterface                 $logger          Logger for a lookup that fails.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly ArchivalRegisterMappers $mappers,
 		private readonly ArchivalSettingsReaderInterface $settingsHandler,
 		private readonly LoggerInterface $logger,
 	) {
@@ -123,7 +109,11 @@ class DestructionListRepository {
 				return [];
 			}
 
-			return $this->objectMapper->findAll(filters: $this->statusFilter(statuses: $statuses), register: $scope['register'], schema: $scope['schema']);
+			return $this->mappers->objectMapper->findAll(
+				filters: $this->statusFilter(statuses: $statuses),
+				register: $scope['register'],
+				schema: $scope['schema']
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('[DestructionListRepository] Could not read destruction lists: ' . $e->getMessage());
 			return [];
@@ -143,7 +133,7 @@ class DestructionListRepository {
 			return null;
 		}
 
-		return ['register' => $this->registerMapper->find((int)$registerId), 'schema' => $this->schemaMapper->find((int)$schemaId)];
+		return ['register' => $this->mappers->registerMapper->find((int)$registerId), 'schema' => $this->mappers->schemaMapper->find((int)$schemaId)];
 	}//end configuredScope()
 
 	/**
@@ -177,7 +167,7 @@ class DestructionListRepository {
 	 */
 	public function find(string $uuid): ?ObjectEntity {
 		try {
-			return $this->objectMapper->find($uuid, null, null, false, false, false);
+			return $this->mappers->objectMapper->find($uuid, null, null, false, false, false);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'[DestructionListRepository] Destruction list ' . $uuid . ' not found: ' . $e->getMessage()
@@ -283,6 +273,6 @@ class DestructionListRepository {
 	public function save(ObjectEntity $list, array $listData): void {
 		$list->setObject($listData);
 
-		$this->objectMapper->update($list);
+		$this->mappers->objectMapper->update($list);
 	}//end save()
 }//end class

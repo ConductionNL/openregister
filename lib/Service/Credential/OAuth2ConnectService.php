@@ -48,7 +48,7 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.StaticAccess) One call, to a named constructor
  * ({@see OAuth2TokenSet}); a value object has no instance to call it on.
  */
-class OAuth2ConnectService {
+class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	/**
 	 * The credential kind this service mints.
 	 *
@@ -57,25 +57,65 @@ class OAuth2ConnectService {
 	public const KIND = 'oauth2-token-set';
 
 	/**
+	 * Declares every provider's endpoints and grants.
+	 *
+	 * @var ProviderCatalogue
+	 */
+	private readonly ProviderCatalogue $catalogue;
+
+	/**
+	 * Resolves the client id and secret for the exchange.
+	 *
+	 * @var OAuth2ClientResolver
+	 */
+	private readonly OAuth2ClientResolver $clients;
+
+	/**
+	 * Registers or reuses a per-instance OAuth2 application.
+	 *
+	 * @var OAuth2InstanceClient
+	 */
+	private readonly OAuth2InstanceClient $instanceClients;
+
+	/**
+	 * Redeems the authorization code at the token endpoint.
+	 *
+	 * @var OAuth2CodeExchange
+	 */
+	private readonly OAuth2CodeExchange $exchange;
+
+	/**
+	 * Repairs the targeted credential in place or mints a new one.
+	 *
+	 * @var OAuth2ConnectionWriter
+	 */
+	private readonly OAuth2ConnectionWriter $writer;
+
+	/**
+	 * Revokes a connection at the provider, best effort.
+	 *
+	 * @var OAuth2UpstreamRevoker
+	 */
+	private readonly OAuth2UpstreamRevoker $revoker;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ProviderCatalogue $catalogue Declares every provider's endpoints and grants.
-	 * @param OAuth2ClientResolver $clients Resolves the client id and secret for the exchange.
-	 * @param OAuth2InstanceClient $instanceClients Registers or reuses a per-instance OAuth2 application.
-	 * @param OAuth2CodeExchange $exchange Redeems the authorization code at the token endpoint.
-	 * @param OAuth2ConnectionWriter $writer Repairs the targeted credential in place or mints a new one.
-	 * @param OAuth2UpstreamRevoker $revoker Revokes a connection at the provider, best effort.
+	 * @param OAuth2ConnectClients $sources The provider catalogue, client resolver and per-instance client registration.
+	 * @param OAuth2ConnectSteps   $steps   The code exchange, connection writer and upstream revoker.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ProviderCatalogue $catalogue,
-		private readonly OAuth2ClientResolver $clients,
-		private readonly OAuth2InstanceClient $instanceClients,
-		private readonly OAuth2CodeExchange $exchange,
-		private readonly OAuth2ConnectionWriter $writer,
-		private readonly OAuth2UpstreamRevoker $revoker,
+		OAuth2ConnectClients $sources,
+		OAuth2ConnectSteps $steps,
 	) {
+		$this->catalogue = $sources->catalogue;
+		$this->clients = $sources->clients;
+		$this->instanceClients = $sources->instanceClients;
+		$this->exchange = $steps->exchange;
+		$this->writer = $steps->writer;
+		$this->revoker = $steps->revoker;
 	}//end __construct()
 
 	/**
@@ -125,6 +165,21 @@ class OAuth2ConnectService {
 	}//end oauth2Provider()
 
 	/**
+	 * The per-request values an authorization URL is built from.
+	 *
+	 * @param string $redirectUri The callback the provider must redirect to.
+	 * @param string $state The signed state.
+	 * @param string $challenge The PKCE code challenge.
+	 *
+	 * @return OAuth2AuthorizationRequest The request, to hand to {@see authorizationUrl()}.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+	 */
+	public function authorizationRequest(string $redirectUri, string $state, string $challenge): OAuth2AuthorizationRequest {
+		return new OAuth2AuthorizationRequest(redirectUri: $redirectUri, state: $state, challenge: $challenge);
+	}//end authorizationRequest()
+
+	/**
 	 * Build the authorization URL a person is sent to.
 	 *
 	 * The OAuth2 client is resolved HERE rather than by the caller, so a controller
@@ -132,9 +187,7 @@ class OAuth2ConnectService {
 	 *
 	 * @param array<string, mixed> $provider The catalogue provider entry.
 	 * @param array<string, mixed> $claims The flow's claims (provider, scopes, host, client).
-	 * @param string $redirectUri The callback the provider must redirect to.
-	 * @param string $state The signed state.
-	 * @param string $challenge The PKCE code challenge.
+	 * @param OAuth2AuthorizationRequest $request The callback, signed state and PKCE challenge, from {@see authorizationRequest()}.
 	 *
 	 * @return string The absolute authorization URL.
 	 *
@@ -142,13 +195,13 @@ class OAuth2ConnectService {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
-	public function authorizationUrl(array $provider, array $claims, string $redirectUri, string $state, string $challenge): string {
+	public function authorizationUrl(array $provider, array $claims, OAuth2AuthorizationRequest $request): string {
 		$flow = new OAuth2FlowClaims(claims: $claims);
 		$config = new OAuth2ProviderConfig(provider: $provider);
 		$instanceBaseUrl = $flow->pinnedHost();
 		$query = array_merge(
-			$this->authorizationQuery(flow: $flow, provider: $provider, redirectUri: $redirectUri, state: $state),
-			$this->pkceChallenge(config: $config, challenge: $challenge),
+			$this->authorizationQuery(flow: $flow, provider: $provider, request: $request),
+			$this->pkceChallenge(config: $config, challenge: $request->challenge),
 			$config->authorizationParameters()
 		);
 
@@ -241,14 +294,13 @@ class OAuth2ConnectService {
 	 *
 	 * @param OAuth2FlowClaims $flow The flow's claims.
 	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $redirectUri The callback the provider must redirect to.
-	 * @param string $state The signed state.
+	 * @param OAuth2AuthorizationRequest $request The callback and signed state.
 	 *
 	 * @return array<string, string> The query parameters.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
-	private function authorizationQuery(OAuth2FlowClaims $flow, array $provider, string $redirectUri, string $state): array {
+	private function authorizationQuery(OAuth2FlowClaims $flow, array $provider, OAuth2AuthorizationRequest $request): array {
 		$scopes = $flow->scopes(provider: $provider);
 		$client = $this->clients->resolve(
 			credential: ['clientId' => $flow->string(key: 'cl'), 'clientCredentialRef' => $flow->string(key: 'cr')],
@@ -259,8 +311,8 @@ class OAuth2ConnectService {
 		return [
 			'response_type' => 'code',
 			'client_id' => $client['clientId'],
-			'redirect_uri' => $redirectUri,
-			'state' => $state,
+			'redirect_uri' => $request->redirectUri,
+			'state' => $request->state,
 			'scope' => implode((new OAuth2ProviderConfig(provider: $provider))->scopeSeparator(), $scopes),
 		];
 	}//end authorizationQuery()

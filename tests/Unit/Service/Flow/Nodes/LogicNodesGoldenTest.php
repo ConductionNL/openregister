@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
@@ -99,8 +100,7 @@ final class LogicNodesGoldenTest extends TestCase {
 			new DecisionTableNode(
 				engine: $this->createMock(DecisionTableEvaluator::class),
 				validator: $this->createMock(DecisionTableValidator::class),
-				l10n: $l10n,
-				urls: $urls,
+				presentation: new FlowNodePresentation(l10n: $l10n, urls: $urls),
 				store: $this->createMock(DecisionTableStore::class)
 			),
 			new EndNode(l10n: $l10n, urls: $urls),

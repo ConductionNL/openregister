@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Files\Service;
 use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
-use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IDBConnection;
@@ -102,9 +102,9 @@ class FileSidebarService {
 	/**
 	 * GDPR entity mapper for entity type lookups.
 	 *
-	 * @var GdprEntityMapper
+	 * @var GdprEntityMapperInterface
 	 */
-	private readonly GdprEntityMapper $gdprEntityMapper;
+	private readonly GdprEntityMapperInterface $gdprEntityMapper;
 
 	/**
 	 * Risk level computation service.

@@ -40,8 +40,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
-use OCA\OpenRegister\Listener\ListenerRegistrar;
-use OCA\OpenRegister\Mcp\McpProviderDiscovery;
+use OCA\OpenRegister\Listener\ListenerBootstrap;
 use OCA\OpenRegister\Middleware\MiddlewareRegistrar;
 use OCA\OpenRegister\Notification\NotifierRegistrar;
 use OCA\OpenRegister\Search\SearchProviderRegistrar;
@@ -50,17 +49,14 @@ use OCA\OpenRegister\Files\FilesRegistrar;
 use OCA\OpenRegister\Mcp\McpRegistrar;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ContractBindingsRegistrar;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
-use OCA\OpenRegister\Service\Gdpr\GdprRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
-use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
 use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\Rbac\RbacRegistrar;
-use OCA\OpenRegister\Service\ServiceRegistrar;
+use OCA\OpenRegister\Service\ServiceBootstrap;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -140,14 +136,14 @@ class Application extends App implements IBootstrap {
 	 */
 	public function register(IRegistrationContext $context): void {
 		include_once __DIR__ . '/../../vendor/autoload.php';
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('or.register.in');
+		\OCA\OpenRegister\Service\WritePhase::stamp('or.register.in');
 
 		// Old names of classes that moved to a component directory.
 		ClassAliasMap::fromFile()->apply(context: $context);
 
 		FeatureToggleRegistrar::register(context: $context);
 		AppHostRegistrar::register(context: $context);
-		ServiceRegistrar::register(context: $context);
+		ServiceBootstrap::register(context: $context);
 		SearchRegistrar::register(context: $context);
 		FilesRegistrar::register(context: $context);
 		McpRegistrar::register(context: $context);
@@ -181,17 +177,17 @@ class Application extends App implements IBootstrap {
 				// the override we are installing.
 				return new OutboundClientFactory(
 					clientService: \OCP\Server::get(\OCP\Http\Client\IClientService::class),
-					proxy: $container->get(\OCA\OpenRegister\Service\Outbound\ProxySettings::class),
+					proxy: $container->get(\OCA\OpenRegister\Service\Outbound\ProxySettingsInterface::class),
 				);
 			}
 		);
 
 		FlowRegistrar::register(context: $context);
 		RbacRegistrar::register(context: $context);
-		GdprRegistrar::register(context: $context);
+		ServiceBootstrap::registerGdpr(context: $context);
 
 		// The contracts other components type-hint, bound to their services.
-		ContractBindings::register(context: $context);
+		ContractBindingsRegistrar::register(context: $context);
 		DbRegistrar::register(context: $context);
 
 		MiddlewareRegistrar::register(context: $context);
@@ -205,8 +201,7 @@ class Application extends App implements IBootstrap {
 		IntegrationRegistrar::register(context: $context);
 		CapabilityRegistrar::register(context: $context);
 		ObjectSourceRegistrar::register(context: $context);
-		ListenerRegistrar::register(context: $context);
-		(new McpProviderDiscovery())->register(context: $context);
+		ListenerBootstrap::register(context: $context);
 		ObservabilityRegistrar::register(context: $context, appId: self::APP_ID);
 
 		NotifierRegistrar::register(context: $context);
@@ -219,7 +214,7 @@ class Application extends App implements IBootstrap {
 		$context->registerDashboardWidget(
 			\OCA\OpenRegister\Dashboard\IntegrationDashboardWidget::class
 		);
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('or.register.out');
+		\OCA\OpenRegister\Service\WritePhase::stamp('or.register.out');
 	}//end register()
 
 	/**
@@ -232,7 +227,7 @@ class Application extends App implements IBootstrap {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	public function boot(IBootContext $context): void {
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('or.boot.in');
+		\OCA\OpenRegister\Service\WritePhase::stamp('or.boot.in');
 		// Dispatch the deep link registration event so consuming apps
 		// (Procest, Pipelinq, etc.) can register their URL patterns.
 		// DeepLinkRegistryService uses ContainerInterface for lazy mapper
@@ -272,7 +267,7 @@ class Application extends App implements IBootstrap {
 		// rejected with "violates the Content Security Policy". Adding
 		// `worker-src 'self'` lets the same-origin SW register.
 		$this->relaxCspForWebPushWorker(server: $server);
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('or.boot.out');
+		\OCA\OpenRegister\Service\WritePhase::stamp('or.boot.out');
 	}//end boot()
 
 	/**

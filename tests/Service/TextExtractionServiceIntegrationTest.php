@@ -26,6 +26,9 @@ use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeCall;
+use OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeDialect;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
 
 /**
  * Integration tests for TextExtractionService and EntityRecognitionHandler
@@ -1000,7 +1003,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testRegexDetectsEmails(): void {
 		$text = 'Contact us at info@example.com for more info.';
-		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [$text, null, 0.5]);
+		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [new EntityDetectionQuery($text, null, 0.5)]);
 
 		$emails = array_filter($entities, fn ($e) => $e['type'] === 'EMAIL');
 		$this->assertNotEmpty($emails);
@@ -1017,7 +1020,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testRegexDetectsIban(): void {
 		$text = 'Betaal naar NL91ABNA0417164300 alstublieft.';
-		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [$text, null, 0.5]);
+		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [new EntityDetectionQuery($text, null, 0.5)]);
 
 		$ibans = array_filter($entities, fn ($e) => $e['type'] === 'IBAN');
 		$this->assertNotEmpty($ibans);
@@ -1033,7 +1036,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testRegexDetectsPhoneNumbers(): void {
 		$text = 'Bel ons op +31612345678 voor vragen.';
-		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [$text, null, 0.5]);
+		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [new EntityDetectionQuery($text, null, 0.5)]);
 
 		$phones = array_filter($entities, fn ($e) => $e['type'] === 'PHONE');
 		$this->assertNotEmpty($phones);
@@ -1047,7 +1050,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	public function testRegexFiltersByEntityType(): void {
 		$text = 'Email: test@test.nl, IBAN: NL91ABNA0417164300, Phone: +31612345678';
 		// Only request EMAIL type.
-		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [$text, ['EMAIL'], 0.5]);
+		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [new EntityDetectionQuery($text, ['EMAIL'], 0.5)]);
 
 		foreach ($entities as $entity) {
 			$this->assertSame('EMAIL', $entity['type']);
@@ -1062,7 +1065,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	public function testRegexFiltersByConfidence(): void {
 		$text = 'Email: test@test.nl, Phone: +31612345678';
 		// High threshold: only EMAIL (0.9) should survive, PHONE (0.7) should not.
-		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [$text, null, 0.85]);
+		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [new EntityDetectionQuery($text, null, 0.85)]);
 
 		foreach ($entities as $entity) {
 			$this->assertGreaterThanOrEqual(0.85, $entity['confidence']);
@@ -1076,7 +1079,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testRegexNoMatches(): void {
 		$text = 'This text contains no PII data at all.';
-		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [$text, null, 0.5]);
+		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [new EntityDetectionQuery($text, null, 0.5)]);
 
 		$this->assertEmpty($entities);
 	}
@@ -1088,7 +1091,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testRegexFindsMultipleEmails(): void {
 		$text = 'Contact alice@example.com or bob@example.com for details.';
-		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [$text, null, 0.5]);
+		$entities = $this->invokePrivate($this->entityHandler, 'detectWithRegex', [new EntityDetectionQuery($text, null, 0.5)]);
 
 		$emails = array_filter($entities, fn ($e) => $e['type'] === 'EMAIL');
 		$this->assertCount(2, $emails);
@@ -1105,7 +1108,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testHybridDetectionFallsToRegex(): void {
 		$text = 'Send to admin@test.org please.';
-		$entities = $this->invokePrivate($this->entityHandler, 'detectWithHybrid', [$text, null, 0.5]);
+		$entities = $this->invokePrivate($this->entityHandler, 'detectWithHybrid', [new EntityDetectionQuery($text, null, 0.5)]);
 		$emails = array_filter($entities, fn ($e) => $e['type'] === 'EMAIL');
 		$this->assertNotEmpty($emails);
 	}
@@ -1121,7 +1124,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testLlmDetectionFallsToRegex(): void {
 		$text = 'Mail me at llm-test@domain.com.';
-		$entities = $this->invokePrivate($this->entityHandler, 'detectWithLLM', [$text, null, 0.5]);
+		$entities = $this->invokePrivate($this->entityHandler, 'detectWithLLM', [new EntityDetectionQuery($text, null, 0.5)]);
 		$emails = array_filter($entities, fn ($e) => $e['type'] === 'EMAIL');
 		$this->assertNotEmpty($emails);
 	}
@@ -1137,7 +1140,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testPresidioFallsBackToRegex(): void {
 		$text = 'Reach us at presidio-test@example.com.';
-		$entities = $this->invokePrivate($this->entityHandler, 'detectWithPresidio', [$text, null, 0.5]);
+		$entities = $this->invokePrivate($this->entityHandler, 'detectWithPresidio', [new EntityDetectionQuery($text, null, 0.5)]);
 		$emails = array_filter($entities, fn ($e) => $e['type'] === 'EMAIL');
 		$this->assertNotEmpty($emails);
 	}
@@ -1153,7 +1156,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testOpenAnonymiserFallsBackToRegex(): void {
 		$text = 'Mail naar anon-test@example.nl graag.';
-		$entities = $this->invokePrivate($this->entityHandler, 'detectWithOpenAnonymiser', [$text, null, 0.5]);
+		$entities = $this->invokePrivate($this->entityHandler, 'detectWithOpenAnonymiser', [new EntityDetectionQuery($text, null, 0.5)]);
 		$emails = array_filter($entities, fn ($e) => $e['type'] === 'EMAIL');
 		$this->assertNotEmpty($emails);
 	}
@@ -1169,7 +1172,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testDetectEntitiesRegexMethod(): void {
 		$text = 'Email: route@test.com.';
-		$entities = $this->invokePrivate($this->entityHandler, 'detectEntities', [$text, 'regex', null, 0.5]);
+		$entities = $this->invokePrivate($this->entityHandler, 'detectEntities', [new EntityDetectionQuery($text, null, 0.5), 'regex']);
 		$this->assertNotEmpty($entities);
 	}
 
@@ -1195,7 +1198,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 		$entities = $this->invokePrivate(
 			$this->entityHandler,
 			'detectEntities',
-			['Contact ruben@example.com about this.', 'nonexistent_method', null, 0.5]
+			[new EntityDetectionQuery('Contact ruben@example.com about this.', null, 0.5), 'nonexistent_method']
 		);
 
 		$this->assertIsArray($entities);
@@ -1352,7 +1355,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testBuildAnalyzeRequestBodyBasic(): void {
-		$result = $this->invokePrivate($this->entityHandler, 'buildAnalyzeRequestBody', ['Test text', 'en', null]);
+		$result = $this->invokePrivate($this->entityHandler, 'buildAnalyzeRequestBody', [new EntityDetectionQuery('Test text', null, 0.0), new AnalyzeDialect('en', null, 'presidio', 0.0)]);
 		$this->assertSame('Test text', $result['text']);
 		$this->assertSame('en', $result['language']);
 		$this->assertArrayNotHasKey('entities', $result);
@@ -1364,7 +1367,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testBuildAnalyzeRequestBodyWithEntityTypes(): void {
-		$result = $this->invokePrivate($this->entityHandler, 'buildAnalyzeRequestBody', ['Test', 'nl', ['EMAIL', 'PERSON']]);
+		$result = $this->invokePrivate($this->entityHandler, 'buildAnalyzeRequestBody', [new EntityDetectionQuery('Test', ['EMAIL', 'PERSON'], 0.0), new AnalyzeDialect('nl', null, 'presidio', 0.0)]);
 		$this->assertSame('nl', $result['language']);
 		$this->assertArrayHasKey('entities', $result);
 		$this->assertContains('EMAIL_ADDRESS', $result['entities']);
@@ -1377,7 +1380,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testBuildAnalyzeRequestBodyEmptyEntityTypes(): void {
-		$result = $this->invokePrivate($this->entityHandler, 'buildAnalyzeRequestBody', ['Test', 'en', []]);
+		$result = $this->invokePrivate($this->entityHandler, 'buildAnalyzeRequestBody', [new EntityDetectionQuery('Test', [], 0.0), new AnalyzeDialect('en', null, 'presidio', 0.0)]);
 		$this->assertArrayNotHasKey('entities', $result);
 	}
 
@@ -1396,7 +1399,9 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 		];
 		$text = 'test@example.com is a valid email.';
 		$result = $this->invokePrivate($this->entityHandler, 'convertApiResultsToEntities', [
-			$apiResults, $text, 0.5, 'presidio', 0,
+			$apiResults,
+			new EntityDetectionQuery($text, null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0),
 		]);
 
 		$this->assertCount(1, $result);
@@ -1416,7 +1421,9 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 		];
 		$text = 'John Doe is a person.';
 		$result = $this->invokePrivate($this->entityHandler, 'convertApiResultsToEntities', [
-			$apiResults, $text, 0.5, 'openanonymiser', 0.85,
+			$apiResults,
+			new EntityDetectionQuery($text, null, 0.5),
+			new AnalyzeDialect('en', null, 'openanonymiser', 0.85),
 		]);
 
 		$this->assertCount(1, $result);
@@ -1436,7 +1443,9 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 			['entity_type' => 'EMAIL_ADDRESS', 'start' => 0, 'end' => 5, 'score' => 0.3],
 		];
 		$result = $this->invokePrivate($this->entityHandler, 'convertApiResultsToEntities', [
-			$apiResults, 'test text', 0.5, 'presidio', 0,
+			$apiResults,
+			new EntityDetectionQuery('test text', null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0),
 		]);
 
 		$this->assertEmpty($result);
@@ -1449,7 +1458,9 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testConvertApiResultsEmpty(): void {
 		$result = $this->invokePrivate($this->entityHandler, 'convertApiResultsToEntities', [
-			[], 'text', 0.5, 'presidio', 0,
+			[],
+			new EntityDetectionQuery('text', null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0),
 		]);
 		$this->assertEmpty($result);
 	}
@@ -1538,9 +1549,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testPostAnalyzeRequestInvalidUrl(): void {
 		$result = $this->invokePrivate($this->entityHandler, 'postAnalyzeRequest', [
-			'http://localhost:99999/nonexistent',
-			['text' => 'test'],
-			'TestService',
+			new AnalyzeCall('http://localhost:99999/nonexistent', ['text' => 'test'], 'TestService'),
 		]);
 
 		$this->assertNull($result);

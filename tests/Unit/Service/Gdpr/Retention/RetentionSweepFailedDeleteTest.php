@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepService;
+use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepSources;
 use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
@@ -70,14 +71,7 @@ class RetentionSweepFailedDeleteTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
 
-		return new RetentionSweepService(
-			$accessor,
-			$retention,
-			$this->createMock(DataSubjectRequestService::class),
-			$time,
-			$this->createMock(LoggerInterface::class),
-			new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class))
-		);
+		return new RetentionSweepService(new RetentionSweepSources($accessor, $this->createMock(DataSubjectRequestService::class), $time), $retention, $this->createMock(LoggerInterface::class), new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class)));
 	}//end sweepWithDelete()
 
 	/**

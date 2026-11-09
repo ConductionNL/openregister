@@ -39,13 +39,13 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\HardeningControllerServices;
-use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
-use OCA\OpenRegister\Service\Hardening\ElevationService;
-use OCA\OpenRegister\Service\Hardening\HardeningFloorException;
-use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
-use OCA\OpenRegister\Service\Hardening\HardeningReportService;
-use OCA\OpenRegister\Service\Hardening\HardeningSettingsService;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
+use OCA\OpenRegister\Service\Hardening\ElevationRequiredExceptionInterface;
+use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
+use OCA\OpenRegister\Service\Hardening\HardeningFloorExceptionInterface;
+use OCA\OpenRegister\Service\Hardening\HardeningFloorsInterface;
+use OCA\OpenRegister\Service\Hardening\HardeningReportServiceInterface;
+use OCA\OpenRegister\Service\Hardening\HardeningSettingsServiceInterface;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\BruteForceProtection;
@@ -71,30 +71,30 @@ class HardeningController extends Controller {
 	/**
 	 * Builds the report.
 	 *
-	 * @var HardeningReportService
+	 * @var HardeningReportServiceInterface
 	 */
-	private readonly HardeningReportService $reportService;
+	private readonly HardeningReportServiceInterface $reportService;
 
 	/**
 	 * Applies a change, or refuses it.
 	 *
-	 * @var HardeningSettingsService
+	 * @var HardeningSettingsServiceInterface
 	 */
-	private readonly HardeningSettingsService $settingsService;
+	private readonly HardeningSettingsServiceInterface $settingsService;
 
 	/**
 	 * Reads the floors in force.
 	 *
-	 * @var HardeningPolicy
+	 * @var HardeningFloorsInterface
 	 */
-	private readonly HardeningPolicy $policy;
+	private readonly HardeningFloorsInterface $policy;
 
 	/**
 	 * Guards the administration writes with a fresh sign-in.
 	 *
-	 * @var ElevationService
+	 * @var ElevationServiceInterface
 	 */
-	private readonly ElevationService $elevation;
+	private readonly ElevationServiceInterface $elevation;
 
 	/**
 	 * Constructor.
@@ -163,8 +163,8 @@ class HardeningController extends Controller {
 		$baselines = [];
 		$comparators = [];
 		foreach (array_keys($floors) as $control) {
-			$baselines[$control] = HardeningPolicy::baseline(control: $control);
-			$comparators[$control] = HardeningPolicy::comparator(control: $control);
+			$baselines[$control] = $this->policy::baseline(control: $control);
+			$comparators[$control] = $this->policy::comparator(control: $control);
 		}
 
 		return new JSONResponse(
@@ -219,9 +219,9 @@ class HardeningController extends Controller {
 			}
 
 			return new JSONResponse(data: $answer);
-		} catch (ElevationRequiredException $stale) {
+		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
-		} catch (HardeningFloorException $refusal) {
+		} catch (HardeningFloorExceptionInterface $refusal) {
 			return new JSONResponse(data: $refusal->toArray(), statusCode: Http::STATUS_CONFLICT);
 		} catch (InvalidArgumentException $invalid) {
 			return new JSONResponse(data: ['error' => $invalid->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
@@ -266,9 +266,9 @@ class HardeningController extends Controller {
 			}
 
 			return new JSONResponse(data: ['floors' => $applied]);
-		} catch (ElevationRequiredException $stale) {
+		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
-		} catch (HardeningFloorException $refusal) {
+		} catch (HardeningFloorExceptionInterface $refusal) {
 			return new JSONResponse(data: $refusal->toArray(), statusCode: Http::STATUS_CONFLICT);
 		} catch (InvalidArgumentException $invalid) {
 			return new JSONResponse(data: ['error' => $invalid->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
@@ -291,7 +291,7 @@ class HardeningController extends Controller {
 	 * @contract tests/Unit/Controller/HardeningControllerTest.php
 	 */
 	#[NoCSRFRequired]
-	#[BruteForceProtection(action: ThrottledSurfaces::ELEVATION)]
+	#[BruteForceProtection(action: ThrottledSurfacesInterface::ELEVATION)]
 	public function elevate(): JSONResponse {
 		$password = (string)($this->request->getParam('password') ?? '');
 
@@ -300,7 +300,7 @@ class HardeningController extends Controller {
 				data: ['error' => 'That password was not confirmed.', 'elevationRequired' => true],
 				statusCode: Http::STATUS_UNAUTHORIZED
 			);
-			$refused->throttle(['action' => ThrottledSurfaces::ELEVATION]);
+			$refused->throttle(['action' => ThrottledSurfacesInterface::ELEVATION]);
 
 			return $refused;
 		}

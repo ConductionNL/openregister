@@ -123,11 +123,9 @@ class NotificationBroadcastServiceTest extends TestCase {
 	 */
 	private function sendToday(string $subject = 'Storing in het zaaksysteem', string $sender = 'beheerder'): NotificationBroadcast {
 		return $this->service->send(
-			subject: $subject,
-			body: 'We werken eraan.',
+			message: new BroadcastMessage(subject: $subject, body: 'We werken eraan.'),
 			sender: $sender,
-			startsAt: new DateTime('-1 hour'),
-			endsAt: new DateTime('+1 hour')
+			window: new BroadcastWindow(startsAt: new DateTime('-1 hour'), endsAt: new DateTime('+1 hour'))
 		);
 	}
 
@@ -181,11 +179,9 @@ class NotificationBroadcastServiceTest extends TestCase {
 	 */
 	public function testABroadcastOutsideItsPeriodDoesNotShow(): void {
 		$this->service->send(
-			subject: 'Onderhoud vannacht',
-			body: null,
+			message: new BroadcastMessage(subject: 'Onderhoud vannacht', body: null),
 			sender: 'beheerder',
-			startsAt: new DateTime('+2 days'),
-			endsAt: new DateTime('+3 days')
+			window: new BroadcastWindow(startsAt: new DateTime('+2 days'), endsAt: new DateTime('+3 days'))
 		);
 
 		$this->assertCount(0, $this->service->activeFor(userId: 'anna'));
@@ -198,11 +194,9 @@ class NotificationBroadcastServiceTest extends TestCase {
 	public function testAPeriodEndingBeforeItStartsIsRefused(): void {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->service->send(
-			subject: 'Onmogelijk',
-			body: null,
+			message: new BroadcastMessage(subject: 'Onmogelijk', body: null),
 			sender: 'beheerder',
-			startsAt: new DateTime('+2 days'),
-			endsAt: new DateTime('+1 day')
+			window: new BroadcastWindow(startsAt: new DateTime('+2 days'), endsAt: new DateTime('+1 day'))
 		);
 	}
 
@@ -212,11 +206,9 @@ class NotificationBroadcastServiceTest extends TestCase {
 	public function testAnEmptySubjectIsRefused(): void {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->service->send(
-			subject: '   ',
-			body: 'Wel een body.',
+			message: new BroadcastMessage(subject: '   ', body: 'Wel een body.'),
 			sender: 'beheerder',
-			startsAt: new DateTime(),
-			endsAt: new DateTime('+1 hour')
+			window: new BroadcastWindow(startsAt: new DateTime(), endsAt: new DateTime('+1 hour'))
 		);
 	}
 

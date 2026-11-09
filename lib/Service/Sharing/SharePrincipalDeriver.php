@@ -44,28 +44,7 @@ namespace OCA\OpenRegister\Service\Sharing;
 /**
  * Validates share lists and derives the scalar principal lists RBAC matches.
  */
-class SharePrincipalDeriver {
-
-	/**
-	 * The rich share list property.
-	 *
-	 * @var string
-	 */
-	public const PROP_SHARED_WITH = 'sharedWith';
-
-	/**
-	 * The derived user-principal list property.
-	 *
-	 * @var string
-	 */
-	public const PROP_SHARED_USERS = 'sharedUsers';
-
-	/**
-	 * The derived group-principal list property.
-	 *
-	 * @var string
-	 */
-	public const PROP_SHARED_GROUPS = 'sharedGroups';
+class SharePrincipalDeriver implements SharePrincipalDeriverInterface {
 
 	/**
 	 * Principal kind naming a Nextcloud user.

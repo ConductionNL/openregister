@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
@@ -47,23 +47,43 @@ use Psr\Log\LoggerInterface;
  */
 class DeleteFileHandler {
 	/**
+	 * Root folder for file operations.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * Read file handler.
+	 *
+	 * @var ReadFileHandler
+	 */
+	private readonly ReadFileHandler $readFileHandler;
+
+	/**
+	 * Logger for logging operations.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for DeleteFileHandler.
 	 *
-	 * @param IRootFolder           $rootFolder           Root folder for file operations.
-	 * @param ReadFileHandler       $readFileHandler      Read file handler.
-	 * @param FileValidationHandler $fileValidHandler     File validation handler.
-	 * @param FileOwnershipHandler  $fileOwnershipHandler File ownership handler.
-	 * @param LoggerInterface       $logger               Logger for logging operations.
-	 * @param FileLockHandler       $fileLockHandler      Lock handler used to release / verify file locks on delete.
+	 * @param DeleteFileSources             $sources              The root folder, the file reader and the logger a delete works with.
+	 * @param FileValidationHandler         $fileValidHandler     File validation handler.
+	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler File ownership handler.
+	 * @param FileLockHandler               $fileLockHandler      Lock handler used to release / verify file locks on delete.
 	 */
 	public function __construct(
-		private readonly IRootFolder $rootFolder,
-		private readonly ReadFileHandler $readFileHandler,
+		DeleteFileSources $sources,
 		private readonly FileValidationHandler $fileValidHandler,
-		private readonly FileOwnershipHandler $fileOwnershipHandler,
-		private readonly LoggerInterface $logger,
+		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
 		private readonly FileLockHandler $fileLockHandler,
 	) {
+		$this->rootFolder = $sources->rootFolder;
+		$this->readFileHandler = $sources->readFileHandler;
+		$this->logger = $sources->logger;
 	}//end __construct()
 
 	/**

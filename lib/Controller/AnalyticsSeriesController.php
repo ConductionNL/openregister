@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\AnalyticsSeriesService;
+use OCA\OpenRegister\Service\AnalyticsSeriesServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -54,14 +54,14 @@ class AnalyticsSeriesController extends Controller {
 	 *
 	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
-	 * @param AnalyticsSeriesService $seriesService Series register/fetch service.
+	 * @param AnalyticsSeriesServiceInterface $seriesService Series register/fetch service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private AnalyticsSeriesService $seriesService,
+		private AnalyticsSeriesServiceInterface $seriesService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

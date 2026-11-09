@@ -41,7 +41,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Registry of all RegulatorEscalateProvider implementations on this instance.
  */
-class RegulatorEscalateRegistry {
+class RegulatorEscalateRegistry implements RegulatorEscalateRegistryInterface {
 
 	/**
 	 * Registered providers, keyed by provider id.

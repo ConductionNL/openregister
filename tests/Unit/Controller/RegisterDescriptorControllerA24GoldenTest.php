@@ -32,6 +32,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RegisterDescriptorControllerFactory;
 
 /**
  * Pins the 401 / 403 refusals and the allowed outcome of every action.
@@ -87,7 +88,7 @@ class RegisterDescriptorControllerA24GoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->willReturnCallback(fn (string $checked): bool => ($checked === $uid && $admin));
-		return new RegisterDescriptorController(
+		return RegisterDescriptorControllerFactory::create(
 			"openregister",
 			$this->createMock(IRequest::class),
 			$this->descriptors,

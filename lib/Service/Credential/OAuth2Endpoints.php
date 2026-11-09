@@ -43,7 +43,7 @@ use OCP\IURLGenerator;
 /**
  * Resolves this instance's own callback, client-metadata and return URLs.
  */
-class OAuth2Endpoints {
+class OAuth2Endpoints implements OAuth2EndpointsInterface {
 	/**
 	 * Constructor.
 	 *

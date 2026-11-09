@@ -63,6 +63,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use DateTime;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
+use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -82,7 +83,7 @@ use UnexpectedValueException;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, LockObjectNodeInterface {
 
 	/**
 	 * The step type this node answers to.
@@ -167,22 +168,36 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	private readonly LockStepContext $lockContext;
 
 	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Resolves the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objects Object lock operations, RBAC-enforcing.
 	 * @param IUserManager $userManager Resolves the run's acting identity.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 * @param FlowRunSubjectRecorder|null $subjects Records the locked object under the declared role.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
 		IUserManager $userManager,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		FlowNodePresentation $presentation,
 		private readonly ?FlowRunSubjectRecorder $subjects = null,
 	) {
-		$this->lockContext = new LockStepContext(userManager: $userManager, l10n: $l10n);
+		$this->l10n = $presentation->l10n;
+		$this->urls = $presentation->urls;
+		$this->lockContext = new LockStepContext(userManager: $userManager, l10n: $this->l10n);
 	}//end __construct()
 
 	/**
@@ -448,8 +463,10 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		// concrete cost of keeping the copy.
 		$this->subjects?->recordOne(
 			context: $context,
-			role: (string)($config['subjectRole'] ?? ''),
-			uuids: array_values(array_unique($targets))
+			candidates: new FlowSubjectCandidates(
+				role: (string)($config['subjectRole'] ?? ''),
+				uuids: array_values(array_unique($targets))
+			)
 		);
 
 	}//end recordSubject()

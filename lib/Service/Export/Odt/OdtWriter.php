@@ -35,7 +35,7 @@ use ZipArchive;
  *
  * @spec openspec/specs/export-pdf-format/spec.md
  */
-class OdtWriter {
+class OdtWriter implements OdtWriterInterface {
 
 	/**
 	 * Namespace declarations shared by every part.

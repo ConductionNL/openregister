@@ -34,7 +34,7 @@ final readonly class SurvivorshipTrustLookup {
 	 *
 	 * @param string                           $entityType    Entity type.
 	 * @param array<int, array<string, mixed>> $trustRows     Candidate trust-configuration rows.
-	 * @param TrustTierResolver                $trustResolver Trust lookup + decay engine.
+	 * @param TrustTierResolverInterface       $trustResolver Trust lookup + decay engine.
 	 * @param DateTimeImmutable                $asOf          Reference instant.
 	 *
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
@@ -42,7 +42,7 @@ final readonly class SurvivorshipTrustLookup {
 	public function __construct(
 		public string $entityType,
 		public array $trustRows,
-		public TrustTierResolver $trustResolver,
+		public TrustTierResolverInterface $trustResolver,
 		public DateTimeImmutable $asOf,
 	) {
 	}//end __construct()

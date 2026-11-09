@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCP\IUserSession;
 
 /**
@@ -39,7 +39,7 @@ final class FlowTestRunControllerServices {
 	 * @param FlowRunServiceInterface $runner Queues and executes a run.
 	 * @param FlowLocatorInterface $resolvers Resolves the flow being tested.
 	 * @param IUserSession $userSession Who is asking, for attribution.
-	 * @param FlowRunnableGuard $guard Whether the caller may run and edit this flow.
+	 * @param FlowRunnableGuardInterface $guard Whether the caller may run and edit this flow.
 	 *
 	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
 	 */
@@ -47,7 +47,7 @@ final class FlowTestRunControllerServices {
 		public readonly FlowRunServiceInterface $runner,
 		public readonly FlowLocatorInterface $resolvers,
 		public readonly IUserSession $userSession,
-		public readonly FlowRunnableGuard $guard,
+		public readonly FlowRunnableGuardInterface $guard,
 	) {
 	}//end __construct()
 }//end class

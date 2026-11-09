@@ -6,6 +6,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Files\Controller\Settings\FileSettingsController;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -161,7 +162,6 @@ class FileSettingsControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = new FileSettingsController(
-			'openregister',
 			$this->request,
 			$this->container,
 			$this->settingsService,
@@ -169,7 +169,6 @@ class FileSettingsControllerTest extends TestCase {
 		);
 
 		$this->testableController = new TestableFileSettingsController(
-			'openregister',
 			$this->request,
 			$this->container,
 			$this->settingsService,
@@ -525,7 +524,7 @@ class FileSettingsControllerTest extends TestCase {
 		$mockService->method('testConnection')->willReturn($probe);
 
 		$this->container->method('get')
-			->with(AnonymisationBackendService::class)
+			->with(AnonymisationBackendServiceInterface::class)
 			->willReturn($mockService);
 
 		$result = $this->controller->testOpenAnonymiserConnection('');
@@ -589,7 +588,7 @@ class FileSettingsControllerTest extends TestCase {
 		$mockService->method('testConnection')->willReturn($probe);
 
 		$this->container->method('get')
-			->with(AnonymisationBackendService::class)
+			->with(AnonymisationBackendServiceInterface::class)
 			->willReturn($mockService);
 
 		$result = $this->controller->testOpenAnonymiserConnection('http://invalid-host-that-does-not-exist:9999');

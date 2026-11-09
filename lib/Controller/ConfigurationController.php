@@ -34,7 +34,7 @@ use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\NotificationServiceInterface;
-use OCA\OpenRegister\Service\SecurityService;
+use OCA\OpenRegister\Service\Security\SafeFetchUrl;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -1254,7 +1254,7 @@ class ConfigurationController extends Controller {
 		}
 
 		try {
-			SecurityService::assertSafeFetchUrl($url);
+			SafeFetchUrl::assert(url: $url);
 		} catch (\InvalidArgumentException $e) {
 			throw new Exception($e->getMessage(), 400);
 		}

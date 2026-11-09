@@ -210,16 +210,14 @@ abstract class ExampleSetEngineRows {
 	/**
 	 * Write one row.
 	 *
-	 * @param string               $app  The app that ships the fragment.
-	 * @param string               $key  The row's key in the fragment.
-	 * @param array<string, mixed> $data The filled fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{uuid: string, runs?: array<string, string>, waitsOn?: array<string, string>}|null}
 	 *         The record entry (a flow's also names its keyed runs), or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	abstract public function write(string $app, string $key, array $data): array;
+	abstract public function write(ExampleSetRow $row): array;
 
 	/**
 	 * Whether a written row is no longer there.
@@ -258,9 +256,7 @@ abstract class ExampleSetEngineRows {
 	 * Update a held row where it is; a kind that updatesInPlace() overrides this.
 	 *
 	 * @param array<string, mixed> $entry The record entry of the earlier write.
-	 * @param string               $app   The app that ships the fragment.
-	 * @param string               $key   The row's key in the fragment.
-	 * @param array<string, mixed> $data  The filled fields.
+	 * @param ExampleSetRow        $row   The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array<string, mixed>|null} The record entry, or why the update failed.
 	 *
@@ -269,8 +265,8 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
 	 */
-	public function update(array $entry, string $app, string $key, array $data): array {
-		return $this->write(app: $app, key: $key, data: $data);
+	public function update(array $entry, ExampleSetRow $row): array {
+		return $this->write(row: $row);
 	}//end update()
 
 	/**

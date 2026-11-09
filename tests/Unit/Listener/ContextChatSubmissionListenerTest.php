@@ -35,6 +35,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionServices;
 
 /**
  * @covers \OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener
@@ -75,11 +76,13 @@ class ContextChatSubmissionListenerTest extends TestCase {
 		);
 
 		$this->listener = new ContextChatSubmissionListener(
-			$container,
-			$this->schemaMapper,
+			new ContextChatSubmissionServices(
+				$container,
+				$this->schemaMapper,
+				$this->userManager,
+				$this->createMock(LoggerInterface::class),
+			),
 			$this->permissionHandler,
-			$this->userManager,
-			$this->createMock(LoggerInterface::class)
 		);
 	}
 

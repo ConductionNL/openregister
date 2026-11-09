@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\Rules;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class DependentValueValidator {
+final class DependentValueValidator implements DependentValueValidatorInterface {
 
 	/**
 	 * The table is not an object, or `allowed` is not a map of lists.

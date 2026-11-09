@@ -24,9 +24,9 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\HardeningStatementControllerServices;
-use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
-use OCA\OpenRegister\Service\Hardening\ElevationService;
-use OCA\OpenRegister\Service\Hardening\StatementService;
+use OCA\OpenRegister\Service\Hardening\ElevationRequiredExceptionInterface;
+use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
+use OCA\OpenRegister\Service\Hardening\StatementServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -60,16 +60,16 @@ class HardeningStatementController extends Controller {
 	/**
 	 * Publishes the statement, and records an acceptance.
 	 *
-	 * @var StatementService
+	 * @var StatementServiceInterface
 	 */
-	private readonly StatementService $statements;
+	private readonly StatementServiceInterface $statements;
 
 	/**
 	 * Guards the administration writes with a fresh sign-in.
 	 *
-	 * @var ElevationService
+	 * @var ElevationServiceInterface
 	 */
-	private readonly ElevationService $elevation;
+	private readonly ElevationServiceInterface $elevation;
 
 	/**
 	 * Names the account, which is never read from the request.
@@ -195,7 +195,7 @@ class HardeningStatementController extends Controller {
 					userId: ($this->userSession->getUser()?->getUID() ?? '')
 				)
 			);
-		} catch (ElevationRequiredException $stale) {
+		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (InvalidArgumentException $invalid) {
 			return new JSONResponse(data: ['error' => $invalid->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
@@ -221,7 +221,7 @@ class HardeningStatementController extends Controller {
 			$this->statements->withdraw();
 
 			return new JSONResponse(data: ['statement' => null]);
-		} catch (ElevationRequiredException $stale) {
+		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
 		}
 

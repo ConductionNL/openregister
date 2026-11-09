@@ -52,6 +52,34 @@ use Throwable;
  * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
  */
 class CaseRealisationService {
+	/**
+	 * The task lifecycle (its trusted creation path).
+	 *
+	 * @var TaskServiceInterface
+	 */
+	private readonly TaskServiceInterface $tasks;
+
+	/**
+	 * The task table, for the terminal-outcome read.
+	 *
+	 * @var TaskMapper
+	 */
+	private readonly TaskMapper $taskRows;
+
+	/**
+	 * The one queue funnel.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runs;
+
+	/**
+	 * The run table, for the terminal-outcome read.
+	 *
+	 * @var FlowRunMapperInterface
+	 */
+	private readonly FlowRunMapperInterface $runRows;
+
 
 	/**
 	 * The trigger name a stage-queued run carries.
@@ -61,19 +89,19 @@ class CaseRealisationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskServiceInterface $tasks The task lifecycle (its trusted creation path).
-	 * @param TaskMapper $taskRows The task table, for the terminal-outcome read.
-	 * @param FlowRunServiceInterface $runs The one queue funnel.
-	 * @param FlowRunMapperInterface $runRows The run table, for the terminal-outcome read.
+	 * @param CaseRealisationTasks $tasks The task lifecycle and the task table.
+	 * @param CaseRealisationRuns $runs The queue funnel and the run table.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly TaskServiceInterface $tasks,
-		private readonly TaskMapper $taskRows,
-		private readonly FlowRunServiceInterface $runs,
-		private readonly FlowRunMapperInterface $runRows,
+		CaseRealisationTasks $tasks,
+		CaseRealisationRuns $runs,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->tasks    = $tasks->tasks;
+		$this->taskRows = $tasks->taskRows;
+		$this->runs     = $runs->runs;
+		$this->runRows  = $runs->runRows;
 
 	}//end __construct()
 

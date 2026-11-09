@@ -70,6 +70,17 @@ class ConversationManagementHandler {
 	private const RECENT_MESSAGES_COUNT = 10;
 
 	/**
+	 * Summary refusal (message, code) per provider when its URL or API key is missing
+	 *
+	 * @var array<string, array{0: string, 1: int}>
+	 */
+	private const MISSING_SUMMARY_CREDENTIAL = [
+		'ollama' => ['Ollama URL not configured', 0],
+		'openai' => ['OpenAI API key not configured', 503],
+		'fireworks' => ['Fireworks AI API key not configured', 503],
+	];
+
+	/**
 	 * Conversation mapper
 	 *
 	 * @var ConversationMapper
@@ -107,25 +118,23 @@ class ConversationManagementHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param ConversationMapper $conversationMapper Conversation mapper.
-	 * @param MessageMapperInterface $messageMapper Message mapper.
-	 * @param SettingsServiceInterface $settingsService Settings service.
+	 * @param ConversationStores        $stores          Conversation and message rows.
+	 * @param SettingsServiceInterface  $settingsService Settings service.
 	 * @param ResponseGenerationHandler $responseHandler Response handler for API calls.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LoggerInterface           $logger          Logger.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		ConversationMapper $conversationMapper,
-		MessageMapperInterface $messageMapper,
+		ConversationStores $stores,
 		SettingsServiceInterface $settingsService,
 		ResponseGenerationHandler $responseHandler,
 		LoggerInterface $logger,
 	) {
-		$this->conversationMapper = $conversationMapper;
-		$this->messageMapper = $messageMapper;
+		$this->conversationMapper = $stores->conversationMapper;
+		$this->messageMapper = $stores->messageMapper;
 		$this->settingsService = $settingsService;
 		$this->responseHandler = $responseHandler;
 		$this->logger = $logger;
@@ -141,10 +150,6 @@ class ConversationManagementHandler {
 	 *
 	 * @return string Generated title
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Title generation requires multiple LLM provider paths
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Title generation requires multiple LLM provider paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) LLM provider configuration cannot be easily split
-	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function generateConversationTitle(string $firstMessage): string {
@@ -157,118 +162,7 @@ class ConversationManagementHandler {
 		);
 
 		try {
-			// Get LLM configuration.
-			$llmConfig = $this->settingsService->getLLMSettingsOnly();
-			$chatProvider = $llmConfig['chatProvider'] ?? null;
-
-			// Try to use configured LLM, fallback if not available.
-			if (empty($chatProvider) === true) {
-				return $this->generateFallbackTitle(message: $firstMessage);
-			}
-
-			// Configure LLM based on provider.
-			// Ollama uses its own native config.
-			if ($chatProvider === 'ollama') {
-				$ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
-				if (empty($ollamaConfig['url']) === true) {
-					return $this->generateFallbackTitle(message: $firstMessage);
-				}
-
-				// Use native Ollama configuration.
-				$config = new OllamaConfig();
-				$config->url = rtrim($ollamaConfig['url'], '/') . '/api/';
-				$config->model = $ollamaConfig['chatModel'] ?? 'llama2';
-				$config->modelOptions['temperature'] = 0.7;
-			} elseif ($chatProvider === 'openai') {
-				$openaiConfig = $llmConfig['openaiConfig'] ?? [];
-				if (empty($openaiConfig['apiKey']) === true) {
-					return $this->generateFallbackTitle(message: $firstMessage);
-				}
-
-				// OpenAI uses OpenAIConfig.
-				$config = new OpenAIConfig();
-				$config->apiKey = $openaiConfig['apiKey'];
-				$config->model = 'gpt-4o-mini';
-
-				// Through modelOptions, NOT a property: OpenAIChat reads
-				// $config->modelOptions and nothing in LLPhant reads a
-				// temperature property, so the old form was discarded silently.
-				$config->modelOptions['temperature'] = 0.7;
-			} elseif ($chatProvider === 'fireworks') {
-				$fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-				if (empty($fireworksConfig['apiKey']) === true) {
-					return $this->generateFallbackTitle(message: $firstMessage);
-				}
-
-				// Fireworks uses OpenAIConfig.
-				$config = new OpenAIConfig();
-				$config->apiKey = $fireworksConfig['apiKey'];
-				$config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
-				$baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-				if (str_ends_with($baseUrl, '/v1') === false) {
-					$baseUrl .= '/v1';
-				}
-
-				$config->url = $baseUrl;
-
-				// Through modelOptions, NOT a property: OpenAIChat reads
-				// $config->modelOptions and nothing in LLPhant reads a
-				// temperature property, so the old form was discarded silently.
-				$config->modelOptions['temperature'] = 0.7;
-			}//end if
-
-			if ($chatProvider !== 'ollama' && $chatProvider !== 'openai' && $chatProvider !== 'fireworks') {
-				return $this->generateFallbackTitle(message: $firstMessage);
-			}
-
-			// Generate title.
-			$prompt = 'Generate a short, descriptive title (max 60 characters) for a conversation ';
-			$prompt .= "that starts with this message:\n\n";
-			$prompt .= "\"{$firstMessage}\"\n\n";
-			$prompt .= 'Title:';
-
-			// Initialize title before conditional assignment.
-			$title = '';
-
-			// Generate title based on provider.
-			// OpenAIChat::__construct() type-errors when given OllamaConfig — skip the
-			// default-OpenAI instantiation for Ollama; the dedicated Ollama branch below
-			// does the right thing.
-			if ($chatProvider !== 'ollama') {
-				$chat = new OpenAIChat($config);
-				$title = $chat->generateText($prompt);
-			}
-
-			if ($chatProvider === 'fireworks') {
-				// Use ResponseGenerationHandler's Fireworks method.
-				$reflectionClass = new ReflectionClass($this->responseHandler);
-				$method = $reflectionClass->getMethod('callFireworksChatAPI');
-
-				/*
-				 * @psalm-suppress UndefinedPropertyFetch LLPhant\OpenAIConfig has dynamic properties
-				 */
-
-				$title = $method->invoke(
-					$this->responseHandler,
-					$config->apiKey,
-					$config->model,
-					$config->url,
-					$prompt
-				);
-			} elseif ($chatProvider === 'ollama') {
-				// Use native Ollama chat.
-				$chat = new OllamaChat($config);
-				$title = $chat->generateText($prompt);
-			}//end if
-
-			$title = trim($title, '"\'');
-
-			// Ensure title isn't too long.
-			if (strlen($title) > 60) {
-				$title = substr($title, 0, 57) . '...';
-			}
-
-			return $title;
+			return $this->generateTitleWithLlm(firstMessage: $firstMessage);
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[ConversationManagementHandler] Failed to generate title, using fallback',
@@ -283,6 +177,207 @@ class ConversationManagementHandler {
 		}//end try
 	}//end generateConversationTitle()
 
+	/**
+	 * Ask the configured LLM for a title, or fall back when none is usable.
+	 *
+	 * @param string $firstMessage First user message.
+	 *
+	 * @return string Generated (or fallback) title
+	 *
+	 * @throws Exception When the LLM call fails
+	 */
+	private function generateTitleWithLlm(string $firstMessage): string {
+		// Get LLM configuration.
+		$llmConfig = $this->settingsService->getLLMSettingsOnly();
+		$chatProvider = $llmConfig['chatProvider'] ?? null;
+
+		$config = $this->buildTitleConfig(chatProvider: $chatProvider, llmConfig: $llmConfig);
+		if ($config === null) {
+			return $this->generateFallbackTitle(message: $firstMessage);
+		}
+
+		// Generate title.
+		$prompt = 'Generate a short, descriptive title (max 60 characters) for a conversation ';
+		$prompt .= "that starts with this message:\n\n";
+		$prompt .= "\"{$firstMessage}\"\n\n";
+		$prompt .= 'Title:';
+
+		if ($chatProvider === 'fireworks') {
+			// The OpenAI-compatible call has always run first for Fireworks;
+			// its result is replaced by the Fireworks call below.
+			$chat = new OpenAIChat($config);
+			$chat->generateText($prompt);
+		}
+
+		$title = trim($this->runPrompt(chatProvider: $chatProvider, config: $config, prompt: $prompt), '"\'');
+
+		// Ensure title isn't too long.
+		if (strlen($title) > 60) {
+			$title = substr($title, 0, 57) . '...';
+		}
+
+		return $title;
+	}//end generateTitleWithLlm()
+
+	/**
+	 * Build the LLM configuration used for title generation.
+	 *
+	 * @param mixed $chatProvider Configured chat provider.
+	 * @param array $llmConfig    LLM settings.
+	 *
+	 * @return OllamaConfig|OpenAIConfig|null Null when the title must fall back
+	 */
+	private function buildTitleConfig(mixed $chatProvider, array $llmConfig): OllamaConfig|OpenAIConfig|null {
+		// Try to use configured LLM, fallback if not available.
+		if (empty($chatProvider) === true || $this->isKnownProvider(chatProvider: $chatProvider) === false) {
+			return null;
+		}
+
+		$config = $this->buildProviderConfig(chatProvider: $chatProvider, llmConfig: $llmConfig);
+		if ($config !== null) {
+			// Through modelOptions, NOT a property: OpenAIChat reads
+			// $config->modelOptions and nothing in LLPhant reads a
+			// temperature property, so the old form was discarded silently.
+			$config->modelOptions['temperature'] = 0.7;
+		}
+
+		return $config;
+	}//end buildTitleConfig()
+
+	/**
+	 * Whether the provider is one this handler can configure.
+	 *
+	 * @param mixed $chatProvider Configured chat provider.
+	 *
+	 * @return bool
+	 */
+	private function isKnownProvider(mixed $chatProvider): bool {
+		return in_array($chatProvider, ['ollama', 'openai', 'fireworks'], true);
+	}//end isKnownProvider()
+
+	/**
+	 * Build the provider configuration for a known provider.
+	 *
+	 * @param string $chatProvider One of ollama, openai or fireworks.
+	 * @param array  $llmConfig    LLM settings.
+	 *
+	 * @return OllamaConfig|OpenAIConfig|null Null when the provider's URL or API key is missing
+	 */
+	private function buildProviderConfig(string $chatProvider, array $llmConfig): OllamaConfig|OpenAIConfig|null {
+		return match ($chatProvider) {
+			'ollama' => $this->buildOllamaConfig(llmConfig: $llmConfig),
+			'openai' => $this->buildOpenAiConfig(llmConfig: $llmConfig),
+			default => $this->buildFireworksConfig(llmConfig: $llmConfig),
+		};
+	}//end buildProviderConfig()
+
+	/**
+	 * Build the native Ollama configuration.
+	 *
+	 * @param array $llmConfig LLM settings.
+	 *
+	 * @return OllamaConfig|null Null when no URL is configured
+	 */
+	private function buildOllamaConfig(array $llmConfig): ?OllamaConfig {
+		$ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
+		if (empty($ollamaConfig['url']) === true) {
+			return null;
+		}
+
+		// Use native Ollama configuration.
+		$config = new OllamaConfig();
+		$config->url = rtrim($ollamaConfig['url'], '/') . '/api/';
+		$config->model = $ollamaConfig['chatModel'] ?? 'llama2';
+
+		return $config;
+	}//end buildOllamaConfig()
+
+	/**
+	 * Build the OpenAI configuration.
+	 *
+	 * @param array $llmConfig LLM settings.
+	 *
+	 * @return OpenAIConfig|null Null when no API key is configured
+	 */
+	private function buildOpenAiConfig(array $llmConfig): ?OpenAIConfig {
+		$openaiConfig = $llmConfig['openaiConfig'] ?? [];
+		if (empty($openaiConfig['apiKey']) === true) {
+			return null;
+		}
+
+		$config = new OpenAIConfig();
+		$config->apiKey = $openaiConfig['apiKey'];
+		$config->model = 'gpt-4o-mini';
+
+		return $config;
+	}//end buildOpenAiConfig()
+
+	/**
+	 * Build the Fireworks (OpenAI-compatible) configuration.
+	 *
+	 * @param array $llmConfig LLM settings.
+	 *
+	 * @return OpenAIConfig|null Null when no API key is configured
+	 */
+	private function buildFireworksConfig(array $llmConfig): ?OpenAIConfig {
+		$fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+		if (empty($fireworksConfig['apiKey']) === true) {
+			return null;
+		}
+
+		$config = new OpenAIConfig();
+		$config->apiKey = $fireworksConfig['apiKey'];
+		$config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+		$baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+		if (str_ends_with($baseUrl, '/v1') === false) {
+			$baseUrl .= '/v1';
+		}
+
+		$config->url = $baseUrl;
+
+		return $config;
+	}//end buildFireworksConfig()
+
+	/**
+	 * Run a prompt against the provider and return the generated text.
+	 *
+	 * @param mixed                     $chatProvider Configured chat provider.
+	 * @param OllamaConfig|OpenAIConfig $config       Provider configuration.
+	 * @param string                    $prompt       Prompt text.
+	 *
+	 * @return string Generated text
+	 *
+	 * @throws Exception When the call fails
+	 */
+	private function runPrompt(mixed $chatProvider, OllamaConfig|OpenAIConfig $config, string $prompt): string {
+		if ($chatProvider === 'fireworks') {
+			// Use ResponseGenerationHandler's Fireworks method via reflection.
+			$reflectionClass = new ReflectionClass($this->responseHandler);
+			$method = $reflectionClass->getMethod('callFireworksChatAPI');
+
+			/*
+			 * @psalm-suppress UndefinedPropertyFetch LLPhant\OpenAIConfig has dynamic properties
+			 */
+
+			return $method->invoke(
+				$this->responseHandler,
+				$config->apiKey,
+				$config->model,
+				$config->url,
+				$prompt
+			);
+		}
+
+		if ($chatProvider === 'ollama') {
+			// Use native Ollama chat.
+			$chat = new OllamaChat($config);
+			return $chat->generateText($prompt);
+		}
+
+		// OpenAI chat.
+		$chat = new OpenAIChat($config);
+		return $chat->generateText($prompt);
+	}//end runPrompt()
 	/**
 	 * Generate fallback title from message
 	 *
@@ -346,31 +441,13 @@ class ConversationManagementHandler {
 			titlePattern: $pattern
 		);
 
-		// If no matches, the base title is unique.
-		if (empty($existingTitles) === true) {
+		// If no matches, or the base title itself is not taken, it is unique.
+		if (empty($existingTitles) === true || in_array($baseTitle, $existingTitles, true) === false) {
 			return $baseTitle;
-		}
-
-		// Check if base title exists.
-		if (in_array($baseTitle, $existingTitles, true) === false) {
-			return $baseTitle;
-		}
-
-		// Find the highest number suffix.
-		$maxNumber = 1;
-		$baseTitleEscaped = preg_quote($baseTitle, '/');
-
-		foreach ($existingTitles as $title) {
-			// Match "Title (N)" pattern.
-			if (preg_match('/^' . $baseTitleEscaped . ' \((\d+)\)$/', $title, $matches) === 1) {
-				$number = (int)$matches[1];
-				if ($number > $maxNumber) {
-					$maxNumber = $number;
-				}
-			}
 		}
 
 		// Generate new title with next number.
+		$maxNumber = $this->highestTitleSuffix(baseTitle: $baseTitle, existingTitles: $existingTitles);
 		$uniqueTitle = $baseTitle . ' (' . ($maxNumber + 1) . ')';
 
 		$this->logger->info(
@@ -388,6 +465,28 @@ class ConversationManagementHandler {
 	}//end ensureUniqueTitle()
 
 	/**
+	 * Find the highest "Title (N)" suffix among existing titles (at least 1).
+	 *
+	 * @param string $baseTitle      Base title.
+	 * @param array  $existingTitles Existing titles for the user-agent pair.
+	 *
+	 * @return int Highest suffix number
+	 */
+	private function highestTitleSuffix(string $baseTitle, array $existingTitles): int {
+		$maxNumber = 1;
+		$baseTitleEscaped = preg_quote($baseTitle, '/');
+
+		foreach ($existingTitles as $title) {
+			// Match "Title (N)" pattern.
+			if (preg_match('/^' . $baseTitleEscaped . ' \((\d+)\)$/', $title, $matches) === 1) {
+				$maxNumber = max($maxNumber, (int)$matches[1]);
+			}
+		}
+
+		return $maxNumber;
+	}//end highestTitleSuffix()
+
+	/**
 	 * Check if conversation needs summarization and create summary
 	 *
 	 * Triggers summarization when token count exceeds threshold.
@@ -403,21 +502,8 @@ class ConversationManagementHandler {
 		$metadata = $conversation->getMetadata() ?? [];
 		$tokenCount = $metadata['token_count'] ?? 0;
 
-		// Check if we need to summarize.
-		if ($tokenCount < self::MAX_TOKENS_BEFORE_SUMMARY) {
+		if ($this->needsSummary(metadata: $metadata) === false) {
 			return;
-		}
-
-		// Check if we recently summarized.
-		$lastSummary = $metadata['last_summary_at'] ?? null;
-		if ($lastSummary !== null) {
-			$lastSummaryTime = new DateTime($lastSummary);
-			$hoursSinceSummary = (time() - $lastSummaryTime->getTimestamp()) / 3600;
-
-			// Don't summarize more than once per hour.
-			if ($hoursSinceSummary < 1) {
-				return;
-			}
 		}
 
 		$this->logger->info(
@@ -431,35 +517,7 @@ class ConversationManagementHandler {
 		);
 
 		try {
-			// Get all messages except recent ones.
-			$allMessages = $this->messageMapper->findByConversation($conversation->getId());
-			$messagesToSummarize = array_slice($allMessages, 0, -self::RECENT_MESSAGES_COUNT);
-
-			if (empty($messagesToSummarize) === true) {
-				return;
-			}
-
-			// Generate summary.
-			$summary = $this->generateSummary(messages: $messagesToSummarize);
-
-			// Update metadata.
-			$metadata['summary'] = $summary;
-			$metadata['last_summary_at'] = (new DateTime())->format('c');
-			$metadata['summarized_messages'] = count($messagesToSummarize);
-
-			$conversation->setMetadata($metadata);
-			$conversation->setUpdated(new DateTime());
-			$this->conversationMapper->update($conversation);
-
-			$this->logger->info(
-				message: '[ConversationManagementHandler] Conversation summarized',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'conversationId' => $conversation->getId(),
-					'summaryLength' => strlen($summary),
-				]
-			);
+			$this->summarizeConversation(conversation: $conversation, metadata: $metadata);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[ConversationManagementHandler] Failed to summarize conversation',
@@ -473,6 +531,76 @@ class ConversationManagementHandler {
 	}//end checkAndSummarize()
 
 	/**
+	 * Whether the token count is over the threshold and no summary ran in the last hour.
+	 *
+	 * @param array $metadata Conversation metadata.
+	 *
+	 * @return bool
+	 */
+	private function needsSummary(array $metadata): bool {
+		$tokenCount = $metadata['token_count'] ?? 0;
+
+		// Check if we need to summarize.
+		if ($tokenCount < self::MAX_TOKENS_BEFORE_SUMMARY) {
+			return false;
+		}
+
+		// Check if we recently summarized.
+		$lastSummary = $metadata['last_summary_at'] ?? null;
+		if ($lastSummary === null) {
+			return true;
+		}
+
+		$lastSummaryTime = new DateTime($lastSummary);
+		$hoursSinceSummary = (time() - $lastSummaryTime->getTimestamp()) / 3600;
+
+		// Don't summarize more than once per hour.
+		return $hoursSinceSummary >= 1;
+	}//end needsSummary()
+
+	/**
+	 * Summarize all but the most recent messages and store the summary.
+	 *
+	 * @param Conversation $conversation Conversation entity.
+	 * @param array        $metadata     Conversation metadata.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When summary generation or storage fails
+	 */
+	private function summarizeConversation(Conversation $conversation, array $metadata): void {
+		// Get all messages except recent ones.
+		$allMessages = $this->messageMapper->findByConversation($conversation->getId());
+		$messagesToSummarize = array_slice($allMessages, 0, -self::RECENT_MESSAGES_COUNT);
+
+		if (empty($messagesToSummarize) === true) {
+			return;
+		}
+
+		// Generate summary.
+		$summary = $this->generateSummary(messages: $messagesToSummarize);
+
+		// Update metadata.
+		$metadata['summary'] = $summary;
+		$metadata['last_summary_at'] = (new DateTime())->format('c');
+		$metadata['summarized_messages'] = count($messagesToSummarize);
+
+		$conversation->setMetadata($metadata);
+		$conversation->setUpdated(new DateTime());
+		$this->conversationMapper->update($conversation);
+
+		$this->logger->info(
+			message: '[ConversationManagementHandler] Conversation summarized',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'conversationId' => $conversation->getId(),
+				'summaryLength' => strlen($summary),
+			]
+		);
+	}//end summarizeConversation()
+
+	/**
 	 * Generate summary of messages
 	 *
 	 * Uses configured LLM to generate a concise summary of conversation messages.
@@ -482,9 +610,6 @@ class ConversationManagementHandler {
 	 * @return string Summary text
 	 *
 	 * @throws \Exception If summary generation fails
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Summary generation requires handling multiple LLM providers
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Summary generation requires handling multiple LLM providers
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
@@ -498,6 +623,27 @@ class ConversationManagementHandler {
 		}
 
 		// Build conversation text.
+		$conversationText = $this->buildConversationText(messages: $messages);
+
+		$config = $this->buildSummaryConfig(chatProvider: $chatProvider, llmConfig: $llmConfig);
+
+		// Generate summary.
+		$prompt = 'Summarize the following conversation concisely. ';
+		$prompt .= "Focus on key topics, decisions, and information discussed:\n\n";
+		$prompt .= $conversationText;
+		$prompt .= "\n\nSummary:";
+
+		return $this->runPrompt(chatProvider: $chatProvider, config: $config, prompt: $prompt);
+	}//end generateSummary()
+
+	/**
+	 * Render messages as "Role: content" blocks.
+	 *
+	 * @param array $messages Array of Message entities.
+	 *
+	 * @return string Conversation text
+	 */
+	private function buildConversationText(array $messages): string {
 		$conversationText = '';
 		foreach ($messages as $message) {
 			$role = 'Assistant';
@@ -508,75 +654,33 @@ class ConversationManagementHandler {
 			$conversationText .= "{$role}: {$message->getContent()}\n\n";
 		}
 
-		// Configure LLM based on provider.
-		// Ollama uses its own native config.
-		// OpenAI and Fireworks use OpenAIConfig (default).
-		$config = new OpenAIConfig();
+		return $conversationText;
+	}//end buildConversationText()
 
-		if ($chatProvider === 'ollama') {
-			$ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
-			if (empty($ollamaConfig['url']) === true) {
-				throw new Exception('Ollama URL not configured');
-			}
+	/**
+	 * Build the LLM configuration for summarization.
+	 *
+	 * Unknown providers get a default OpenAIConfig; a known provider without
+	 * its URL or API key is refused.
+	 *
+	 * @param mixed $chatProvider Configured chat provider.
+	 * @param array $llmConfig    LLM settings.
+	 *
+	 * @return OllamaConfig|OpenAIConfig
+	 *
+	 * @throws Exception When a known provider is missing its URL or API key
+	 */
+	private function buildSummaryConfig(mixed $chatProvider, array $llmConfig): OllamaConfig|OpenAIConfig {
+		if ($this->isKnownProvider(chatProvider: $chatProvider) === false) {
+			return new OpenAIConfig();
+		}
 
-			// Use native Ollama configuration.
-			$config = new OllamaConfig();
-			$config->url = rtrim($ollamaConfig['url'], '/') . '/api/';
-			$config->model = $ollamaConfig['chatModel'] ?? 'llama2';
-		} elseif ($chatProvider === 'openai') {
-			$openaiConfig = $llmConfig['openaiConfig'] ?? [];
-			if (empty($openaiConfig['apiKey']) === true) {
-				throw new Exception('OpenAI API key not configured', 503);
-			}
+		$config = $this->buildProviderConfig(chatProvider: $chatProvider, llmConfig: $llmConfig);
+		if ($config === null) {
+			[$message, $code] = self::MISSING_SUMMARY_CREDENTIAL[$chatProvider];
+			throw new Exception($message, $code);
+		}
 
-			$config->apiKey = $openaiConfig['apiKey'];
-			$config->model = 'gpt-4o-mini';
-		} elseif ($chatProvider === 'fireworks') {
-			$fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-			if (empty($fireworksConfig['apiKey']) === true) {
-				throw new Exception('Fireworks AI API key not configured', 503);
-			}
-
-			$config->apiKey = $fireworksConfig['apiKey'];
-			$config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
-			$baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-			if (str_ends_with($baseUrl, '/v1') === false) {
-				$baseUrl .= '/v1';
-			}
-
-			$config->url = $baseUrl;
-		}//end if
-
-		// Generate summary.
-		$prompt = 'Summarize the following conversation concisely. ';
-		$prompt .= "Focus on key topics, decisions, and information discussed:\n\n";
-		$prompt .= $conversationText;
-		$prompt .= "\n\nSummary:";
-
-		// Generate summary based on provider.
-		if ($chatProvider === 'fireworks') {
-			// Use ResponseGenerationHandler's Fireworks method via reflection.
-			$reflectionClass = new ReflectionClass($this->responseHandler);
-			$method = $reflectionClass->getMethod('callFireworksChatAPI');
-
-			/*
-			 * @psalm-suppress UndefinedPropertyFetch LLPhant\OpenAIConfig has dynamic properties
-			 */
-
-			return $method->invoke(
-				$this->responseHandler,
-				$config->apiKey,
-				$config->model,
-				$config->url,
-				$prompt
-			);
-		} elseif ($chatProvider === 'ollama') {
-			// Use native Ollama chat.
-			$chat = new OllamaChat($config);
-			return $chat->generateText($prompt);
-		}//end if
-		// OpenAI chat.
-		$chat = new OpenAIChat($config);
-		return $chat->generateText($prompt);
-	}//end generateSummary()
+		return $config;
+	}//end buildSummaryConfig()
 }//end class

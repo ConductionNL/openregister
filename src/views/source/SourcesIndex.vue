@@ -21,13 +21,7 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 			:viewMode="viewMode"
 			:selectable="true"
 			:selectedIds="selectedSources"
-			:showEditAction="false"
-			:showCopyAction="false"
-			:showDeleteAction="false"
-			:showMassImport="false"
-			:showMassExport="false"
-			:showMassCopy="false"
-			:showMassDelete="false"
+			v-bind="builtinActionsOff"
 			showViewToggle
 			:addLabel="t('openregister', 'Add Source')"
 			rowKey="id"
@@ -139,6 +133,11 @@ import { NcAppContent } from '@nextcloud/vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import { deleteAction, editAction, viewAction } from '../../services/menuActions.js'
+import {
+	BUILTIN_ACTIONS_OFF,
+	rowOpeners,
+	timestampColumns,
+} from '../indexPageOptions.js'
 import { localPagination } from '../localPagination.js'
 
 export default {
@@ -154,6 +153,7 @@ export default {
 
 	data() {
 		return {
+			builtinActionsOff: BUILTIN_ACTIONS_OFF,
 			viewMode: 'cards',
 			selectedSources: [],
 			isRefreshing: false,
@@ -173,16 +173,7 @@ export default {
 				{ key: 'type', label: t('openregister', 'Type') },
 				{ key: 'databaseUrl', label: t('openregister', 'Database URL') },
 				{ key: 'registers', label: t('openregister', 'Registers') },
-				{
-					key: 'created',
-					label: t('openregister', 'Created'),
-					sortable: true,
-				},
-				{
-					key: 'updated',
-					label: t('openregister', 'Updated'),
-					sortable: true,
-				},
+				...timestampColumns(),
 			]
 		},
 
@@ -255,31 +246,7 @@ export default {
 			]
 		},
 
-		/**
-		 * Select a row and open a modal on it.
-		 *
-		 * @spec exclude UI plumbing — store delegation.
-		 * @param {object} item - list row
-		 * @param {string} modal - modal name
-		 * @return {void}
-		 */
-		openModal(item, modal) {
-			sourceStore.setSourceItem(item)
-			navigationStore.setModal(modal)
-		},
-
-		/**
-		 * Select a row and open a dialog on it.
-		 *
-		 * @spec exclude UI plumbing — store delegation.
-		 * @param {object} item - list row
-		 * @param {string} dialog - dialog name
-		 * @return {void}
-		 */
-		openDialog(item, dialog) {
-			sourceStore.setSourceItem(item)
-			navigationStore.setDialog(dialog)
-		},
+		...rowOpeners((item) => sourceStore.setSourceItem(item)),
 
 		/**
 		 * Reload the source list from the store.

@@ -50,7 +50,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class StatementService {
+class StatementService implements StatementServiceInterface {
 
 	/**
 	 * Where the published statement is stored, as JSON.

@@ -37,8 +37,10 @@ use OCA\OpenRegister\Db\SubjectExportMapper;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\Export\ExportBundleService;
+use OCA\OpenRegister\Service\Gdpr\Export\ExportDossierSources;
 use OCA\OpenRegister\Service\Gdpr\Export\OneTimeDownloadTokenStore;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
+use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportQueue;
 use OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -147,7 +149,7 @@ final class ExportGoldenTest extends TestCase {
 			$audit->method('findByObjectUntil')->willReturn($trail);
 		}
 
-		return new ExportBundleService($dsr, $accessor, new UnsignedPadesSigner(), $tokens, $audit, $this->logger());
+		return new ExportBundleService(new ExportDossierSources($dsr, $accessor, $audit), new UnsignedPadesSigner(), $tokens, $this->logger());
 	}//end bundleService()
 
 	public function testGenerateRefusesAnUnreachableCaseBeforeAnything(): void {
@@ -420,7 +422,7 @@ final class ExportGoldenTest extends TestCase {
 			}
 		);
 
-		return new SubjectExportService($mapper, $subjects, $jobList, $session, $groups, $this->logger());
+		return new SubjectExportService(new SubjectExportQueue($mapper, $subjects, $jobList), $session, $groups, $this->logger());
 	}//end subjectService()
 
 	public function testRequestQueuesAndAuditsBothNames(): void {

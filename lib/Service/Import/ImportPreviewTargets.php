@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Import;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Service\Object\ObjectValidatorInterface;
 
 /**
  * Where a preview writes: the register and schema lookups, schema validation and the object write path.
@@ -39,13 +39,13 @@ final readonly class ImportPreviewTargets {
 	 *
 	 * @param RegisterMapperInterface $registerMapper Register lookup.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
-	 * @param ValidateObjectInterface $validateObject Schema validation.
+	 * @param ObjectValidatorInterface $validateObject Schema validation.
 	 * @param ObjectOperationsInterface $objectService The write path.
 	 */
 	public function __construct(
 		public RegisterMapperInterface $registerMapper,
 		public SchemaMapperInterface $schemaMapper,
-		public ValidateObjectInterface $validateObject,
+		public ObjectValidatorInterface $validateObject,
 		public ObjectOperationsInterface $objectService,
 	) {
 	}//end __construct()

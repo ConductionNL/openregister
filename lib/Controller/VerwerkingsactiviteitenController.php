@@ -49,8 +49,8 @@ use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IDBConnection;
 use OCP\IRequest;
 

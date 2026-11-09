@@ -137,3 +137,67 @@ describe('ExploreSchema.togglePropertySelection', () => {
 		expect(ctx.selectedPropertiesConfig.age).toBeUndefined()
 	})
 })
+
+describe('ExploreSchema.updateSchema', () => {
+	beforeEach(() => {
+		jest.useFakeTimers()
+		jest.spyOn(console, 'error').mockImplementation(() => {})
+	})
+	afterEach(() => {
+		jest.useRealTimers()
+		jest.restoreAllMocks()
+	})
+
+	/**
+	 * A context with one selected property ready to save.
+	 *
+	 * @return {object} The context
+	 */
+	function saving() {
+		const ctx = context()
+		ctx.selectedProperties = []
+		ctx.success = false
+		ctx.handleDialogClose = jest.fn()
+		return ctx
+	}
+
+	it('reports an HTTP failure', async () => {
+		global.fetch = answer({ ok: false, status: 502 })
+		const ctx = saving()
+		await ctx.updateSchema()
+		expect(ctx.error).toBe('HTTP error! status: 502')
+		expect(ctx.success).toBe(false)
+		expect(ctx.loading).toBe(false)
+	})
+
+	it('reports an error the endpoint returns', async () => {
+		global.fetch = answer({
+			ok: true,
+			json: () => Promise.resolve({ error: 'locked' }),
+		})
+		const ctx = saving()
+		await ctx.updateSchema()
+		expect(ctx.error).toBe('locked')
+		expect(ctx.success).toBe(false)
+	})
+
+	it('posts the updates and stores the returned schema', async () => {
+		const { schemaStore } = jest.requireMock('../../store/store.js')
+		schemaStore.setSchemaItem = jest.fn()
+		schemaStore.refreshSchemaList = jest.fn()
+		global.fetch = answer({
+			ok: true,
+			json: () => Promise.resolve({ schema: { id: 7, title: 'S' } }),
+		})
+		const ctx = saving()
+		await ctx.updateSchema()
+		expect(global.fetch.mock.calls[0][0]).toBe(
+			'/index.php/apps/openregister/api/schemas/7/update-from-exploration',
+		)
+		expect(ctx.error).toBeNull()
+		expect(ctx.success).toBe(true)
+		expect(schemaStore.setSchemaItem).toHaveBeenCalledWith({ id: 7, title: 'S' })
+		jest.runAllTimers()
+		expect(ctx.handleDialogClose).toHaveBeenCalled()
+	})
+})

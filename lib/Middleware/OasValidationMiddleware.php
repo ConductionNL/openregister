@@ -7,7 +7,7 @@
  * operation's request-body schema in the generated OAS, and validates
  * the incoming JSON body against it. On a validation miss the middleware
  * short-circuits with an RFC 7807 `application/problem+json` 422 response
- * via `ProblemDetailsBuilder::validationFailed`.
+ * via `ProblemDetailsBuilderInterface::validationFailed`.
  *
  * Opt-in: only runs on JSON-bodied (POST/PUT/PATCH) requests AND only
  * when an `_validate=true` query parameter is set OR when the operation
@@ -34,8 +34,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Service\Oas\OasRequestValidator;
-use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
+use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
+use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Middleware;
 use OCP\IRequest;
@@ -50,14 +50,14 @@ class OasValidationMiddleware extends Middleware {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming request.
-	 * @param OasRequestValidator $validator JSON-Schema validator wrapper.
-	 * @param ProblemDetailsBuilder $problems RFC 7807 response shape builder.
+	 * @param OasRequestValidatorInterface $validator JSON-Schema validator wrapper.
+	 * @param ProblemDetailsBuilderInterface $problems RFC 7807 response shape builder.
 	 * @param ?LoggerInterface $logger Optional logger for skipped paths.
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly OasRequestValidator $validator,
-		private readonly ProblemDetailsBuilder $problems,
+		private readonly OasRequestValidatorInterface $validator,
+		private readonly ProblemDetailsBuilderInterface $problems,
 		private readonly ?LoggerInterface $logger = null,
 	) {
 
@@ -149,7 +149,7 @@ class OasValidationMiddleware extends Middleware {
 			instance: (string)$this->request->getRequestUri()
 		);
 		$response = new JSONResponse(data: $problem, statusCode: 422);
-		$response->addHeader('Content-Type', ProblemDetailsBuilder::CONTENT_TYPE);
+		$response->addHeader('Content-Type', ProblemDetailsBuilderInterface::CONTENT_TYPE);
 		return $response;
 	}//end failureResponse()
 

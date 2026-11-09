@@ -31,12 +31,12 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\ExportProfilesControllerServices;
 use OCA\OpenRegister\Db\ExportProfile;
-use OCA\OpenRegister\Service\Export\ExportProfileService;
+use OCA\OpenRegister\Service\Export\ExportProfileServiceInterface;
+use OCA\OpenRegister\Service\Export\ExportProfileWriterInterface;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRunContent;
 use OCA\OpenRegister\Service\Export\ExportRunFile;
 use OCA\OpenRegister\Service\Export\ExportRunOrigin;
-use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportRefusedException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -64,9 +64,9 @@ class ExportProfilesController extends Controller {
 	/**
 	 * Profile administration and runs.
 	 *
-	 * @var ExportProfileService
+	 * @var ExportProfileServiceInterface
 	 */
-	private readonly ExportProfileService $service;
+	private readonly ExportProfileServiceInterface $service;
 
 	/**
 	 * Current-user session.
@@ -398,7 +398,7 @@ class ExportProfilesController extends Controller {
 	public function contract(): JSONResponse {
 		return new JSONResponse(
 			data: [
-				'csvMetadataPrefix' => ExportProfileWriter::CSV_METADATA_PREFIX,
+				'csvMetadataPrefix' => ExportProfileWriterInterface::CSV_METADATA_PREFIX,
 				'valueModes' => ExportProfile::MODES,
 				'formats' => ExportProfile::FORMATS,
 				'headers' => [

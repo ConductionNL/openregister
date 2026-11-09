@@ -37,6 +37,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\ManifestService;
+use OCA\OpenRegister\Service\ManifestSources;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -135,7 +136,7 @@ class ManifestServiceAccessGoldenTest extends TestCase {
 			}
 		);
 
-		return new ManifestService($objects, $schemas, $evaluator, $session, new NullLogger());
+		return new ManifestService(new ManifestSources($objects, $schemas), $evaluator, $session, new NullLogger());
 	}//end service()
 
 	/**

@@ -90,49 +90,68 @@ class ReconcileDeclaredBackgroundJobs implements IRepairStep {
 			return;
 		}
 
-		$added = 0;
-		$skipped = 0;
-
+		$tally = ['added' => 0, 'skipped' => 0, 'present' => 0];
 		foreach ($declared as $class) {
-			try {
-				if ($this->jobList->has($class, null) === true) {
-					continue;
-				}
-
-				// Resolve through the container so a job with unbuildable
-				// dependencies fails here, named, rather than at cron time.
-				$job = $this->container->get($class);
-				if (($job instanceof IJob) === false) {
-					$output->warning('[OpenRegister] ' . $class . ' is declared as a job but is not an IJob — skipped.');
-					$skipped++;
-					continue;
-				}
-
-				$this->jobList->add($class);
-				$output->info('[OpenRegister] Registered missing background job: ' . $class);
-				$added++;
-			} catch (Throwable $e) {
-				// One unresolvable job must not abort the repair run: the
-				// whole point of this step is to recover an instance.
-				$output->warning('[OpenRegister] Could not register ' . $class . ': ' . $e->getMessage());
-				$this->logger->warning(
-					'[OpenRegister] Background-job reconciliation skipped ' . $class,
-					['exception' => $e]
-				);
-				$skipped++;
-			}//end try
-		}//end foreach
-
-		if ($added === 0 && $skipped === 0) {
-			$output->info('[OpenRegister] All ' . count($declared) . ' declared background jobs are already registered.');
-			return;
+			$tally[$this->reconcileOne(class: $class, output: $output)]++;
 		}
 
-		$output->info(
-			'[OpenRegister] Background jobs reconciled: ' . $added . ' added, '
-			. $skipped . ' skipped, ' . count($declared) . ' declared.'
-		);
+		$output->info(self::summary(added: $tally['added'], skipped: $tally['skipped'], declared: count($declared)));
 	}//end run()
+
+	/**
+	 * Register one declared job when it is missing and buildable.
+	 *
+	 * @param string  $class  The declared job class.
+	 * @param IOutput $output Repair output.
+	 *
+	 * @return string 'present', 'added' or 'skipped'.
+	 */
+	private function reconcileOne(string $class, IOutput $output): string {
+		try {
+			if ($this->jobList->has($class, null) === true) {
+				return 'present';
+			}
+
+			// Resolve through the container so a job with unbuildable
+			// dependencies fails here, named, rather than at cron time.
+			$job = $this->container->get($class);
+			if (($job instanceof IJob) === false) {
+				$output->warning('[OpenRegister] ' . $class . ' is declared as a job but is not an IJob — skipped.');
+				return 'skipped';
+			}
+
+			$this->jobList->add($class);
+			$output->info('[OpenRegister] Registered missing background job: ' . $class);
+			return 'added';
+		} catch (Throwable $e) {
+			// One unresolvable job must not abort the repair run: the
+			// whole point of this step is to recover an instance.
+			$output->warning('[OpenRegister] Could not register ' . $class . ': ' . $e->getMessage());
+			$this->logger->warning(
+				'[OpenRegister] Background-job reconciliation skipped ' . $class,
+				['exception' => $e]
+			);
+			return 'skipped';
+		}//end try
+	}//end reconcileOne()
+
+	/**
+	 * The closing line of the reconciliation.
+	 *
+	 * @param int $added    Jobs registered.
+	 * @param int $skipped  Jobs that could not be registered.
+	 * @param int $declared Jobs declared in info.xml.
+	 *
+	 * @return string The line to report.
+	 */
+	private static function summary(int $added, int $skipped, int $declared): string {
+		if ($added === 0 && $skipped === 0) {
+			return '[OpenRegister] All ' . $declared . ' declared background jobs are already registered.';
+		}
+
+		return '[OpenRegister] Background jobs reconciled: ' . $added . ' added, '
+			. $skipped . ' skipped, ' . $declared . ' declared.';
+	}//end summary()
 
 	/**
 	 * Read the `<job>` class names out of appinfo/info.xml.
@@ -171,8 +190,19 @@ class ReconcileDeclaredBackgroundJobs implements IRepairStep {
 			return [];
 		}
 
+		return self::jobClassesOf(backgroundJobs: $xml->{'background-jobs'});
+	}//end declaredJobs()
+
+	/**
+	 * The non-empty `<job>` class names under `<background-jobs>`.
+	 *
+	 * @param \SimpleXMLElement $backgroundJobs The `<background-jobs>` element.
+	 *
+	 * @return array<int, string> The declared job classes, in order.
+	 */
+	private static function jobClassesOf(\SimpleXMLElement $backgroundJobs): array {
 		$classes = [];
-		foreach ($xml->{'background-jobs'}->job as $job) {
+		foreach ($backgroundJobs->job as $job) {
 			$class = trim((string)$job);
 			if ($class !== '') {
 				$classes[] = $class;
@@ -180,5 +210,5 @@ class ReconcileDeclaredBackgroundJobs implements IRepairStep {
 		}
 
 		return $classes;
-	}//end declaredJobs()
+	}//end jobClassesOf()
 }//end class

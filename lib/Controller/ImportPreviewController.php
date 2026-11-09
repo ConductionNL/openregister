@@ -33,14 +33,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\BackgroundJob\ImportPreviewRunner;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Controller\Support\ImportPreviewControllerServices;
 use OCA\OpenRegister\Db\ImportPreview;
-use OCA\OpenRegister\Db\ImportPreviewMapper;
-use OCA\OpenRegister\Db\ImportPreviewRowMapper;
+use OCA\OpenRegister\Db\ImportPreviewMapperInterface;
+use OCA\OpenRegister\Db\ImportPreviewRowMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Service\Import\ConflictPolicy;
+use OCA\OpenRegister\Service\Import\ConflictPolicyNames;
 use OCA\OpenRegister\Service\Import\ImportPreviewRefusedException;
 use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
 use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
@@ -52,6 +52,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\BackgroundJob\IJobList;
 use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
 
@@ -88,16 +89,16 @@ class ImportPreviewController extends Controller {
 	/**
 	 * Preview persistence.
 	 *
-	 * @var ImportPreviewMapper
+	 * @var ImportPreviewMapperInterface
 	 */
-	private readonly ImportPreviewMapper $previewMapper;
+	private readonly ImportPreviewMapperInterface $previewMapper;
 
 	/**
 	 * Per-row decision persistence.
 	 *
-	 * @var ImportPreviewRowMapper
+	 * @var ImportPreviewRowMapperInterface
 	 */
-	private readonly ImportPreviewRowMapper $rowMapper;
+	private readonly ImportPreviewRowMapperInterface $rowMapper;
 
 	/**
 	 * The file reader, for hashing and staging.
@@ -175,27 +176,27 @@ class ImportPreviewController extends Controller {
 			data: [
 				'results' => [
 					[
-						'id' => ConflictPolicy::CREATE_ONLY,
+						'id' => ConflictPolicyNames::CREATE_ONLY,
 						'label' => 'Create only',
 						'description' => 'Every row creates. A row that matches an existing object is refused.',
 					],
 					[
-						'id' => ConflictPolicy::UPDATE_ONLY,
+						'id' => ConflictPolicyNames::UPDATE_ONLY,
 						'label' => 'Update only',
 						'description' => 'Only matched rows are written. A row that matches nothing is skipped.',
 					],
 					[
-						'id' => ConflictPolicy::UPSERT,
+						'id' => ConflictPolicyNames::UPSERT,
 						'label' => 'Upsert',
 						'description' => 'A matched row updates, an unmatched row creates.',
 					],
 					[
-						'id' => ConflictPolicy::REFUSE_ON_CONFLICT,
+						'id' => ConflictPolicyNames::REFUSE_ON_CONFLICT,
 						'label' => 'Refuse on conflict',
 						'description' => 'A matched row is refused. Unmatched rows create.',
 					],
 				],
-				'default' => ConflictPolicy::DEFAULT_POLICY,
+				'default' => ConflictPolicyNames::DEFAULT_POLICY,
 				'formats' => SourceRowReaderInterface::FORMATS,
 			]
 		);
@@ -270,17 +271,30 @@ class ImportPreviewController extends Controller {
 			);
 		}
 
-		$params = [
-			'register' => $register,
-			'schema' => $this->request->getParam('schema'),
-			'filePath' => ($uploadedFile['tmp_name'] ?? ''),
-			'sourceName' => ($uploadedFile['name'] ?? ''),
-			'format' => $this->request->getParam('format'),
-			'policy' => $this->request->getParam('policy'),
-			'matchKey' => $this->request->getParam('matchKey'),
-			'packSlug' => $this->request->getParam('mapping'),
-		];
+		return $this->runPreview(
+			params: [
+				'register' => $register,
+				'schema' => $this->request->getParam('schema'),
+				'filePath' => ($uploadedFile['tmp_name'] ?? ''),
+				'sourceName' => ($uploadedFile['name'] ?? ''),
+				'format' => $this->request->getParam('format'),
+				'policy' => $this->request->getParam('policy'),
+				'matchKey' => $this->request->getParam('matchKey'),
+				'packSlug' => $this->request->getParam('mapping'),
+			]
+		);
+	}//end create()
 
+	/**
+	 * Build the preview now, or stage it and queue it when the request asks for async.
+	 *
+	 * @param array<string, mixed> $params The preview parameters.
+	 *
+	 * @return JSONResponse 201 with the preview, 202 for a queued one, or 400 / 500.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function runPreview(array $params): JSONResponse {
 		$async = filter_var($this->request->getParam('async', false), FILTER_VALIDATE_BOOLEAN);
 
 		try {
@@ -296,7 +310,7 @@ class ImportPreviewController extends Controller {
 		} catch (Throwable $exception) {
 			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
 		}//end try
-	}//end create()
+	}//end runPreview()
 
 	/**
 	 * One preview, with its state and its counts.
@@ -374,17 +388,29 @@ class ImportPreviewController extends Controller {
 			return $preview;
 		}
 
-		$sourceHash = $this->sourceHashFromRequest();
+		return $this->runCommit(preview: $preview, sourceHash: $this->sourceHashFromRequest());
+	}//end commit()
 
+	/**
+	 * Commit the preview now, or queue the commit when the request asks for async.
+	 *
+	 * @param ImportPreview $preview    The caller's own preview.
+	 * @param string|null   $sourceHash The source file's hash, or null when none was sent.
+	 *
+	 * @return JSONResponse 200 with the committed preview, 202 for a queued commit, or 409 / 400 / 500.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function runCommit(ImportPreview $preview, string|null $sourceHash): JSONResponse {
 		try {
 			$async = filter_var($this->request->getParam('async', false), FILTER_VALIDATE_BOOLEAN);
 
 			if ($async === true) {
 				$this->jobList->add(
-					ImportPreviewRunner::class,
+					JobHandles::IMPORT_PREVIEW_RUNNER,
 					[
 						'preview_id' => (int)$preview->getId(),
-						'phase' => ImportPreviewRunner::PHASE_COMMIT,
+						'phase' => JobHandles::IMPORT_PREVIEW_PHASE_COMMIT,
 						'source_hash' => $sourceHash,
 					]
 				);
@@ -406,7 +432,7 @@ class ImportPreviewController extends Controller {
 		} catch (Throwable $exception) {
 			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
 		}//end try
-	}//end commit()
+	}//end runCommit()
 
 	/**
 	 * Stage the upload and queue the preview, so a large file is decided off
@@ -431,10 +457,10 @@ class ImportPreviewController extends Controller {
 		$this->previewMapper->persist(preview: $preview);
 
 		$this->jobList->add(
-			ImportPreviewRunner::class,
+			JobHandles::IMPORT_PREVIEW_RUNNER,
 			[
 				'preview_id' => (int)$preview->getId(),
-				'phase' => ImportPreviewRunner::PHASE_PREVIEW,
+				'phase' => JobHandles::IMPORT_PREVIEW_PHASE_PREVIEW,
 			]
 		);
 
@@ -447,7 +473,7 @@ class ImportPreviewController extends Controller {
 	 *
 	 * @return string|null The hash, or null when the request names none.
 	 */
-	private function sourceHashFromRequest(): ?string {
+	private function sourceHashFromRequest(): string|null {
 		$uploadedFile = $this->request->getUploadedFile('file');
 
 		if ($uploadedFile !== null && ($uploadedFile['tmp_name'] ?? '') !== '') {
@@ -541,6 +567,22 @@ class ImportPreviewController extends Controller {
 			return false;
 		}
 
+		return $this->inManageGroup(user: $user, entries: $authorization['manage']);
+	}//end mayManage()
+
+	/**
+	 * Whether one of the user's groups is named by the register's manage rule.
+	 *
+	 * A group lookup that fails is a refusal.
+	 *
+	 * @param IUser $user    The caller.
+	 * @param mixed $entries The register's `manage` entries.
+	 *
+	 * @return bool True when one of the user's groups is named.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function inManageGroup(IUser $user, mixed $entries): bool {
 		try {
 			$userGroups = $this->groupManager->getUserGroupIds($user);
 		} catch (Throwable $exception) {
@@ -548,19 +590,51 @@ class ImportPreviewController extends Controller {
 		}
 
 		foreach ($userGroups as $groupId) {
-			foreach ($authorization['manage'] as $entry) {
-				if (is_string($entry) === true && $entry === $groupId) {
-					return true;
-				}
-
-				if (is_array($entry) === true && ($entry['group'] ?? null) === $groupId) {
-					return true;
-				}
+			if ($this->entriesNameGroup(entries: $entries, groupId: $groupId) === true) {
+				return true;
 			}
 		}
 
 		return false;
-	}//end mayManage()
+	}//end inManageGroup()
+
+	/**
+	 * Whether any manage entry names this group.
+	 *
+	 * @param mixed $entries The register's `manage` entries.
+	 * @param mixed $groupId One of the caller's group ids.
+	 *
+	 * @return bool True when an entry names the group.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function entriesNameGroup(mixed $entries, mixed $groupId): bool {
+		foreach ($entries as $entry) {
+			if ($this->entryNamesGroup(entry: $entry, groupId: $groupId) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end entriesNameGroup()
+
+	/**
+	 * Whether one manage entry names this group, as a bare id or as `{group: id}`.
+	 *
+	 * @param mixed $entry   One manage entry.
+	 * @param mixed $groupId One of the caller's group ids.
+	 *
+	 * @return bool True when the entry names the group.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function entryNamesGroup(mixed $entry, mixed $groupId): bool {
+		if (is_string($entry) === true && $entry === $groupId) {
+			return true;
+		}
+
+		return is_array($entry) === true && ($entry['group'] ?? null) === $groupId;
+	}//end entryNamesGroup()
 
 	/**
 	 * One request parameter, with an empty string read as absent.

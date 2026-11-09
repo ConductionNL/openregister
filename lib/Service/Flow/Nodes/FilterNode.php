@@ -118,24 +118,7 @@ class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface
 		// guard and then kept all eleven items. The run was green end to end and
 		// the sweep flagged every object instead of the nine it meant to.
 		if (is_array($condition) === false) {
-			if (is_string($condition) === true && str_contains($condition, '{{') === true) {
-				throw new UnexpectedValueException(
-					$this->l10n->t(
-						'A filter condition is an expression, not a template. Write {example} rather than "{given}".',
-						[
-							'example' => '{"==": [{"var": "json.status"}, "synced"]}',
-							'given' => $condition,
-						]
-					)
-				);
-			}
-
-			throw new UnexpectedValueException(
-				$this->l10n->t(
-					'A filter condition must be an expression, not a fixed value: "{given}" answers the same for every item.',
-					['given' => var_export($condition, true)]
-				)
-			);
+			$this->refuseConstant(condition: $condition);
 		}
 
 		if (FlowExpression::isValid(logic: $condition) === false) {
@@ -143,6 +126,37 @@ class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface
 		}
 
 	}//end validateConfig()
+
+	/**
+	 * Refuse a condition that is not an expression: a template string gets
+	 * the template hint, anything else is named as a fixed value.
+	 *
+	 * @param mixed $condition The configured condition, not an array.
+	 *
+	 * @return never
+	 *
+	 * @throws UnexpectedValueException Always.
+	 */
+	private function refuseConstant(mixed $condition): never {
+		if (is_string($condition) === true && str_contains($condition, '{{') === true) {
+			throw new UnexpectedValueException(
+				$this->l10n->t(
+					'A filter condition is an expression, not a template. Write {example} rather than "{given}".',
+					[
+						'example' => '{"==": [{"var": "json.status"}, "synced"]}',
+						'given' => $condition,
+					]
+				)
+			);
+		}
+
+		throw new UnexpectedValueException(
+			$this->l10n->t(
+				'A filter condition must be an expression, not a fixed value: "{given}" answers the same for every item.',
+				['given' => var_export($condition, true)]
+			)
+		);
+	}//end refuseConstant()
 
 	/**
 	 * Keep the matching items.

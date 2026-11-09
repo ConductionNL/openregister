@@ -46,9 +46,7 @@ namespace OCA\OpenRegister\Service\Oas;
  * @spec openspec/specs/oas-validation/spec.md "Error responses include problem details (API-46 / RFC 7807)"
  * @spec openspec/specs/oas-validation/spec.md "API-46 RFC 7807 — retrofit cross-ref"
  */
-class ProblemDetailsBuilder {
-
-	public const CONTENT_TYPE = 'application/problem+json';
+class ProblemDetailsBuilder implements ProblemDetailsBuilderInterface {
 
 	public const DEFAULT_TYPE = 'about:blank';
 

@@ -33,7 +33,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<SchemaChangelog>
  */
-class SchemaChangelogMapper extends QBMapper {
+class SchemaChangelogMapper extends QBMapper implements SchemaChangelogMapperInterface {
 	/**
 	 * Constructor.
 	 *

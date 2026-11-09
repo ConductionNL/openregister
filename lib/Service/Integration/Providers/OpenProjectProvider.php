@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
 use OCA\OpenRegister\Db\OpenProjectLink;
-use OCA\OpenRegister\Db\OpenProjectLinkMapper;
+use OCA\OpenRegister\Db\OpenProjectLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Support\FleetAppId;
@@ -79,7 +79,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 	 * @param ExternalIntegrationRouterInterface $router External-call router.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IL10N $l10n Localisation.
-	 * @param OpenProjectLinkMapper|null $linkMapper Tier-2 link table (optional).
+	 * @param OpenProjectLinkMapperInterface|null $linkMapper Tier-2 link table (optional).
 	 *
 	 * @return void
 	 */
@@ -87,7 +87,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 		private ExternalIntegrationRouterInterface $router,
 		private IAppManager $appManager,
 		private IL10N $l10n,
-		private ?OpenProjectLinkMapper $linkMapper = null,
+		private ?OpenProjectLinkMapperInterface $linkMapper = null,
 	) {
 	}//end __construct()
 

@@ -73,21 +73,17 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	/**
 	 * Constructor.
 	 *
-	 * @param DbalConnectionFactory $connectionFactory Opens the DBAL connection for a source.
-	 * @param SqlTypeMapper $typeMapper SQL column → JSON-Schema mapping.
+	 * @param IntrospectionTools $tools The connection factory, the SQL type mapper and the schema differ.
 	 * @param RegisterMapperInterface $registerMapper Register persistence.
 	 * @param SchemaMapperInterface $schemaMapper Schema persistence.
-	 * @param SchemaDiffService $diffService Classifies structural drift between runs.
 	 * @param LoggerInterface $logger Secret-free diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly DbalConnectionFactory $connectionFactory,
-		private readonly SqlTypeMapper $typeMapper,
+		private readonly IntrospectionTools $tools,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly SchemaDiffService $diffService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -143,7 +139,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	private function introspectSource(Source $source, string $sourceId): array {
-		$connection    = $this->connectionFactory->getConnection(source: $source);
+		$connection    = $this->tools->connectionFactory->getConnection(source: $source);
 		$schemaManager = $connection->createSchemaManager();
 		$tableNames    = $this->userTableNames(schemaManager: $schemaManager);
 		$viewNames     = $this->userViewNames(schemaManager: $schemaManager);
@@ -286,7 +282,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 
 			if (isset($existingSchemas[$table]) === true) {
 				$existing = $existingSchemas[$table];
-				$changeSet = $this->diffService->diff(
+				$changeSet = $this->tools->diffService->diff(
 					old: ['properties' => $existing->getProperties(), 'required' => $existing->getRequired()],
 					new: ['properties' => $definition['properties'], 'required' => ($definition['required'] ?? [])]
 				);
@@ -371,7 +367,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 
 		foreach ($columns as $column) {
 			$name     = $column->getName();
-			$fragment = $this->typeMapper->mapColumn(column: $column);
+			$fragment = $this->tools->typeMapper->mapColumn(column: $column);
 
 			if (($fragment['x-filterable'] ?? true) === false) {
 				$nonFilterable[] = $name;

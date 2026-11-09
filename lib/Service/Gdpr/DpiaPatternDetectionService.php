@@ -46,7 +46,7 @@ use DateTimeImmutable;
  * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
  *   (Requirement: DPIA pattern detection over DSAR cases)
  */
-class DpiaPatternDetectionService {
+class DpiaPatternDetectionService implements DpiaPatternDetectorInterface {
 
 	/**
 	 * Default threshold, matching pipelinq's `DpiaDetectionService::DEFAULT_THRESHOLD`.

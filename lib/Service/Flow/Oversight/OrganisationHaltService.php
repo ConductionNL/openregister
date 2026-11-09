@@ -49,7 +49,7 @@ use Throwable;
  *
  * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
  */
-class OrganisationHaltService {
+class OrganisationHaltService implements OrganisationHaltServiceInterface {
 
 	public const CONFIG_KEY = 'organisation_halts';
 

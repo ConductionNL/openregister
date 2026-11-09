@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -168,12 +169,12 @@ class ObjectDraftController extends Controller {
 		// Through the RBAC boundary first: a record the caller may not read
 		// answers the same 404 an unknown id gets, so this endpoint cannot be
 		// used to probe which ids exist.
-		$target = $this->readableDraft(register: $register, schema: $schema, id: $id);
-		if ($target === null) {
+		$draft = $this->readableDraft(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
+		if ($draft === null) {
 			return $this->notFound();
 		}
 
-		return $this->activateFor(target: $target, id: $id, user: $user, changes: $this->changesFromRequest());
+		return $this->activateFor(draft: $draft, user: $user);
 	}//end activate()
 
 	/**
@@ -184,17 +185,16 @@ class ObjectDraftController extends Controller {
 	 * in a register an administrator made in another organisation is still its
 	 * owner's; the read of the draft is the authorisation.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema   Schema slug or id.
-	 * @param string $id       The draft's uuid.
+	 * @param ObjectLinkRoute $route Register slug or id, schema slug or id, and the draft's uuid.
 	 *
-	 * @return array{register: \OCA\OpenRegister\Db\Register, schema: \OCA\OpenRegister\Db\Schema}|null The register and schema.
+	 * @return array{register: \OCA\OpenRegister\Db\Register, schema: \OCA\OpenRegister\Db\Schema, id: string}|null The register,
+	 *         schema and uuid.
 	 */
-	private function readableDraft(string $register, string $schema, string $id): ?array {
+	private function readableDraft(ObjectLinkRoute $route): ?array {
 		try {
-			$registerEntity = $this->registers->find(id: $register, _rbac: false, _multitenancy: false);
-			$schemaEntity = $this->schemas->find(id: $schema, _rbac: false, _multitenancy: false);
-			$readable = $this->objects->find(id: $id, register: $registerEntity, schema: $schemaEntity, _render: false, _audit: false);
+			$registerEntity = $this->registers->find(id: $route->register, _rbac: false, _multitenancy: false);
+			$schemaEntity = $this->schemas->find(id: $route->schema, _rbac: false, _multitenancy: false);
+			$readable = $this->objects->find(id: $route->id, register: $registerEntity, schema: $schemaEntity, _render: false, _audit: false);
 		} catch (Throwable) {
 			return null;
 		}
@@ -203,7 +203,7 @@ class ObjectDraftController extends Controller {
 			return null;
 		}
 
-		return ['register' => $registerEntity, 'schema' => $schemaEntity];
+		return ['register' => $registerEntity, 'schema' => $schemaEntity, 'id' => $route->id];
 	}//end readableDraft()
 
 	/**
@@ -223,16 +223,14 @@ class ObjectDraftController extends Controller {
 	/**
 	 * Make a readable draft definitive for its asserted owner, and answer the outcome.
 	 *
-	 * @param array<string, mixed> $target  The draft's register and schema.
-	 * @param string               $id      The draft's uuid.
-	 * @param IUser                $user    The signed-in user.
-	 * @param array<string, mixed> $changes The property values laid over the draft.
+	 * @param array<string, mixed> $draft The draft's register, schema and uuid.
+	 * @param IUser                $user  The signed-in user.
 	 *
 	 * @return JSONResponse The activated object, or the refusal.
 	 */
-	private function activateFor(array $target, string $id, IUser $user, array $changes): JSONResponse {
+	private function activateFor(array $draft, IUser $user): JSONResponse {
 		try {
-			$activated = $this->activateDraft(target: $target, id: $id, user: $user, changes: $changes);
+			$activated = $this->activateDraft(draft: $draft, user: $user);
 		} catch (DraftActivationRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
 		} catch (Throwable $exception) {
@@ -252,22 +250,22 @@ class ObjectDraftController extends Controller {
 	/**
 	 * Make the draft definitive as the signed-in user.
 	 *
-	 * @param array<string, mixed> $target  The draft's register and schema.
-	 * @param string               $id      The draft's uuid.
-	 * @param IUser                $user    The signed-in user.
-	 * @param array<string, mixed> $changes The property values laid over the draft.
+	 * The property values the request body lays over the draft are read here.
+	 *
+	 * @param array<string, mixed> $draft The draft's register, schema and uuid.
+	 * @param IUser                $user  The signed-in user.
 	 *
 	 * @return ObjectEntity The activated object.
 	 *
 	 * @throws DraftActivationRefusedException When the draft may not be made definitive.
 	 */
-	private function activateDraft(array $target, string $id, IUser $user, array $changes): ObjectEntity {
+	private function activateDraft(array $draft, IUser $user): ObjectEntity {
 		return $this->activation->activateAsUser(
-			register: $target['register'],
-			schema: $target['schema'],
-			draftId: $id,
+			register: $draft['register'],
+			schema: $draft['schema'],
+			draftId: $draft['id'],
 			user: $user,
-			changes: $changes
+			changes: $this->changesFromRequest()
 		);
 	}//end activateDraft()
 

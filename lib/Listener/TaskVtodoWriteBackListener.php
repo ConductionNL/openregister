@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
+use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskProjectionServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
 use OCP\Calendar\Events\CalendarObjectDeletedEvent;
@@ -175,7 +175,7 @@ class TaskVtodoWriteBackListener implements IEventListener {
 			return null;
 		}
 
-		return TaskCalendarProjector::taskUuidOf(calendarData: $body);
+		return TaskCalendarDocument::taskUuidOf(calendarData: $body);
 	}//end projectedTaskOf()
 
 	/**

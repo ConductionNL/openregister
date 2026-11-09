@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\PhotoLink;
-use OCA\OpenRegister\Db\PhotoLinkMapper;
+use OCA\OpenRegister\Db\PhotoLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -65,21 +65,41 @@ class PhotosProvider extends AbstractIntegrationProvider {
 	];
 
 	/**
+	 * NC DB connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db NC DB connection.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 * @param PhotoLinkMapper $photoLinkMapper Photo-link mapper (Tier-2 link table).
-	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
+	 * @param LeafProviderPlatform     $platform        The DB connection, app manager and localisation.
+	 * @param PhotoLinkMapperInterface $photoLinkMapper Photo-link mapper (Tier-2 link table).
+	 * @param LoggerInterface          $logger          Logger for the degraded marker-scan path.
 	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private PhotoLinkMapper $photoLinkMapper,
+		LeafProviderPlatform $platform,
+		private PhotoLinkMapperInterface $photoLinkMapper,
 		private LoggerInterface $logger,
 	) {
+		$this->db = $platform->db;
+		$this->appManager = $platform->appManager;
+		$this->l10n = $platform->l10n;
 	}//end __construct()
 
 	public function getId(): string {
@@ -101,9 +121,9 @@ class PhotosProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads first.
 	 *
-	 * @return PhotoLinkMapper
+	 * @return PhotoLinkMapperInterface
 	 */
-	protected function linkMapper(): PhotoLinkMapper {
+	protected function linkMapper(): PhotoLinkMapperInterface {
 		return $this->photoLinkMapper;
 	}//end linkMapper()
 

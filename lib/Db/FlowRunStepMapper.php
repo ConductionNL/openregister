@@ -32,7 +32,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
  */
-class FlowRunStepMapper extends QBMapper {
+class FlowRunStepMapper extends QBMapper implements FlowRunStepMapperInterface {
 
 	use SelectByColumnTrait;
 	/**

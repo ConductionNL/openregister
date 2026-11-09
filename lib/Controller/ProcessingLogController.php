@@ -40,16 +40,17 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
 use OCA\OpenRegister\Controller\Support\ProcessingLogAccess;
 use OCA\OpenRegister\Controller\Support\ProcessingLogPolicy;
-use OCA\OpenRegister\Db\ProcessingLogMapper;
+use OCA\OpenRegister\Db\ProcessingLogReadScope;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * REST endpoints for querying and exporting the AVG processing log.
@@ -82,26 +83,30 @@ class ProcessingLogController extends Controller {
 	private readonly GdprRequestParams $params;
 
 	/**
+	 * The processing log store and the app config the policy reads.
+	 *
+	 * @var ProcessingLogControllerServices
+	 */
+	private readonly ProcessingLogControllerServices $services;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                       $appName             App identifier.
 	 * @param IRequest                     $request             Active request.
-	 * @param ProcessingLogMapper          $logMapper           Append-only log mapper.
+	 * @param ProcessingLogControllerServices $services Processing log store and the app config the policy reads.
 	 * @param ControllerSession            $session             Session, group manager and logger.
-	 * @param IAppConfig                   $appConfig           App-config reader.
 	 * @param OrganisationServiceInterface $organisationService Org-scoping helper.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ProcessingLogMapper $logMapper,
+		ProcessingLogControllerServices $services,
 		private readonly ControllerSession $session,
-		IAppConfig $appConfig,
 		OrganisationServiceInterface $organisationService,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
-		$this->policy = new ProcessingLogPolicy(appConfig: $appConfig);
+		$this->services = $services;
+		$this->policy = new ProcessingLogPolicy(appConfig: $services->appConfig);
 		$this->access = new ProcessingLogAccess(session: $this->session, policy: $this->policy, organisationService: $organisationService);
 		$this->params = new GdprRequestParams(request: $request);
 	}//end __construct()
@@ -163,7 +168,7 @@ class ProcessingLogController extends Controller {
 			);
 		}
 
-		return $this->extract(subject: $subject, organisationId: $organisationId, includeConfidential: $isFg);
+		return $this->extract(subject: $subject, scope: ['organisationId' => $organisationId, 'includeConfidential' => $isFg]);
 	}//end involvedParty()
 
 	/**
@@ -194,12 +199,14 @@ class ProcessingLogController extends Controller {
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	private function filtered(?string $organisationId, bool $includeConfidential): array {
-		return $this->logMapper->findFiltered(
+		return $this->services->logMapper->findFiltered(
 			filters: $this->filters(),
-			from: $this->dateParam(key: 'from'),
-			to: $this->dateParam(key: 'to'),
-			organisationId: $organisationId,
-			includeConfidential: $includeConfidential,
+			scope: new ProcessingLogReadScope(
+				from: $this->dateParam(key: 'from'),
+				to: $this->dateParam(key: 'to'),
+				organisationId: $organisationId,
+				includeConfidential: $includeConfidential
+			),
 			limit: $this->params->boundedInt(key: 'limit', default: 100, max: 1000),
 			offset: $this->params->boundedInt(key: 'offset', default: 0, max: 1000000)
 		);
@@ -227,15 +234,15 @@ class ProcessingLogController extends Controller {
 	/**
 	 * The per-subject extract over the requested period, or the range refusal.
 	 *
-	 * @param array{idType: string, idValue: string} $subject             The subject identifiers.
-	 * @param string|null                            $organisationId      The organisation scope.
-	 * @param bool                                   $includeConfidential Whether confidential entries are included.
+	 * @param array{idType: string, idValue: string}                       $subject The subject identifiers.
+	 * @param array{organisationId: ?string, includeConfidential: bool} $scope   The organisation scope, and whether
+	 *                                                                           confidential entries are included.
 	 *
 	 * @return JSONResponse The extract envelope, or HTTP 422.
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	private function extract(array $subject, ?string $organisationId, bool $includeConfidential): JSONResponse {
+	private function extract(array $subject, array $scope): JSONResponse {
 		$from = $this->dateParam(key: 'from');
 		$to = $this->dateParam(key: 'to');
 
@@ -244,32 +251,33 @@ class ProcessingLogController extends Controller {
 			return $rangeError;
 		}
 
-		$entries = $this->logMapper->findBySubject(
-			idType: $subject['idType'], idValue: $subject['idValue'], from: $from, to: $to,
-			organisationId: $organisationId, includeConfidential: $includeConfidential
+		$entries = $this->services->logMapper->findBySubject(
+			idType: $subject['idType'], idValue: $subject['idValue'],
+			scope: new ProcessingLogReadScope(
+				from: $from, to: $to,
+				organisationId: $scope['organisationId'], includeConfidential: $scope['includeConfidential']
+			)
 		);
 
-		return new JSONResponse(data: $this->extractBody(subject: $subject, from: $from, to: $to, entries: $entries));
+		return new JSONResponse(data: $this->extractBody(subject: $subject, read: ['from' => $from, 'to' => $to, 'entries' => $entries]));
 	}//end extract()
 
 	/**
 	 * The extract envelope.
 	 *
-	 * @param array{idType: string, idValue: string} $subject The subject identifiers.
-	 * @param DateTime|null                          $from    Lower bound.
-	 * @param DateTime|null                          $to      Upper bound.
-	 * @param array<int, mixed>                      $entries The reads.
+	 * @param array{idType: string, idValue: string}                             $subject The subject identifiers.
+	 * @param array{from: ?DateTime, to: ?DateTime, entries: array<int, mixed>} $read    The lower and upper bound, and the reads.
 	 *
 	 * @return array<string, mixed> The response body.
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	private function extractBody(array $subject, DateTime|null $from, DateTime|null $to, array $entries): array {
+	private function extractBody(array $subject, array $read): array {
 		return [
 			'subject' => $subject,
-			'period' => ['from' => $from?->format('c'), 'to' => $to?->format('c')],
-			'count' => count($entries),
-			'reads' => $entries,
+			'period' => ['from' => $read['from']?->format('c'), 'to' => $read['to']?->format('c')],
+			'count' => count($read['entries']),
+			'reads' => $read['entries'],
 		];
 	}//end extractBody()
 

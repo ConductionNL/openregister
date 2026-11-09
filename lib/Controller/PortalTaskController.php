@@ -7,7 +7,7 @@
  * AUTH POSTURE, decided rather than inherited. The subject routes carry
  * `#[PublicPage]`: the caller is portaliq's server-to-server forward, which
  * has no Nextcloud session and MUST NOT need one. The check is the signed
- * `X-Portal-Subject` assertion, verified by {@see PortalSubjectAssertion}
+ * `X-Portal-Subject` assertion, verified by {@see PortalSubjectAssertionInterface}
  * fail-closed, and then the task service's own authorization of the acting
  * party against the task's STORED party reference. A Nextcloud session on the
  * request is ignored entirely: an administrator acting through this seam is
@@ -52,16 +52,16 @@ use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
-use OCA\OpenRegister\Service\Portal\PortalSubjectAssertion;
-use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
-use OCA\OpenRegister\Service\Portal\PortalTaskService;
+use OCA\OpenRegister\Service\Portal\PortalSubjectAssertionInterface;
+use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryServiceInterface;
+use OCA\OpenRegister\Service\Portal\PortalTaskServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -83,23 +83,23 @@ class PortalTaskController extends Controller {
 	/**
 	 * Verifies the acting subject.
 	 *
-	 * @var PortalSubjectAssertion
+	 * @var PortalSubjectAssertionInterface
 	 */
-	private readonly PortalSubjectAssertion $assertion;
+	private readonly PortalSubjectAssertionInterface $assertion;
 
 	/**
 	 * The subject-scoped read and completion.
 	 *
-	 * @var PortalTaskService
+	 * @var PortalTaskServiceInterface
 	 */
-	private readonly PortalTaskService $portal;
+	private readonly PortalTaskServiceInterface $portal;
 
 	/**
 	 * The delivery ledger.
 	 *
-	 * @var PortalTaskDeliveryService
+	 * @var PortalTaskDeliveryServiceInterface
 	 */
-	private readonly PortalTaskDeliveryService $delivery;
+	private readonly PortalTaskDeliveryServiceInterface $delivery;
 
 	/**
 	 * Names the operator on the delivery routes.
@@ -202,13 +202,11 @@ class PortalTaskController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function complete(string $uuid, string $outcome = PortalTaskService::DEFAULT_OUTCOME, ?string $comment = null): JSONResponse {
+	public function complete(string $uuid, string $outcome = PortalTaskServiceInterface::DEFAULT_OUTCOME, ?string $comment = null): JSONResponse {
 		return $this->asSubject(
 			action: fn (PortalSubject $subject): JSONResponse => $this->completeAs(
 				subject: $subject,
-				uuid: $uuid,
-				outcome: $outcome,
-				comment: $comment
+				completion: ['uuid' => $uuid, 'outcome' => $outcome, 'comment' => $comment]
 			)
 		);
 	}//end complete()
@@ -375,21 +373,20 @@ class PortalTaskController extends Controller {
 	/**
 	 * Complete the task as the subject, with the request's answers and uploads.
 	 *
-	 * @param PortalSubject $subject The acting subject.
-	 * @param string        $uuid    The task uuid.
-	 * @param string        $outcome The outcome to record.
-	 * @param string|null   $comment The party's comment.
+	 * @param PortalSubject                                             $subject    The acting subject.
+	 * @param array{uuid: string, outcome: string, comment: string|null} $completion The task uuid, the outcome to record and
+	 *                                                                               the party's comment.
 	 *
 	 * @return JSONResponse The completed task row.
 	 */
-	private function completeAs(PortalSubject $subject, string $uuid, string $outcome, ?string $comment): JSONResponse {
+	private function completeAs(PortalSubject $subject, array $completion): JSONResponse {
 		$task = $this->portal->complete(
 			subject: $subject,
-			uuid: $uuid,
+			uuid: $completion['uuid'],
 			answers: $this->answers(),
-			comment: $comment,
+			comment: $completion['comment'],
 			files: $this->uploads(),
-			outcome: $outcome
+			outcome: $completion['outcome']
 		);
 
 		return new JSONResponse($this->portal->row(task: $task));

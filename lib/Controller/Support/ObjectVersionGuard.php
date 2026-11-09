@@ -26,7 +26,8 @@ namespace OCA\OpenRegister\Controller\Support;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Object\ConflictReport;
+use OCA\OpenRegister\Service\Object\ConflictReportInterface;
+use OCA\OpenRegister\Service\Object\ConflictReports;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -100,8 +101,8 @@ final class ObjectVersionGuard {
 	 */
 	private function conflictBody(VersionMismatch $mismatch, SentWrite $write): array {
 		$plain = [
-			'error' => ConflictReport::ERROR,
-			'code' => ConflictReport::CODE,
+			'error' => ConflictReportInterface::ERROR,
+			'code' => ConflictReportInterface::CODE,
 			'message' => 'This object changed since you read it. Re-read it and try again.',
 			'conflicts' => [],
 			'changedBy' => null,
@@ -129,7 +130,7 @@ final class ObjectVersionGuard {
 	 */
 	private function report(VersionMismatch $mismatch, SentWrite $write): ?array {
 		try {
-			return $this->container->get(ConflictReport::class)->build(
+			return ConflictReports::from(container: $this->container)->build(
 				stored: $mismatch->stored,
 				schema: $write->schema,
 				sent: $write->data,

@@ -43,11 +43,11 @@ use DateTime;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaChangelog;
-use OCA\OpenRegister\Db\SchemaChangelogMapper;
+use OCA\OpenRegister\Db\SchemaChangelogMapperInterface;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Db\SchemaRunEntry;
-use OCA\OpenRegister\Db\SchemaRunEntryMapper;
-use OCA\OpenRegister\Db\SchemaRunMapper;
+use OCA\OpenRegister\Db\SchemaRunEntryMapperInterface;
+use OCA\OpenRegister\Db\SchemaRunMapperInterface;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -60,17 +60,17 @@ class SchemaVersioningService {
 	 * Constructor.
 	 *
 	 * @param SchemaDiffService $diffService Pure diff/classification.
-	 * @param SchemaChangelogMapper $changelogMapper Changelog persistence.
-	 * @param SchemaRunMapper $runMapper Run persistence (for invalid counts).
-	 * @param SchemaRunEntryMapper $runEntryMapper Per-object run entries.
+	 * @param SchemaChangelogMapperInterface $changelogMapper Changelog persistence.
+	 * @param SchemaRunMapperInterface $runMapper Run persistence (for invalid counts).
+	 * @param SchemaRunEntryMapperInterface $runEntryMapper Per-object run entries.
 	 * @param IUserSession $userSession Current user resolution.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		private readonly SchemaDiffService $diffService,
-		private readonly SchemaChangelogMapper $changelogMapper,
-		private readonly SchemaRunMapper $runMapper,
-		private readonly SchemaRunEntryMapper $runEntryMapper,
+		private readonly SchemaChangelogMapperInterface $changelogMapper,
+		private readonly SchemaRunMapperInterface $runMapper,
+		private readonly SchemaRunEntryMapperInterface $runEntryMapper,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {

@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessHistory;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
+use OCA\OpenRegister\Service\Rbac\ObjectAccessReportSources;
 use OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -55,6 +56,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectPermissionsControllerFactory;
 
 /**
  * Tasks 7.2 and 7.3, over the wire.
@@ -172,15 +174,13 @@ class ObjectPermissionsControllerTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn(DenyEnforcementMode::MODE_STAGING);
 
 		$report = new ObjectAccessReport(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			auditTrailMapper: $auditTrailMapper,
+			sources: new ObjectAccessReportSources(registerMapper: $registerMapper, schemaMapper: $schemaMapper, auditTrailMapper: $auditTrailMapper),
 			holders: new ObjectPermissionsResolver(),
 			history: new ObjectAccessHistory(),
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())
 		);
 
-		return new ObjectPermissionsController(
+		return ObjectPermissionsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			objectService: $objectService,

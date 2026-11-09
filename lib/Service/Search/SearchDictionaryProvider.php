@@ -218,24 +218,39 @@ class SearchDictionaryProvider {
 				continue;
 			}
 
-			$alternates = [];
-			foreach ((array)($concept['altLabel'] ?? []) as $tag => $value) {
-				if ((string)$tag !== $language) {
-					continue;
-				}
-
-				foreach ((array)$value as $alternate) {
-					if (is_string($alternate) === true) {
-						$alternates[] = $alternate;
-					}
-				}
-			}
-
-			$declarations[] = ['prefLabel' => $preferred, 'altLabel' => $alternates];
-		}//end foreach
+			$declarations[] = [
+				'prefLabel' => $preferred,
+				'altLabel' => $this->alternatesIn(raw: ($concept['altLabel'] ?? []), language: $language),
+			];
+		}
 
 		return $declarations;
 	}//end declarationsIn()
+
+	/**
+	 * One language's alternate labels off a language-keyed map.
+	 *
+	 * @param mixed  $raw      The language-keyed map; each value a label or a list of them.
+	 * @param string $language The language tag.
+	 *
+	 * @return array<int, string> The alternate labels, strings only.
+	 */
+	private function alternatesIn(mixed $raw, string $language): array {
+		$alternates = [];
+		foreach ((array)$raw as $tag => $value) {
+			if ((string)$tag !== $language) {
+				continue;
+			}
+
+			foreach ((array)$value as $alternate) {
+				if (is_string($alternate) === true) {
+					$alternates[] = $alternate;
+				}
+			}
+		}
+
+		return $alternates;
+	}//end alternatesIn()
 
 	/**
 	 * The stopwords, projected to one language.
@@ -374,20 +389,49 @@ class SearchDictionaryProvider {
 		);
 
 		foreach (($result['results'] ?? []) as $row) {
-			if (is_object($row) === true && method_exists($row, 'getUuid') === true) {
-				return (string)$row->getUuid();
-			}
-
-			if (is_array($row) === true) {
-				$uuid = (($row['@self']['id'] ?? null) ?? ($row['id'] ?? null));
-				if (is_string($uuid) === true && $uuid !== '') {
-					return $uuid;
-				}
+			$uuid = $this->uuidOf(row: $row);
+			if ($uuid !== null) {
+				return $uuid;
 			}
 		}
 
 		return null;
 	}//end schemeUuid()
+
+	/**
+	 * The uuid one search row carries, in either row shape.
+	 *
+	 * @param mixed $row An entity with getUuid(), or a serialised object array.
+	 *
+	 * @return string|null The uuid, or null when the row carries no usable one.
+	 */
+	private function uuidOf(mixed $row): ?string {
+		if (is_object($row) === true && method_exists($row, 'getUuid') === true) {
+			return (string)$row->getUuid();
+		}
+
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		return $this->uuidOfArray(row: $row);
+	}//end uuidOf()
+
+	/**
+	 * The uuid a serialised object array carries, `@self.id` before `id`.
+	 *
+	 * @param array $row The serialised object.
+	 *
+	 * @return string|null The uuid, or null when it is not a non-empty string.
+	 */
+	private function uuidOfArray(array $row): ?string {
+		$uuid = (($row['@self']['id'] ?? null) ?? ($row['id'] ?? null));
+		if (is_string($uuid) === true && $uuid !== '') {
+			return $uuid;
+		}
+
+		return null;
+	}//end uuidOfArray()
 
 	/**
 	 * The object payloads of a search result.

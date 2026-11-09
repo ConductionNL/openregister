@@ -29,8 +29,8 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\GdprEntitiesControllerServices;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
-use OCA\OpenRegister\Db\GdprEntityMapper;
-use OCA\OpenRegister\Service\Decision\DecisionVisibility;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
+use OCA\OpenRegister\Service\Decision\DecisionVisibilityInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -66,9 +66,9 @@ class GdprEntitiesController extends Controller {
 	/**
 	 * GDPR entity mapper
 	 *
-	 * @var GdprEntityMapper
+	 * @var GdprEntityMapperInterface
 	 */
-	private readonly GdprEntityMapper $entityMapper;
+	private readonly GdprEntityMapperInterface $entityMapper;
 
 	/**
 	 * Entity relation mapper
@@ -115,9 +115,9 @@ class GdprEntitiesController extends Controller {
 	/**
 	 * Masks another reviewer's hidden decision
 	 *
-	 * @var DecisionVisibility
+	 * @var DecisionVisibilityInterface
 	 */
-	private readonly DecisionVisibility $decisionVisibility;
+	private readonly DecisionVisibilityInterface $decisionVisibility;
 
 	/**
 	 * GdprEntitiesController constructor

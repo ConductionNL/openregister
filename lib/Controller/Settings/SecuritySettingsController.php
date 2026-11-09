@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
-use OCA\OpenRegister\Service\SecurityService;
+use OCA\OpenRegister\Service\RateLimitResetInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -43,13 +43,13 @@ class SecuritySettingsController extends Controller {
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param SecurityService $securityService Security service.
+	 * @param RateLimitResetInterface $securityService Security service.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly SecurityService $securityService,
+		private readonly RateLimitResetInterface $securityService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

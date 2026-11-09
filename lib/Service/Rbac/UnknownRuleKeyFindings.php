@@ -36,7 +36,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/row-field-level-security/spec.md
  */
-class UnknownRuleKeyFindings {
+class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 
 	/**
 	 * Reads rule lists, principals and stored blocks.

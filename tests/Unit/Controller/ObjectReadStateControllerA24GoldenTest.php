@@ -41,6 +41,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Controller\Support\ObjectReadStateControllerServices;
 
 /**
  * Golden outcomes of the read-state endpoints.
@@ -95,11 +96,9 @@ class ObjectReadStateControllerA24GoldenTest extends TestCase {
 		}
 
 		return new ObjectReadStateController(
-			appName: 'openregister',
 			request: $request,
 			objectService: $objects,
-			readState: $this->readState,
-			clearing: $this->clearing,
+			services: new ObjectReadStateControllerServices(readState: $this->readState, clearing: $this->clearing),
 			logger: $this->logger
 		);
 	}

@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\MapLink;
-use OCA\OpenRegister\Db\MapLinkMapper;
+use OCA\OpenRegister\Db\MapLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -65,13 +65,42 @@ class MapsProvider extends AbstractIntegrationProvider {
 		'url' => '/index.php/apps/maps/#/m=',
 	];
 
+	/**
+	 * NC DB connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param LeafProviderPlatform   $platform      The DB connection, app manager and localisation.
+	 * @param MapLinkMapperInterface $mapLinkMapper Map-link mapper (Tier-2 link table).
+	 * @param LoggerInterface        $logger        Logger for the degraded marker-scan path.
+	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private MapLinkMapper $mapLinkMapper,
+		LeafProviderPlatform $platform,
+		private MapLinkMapperInterface $mapLinkMapper,
 		private LoggerInterface $logger,
 	) {
+		$this->db = $platform->db;
+		$this->appManager = $platform->appManager;
+		$this->l10n = $platform->l10n;
 	}//end __construct()
 
 	public function getId(): string {
@@ -93,9 +122,9 @@ class MapsProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads first.
 	 *
-	 * @return MapLinkMapper
+	 * @return MapLinkMapperInterface
 	 */
-	protected function linkMapper(): MapLinkMapper {
+	protected function linkMapper(): MapLinkMapperInterface {
 		return $this->mapLinkMapper;
 	}//end linkMapper()
 

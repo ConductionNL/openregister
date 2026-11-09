@@ -50,23 +50,43 @@ use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
  */
 class FileVersioningHandler {
 	/**
+	 * Root folder for file access.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * App manager to check if files_versions is enabled.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * App container the Files_Versions manager is resolved from.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
 	 * Constructor for FileVersioningHandler.
 	 *
-	 * @param IRootFolder $rootFolder Root folder for file access.
-	 * @param IAppManager $appManager App manager to check if files_versions is enabled.
-	 * @param IUserSession $userSession User session for current user context.
-	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param ContainerInterface $container App container the Files_Versions manager is resolved from.
+	 * @param FileVersionsPlatform $platform    The root folder, the app manager and the container the versions manager is resolved from.
+	 * @param IUserSession         $userSession User session for current user context.
+	 * @param LoggerInterface      $logger      Logger for logging operations.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function __construct(
-		private readonly IRootFolder $rootFolder,
-		private readonly IAppManager $appManager,
+		FileVersionsPlatform $platform,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly ContainerInterface $container,
 	) {
+		$this->rootFolder = $platform->rootFolder;
+		$this->appManager = $platform->appManager;
+		$this->container = $platform->container;
 	}//end __construct()
 
 	/**

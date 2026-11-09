@@ -161,15 +161,16 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 			return $this->resolveMockBody(config: $target['config'], sourceId: $target['sourceId']);
 		}
 
+		$request = new UpstreamRequest(method: $method, path: $path, options: $options);
 		try {
-			return $this->invoke(source: $target['source'], method: $method, path: $path, options: $options);
+			return $this->invoke(source: $target['source'], request: $request);
 		} catch (ProviderUnavailableException $e) {
 			// Already classified — surface as-is.
 			throw $e;
 		} catch (\Throwable $e) {
 			// Anything else surfacing from OpenConnector / the upstream is
 			// treated as an upstream failure, wrapping the original throwable.
-			throw $this->upstreamFailure(provider: $provider, kind: 'call', request: $method . ' ' . $path, previous: $e);
+			throw $this->upstreamFailure(provider: $provider, kind: 'call', request: $request->describe(), previous: $e);
 		}
 	}//end call()
 
@@ -223,13 +224,14 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 			return ['body' => $this->resolveMockBody(config: $config, sourceId: $target['sourceId']), 'meta' => $this->mockMeta(config: $config)];
 		}
 
+		$request = new UpstreamRequest(method: $method, path: $path, options: $options);
 		try {
-			return $this->invokeWithMeta(source: $target['source'], method: $method, path: $path, options: $options);
+			return $this->invokeWithMeta(source: $target['source'], request: $request);
 		} catch (ProviderUnavailableException $e) {
 			// Already classified — surface as-is.
 			throw $e;
 		} catch (\Throwable $e) {
-			throw $this->upstreamFailure(provider: $provider, kind: 'call (with meta)', request: $method . ' ' . $path, previous: $e);
+			throw $this->upstreamFailure(provider: $provider, kind: 'call (with meta)', request: $request->describe(), previous: $e);
 		}
 	}//end callWithMeta()
 
@@ -484,26 +486,18 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 			return null;
 		}
 
-		$objectService = $this->container->get(ObjectOperationsInterface::class);
-		if ($objectService instanceof ObjectService === false) {
-			throw new RuntimeException('The container did not return an ObjectService.');
-		}
-
+		$objectService = $this->objectService();
 		foreach (FleetAppId::candidates(canonical: 'integriq') as $register) {
-			try {
-				$source = $objectService->find(
+			$source = $this->absentAsNull(
+				read: static fn () => $objectService->find(
 					id: $sourceId,
 					register: $register,
 					schema: self::SOURCE_SCHEMA,
 					_rbac: false,
 					_multitenancy: false,
 					_audit: false
-				);
-			} catch (DoesNotExistException $e) {
-				// This register slug is absent here, or it holds no such source.
-				// Either way the next spelling may still answer.
-				continue;
-			}
+				)
+			);
 
 			if ($source !== null) {
 				return $source;
@@ -512,6 +506,40 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 
 		return null;
 	}//end findSource()
+
+	/**
+	 * One register's answer to the source lookup, null when it holds none.
+	 *
+	 * A missing register slug or a missing source both surface as
+	 * DoesNotExistException; either way the next spelling may still answer.
+	 *
+	 * @param callable(): ?ObjectEntity $read The lookup in one register.
+	 *
+	 * @return ObjectEntity|null The source, or null when absent here.
+	 */
+	private function absentAsNull(callable $read): ?ObjectEntity {
+		try {
+			return $read();
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end absentAsNull()
+
+	/**
+	 * The ObjectService the source lookup reads through.
+	 *
+	 * @return ObjectService The object service.
+	 *
+	 * @throws RuntimeException When the container hands back anything else.
+	 */
+	private function objectService(): ObjectService {
+		$objectService = $this->container->get(ObjectOperationsInterface::class);
+		if ($objectService instanceof ObjectService === false) {
+			throw new RuntimeException('The container did not return an ObjectService.');
+		}
+
+		return $objectService;
+	}//end objectService()
 
 	/**
 	 * Build the `openconnector-source-missing` failure.
@@ -718,18 +746,16 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	/**
 	 * Invoke the upstream call via OpenConnector's CallService.
 	 *
-	 * @param mixed $source Resolved source entity.
-	 * @param string $method HTTP method.
-	 * @param string $path Path relative to source base URL.
-	 * @param array<string,mixed> $options Call options (query / body / headers / withholdBodies).
+	 * @param mixed           $source  Resolved source entity.
+	 * @param UpstreamRequest $request The method, path and call options.
 	 *
 	 * @return array<string,mixed> Decoded response body.
 	 *
 	 * @throws \RuntimeException When CallService is unreachable. The
 	 *                           caller wraps this as ProviderUnavailableException.
 	 */
-	private function invoke($source, string $method, string $path, array $options): array {
-		$response = $this->dispatch(source: $source, method: $method, path: $path, options: $options);
+	private function invoke($source, UpstreamRequest $request): array {
+		$response = $this->dispatch(source: $source, request: $request);
 
 		return $this->responses->decode(response: $response);
 	}//end invoke()
@@ -738,18 +764,16 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 * Invoke the upstream call like {@see invoke()} but return both the
 	 * decoded body and the extracted response metadata.
 	 *
-	 * @param mixed $source Resolved source entity.
-	 * @param string $method HTTP method.
-	 * @param string $path Path relative to source base URL.
-	 * @param array<string,mixed> $options Call options (query / body / headers / withholdBodies).
+	 * @param mixed           $source  Resolved source entity.
+	 * @param UpstreamRequest $request The method, path and call options.
 	 *
 	 * @return array{body: array<string,mixed>, meta: array{status: int, durationMs: int, correlationId: ?string, headers: array<string,string>}}
 	 *
 	 * @throws \RuntimeException When CallService is unreachable. The caller
 	 *                           wraps this as ProviderUnavailableException.
 	 */
-	private function invokeWithMeta($source, string $method, string $path, array $options): array {
-		$response = $this->dispatch(source: $source, method: $method, path: $path, options: $options);
+	private function invokeWithMeta($source, UpstreamRequest $request): array {
+		$response = $this->dispatch(source: $source, request: $request);
 
 		return [
 			'body' => $this->responses->decode(response: $response),
@@ -769,10 +793,8 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 * refuse the unknown named argument: that would read as an outage and be
 	 * logged at error level on every call of an older connector.
 	 *
-	 * @param mixed $source Resolved source entity.
-	 * @param string $method HTTP method.
-	 * @param string $path Path relative to source base URL.
-	 * @param array<string,mixed> $options Call options (query / body / headers / withholdBodies).
+	 * @param mixed           $source  Resolved source entity.
+	 * @param UpstreamRequest $request The method, path and call options.
 	 *
 	 * @return mixed The raw CallService response.
 	 *
@@ -781,29 +803,20 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 *
 	 * @spec openspec/specs/integration-person-lookup/spec.md#requirement-a-call-may-be-recorded-without-its-bodies
 	 */
-	private function dispatch($source, string $method, string $path, array $options) {
+	private function dispatch($source, UpstreamRequest $request) {
+		$method  = $request->method;
+		$options = $request->options;
 		$withholdBodies = (($options['withholdBodies'] ?? false) === true);
 		unset($options['withholdBodies']);
 
 		$callService = $this->container->get($this->callServiceClass());
-		if ($withholdBodies === true && (new CallSignature())->accepts(service: $callService, method: 'call', name: 'withholdBodies') === false) {
-			$this->logger->info(
-				'[ExternalIntegrationRouter] The connector CallService cannot withhold bodies; the call is not made.'
-			);
-			throw new ProviderUnavailableException(
-				message: 'The connector cannot record a call without its bodies, so the call is not made.',
-				cause: ProviderUnavailableException::CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES
-			);
-		}
+		$this->assertCanWithholdBodies(callService: $callService, withholdBodies: $withholdBodies);
 
 		$options = $this->connectorOptions(options: $options);
-		$path = $this->connectorEndpoint(source: $source, path: $path);
+		$path = $this->connectorEndpoint(source: $source, path: $request->path);
 
 		if (method_exists($callService, 'call') === true) {
-			$named = [];
-			if ($withholdBodies === true) {
-				$named = ['withholdBodies' => true];
-			}
+			$named = self::withholdArguments(withholdBodies: $withholdBodies);
 
 			$response = $callService->call($source, $path, $method, $options, ...$named);
 			$this->assertUpstreamOk(response: $response);
@@ -820,6 +833,43 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 			'The connector CallService does not expose a known call/request method.'
 		);
 	}//end dispatch()
+
+	/**
+	 * Refuse a body-withholding call the connector cannot make, before it is made.
+	 *
+	 * @param mixed $callService    The connector CallService.
+	 * @param bool  $withholdBodies Whether the call must be recorded without its bodies.
+	 *
+	 * @return void
+	 *
+	 * @throws ProviderUnavailableException When bodies are to be withheld and the connector cannot.
+	 */
+	private function assertCanWithholdBodies(mixed $callService, bool $withholdBodies): void {
+		if ($withholdBodies === true && (new CallSignature())->accepts(service: $callService, method: 'call', name: 'withholdBodies') === false) {
+			$this->logger->info(
+				'[ExternalIntegrationRouter] The connector CallService cannot withhold bodies; the call is not made.'
+			);
+			throw new ProviderUnavailableException(
+				message: 'The connector cannot record a call without its bodies, so the call is not made.',
+				cause: ProviderUnavailableException::CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES
+			);
+		}
+	}//end assertCanWithholdBodies()
+
+	/**
+	 * The named arguments that ask the connector to withhold bodies, when asked.
+	 *
+	 * @param bool $withholdBodies Whether the call must be recorded without its bodies.
+	 *
+	 * @return array<string, bool>
+	 */
+	private static function withholdArguments(bool $withholdBodies): array {
+		if ($withholdBodies === true) {
+			return ['withholdBodies' => true];
+		}
+
+		return [];
+	}//end withholdArguments()
 
 	/**
 	 * Treat a >= 400 upstream status (carried on the CallLog OpenConnector

@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Audit\AuditSink;
-use OCA\OpenRegister\Service\Audit\AuditSinkStatus;
+use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
+use OCA\OpenRegister\Service\Audit\AuditSinkStatusInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 
@@ -36,16 +36,16 @@ final class AuditSinkControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param AuditSink $sink The configured sink.
-	 * @param AuditSinkStatus $status The sink's health.
+	 * @param AuditSinkInterface $sink The configured sink.
+	 * @param AuditSinkStatusInterface $status The sink's health.
 	 * @param IUserSession $userSession Current user session.
 	 * @param IGroupManager $groupManager Group manager, for the admin gate.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function __construct(
-		public readonly AuditSink $sink,
-		public readonly AuditSinkStatus $status,
+		public readonly AuditSinkInterface $sink,
+		public readonly AuditSinkStatusInterface $status,
 		public readonly IUserSession $userSession,
 		public readonly IGroupManager $groupManager,
 	) {

@@ -41,7 +41,7 @@ use OCP\IConfig;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
  */
-class MaintenanceModeService implements MaintenanceModeServiceInterface {
+class MaintenanceModeService implements MaintenanceModeServiceInterface, MaintenanceModeHoldInterface {
 
 	/**
 	 * The app the mode belongs to.

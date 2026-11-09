@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
-use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
+use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistryInterface;
+use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
 
 /**
  * The domain services of the dsar case API.
@@ -34,14 +34,14 @@ final class DsarCaseRegistries {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param IdentityVerifyRegistry    $identityRegistry  Identity-verify seam registry (pack-selector-driven, fail-closed).
-	 * @param RegulatorEscalateRegistry $regulatorRegistry Regulator-escalate seam registry (pack-selector-driven, fail-closed).
+	 * @param IdentityVerifyRegistryInterface    $identityRegistry  Identity-verify seam registry (pack-selector-driven, fail-closed).
+	 * @param RegulatorEscalateRegistryInterface $regulatorRegistry Regulator-escalate seam registry (pack-selector-driven, fail-closed).
 	 *
 	 * @spec openspec/specs/dsar-case-api/spec.md
 	 */
 	public function __construct(
-		public readonly IdentityVerifyRegistry $identityRegistry,
-		public readonly RegulatorEscalateRegistry $regulatorRegistry,
+		public readonly IdentityVerifyRegistryInterface $identityRegistry,
+		public readonly RegulatorEscalateRegistryInterface $regulatorRegistry,
 	) {
 	}//end __construct()
 }//end class

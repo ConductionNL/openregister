@@ -37,21 +37,7 @@ use OCA\OpenRegister\Service\WriteCause;
 /**
  * Load + audited-save helper for data-subject-request case objects.
  */
-class CaseObjectAccessor {
-
-	/**
-	 * Register slug the case objects live under (declared by the head).
-	 *
-	 * @var string
-	 */
-	public const REGISTER_SLUG = 'data-subject-requests';
-
-	/**
-	 * Schema slug of the case entity (declared by the head).
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_SLUG = 'dataSubjectRequest';
+class CaseObjectAccessor implements CaseObjectAccessorInterface {
 
 	/**
 	 * The findAll() config selecting every case object.

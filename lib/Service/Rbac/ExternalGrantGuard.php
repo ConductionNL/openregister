@@ -51,7 +51,7 @@ use DateTimeInterface;
  *
  * @spec openspec/specs/authorization-rbac/spec.md
  */
-class ExternalGrantGuard {
+class ExternalGrantGuard implements ExternalGrantGuardInterface {
 	/**
 	 * The entry key declaring that a principal is outside the organisation.
 	 *
@@ -65,13 +65,6 @@ class ExternalGrantGuard {
 	 * @var string
 	 */
 	public const RULE = 'external-grant-needs-an-end';
-
-	/**
-	 * How many days before an end counts as "about to lapse" by default.
-	 *
-	 * @var int
-	 */
-	public const DEFAULT_WARNING_DAYS = 14;
 
 	/**
 	 * Block keys that are settings rather than lists of entries.

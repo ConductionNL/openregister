@@ -31,6 +31,7 @@ jest.mock('vue-material-design-icons/ChartLine.vue', () => ({ __esModule: true, 
 jest.mock('vue-material-design-icons/CheckCircle.vue', () => ({ __esModule: true, default: {} }))
 jest.mock('vue-material-design-icons/Cog.vue', () => ({ __esModule: true, default: {} }))
 jest.mock('vue-material-design-icons/CogOutline.vue', () => ({ __esModule: true, default: {} }))
+jest.mock('vue-material-design-icons/Delete.vue', () => ({ __esModule: true, default: {} }))
 jest.mock('vue-material-design-icons/ContentCopy.vue', () => ({ __esModule: true, default: {} }))
 jest.mock('vue-material-design-icons/ContentSave.vue', () => ({ __esModule: true, default: {} }))
 jest.mock('vue-material-design-icons/Database.vue', () => ({ __esModule: true, default: {} }))

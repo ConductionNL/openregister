@@ -215,27 +215,59 @@ class FacetResponseCache {
 		$ids = [];
 
 		foreach ($values as $value) {
-			if ($value === null) {
-				continue;
-			}
-
-			$candidates = [$value];
-			if (is_array($value) === true) {
-				$candidates = $value;
-			}
-
-			foreach ($candidates as $candidate) {
-				if (is_int($candidate) === true || is_string($candidate) === true) {
-					$candidate = (string)$candidate;
-					if ($candidate !== '') {
-						$ids[] = $candidate;
-					}
+			foreach (self::candidatesOf(value: $value) as $candidate) {
+				$id = self::scopeIdOf(candidate: $candidate);
+				if ($id !== null) {
+					$ids[] = $id;
 				}
 			}
 		}
 
 		return array_values(array_unique($ids));
 	}//end scopeIdsFromQuery()
+
+	/**
+	 * The candidate ids of one query value: none for null, its items for a list, else itself.
+	 *
+	 * @param mixed $value The query value.
+	 *
+	 * @return array The candidates
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private static function candidatesOf(mixed $value): array {
+		if ($value === null) {
+			return [];
+		}
+
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [$value];
+	}//end candidatesOf()
+
+	/**
+	 * A candidate as a scope id: a non-empty int or string, as a string.
+	 *
+	 * @param mixed $candidate The candidate.
+	 *
+	 * @return string|null The id
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private static function scopeIdOf(mixed $candidate): ?string {
+		if (is_int($candidate) === false && is_string($candidate) === false) {
+			return null;
+		}
+
+		$id = (string)$candidate;
+		if ($id === '') {
+			return null;
+		}
+
+		return $id;
+	}//end scopeIdOf()
 
 	/**
 	 * Get cached facet response.

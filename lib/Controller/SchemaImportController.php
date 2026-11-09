@@ -39,9 +39,9 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\SchemaImport\ImportedSchema;
+use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaInterface;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
-use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
+use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -56,9 +56,9 @@ class SchemaImportController extends Controller {
 	/**
 	 * Standards import orchestrator.
 	 *
-	 * @var SchemaImportService
+	 * @var SchemaImportServiceInterface
 	 */
-	private readonly SchemaImportService $importService;
+	private readonly SchemaImportServiceInterface $importService;
 
 	/**
 	 * Schema persistence.
@@ -178,12 +178,12 @@ class SchemaImportController extends Controller {
 	/**
 	 * Persist an imported schema, associate it with the target register, and answer 201.
 	 *
-	 * @param ImportedSchema $imported The mapped schema.
+	 * @param ImportedSchemaInterface $imported The mapped schema.
 	 * @param int|null $registerId The register to associate it with, or null.
 	 *
 	 * @return JSONResponse The created schema, or the 500.
 	 */
-	private function persistImported(ImportedSchema $imported, ?int $registerId): JSONResponse {
+	private function persistImported(ImportedSchemaInterface $imported, ?int $registerId): JSONResponse {
 		try {
 			$schema = $this->persistNewSchema(imported: $imported);
 		} catch (\Throwable $e) {
@@ -194,7 +194,7 @@ class SchemaImportController extends Controller {
 			$this->associateWithRegister(registerId: $registerId, schemaId: (int)$schema->getId());
 		}
 
-		return new JSONResponse(['schema' => $schema->jsonSerialize(), 'unknownRequested' => $imported->unknownRequested], Http::STATUS_CREATED);
+		return new JSONResponse(['schema' => $schema->jsonSerialize(), 'unknownRequested' => $imported->unknownRequested()], Http::STATUS_CREATED);
 	}//end persistImported()
 
 	/**
@@ -321,11 +321,11 @@ class SchemaImportController extends Controller {
 	/**
 	 * Persist a freshly-imported schema.
 	 *
-	 * @param ImportedSchema $imported The mapped schema.
+	 * @param ImportedSchemaInterface $imported The mapped schema.
 	 *
 	 * @return Schema The persisted schema entity.
 	 */
-	private function persistNewSchema(ImportedSchema $imported): Schema {
+	private function persistNewSchema(ImportedSchemaInterface $imported): Schema {
 		// Use the canonical creation path so the schema gets its uuid, slug,
 		// version, facet configuration and delta extraction. Hand-rolling
 		// hydrate()+insert() bypasses cleanObject() and inserts a NULL uuid,

@@ -23,6 +23,7 @@ use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
+use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -105,15 +106,19 @@ final class ApiCallRecordMapperCountGoldenTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueBool')->willReturn(true);
 
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('leverancier');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
 		$recorder = new ApiCallRecorder(
 			mapper: new ApiCallRecordMapper(db: $db),
-			userSession: $this->createMock(IUserSession::class),
+			userSession: $session,
 			appConfig: $appConfig,
 			logger: $this->createMock(LoggerInterface::class),
 		);
 
 		$recorder->record(
-			principal: 'leverancier',
 			path: '/apps/openregister/api/objects/zaken/melding/3f2504e0-4f89-41d3-9a0c-0305e82c3301',
 			method: 'get',
 			apiVersion: '1',

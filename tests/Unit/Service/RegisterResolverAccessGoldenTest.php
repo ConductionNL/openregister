@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterResolverService;
+use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\Resolver\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Service\Resolver\Exception\SchemaNotFoundException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -73,10 +74,9 @@ class RegisterResolverAccessGoldenTest extends TestCase {
 
 		$this->resolver = new RegisterResolverService(
 			appConfig: $this->appConfig,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			mappers: new RegisterSchemaMappers($this->registerMapper, $this->schemaMapper),
 			organisationService: $this->organisationService,
-			logger: $this->logger,
+			logger: $this->logger
 		);
 	}//end setUp()
 

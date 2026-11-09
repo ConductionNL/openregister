@@ -1076,14 +1076,14 @@ parameters:
 			path: lib/Files/Controller/FilesController.php
 
 		-
-			message: "#^Parameter \\$csrfManager of method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\GraphQLController\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSRF\\\\CsrfTokenManager\\.$#"
+			message: "#^Parameter \\$csrfManager of method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\Support\\\\GraphQLControllerServices\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSRF\\\\CsrfTokenManager\\.$#"
 			count: 2
-			path: lib/Search/Controller/GraphQLController.php
+			path: lib/Search/Controller/Support/GraphQLControllerServices.php
 
 		-
-			message: "#^Parameter \\$nonceManager of method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\GraphQLController\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSP\\\\ContentSecurityPolicyNonceManager\\.$#"
+			message: "#^Parameter \\$nonceManager of method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\Support\\\\GraphQLControllerServices\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSP\\\\ContentSecurityPolicyNonceManager\\.$#"
 			count: 2
-			path: lib/Search/Controller/GraphQLController.php
+			path: lib/Search/Controller/Support/GraphQLControllerServices.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Notifications\\\\Controller\\\\HeartbeatController\\:\\:heartbeat\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{status\\: 'alive', timestamp\\: int\\<1, max\\>, message\\: 'Heartbeat…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{status\\: string, timestamp\\: int, message\\: string\\}, array\\{\\}\\>\\.$#"

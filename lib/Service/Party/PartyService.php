@@ -103,29 +103,51 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 		// The party tables first: an id alone makes the object layer search every
 		// magic table on the instance, which took seconds per party.
 		foreach ($this->partyTables() as $table) {
-			try {
-				$found = $this->objects->find(
-					id: $partyUuid,
-					register: $table['register'],
-					schema: $table['schema'],
-					_render: false,
-					_audit: false
-				);
-			} catch (Throwable) {
-				$found = null;
-			}
-
+			$found = $this->findInTable(partyUuid: $partyUuid, table: $table);
 			if ($found !== null) {
 				return $found;
 			}
 		}
 
+		return $this->findOnInstance(partyUuid: $partyUuid);
+	}//end find()
+
+	/**
+	 * The object with that uuid anywhere on the instance, null when there is none the caller may read.
+	 *
+	 * @param string $partyUuid The party's uuid.
+	 *
+	 * @return ObjectEntity|null The object.
+	 */
+	private function findOnInstance(string $partyUuid): ?ObjectEntity {
 		try {
 			return $this->objects->find(id: $partyUuid, _render: false, _audit: false);
 		} catch (Throwable) {
 			return null;
 		}
-	}//end find()
+	}//end findOnInstance()
+
+	/**
+	 * The party with that uuid in one party table, null when that table does not hold it.
+	 *
+	 * @param string $partyUuid The party's uuid.
+	 * @param array{register: int, schema: int} $table The table.
+	 *
+	 * @return ObjectEntity|null The party.
+	 */
+	private function findInTable(string $partyUuid, array $table): ?ObjectEntity {
+		try {
+			return $this->objects->find(
+				id: $partyUuid,
+				register: $table['register'],
+				schema: $table['schema'],
+				_render: false,
+				_audit: false
+			);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end findInTable()
 
 	/**
 	 * The register and schema ids of every table that holds party records.
@@ -141,22 +163,37 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 
 		$tables = [];
 		if ($this->registers !== null) {
-			try {
-				foreach ($this->partySchemas() as $party) {
-					$schemaId = (int)$party['schema']->getId();
-					foreach ($this->registers->getAllRegisterIdsWithSchema(schemaId: $schemaId) as $registerId) {
-						$tables[] = ['register' => (int)$registerId, 'schema' => $schemaId];
-					}
-				}
-			} catch (Throwable) {
-				$tables = [];
-			}
+			$tables = $this->readPartyTables(registers: $this->registers);
 		}
 
 		$this->partyTables = $tables;
 
 		return $tables;
 	}//end partyTables()
+
+	/**
+	 * Every register/schema pair holding a party schema; none when the
+	 * registers cannot be read.
+	 *
+	 * @param RegisterMapperInterface $registers The registers.
+	 *
+	 * @return array<int, array{register: int, schema: int}> The tables.
+	 */
+	private function readPartyTables(RegisterMapperInterface $registers): array {
+		$tables = [];
+		try {
+			foreach ($this->partySchemas() as $party) {
+				$schemaId = (int)$party['schema']->getId();
+				foreach ($registers->getAllRegisterIdsWithSchema(schemaId: $schemaId) as $registerId) {
+					$tables[] = ['register' => (int)$registerId, 'schema' => $schemaId];
+				}
+			}
+		} catch (Throwable) {
+			$tables = [];
+		}
+
+		return $tables;
+	}//end readPartyTables()
 
 	/**
 	 * The object with that uuid, read without RBAC or multitenancy; null when there is none.
@@ -253,20 +290,10 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 			return [];
 		}
 
-		$raw = ($party->getObject()[$definition->addressesProperty()] ?? null);
-		if (is_array($raw) === false) {
-			return [];
-		}
-
-		$addresses = [];
-		foreach ($raw as $entry) {
-			$address = self::normaliseAddress(entry: $entry);
-			if ($address !== null) {
-				$addresses[] = $address;
-			}
-		}
-
-		return $addresses;
+		return self::normaliseEach(
+			raw: ($party->getObject()[$definition->addressesProperty()] ?? null),
+			normalise: self::normaliseAddress(...)
+		);
 	}//end addresses()
 
 	/**
@@ -310,21 +337,36 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 			return [];
 		}
 
-		$raw = ($party->getObject()[$definition->indicatorsProperty()] ?? null);
+		return self::normaliseEach(
+			raw: ($party->getObject()[$definition->indicatorsProperty()] ?? null),
+			normalise: self::normaliseIndicator(...)
+		);
+	}//end indicators()
+
+	/**
+	 * Normalise every entry of a stored list, dropping the malformed ones; a
+	 * value that is not a list holds none.
+	 *
+	 * @param mixed $raw The stored value.
+	 * @param callable(mixed): (array<string, mixed>|null) $normalise The entry normaliser.
+	 *
+	 * @return array<int, array<string, mixed>> The normalised entries.
+	 */
+	private static function normaliseEach(mixed $raw, callable $normalise): array {
 		if (is_array($raw) === false) {
 			return [];
 		}
 
-		$indicators = [];
+		$entries = [];
 		foreach ($raw as $entry) {
-			$indicator = self::normaliseIndicator(entry: $entry);
-			if ($indicator !== null) {
-				$indicators[] = $indicator;
+			$normalised = $normalise($entry);
+			if ($normalised !== null) {
+				$entries[] = $normalised;
 			}
 		}
 
-		return $indicators;
-	}//end indicators()
+		return $entries;
+	}//end normaliseEach()
 
 	/**
 	 * The party holding that address, null when no party does.
@@ -347,32 +389,64 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 		}
 
 		foreach ($this->partySchemas() as $party) {
-			$candidates = [];
-			try {
-				$candidates = $this->objects->findAll(
-					config: [
-						'filters' => ['schema' => $party['schema']->getId()],
-						'search' => $address,
-						'limit' => 50,
-					]
-				);
-			} catch (Throwable) {
-				$candidates = [];
+			$holder = $this->firstHolder(
+				candidates: $this->addressCandidates(schema: $party['schema'], address: $address),
+				needle: $needle,
+				definition: $party['definition']
+			);
+			if ($holder !== null) {
+				return $holder;
 			}
-
-			foreach ($candidates as $candidate) {
-				if ($candidate instanceof ObjectEntity === false) {
-					continue;
-				}
-
-				if ($this->holdsAddress(party: $candidate, needle: $needle, definition: $party['definition']) === true) {
-					return $candidate;
-				}
-			}
-		}//end foreach
+		}
 
 		return null;
 	}//end resolveByAddress()
+
+	/**
+	 * The objects of one party schema a search for the address finds; none
+	 * when the search fails.
+	 *
+	 * @param Schema $schema The party schema.
+	 * @param string $address The address as given.
+	 *
+	 * @return array<int, mixed> The candidates.
+	 */
+	private function addressCandidates(Schema $schema, string $address): array {
+		try {
+			return $this->objects->findAll(
+				config: [
+					'filters' => ['schema' => $schema->getId()],
+					'search' => $address,
+					'limit' => 50,
+				]
+			);
+		} catch (Throwable) {
+			return [];
+		}
+	}//end addressCandidates()
+
+	/**
+	 * The first candidate that holds the address exactly.
+	 *
+	 * @param array<int, mixed> $candidates The search results.
+	 * @param string $needle The normalised address.
+	 * @param PartyDefinition $definition The schema's party declaration.
+	 *
+	 * @return ObjectEntity|null The holder.
+	 */
+	private function firstHolder(array $candidates, string $needle, PartyDefinition $definition): ?ObjectEntity {
+		foreach ($candidates as $candidate) {
+			if ($candidate instanceof ObjectEntity === false) {
+				continue;
+			}
+
+			if ($this->holdsAddress(party: $candidate, needle: $needle, definition: $definition) === true) {
+				return $candidate;
+			}
+		}
+
+		return null;
+	}//end firstHolder()
 
 	/**
 	 * Refuse a parent that would close a cycle or push the tree past its bound.
@@ -395,9 +469,24 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 			throw new Exception('Party "' . $partyUuid . '" cannot be its own parent', 400);
 		}
 
-		$seen = [$partyUuid => true];
+		$this->assertNoCycle(partyUuid: $partyUuid, parentUuid: $parentUuid);
+	}//end assertParentAllowed()
+
+	/**
+	 * Walk up from the proposed parent and refuse a chain that returns to a
+	 * party already seen, or that runs deeper than the declared bound.
+	 *
+	 * @param string $partyUuid The party.
+	 * @param string $parentUuid The proposed parent.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception 400 when the parent would close a cycle or exceed the depth.
+	 */
+	private function assertNoCycle(string $partyUuid, string $parentUuid): void {
+		$seen   = [$partyUuid => true];
 		$cursor = $parentUuid;
-		$depth = 1;
+		$depth  = 1;
 		while ($cursor !== null && $cursor !== '') {
 			if (isset($seen[$cursor]) === true) {
 				throw new Exception(
@@ -411,7 +500,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 			$cursor = $this->parentOf(cursor: $cursor, partyUuid: $partyUuid, depth: $depth);
 			$depth++;
 		}//end while
-	}//end assertParentAllowed()
+	}//end assertNoCycle()
 
 	/**
 	 * One step up the parent chain, or null when the walk ends here.
@@ -436,8 +525,8 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 			return null;
 		}
 
-		$definition = $this->definitionFor(party: $ancestor);
-		if ($definition === null || $definition->parentProperty() === null) {
+		$definition = $this->nestingDefinitionOf(party: $ancestor);
+		if ($definition === null) {
 			return null;
 		}
 
@@ -451,6 +540,22 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 
 		return self::text(value: ($ancestor->getObject()[$definition->parentProperty()] ?? null));
 	}//end parentOf()
+
+	/**
+	 * The party's declaration when it declares a parent property, else null.
+	 *
+	 * @param ObjectEntity $party The party.
+	 *
+	 * @return PartyDefinition|null The declaration.
+	 */
+	private function nestingDefinitionOf(ObjectEntity $party): ?PartyDefinition {
+		$definition = $this->definitionFor(party: $party);
+		if ($definition === null || $definition->parentProperty() === null) {
+			return null;
+		}
+
+		return $definition;
+	}//end nestingDefinitionOf()
 
 	/**
 	 * Whether a party holds that exact address.
@@ -521,18 +626,30 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 			return null;
 		}
 
-		$effect = (self::text(value: ($entry['effect'] ?? null)) ?? 'warn');
-		if (in_array($effect, self::EFFECTS, true) === false) {
-			$effect = 'warn';
-		}
-
 		return [
 			'key' => $key,
 			'label' => (self::text(value: ($entry['label'] ?? null)) ?? $key),
-			'effect' => $effect,
+			'effect' => self::effectOf(entry: $entry),
 			'note' => self::text(value: ($entry['note'] ?? null)),
 		];
 	}//end normaliseIndicator()
+
+	/**
+	 * An indicator's declared effect; one naming none, or one this version
+	 * does not know, warns.
+	 *
+	 * @param array<mixed> $entry The stored indicator.
+	 *
+	 * @return string The effect.
+	 */
+	private static function effectOf(array $entry): string {
+		$effect = (self::text(value: ($entry['effect'] ?? null)) ?? 'warn');
+		if (in_array($effect, self::EFFECTS, true) === false) {
+			return 'warn';
+		}
+
+		return $effect;
+	}//end effectOf()
 
 	/**
 	 * An address value reduced to what a comparison should care about.

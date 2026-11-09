@@ -20,6 +20,7 @@ use OCA\OpenRegister\Event\PersonUnlinkedEvent;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
 use OCA\OpenRegister\Service\PersonLinkService;
+use OCA\OpenRegister\Service\PersonLinkTargets;
 use OCA\OpenRegister\Service\UserLinkWriter;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -103,8 +104,7 @@ class PersonLinkServiceTest extends TestCase {
 
 		$this->service = new PersonLinkService(
 			$this->links,
-			$this->contacts,
-			$this->userLinks,
+			new PersonLinkTargets($this->contacts, $this->userLinks),
 			$this->schemas,
 			new PersonLinkEvents($dispatcher)
 		);

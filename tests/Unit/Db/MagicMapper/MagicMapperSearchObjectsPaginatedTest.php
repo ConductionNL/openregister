@@ -18,6 +18,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -136,6 +137,34 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 		$this->assertStringNotContainsString('schema:2', $across[0]);
 		$this->assertCount(1, array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
 	}//end testATextSearchLeavesOutTheTablesItMayNotRead()
+
+	/**
+	 * A text search across every table passes the caller's RBAC and multitenancy flags to the search and the count.
+	 *
+	 * @return void
+	 */
+	public function testATextSearchCarriesTheCallersFlags(): void {
+		$case = [
+			'search'       => ['_search' => 'zaak'],
+			'count'        => ['_search' => 'zaak'],
+			'pairs'        => [['registerId' => 1, 'schemaId' => 2], ['registerId' => 1, 'schemaId' => 3]],
+			'rbac'         => false,
+			'multitenancy' => false,
+		];
+		$result = $this->runCase(case: $case);
+
+		$across = array_values(array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'searchAcross ')));
+		$this->assertCount(1, $across);
+		$this->assertStringContainsString('"_rbac":false,"_multitenancy":false', $across[0]);
+		$counts = array_values(array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
+		$this->assertCount(2, $counts);
+		foreach ($counts as $count) {
+			$this->assertStringContainsString('"_rbac":false,"_multitenancy":false', $count);
+		}
+
+		$this->assertSame(['magic_mapper'], [$result['response']['@self']['source'] ?? null]);
+		$this->assertSame([], $result['response']['ignoredFilters'] ?? null);
+	}//end testATextSearchCarriesTheCallersFlags()
 
 	public function testEveryCaseIsRecorded(): void {
 		$expected = require __DIR__.'/fixtures/search-objects-paginated.php';
@@ -291,7 +320,7 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 			static fn ($register, $schema): bool => in_array($schema->getId(), $refused, true) === false
 		);
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
-		$container->method('get')->willReturnCallback(static fn (string $id) => ($id === PurposeGuard::class) ? $guard : null);
+		$container->method('get')->willReturnCallback(static fn (string $id) => ($id === PurposeGuardInterface::class) ? $guard : null);
 
 		return $container;
 	}//end container()

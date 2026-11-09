@@ -24,12 +24,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
+			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeModal" />
 		</template>
 
 		<div v-if="!success" class="formContainer">
@@ -52,9 +47,9 @@ import { navigationStore, objectStore } from '../../store/store.js'
 
 <script>
 import { json, jsonParseLinter } from '@codemirror/lang-json'
-import { NcButton, NcDialog, NcNoteCard } from '@nextcloud/vue'
+import { NcDialog, NcNoteCard } from '@nextcloud/vue'
 import CodeMirror from 'vue-codemirror6'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { getTheme } from '../../services/getTheme.js'
 
 export default {
@@ -62,11 +57,10 @@ export default {
 	components: {
 		// components
 		NcDialog,
-		NcButton,
 		NcNoteCard,
 		CodeMirror,
 		// icons
-		Cancel,
+		CloseCancelButton,
 	},
 
 	data() {

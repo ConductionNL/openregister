@@ -45,7 +45,7 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-final class NotificationAnnotationValidator {
+final class NotificationAnnotationValidator implements NotificationAnnotationValidatorInterface {
 
 	private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook', 'talk', 'web-push'];
 

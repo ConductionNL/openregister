@@ -29,9 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Rbac\GrantTerms;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
@@ -223,19 +223,16 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	/**
 	 * Share the object's folder with the principal, with the declared account as the active user.
 	 *
-	 * @param string               $app  The app that ships the fragment (unused: the share is the account's).
-	 * @param string               $key  The grant's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled grant fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{id: string, object: string, node: int, sharedBy: string,
 	 *         sharedWith: string, shareType: int}|null}
 	 *         The record entry (the share's id, its object and the fields held() matches), or why the grant failed.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $app and $key are the contract of every kind.
-	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		$uuid   = (string) $data['object'];
 		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: $uuid);
 		if ($object === null) {
@@ -260,14 +257,14 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 * @return array<string, mixed> The share the service made.
 	 */
 	private function grant(ObjectEntity $object, array $data): array {
-		return $this->sharing()->grant(
+		return $this->sharing()->grantWithTerms(
 			object: $object,
 			type: (string) $data['type'],
 			shareWith: (string) $data['shareWith'],
-			permissions: (int) ($data['permissions'] ?? 1),
-			verbs: array_values((array) ($data['verbs'] ?? [])),
-			expiresAt: $this->moment(value: ($data['expiresAt'] ?? null)),
-			sharedAt: $this->moment(value: ($data['sharedAt'] ?? null))
+			terms: (new GrantTerms(
+				permissions: (int) ($data['permissions'] ?? 1),
+				verbs: array_values((array) ($data['verbs'] ?? []))
+			))->dated(expiresAt: ($data['expiresAt'] ?? null), sharedAt: ($data['sharedAt'] ?? null))
 		);
 	}//end grant()
 
@@ -355,21 +352,6 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 
 		return 'removed';
 	}//end deleteShare()
-
-	/**
-	 * A checked date as a moment, or null when it is not declared.
-	 *
-	 * @param mixed $value The filled value.
-	 *
-	 * @return DateTime|null
-	 */
-	private function moment(mixed $value): ?DateTime {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		return new DateTime($value);
-	}//end moment()
 
 	/**
 	 * The object sharing service, which holds the guard.

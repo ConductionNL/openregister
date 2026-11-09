@@ -66,35 +66,7 @@ use Throwable;
  *   `OCP\Server::get` behind `class_exists` guards so OpenRegister carries no
  *   compile-time dependency on the optional app (design D-A, Deck-leaf idiom).
  */
-class DoriathCredentialStore implements CredentialStore {
-	/**
-	 * IAppConfig key (app `openregister`) holding the Doriath-assigned application UUID.
-	 *
-	 * @var string
-	 */
-	public const APP_CONFIG_APPLICATION_ID = 'doriath_application_id';
-
-	/**
-	 * IAppConfig key (app `openregister`) holding OpenRegister's own public key PEM.
-	 *
-	 * Public material only — needed by {@see put()} for envelope encryption
-	 * without a Doriath round-trip. The private counterpart NEVER lands here.
-	 *
-	 * @var string
-	 */
-	public const APP_CONFIG_PUBLIC_KEY_PEM = 'doriath_public_key_pem';
-
-	/**
-	 * SYSTEM-scoped `ICredentialsManager` key holding OpenRegister's private key PEM.
-	 *
-	 * Same system-scope idiom (`userId = ''`) as the per-app broker signing
-	 * secrets in {@see CredentialAppTokenService}. The private key never leaves
-	 * `ICredentialsManager`, is never logged, and never lands in `IAppConfig`.
-	 *
-	 * @var string
-	 */
-	public const PRIVATE_KEY_ID = 'openregister/doriath/private-key';
-
+class DoriathCredentialStore implements CredentialStore, DoriathCredentialKeys {
 	/**
 	 * Stateless encrypt service (scheme `rsa-oaep-sha256-chunked-v1`), RELATIVE.
 	 *

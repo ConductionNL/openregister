@@ -109,29 +109,56 @@ final class PlaceholderResolver implements PlaceholderResolverInterface {
 	 * @return mixed A DateTimeImmutable for known placeholders; the raw string when unknown.
 	 */
 	private function resolveDate(string $expr): mixed {
-		// Split into base + optional offset (e.g. `$now-7d`, `$startOfMonth+1`).
-		$matched = preg_match('/^(\$[a-zA-Z]+)([+-]\d+)([dwmy]?)$/', $expr, $matches);
-		$datebases = ['$now', '$startOfDay', '$startOfWeek', '$startOfMonth', '$startOfYear'];
-		if ($matched === 1) {
-			$base = $matches[1];
-			$sign = (int)$matches[2];
-			$unit = $this->defaultUnitFor(base: $base);
-			if ($matches[3] !== '') {
-				$unit = $matches[3];
-			}
-		} elseif (in_array($expr, $datebases, true) === true) {
-			$base = $expr;
-			$sign = 0;
-			$unit = $this->defaultUnitFor(base: $expr);
-		}
-
-		if (isset($base) === false) {
+		$parsed = $this->parseDateExpression(expr: $expr);
+		if ($parsed === null) {
 			// Unknown placeholder — leave as-is for the caller to surface.
 			return $expr;
 		}
 
+		return $this->applyOffset(
+			dateTime: $this->baseDate(base: $parsed['base']),
+			sign: $parsed['sign'],
+			unit: $parsed['unit']
+		);
+	}//end resolveDate()
+
+	/**
+	 * Split a date placeholder into base, signed offset and unit.
+	 *
+	 * `$now-7d`, `$startOfMonth+1` (unit defaults per base) or a bare base.
+	 * Any `$word` base with an offset is accepted; an unknown bare base is not.
+	 *
+	 * @param string $expr The raw placeholder expression.
+	 *
+	 * @return array{base: string, sign: int, unit: string}|null Null when not a date placeholder.
+	 */
+	private function parseDateExpression(string $expr): ?array {
+		if (preg_match('/^(\$[a-zA-Z]+)([+-]\d+)([dwmy]?)$/', $expr, $matches) === 1) {
+			$unit = $matches[3];
+			if ($unit === '') {
+				$unit = $this->defaultUnitFor(base: $matches[1]);
+			}
+
+			return ['base' => $matches[1], 'sign' => (int)$matches[2], 'unit' => $unit];
+		}
+
+		if (in_array($expr, ['$now', '$startOfDay', '$startOfWeek', '$startOfMonth', '$startOfYear'], true) === true) {
+			return ['base' => $expr, 'sign' => 0, 'unit' => $this->defaultUnitFor(base: $expr)];
+		}
+
+		return null;
+	}//end parseDateExpression()
+
+	/**
+	 * The instant a placeholder base names, in the default timezone.
+	 *
+	 * @param string $base The placeholder base; an unknown base means now.
+	 *
+	 * @return DateTimeImmutable
+	 */
+	private function baseDate(string $base): DateTimeImmutable {
 		$now = new DateTimeImmutable('now', new DateTimeZone(date_default_timezone_get()));
-		$dateTime = match ($base) {
+		return match ($base) {
 			'$now' => $now,
 			'$startOfDay' => $now->modify('today'),
 			'$startOfWeek' => $now->modify('monday this week'),
@@ -139,27 +166,37 @@ final class PlaceholderResolver implements PlaceholderResolverInterface {
 			'$startOfYear' => $now->modify('first day of January ' . $now->format('Y'))->modify('today'),
 			default => $now,
 		};
+	}//end baseDate()
 
-		if ($sign !== 0) {
-			$unitWord = match ($unit) {
-				'd' => 'days',
-				'w' => 'weeks',
-				'm' => 'months',
-				'y' => 'years',
-				default => 'days',
-			};
-
-			$signChar = '+';
-			if ($sign < 0) {
-				$signChar = '-';
-			}
-
-			$intervalSpec = sprintf('%s%d %s', $signChar, abs($sign), $unitWord);
-			$dateTime = $dateTime->modify($intervalSpec);
+	/**
+	 * Shift an instant by a signed number of units.
+	 *
+	 * @param DateTimeImmutable $dateTime The base instant.
+	 * @param int $sign Signed offset; 0 leaves the instant as it is.
+	 * @param string $unit One of `d`, `w`, `m`, `y`.
+	 *
+	 * @return DateTimeImmutable
+	 */
+	private function applyOffset(DateTimeImmutable $dateTime, int $sign, string $unit): DateTimeImmutable {
+		if ($sign === 0) {
+			return $dateTime;
 		}
 
-		return $dateTime;
-	}//end resolveDate()
+		$unitWord = match ($unit) {
+			'd' => 'days',
+			'w' => 'weeks',
+			'm' => 'months',
+			'y' => 'years',
+			default => 'days',
+		};
+
+		$signChar = '+';
+		if ($sign < 0) {
+			$signChar = '-';
+		}
+
+		return $dateTime->modify(sprintf('%s%d %s', $signChar, abs($sign), $unitWord));
+	}//end applyOffset()
 
 	/**
 	 * Pick the natural unit suffix for a date placeholder.

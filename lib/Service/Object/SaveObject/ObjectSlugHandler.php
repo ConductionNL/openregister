@@ -45,7 +45,7 @@ use OCA\OpenRegister\Db\Schema;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) Design D1: this is the one owner of every slug
  *   write (save, bulk, restore, move, seed, backfill), so each writer has its entry point here.
  */
-class ObjectSlugHandler {
+class ObjectSlugHandler implements ObjectSlugTargetInterface {
 
 	/**
 	 * The `objectSlugField` value that builds the slug from the schema name and the

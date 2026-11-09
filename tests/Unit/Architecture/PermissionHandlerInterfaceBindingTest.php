@@ -48,7 +48,6 @@ final class PermissionHandlerInterfaceBindingTest extends TestCase {
 	 */
 	private const STATIC_CALLERS = [
 		'Db/MagicMapper/MagicRbacHandler.php',
-		'Service/Authorization/GrantableRightsIndex.php',
 		'Service/Rbac/RoleBlockExpander.php',
 	];
 

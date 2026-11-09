@@ -69,9 +69,7 @@ class CasePlanEnsurer {
 	/**
 	 * Ensure the definition's items exist on the object with their states.
 	 *
-	 * @param string $objectUuid The anchoring object.
-	 * @param int|null $registerId Its register.
-	 * @param int|null $schemaId Its schema.
+	 * @param CaseAnchor $anchor The anchoring object, its register and its schema.
 	 * @param array<string, mixed> $definition `settings` + nested `items`; a node MAY carry `state`.
 	 * @param array<int, mixed> $history Entries `{item, from?, to, at, actor?, reason?}`.
 	 * @param string $actor The importing identity (`system:<app>`).
@@ -82,9 +80,12 @@ class CasePlanEnsurer {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	public function ensure(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, array $history, string $actor): array {
+	public function ensure(CaseAnchor $anchor, array $definition, array $history, string $actor): array {
+		$objectUuid = $anchor->objectUuid;
+		$registerId = $anchor->registerId;
+		$schemaId   = $anchor->schemaId;
 		$normalised = $this->definitions->validate(definition: $definition);
-		$types = [];
+		$types      = [];
 		$this->checkStates(nodes: $normalised['items'], types: $types);
 		$context = ['object' => $objectUuid, 'register' => $registerId, 'schema' => $schemaId];
 		$context['settings'] = $normalised['settings'];

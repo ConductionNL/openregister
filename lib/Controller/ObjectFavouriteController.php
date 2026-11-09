@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
@@ -46,6 +47,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Star an object for the calling user, and unstar it.
@@ -66,20 +68,18 @@ class ObjectFavouriteController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                    $appName       App name.
 	 * @param IRequest                  $request       Request.
 	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
 	 * @param FavouriteServiceInterface $favourites    The favourite primitive.
 	 * @param LoggerInterface           $logger        Logger.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectOperationsInterface $objectService,
 		private readonly FavouriteServiceInterface $favourites,
 		LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$failure = 'Could not complete the favourite request';
 		$this->endpoint = new ObjectSharingEndpoint(objectService: $objectService, logger: $logger, file: __FILE__, failure: $failure);
 	}//end __construct()
@@ -115,7 +115,7 @@ class ObjectFavouriteController extends Controller {
 		}
 
 		$body = array_merge($favourite->jsonSerialize(), ['favourite' => true, 'watching' => true]);
-		return $this->deprecated(response: new JSONResponse($body), register: $register, schema: $schema, id: $id);
+		return $this->deprecated(response: new JSONResponse($body), route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 
 	}//end star()
 
@@ -149,23 +149,21 @@ class ObjectFavouriteController extends Controller {
 		}
 
 		$body = ['favourite' => false, 'watching' => false, 'removed' => $removed];
-		return $this->deprecated(response: new JSONResponse($body), register: $register, schema: $schema, id: $id);
+		return $this->deprecated(response: new JSONResponse($body), route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 
 	}//end unstar()
 
 	/**
 	 * Mark a response as coming from a deprecated route, naming its successor.
 	 *
-	 * @param JSONResponse $response The response to mark.
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object uuid.
+	 * @param JSONResponse    $response The response to mark.
+	 * @param ObjectLinkRoute $route    Register slug or id, schema slug or id, and object uuid.
 	 *
 	 * @return JSONResponse The same response, with the two headers.
 	 */
-	private function deprecated(JSONResponse $response, string $register, string $schema, string $id): JSONResponse {
-		$successor = '/index.php/apps/openregister/api/objects/'.rawurlencode($register)
-			.'/'.rawurlencode($schema).'/'.rawurlencode($id).'/watch';
+	private function deprecated(JSONResponse $response, ObjectLinkRoute $route): JSONResponse {
+		$successor = '/index.php/apps/openregister/api/objects/'.rawurlencode($route->register)
+			.'/'.rawurlencode($route->schema).'/'.rawurlencode($route->id).'/watch';
 
 		$response->addHeader('Deprecation', 'true');
 		$response->addHeader('Link', '<'.$successor.'>; rel="successor-version"');

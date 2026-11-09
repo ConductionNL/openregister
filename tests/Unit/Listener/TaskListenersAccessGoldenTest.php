@@ -44,6 +44,7 @@ use OCP\EventDispatcher\Event;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Listener\Support\AssigneeFollowServices;
 
 /**
  * Allowed AND refused, for each access decision these listeners make.
@@ -189,7 +190,7 @@ final class TaskListenersAccessGoldenTest extends TestCase {
 		$users = $this->createMock(IUserManager::class);
 		$users->method('userExists')->willReturnCallback(static fn (string $uid): bool => $uid === 'jan');
 
-		return new AssigneeFollowListener($schemas, new SemanticRoleHandler(), $permissions, $users, $watchers, new NullLogger());
+		return new AssigneeFollowListener($schemas, new AssigneeFollowServices(new SemanticRoleHandler(), $users, $watchers), $permissions, new NullLogger());
 	}//end assigneeListener()
 
 	/**

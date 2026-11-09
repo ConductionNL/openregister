@@ -44,7 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\Sharing;
 
-use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\AccessLink;
@@ -58,7 +58,7 @@ use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 
 /**
  * Resolves and renders the subject behind an access link.
@@ -135,9 +135,9 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	/**
 	 * Reads which object a subject names.
 	 *
-	 * @var AccessLinkSubject
+	 * @var AccessLinkSubjectInterface
 	 */
-	private readonly AccessLinkSubject $subjects;
+	private readonly AccessLinkSubjectInterface $subjects;
 
 	/**
 	 * PSR logger.
@@ -427,7 +427,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		);
 
 		// A link never reveals an explicit-reveal value: it reads masked.
-		return ExplicitReveal::maskAll(schema: $schema, object: $readable);
+		return ExplicitRevealMasks::maskAll(schema: $schema, object: $readable);
 	}//end filteredProperties()
 
 	/**

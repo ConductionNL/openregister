@@ -20,6 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\TranslationEdit;
+use OCA\OpenRegister\Db\TranslationFilter;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCP\AppFramework\Db\Entity;
@@ -66,23 +69,23 @@ class TranslationMapperGoldenTest extends TestCase {
 	 */
 	public static function cases(): array {
 		$cases = [
-			'upsert new slot, defaults' => ['upsert', ['obj-1', 'title', 'en', 'Hello'], [], [[]]],
-			'upsert new slot, every option' => ['upsert', ['obj-1', 'title', 'de', 'Hallo', 'approved', 'alice', 'en'], [], [[]]],
-			'upsert new slot, empty source language and null value' => ['upsert', ['obj-1', 'title', 'fr', null, null, null, ''], [], [[]]],
-			'upsert existing slot keeps status' => ['upsert', ['obj-1', 'title', 'en', 'New'], [], [[self::row('approved')]]],
-			'upsert existing slot without status gets draft' => ['upsert', ['obj-1', 'title', 'en', 'New'], [], [[self::row(null)]]],
-			'upsert existing slot overrides status' => ['upsert', ['obj-1', 'title', 'en', 'New', 'outdated', 'carol', 'de'], [], [[self::row('approved')]]],
+			'upsert new slot, defaults' => ['upsert', [new TranslationSlot('obj-1', 'title', 'en'), new TranslationEdit('Hello')], [], [[]]],
+			'upsert new slot, every option' => ['upsert', [new TranslationSlot('obj-1', 'title', 'de'), new TranslationEdit('Hallo', 'approved', 'alice', 'en')], [], [[]]],
+			'upsert new slot, empty source language and null value' => ['upsert', [new TranslationSlot('obj-1', 'title', 'fr'), new TranslationEdit(null, null, null, '')], [], [[]]],
+			'upsert existing slot keeps status' => ['upsert', [new TranslationSlot('obj-1', 'title', 'en'), new TranslationEdit('New')], [], [[self::row('approved')]]],
+			'upsert existing slot without status gets draft' => ['upsert', [new TranslationSlot('obj-1', 'title', 'en'), new TranslationEdit('New')], [], [[self::row(null)]]],
+			'upsert existing slot overrides status' => ['upsert', [new TranslationSlot('obj-1', 'title', 'en'), new TranslationEdit('New', 'outdated', 'carol', 'de')], [], [[self::row('approved')]]],
 			'findOne found' => ['findOne', ['obj-1', 'title', 'en'], [], [[self::row('draft')]]],
 			'findOne missing' => ['findOne', ['obj-1', 'title', 'en'], [], [[]]],
 			'findByObject' => ['findByObject', ['obj-1'], [], [[self::row('draft'), self::row('approved')]]],
 			'deleteByObject' => ['deleteByObject', ['obj-1'], [4], []],
 			'completeness' => ['getCompletenessByObject', ['obj-1'], [], [[['language' => 'en', 'count' => '3'], ['language' => 'de', 'count' => 1]]]],
 			'completeness empty' => ['getCompletenessByObject', ['obj-1'], [], [[]]],
-			'search defaults' => ['search', [], [], [[self::row('draft')]]],
-			'search every filter' => ['search', ['50%_off\\x', 'de', 'approved', 'obj-1', 20, 'nl', true], [], [[]]],
-			'search empty strings are ignored' => ['search', ['', '', '', '', 0, '', false], [], [[]]],
-			'search limit is capped' => ['search', [null, 'en', null, null, 5000], [], [[]]],
-			'search negative limit and outdated only' => ['search', [null, null, null, null, -3, null, true], [], [[]]],
+			'search defaults' => ['search', [new TranslationFilter()], [], [[self::row('draft')]]],
+			'search every filter' => ['search', [new TranslationFilter('de', 'approved', 'obj-1', 'nl'), '50%_off\\x', 20, true], [], [[]]],
+			'search empty strings are ignored' => ['search', [new TranslationFilter('', '', '', ''), '', 0, false], [], [[]]],
+			'search limit is capped' => ['search', [new TranslationFilter('en'), null, 5000], [], [[]]],
+			'search negative limit and outdated only' => ['search', [new TranslationFilter(), null, -3, true], [], [[]]],
 			'markDerivedOutdated' => ['markDerivedOutdated', ['obj-1', 'title', 'nl'], [2], []],
 			'backfill without registers' => ['backfillSourceLanguage', [[]], [7], []],
 			'backfill per register' => ['backfillSourceLanguage', [[5 => 'de', '12' => '', 'r-x' => null], 25], [3, 4, 5, 6], []],

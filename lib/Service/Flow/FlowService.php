@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\FlowVersionMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
 
@@ -648,7 +648,7 @@ class FlowService implements FlowServiceInterface {
 			// content-addressed and SHARED — two flows holding the same graph
 			// share one row — so deleting by flow would pull a definition out
 			// from under an unrelated flow's version.
-			$this->platform->container->get(FlowVersionMapper::class)->deleteByFlow(flowUuid: $uuid);
+			$this->platform->container->get(FlowVersionMapperInterface::class)->deleteByFlow(flowUuid: $uuid);
 		} catch (Throwable $e) {
 			// The flow itself is already gone, so this must not turn a
 			// successful delete into an error the caller has to retry — a retry

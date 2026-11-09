@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\SecurityService;
+use OCA\OpenRegister\Service\SecurityHeadersInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use RuntimeException;
 
@@ -39,10 +39,10 @@ final class UserResponses {
 	/**
 	 * Constructor.
 	 *
-	 * @param SecurityService $securityService Adds the security headers.
+	 * @param SecurityHeadersInterface $securityService Adds the security headers.
 	 */
 	public function __construct(
-		private readonly SecurityService $securityService,
+		private readonly SecurityHeadersInterface $securityService,
 	) {
 	}//end __construct()
 

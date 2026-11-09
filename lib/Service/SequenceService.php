@@ -36,7 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Sequence;
-use OCA\OpenRegister\Db\SequenceMapper;
+use OCA\OpenRegister\Db\SequenceMapperInterface;
 use OCP\DB\Exception as DbException;
 use OCP\IDBConnection;
 use Throwable;
@@ -48,13 +48,13 @@ class SequenceService implements SequenceServiceInterface {
 	/**
 	 * Wire the sequence mapper and DB connection used for the reservation transaction.
 	 *
-	 * @param SequenceMapper $mapper The sequence mapper.
+	 * @param SequenceMapperInterface $mapper The sequence mapper.
 	 * @param IDBConnection $db DB connection (for the reservation transaction).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SequenceMapper $mapper,
+		private readonly SequenceMapperInterface $mapper,
 		private readonly IDBConnection $db,
 	) {
 	}//end __construct()

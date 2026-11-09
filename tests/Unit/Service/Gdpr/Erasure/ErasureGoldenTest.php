@@ -45,12 +45,15 @@ use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\Erasure\CoSubjectProbe;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureBucket;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureDestroyer;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureDestructionSteps;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureDestroyGuard;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureCounters;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureProtectionResolver;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureSchemaResolver;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureScopeCounter;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewUnknownException;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRefusedException;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner;
 use OCA\OpenRegister\Service\Gdpr\Erasure\SubjectPartyCounter;
@@ -293,13 +296,7 @@ final class ErasureGoldenTest extends TestCase {
 
 		$parties = new SubjectPartyCounter();
 
-		return new ErasurePreviewService(
-			$subjects,
-			new ErasureProtectionResolver($guard, $retention, new NullLogger()),
-			new CoSubjectProbe($db, $parties, new NullLogger()),
-			new ErasureScopeCounter($scopeService, new ErasureSchemaResolver($schemaMapper), new NullLogger()),
-			$parties
-		);
+		return new ErasurePreviewService($subjects, new ErasureProtectionResolver($guard, $retention, new NullLogger()), new ErasureCounters(new CoSubjectProbe($db, $parties, new NullLogger()), new ErasureScopeCounter($scopeService, new ErasureSchemaResolver($schemaMapper), new NullLogger()), $parties));
 	}//end previewService()
 
 	public function testWholeObjectPreviewClassifiesEveryGroundExactly(): void {
@@ -591,14 +588,7 @@ final class ErasureGoldenTest extends TestCase {
 			}
 		);
 
-		$destroyer = new ErasureDestroyer(
-			new ErasureSchemaResolver($schemaMapper),
-			new ErasureDestroyGuard($destroyRight, $clock),
-			$scopeService,
-			$recorder,
-			$objectMapper,
-			new NullLogger()
-		);
+		$destroyer = new ErasureDestroyer(new ErasureDestructionSteps(new ErasureSchemaResolver($schemaMapper), $scopeService, $recorder, $objectMapper), new ErasureDestroyGuard($destroyRight, $clock), new NullLogger());
 
 		return new ErasureRunner($previewService, $store, $subjects, $destroyer);
 	}//end runner()
@@ -728,11 +718,18 @@ final class ErasureGoldenTest extends TestCase {
 		self::assertSame($previous, $e->getPrevious());
 		self::assertSame(['error' => 'ERASURE_REFUSED', 'rule' => 'override', 'message' => 'Because.', 'k' => 'v'], $e->toResponseBody());
 
-		$e = new ErasureRefusedException('r2', 'Gone.', 404);
+		$e = new ErasurePreviewUnknownException();
+		self::assertInstanceOf(ErasureRefusedException::class, $e);
 		self::assertSame(404, $e->getStatusCode());
 		self::assertSame(404, $e->getCode());
 		self::assertNull($e->getPrevious());
-		self::assertSame(['error' => 'ERASURE_REFUSED', 'rule' => 'r2', 'message' => 'Gone.'], $e->toResponseBody());
+		self::assertSame(
+			['error' => 'ERASURE_REFUSED', 'rule' => 'erasure-preview-unknown', 'message' => 'No erasure preview with that identifier exists.'],
+			$e->toResponseBody()
+		);
+
+		$e = new ErasurePreviewUnknownException(previous: $previous);
+		self::assertSame($previous, $e->getPrevious());
 	}//end testTheRefusalExceptionKeepsItsPublicShape()
 
 	private function store(?ErasurePreview $row, ?string $uid, bool $admin = false): ErasurePreviewStore {

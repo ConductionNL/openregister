@@ -43,6 +43,8 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 use OCA\OpenRegister\Service\OperationsConsoleServiceInterface;
 use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
+use OCA\OpenRegister\Service\Operations\JobRunFilter;
+use OCA\OpenRegister\Service\Operations\JobScheduleChange;
 use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
 use OCA\OpenRegister\Controller\Support\OperationsActingRequest;
 use OCP\AppFramework\Controller;
@@ -51,6 +53,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Controller\Support\OperationsConsoleControllerServices;
 
 /**
  * OperationsConsoleController.
@@ -67,28 +70,44 @@ class OperationsConsoleController extends Controller {
 	private readonly OperationsActingRequest $acting;
 
 	/**
+	 * The read model.
+	 *
+	 * @var OperationsConsoleServiceInterface
+	 */
+	private readonly OperationsConsoleServiceInterface $console;
+
+	/**
+	 * The run history, run now and the schedule.
+	 *
+	 * @var OperationsJobsServiceInterface
+	 */
+	private readonly OperationsJobsServiceInterface $jobsService;
+
+	/**
+	 * The administered failure threshold.
+	 *
+	 * @var JobAlertServiceInterface
+	 */
+	private readonly JobAlertServiceInterface $alerts;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                            $appName     Application name.
 	 * @param IRequest                          $request     HTTP request.
-	 * @param OperationsConsoleServiceInterface $console     The read model.
-	 * @param OperationsJobsServiceInterface    $jobsService The run history, run now and the schedule.
-	 * @param JobAlertServiceInterface          $alerts      The administered failure threshold.
+	 * @param OperationsConsoleControllerServices $services The services, bundled.
 	 * @param IUserSession                      $userSession Names the administrator acting.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One console, one
-	 * controller: splitting it would put the operations surface behind two
-	 * route prefixes for no reader's benefit.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly OperationsConsoleServiceInterface $console,
-		private readonly OperationsJobsServiceInterface $jobsService,
-		private readonly JobAlertServiceInterface $alerts,
+		OperationsConsoleControllerServices $services,
 		IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->console = $services->console;
+		$this->jobsService = $services->jobsService;
+		$this->alerts = $services->alerts;
 		$this->acting = new OperationsActingRequest(request: $request, userSession: $userSession);
 	}//end __construct()
 
@@ -166,9 +185,11 @@ class OperationsConsoleController extends Controller {
 
 		return new JSONResponse(
 			data: $this->jobsService->runs(
-				jobClass: $this->acting->stringParam(name: 'job'),
-				outcome: $this->acting->stringParam(name: 'outcome'),
-				windowHours: $windowHours,
+				filter: new JobRunFilter(
+					jobClass: $this->acting->stringParam(name: 'job'),
+					outcome: $this->acting->stringParam(name: 'outcome'),
+					windowHours: $windowHours
+				),
 				limit: $this->acting->intParam(name: 'limit', fallback: 50),
 				offset: $this->acting->intParam(name: 'offset', fallback: 0)
 			)
@@ -277,10 +298,12 @@ class OperationsConsoleController extends Controller {
 
 		return $this->jobsService->administerSchedule(
 			jobClass: $jobClass,
-			enabled: $wantedEnabled,
-			intervalSeconds: $this->acting->nullableIntParam(name: 'intervalSeconds'),
-			windowStartHour: $this->acting->nullableIntParam(name: 'windowStartHour'),
-			windowEndHour: $this->acting->nullableIntParam(name: 'windowEndHour')
+			change: new JobScheduleChange(
+				enabled: $wantedEnabled,
+				intervalSeconds: $this->acting->nullableIntParam(name: 'intervalSeconds'),
+				windowStartHour: $this->acting->nullableIntParam(name: 'windowStartHour'),
+				windowEndHour: $this->acting->nullableIntParam(name: 'windowEndHour')
+			)
 		);
 	}//end administerSchedule()
 

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Schemas\PropertyVocabulary;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\PropertyVocabularyControllerFactory;
 
 /**
  * PropertyVocabularyControllerTest.
@@ -80,7 +81,7 @@ class PropertyVocabularyControllerTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->vocabulary = new PropertyVocabulary();
 
-		$this->controller = new PropertyVocabularyController(
+		$this->controller = PropertyVocabularyControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->vocabulary,

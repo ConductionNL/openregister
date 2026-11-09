@@ -51,7 +51,7 @@ use Throwable;
  *
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
-class ContentReportService {
+class ContentReportService implements ContentReportServiceInterface {
 	/**
 	 * The app the configuration lives under.
 	 *

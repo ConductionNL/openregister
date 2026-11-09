@@ -17,11 +17,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Service\File\CreateFileSources;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
@@ -94,11 +96,9 @@ class CreateFileHandlerTest extends TestCase {
 		$this->fileService = $this->createMock(FileService::class);
 
 		$this->handler = new CreateFileHandler(
-			$this->folderMgmtHandler,
+			new CreateFileSources($this->folderMgmtHandler, $this->objectEntityMapper, $this->logger),
 			$this->fileValidHandler,
-			$this->fileOwnershipHandler,
-			$this->objectEntityMapper,
-			$this->logger
+			$this->fileOwnershipHandler
 		);
 		$this->handler->setFileService($this->fileService);
 	}//end setUp()
@@ -141,8 +141,7 @@ class CreateFileHandlerTest extends TestCase {
 
 		$result = $this->handler->addFile(
 			objectEntity: $this->createMock(ObjectEntity::class),
-			fileName: 'doc.pdf',
-			content: $stream
+			upload: new FileUpload(fileName: 'doc.pdf', content: $stream, share: false)
 		);
 
 		$this->assertSame($file, $result);
@@ -169,8 +168,7 @@ class CreateFileHandlerTest extends TestCase {
 		try {
 			$this->handler->addFile(
 				objectEntity: $this->createMock(ObjectEntity::class),
-				fileName: 'evil.pdf',
-				content: $stream
+				upload: new FileUpload(fileName: 'evil.pdf', content: $stream, share: false)
 			);
 		} finally {
 			fclose($stream);
@@ -187,8 +185,7 @@ class CreateFileHandlerTest extends TestCase {
 
 		$result = $this->handler->addFile(
 			objectEntity: $this->createMock(ObjectEntity::class),
-			fileName: 'doc.pdf',
-			content: 'plain-string-content'
+			upload: new FileUpload(fileName: 'doc.pdf', content: 'plain-string-content', share: false)
 		);
 
 		$this->assertSame($file, $result);

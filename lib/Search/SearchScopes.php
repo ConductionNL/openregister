@@ -66,21 +66,41 @@ final class SearchScopes {
 	public const FILES = 'files';
 
 	/**
+	 * App ids to keep.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $apps;
+
+	/**
+	 * Register slugs to keep.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $registers;
+
+	/**
+	 * Schema slugs to keep.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $schemas;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param array<int, string> $apps      App ids to keep.
-	 * @param array<int, string> $registers Register slugs to keep.
-	 * @param array<int, string> $schemas   Schema slugs to keep.
+	 * @param SearchScopeTargets $targets   The apps, registers and schemas to keep.
 	 * @param boolean            $filesOnly Whether only file hits were asked for.
 	 * @param array<int, string> $unparsed  Scopes that named nothing this search understands.
 	 */
 	private function __construct(
-		public readonly array $apps,
-		public readonly array $registers,
-		public readonly array $schemas,
+		SearchScopeTargets $targets,
 		public readonly bool $filesOnly,
 		public readonly array $unparsed,
 	) {
+		$this->apps      = $targets->apps;
+		$this->registers = $targets->registers;
+		$this->schemas   = $targets->schemas;
 	}//end __construct()
 
 	/**
@@ -100,9 +120,11 @@ final class SearchScopes {
 		}
 
 		return new self(
-			apps: self::distinct(values: $found['app']),
-			registers: self::distinct(values: $found['register']),
-			schemas: self::distinct(values: $found['schema']),
+			targets: new SearchScopeTargets(
+				apps: self::distinct(values: $found['app']),
+				registers: self::distinct(values: $found['register']),
+				schemas: self::distinct(values: $found['schema'])
+			),
 			filesOnly: $found[self::FILES] !== [],
 			unparsed: self::distinct(values: $found['unparsed']),
 		);

@@ -41,26 +41,86 @@ namespace OCA\OpenRegister\Service\Audit;
  */
 class TokenIdentity {
 	/**
+	 * The token's stable identifier, never its value.
+	 *
+	 * @var string|null
+	 */
+	private readonly ?string $reference;
+
+	/**
+	 * The label the token carries, as its owner wrote it.
+	 *
+	 * @var string|null
+	 */
+	private readonly ?string $name;
+
+	/**
+	 * The uid of the principal the token belongs to.
+	 *
+	 * @var string|null
+	 */
+	private readonly ?string $ownerUid;
+
+	/**
+	 * That principal's display name.
+	 *
+	 * @var string|null
+	 */
+	private readonly ?string $ownerName;
+
+	/**
+	 * The registered consumer's uuid.
+	 *
+	 * @var string|null
+	 */
+	private readonly ?string $consumerUuid;
+
+	/**
+	 * The registered consumer's name.
+	 *
+	 * @var string|null
+	 */
+	private readonly ?string $consumerName;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string      $mechanism    How the caller authenticated: `app-password`, `jwt` or `api-key`.
-	 * @param string|null $reference    The token's stable identifier, never its value.
-	 * @param string|null $name         The label the token carries, as its owner wrote it.
-	 * @param string|null $ownerUid     The uid of the principal the token belongs to.
-	 * @param string|null $ownerName    That principal's display name.
-	 * @param string|null $consumerUuid The registered consumer's uuid.
-	 * @param string|null $consumerName The registered consumer's name.
+	 * @param string               $mechanism How the caller authenticated: `app-password`, `jwt` or `api-key`.
+	 * @param NamedIdentifier|null $token     The token's reference (never its value) and its label.
+	 * @param NamedIdentifier|null $owner     The uid and display name of the principal the token belongs to.
+	 * @param NamedIdentifier|null $consumer  The registered consumer's uuid and name.
 	 */
 	public function __construct(
 		private readonly string $mechanism,
-		private readonly ?string $reference = null,
-		private readonly ?string $name = null,
-		private readonly ?string $ownerUid = null,
-		private readonly ?string $ownerName = null,
-		private readonly ?string $consumerUuid = null,
-		private readonly ?string $consumerName = null,
+		?NamedIdentifier $token = null,
+		?NamedIdentifier $owner = null,
+		?NamedIdentifier $consumer = null,
 	) {
+		$this->reference = $token?->id;
+		$this->name = $token?->name;
+		$this->ownerUid = $owner?->id;
+		$this->ownerName = $owner?->name;
+		$this->consumerUuid = $consumer?->id;
+		$this->consumerName = $consumer?->name;
 	}//end __construct()
+
+	/**
+	 * The same identity, now naming the registered consumer the token runs as.
+	 *
+	 * @param NamedIdentifier $consumer The consumer's uuid and name.
+	 *
+	 * @return TokenIdentity A new identity; this one is unchanged.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function withConsumer(NamedIdentifier $consumer): TokenIdentity {
+		return new TokenIdentity(
+			mechanism: $this->mechanism,
+			token: new NamedIdentifier(id: $this->reference, name: $this->name),
+			owner: new NamedIdentifier(id: $this->ownerUid, name: $this->ownerName),
+			consumer: $consumer,
+		);
+	}//end withConsumer()
 
 	/**
 	 * How the caller authenticated.

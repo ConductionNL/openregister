@@ -103,94 +103,124 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 
 		$fired = [];
 		foreach ($candidates as $candidate) {
-			$cron = $this->scheduleOf(candidate: $candidate);
-			if ($cron === null) {
-				continue;
+			if ($this->fireIfDue(candidate: $candidate, now: $now) === true) {
+				$fired[] = $candidate['id'];
 			}
-
-			// The registry guarantees a non-empty id — a candidate without one
-			// is dropped there, so every id here is one a resolver can load.
-			$uuid = $candidate['id'];
-			if ($this->isDue(candidate: $candidate, cron: $cron, now: $now) === false) {
-				continue;
-			}
-
-			// SINGLETON: never overlap a flow with itself.
-			//
-			// A scheduled flow can be slower than its own interval — a pipeline
-			// poll on a five-minute cron easily is — and without this guard
-			// tick N+1 starts while tick N is still going. Two runs of one flow
-			// then race on whatever that flow is bookkeeping, which is exactly
-			// the failure openregister#2212 documented at the object layer.
-			//
-			// This is the property that makes the shell orchestrator being
-			// replaced safe today: `hydra-supervisor.sh` holds an exclusive
-			// flock, so exactly one supervisor exists and its check-then-write
-			// slot bookkeeping never races because nothing runs beside it. A
-			// scheduled flow gets the same guarantee here, and with it most
-			// flow state needs no locking at all.
-			//
-			// The last-fire marker is deliberately NOT advanced when we skip:
-			// the flow stays due, so it starts on the first tick after the
-			// previous run finishes rather than waiting a whole extra interval.
-			if ($this->runs->hasActiveRun(flowId: $uuid) === true) {
-				$this->logger->info(
-					message: '[FlowSchedule] Skipping due flow — previous run has not finished',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'flow' => $uuid,
-					]
-				);
-				continue;
-			}
-
-			// The candidate's `owner` is deliberately NOT passed on as the run's
-			// identity any more. It is the DEFINITION's owner — who may edit this
-			// flow — and using it here made a scheduled run execute as whoever
-			// authored the flow, which nobody consented to (ADR-099). The
-			// identity now comes from the schedule trigger node's `runAs`,
-			// resolved by FlowRunAttribution, and its absence is a refusal.
-			//
-			// Per flow, not around the loop. A refused flow must not stop the
-			// ones after it from firing — one broken definition silently
-			// disabling every later schedule is a far bigger outage than the
-			// one being reported, and it would present as "cron stopped
-			// working" rather than as a fault in a specific flow.
-			try {
-				$this->fire(uuid: $uuid, now: $now);
-			} catch (FlowUnattributed $e) {
-				$this->reportUnattributed(uuid: $uuid, refusal: $e);
-				continue;
-			} catch (DelegationRefused $e) {
-				// A SEPARATE catch, not folded into the one above. Both stop the
-				// flow, and they mean opposite things: "nobody was named" needs
-				// the definition edited, "the delegation is no longer live" needs
-				// a grant re-issued and will start working again on its own when
-				// one is. Reporting them in the same words would send the reader
-				// to the wrong one every second time.
-				$this->reportRefusedDelegation(uuid: $uuid, refusal: $e);
-				continue;
-			} catch (FlowDeadEnd $e) {
-				// The refusal already recorded status/status_message on the
-				// flow itself, so the author can see why without reading logs.
-				$this->logger->warning(
-					message: '[FlowSchedule] Skipping due flow — it is not runnable: ' . $e->getMessage(),
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'flow' => $uuid,
-						'nodes' => $e->getNodeIds(),
-					]
-				);
-				continue;
-			}
-
-			$fired[] = $uuid;
-		}//end foreach
+		}
 
 		return $fired;
 	}//end fireDueFlows()
+
+	/**
+	 * Fire one candidate when it is a valid schedule, due, and not still running.
+	 *
+	 * @param array<string, mixed> $candidate The scheduled-flow candidate.
+	 * @param DateTimeInterface    $now       The tick.
+	 *
+	 * @return bool True when the flow fired.
+	 *
+	 * @spec openspec/changes/or-flow-scheduled-trigger/specs/flow-scheduled-trigger/spec.md
+	 */
+	private function fireIfDue(array $candidate, DateTimeInterface $now): bool {
+		$cron = $this->scheduleOf(candidate: $candidate);
+		if ($cron === null) {
+			return false;
+		}
+
+		// The registry guarantees a non-empty id — a candidate without one
+		// is dropped there, so every id here is one a resolver can load.
+		$uuid = $candidate['id'];
+		if ($this->isDue(candidate: $candidate, cron: $cron, now: $now) === false) {
+			return false;
+		}
+
+		// SINGLETON: never overlap a flow with itself.
+		//
+		// A scheduled flow can be slower than its own interval — a pipeline
+		// poll on a five-minute cron easily is — and without this guard
+		// tick N+1 starts while tick N is still going. Two runs of one flow
+		// then race on whatever that flow is bookkeeping, which is exactly
+		// the failure openregister#2212 documented at the object layer.
+		//
+		// This is the property that makes the shell orchestrator being
+		// replaced safe today: `hydra-supervisor.sh` holds an exclusive
+		// flock, so exactly one supervisor exists and its check-then-write
+		// slot bookkeeping never races because nothing runs beside it. A
+		// scheduled flow gets the same guarantee here, and with it most
+		// flow state needs no locking at all.
+		//
+		// The last-fire marker is deliberately NOT advanced when we skip:
+		// the flow stays due, so it starts on the first tick after the
+		// previous run finishes rather than waiting a whole extra interval.
+		if ($this->runs->hasActiveRun(flowId: $uuid) === true) {
+			$this->logger->info(
+				message: '[FlowSchedule] Skipping due flow — previous run has not finished',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'flow' => $uuid,
+				]
+			);
+			return false;
+		}
+
+		// The candidate's `owner` is deliberately NOT passed on as the run's
+		// identity any more. It is the DEFINITION's owner — who may edit this
+		// flow — and using it here made a scheduled run execute as whoever
+		// authored the flow, which nobody consented to (ADR-099). The
+		// identity now comes from the schedule trigger node's `runAs`,
+		// resolved by FlowRunAttribution, and its absence is a refusal.
+		//
+		// Per flow, not around the loop. A refused flow must not stop the
+		// ones after it from firing — one broken definition silently
+		// disabling every later schedule is a far bigger outage than the
+		// one being reported, and it would present as "cron stopped
+		// working" rather than as a fault in a specific flow.
+		return $this->tryFire(uuid: $uuid, now: $now);
+	}//end fireIfDue()
+
+	/**
+	 * Fire one due flow; a flow that refuses is reported and skipped, never fatal to the tick.
+	 *
+	 * @param string            $uuid The flow id.
+	 * @param DateTimeInterface $now  The tick.
+	 *
+	 * @return bool True when it fired, false when it was refused.
+	 *
+	 * @spec openspec/changes/or-flow-scheduled-trigger/specs/flow-scheduled-trigger/spec.md
+	 */
+	private function tryFire(string $uuid, DateTimeInterface $now): bool {
+		try {
+			$this->fire(uuid: $uuid, now: $now);
+		} catch (FlowUnattributed $e) {
+			$this->reportUnattributed(uuid: $uuid, refusal: $e);
+			return false;
+		} catch (DelegationRefused $e) {
+			// A SEPARATE catch, not folded into the one above. Both stop the
+			// flow, and they mean opposite things: "nobody was named" needs
+			// the definition edited, "the delegation is no longer live" needs
+			// a grant re-issued and will start working again on its own when
+			// one is. Reporting them in the same words would send the reader
+			// to the wrong one every second time.
+			$this->reportRefusedDelegation(uuid: $uuid, refusal: $e);
+			return false;
+		} catch (FlowDeadEnd $e) {
+			// The refusal already recorded status/status_message on the
+			// flow itself, so the author can see why without reading logs.
+			$this->logger->warning(
+				message: '[FlowSchedule] Skipping due flow — it is not runnable: ' . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'flow' => $uuid,
+					'nodes' => $e->getNodeIds(),
+				]
+			);
+			return false;
+		}
+
+		return true;
+	}//end tryFire()
 
 	/**
 	 * Report a due flow that named no acting identity.
@@ -269,11 +299,7 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 	 *                     a valid enabled schedule.
 	 */
 	private function scheduleOf(array $candidate): ?string {
-		if (($candidate['enabled'] ?? false) !== true) {
-			return null;
-		}
-
-		if ((string)($candidate['trigger'] ?? '') !== 'schedule') {
+		if ($this->isScheduleCandidate(candidate: $candidate) === false) {
 			return null;
 		}
 
@@ -284,6 +310,19 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 
 		return $cron;
 	}//end scheduleOf()
+
+	/**
+	 * Whether a candidate is an enabled flow on the schedule trigger.
+	 *
+	 * @param array<string, mixed> $candidate The candidate.
+	 *
+	 * @return bool True for an enabled schedule.
+	 *
+	 * @spec openspec/changes/or-flow-scheduled-trigger/specs/flow-scheduled-trigger/spec.md
+	 */
+	private function isScheduleCandidate(array $candidate): bool {
+		return ($candidate['enabled'] ?? false) === true && (string)($candidate['trigger'] ?? '') === 'schedule';
+	}//end isScheduleCandidate()
 
 	/**
 	 * Whether a cron occurrence has passed since the flow's baseline.

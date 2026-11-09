@@ -39,7 +39,7 @@ use Throwable;
  *
  * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
  */
-class ExplicitRevealTrailMasker {
+class ExplicitRevealTrailMasker implements ExplicitRevealTrailMaskerInterface {
 
 	/**
 	 * Schemas already read, by id; null when it could not be read.

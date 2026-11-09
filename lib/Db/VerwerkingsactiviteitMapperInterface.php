@@ -1,7 +1,7 @@
 <?php
 
 /**
- * VerwerkingsactiviteitMapperInterface: what callers outside the Db component use of VerwerkingsactiviteitMapper.
+ * VerwerkingsactiviteitMapperInterface: the part of VerwerkingsactiviteitMapper that the verwerkingsactiviteiten controller uses.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -12,8 +12,6 @@
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
  */
@@ -26,10 +24,8 @@ use InvalidArgumentException;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
- * The methods of VerwerkingsactiviteitMapper that callers outside the Db component use.
- *
- * Callers type against this interface and resolve it from the container; the
- * registrar binds it to VerwerkingsactiviteitMapper. Guarded by C04InterfaceBindingsTest.
+ * The methods of VerwerkingsactiviteitMapper that callers outside its component use.
+ * Callers depend on this interface, not on the class.
  */
 interface VerwerkingsactiviteitMapperInterface {
 
@@ -78,6 +74,15 @@ interface VerwerkingsactiviteitMapperInterface {
 	public function insert($entity): Verwerkingsactiviteit;
 
 	/**
+	 * Update with vocabulary validation. Bumps `updated`.
+	 *
+	 * @param Verwerkingsactiviteit $entity Entity to update.
+	 *
+	 * @return Verwerkingsactiviteit
+	 */
+	public function update($entity): Verwerkingsactiviteit;
+
+	/**
 	 * Resolve a `code|uuid` reference to a concrete entity.
 	 *
 	 * Tries `code` first, falls back to `uuid`. Used by the audit-trail
@@ -89,13 +94,4 @@ interface VerwerkingsactiviteitMapperInterface {
 	 * @return Verwerkingsactiviteit|null
 	 */
 	public function resolveReference(string $reference): ?Verwerkingsactiviteit;
-
-	/**
-	 * Update with vocabulary validation. Bumps `updated`.
-	 *
-	 * @param Verwerkingsactiviteit $entity Entity to update.
-	 *
-	 * @return Verwerkingsactiviteit
-	 */
-	public function update($entity): Verwerkingsactiviteit;
 }//end interface

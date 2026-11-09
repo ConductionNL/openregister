@@ -151,7 +151,7 @@ class CasePlanService implements CasePlanServiceInterface {
 		$this->anchorAccess->authorization->assertMayAdminister(verb: 'create-plan', settings: $normalised['settings'], uid: $uid);
 
 		$anchor = new CaseAnchor(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId);
-		$provenance = ['flowUuid' => $flowUuid, 'flowVersion' => $flowVersion];
+		$provenance = new CasePlanProvenance(flowUuid: $flowUuid, flowVersion: $flowVersion);
 		$insertion = new CasePlanInsertion(anchor: $anchor, settings: $normalised['settings'], actor: $uid, provenance: $provenance);
 		$this->insertPlan(insertion: $insertion, items: $normalised['items']);
 
@@ -234,9 +234,7 @@ class CasePlanService implements CasePlanServiceInterface {
 		$actor = $this->systemActor(app: $app);
 
 		return $this->ensurer()->ensure(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
+			anchor: new CaseAnchor(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId),
 			definition: $definition,
 			history: $history,
 			actor: $actor
@@ -759,7 +757,7 @@ class CasePlanService implements CasePlanServiceInterface {
 			$this->mechanics->machine->recordCreation(
 				item: $persisted,
 				cause: CaseItemAudit::CAUSE_IMPORT,
-				causeRef: $insertion->provenance['flowUuid'],
+				causeRef: $insertion->provenance->flowUuid,
 				actor: $insertion->actor
 			);
 
@@ -788,10 +786,10 @@ class CasePlanService implements CasePlanServiceInterface {
 			parentId: $parentId,
 			position: $position,
 			settings: $insertion->settings,
-			origin: ($insertion->origin ?? $this->mechanics->definitions->originOf(node: $node)),
+			origin: ($insertion->provenance->origin ?? $this->mechanics->definitions->originOf(node: $node)),
 			actor: $insertion->actor,
-			flowUuid: $insertion->provenance['flowUuid'],
-			flowVersion: $insertion->provenance['flowVersion']
+			flowUuid: $insertion->provenance->flowUuid,
+			flowVersion: $insertion->provenance->flowVersion
 		);
 	}//end rowFor()
 
@@ -811,7 +809,9 @@ class CasePlanService implements CasePlanServiceInterface {
 	private function adHocInsertion(string $objectUuid, CaseItem $first, CasePlanTree $tree, ?string $uid): CasePlanInsertion {
 		$anchor = new CaseAnchor(objectUuid: $objectUuid, registerId: $first->getRegisterId(), schemaId: $first->getSchemaId());
 
-		return new CasePlanInsertion(anchor: $anchor, settings: $tree->settings(), actor: $uid, origin: CaseItem::ORIGIN_ADHOC);
+		$provenance = new CasePlanProvenance(origin: CaseItem::ORIGIN_ADHOC);
+
+		return new CasePlanInsertion(anchor: $anchor, settings: $tree->settings(), actor: $uid, provenance: $provenance);
 	}//end adHocInsertion()
 
 	/**

@@ -6,6 +6,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Service\TenantDirectory;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroup;
@@ -43,8 +44,7 @@ class TenantLifecycleServiceTest extends TestCase {
 
 		$this->service = new TenantLifecycleService(
 			$this->organisationMapper,
-			$this->groupManager,
-			$this->userManager,
+			new TenantDirectory($this->groupManager, $this->userManager),
 			$this->logger
 		);
 	}

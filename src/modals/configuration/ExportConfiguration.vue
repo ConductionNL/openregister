@@ -27,12 +27,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
+			<CloseCancelButton label="Cancel" @click="closeModal" />
 			<NcButton
 				:disabled="loading || !isValid"
 				variant="primary"
@@ -88,8 +83,8 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Export from 'vue-material-design-icons/Export.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'ExportConfiguration',
@@ -100,7 +95,7 @@ export default {
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		// Icons
-		Cancel,
+		CloseCancelButton,
 		Export,
 	},
 

@@ -46,27 +46,36 @@ class ErasureRefusedException extends Exception {
 	private const ERROR = 'ERASURE_REFUSED';
 
 	/**
+	 * The status every refusal but an unknown preview answers with.
+	 *
+	 * @var int
+	 */
+	private const STATUS_CONFLICT = 409;
+
+	/**
 	 * Build a refusal.
 	 *
 	 * The sentence and the status code are kept where Exception keeps them —
 	 * the message and the code — so there is one copy of each.
 	 *
-	 * @param string               $rule       Machine-readable rule id, e.g. `erasure-not-approved`.
-	 * @param string               $reason     The sentence a person reads.
-	 * @param int                  $statusCode The HTTP status the caller should answer with.
-	 * @param array<string, mixed> $context    Anything else the caller needs to act.
-	 * @param Throwable|null       $previous   Previous exception.
+	 * A refusal answers 409: the request conflicts with the state the
+	 * erasure is in. The one refusal that answers otherwise is its own class,
+	 * {@see ErasurePreviewUnknownException}.
+	 *
+	 * @param string               $rule     Machine-readable rule id, e.g. `erasure-not-approved`.
+	 * @param string               $reason   The sentence a person reads.
+	 * @param array<string, mixed> $context  Anything else the caller needs to act.
+	 * @param Throwable|null       $previous Previous exception.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly string $rule,
 		string $reason,
-		int $statusCode = 409,
 		private readonly array $context = [],
 		?Throwable $previous = null,
 	) {
-		parent::__construct(message: $reason, code: $statusCode, previous: $previous);
+		parent::__construct(message: $reason, code: self::STATUS_CONFLICT, previous: $previous);
 	}//end __construct()
 
 	/**

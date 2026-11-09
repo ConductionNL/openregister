@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Connection\ConnectionReporter;
+use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCP\IAppConfig;
 
 /**
@@ -34,13 +34,13 @@ final class EdepotSettingsPlatform {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ConnectionReporter $connectionReporter Reports connection test outcomes to integriq's connection registry.
+	 * @param ConnectionReporterInterface $connectionReporter Reports connection test outcomes to integriq's connection registry.
 	 * @param IAppConfig         $appConfig          The app configuration.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
 	 */
 	public function __construct(
-		public readonly ConnectionReporter $connectionReporter,
+		public readonly ConnectionReporterInterface $connectionReporter,
 		public readonly IAppConfig $appConfig,
 	) {
 	}//end __construct()

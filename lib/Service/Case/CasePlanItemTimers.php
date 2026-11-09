@@ -40,6 +40,7 @@ use DateTimeInterface;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
 use Psr\Log\LoggerInterface;
@@ -108,8 +109,9 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 		$moment = DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable());
 		$deadlines = array_filter([FlowTimer::PURPOSE_DUE => $item->getDueAt(), FlowTimer::PURPOSE_EXPIRY => $item->getExpiresAt()]);
 		$armed = 0;
+		$act = new FlowTimerAct(actor: $actor, now: $moment);
 		foreach ($deadlines as $purpose => $deadline) {
-			if ($this->arm(item: $item, purpose: (string)$purpose, deadline: $deadline, actor: $actor, now: $moment) === true) {
+			if ($this->arm(item: $item, purpose: (string)$purpose, deadline: $deadline, act: $act) === true) {
 				$armed++;
 			}
 		}
@@ -166,7 +168,7 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 			return self::REARM_OVERDUE;
 		}
 
-		if ($this->arm(item: $item, purpose: FlowTimer::PURPOSE_EXPIRY, deadline: $expires, actor: $actor, now: $moment) === true) {
+		if ($this->arm(item: $item, purpose: FlowTimer::PURPOSE_EXPIRY, deadline: $expires, act: new FlowTimerAct(actor: $actor, now: $moment)) === true) {
 			return self::REARM_ARMED;
 		}
 
@@ -230,22 +232,23 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	 * @param CaseItem $item The item.
 	 * @param string $purpose `due` or `expiry`.
 	 * @param DateTimeInterface $deadline The moment.
-	 * @param string|null $actor The arming identity.
-	 * @param DateTimeImmutable $now The clock.
+	 * @param FlowTimerAct $act The arming identity and the clock.
 	 *
 	 * @return boolean True when armed.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	private function arm(CaseItem $item, string $purpose, DateTimeInterface $deadline, ?string $actor, DateTimeImmutable $now): bool {
-		$seconds = ($deadline->getTimestamp() - $now->getTimestamp());
+	private function arm(CaseItem $item, string $purpose, DateTimeInterface $deadline, FlowTimerAct $act): bool {
+		$seconds = ($deadline->getTimestamp() - $act->now->getTimestamp());
 		if ($seconds <= 0) {
 			$this->passedBeforeEntry(item: $item, purpose: $purpose);
 
 			return false;
 		}
 
-		return $this->submit(item: $item, config: $this->configFor(item: $item, purpose: $purpose, deadline: $deadline, seconds: $seconds), actor: $actor);
+		$config = $this->configFor(item: $item, purpose: $purpose, deadline: $deadline, seconds: $seconds);
+
+		return $this->submit(item: $item, config: $config, actor: $act->actor);
 	}//end arm()
 
 	/**

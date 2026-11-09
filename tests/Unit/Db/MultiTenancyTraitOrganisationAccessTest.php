@@ -284,7 +284,10 @@ class MultiTenancyTraitOrganisationAccessTest extends TestCase {
 		$host = new TenancyGuardHost('org-a');
 		$host->verify($entity);
 
-		$this->addToAssertionCount(1);
+		$entity->setOrganisation('org-b');
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(Response::HTTP_FORBIDDEN);
+		$host->verify($entity);
 	}//end testSameOrganisationWriteIsAllowed()
 
 	/**
@@ -303,7 +306,11 @@ class MultiTenancyTraitOrganisationAccessTest extends TestCase {
 		$host = new TenancyGuardHost('org-b');
 		$host->verify(new $entityClass());
 
-		$this->addToAssertionCount(1);
+		$owned = new $entityClass();
+		$owned->setOrganisation('org-a');
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(Response::HTTP_FORBIDDEN);
+		$host->verify($owned);
 	}//end testEntityWithoutAnOrganisationIsAllowed()
 
 	/**

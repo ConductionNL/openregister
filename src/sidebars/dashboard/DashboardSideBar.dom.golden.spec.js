@@ -102,10 +102,16 @@ function mockStub(name) {
 		inheritAttrs: false,
 		render() {
 			const attrs = Object.fromEntries(
-				Object.entries(this.$attrs).filter(
-					([key, value]) =>
-						!/^on[A-Z]/.test(key) && typeof value !== 'object',
-				),
+				Object.entries(this.$attrs)
+					.filter(
+						([key, value]) =>
+							!/^on[A-Z]/.test(key) && typeof value !== 'object',
+					)
+					// Function source differs when coverage instruments it.
+					.map(([key, value]) => [
+						key,
+						typeof value === 'function' ? '[function]' : value,
+					]),
 			)
 			return render(
 				`x-${name}`,

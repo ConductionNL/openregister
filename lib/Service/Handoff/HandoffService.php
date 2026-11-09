@@ -132,14 +132,38 @@ class HandoffService implements HandoffServiceInterface {
 	 *   (Requirement: Handoff REST surface)
 	 */
 	public function listAvailability(string $register, string $schema, string $id): array {
+		return $this->availabilityOf(source: $this->loadSource(register: $register, schema: $schema, id: $id));
+	}//end listAvailability()
+
+	/**
+	 * Load a source object under the caller's RBAC (read guard, ADR-005).
+	 *
+	 * @param string $register The register slug or id.
+	 * @param string $schema   The schema slug or id.
+	 * @param string $id       The object id/uuid.
+	 *
+	 * @return ObjectEntity The source object.
+	 *
+	 * @throws HandoffException When the object does not exist.
+	 * @throws \Exception       When the object cannot be read by the caller.
+	 */
+	private function loadSource(string $register, string $schema, string $id): ObjectEntity {
 		$source = WriteCause::asLookup(fn () => $this->objects->objectService->find(id: $id, register: $register, schema: $schema));
 		if ($source === null) {
-			throw new HandoffException(
-				errorCode: HandoffException::NOT_DECLARED,
-				message: 'Object not found.'
-			);
+			throw new HandoffException(errorCode: HandoffException::NOT_DECLARED, message: 'Object not found.');
 		}
 
+		return $source;
+	}//end loadSource()
+
+	/**
+	 * One availability record per handoff the source's schema declares.
+	 *
+	 * @param ObjectEntity $source The source object.
+	 *
+	 * @return array<int, array<string, mixed>> One availability record per declared handoff.
+	 */
+	private function availabilityOf(ObjectEntity $source): array {
 		$sourceSchema = $this->objects->schemaMapper->find(id: (string)$source->getSchema());
 		$entries = $this->declaredHandoffs(schema: $sourceSchema);
 
@@ -152,48 +176,49 @@ class HandoffService implements HandoffServiceInterface {
 		foreach ($entries as $entry) {
 			$handoffId = (string)($entry['id'] ?? '');
 			$kindUri = (string)($entry['targetSemanticType'] ?? '');
-			$mode = (string)($entry['whenUnavailable'] ?? 'hide');
-
-			if (isset($parked[$handoffId]) === true) {
-				$availability[] = [
-					'id' => $handoffId,
-					'targetSemanticType' => $kindUri,
-					'trigger' => (string)($entry['trigger'] ?? 'manual'),
-					'whenUnavailable' => $mode,
-					'state' => 'queued',
-					'queueEntry' => $parked[$handoffId]->jsonSerialize(),
-				];
-				continue;
-			}
-
-			$provider = $this->resolveProvider(kindUri: $kindUri, consumingRegisterId: (int)$source->getRegister());
-			if ($provider === null) {
-				$availability[] = [
-					'id' => $handoffId,
-					'targetSemanticType' => $kindUri,
-					'trigger' => (string)($entry['trigger'] ?? 'manual'),
-					'whenUnavailable' => $mode,
-					'state' => 'unavailable',
-					'reason' => HandoffException::PROVIDER_UNAVAILABLE,
-				];
-				continue;
-			}
-
-			$availability[] = [
+			$record = [
 				'id' => $handoffId,
 				'targetSemanticType' => $kindUri,
 				'trigger' => (string)($entry['trigger'] ?? 'manual'),
-				'whenUnavailable' => $mode,
-				'state' => 'available',
-				'provider' => [
-					'schema' => ($provider->getSlug() ?? (string)$provider->getId()),
-					'title' => $provider->getTitle(),
-				],
+				'whenUnavailable' => (string)($entry['whenUnavailable'] ?? 'hide'),
 			];
-		}//end foreach
+
+			if (isset($parked[$handoffId]) === true) {
+				$availability[] = $record + ['state' => 'queued', 'queueEntry' => $parked[$handoffId]->jsonSerialize()];
+				continue;
+			}
+
+			$availability[] = $record + $this->providerState(kindUri: $kindUri, source: $source);
+		}
 
 		return $availability;
-	}//end listAvailability()
+	}//end availabilityOf()
+
+	/**
+	 * The `available` / `unavailable` part of one availability record.
+	 *
+	 * @param string       $kindUri The target kind URI.
+	 * @param ObjectEntity $source  The source object (its register biases the provider tie-break).
+	 *
+	 * @return array<string, mixed> The state and either the provider or the unavailability reason.
+	 */
+	private function providerState(string $kindUri, ObjectEntity $source): array {
+		$provider = $this->resolveProvider(kindUri: $kindUri, consumingRegisterId: (int)$source->getRegister());
+		if ($provider === null) {
+			return [
+				'state' => 'unavailable',
+				'reason' => HandoffException::PROVIDER_UNAVAILABLE,
+			];
+		}
+
+		return [
+			'state' => 'available',
+			'provider' => [
+				'schema' => ($provider->getSlug() ?? (string)$provider->getId()),
+				'title' => $provider->getTitle(),
+			],
+		];
+	}//end providerState()
 
 	/**
 	 * Execute a declared handoff on a source object (or park it, queue mode).
@@ -230,61 +255,58 @@ class HandoffService implements HandoffServiceInterface {
 		bool $deferred = false,
 		?string $correlationId = null,
 	): array {
-		// 1. Load the source under the caller's RBAC (read) — 404/403 surface here.
-		$source = WriteCause::asLookup(fn () => $this->objects->objectService->find(id: $id, register: $register, schema: $schema));
-		if ($source === null) {
-			throw new HandoffException(errorCode: HandoffException::NOT_DECLARED, message: 'Object not found.');
-		}
+		return $this->run(
+			request: new HandoffRequest(
+				register: $register,
+				schema: $schema,
+				id: $id,
+				handoffId: $handoffId,
+				deferred: $deferred,
+				correlationId: ($correlationId ?? Uuid::v4()->toRfc4122())
+			)
+		);
+	}//end execute()
 
-		$sourceSchema = $this->objects->schemaMapper->find(id: (string)$source->getSchema());
-
-		// 2. The declared entry — `handoff-not-declared` when absent.
-		$entry = $this->declaredHandoff(schema: $sourceSchema, handoffId: $handoffId);
-		if ($entry === null) {
-			throw new HandoffException(
-				errorCode: HandoffException::NOT_DECLARED,
-				message: sprintf(
-					'Schema "%s" declares no handoff with id "%s".',
-					(string)($sourceSchema->getSlug() ?? $sourceSchema->getId()),
-					$handoffId
-				)
-			);
-		}
+	/**
+	 * Run one handoff request: the flow documented on {@see self::execute()}.
+	 *
+	 * @param HandoffRequest $request The request.
+	 *
+	 * @return array<string, mixed> The executed or parked result.
+	 *
+	 * @throws HandoffException For not-declared / provider-unavailable (hide mode).
+	 * @throws NotAuthorizedException When the caller lacks write-on-source or create-on-target.
+	 * @throws \Exception Underlying write-path errors (surfaced after rollback).
+	 */
+	private function run(HandoffRequest $request): array {
+		// 1-2. Load the source under the caller's RBAC (read) and read the declared entry.
+		$plan = $this->plan(request: $request);
 
 		// Write permission on the source, as the calling user (never escalate).
 		$this->objects->permissionHandler->checkPermission(
-			schema: $sourceSchema,
+			schema: $plan->sourceSchema,
 			action: 'update',
-			objectOwner: $source->getOwner(),
-			object: $source
+			objectOwner: $plan->source->getOwner(),
+			object: $plan->source
 		);
 
 		// 3. Resolve the provider (complete-binding filter on the resolver result).
-		$kindUri = (string)($entry['targetSemanticType'] ?? '');
-		$provider = $this->resolveProvider(kindUri: $kindUri, consumingRegisterId: (int)$source->getRegister());
-
+		$provider = $this->resolveProvider(kindUri: $plan->kindUri(), consumingRegisterId: (int)$plan->source->getRegister());
 		if ($provider === null) {
-			return $this->degrade(entry: $entry, source: $source, kindUri: $kindUri, handoffId: $handoffId);
+			return $this->degrade(plan: $plan);
 		}
 
 		$targetRegister = $this->providers->semanticTypeResolver->findRegisterForSchema(schema: $provider);
 		if ($targetRegister === null) {
 			// An orphaned provider schema cannot receive objects — same degradation path.
-			return $this->degrade(entry: $entry, source: $source, kindUri: $kindUri, handoffId: $handoffId);
+			return $this->degrade(plan: $plan);
 		}
 
 		// 4. RBAC pre-check: create on the resolved target schema, as the caller — typed 403 before any write.
 		$this->objects->permissionHandler->checkPermission(schema: $provider, action: 'create');
 
 		// 5. Evaluate the mapping and translate contract fields → provider properties via the binding.
-		$correlationId = ($correlationId ?? Uuid::v4()->toRfc4122());
-		$provenance = $this->buildProvenance(source: $source, sourceSchema: $sourceSchema);
-		$contractData = $this->providers->mappingEvaluator->evaluate(
-			mapping: (array)($entry['mapping'] ?? []),
-			sourceData: $source->getObject(),
-			provenance: $provenance
-		);
-		$targetData = $this->translateThroughBinding(provider: $provider, kindUri: $kindUri, contractData: $contractData);
+		$targetData = $this->targetData(plan: $plan, provider: $provider);
 
 		// 6. All-or-nothing execution. A single wrapping DB transaction is NOT
 		// possible here: ObjectService::saveObject issues best-effort probe
@@ -306,77 +328,139 @@ class HandoffService implements HandoffServiceInterface {
 
 		$created = new HandoffTarget(object: $target, register: $targetRegister, schema: $provider);
 
-		$sourceSnapshot = $source->getObject();
+		$sourceSnapshot = $plan->source->getObject();
 		try {
-			$this->applyOnSuccess(entry: $entry, source: $source, register: $register, schema: $schema);
+			$this->applyOnSuccess(plan: $plan);
 		} catch (\Throwable $e) {
 			$this->compensate(target: $created);
 			throw $e;
 		}
 
-		$this->ledger->db->beginTransaction();
-		try {
-			$this->writeProvenanceRelations(
-				source: $source,
-				target: $created,
-				handoffId: $handoffId,
-				sourceSchema: $sourceSchema
-			);
-			$this->writeAuditRows(
-				source: $source,
-				target: $created,
-				facts: new HandoffAuditFacts(
-					kindUri: $kindUri,
-					handoffId: $handoffId,
-					correlationId: $correlationId,
-					deferred: $deferred
-				)
-			);
-
-			$this->ledger->db->commit();
-		} catch (\Throwable $e) {
-			$this->ledger->db->rollBack();
-			$this->compensate(
-				target: $created,
-				restore: new HandoffSourceRestore(
-					source: $source,
-					snapshot: $sourceSnapshot,
-					registerRef: $register,
-					schemaRef: $schema
-				)
-			);
-			throw $e;
-		}//end try
+		$this->recordProvenance(plan: $plan, target: $created, sourceSnapshot: $sourceSnapshot);
 
 		// 7. Post-commit: dispatch the ADR-041 event (a throwing listener can never roll back the handoff).
-		$this->requesters->eventDispatcher->dispatchTyped(
-			new HandoffExecutedEvent(
-				sourceApp: (string)($sourceSchema->getApplication() ?? ''),
-				sourceRegister: (int)$source->getRegister(),
-				sourceSchema: (int)$source->getSchema(),
-				sourceObjectUuid: (string)$source->getUuid(),
-				subjectLabel: $source->getName(),
-				targetSemanticType: $kindUri,
-				targetRegister: (int)$target->getRegister(),
-				targetSchema: (int)$target->getSchema(),
-				targetObjectUuid: (string)$target->getUuid(),
-				handoffId: $handoffId,
-				correlationId: $correlationId,
-				deferred: $deferred
-			)
-		);
+		$this->dispatchExecuted(plan: $plan, target: $target);
 
 		return [
 			'status' => 'executed',
-			'correlationId' => $correlationId,
+			'correlationId' => $request->correlationId,
 			'target' => [
 				'register' => (int)$target->getRegister(),
 				'schema' => (int)$target->getSchema(),
 				'uuid' => (string)$target->getUuid(),
 			],
 		];
+	}//end run()
 
-	}//end execute()
+	/**
+	 * Load the source and its schema and read the declared entry the request names.
+	 *
+	 * @param HandoffRequest $request The request.
+	 *
+	 * @return HandoffPlan The request with its source, source schema and declared entry.
+	 *
+	 * @throws HandoffException When the object does not exist or declares no such handoff.
+	 */
+	private function plan(HandoffRequest $request): HandoffPlan {
+		$source = $this->loadSource(register: $request->register, schema: $request->schema, id: $request->id);
+		$sourceSchema = $this->objects->schemaMapper->find(id: (string)$source->getSchema());
+
+		// The declared entry — `handoff-not-declared` when absent.
+		$entry = $this->declaredHandoff(schema: $sourceSchema, handoffId: $request->handoffId);
+		if ($entry === null) {
+			throw new HandoffException(
+				errorCode: HandoffException::NOT_DECLARED,
+				message: sprintf(
+					'Schema "%s" declares no handoff with id "%s".',
+					(string)($sourceSchema->getSlug() ?? $sourceSchema->getId()),
+					$request->handoffId
+				)
+			);
+		}
+
+		return new HandoffPlan(request: $request, source: $source, sourceSchema: $sourceSchema, entry: $entry);
+	}//end plan()
+
+	/**
+	 * Evaluate the declared mapping and translate it onto the provider's properties.
+	 *
+	 * @param HandoffPlan $plan     The plan.
+	 * @param Schema      $provider The resolved provider schema.
+	 *
+	 * @return array<string, mixed> The target object data.
+	 */
+	private function targetData(HandoffPlan $plan, Schema $provider): array {
+		$provenance = $this->buildProvenance(source: $plan->source, sourceSchema: $plan->sourceSchema);
+		$contractData = $this->providers->mappingEvaluator->evaluate(
+			mapping: (array)($plan->entry['mapping'] ?? []),
+			sourceData: $plan->source->getObject(),
+			provenance: $provenance
+		);
+
+		return $this->translateThroughBinding(provider: $provider, kindUri: $plan->kindUri(), contractData: $contractData);
+	}//end targetData()
+
+	/**
+	 * Write the provenance relations and audit rows in one DB transaction;
+	 * on failure roll back, remove the target and restore the source.
+	 *
+	 * @param HandoffPlan          $plan           The plan.
+	 * @param HandoffTarget        $target         The created target object.
+	 * @param array<string, mixed> $sourceSnapshot The source data before `onSuccess.set`.
+	 *
+	 * @return void
+	 *
+	 * @throws \Throwable The original failure, after rollback and compensation.
+	 */
+	private function recordProvenance(HandoffPlan $plan, HandoffTarget $target, array $sourceSnapshot): void {
+		$this->ledger->db->beginTransaction();
+		try {
+			$this->writeProvenanceRelations(plan: $plan, target: $target);
+			$this->writeAuditRows(plan: $plan, target: $target);
+
+			$this->ledger->db->commit();
+		} catch (\Throwable $e) {
+			$this->ledger->db->rollBack();
+			$this->compensate(
+				target: $target,
+				restore: new HandoffSourceRestore(
+					source: $plan->source,
+					snapshot: $sourceSnapshot,
+					registerRef: $plan->request->register,
+					schemaRef: $plan->request->schema
+				)
+			);
+			throw $e;
+		}//end try
+	}//end recordProvenance()
+
+	/**
+	 * Dispatch the ADR-041 handoff-executed event.
+	 *
+	 * @param HandoffPlan  $plan   The plan.
+	 * @param ObjectEntity $target The created target object.
+	 *
+	 * @return void
+	 */
+	private function dispatchExecuted(HandoffPlan $plan, ObjectEntity $target): void {
+		$source = $plan->source;
+		$this->requesters->eventDispatcher->dispatchTyped(
+			new HandoffExecutedEvent(
+				sourceApp: (string)($plan->sourceSchema->getApplication() ?? ''),
+				sourceRegister: (int)$source->getRegister(),
+				sourceSchema: (int)$source->getSchema(),
+				sourceObjectUuid: (string)$source->getUuid(),
+				subjectLabel: $source->getName(),
+				targetSemanticType: $plan->kindUri(),
+				targetRegister: (int)$target->getRegister(),
+				targetSchema: (int)$target->getSchema(),
+				targetObjectUuid: (string)$target->getUuid(),
+				handoffId: $plan->request->handoffId,
+				correlationId: $plan->request->correlationId,
+				deferred: $plan->request->deferred
+			)
+		);
+	}//end dispatchExecuted()
 
 	/**
 	 * Drain parked queue entries whose kind now resolves to a provider.
@@ -395,14 +479,7 @@ class HandoffService implements HandoffServiceInterface {
 	 *   (Scenario: No provider installed, queue mode)
 	 */
 	public function drainParked(?string $kindUri = null): array {
-		$entries = [];
-		if ($kindUri !== null) {
-			$entries = $this->ledger->queueMapper->findParkedByKind(kindUri: $kindUri);
-		}
-
-		if ($kindUri === null) {
-			$entries = $this->ledger->queueMapper->findParked();
-		}
+		$entries = $this->parkedEntries(kindUri: $kindUri);
 
 		$summary = [
 			'drained' => 0,
@@ -411,23 +488,47 @@ class HandoffService implements HandoffServiceInterface {
 		];
 
 		foreach ($entries as $entry) {
-			// Cheap pre-check: still no provider → leave parked.
-			$this->providers->semanticTypeResolver->clearCache();
-			if ($this->resolveProvider(kindUri: $entry->getTargetKind(), consumingRegisterId: $entry->getSourceRegister()) === null) {
-				$summary['skipped']++;
-				continue;
-			}
-
-			if ($this->drainEntry(entry: $entry) === true) {
-				$summary['drained']++;
-				continue;
-			}
-
-			$summary['failed']++;
+			$summary[$this->drainOutcome(entry: $entry)]++;
 		}
 
 		return $summary;
 	}//end drainParked()
+
+	/**
+	 * The parked queue entries to drain.
+	 *
+	 * @param string|null $kindUri Only entries parked for this kind (null = all parked kinds).
+	 *
+	 * @return HandoffQueueEntry[] The parked entries.
+	 */
+	private function parkedEntries(?string $kindUri): array {
+		if ($kindUri !== null) {
+			return $this->ledger->queueMapper->findParkedByKind(kindUri: $kindUri);
+		}
+
+		return $this->ledger->queueMapper->findParked();
+	}//end parkedEntries()
+
+	/**
+	 * Drain one parked entry and name its summary bucket.
+	 *
+	 * @param HandoffQueueEntry $entry The parked entry.
+	 *
+	 * @return string `skipped` (still no provider), `drained` or `failed`.
+	 */
+	private function drainOutcome(HandoffQueueEntry $entry): string {
+		// Cheap pre-check: still no provider → leave parked.
+		$this->providers->semanticTypeResolver->clearCache();
+		if ($this->resolveProvider(kindUri: $entry->getTargetKind(), consumingRegisterId: $entry->getSourceRegister()) === null) {
+			return 'skipped';
+		}
+
+		if ($this->drainEntry(entry: $entry) === true) {
+			return 'drained';
+		}
+
+		return 'failed';
+	}//end drainOutcome()
 
 	/**
 	 * Drain a single parked entry as its recorded requesting user.
@@ -495,10 +596,7 @@ class HandoffService implements HandoffServiceInterface {
 	 * provider-unavailable error (409-class, never 5xx); `queue` → park a
 	 * durable queue entry + audit + 202-style parked result.
 	 *
-	 * @param array<string, mixed> $entry The declared handoff entry.
-	 * @param ObjectEntity $source The source object.
-	 * @param string $kindUri The target kind URI.
-	 * @param string $handoffId The handoff entry id.
+	 * @param HandoffPlan $plan The plan whose kind has no provider.
 	 *
 	 * @return array<string, mixed> The parked result (queue mode only).
 	 *
@@ -507,7 +605,11 @@ class HandoffService implements HandoffServiceInterface {
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Scenario: No provider installed, hide mode)
 	 */
-	private function degrade(array $entry, ObjectEntity $source, string $kindUri, string $handoffId): array {
+	private function degrade(HandoffPlan $plan): array {
+		$entry = $plan->entry;
+		$source = $plan->source;
+		$kindUri = $plan->kindUri();
+		$handoffId = $plan->request->handoffId;
 		$mode = (string)($entry['whenUnavailable'] ?? 'hide');
 		if ($mode !== 'queue') {
 			throw new HandoffException(
@@ -582,23 +684,34 @@ class HandoffService implements HandoffServiceInterface {
 			return null;
 		}
 
-		$configuration = ($schema->getConfiguration() ?? []);
-		$binding = ($configuration['handoffContract'] ?? null);
-		if (is_array($binding) === false) {
-			return null;
-		}
-
-		$isComplete = HandoffContractBindingValidator::isCompleteBinding(
-			kindUri: $kindUri,
-			binding: $binding,
-			properties: ($schema->getProperties() ?? [])
-		);
-		if ($isComplete === false) {
+		if ($this->hasCompleteBinding(schema: $schema, kindUri: $kindUri) === false) {
 			return null;
 		}
 
 		return $schema;
 	}//end resolveProvider()
+
+	/**
+	 * Whether a schema carries a complete `handoffContract` binding for a kind.
+	 *
+	 * @param Schema $schema  The candidate provider schema.
+	 * @param string $kindUri The canonical kind URI.
+	 *
+	 * @return bool True when the binding is an array and complete.
+	 */
+	private function hasCompleteBinding(Schema $schema, string $kindUri): bool {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$binding = ($configuration['handoffContract'] ?? null);
+		if (is_array($binding) === false) {
+			return false;
+		}
+
+		return HandoffContractBindingValidator::isCompleteBinding(
+			kindUri: $kindUri,
+			binding: $binding,
+			properties: ($schema->getProperties() ?? [])
+		);
+	}//end hasCompleteBinding()
 
 	/**
 	 * Translate evaluated contract-field values to provider properties
@@ -725,28 +838,25 @@ class HandoffService implements HandoffServiceInterface {
 	 * without its handed-off status while the target exists — or vice versa —
 	 * is partial state the contract forbids.
 	 *
-	 * @param array<string, mixed> $entry The declared handoff entry.
-	 * @param ObjectEntity $source The source object.
-	 * @param string $register The source register reference.
-	 * @param string $schema The source schema reference.
+	 * @param HandoffPlan $plan The plan (declared entry, source and its register/schema references).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Scenario: Successful request-to-case handoff)
 	 */
-	private function applyOnSuccess(array $entry, ObjectEntity $source, string $register, string $schema): void {
-		$set = (array)(($entry['onSuccess'] ?? [])['set'] ?? []);
+	private function applyOnSuccess(HandoffPlan $plan): void {
+		$set = (array)(($plan->entry['onSuccess'] ?? [])['set'] ?? []);
 		if ($set === []) {
 			return;
 		}
 
-		$data = array_merge($source->getObject(), $set);
+		$data = array_merge($plan->source->getObject(), $set);
 		$this->objects->objectService->saveObject(
 			object: $data,
-			register: $register,
-			schema: $schema,
-			uuid: (string)$source->getUuid()
+			register: $plan->request->register,
+			schema: $plan->request->schema,
+			uuid: (string)$plan->source->getUuid()
 		);
 
 	}//end applyOnSuccess()
@@ -762,22 +872,18 @@ class HandoffService implements HandoffServiceInterface {
 	 * (`findAcrossAllMagicTables` is prohibitively slow inside the handoff
 	 * transaction on large instances).
 	 *
-	 * @param ObjectEntity $source The source object.
+	 * @param HandoffPlan $plan The plan (source, source schema as magic-table context, handoff id).
 	 * @param HandoffTarget $target The created target object, in its magic-table context.
-	 * @param string $handoffId The handoff entry id.
-	 * @param Schema $sourceSchema The source schema (magic-table context).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Scenario: Successful request-to-case handoff)
 	 */
-	private function writeProvenanceRelations(
-		ObjectEntity $source,
-		HandoffTarget $target,
-		string $handoffId,
-		Schema $sourceSchema,
-	): void {
+	private function writeProvenanceRelations(HandoffPlan $plan, HandoffTarget $target): void {
+		$source = $plan->source;
+		$sourceSchema = $plan->sourceSchema;
+		$handoffId = $plan->request->handoffId;
 		$sourceRegister = $this->providers->semanticTypeResolver->findRegisterForSchema(schema: $sourceSchema);
 
 		// Fresh raw source row: applyOnSuccess() may have rewritten it (and
@@ -814,29 +920,25 @@ class HandoffService implements HandoffServiceInterface {
 	 * One immutable audit row per side (actor, kind, handoff id,
 	 * correlationId, resolved schema, deferred flag).
 	 *
-	 * @param ObjectEntity $source The source object.
+	 * @param HandoffPlan $plan The plan (source, kind, handoff id, correlation id, deferred flag).
 	 * @param HandoffTarget $target The created target object; its schema is the resolved provider.
-	 * @param HandoffAuditFacts $facts The kind, handoff id, correlation id and deferred flag.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Scenario: Successful request-to-case handoff)
 	 */
-	private function writeAuditRows(
-		ObjectEntity $source,
-		HandoffTarget $target,
-		HandoffAuditFacts $facts,
-	): void {
+	private function writeAuditRows(HandoffPlan $plan, HandoffTarget $target): void {
+		$source = $plan->source;
 		$context = [
-			'handoffId' => $facts->handoffId,
-			'targetKind' => $facts->kindUri,
-			'correlationId' => $facts->correlationId,
+			'handoffId' => $plan->request->handoffId,
+			'targetKind' => $plan->kindUri(),
+			'correlationId' => $plan->request->correlationId,
 			'resolvedSchema' => ($target->schema->getSlug() ?? (string)$target->schema->getId()),
-			'deferred' => $facts->deferred,
+			'deferred' => $plan->request->deferred,
 			'drainedAt' => null,
 		];
-		if ($facts->deferred === true) {
+		if ($plan->request->deferred === true) {
 			$context['drainedAt'] = (new DateTime())->format('c');
 		}
 

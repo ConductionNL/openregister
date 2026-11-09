@@ -102,16 +102,16 @@ final class RevertControllerA24GoldenTest extends TestCase {
 	public function testTheRevertPointPrecedence(): void {
 		$controller = $this->controller(params: ['datetime' => '2024-01-01T00:00:00', 'auditTrailId' => 7, 'version' => '1.0.0']);
 		$this->handler->expects($this->once())->method('revert')
-			->with('r', 's', 'u-1', $this->isInstanceOf(DateTime::class), false)
+			->with('r', 's', 'u-1', $this->callback(static fn (\OCA\OpenRegister\Service\Object\RevertPoint $point): bool => $point->until instanceof DateTime && $point->overwriteVersion === false))
 			->willReturn($this->reverted());
 		$controller->revert('r', 's', 'u-1');
 
 		$controller = $this->controller(params: ['auditTrailId' => 7, 'version' => '1.0.0', 'overwriteVersion' => true]);
-		$this->handler->expects($this->once())->method('revert')->with('r', 's', 'u-1', 7, true)->willReturn($this->reverted());
+		$this->handler->expects($this->once())->method('revert')->with('r', 's', 'u-1', $this->equalTo(new \OCA\OpenRegister\Service\Object\RevertPoint(7, true)))->willReturn($this->reverted());
 		$controller->revert('r', 's', 'u-1');
 
 		$controller = $this->controller(params: ['version' => '1.0.0']);
-		$this->handler->expects($this->once())->method('revert')->with('r', 's', 'u-1', '1.0.0', false)->willReturn($this->reverted());
+		$this->handler->expects($this->once())->method('revert')->with('r', 's', 'u-1', $this->equalTo(new \OCA\OpenRegister\Service\Object\RevertPoint('1.0.0', false)))->willReturn($this->reverted());
 		$response = $controller->revert('r', 's', 'u-1');
 
 		$this->assertSame([200, $this->reverted()->jsonSerialize()], [$response->getStatus(), $response->getData()]);

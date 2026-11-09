@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ContentReportMapperInterface: what callers outside the Db component use of ContentReportMapper.
+ * ContentReportMapperInterface: what callers outside the component use of ContentReportMapper.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -9,7 +9,7 @@
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -25,10 +25,10 @@ namespace OCA\OpenRegister\Db;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
- * The methods of ContentReportMapper that callers outside the Db component use.
+ * The content report lookups and updates the content report endpoints use.
  *
- * Callers type against this interface and resolve it from the container; the
- * registrar binds it to ContentReportMapper. Guarded by C04InterfaceBindingsTest.
+ * Declares only what callers outside the component use; the rest of the
+ * class stays its own.
  */
 interface ContentReportMapperInterface {
 

@@ -29,7 +29,7 @@ use DateTime;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SearchTrailPageLinks;
 use OCA\OpenRegister\Db\SearchTrail;
-use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\SearchTrailMapperInterface;
 use OCA\OpenRegister\Service\SearchTrailServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -37,6 +37,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Controller\Support\SearchTrailControllerServices;
 
 /**
  * Class SearchTrailController
@@ -86,24 +87,50 @@ class SearchTrailController extends Controller {
 	];
 
 	/**
+	 * The search trail service
+	 *
+	 * @var SearchTrailServiceInterface
+	 */
+	private readonly SearchTrailServiceInterface $searchTrailService;
+
+	/**
+	 * Mapper the admin clear-all path deletes through
+	 *
+	 * @var SearchTrailMapperInterface
+	 */
+	private readonly SearchTrailMapperInterface $searchTrailMapper;
+
+	/**
+	 * Active user session for caller identity
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin / role checks
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor for SearchTrailController
 	 *
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param SearchTrailServiceInterface $searchTrailService The search trail service
-	 * @param SearchTrailMapper $searchTrailMapper Mapper the admin clear-all path deletes through
-	 * @param IUserSession $userSession Active user session for caller identity
-	 * @param IGroupManager $groupManager Group manager for admin / role checks
+	 * @param SearchTrailControllerServices $services The services, bundled.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SearchTrailServiceInterface $searchTrailService,
-		private readonly SearchTrailMapper $searchTrailMapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		SearchTrailControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->searchTrailService = $services->searchTrailService;
+		$this->searchTrailMapper = $services->searchTrailMapper;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
 	}//end __construct()
 
 	/**
@@ -333,11 +360,8 @@ class SearchTrailController extends Controller {
 	 * It calculates the number of pages, sets the appropriate offset and page values, and returns the paginated results
 	 * along with metadata such as total items, current page, total pages, limit, and offset.
 	 *
-	 * @param array $results The array of objects to paginate.
-	 * @param int|null $total The total number of items (before pagination). Defaults to 0.
-	 * @param int|null $limit The number of items per page. Defaults to 20.
-	 * @param int|null $offset The offset of items. Defaults to 0.
-	 * @param int|null $page The current page number. Defaults to 1.
+	 * @param array        $results The array of objects to paginate.
+	 * @param ResultWindow $window  The total and the page position of the results.
 	 *
 	 * @return (array|float|int|null|string)[]
 	 *
@@ -361,8 +385,7 @@ class SearchTrailController extends Controller {
 	 * @spec exclude Private helper: shared pagination-envelope builder; the search-trail analytics API is owned by
 	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
 	 */
-	private function paginate(array $results, ?int $total = 0, ?int $limit = 20, ?int $offset = 0, ?int $page = 1): array {
-		$window = new ResultWindow(total: $total, limit: $limit, offset: $offset, page: $page);
+	private function paginate(array $results, ResultWindow $window): array {
 		$envelope = $window->over(results: $results);
 		$links = new SearchTrailPageLinks(currentUrl: $this->request->getRequestUri());
 
@@ -381,10 +404,12 @@ class SearchTrailController extends Controller {
 	private function statsPage(array $items, mixed $total, array $query): array {
 		return $this->paginate(
 			results: $items,
-			total: $total,
-			limit: $query['statsLimit'],
-			offset: $query['offset'] ?? 0,
-			page: $query['page'] ?? 1
+			window: new ResultWindow(
+				total: $total,
+				limit: $query['statsLimit'],
+				offset: $query['offset'] ?? 0,
+				page: $query['page'] ?? 1
+			)
 		);
 	}//end statsPage()
 
@@ -437,10 +462,12 @@ class SearchTrailController extends Controller {
 
 		return $this->paginate(
 			results: $serviceResult['results'] ?? [],
-			total: $serviceResult['total'] ?? 0,
-			limit: $serviceResult['limit'] ?? 20,
-			offset: $serviceResult['offset'] ?? 0,
-			page: (int)($serviceResult['page'] ?? 1)
+			window: new ResultWindow(
+				total: $serviceResult['total'] ?? 0,
+				limit: $serviceResult['limit'] ?? 20,
+				offset: $serviceResult['offset'] ?? 0,
+				page: (int)($serviceResult['page'] ?? 1)
+			)
 		);
 	}//end indexPage()
 

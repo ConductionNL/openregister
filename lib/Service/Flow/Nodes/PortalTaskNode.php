@@ -113,24 +113,58 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 	private readonly PortalTaskConfig $config;
 
 	/**
+	 * Creates and reads the node's task.
+	 *
+	 * @var FlowTaskBridge
+	 */
+	private readonly FlowTaskBridge $bridge;
+
+	/**
+	 * Resolves the party role against the case.
+	 *
+	 * @var PortalPartyResolver
+	 */
+	private readonly PortalPartyResolver $parties;
+
+	/**
+	 * Records the ask for the portal seam.
+	 *
+	 * @var PortalTaskDeliveryService
+	 */
+	private readonly PortalTaskDeliveryService $delivery;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Resolves the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowTaskBridge $bridge Creates and reads the node's task.
-	 * @param PortalPartyResolver $parties Resolves the party role against the case.
-	 * @param PortalTaskDeliveryService $delivery Records the ask for the portal seam.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param PortalTaskServices   $services     The task bridge, party resolver and delivery seam.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
 	 */
 	public function __construct(
-		private readonly FlowTaskBridge $bridge,
-		private readonly PortalPartyResolver $parties,
-		private readonly PortalTaskDeliveryService $delivery,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		PortalTaskServices $services,
+		FlowNodePresentation $presentation,
 	) {
-		$this->config = new PortalTaskConfig(l10n: $l10n);
+		$this->bridge   = $services->bridge;
+		$this->parties  = $services->parties;
+		$this->delivery = $services->delivery;
+		$this->l10n     = $presentation->l10n;
+		$this->urls     = $presentation->urls;
+		$this->config   = new PortalTaskConfig(l10n: $this->l10n);
 
 	}//end __construct()
 
@@ -283,25 +317,10 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 			throw $this->suspension(config: $config, items: $items);
 		}
 
-		$task = $this->bridge->taskOrNull(uuid: $taskUuid);
-		if ($task === null) {
-			throw new RuntimeException(sprintf('Task %s, which this step was waiting on, no longer exists.', $taskUuid));
-		}
-
-		if ($task->isInTerminalState() === false) {
-			// A heartbeat wake, a reminder, a nudge: none is an answer. Suspend
-			// again and do NOT touch the slot: askedAt stays what it was.
-			throw $this->suspension(config: $config, items: $items);
-		}
+		$task = $this->awaitedTask(round: $round, taskUuid: $taskUuid);
 
 		if ($resume->get(key: PortalTaskConfig::SLOT_PASSED_AT, default: null) === null) {
-			// A terminal read with no signal in hand means the completion's
-			// wake never arrived — refused or lost — and the heartbeat is what
-			// recovered it. Recorded before the outcome is applied, which is
-			// identical on both paths; the user-task node makes the same call.
-			if (array_key_exists(FlowRunServiceInterface::SIGNAL_CONTEXT_KEY, $context) === false) {
-				$this->bridge->recordHeartbeatRecovery(task: $task);
-			}
+			$this->recordRecoveryUnlessSignalled(task: $task, context: $context);
 
 			// The first pass over a terminal task: the answer travels on. Marked
 			// ONCE, so the next firing of this node in this run is a re-entry.
@@ -311,17 +330,7 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 		}
 
 		// Re-entry: the graph routed back into this node after it continued.
-		$reason = $this->config->reasonFrom(config: $config, items: $items);
-		if ($reason === '') {
-			throw new RuntimeException(
-				sprintf(
-					'openregister.portal-task re-entered after task %s ended, but the items carry no reason under "%s"; '
-					. 'a party is not asked the same thing twice without an explanation.',
-					$taskUuid,
-					$this->config->reasonField(config: $config)
-				)
-			);
-		}
+		$reason = $this->reasonForReAsk(round: $round, taskUuid: $taskUuid);
 
 		$cycle = ((int)$resume->get(key: PortalTaskConfig::SLOT_CYCLE, default: 1) + 1);
 		$round = $round->inCycle(cycle: $cycle, previousTaskUuid: $taskUuid)->because(reason: $reason);
@@ -329,6 +338,84 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 
 		throw $this->suspension(config: $config, items: $items);
 	}//end execute()
+
+	/**
+	 * The task this step is waiting on, once it is terminal.
+	 *
+	 * @param PortalTaskRound $round    The ask: its items and configuration.
+	 * @param string          $taskUuid The task held in this node's slot.
+	 *
+	 * @return Task The terminal task.
+	 *
+	 * @throws RuntimeException When the task no longer exists.
+	 * @throws FlowSuspension   While the task is not terminal.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
+	 */
+	private function awaitedTask(PortalTaskRound $round, string $taskUuid): Task {
+		$task = $this->bridge->taskOrNull(uuid: $taskUuid);
+		if ($task === null) {
+			throw new RuntimeException(sprintf('Task %s, which this step was waiting on, no longer exists.', $taskUuid));
+		}
+
+		if ($task->isInTerminalState() === false) {
+			// A heartbeat wake, a reminder, a nudge: none is an answer. Suspend
+			// again and do NOT touch the slot: askedAt stays what it was.
+			throw $this->suspension(config: $round->config, items: $round->items);
+		}
+
+		return $task;
+	}//end awaitedTask()
+
+	/**
+	 * Audit a heartbeat-recovered answer on the task.
+	 *
+	 * A terminal read with no signal in hand means the completion's wake never
+	 * arrived — refused or lost — and the heartbeat is what recovered it.
+	 * Recorded before the outcome is applied, which is identical on both
+	 * paths; the user-task node makes the same call.
+	 *
+	 * @param Task                 $task    The terminal task.
+	 * @param array<string, mixed> $context Run-level metadata.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
+	 */
+	private function recordRecoveryUnlessSignalled(Task $task, array $context): void {
+		if (array_key_exists(FlowRunServiceInterface::SIGNAL_CONTEXT_KEY, $context) === false) {
+			$this->bridge->recordHeartbeatRecovery(task: $task);
+		}
+
+	}//end recordRecoveryUnlessSignalled()
+
+	/**
+	 * The reason a re-entered step asks the party again.
+	 *
+	 * @param PortalTaskRound $round    The ask: its items and configuration.
+	 * @param string          $taskUuid The task that already ended.
+	 *
+	 * @return string The non-empty reason.
+	 *
+	 * @throws RuntimeException When the items carry no reason.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-re-ask-creates-a-new-task-carrying-a-mandatory-reason
+	 */
+	private function reasonForReAsk(PortalTaskRound $round, string $taskUuid): string {
+		$reason = $this->config->reasonFrom(config: $round->config, items: $round->items);
+		if ($reason === '') {
+			throw new RuntimeException(
+				sprintf(
+					'openregister.portal-task re-entered after task %s ended, but the items carry no reason under "%s"; '
+					. 'a party is not asked the same thing twice without an explanation.',
+					$taskUuid,
+					$this->config->reasonField(config: $round->config)
+				)
+			);
+		}
+
+		return $reason;
+	}//end reasonForReAsk()
 
 	/**
 	 * One ask: match the party on the case, create the external task, record

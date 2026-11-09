@@ -50,7 +50,7 @@ use OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Files\Service\File\PreviewSize;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Object\FileWriteGuard;
+use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCA\OpenRegister\Files\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
@@ -194,9 +194,9 @@ class FilesController extends Controller {
 	/**
 	 * The file write guard.
 	 *
-	 * @var ?FileWriteGuard
+	 * @var ?FileWriteGuardInterface
 	 */
-	private readonly ?FileWriteGuard $fileWriteGuard;
+	private readonly ?FileWriteGuardInterface $fileWriteGuard;
 
 	/**
 	 * The file restrictions.

@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -90,7 +91,7 @@ class ExampleSetTasksWriteGoldenTest extends TestCase {
 	 */
 	public function testANewTaskIsImportedAsItsAssignee(): void {
 		$data = ['title' => 'Call', 'objectUuid' => 'o-1', 'assignee' => 'alice', 'createdAt' => '2026-01-02T03:04:05+00:00', 'claimedAt' => null];
-		$this->assertSame(['error' => '', 'entry' => ['uuid' => 'task-1']], $this->tasks()->write(app: 'demo', key: 't1', data: $data));
+		$this->assertSame(['error' => '', 'entry' => ['uuid' => 'task-1']], $this->tasks()->write(row: new ExampleSetRow(app: 'demo', key: 't1', data: $data)));
 		$this->assertSame(
 			[
 				'findByKey example-set:demo/t1',
@@ -108,7 +109,7 @@ class ExampleSetTasksWriteGoldenTest extends TestCase {
 	public function testATaskThatHoldsTheKeyIsAdopted(): void {
 		$held = new Task();
 		$held->setUuid('held-9');
-		$result = $this->tasks(holders: [$held])->write(app: 'demo', key: 't1', data: ['title' => 'Call', 'objectUuid' => 'o-1', 'taskKey' => 'onboarding.step1']);
+		$result = $this->tasks(holders: [$held])->write(row: new ExampleSetRow(app: 'demo', key: 't1', data: ['title' => 'Call', 'objectUuid' => 'o-1', 'taskKey' => 'onboarding.step1']));
 		$this->assertSame(['error' => '', 'entry' => ['uuid' => 'held-9']], $result);
 		$this->assertSame(['findByKey onboarding.step1'], $this->calls);
 	}//end testATaskThatHoldsTheKeyIsAdopted()
@@ -120,8 +121,8 @@ class ExampleSetTasksWriteGoldenTest extends TestCase {
 	 */
 	public function testAnExternalOrUnassignedTaskIsRaisedByTheApp(): void {
 		$tasks = $this->tasks();
-		$tasks->write(app: 'demo', key: 'x', data: ['title' => 'Upload', 'objectUuid' => 'o-1', 'performerType' => 'external', 'assignee' => 'party:p', 'uploadRules' => ['required' => true]]);
-		$tasks->write(app: 'demo', key: 'y', data: ['title' => 'Look', 'objectUuid' => 'o-1']);
+		$tasks->write(row: new ExampleSetRow(app: 'demo', key: 'x', data: ['title' => 'Upload', 'objectUuid' => 'o-1', 'performerType' => 'external', 'assignee' => 'party:p', 'uploadRules' => ['required' => true]]));
+		$tasks->write(row: new ExampleSetRow(app: 'demo', key: 'y', data: ['title' => 'Look', 'objectUuid' => 'o-1']));
 		$this->assertSame(
 			[
 				'findByKey example-set:demo/x',
@@ -140,8 +141,8 @@ class ExampleSetTasksWriteGoldenTest extends TestCase {
 	 */
 	public function testAFinishedTaskIsMarkedCompleted(): void {
 		$data = ['title' => 'Done', 'objectUuid' => 'o-1', 'assignee' => 'alice', 'completedBy' => 'bob', 'completedAt' => '2026-01-05T10:00:00+00:00'];
-		$this->tasks(terminal: true)->write(app: 'demo', key: 'd', data: $data);
-		$this->tasks(terminal: false)->write(app: 'demo', key: 'e', data: $data);
+		$this->tasks(terminal: true)->write(row: new ExampleSetRow(app: 'demo', key: 'd', data: $data));
+		$this->tasks(terminal: false)->write(row: new ExampleSetRow(app: 'demo', key: 'e', data: $data));
 		$this->assertSame(
 			[
 				'findByKey example-set:demo/d',
@@ -162,7 +163,7 @@ class ExampleSetTasksWriteGoldenTest extends TestCase {
 	public function testARefusedImportIsTheError(): void {
 		$this->assertSame(
 			['error' => 'the engine refused it', 'entry' => null],
-			$this->tasks(fail: true)->write(app: 'demo', key: 't', data: ['title' => 'Call', 'objectUuid' => 'o-1', 'assignee' => 'alice'])
+			$this->tasks(fail: true)->write(row: new ExampleSetRow(app: 'demo', key: 't', data: ['title' => 'Call', 'objectUuid' => 'o-1', 'assignee' => 'alice']))
 		);
 	}//end testARefusedImportIsTheError()
 }//end class

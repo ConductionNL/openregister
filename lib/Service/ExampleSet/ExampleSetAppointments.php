@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use DateTimeZone;
 use OCA\OpenRegister\Db\CalendarLink;
-use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\OpenRegister\Db\CalendarLinkMapperInterface;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCP\IUserManager;
@@ -131,15 +131,15 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	/**
 	 * Write the event to the owner's calendar and link it to the object.
 	 *
-	 * @param string               $app  The app that ships the fragment, recorded as the linker.
-	 * @param string               $key  The appointment's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled appointment fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{object: string, calendar: int, uri: string, uid: string}|null} The entry, or why not.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$data = $row->data;
 		$objectUuid = (string) $data['object'];
 		$target     = $this->target(uuid: $objectUuid);
 		if ($target === null) {
@@ -148,7 +148,9 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 
 		try {
 			$event = $this->createEvent(data: $data);
-			$this->insertLink(app: $app, target: ['object' => $objectUuid, ...$target], event: $event, data: $data);
+			$link  = $this->link(target: ['object' => $objectUuid, ...$target], event: $event);
+			$this->describe(link: $link, data: $data);
+			$this->insertLink(link: $link, app: $app);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
@@ -174,16 +176,14 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	}//end createEvent()
 
 	/**
-	 * Link the event to the object (or task) it is on.
+	 * The link from the event to the object (or task) it is on, not yet stored.
 	 *
-	 * @param string                                                          $app    The app that ships the fragment, recorded as the linker.
-	 * @param array{object: string, register: int, schema: int}               $target The object or task and its register and schema.
+	 * @param array{object: string, register: int, schema: int}                   $target The object or task and its register and schema.
 	 * @param array{calendarUri: string, calendar: int, uid: string, uri: string} $event  Where the event is.
-	 * @param array<string, mixed>                                            $data   The filled appointment fields.
 	 *
-	 * @return void
+	 * @return CalendarLink
 	 */
-	private function insertLink(string $app, array $target, array $event, array $data): void {
+	private function link(array $target, array $event): CalendarLink {
 		$link = new CalendarLink();
 		$link->setObjectUuid($target['object']);
 		$link->setRegisterId($target['register']);
@@ -192,11 +192,35 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 		$link->setCalendarId($event['calendar']);
 		$link->setEventUid($event['uid']);
 		$link->setEventUri($event['uri']);
+
+		return $link;
+	}//end link()
+
+	/**
+	 * Put the summary, the start and end and the location of the appointment on its link.
+	 *
+	 * @param CalendarLink         $link The link.
+	 * @param array<string, mixed> $data The filled appointment fields.
+	 *
+	 * @return void
+	 */
+	private function describe(CalendarLink $link, array $data): void {
 		$link->setSummary((string) $data['summary']);
 		$this->setWhenAndWhere(link: $link, data: $data);
+	}//end describe()
+
+	/**
+	 * Store the link, recorded as made now by the app that ships the fragment.
+	 *
+	 * @param CalendarLink $link The link.
+	 * @param string       $app  The app that ships the fragment, recorded as the linker.
+	 *
+	 * @return void
+	 */
+	private function insertLink(CalendarLink $link, string $app): void {
 		$link->setLinkedBy($app);
 		$link->setLinkedAt(new DateTime());
-		$this->container->get(CalendarLinkMapper::class)->insert($link);
+		$this->container->get(CalendarLinkMapperInterface::class)->insert($link);
 	}//end insertLink()
 
 	/**
@@ -264,7 +288,7 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	 */
 	public function revert(array $entry): string {
 		try {
-			$links = $this->container->get(CalendarLinkMapper::class);
+			$links = $this->container->get(CalendarLinkMapperInterface::class);
 			$links->deleteByObjectAndEvent(objectUuid: (string) $entry['object'], eventUid: (string) $entry['uid']);
 			if ($this->lost(entry: $entry) === false) {
 				$this->caldav()->deleteCalendarObject((int) $entry['calendar'], (string) $entry['uri']);

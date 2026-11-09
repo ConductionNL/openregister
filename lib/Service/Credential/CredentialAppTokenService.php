@@ -42,7 +42,7 @@ use OCP\Security\ISecureRandom;
 /**
  * Issues and verifies short-lived signed per-app broker tokens.
  */
-class CredentialAppTokenService {
+class CredentialAppTokenService implements CredentialAppTokenServiceInterface {
 	/**
 	 * System-scoped vault key prefix for a per-app signing secret.
 	 *

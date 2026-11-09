@@ -39,7 +39,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Create, list and revoke federated shares.
  */
-class FederationShareService {
+class FederationShareService implements FederationShareServiceInterface {
 
 	/**
 	 * Recognised share scopes.

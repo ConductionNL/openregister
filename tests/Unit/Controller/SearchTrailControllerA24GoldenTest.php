@@ -22,6 +22,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SearchTrailControllerFactory;
 
 /**
  * Golden outcomes of every SearchTrailController action.
@@ -76,7 +77,7 @@ class SearchTrailControllerA24GoldenTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturnCallback(static fn (string $id): bool => $id === 'admin');
 
-		return new SearchTrailController('openregister', $request, $this->service, $this->mapper, $session, $groups);
+		return SearchTrailControllerFactory::create('openregister', $request, $this->service, $this->mapper, $session, $groups);
 	}
 
 	/**

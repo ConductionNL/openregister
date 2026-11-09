@@ -23,6 +23,8 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Form\FormPayloadFindings;
 use OCA\OpenRegister\Service\Object\DraftActivation;
+use OCA\OpenRegister\Service\Object\DraftActivationChecks;
+use OCA\OpenRegister\Service\Object\DraftActivationSignals;
 use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -180,11 +182,8 @@ class DraftActivationTest extends TestCase {
 
 		$this->activation = new DraftActivation(
 			objects: $objects,
-			validator: $validator,
-			findings: new FormPayloadFindings(),
-			events: $events,
-			time: $time,
-			l10n: $l10n
+			checks: new DraftActivationChecks(validator: $validator, findings: new FormPayloadFindings(), l10n: $l10n),
+			signals: new DraftActivationSignals(events: $events, time: $time)
 		);
 	}//end setUp()
 

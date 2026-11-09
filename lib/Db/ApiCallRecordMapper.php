@@ -49,7 +49,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass Registered through the container and used by ApiCallRecorder.
  */
-class ApiCallRecordMapper extends QBMapper {
+class ApiCallRecordMapper extends QBMapper implements ApiCallRecordMapperInterface {
 
 	/**
 	 * The table this mapper owns.

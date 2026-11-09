@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Export\ExportProfileService;
+use OCA\OpenRegister\Service\Export\ExportProfileServiceInterface;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -36,7 +36,7 @@ final class ExportProfilesControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ExportProfileService $service Profile administration and runs.
+	 * @param ExportProfileServiceInterface $service Profile administration and runs.
 	 * @param IUserSession $userSession Current-user session.
 	 * @param IGroupManager $groupManager Group manager for the admin check.
 	 * @param ExportRunRecorder $exportRuns Records the export this run served.
@@ -44,7 +44,7 @@ final class ExportProfilesControllerServices {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function __construct(
-		public readonly ExportProfileService $service,
+		public readonly ExportProfileServiceInterface $service,
 		public readonly IUserSession $userSession,
 		public readonly IGroupManager $groupManager,
 		public readonly ExportRunRecorder $exportRuns,

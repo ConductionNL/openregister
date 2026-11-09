@@ -53,15 +53,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
-use OCP\IGroupManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * The one subscription primitive: watch, unwatch, list, and heal.
@@ -108,22 +104,16 @@ class WatcherService implements WatcherServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param WatcherMapperInterface $mapper The watcher rows.
-	 * @param IUserSession $userSession Resolves the calling user.
-	 * @param IGroupManager $groupManager Resolves the caller's groups for the `manage` posture.
-	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema for the `update` posture.
-	 * @param PermissionHandlerInterface $permissions The one RBAC evaluator.
+	 * @param WatcherStore $store The watcher rows, the schema lookups and the log.
+	 * @param WatcherCaller $caller The signed-in user and their groups.
+	 * @param PermissionCheckInterface $permissions The one RBAC evaluator.
 	 * @param ObjectScopeResolver $scopeResolver The one definition of "admitted unconditionally".
-	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly WatcherMapperInterface $mapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly PermissionHandlerInterface $permissions,
+		private readonly WatcherStore $store,
+		private readonly WatcherCaller $caller,
+		private readonly PermissionCheckInterface $permissions,
 		private readonly ObjectScopeResolver $scopeResolver,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -135,7 +125,7 @@ class WatcherService implements WatcherServiceInterface {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function callerUid(): ?string {
-		return $this->userSession->getUser()?->getUID();
+		return $this->caller->userSession->getUser()?->getUID();
 	}//end callerUid()
 
 	/**
@@ -169,13 +159,11 @@ class WatcherService implements WatcherServiceInterface {
 
 		$this->forgetMemos();
 
-		return $this->mapper->subscribe(
-			userId: $uid,
-			objectUuid: $uuid,
-			register: $register,
-			schema: $schema,
-			notify: $notify
-		);
+		$follow = self::follow(userId: $uid, objectUuid: $uuid);
+		$follow->setRegister($register);
+		$follow->setSchema($schema);
+
+		return $this->store->mapper->subscribe(watcher: $follow, notify: $notify);
 	}//end watch()
 
 	/**
@@ -200,20 +188,18 @@ class WatcherService implements WatcherServiceInterface {
 		$uid = $this->requireCaller();
 		$uuid = $this->requireUuid(object: $object);
 
-		$existing = $this->mapper->findOne(userId: $uid, objectUuid: $uuid);
+		$existing = $this->store->mapper->findOne(userId: $uid, objectUuid: $uuid);
 		if ($existing !== null) {
 			return $existing;
 		}
 
 		$this->forgetMemos();
 
-		return $this->mapper->subscribe(
-			userId: $uid,
-			objectUuid: $uuid,
-			register: $register,
-			schema: $schema,
-			notify: false
-		);
+		$follow = self::follow(userId: $uid, objectUuid: $uuid);
+		$follow->setRegister($register);
+		$follow->setSchema($schema);
+
+		return $this->store->mapper->subscribe(watcher: $follow, notify: false);
 	}//end followQuietly()
 
 	/**
@@ -233,7 +219,7 @@ class WatcherService implements WatcherServiceInterface {
 
 		$this->forgetMemos();
 
-		return $this->mapper->unsubscribe(userId: $uid, objectUuid: $uuid);
+		return $this->store->mapper->unsubscribe(userId: $uid, objectUuid: $uuid);
 	}//end unwatch()
 
 	/**
@@ -250,7 +236,7 @@ class WatcherService implements WatcherServiceInterface {
 	public function listWatchers(ObjectEntity $object): array {
 		$this->requireUpdate(object: $object);
 
-		return $this->mapper->findByObject(objectUuid: $this->requireUuid(object: $object));
+		return $this->store->mapper->findByObject(objectUuid: $this->requireUuid(object: $object));
 	}//end listWatchers()
 
 	/**
@@ -272,12 +258,11 @@ class WatcherService implements WatcherServiceInterface {
 
 		$this->forgetMemos();
 
-		return $this->mapper->subscribe(
-			userId: $userId,
-			objectUuid: $this->requireUuid(object: $object),
-			register: $register,
-			schema: $schema
-		);
+		$follow = self::follow(userId: $userId, objectUuid: $this->requireUuid(object: $object));
+		$follow->setRegister($register);
+		$follow->setSchema($schema);
+
+		return $this->store->mapper->subscribe(watcher: $follow);
 	}//end addWatcher()
 
 	/**
@@ -315,12 +300,11 @@ class WatcherService implements WatcherServiceInterface {
 	): Watcher {
 		$this->forgetMemos();
 
-		return $this->mapper->subscribe(
-			userId: $userId,
-			objectUuid: $this->requireUuid(object: $object),
-			register: $register,
-			schema: $schema
-		);
+		$follow = self::follow(userId: $userId, objectUuid: $this->requireUuid(object: $object));
+		$follow->setRegister($register);
+		$follow->setSchema($schema);
+
+		return $this->store->mapper->subscribe(watcher: $follow);
 	}//end subscribeMentioned()
 
 	/**
@@ -353,13 +337,11 @@ class WatcherService implements WatcherServiceInterface {
 	): Watcher {
 		$this->forgetMemos();
 
-		return $this->mapper->subscribe(
-			userId: $userId,
-			objectUuid: $this->requireUuid(object: $object),
-			register: $register,
-			schema: $schema,
-			notify: true
-		);
+		$follow = self::follow(userId: $userId, objectUuid: $this->requireUuid(object: $object));
+		$follow->setRegister($register);
+		$follow->setSchema($schema);
+
+		return $this->store->mapper->subscribe(watcher: $follow, notify: true);
 	}//end followAssigned()
 
 	/**
@@ -384,7 +366,7 @@ class WatcherService implements WatcherServiceInterface {
 
 		$this->forgetMemos();
 
-		return $this->mapper->unsubscribe(
+		return $this->store->mapper->unsubscribe(
 			userId: $userId,
 			objectUuid: $this->requireUuid(object: $object)
 		);
@@ -445,9 +427,9 @@ class WatcherService implements WatcherServiceInterface {
 		}
 
 		try {
-			return $this->mapper->notifyMapForUser(userId: $uid);
+			return $this->store->mapper->notifyMapForUser(userId: $uid);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->store->logger->warning(
 				sprintf('[WatcherService] follow lookup failed for "%s": %s', $uid, $e->getMessage())
 			);
 			return [];
@@ -481,9 +463,9 @@ class WatcherService implements WatcherServiceInterface {
 		}
 
 		try {
-			return $this->mapper->countForObject(objectUuid: $objectUuid);
+			return $this->store->mapper->countForObject(objectUuid: $objectUuid);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->store->logger->warning(
 				sprintf('[WatcherService] watcher count failed for "%s": %s', $objectUuid, $e->getMessage())
 			);
 			return 0;
@@ -501,7 +483,7 @@ class WatcherService implements WatcherServiceInterface {
 	 */
 	public function maySeeWatchers(ObjectEntity $object): bool {
 		try {
-			$schema = $this->schemaMapper->find(id: $object->getSchema(), _rbac: false, _multitenancy: false);
+			$schema = $this->store->schemaMapper->find(id: $object->getSchema(), _rbac: false, _multitenancy: false);
 		} catch (\Throwable $e) {
 			// No schema, no verdict, and the fail-closed answer hides the count.
 			return false;
@@ -537,9 +519,9 @@ class WatcherService implements WatcherServiceInterface {
 		}
 
 		try {
-			$rows = $this->mapper->findNotifyingByObject(objectUuid: $objectUuid);
+			$rows = $this->store->mapper->findNotifyingByObject(objectUuid: $objectUuid);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->store->logger->warning(
 				sprintf('[WatcherService] watcher lookup failed for "%s": %s', $objectUuid, $e->getMessage())
 			);
 			return [];
@@ -580,9 +562,9 @@ class WatcherService implements WatcherServiceInterface {
 			}
 
 			try {
-				$this->mapper->unsubscribe(userId: $userId, objectUuid: $objectUuid);
+				$this->store->mapper->unsubscribe(userId: $userId, objectUuid: $objectUuid);
 			} catch (\Throwable $e) {
-				$this->logger->warning(
+				$this->store->logger->warning(
 					sprintf('[WatcherService] could not drop watcher "%s": %s', $userId, $e->getMessage())
 				);
 			}
@@ -607,7 +589,7 @@ class WatcherService implements WatcherServiceInterface {
 
 		$this->forgetMemos();
 
-		return $this->mapper->deleteByObject(objectUuid: $objectUuid);
+		return $this->store->mapper->deleteByObject(objectUuid: $objectUuid);
 	}//end cleanupForObject()
 
 	/**
@@ -650,9 +632,9 @@ class WatcherService implements WatcherServiceInterface {
 		}
 
 		try {
-			$counts = $this->mapper->countsByObject();
+			$counts = $this->store->mapper->countsByObject();
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->store->logger->warning(
 				sprintf('[WatcherService] watcher count map failed: %s', $e->getMessage())
 			);
 			$counts = [];
@@ -679,6 +661,21 @@ class WatcherService implements WatcherServiceInterface {
 
 		return $uid;
 	}//end requireCaller()
+
+	/**
+	 * An unsaved follow of one user on one object, for the mapper to subscribe.
+	 *
+	 * @param string $userId The following user.
+	 * @param string $objectUuid The followed object's uuid.
+	 *
+	 * @return Watcher The follow, without register, schema or notify switch.
+	 */
+	private static function follow(string $userId, string $objectUuid): Watcher {
+		$follow = new Watcher();
+		$follow->setUserId($userId);
+		$follow->setObjectUuid($objectUuid);
+		return $follow;
+	}//end follow()
 
 	/**
 	 * The object's uuid, or a refusal.
@@ -731,9 +728,9 @@ class WatcherService implements WatcherServiceInterface {
 	private function requireManage(ObjectEntity $object): void {
 		$uid = $this->callerUid();
 		$groups = [];
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user !== null) {
-			$groups = $this->groupManager->getUserGroupIds($user);
+			$groups = $this->caller->groupManager->getUserGroupIds($user);
 		}
 
 		if ($this->scopeResolver->admitsUnconditionally(

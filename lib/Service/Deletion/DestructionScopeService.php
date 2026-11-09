@@ -38,10 +38,6 @@ namespace OCA\OpenRegister\Service\Deletion;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
-use OCA\OpenRegister\Service\ObjectRelationCleanupService;
-use OCA\OpenRegister\Service\TaskService;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -69,10 +65,7 @@ class DestructionScopeService {
 	 * @param AuditTrailMapperInterface                  $auditTrailMapper Versions and content-bearing audit rows.
 	 * @param LoggerInterface                   $logger           PSR logger.
 	 * @param DestructionScopeReader            $reader           Reads the scope a schema declares.
-	 * @param NoteServiceInterface|null                  $noteService      Notes on the object.
-	 * @param FileService|null                  $fileService      The object's bound folder.
-	 * @param TaskService|null                  $taskService      CalDAV tasks linked to the object.
-	 * @param ObjectRelationCleanupService|null $relationCleanup  The remaining timeline links.
+	 * @param DestructionCompanions $companions The notes, files, tasks and relations that go with a destroyed object.
 	 *
 	 * @return void
 	 */
@@ -80,10 +73,7 @@ class DestructionScopeService {
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 		private readonly DestructionScopeReader $reader,
-		private readonly ?NoteServiceInterface $noteService = null,
-		private readonly ?FileService $fileService = null,
-		private readonly ?TaskService $taskService = null,
-		private readonly ?ObjectRelationCleanupService $relationCleanup = null,
+		private readonly DestructionCompanions $companions,
 	) {
 	}//end __construct()
 
@@ -197,10 +187,10 @@ class DestructionScopeService {
 	private function isAvailable(string $member): bool {
 		return match ($member) {
 			DestructionScope::VERSIONS, DestructionScope::AUDIT_CONTENT => true,
-			DestructionScope::NOTES => ($this->noteService !== null),
-			DestructionScope::FILES => ($this->fileService !== null),
-			DestructionScope::TASKS => ($this->taskService !== null),
-			DestructionScope::TIMELINE => ($this->relationCleanup !== null),
+			DestructionScope::NOTES => ($this->companions->noteService !== null),
+			DestructionScope::FILES => ($this->companions->fileService !== null),
+			DestructionScope::TASKS => ($this->companions->taskService !== null),
+			DestructionScope::TIMELINE => ($this->companions->relationCleanup !== null),
 			default => false,
 		};
 	}//end isAvailable()
@@ -228,10 +218,10 @@ class DestructionScopeService {
 					onlyActions: null,
 					excludeActions: DestructionScope::EVIDENCE_ACTIONS
 				),
-				DestructionScope::NOTES => $this->noteService?->countNotesForObject($uuid) ?? 0,
-				DestructionScope::FILES => count($this->fileService?->getFiles($object) ?? []),
-				DestructionScope::TASKS => count($this->taskService?->getTasksForObject($uuid) ?? []),
-				DestructionScope::TIMELINE => $this->relationCleanup?->countTimelineLinks($uuid) ?? 0,
+				DestructionScope::NOTES => $this->companions->noteService?->countNotesForObject($uuid) ?? 0,
+				DestructionScope::FILES => count($this->companions->fileService?->getFiles($object) ?? []),
+				DestructionScope::TASKS => count($this->companions->taskService?->getTasksForObject($uuid) ?? []),
+				DestructionScope::TIMELINE => $this->companions->relationCleanup?->countTimelineLinks($uuid) ?? 0,
 				default => 0,
 			};
 		} catch (Throwable $e) {
@@ -289,7 +279,7 @@ class DestructionScopeService {
 	 * @return int The number destroyed.
 	 */
 	private function destroyNotes(string $uuid, int $expected): int {
-		$this->noteService?->deleteNotesForObject($uuid);
+		$this->companions->noteService?->deleteNotesForObject($uuid);
 		return $expected;
 	}//end destroyNotes()
 
@@ -302,7 +292,7 @@ class DestructionScopeService {
 	 * @return int The number destroyed.
 	 */
 	private function destroyFiles(ObjectEntity $object, int $expected): int {
-		$folder = $this->fileService?->getObjectFolder(objectEntity: $object);
+		$folder = $this->companions->fileService?->getObjectFolder(objectEntity: $object);
 		if ($folder === null) {
 			return 0;
 		}
@@ -319,10 +309,10 @@ class DestructionScopeService {
 	 * @return int The number destroyed.
 	 */
 	private function destroyTasks(string $uuid): int {
-		$tasks = ($this->taskService?->getTasksForObject($uuid) ?? []);
+		$tasks = ($this->companions->taskService?->getTasksForObject($uuid) ?? []);
 		$went = 0;
 		foreach ($tasks as $task) {
-			$this->taskService?->deleteTask((string)$task['calendarId'], (string)$task['id']);
+			$this->companions->taskService?->deleteTask((string)$task['calendarId'], (string)$task['id']);
 			$went++;
 		}
 
@@ -338,7 +328,7 @@ class DestructionScopeService {
 	 * @return int The number destroyed.
 	 */
 	private function destroyTimeline(string $uuid, int $expected): int {
-		$this->relationCleanup?->destroyTimelineLinks($uuid);
+		$this->companions->relationCleanup?->destroyTimelineLinks($uuid);
 		return $expected;
 	}//end destroyTimeline()
 }//end class

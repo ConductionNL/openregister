@@ -218,6 +218,62 @@ final class ConfigurationDraftServiceTest extends TestCase {
 		$this->assertFalse($draft->getRemoves());
 	}//end testDraftingAValueIsNotARemoval()
 
+	public function testANewDraftIsWrittenAgainstTheLiveValueFieldForField(): void {
+		[$service, $store] = $this->service($this->set(), [], false, 'author');
+		$store->expects($this->once())->method('read')->with(ConfigurationLayer::INSTANCE, null, 'rbac')->willReturn(
+			new ConfigurationSnapshot(ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => true], true, 'dep-1')
+		);
+
+		$draft = $service->draftValue('set-1', ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => false]);
+
+		$this->assertSame(
+			['set-1', ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => true], true, ['enabled' => false], false, 'author'],
+			[
+				$draft->getSetUuid(),
+				$draft->getLayer(),
+				$draft->getLayerRef(),
+				$draft->getConfigKey(),
+				$draft->readBaseValue(),
+				$draft->getBasePresent(),
+				$draft->readDraftValue(),
+				$draft->getRemoves(),
+				$draft->getCreatedBy(),
+			]
+		);
+	}//end testANewDraftIsWrittenAgainstTheLiveValueFieldForField()
+
+	public function testAnAddressRefusalNamesTheAddressAndReadsNothing(): void {
+		[$service, $store] = $this->service($this->set());
+		$store->expects($this->never())->method('read');
+
+		foreach ([[ConfigurationLayer::INSTANCE, null, 'whatever'], [ConfigurationLayer::REGISTER, null, 'integration.mail']] as [$layer, $ref, $key]) {
+			try {
+				$service->draftRemoval('set-1', $layer, $ref, $key);
+				$this->fail('the address should be refused');
+			} catch (DeploymentRefusedException $exception) {
+				$this->assertSame(DeploymentRefusedException::REASON_INVALID, $exception->getReason());
+				$this->assertSame(400, $exception->getStatusCode());
+				$this->assertSame(
+					[['layer' => $layer, 'layerRef' => $ref, 'key' => $key, 'reason' => $exception->getMessage()]],
+					$exception->getRefusals()
+				);
+			}
+		}
+	}//end testAnAddressRefusalNamesTheAddressAndReadsNothing()
+
+	public function testAValueIsShapeCheckedButARemovalIsNot(): void {
+		[$service] = $this->service($this->set());
+
+		try {
+			$service->draftValue('set-1', ConfigurationLayer::INSTANCE, null, 'rbac', 'not a shape');
+			$this->fail('a value of the wrong shape should be refused');
+		} catch (DeploymentRefusedException $exception) {
+			$this->assertSame(DeploymentRefusedException::REASON_INVALID, $exception->getReason());
+		}
+
+		$this->assertTrue($service->draftRemoval('set-1', ConfigurationLayer::INSTANCE, null, 'rbac')->getRemoves());
+	}//end testAValueIsShapeCheckedButARemovalIsNot()
+
 	public function testFourEyesAreRequired(): void {
 		$draft = new ConfigurationDraft();
 		$draft->setUuid('draft-1');

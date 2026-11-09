@@ -18,6 +18,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\TranslationEdit;
+use OCA\OpenRegister\Db\TranslationFilter;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -98,7 +101,7 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 		$this->session->method('getUser')->willReturn($user);
 		$this->mapper->expects($this->once())->method('findOne')->with('u1', 'title', 'en')->willReturn($existing);
 		$this->mapper->expects($this->once())->method('upsert')
-			->with('u1', 'title', 'en', 'Hello', Translation::STATUS_APPROVED, 'alice')
+			->with($this->equalTo(new TranslationSlot('u1', 'title', 'en')), $this->equalTo(new TranslationEdit('Hello', Translation::STATUS_APPROVED, 'alice')))
 			->willReturn($saved);
 
 		$this->assertSame($saved, $this->service->setStatus('u1', 'title', 'en', Translation::STATUS_APPROVED));
@@ -109,7 +112,7 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 		$this->session->method('getUser')->willReturn(null);
 		$this->mapper->method('findOne')->willReturn($existing);
 		$this->mapper->expects($this->once())->method('upsert')
-			->with('u1', 'title', 'en', 'Hello', Translation::STATUS_DRAFT, null)
+			->with($this->equalTo(new TranslationSlot('u1', 'title', 'en')), $this->equalTo(new TranslationEdit('Hello', Translation::STATUS_DRAFT, null)))
 			->willReturn($existing);
 
 		$this->service->setStatus('u1', 'title', 'en', Translation::STATUS_DRAFT);
@@ -138,7 +141,7 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 	public function testSearchForwardsEveryFilterAndSerialises(): void {
 		$rows = [$this->row('u1', 'title', 'en', 'Hi', 'nl')];
 		$this->mapper->expects($this->once())->method('search')
-			->with('q', 'en', 'draft', 'u1', 5, 'nl', true)
+			->with($this->equalTo(new TranslationFilter('en', 'draft', 'u1', 'nl')), 'q', 5, true)
 			->willReturn($rows);
 
 		$this->assertSame(
@@ -149,7 +152,7 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 
 	public function testSearchDefaults(): void {
 		$this->mapper->expects($this->once())->method('search')
-			->with(null, null, null, null, 100, null, false)
+			->with($this->equalTo(new TranslationFilter()), null, 100, false)
 			->willReturn([]);
 		$this->assertSame([], $this->service->search());
 	}//end testSearchDefaults()
@@ -160,7 +163,7 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 		$c = $this->row('u2', 'body', 'en', 'Text', '');
 		$d = $this->row('u3', 'body', 'en', 'Gone', 'fr');
 		$this->mapper->expects($this->once())->method('search')
-			->with('q', 'en', null, null, 7, 'nl', true)
+			->with($this->equalTo(new TranslationFilter('en', null, null, 'nl')), 'q', 7, true)
 			->willReturn([$a, $b, $c, $d]);
 		$this->mapper->expects($this->exactly(2))->method('findOne')
 			->willReturnCallback(

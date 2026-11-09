@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Notifications\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineKindService;
 use Psr\Container\ContainerInterface;
@@ -150,16 +151,17 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 	/**
 	 * Write one entry by the named person, or find the one an earlier install wrote.
 	 *
-	 * @param string               $app  The fragment's app.
-	 * @param string               $key  The row key.
-	 * @param array<string, mixed> $data The row's fields, placeholders filled.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{uuid: string, object: string}|null} The record entry, or why the
 	 *                                                                                write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$key = $row->key;
+		$data = $row->data;
 		$objectUuid = (string) $data['object'];
 		$object     = $this->container->get(PartyService::class)->findUnscoped(uuid: $objectUuid);
 		if ($object === null) {

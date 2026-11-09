@@ -31,6 +31,10 @@ use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
@@ -75,6 +79,8 @@ final class FilesRegistrar
         DocumentProcessingHandlerInterface::class => DocumentProcessingHandler::class,
         FileMapperInterface::class                => FileMapper::class,
         FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
+        FileRestrictionGuardInterface::class      => FileRestrictionGuard::class,
+        FileSharingHandlerInterface::class        => FileSharingHandler::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,
         RegisterFolderProvisionerInterface::class => RegisterFolderProvisioner::class,

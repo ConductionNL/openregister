@@ -126,7 +126,7 @@ class SlaCalculatorGoldenTest extends TestCase {
 			$calendar = self::calendars()[$calName];
 			foreach ([3.5, -3.5, 0.0] as $amount) {
 				$collector = new WalkCollector();
-				$landed = self::capture(fn () => $calc->add(from: self::at('2026-04-24 16:00:00 Europe/Amsterdam'), value: $amount, unit: 'businessDays', calendar: $calendar, collector: $collector));
+				$landed = self::capture(fn () => $calc->addWatched(addition: new \OCA\OpenRegister\Service\Flow\Timer\SlaAddition(start: \DateTimeImmutable::createFromInterface(self::at('2026-04-24 16:00:00 Europe/Amsterdam')), value: $amount, unit: 'businessDays', calendar: $calendar), collector: $collector));
 				$actual["collector / {$calName} / {$amount}"] = ['landed' => $landed, 'walk' => $collector->walk(), 'examined' => $collector->examinedCount()];
 			}
 

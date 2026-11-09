@@ -37,10 +37,10 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTime;
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\DelegationGrantMapper;
+use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionExplanationInterface;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -63,7 +63,7 @@ use Throwable;
  *
  * @spec openspec/specs/authorization-rbac/spec.md
  */
-class PrincipalReachService {
+class PrincipalReachService implements PrincipalReachListerInterface {
 	/**
 	 * The schemas the cascade is asked about.
 	 *
@@ -81,9 +81,9 @@ class PrincipalReachService {
 	/**
 	 * Delegations held by this principal.
 	 *
-	 * @var DelegationGrantMapper
+	 * @var DelegationGrantMapperInterface
 	 */
-	private readonly DelegationGrantMapper $delegations;
+	private readonly DelegationGrantMapperInterface $delegations;
 
 	/**
 	 * Group membership.
@@ -102,13 +102,13 @@ class PrincipalReachService {
 	/**
 	 * Wire the authorities the listing reads.
 	 *
-	 * @param PermissionHandlerInterface $permissions The canonical RBAC verdict and its provenance.
+	 * @param PermissionExplanationInterface $permissions The canonical RBAC verdict and its provenance.
 	 * @param ReachSources               $sources     The schemas the cascade is asked about, derived grants and delegations.
 	 * @param PrincipalDirectory         $directory   Group membership and account lookup.
 	 * @param LoggerInterface            $logger      PSR logger.
 	 */
 	public function __construct(
-		private readonly PermissionHandlerInterface $permissions,
+		private readonly PermissionExplanationInterface $permissions,
 		ReachSources $sources,
 		PrincipalDirectory $directory,
 		private readonly LoggerInterface $logger,

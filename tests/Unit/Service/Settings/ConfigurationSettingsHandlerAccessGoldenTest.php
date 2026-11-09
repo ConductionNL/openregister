@@ -94,8 +94,7 @@ class ConfigurationSettingsHandlerAccessGoldenTest extends TestCase {
 		return new ConfigurationSettingsHandler(
 			$appConfig,
 			new SettingsDirectory($groups, $users, $organisations),
-			new ConfigurationSettingsSupport($this->createMock(LoggerInterface::class), $this->createMock(IAppManager::class), $announcer, $changeRecorder),
-			'openregister'
+			new ConfigurationSettingsSupport($this->createMock(LoggerInterface::class), $this->createMock(IAppManager::class), $announcer, $changeRecorder)
 		);
 	}//end handler()
 

@@ -1503,31 +1503,30 @@ class GitHubHandler implements GitHubClientInterface {
 		?string $specRef,
 		string $userId,
 	): array {
-		$useServerPat = false;
-		$token = $this->resolveCreateIssueToken(userId: $userId, useServerPat: $useServerPat);
-		$effectiveBody = $this->buildIssueBody(userId: $userId, body: $body, specRef: $specRef, useServerPat: $useServerPat);
-		$payload = $this->buildIssuePayload(title: $title, effectiveBody: $effectiveBody, specRef: $specRef);
-
 		$submission = new GitHubIssueSubmission(owner: $owner, repo: $repo, userId: $userId, specRef: $specRef);
-		return $this->dispatchCreateIssue(submission: $submission, payload: $payload, token: $token, useServerPat: $useServerPat);
+		$delivery = $this->resolveCreateIssueDelivery(submission: $submission);
+		$effectiveBody = $this->buildIssueBody(delivery: $delivery, body: $body);
+		$payload = self::withSpecRefLabel(payload: ['title' => $title, 'body' => $effectiveBody], specRef: $specRef);
+
+		return $this->dispatchCreateIssue(delivery: $delivery, payload: $payload);
 	}//end createIssue()
 
 	/**
-	 * The response of createIssue: the issue's number, URL and state, which PAT was used, and its capability.
+	 * The structured response shape of a created issue.
 	 *
-	 * @param array<string, mixed> $data         The decoded GitHub response.
-	 * @param string|null          $specRef      Validated capability slug, or null.
-	 * @param bool                 $useServerPat Whether the server PAT was used.
+	 * @param array<string, mixed> $data     The decoded GitHub response.
+	 * @param GitHubIssueDelivery  $delivery The submission and its credential.
 	 *
 	 * @return array{number: int, html_url: string, state: string, specRef?: string, used_server_pat: bool}
 	 */
-	private static function createdIssue(array $data, ?string $specRef, bool $useServerPat): array {
+	private static function createdIssue(array $data, GitHubIssueDelivery $delivery): array {
 		$result = [
 			'number' => (int)($data['number'] ?? 0),
 			'html_url' => (string)($data['html_url'] ?? ''),
 			'state' => (string)($data['state'] ?? 'open'),
-			'used_server_pat' => $useServerPat,
+			'used_server_pat' => $delivery->useServerPat,
 		];
+		$specRef = $delivery->submission->specRef;
 		if ($specRef !== null && $specRef !== '') {
 			$result['specRef'] = $specRef;
 		}
@@ -1537,24 +1536,21 @@ class GitHubHandler implements GitHubClientInterface {
 
 	/**
 	 * Resolve the PAT to use for a `createIssue` call: prefer the user's per-user token, fall
-	 * back to the app-level PAT. Sets `$useServerPat` by reference so the caller can branch on it
-	 * for attribution + audit logging.
+	 * back to the app-level PAT. The delivery says which one was taken, so the caller can branch
+	 * on it for attribution + audit logging.
 	 *
-	 * @param string $userId Submitting Nextcloud UID.
-	 * @param bool $useServerPat Output flag — true when the fallback path is
-	 *                           taken.
+	 * @param GitHubIssueSubmission $submission Where the issue goes and who submits it.
 	 *
-	 * @return string Non-empty token string.
+	 * @return GitHubIssueDelivery The submission with a non-empty token and its server-PAT flag.
 	 *
 	 * @throws \RuntimeException `github_pat_not_configured` when neither PAT is available.
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
 	 */
-	private function resolveCreateIssueToken(string $userId, bool &$useServerPat): string {
-		$userToken = $this->getUserToken(userId: $userId) ?? '';
-		$useServerPat = $userToken === '';
-		if ($useServerPat === false) {
-			return $userToken;
+	private function resolveCreateIssueDelivery(GitHubIssueSubmission $submission): GitHubIssueDelivery {
+		$userToken = $this->getUserToken(userId: $submission->userId) ?? '';
+		if ($userToken !== '') {
+			return new GitHubIssueDelivery(submission: $submission, token: $userToken, useServerPat: false);
 		}
 
 		$serverToken = $this->appConfig->getValueString('openregister', 'github_api_token', '');
@@ -1562,29 +1558,25 @@ class GitHubHandler implements GitHubClientInterface {
 			throw new RuntimeException('github_pat_not_configured');
 		}
 
-		return $serverToken;
-	}//end resolveCreateIssueToken()
+		return new GitHubIssueDelivery(submission: $submission, token: $serverToken, useServerPat: true);
+	}//end resolveCreateIssueDelivery()
 
 	/**
-	 * Build the final issue body sent to GitHub: attribution prefix when server-PAT path, then
-	 * the user's body, then the optional specRef suffix.
+	 * The body sent to GitHub: attributed when the server PAT carries it,
+	 * suffixed with the related capability when one is named.
 	 *
-	 * @param string $userId Submitting UID (for attribution lookup).
-	 * @param string $body Caller-supplied body.
-	 * @param string|null $specRef Validated specRef slug, or null.
-	 * @param bool $useServerPat Whether the attribution prefix should be prepended.
+	 * @param GitHubIssueDelivery $delivery The submission and its credential.
+	 * @param string              $body     The body as the user wrote it.
 	 *
-	 * @return string Final body string.
-	 *
-	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
-	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-8
+	 * @return string The effective body.
 	 */
-	private function buildIssueBody(string $userId, string $body, ?string $specRef, bool $useServerPat): string {
+	private function buildIssueBody(GitHubIssueDelivery $delivery, string $body): string {
 		$effectiveBody = $body;
-		if ($useServerPat === true) {
-			$effectiveBody = $this->attributionFormatter->format(userId: $userId) . $body;
+		if ($delivery->useServerPat === true) {
+			$effectiveBody = $this->attributionFormatter->format(userId: $delivery->submission->userId) . $body;
 		}
 
+		$specRef = $delivery->submission->specRef;
 		if ($specRef !== null && $specRef !== '') {
 			$effectiveBody .= "\n\n---\nRelated capability: `" . $specRef . "`\n";
 		}
@@ -1593,53 +1585,46 @@ class GitHubHandler implements GitHubClientInterface {
 	}//end buildIssueBody()
 
 	/**
-	 * Build the GitHub Issues API request payload.
+	 * The issue payload, carrying the `specRef:<slug>` label when a capability is named.
 	 *
-	 * @param string $title Issue title.
-	 * @param string $effectiveBody Final body string (already includes attribution + specRef suffix).
-	 * @param string|null $specRef Validated specRef slug; when present a `specRef:<slug>` label is applied.
+	 * @param array{title: string, body: string} $payload The title and effective body.
+	 * @param string|null                        $specRef The capability slug, or null.
 	 *
-	 * @return array<string, mixed> Request payload.
+	 * @return array<string, mixed> The payload.
 	 */
-	private function buildIssuePayload(string $title, string $effectiveBody, ?string $specRef): array {
-		$payload = ['title' => $title, 'body' => $effectiveBody];
+	private static function withSpecRefLabel(array $payload, ?string $specRef): array {
 		if ($specRef !== null && $specRef !== '') {
 			$payload['labels'] = ['specRef:' . $specRef];
 		}
 
 		return $payload;
-	}//end buildIssuePayload()
+	}//end withSpecRefLabel()
 
 	/**
-	 * Dispatch the POST to GitHub's `/repos/{owner}/{repo}/issues` endpoint, then audit + decode.
-	 * On error, emit the server-PAT failure audit entry (task 1.17) before rethrowing. On success
-	 * audit + decode the body and return createIssue's response.
+	 * Send the issue, auditing a server-PAT submission whichever way it ends.
 	 *
-	 * @param GitHubIssueSubmission $submission   Where the issue goes and who submits it.
-	 * @param array                 $payload      Request payload.
-	 * @param string                $token        Bearer token.
-	 * @param bool                  $useServerPat Whether the server-PAT path is in effect (gates audit).
+	 * @param GitHubIssueDelivery  $delivery The submission and its credential.
+	 * @param array<string, mixed> $payload  The issue payload.
 	 *
 	 * @return array{number: int, html_url: string, state: string, specRef?: string, used_server_pat: bool}
 	 *
-	 * @throws \Exception When the underlying HTTP call fails for any reason.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
+	 * @throws Exception The request failure, after it was audited.
 	 */
-	private function dispatchCreateIssue(GitHubIssueSubmission $submission, array $payload, string $token, bool $useServerPat): array {
+	private function dispatchCreateIssue(GitHubIssueDelivery $delivery, array $payload): array {
+		$submission = $delivery->submission;
 		try {
-			$headers = self::bearerHeaders(token: $token) + ['Content-Type' => 'application/json'];
+			$headers = self::bearerHeaders(token: $delivery->token) + ['Content-Type' => 'application/json'];
 			$options = ['headers' => $headers, 'body' => json_encode($payload, JSON_THROW_ON_ERROR)];
 			$response = $this->client->request('POST', $submission->issuesUrl(apiBase: self::API_BASE), $options);
 		} catch (Exception $exception) {
 			$failure = ['error_code' => $exception::class, 'github_status' => $this->extractGitHubStatus(exception: $exception)];
-			$this->auditServerPatSubmission(submission: $submission, useServerPat: $useServerPat, issueNumber: 0, failure: $failure);
+			$this->auditServerPatFailure(delivery: $delivery, failure: $failure);
 			throw $exception;
 		}
 
 		$data = self::decodedIssue(response: $response);
-		$this->auditServerPatSubmission(submission: $submission, useServerPat: $useServerPat, issueNumber: (int)($data['number'] ?? 0), failure: null);
-		return self::createdIssue(data: $data, specRef: $submission->specRef, useServerPat: $useServerPat);
+		$this->auditServerPatSuccess(delivery: $delivery, issueNumber: (int)($data['number'] ?? 0));
+		return self::createdIssue(data: $data, delivery: $delivery);
 	}//end dispatchCreateIssue()
 
 	/**
@@ -1659,40 +1644,56 @@ class GitHubHandler implements GitHubClientInterface {
 	}//end decodedIssue()
 
 	/**
-	 * Emit a single audit-log entry for a server-PAT-fallback submission (task 1.17).
+	 * Audit a server-PAT submission that succeeded; a user-PAT one is not audited here.
 	 *
-	 * Only server-PAT submissions are audited: user-PAT submissions are auditable on GitHub
-	 * directly under the user's identity and SHALL NOT emit an openregister entry.
-	 *
-	 * Fields written: `user_id`, `repo`, `issue_number`, `specref`, `timestamp`. On failure the
-	 * entry additionally carries `error_code` + `github_status`. NEVER logs the PAT, the issue
-	 * body, the issue title, or the attribution prefix — only the structured metadata fields
-	 * the spec lists.
-	 *
-	 * @param GitHubIssueSubmission $submission   Where the issue went and who submitted it.
-	 * @param bool                  $useServerPat Whether the server PAT was used; nothing is audited otherwise.
-	 * @param int                   $issueNumber  GitHub issue number on success, 0 on failure.
-	 * @param array{error_code: string, github_status: int}|null $failure The error class and GitHub
-	 *                                                                    status on failure, null on success.
+	 * @param GitHubIssueDelivery $delivery    The submission and its credential.
+	 * @param int                 $issueNumber The created issue's number.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function auditServerPatSubmission(GitHubIssueSubmission $submission, bool $useServerPat, int $issueNumber, ?array $failure): void {
-		if ($useServerPat === false) {
+	private function auditServerPatSuccess(GitHubIssueDelivery $delivery, int $issueNumber): void {
+		if ($delivery->useServerPat === false) {
 			return;
 		}
 
+		$this->logger->info(
+			message: '[GitHubHandler] Server-PAT submission succeeded',
+			context: $this->serverPatContext(submission: $delivery->submission, issueNumber: $issueNumber)
+		);
+	}//end auditServerPatSuccess()
+
+	/**
+	 * Audit a server-PAT submission that failed; a user-PAT one is not audited here.
+	 *
+	 * @param GitHubIssueDelivery  $delivery The submission and its credential.
+	 * @param array<string, mixed> $failure  `error_code` and `github_status`.
+	 *
+	 * @return void
+	 */
+	private function auditServerPatFailure(GitHubIssueDelivery $delivery, array $failure): void {
+		if ($delivery->useServerPat === false) {
+			return;
+		}
+
+		$this->logger->warning(
+			message: '[GitHubHandler] Server-PAT submission failed',
+			context: $this->serverPatContext(submission: $delivery->submission, issueNumber: 0) + $failure
+		);
+	}//end auditServerPatFailure()
+
+	/**
+	 * The audit context of a server-PAT submission.
+	 *
+	 * @param GitHubIssueSubmission $submission  Where the issue went and who submitted it.
+	 * @param int                   $issueNumber The issue number, 0 when none was created.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	private function serverPatContext(GitHubIssueSubmission $submission, int $issueNumber): array {
 		$context = ['user_id' => $submission->userId, 'repo' => $submission->repoSlug(), 'issue_number' => $issueNumber];
-		$context += ['specref' => $submission->specRef ?? '', 'timestamp' => gmdate('c')];
-		if ($failure === null) {
-			$this->logger->info(message: '[GitHubHandler] Server-PAT submission succeeded', context: $context);
-			return;
-		}
 
-		$this->logger->warning(message: '[GitHubHandler] Server-PAT submission failed', context: $context + $failure);
-	}//end auditServerPatSubmission()
+		return $context + ['specref' => $submission->specRef ?? '', 'timestamp' => gmdate('c')];
+	}//end serverPatContext()
 
 	/**
 	 * Extract GitHub's HTTP status from a Guzzle exception when available. Returns 0 when the

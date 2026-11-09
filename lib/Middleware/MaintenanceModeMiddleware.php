@@ -24,8 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Controller\OperationsConsoleController;
-use OCA\OpenRegister\Service\Operations\MaintenanceModeService;
+use OCA\OpenRegister\Controller\Support\MaintenanceReachableControllersInterface;
+use OCA\OpenRegister\Service\Operations\MaintenanceModeHoldInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -54,14 +54,14 @@ class MaintenanceModeMiddleware extends Middleware {
 	 *
 	 * @var array<int, string>
 	 */
-	private const ALWAYS_REACHABLE = [OperationsConsoleController::class];
+	private const ALWAYS_REACHABLE = MaintenanceReachableControllersInterface::ALWAYS_REACHABLE;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param MaintenanceModeService $maintenance The mode.
+	 * @param MaintenanceModeHoldInterface $maintenance The mode.
 	 */
-	public function __construct(private readonly MaintenanceModeService $maintenance) {
+	public function __construct(private readonly MaintenanceModeHoldInterface $maintenance) {
 	}//end __construct()
 
 	/**

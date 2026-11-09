@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Harvests + dedups evidence onto a case.
  */
-class EvidenceHarvestService {
+class EvidenceHarvestService implements EvidenceHarvestServiceInterface {
 	/**
 	 * Constructor.
 	 *

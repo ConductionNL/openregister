@@ -28,6 +28,8 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectDeadline;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
+use OCA\OpenRegister\Service\Gdpr\SubjectRecords;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectEntityIndex;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectLoader;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectWriter;
@@ -212,22 +214,15 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 	private function buildService(): DataSubjectRequestService {
 		$logger = $this->createMock(LoggerInterface::class);
 
-		return new DataSubjectRequestService(
-			index: new SubjectEntityIndex(db: $this->db, logger: $logger),
-			loader: new SubjectObjectLoader(objectMapper: $this->objectMapper, logger: $logger),
-			writer: new SubjectObjectWriter(
+		return new DataSubjectRequestService(records: new SubjectRecords(index: new SubjectEntityIndex(db: $this->db, logger: $logger), loader: new SubjectObjectLoader(objectMapper: $this->objectMapper, logger: $logger), writer: new SubjectObjectWriter(
 				objectService: $this->objectService,
 				dsarService: $this->dsarService,
 				userSession: $this->userSession,
 				logger: $logger
-			),
-			retentionGate: new SubjectRetentionGate(
+			)), retentionGate: new SubjectRetentionGate(
 				retentionService: $this->retentionService,
 				archivalGuard: new ArchivalRetentionGuard($this->schemaMapper, $logger)
-			),
-			deadline: new DataSubjectDeadline(),
-			logger: $logger
-		);
+			), deadline: new DataSubjectDeadline(), logger: $logger);
 
 	}//end buildService()
 
@@ -474,7 +469,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 	public function testDiscoveryShapes(): void {
 		$this->db->expects($this->never())->method('getQueryBuilder');
 		$this->assertSame([], $this->buildService()->findSubjectData(subjectId: '   '));
-		$this->assertSame([], $this->buildService()->findSubjectObjects(subjectId: ''));
+		$this->assertSame([], $this->buildService()->findSubjectObjects(query: new SubjectQuery(subjectId: '')));
 
 	}//end testDiscoveryShapes()
 
@@ -488,7 +483,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$a = $this->object('a');
 		$seven = $this->object('7');
 
-		$hits = $this->buildService()->findSubjectObjects(subjectId: 'ja%ne', type: 'email', mode: 'ilike', rbac: false, multitenancy: false);
+		$hits = $this->buildService()->findSubjectObjects(query: new SubjectQuery(subjectId: 'ja%ne', type: 'email', mode: 'ilike'), rbac: false, multitenancy: false);
 
 		$this->assertSame(['%ja\\%ne%', 'email'], $this->params);
 		$this->assertCount(2, $hits);

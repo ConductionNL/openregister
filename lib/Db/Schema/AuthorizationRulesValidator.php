@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Db\Schema;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 
 /**
  * Refuses an authorization block, schema-level or on a property, that names an unknown action or a malformed rule.
@@ -58,7 +58,7 @@ final class AuthorizationRulesValidator {
 	 * @param array<int, string> $declaredActions The actions the schema declares.
 	 */
 	public function __construct(array $declaredActions) {
-		$this->validActions = array_merge(array_keys(PermissionCatalogue::CANONICAL), $declaredActions);
+		$this->validActions = array_merge(array_keys(PermissionCatalogueInterface::CANONICAL), $declaredActions);
 		$this->controls = new AuthorizationControlKeys();
 	}//end __construct()
 

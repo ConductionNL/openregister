@@ -45,8 +45,10 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemMapper;
+use OCA\OpenRegister\Db\CaseItemMapperInterface;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\OpenRegister\Db\CalendarLinkMapperInterface;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages;
@@ -63,10 +65,12 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesStore;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
@@ -76,11 +80,13 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetOwnRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds;
 use OCA\OpenRegister\Db\DeckLinkMapper;
+use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates;
@@ -94,6 +100,7 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
+use OCA\OpenRegister\Db\TaskAuditMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -101,6 +108,7 @@ use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
+use OCA\OpenRegister\Db\ObjectReadStateMapperInterface;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException as CommentNotFoundException;
@@ -110,6 +118,8 @@ use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
@@ -315,27 +325,27 @@ abstract class ExampleSetTestCase extends TestCase {
 			WatcherMapperInterface::class      => $this->watcherMapper(),
 			PartyRoleService::class   => $this->partyRoles(),
 			PartyService::class       => $this->partyService(),
-			ContactLinkMapper::class  => $this->contactLinks(),
+			ContactLinkMapperInterface::class => $this->contactLinks(),
 			ICommentsManager::class   => $this->commentsManager(),
-			ObjectReadStateMapper::class => $this->readStateMapper(),
+			ObjectReadStateMapperInterface::class => $this->readStateMapper(),
 			FlowMapper::class         => $this->flowMapper(),
 			FlowVersionService::class => $this->flowVersions(),
 			FlowService::class        => $this->flowService(),
 			FlowRunMapperInterface::class      => $this->flowRunMapper(),
-			TaskAuditMapper::class    => $this->taskAuditMapper(),
+			TaskAuditMapperInterface::class => $this->taskAuditMapper(),
 			ExampleSetDeckStore::class => $this->deckStore(),
 			ExampleSetCollectivesStore::class => $this->collectivesStore(),
 			ExampleSetTalkStore::class => $this->talkStore(),
-			TalkLinkMapper::class     => $this->talkLinkMapper(),
+			TalkLinkMapperInterface::class => $this->talkLinkMapper(),
 			AuditTrailMapperInterface::class => $this->auditTrailMapper(),
 			TimelineEntryMapper::class => $this->timelineEntryMapper(),
 			TimelineKindService::class => $this->timelineKindService(),
-			DeckLinkMapper::class     => $this->deckLinkMapper(),
-			EmailLinkMapper::class    => $this->emailLinkMapper(),
+			DeckLinkMapperInterface::class => $this->deckLinkMapper(),
+			EmailLinkMapperInterface::class => $this->emailLinkMapper(),
 			CalDavBackend::class      => $this->caldav(),
-			CalendarLinkMapper::class => $this->calendarLinkMapper(),
+			CalendarLinkMapperInterface::class => $this->calendarLinkMapper(),
 			CasePlanService::class    => $this->casePlans(),
-			CaseItemMapper::class     => $this->caseItemMapper(),
+			CaseItemMapperInterface::class => $this->caseItemMapper(),
 			IUserManager::class       => $this->createMock(IUserManager::class),
 			OrganisationServiceInterface::class => $this->organisationService(),
 			default                   => $this->services[$id],
@@ -584,15 +594,15 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function viewService(): ViewService {
 		$service = $this->createMock(ViewService::class);
 		$service->method('create')->willReturnCallback(
-			function (string $name, string $description, string $owner, bool $isPublic, bool $isDefault, array $query, ?array $presentation = null, ?array $sharedWith = null, ?array $alert = null): View {
+			function (ViewDefinition $definition, ViewAudience $audience, ?array $alert = null): View {
 				$view = new View();
 				$view->setUuid('view-'.(++$this->viewsCreated));
-				$view->setName($name);
-				$view->setOwner($owner);
-				$view->setIsPublic($isPublic);
-				$view->setQuery($query);
+				$view->setName($definition->name);
+				$view->setOwner($audience->owner);
+				$view->setIsPublic($audience->isPublic);
+				$view->setQuery($definition->query);
 				$view->setAlert($alert);
-				$view->setSharedWith($sharedWith ?? []);
+				$view->setSharedWith($audience->sharedWith ?? []);
 				$this->savedViews[(string) $view->getUuid()] = $view;
 				return $view;
 			}
@@ -1214,8 +1224,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function readStateMapper(): ObjectReadStateMapper {
 		$mapper = $this->createMock(ObjectReadStateMapper::class);
 		$mapper->method('markSeen')->willReturnCallback(
-			function (string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?array $subSeen = null, ?\DateTime $seenAt = null): ObjectReadState {
-				$this->readStates[$userId.' '.$objectUuid] = ($seenAt ?? new \DateTime());
+			function (ObjectReadState $sighting): ObjectReadState {
+				$this->readStates[$sighting->getUserId().' '.$sighting->getObjectUuid()] = ($sighting->getLastSeenAt() ?? new \DateTime());
 				return new ObjectReadState();
 			}
 		);
@@ -1237,14 +1247,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function watcherMapper(): WatcherMapper {
 		$mapper = $this->createMock(WatcherMapper::class);
 		$mapper->method('subscribe')->willReturnCallback(
-			function (string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?bool $notify = null): Watcher {
-				$watcher = new Watcher();
-				$watcher->setUserId($userId);
-				$watcher->setObjectUuid($objectUuid);
-				$watcher->setRegister($register);
-				$watcher->setSchema($schema);
+			function (Watcher $watcher, ?bool $notify = null): Watcher {
 				$watcher->setNotify($notify ?? true);
-				$this->follows[$userId.' '.$objectUuid] = $watcher;
+				$this->follows[$watcher->getUserId().' '.$watcher->getObjectUuid()] = $watcher;
 				return $watcher;
 			}
 		);
@@ -1266,7 +1271,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function partyRoles(): PartyRoleService {
 		$roles = $this->createMock(PartyRoleService::class);
 		$roles->method('importParty')->willReturnCallback(
-			function (string $objectUuid, int $registerId, int|string|null $schemaId, array $payload, string $linkedBy): ContactLink {
+			function (ObjectEntity $object, array $payload, string $linkedBy): ContactLink {
+				$objectUuid = (string) $object->getUuid();
+				$registerId = (int) $object->getRegister();
 				if (str_starts_with((string) $payload['partyUuid'], 'not-a-party') === true) {
 					throw new \Exception('Object "'.$payload['partyUuid'].'" is not a party', 400);
 				}

@@ -25,11 +25,7 @@
 					style="display: none"
 					@change="uploadAvatar" />
 			</div>
-			<p
-				v-if="message"
-				:class="{ section__error: isError, section__success: !isError }">
-				{{ message }}
-			</p>
+			<SectionStatus :message="message" :isError="isError" />
 		</div>
 	</div>
 </template>
@@ -39,16 +35,19 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcAvatar, NcButton } from '@nextcloud/vue'
+import SectionStatus from '../../../components/shared/SectionStatus.vue'
+import { sectionStatus } from '../../../composables/sectionStatus.js'
 
 export default {
 	name: 'AvatarSection',
-	components: { NcAvatar, NcButton },
+	components: { NcAvatar, NcButton, SectionStatus },
+
+	mixins: [sectionStatus],
+
 	data() {
 		return {
 			userId: '',
 			canChangeAvatar: true,
-			message: '',
-			isError: false,
 		}
 	},
 
@@ -102,13 +101,9 @@ export default {
 					data,
 					{ headers: { 'Content-Type': file.type } },
 				)
-				this.message = t('openregister', 'Avatar updated successfully')
-				this.isError = false
+				this.setStatus(t('openregister', 'Avatar updated successfully'))
 			} catch (e) {
-				this.message =
-					e.response?.data?.error
-					|| t('openregister', 'Failed to upload avatar')
-				this.isError = true
+				this.setStatusError(e, t('openregister', 'Failed to upload avatar'))
 			}
 		},
 
@@ -124,13 +119,9 @@ export default {
 				await axios.delete(
 					generateUrl('/apps/openregister/api/user/me/avatar'),
 				)
-				this.message = t('openregister', 'Avatar removed')
-				this.isError = false
+				this.setStatus(t('openregister', 'Avatar removed'))
 			} catch (e) {
-				this.message =
-					e.response?.data?.error
-					|| t('openregister', 'Failed to remove avatar')
-				this.isError = true
+				this.setStatusError(e, t('openregister', 'Failed to remove avatar'))
 			}
 		},
 	},

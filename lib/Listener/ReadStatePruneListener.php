@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Listener\Support\HandlesObjectDeletion;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -50,12 +50,12 @@ final class ReadStatePruneListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ReadStateService $readState The read-state primitive, which owns the cleanup.
+	 * @param ReadStateServiceInterface $readState The read-state primitive, which owns the cleanup.
 	 * @param NotificationClearingServiceInterface $clearing Archives notices whose subject is gone.
 	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
-		private readonly ReadStateService $readState,
+		private readonly ReadStateServiceInterface $readState,
 		private readonly NotificationClearingServiceInterface $clearing,
 		private readonly LoggerInterface $logger,
 	) {

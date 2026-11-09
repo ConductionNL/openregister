@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -118,8 +119,8 @@ class CalculationOnSaveUnresolvedReferenceTest extends TestCase {
 			->onlyMethods(['record'])
 			->getMock();
 		$this->ruleRuns->method('record')->willReturnCallback(
-			function (string $ruleId, string $schemaSlug, RuleTrace $trace): void {
-				$this->traces[$ruleId] = $trace;
+			function (RuleRunSubject $subject, RuleTrace $trace): void {
+				$this->traces[$subject->ruleId] = $trace;
 			}
 		);
 

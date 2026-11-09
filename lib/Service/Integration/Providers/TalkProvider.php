@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use DateTime;
 use OCA\OpenRegister\Db\TalkLink;
-use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -65,7 +65,7 @@ class TalkProvider extends AbstractIntegrationProvider {
 		private IAppManager $appManager,
 		private IUserSession $userSession,
 		private IL10N $l10n,
-		private ?TalkLinkMapper $talkLinkMapper = null,
+		private ?TalkLinkMapperInterface $talkLinkMapper = null,
 	) {
 	}//end __construct()
 

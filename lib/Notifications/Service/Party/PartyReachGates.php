@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Party;
 
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Service\Party\PartySendRefusalInterface;
 
 /**
  * The declared indicators and the opt-out authority, which decide who may be reached.
@@ -34,11 +34,11 @@ final readonly class PartyReachGates {
 	/**
 	 * Bundle the gates.
 	 *
-	 * @param PartyIndicatorGuard $indicators The declared effects, which decide who may be reached.
-	 * @param OptOutAuthority     $optOut     Asks integriq whether a party's address may be mailed.
+	 * @param PartySendRefusalInterface $indicators The declared effects, which decide who may be reached.
+	 * @param OptOutAuthority           $optOut     Asks integriq whether a party's address may be mailed.
 	 */
 	public function __construct(
-		public PartyIndicatorGuard $indicators,
+		public PartySendRefusalInterface $indicators,
 		public OptOutAuthority $optOut,
 	) {
 	}//end __construct()
