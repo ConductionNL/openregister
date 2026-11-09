@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\RevertController;
+use OCA\OpenRegister\Controller\Support\RevertControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -66,7 +67,7 @@ final class RevertControllerA24GoldenTest extends TestCase {
 		$request->method('getParams')->willReturn($params);
 		$this->handler = $this->createMock(RevertHandler::class);
 
-		return new RevertController('openregister', $request, $this->handler, $objects);
+		return new RevertController($request, new RevertControllerServices($this->handler, $objects));
 	}//end controller()
 
 	/**

@@ -612,14 +612,15 @@ class SaveObjects {
 	 */
 	private function safeguardBulkObjects(BulkSaveRun $run, array $objects): array {
 		$safeguardStart = microtime(true);
-		$objects = $this->refuseInvalidDecisionTables(objects: $objects, register: $run->register, schema: $run->schema, result: $run->result);
-		$flags   = ['rbac' => $run->rbac, 'validation' => $run->validation, 'multitenancy' => $run->multitenancy];
-		$objects = $this->applyBulkSafeguards(
+		$objects = $this->refuseInvalidDecisionTables(run: $run, objects: $objects);
+		$batch   = new SafeguardBatchRun(
 			objects: $objects,
 			defaults: new BulkBatchDefaults(register: $run->register, schema: $run->schema),
-			flags: $flags,
+			flags: ['rbac' => $run->rbac, 'validation' => $run->validation, 'multitenancy' => $run->multitenancy],
 			result: $run->result
 		);
+		$objects     = $this->applyBulkSafeguards(batch: $batch);
+		$run->result = $batch->result;
 		$run->safeguardMs = round((microtime(true) - $safeguardStart) * 1000, 2);
 
 		return $objects;
@@ -922,49 +923,43 @@ class SaveObjects {
 	 * wiring DOES inject all three, so production callers get the full
 	 * pipeline.
 	 *
-	 * @param array<int, array<string, mixed>> $objects Raw input objects.
-	 * @param BulkBatchDefaults $defaults Default register and schema context (schema null = mixed-schema).
-	 * @param array{rbac: bool, validation: bool, multitenancy?: bool} $flags The caller-requested
-	 *                                   RBAC, validation and multitenancy flags (admin may set rbac and multitenancy false).
-	 * @param array $result Result accumulator (mutated in place: `invalid` + `statistics`).
+	 * @param SafeguardBatchRun $batch The raw input objects, the default register and schema context
+	 *                                 (schema null = mixed-schema), the caller-requested RBAC, validation
+	 *                                 and multitenancy flags (admin may set rbac and multitenancy false),
+	 *                                 and the result accumulator (`invalid` + `statistics` grow in place).
 	 *
 	 * @return array<int, array<string, mixed>> Objects that passed every gate.
 	 */
-	private function applyBulkSafeguards(
-		array $objects,
-		BulkBatchDefaults $defaults,
-		array $flags,
-		array &$result,
-	): array {
+	private function applyBulkSafeguards(SafeguardBatchRun $batch): array {
 		// No-op when dependencies are not wired (legacy constructor signature).
 		if ($this->permissionHandler === null) {
-			return $objects;
+			return $batch->objects;
 		}
 
-		$run = $this->startBulkSafeguardRun(objects: $objects, defaults: $defaults, flags: $flags);
-
-		return $this->screenSafeguardBatch(objects: $objects, run: $run, result: $result);
+		return $this->screenSafeguardBatch(batch: $batch, run: $this->startBulkSafeguardRun(batch: $batch));
 	}//end applyBulkSafeguards()
 
 	/**
 	 * Every row of a batch through the gates, in order; a refused row lands in the result.
 	 *
-	 * @param array<int|string, array<string, mixed>> $objects The rows.
-	 * @param BulkSafeguardRun                        $run     The safeguard pass.
-	 * @param array                                   $result  Result accumulator (mutated in place).
+	 * @param SafeguardBatchRun $batch The rows, and the result accumulator (mutated in place).
+	 * @param BulkSafeguardRun  $run   The safeguard pass.
 	 *
 	 * @return array<int, array<string, mixed>> The rows that passed.
 	 */
-	private function screenSafeguardBatch(array $objects, BulkSafeguardRun $run, array &$result): array {
+	private function screenSafeguardBatch(SafeguardBatchRun $batch, BulkSafeguardRun $run): array {
 		$passed = [];
-		foreach ($objects as $index => $object) {
+		foreach ($batch->objects as $index => $object) {
 			[$row, $refusal] = $this->screenSafeguardRow(object: $object, run: $run);
 			if ($refusal === null) {
 				$passed[] = $row;
 				continue;
 			}
 
-			$this->recordSafeguardRejection(object: $row, reason: $refusal, result: $result, index: self::batchPosition(index: $index));
+			$this->recordSafeguardRejection(
+				rejection: new SafeguardRejection(object: $row, reason: $refusal, index: self::batchPosition(index: $index)),
+				result: $batch->result
+			);
 		}
 
 		return $passed;
@@ -997,20 +992,20 @@ class SaveObjects {
 	 * A group whose probe failed is absent from the map, and the row lookup falls back to
 	 * its own query: an empty map means "not prefetched", never "nothing exists".
 	 *
-	 * @param array             $objects  The rows of the batch
-	 * @param BulkBatchDefaults $defaults The batch's default register and schema
-	 * @param array{rbac: bool, validation: bool, multitenancy?: bool} $flags The caller's flags
+	 * @param SafeguardBatchRun $batch The rows of the batch, its default register and schema, and the caller's flags
 	 *
 	 * @return BulkSafeguardRun
 	 */
-	private function startBulkSafeguardRun(array $objects, BulkBatchDefaults $defaults, array $flags): BulkSafeguardRun {
+	private function startBulkSafeguardRun(SafeguardBatchRun $batch): BulkSafeguardRun {
+		$flags    = $batch->flags;
+		$defaults = $batch->defaults;
 		$run             = new BulkSafeguardRun(currentUser: $this->userSession->getUser());
 		$run->isAdmin    = $this->safeguardCallerIsAdmin(run: $run);
 		$run->rbac       = ($flags['rbac'] === true || $run->isAdmin === false);
 		$run->validation = $flags['validation'];
 		$run->multitenancy = (($flags['multitenancy'] ?? true) === true || $run->isAdmin === false);
 		$this->resolveSafeguardDefaults(run: $run, defaults: ['register' => $defaults->register, 'schema' => $defaults->schema]);
-		$run->existingByUuid = $this->prefetchExistingRows(objects: $objects, run: $run);
+		$run->existingByUuid = $this->prefetchExistingRows(objects: $batch->objects, run: $run);
 
 		return $run;
 	}//end startBulkSafeguardRun()
@@ -1248,12 +1243,7 @@ class SaveObjects {
 			return [$row, null];
 		}
 
-		return $this->applyPropertyAuthorization(
-			object: $row,
-			schema: $run->rowSchema,
-			existing: $run->rowExisting,
-			isCreate: ($run->rowAction === 'create')
-		);
+		return $this->applyPropertyAuthorization(object: $row, run: $run);
 	}//end rowPropertyAuthorization()
 
 	/**
@@ -1597,16 +1587,17 @@ class SaveObjects {
 	 * forward, so leaving it out cannot clear it. A system operation is not narrowed. Without the
 	 * property handler a row of a schema that has property rules is refused, never written unchecked.
 	 *
-	 * @param array<string, mixed> $object   The row, business fields at the top and `@self` beside them.
-	 * @param Schema               $schema   The row's schema.
-	 * @param ObjectEntity|null    $existing The stored row on an update, null on a create.
-	 * @param bool                 $isCreate Whether the row creates.
+	 * The row's schema, its stored row (null on a create) and whether it creates come from the safeguard pass.
+	 *
+	 * @param array<string, mixed> $object The row, business fields at the top and `@self` beside them.
+	 * @param BulkSafeguardRun     $run    The safeguard pass, positioned on this row.
 	 *
 	 * @return array{0: array<string, mixed>, 1: string|null} The row to write, and a refusal or null.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
 	 */
-	private function applyPropertyAuthorization(array $object, Schema $schema, ?ObjectEntity $existing, bool $isCreate): array {
+	private function applyPropertyAuthorization(array $object, BulkSafeguardRun $run): array {
+		$schema = $run->rowSchema;
 		// A system operation (cron, runAsSystem, the example-set installer) is trusted here as
 		// PermissionHandlerInterface::hasPermission trusts it for the object rule.
 		if (SystemOperationContext::isActive() === true) {
@@ -1618,8 +1609,8 @@ class SaveObjects {
 			return [$object, self::unguardedPropertyRefusal(schema: $schema)];
 		}
 
-		$check   = new BulkRowPropertyAuthorization(propertyRbac: $propertyRbac, schema: $schema, existing: $existing);
-		$refusal = $check->refusal(object: $object, isCreate: $isCreate);
+		$check   = new BulkRowPropertyAuthorization(propertyRbac: $propertyRbac, schema: $schema, existing: $run->rowExisting);
+		$refusal = $check->refusal(object: $object, isCreate: ($run->rowAction === 'create'));
 		if ($refusal !== null) {
 			return [$object, $refusal];
 		}
@@ -2128,15 +2119,16 @@ class SaveObjects {
 	 * index is the caller's own array key, so it maps straight back onto the
 	 * payload they sent.
 	 *
-	 * @param array $object Sanitised row (post-strip — safe to log shape).
-	 * @param string $reason Human-readable rejection reason.
-	 * @param array $result Result accumulator (mutated in place).
-	 * @param int|null $index Position of the row in the submitted batch, when known.
+	 * @param SafeguardRejection $rejection The sanitised row (post-strip — safe to log shape), the human-readable
+	 *                                      reason, and the row's position in the submitted batch, when known.
+	 * @param array              $result    Result accumulator (mutated in place).
 	 *
 	 * @return void
 	 */
-	private function recordSafeguardRejection(array $object, string $reason, array &$result, ?int $index = null): void {
-		$result['invalid'][] = ['object' => $object, 'error' => $reason, 'index' => $index, 'type' => 'BulkSafeguardException'];
+	private function recordSafeguardRejection(SafeguardRejection $rejection, array &$result): void {
+		$reason = $rejection->reason;
+		$index  = $rejection->index;
+		$result['invalid'][] = ['object' => $rejection->object, 'error' => $reason, 'index' => $index, 'type' => 'BulkSafeguardException'];
 		$result['errors'][]  = ['error' => $reason, 'type' => 'BulkSafeguardException', 'index' => $index];
 		$result['statistics']['invalid']++;
 		$result['statistics']['errors']++;
@@ -2319,7 +2311,7 @@ class SaveObjects {
 		$selfData['relations'] = (new BulkRelationScanner())->scan(data: $tempEntity->getObject(), run: new BulkRelationRun(schema: $schema));
 		$object['@self'] = $selfData;
 
-		return $this->handlePreValidationCascading(object: $object, schema: $schema, uuid: $selfData['id'])[0];
+		return $this->handlePreValidationCascading(object: $object, uuid: $selfData['id'])[0];
 	}//end prepareMixedSchemaObject()
 
 	/**
@@ -3163,27 +3155,32 @@ class SaveObjects {
 			return null;
 		}
 
-		return $this->chunkCreateRefusal(handler: $handler, schema: $schema, run: $run, owner: ($objData['owner'] ?? null));
+		$create = new BulkCreateCheck(
+			schema: $schema,
+			owner: ($objData['owner'] ?? null),
+			userId: $run->userId,
+			registerId: $this->runRegisterId(run: $run)
+		);
+
+		return $this->chunkCreateRefusal(handler: $handler, create: $create);
 	}//end chunkPermissionRefusal()
 
 	/**
 	 * The refusal of a create the permission handler does not grant, or null.
 	 *
 	 * @param PermissionHandlerInterface $handler The permission handler.
-	 * @param Schema                     $schema  The row's schema.
-	 * @param BulkSaveRun                $run     The bulk save call.
-	 * @param mixed                      $owner   The row's owner.
+	 * @param BulkCreateCheck            $create  The row's schema and owner, the user and the register of the call.
 	 *
 	 * @return array{error: string, type: string}|null The refusal.
 	 */
-	private function chunkCreateRefusal(PermissionHandlerInterface $handler, Schema $schema, BulkSaveRun $run, mixed $owner): ?array {
+	private function chunkCreateRefusal(PermissionHandlerInterface $handler, BulkCreateCheck $create): ?array {
 		$hasPermission = $handler->hasPermission(
-			schema: $schema,
+			schema: $create->schema,
 			action: 'create',
-			userId: $run->userId,
-			objectOwner: $owner,
+			userId: $create->userId,
+			objectOwner: $create->owner,
 			_rbac: true,
-			register: $this->runRegisterId(run: $run)
+			register: $create->registerId
 		);
 		if ($hasPermission === true) {
 			return null;
@@ -3918,9 +3915,8 @@ class SaveObjects {
 	 * TODO: Implement full cascading support for bulk operations by integrating with
 	 * SaveObject.cascadeObjects() method or implementing bulk-optimized cascading.
 	 *
-	 * @param array $object The object data to process
-	 * @param Schema $schema The schema containing property definitions
-	 * @param string|null $uuid The UUID of the parent object (will be generated if null)
+	 * @param array       $object The object data to process
+	 * @param string|null $uuid   The UUID of the parent object (will be generated if null)
 	 *
 	 * @return array Array containing [processedObject, parentUuid]
 	 *
@@ -3928,7 +3924,7 @@ class SaveObjects {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid): array {
+	private function handlePreValidationCascading(array $object, ?string $uuid): array {
 		// SIMPLIFIED: For bulk operations, we skip complex cascading for now.
 		// and handle it later in individual object processing if needed.
 		if ($uuid === null) {
@@ -4421,22 +4417,19 @@ class SaveObjects {
 	 * DecisionTableValidationListener never ran for a bulk save. Runs before the other safeguards, on the caller's
 	 * own array positions, so a refusal names the row it is about.
 	 *
-	 * @param array<int|string, array<string, mixed>> $objects  The raw rows.
-	 * @param Register|string|int|null                $register Default register context.
-	 * @param Schema|string|int|null                  $schema   Default schema context.
-	 * @param array                                   $result   Result accumulator (mutated in place).
+	 * @param BulkSaveRun                             $run     The bulk save call: its default register and schema
+	 *                                                         context, and its result (refused rows land in it).
+	 * @param array<int|string, array<string, mixed>> $objects The raw rows.
 	 *
 	 * @return array<int|string, array<string, mixed>> The rows that may go on.
 	 */
-	private function refuseInvalidDecisionTables(
-		array $objects,
-		Register|string|int|null $register,
-		Schema|string|int|null $schema,
-		array &$result
-	): array {
-		$refusals = ($this->rowRules?->decisionTables?->refusals(objects: $objects, register: $register, schema: $schema) ?? []);
+	private function refuseInvalidDecisionTables(BulkSaveRun $run, array $objects): array {
+		$refusals = ($this->rowRules?->decisionTables?->refusals(objects: $objects, register: $run->register, schema: $run->schema) ?? []);
 		foreach ($refusals as $position => $reason) {
-			$this->recordSafeguardRejection(object: $objects[$position], reason: $reason, result: $result, index: self::positionIndex(position: $position));
+			$this->recordSafeguardRejection(
+				rejection: new SafeguardRejection(object: $objects[$position], reason: $reason, index: self::positionIndex(position: $position)),
+				result: $run->result
+			);
 			unset($objects[$position]);
 		}
 

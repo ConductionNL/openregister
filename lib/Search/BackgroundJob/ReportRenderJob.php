@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Search\BackgroundJob\Support\DashboardRenderRun;
 use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderDelivery;
 use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderPlatform;
 use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderSources;
@@ -245,14 +246,14 @@ class ReportRenderJob extends TimedJob {
 		$skipped = 0;
 		foreach ($candidates as $dashboard) {
 			$payload = $dashboard->getObject() ?? [];
-			$schedule = ($payload['schedule'] ?? null);
-			if ($this->shouldRender(payload: $payload, schedule: $schedule, now: $now) === false) {
+			$dashboardRun = new DashboardRenderRun(dashboard: $dashboard, payload: $payload);
+			if ($this->shouldRender(run: $dashboardRun, now: $now) === false) {
 				$skipped++;
 				continue;
 			}
 
 			try {
-				$this->renderAndDeliver(dashboard: $dashboard, payload: $payload);
+				$this->renderAndDeliver(run: $dashboardRun);
 				$rendered++;
 			} catch (\Throwable $e) {
 				$this->logger->warning(
@@ -281,13 +282,13 @@ class ReportRenderJob extends TimedJob {
 	/**
 	 * Should the dashboard be rendered now?
 	 *
-	 * @param array<string, mixed> $payload Dashboard data.
-	 * @param array<string, mixed>|null $schedule Schedule descriptor.
-	 * @param DateTime $now Reference time.
+	 * @param DashboardRenderRun $run The dashboard and its data.
+	 * @param DateTime           $now Reference time.
 	 *
 	 * @return bool
 	 */
-	private function shouldRender(array $payload, $schedule, DateTime $now): bool {
+	private function shouldRender(DashboardRenderRun $run, DateTime $now): bool {
+		$schedule = $run->schedule();
 		if (is_array($schedule) === false) {
 			return false;
 		}
@@ -302,7 +303,7 @@ class ReportRenderJob extends TimedJob {
 			return false;
 		}
 
-		$lastRendered = ($payload['lastRenderedAt'] ?? null);
+		$lastRendered = ($run->payload['lastRenderedAt'] ?? null);
 		if (is_string($lastRendered) === true && $lastRendered !== '') {
 			try {
 				$last = new DateTime($lastRendered);
@@ -321,36 +322,25 @@ class ReportRenderJob extends TimedJob {
 	/**
 	 * Render + deliver a single dashboard.
 	 *
-	 * @param ObjectEntity $dashboard Dashboard entity.
-	 * @param array<string, mixed> $payload Dashboard data.
+	 * @param DashboardRenderRun $run The dashboard and its data.
 	 *
 	 * @return void
 	 */
-	private function renderAndDeliver(ObjectEntity $dashboard, array $payload): void {
-		$delivery = ($payload['delivery'] ?? []);
+	private function renderAndDeliver(DashboardRenderRun $run): void {
+		$delivery = $run->delivery();
 		$format = (string)($delivery['format'] ?? 'xlsx');
 		if (in_array(needle: $format, haystack: ReportRenderService::FORMATS, strict: true) === false) {
 			$format = 'xlsx';
 		}
 
 		$rendered = $this->renderService->render(
-			dashboard: $dashboard,
+			dashboard: $run->dashboard,
 			format: $format
 		);
 
 		$channel = (string)($delivery['channel'] ?? 'files');
 		if ($channel === 'files' || $channel === 'both') {
-			$deliveryArray = [];
-			if (is_array($delivery) === true) {
-				$deliveryArray = $delivery;
-			}
-
-			$this->writeToFiles(
-				dashboard: $dashboard,
-				payload: $payload,
-				rendered: $rendered,
-				delivery: $deliveryArray
-			);
+			$this->writeToFiles(run: $run, rendered: $rendered);
 		}
 
 		// Email channel is Phase 2b.
@@ -363,14 +353,13 @@ class ReportRenderJob extends TimedJob {
 	 * dashboard owner's home. When the dashboard's `delivery.filesFolder`
 	 * is set, that path is used instead.
 	 *
-	 * @param ObjectEntity $dashboard Dashboard entity.
-	 * @param array<string, mixed> $payload Dashboard data.
+	 * @param DashboardRenderRun   $run      The dashboard, its data and delivery descriptor.
 	 * @param array<string, mixed> $rendered ReportRenderService::render output.
-	 * @param array<string, mixed> $delivery Delivery descriptor.
 	 *
 	 * @return void
 	 */
-	private function writeToFiles(ObjectEntity $dashboard, array $payload, array $rendered, array $delivery): void {
+	private function writeToFiles(DashboardRenderRun $run, array $rendered): void {
+		$dashboard = $run->dashboard;
 		// SECURITY: refuse to fall back to 'admin' when the dashboard
 		// owner is null. The previous default dropped attacker-controlled
 		// bytes (rendered HTML/PDF derived from a user-writable
@@ -397,9 +386,9 @@ class ReportRenderJob extends TimedJob {
 			return;
 		}
 
-		$folderPath = (string)($delivery['filesFolder'] ?? '');
+		$folderPath = (string)($run->delivery()['filesFolder'] ?? '');
 		if ($folderPath === '') {
-			$slug = $this->slugify(value: (string)($payload['titel'] ?? 'dashboard'));
+			$slug = $this->slugify(value: (string)($run->payload['titel'] ?? 'dashboard'));
 			$folderPath = sprintf('Reports/%s', $slug);
 		}
 
