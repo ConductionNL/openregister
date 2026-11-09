@@ -6,6 +6,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\RevertController;
+use OCA\OpenRegister\Controller\Support\RevertControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -34,9 +35,10 @@ class RevertControllerTest extends TestCase {
 		$this->revertService = $this->createMock(RevertHandler::class);
 
 		$this->controller = new RevertController(
-			'openregister',
 			$this->request,
-			$this->revertService
+			new RevertControllerServices(
+				$this->revertService
+			)
 		);
 	}
 
