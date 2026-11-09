@@ -4637,14 +4637,43 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			]
 		);
 
-		// Live (non-orphaned) magic tables, keyed by unprefixed table name.
-		$candidates = $this->getLiveMagicTables();
+		$template = new MagicCrossTableHit(identifier: $identifier);
+		$template->includeDeleted = $includeDeleted;
+		$template->rbac           = $_rbac;
+		$template->multitenancy   = $_multitenancy;
 
-		// A caller that named a register gets its tables ONLY. Scanning every
-		// register is both wrong (another register's object does not answer
-		// "is this one of mine?") and ruinous: one union branch per magic table
-		// cost ~3.4s to plan on an instance with 2,728 of them (measured
-		// 2026-07-29, ~1.9s of a ~3.0s object create).
+		// Two phases instead of one `SELECT *` per magic table (an N+1 of ~1,000
+		// queries on a live instance). LOCATE: one UNION ALL per chunk of
+		// MAGIC_TABLE_SCAN_CHUNK_SIZE tables selecting only (table, _id). FETCH:
+		// one `SELECT *` from the table that holds the row. The shared metadata
+		// columns are what make the union across heterogeneous tables well-typed.
+		$candidates = $this->liveMagicTablesInScope(registerIdScope: $registerIdScope);
+		foreach (array_chunk($candidates, self::MAGIC_TABLE_SCAN_CHUNK_SIZE, true) as $chunk) {
+			$found = $this->findInMagicTableChunk(chunk: $chunk, template: $template);
+			if ($found !== null) {
+				return $found;
+			}
+		}
+
+		// Not found in any magic table.
+		throw new DoesNotExistException("Object with identifier '$identifier' not found in any magic table");
+	}//end findAcrossAllMagicTables()
+
+	/**
+	 * The live (non-orphaned) magic tables, keyed by unprefixed table name, narrowed to one register when named.
+	 *
+	 * A caller that named a register gets its tables ONLY. Scanning every
+	 * register is both wrong (another register's object does not answer
+	 * "is this one of mine?") and ruinous: one union branch per magic table
+	 * cost ~3.4s to plan on an instance with 2,728 of them (measured
+	 * 2026-07-29, ~1.9s of a ~3.0s object create).
+	 *
+	 * @param int|null $registerIdScope The register to stay inside, or null for every register.
+	 *
+	 * @return array<string, array{registerId: int|string, schemaId: int|string}>
+	 */
+	private function liveMagicTablesInScope(?int $registerIdScope): array {
+		$candidates = $this->getLiveMagicTables();
 		if ($registerIdScope !== null) {
 			$candidates = array_filter(
 				$candidates,
@@ -4661,49 +4690,39 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			]
 		);
 
-		$probe = new MagicIdentifierProbe(identifier: (string)$identifier, includeDeleted: $includeDeleted);
+		return $candidates;
+	}//end liveMagicTablesInScope()
 
-		// Two phases instead of one `SELECT *` per magic table (an N+1 of ~1,000
-		// queries on a live instance). LOCATE: one UNION ALL per chunk of
-		// MAGIC_TABLE_SCAN_CHUNK_SIZE tables selecting only (table, _id). FETCH:
-		// one `SELECT *` from the table that holds the row. The shared metadata
-		// columns are what make the union across heterogeneous tables well-typed.
-		foreach (array_chunk($candidates, self::MAGIC_TABLE_SCAN_CHUNK_SIZE, true) as $chunk) {
-			$located = $this->locateIdentifierInMagicTables(tables: array_keys($chunk), probe: $probe);
-			if ($located === null) {
-				continue;
-			}
+	/**
+	 * Locate, fetch and resolve the identifier in one chunk of magic tables.
+	 *
+	 * @param array<string, array{registerId: int|string, schemaId: int|string}> $chunk    The tables, keyed by name
+	 * @param MagicCrossTableHit                                                 $template The identifier and flags of the lookup
+	 *
+	 * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}|null The answer, or null to keep scanning.
+	 */
+	private function findInMagicTableChunk(array $chunk, MagicCrossTableHit $template): ?array {
+		$probe   = new MagicIdentifierProbe(identifier: (string)$template->identifier, includeDeleted: $template->includeDeleted);
+		$located = $this->locateIdentifierInMagicTables(tables: array_keys($chunk), probe: $probe);
+		if ($located === null) {
+			return null;
+		}
 
-			$row = $this->fetchMagicRowById(
-				tableName: $located['table'],
-				id: $located['id'],
-				includeDeleted: $includeDeleted
-			);
-			if ($row === null) {
-				// Gone between locate and fetch (concurrent hard delete), or the
-				// table is unreadable. Keep scanning the other chunks.
-				continue;
-			}
+		$row = $this->fetchMagicRowById(tableName: $located['table'], id: $located['id'], includeDeleted: $template->includeDeleted);
+		if ($row === null) {
+			// Gone between locate and fetch (concurrent hard delete), or the
+			// table is unreadable. Keep scanning the other chunks.
+			return null;
+		}
 
-			$hit = new MagicCrossTableHit(identifier: $identifier);
-			$hit->tableName = $located['table'];
-			$hit->id = (int)$located['id'];
-			$hit->row = $row;
-			$hit->registerId = $chunk[$located['table']]['registerId'];
-			$hit->schemaId = $chunk[$located['table']]['schemaId'];
-			$hit->includeDeleted = $includeDeleted;
-			$hit->rbac = $_rbac;
-			$hit->multitenancy = $_multitenancy;
-
-			$found = $this->resolveCrossTableHit(hit: $hit);
-			if ($found !== null) {
-				return $found;
-			}
-		}//end foreach
-
-		// Not found in any magic table.
-		throw new DoesNotExistException("Object with identifier '$identifier' not found in any magic table");
-	}//end findAcrossAllMagicTables()
+		$hit = clone $template;
+		$hit->tableName  = $located['table'];
+		$hit->id         = (int)$located['id'];
+		$hit->row        = $row;
+		$hit->registerId = $chunk[$located['table']]['registerId'];
+		$hit->schemaId   = $chunk[$located['table']]['schemaId'];
+		return $this->resolveCrossTableHit(hit: $hit);
+	}//end findInMagicTableChunk()
 
 	/**
 	 * Turn a located row into the lookup's answer: load its register and
