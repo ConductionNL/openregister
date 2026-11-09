@@ -15,11 +15,7 @@
  * @license EUPL-1.2
  * @copyright 2026 Conduction B.V.
  */
-import {
-	objectStore,
-	registerStore,
-	schemaStore,
-} from '../store/store.js'
+import { objectStore, registerStore, schemaStore } from '../store/store.js'
 
 /**
  * Build the live collection methods.
