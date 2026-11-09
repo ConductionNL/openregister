@@ -121,19 +121,34 @@ class DepartmentMatrixCompiler {
 	 * and both evaluators read it as they read any other. A row past its
 	 * `until` compiles to nothing.
 	 *
-	 * @param array<string, mixed>   $matrix    The declared matrix.
-	 * @param string[]               $ownValues The caller's own field values, for `$self`.
-	 * @param DateTimeInterface|null $now       The moment `until` is read against; now when null.
+	 * `until` is read against the real clock; compileAt() takes the moment.
+	 *
+	 * @param array<string, mixed> $matrix    The declared matrix.
+	 * @param string[]             $ownValues The caller's own field values, for `$self`.
 	 *
 	 * @return array<string, array<int, array<string, mixed>>> Rules per action.
 	 *
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function compile(array $matrix, array $ownValues, ?DateTimeInterface $now = null): array {
-		$run = new MatrixCompileRun(ownValues: $ownValues, field: trim((string)($matrix['field'] ?? '')), now: ($now ?? new DateTimeImmutable()));
-		return $this->compileRows(rows: ($matrix['rows'] ?? null), run: $run);
+	public function compile(array $matrix, array $ownValues): array {
+		return $this->compileAt(matrix: $matrix, caller: new MatrixCaller(ownValues: $ownValues, now: new DateTimeImmutable()));
 	}//end compile()
+
+	/**
+	 * Compile a matrix into authorization rules for a caller at a moment.
+	 *
+	 * @param array<string, mixed> $matrix The declared matrix.
+	 * @param MatrixCaller         $caller The caller's own field values and the moment `until` is read against.
+	 *
+	 * @return array<string, array<int, array<string, mixed>>> Rules per action.
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 */
+	public function compileAt(array $matrix, MatrixCaller $caller): array {
+		$run = new MatrixCompileRun(caller: $caller, field: trim((string)($matrix['field'] ?? '')));
+		return $this->compileRows(rows: ($matrix['rows'] ?? null), run: $run);
+	}//end compileAt()
 
 	/**
 	 * Gather the rows by action and group, then emit one rule per scope.
@@ -221,7 +236,7 @@ class DepartmentMatrixCompiler {
 		}
 
 		$group = trim((string)($row['group'] ?? ''));
-		if ($group === '' || $this->hasLapsed(row: $row, now: $run->now) === true) {
+		if ($group === '' || $this->hasLapsed(row: $row, now: $run->caller->now) === true) {
 			return null;
 		}
 
@@ -260,7 +275,7 @@ class DepartmentMatrixCompiler {
 			return null;
 		}
 
-		$values = $this->valuesOf(row: $row, ownValues: $run->ownValues);
+		$values = $this->valuesOf(row: $row, ownValues: $run->caller->ownValues);
 		if (empty($values) === true) {
 			// 🔴 DROPPED WHOLE. See the class docblock: an empty `$in` is
 			// dropped by the SQL builder and the rule becomes an

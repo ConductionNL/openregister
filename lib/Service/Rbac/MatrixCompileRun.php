@@ -22,10 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use DateTimeInterface;
-
 /**
- * The caller's own values, the matrix field, the moment, and the scopes
+ * The caller (own values and moment), the matrix field, and the scopes
  * gathered so far per action and group.
  *
  * Built and consumed by DepartmentMatrixCompiler only; it never leaves that class.
@@ -44,14 +42,12 @@ final class MatrixCompileRun {
 	/**
 	 * Start the run.
 	 *
-	 * @param array<int, string> $ownValues The caller's own field values, for `$self`.
-	 * @param string             $field     The record field the matrix matches on.
-	 * @param DateTimeInterface  $now       The moment `until` is read against.
+	 * @param MatrixCaller $caller The caller's own field values and the moment `until` is read against.
+	 * @param string       $field  The record field the matrix matches on.
 	 */
 	public function __construct(
-		public readonly array $ownValues,
+		public readonly MatrixCaller $caller,
 		public readonly string $field,
-		public readonly DateTimeInterface $now,
 	) {
 	}//end __construct()
 }//end class

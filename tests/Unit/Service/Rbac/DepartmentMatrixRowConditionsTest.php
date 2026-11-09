@@ -24,6 +24,7 @@ namespace Unit\Service\Rbac;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
+use OCA\OpenRegister\Service\Rbac\MatrixCaller;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\Rbac\MatrixShape;
 use PHPUnit\Framework\TestCase;
@@ -118,9 +119,9 @@ class DepartmentMatrixRowConditionsTest extends TestCase {
 		$now = new DateTimeImmutable('2026-10-23T12:00:00+00:00');
 		$row = static fn (string $until): array => ['value' => 'team-a', 'group' => 'g', 'actions' => ['read'], 'until' => $until];
 
-		$this->assertSame([], $compiler->compile(matrix: $this->matrix([$row('2026-10-22')]), ownValues: [], now: $now));
-		$this->assertSame([], $compiler->compile(matrix: $this->matrix([$row('someday')]), ownValues: [], now: $now));
-		$this->assertArrayHasKey('read', $compiler->compile(matrix: $this->matrix([$row('2026-10-24')]), ownValues: [], now: $now));
+		$this->assertSame([], $compiler->compileAt(matrix: $this->matrix([$row('2026-10-22')]), caller: new MatrixCaller(ownValues: [], now: $now)));
+		$this->assertSame([], $compiler->compileAt(matrix: $this->matrix([$row('someday')]), caller: new MatrixCaller(ownValues: [], now: $now)));
+		$this->assertArrayHasKey('read', $compiler->compileAt(matrix: $this->matrix([$row('2026-10-24')]), caller: new MatrixCaller(ownValues: [], now: $now)));
 	}//end testUntilEndsARow()
 
 	/**
