@@ -22,9 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Serializer;
-
-use OCA\OpenRegister\Db\Register;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The methods of RegisterSerializer that callers outside its component use.
@@ -35,7 +33,7 @@ interface RegisterSerializerInterface {
 	/**
 	 * Serialize a collection of Register entities.
 	 *
-	 * @param Register[] $registers Registers to serialize.
+	 * @param RegisterInterface[] $registers Registers to serialize.
 	 * @param array $extend Extension keys to apply.
 	 * @param array<int,array<int,array{total:int}>>|null $schemaStatsByRegisterId Pre-computed per-register stats
 	 *                                                                             (registerId → schemaId →

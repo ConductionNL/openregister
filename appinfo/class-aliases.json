@@ -1915,6 +1915,11 @@
 			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectRelationCleanupServiceInterface",
 			"eager": false,
 			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Serializer\\RegisterSerializerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RegisterSerializerInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }
