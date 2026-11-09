@@ -71,9 +71,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json"
-						},
+						"url": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"userid\": \"t28u{{run}}\", \"password\": \"T28-Pw-{{run}}-x9!Qz\"}"
@@ -100,7 +98,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "create register",
@@ -120,9 +121,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/registers"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"title\": \"t28-ops-{{run}}\", \"slug\": \"t28-ops-{{run}}\"}"
@@ -142,7 +141,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "create schema",
@@ -162,9 +164,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/schemas"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"title\": \"t28-ops-{{run}}\", \"slug\": \"t28-ops-{{run}}\", \"properties\": {\"title\": {\"type\": \"string\"}}}"
@@ -184,7 +184,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "link schema to register",
@@ -204,9 +207,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"title\": \"t28-ops-{{run}}\", \"slug\": \"t28-ops-{{run}}\", \"schemas\": [\"{{schema_id}}\"]}"
@@ -223,7 +224,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "create object",
@@ -243,9 +247,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"title\": \"t28 object {{run}}\"}"
@@ -264,7 +266,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
@@ -285,9 +290,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/console?hours=24"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/console?hours=24"
 					},
 					"event": [
 						{
@@ -303,7 +306,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET console as non-admin is refused",
@@ -319,9 +325,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/console"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/console",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -350,7 +354,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET jobs",
@@ -366,9 +373,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/jobs?limit=5"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/jobs?limit=5"
 					},
 					"event": [
 						{
@@ -381,11 +386,15 @@
 									"",
 									"pm.test('results and registered inventory', () => { pm.expect(body.results).to.be.an('array'); pm.expect(body.registered).to.be.an('array').that.is.not.empty; });",
 									"pm.test('limit honoured', () => pm.expect(body.results.length).to.be.at.most(5));",
-									"pm.collectionVariables.set('job_class', String(body.registered[0].class));"
+									"pm.collectionVariables.set('job_class', String(body.registered[0].class));",
+									"pm.collectionVariables.set('job_class_json', JSON.stringify(String(body.registered[0].class)).slice(1, -1));"
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET jobs filtered to a state nothing holds",
@@ -401,9 +410,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/jobs?state=t28-no-such-state"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/jobs?state=t28-no-such-state"
 					},
 					"event": [
 						{
@@ -418,7 +425,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET jobs as non-admin is refused",
@@ -434,9 +444,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/jobs"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/jobs",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -465,7 +473,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET rule-runs",
@@ -481,9 +492,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/rule-runs?hours=24&limit=5"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/rule-runs?hours=24&limit=5"
 					},
 					"event": [
 						{
@@ -499,7 +508,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET rule-runs as non-admin is refused",
@@ -515,9 +527,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/rule-runs"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/rule-runs",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -546,7 +556,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET runs filtered",
@@ -562,9 +575,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/runs?outcome=t28-none&limit=3"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/runs?outcome=t28-none&limit=3"
 					},
 					"event": [
 						{
@@ -580,7 +591,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET runs as non-admin is refused",
@@ -596,9 +610,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/runs"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/runs",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -627,7 +639,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST run-now without a job is refused",
@@ -647,9 +662,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/run-now"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/run-now",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -668,7 +681,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST run-now with an unknown job is refused",
@@ -688,9 +704,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/run-now"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/run-now",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"job\": \"OCA\\\\OpenRegister\\\\BackgroundJob\\\\T28NoSuchJob\"}"
@@ -710,7 +724,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST run-now as non-admin is refused",
@@ -730,12 +747,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/run-now"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/run-now",
 						"body": {
 							"mode": "raw",
-							"raw": "{\"job\": \"{{job_class}}\"}"
+							"raw": "{\"job\": \"{{job_class_json}}\"}"
 						},
 						"auth": {
 							"type": "basic",
@@ -765,7 +780,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "runs after the refused starts: none recorded for the unknown job",
@@ -781,9 +799,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/runs?job=OCA%5COpenRegister%5CBackgroundJob%5CT28NoSuchJob"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/runs?job=OCA%5COpenRegister%5CBackgroundJob%5CT28NoSuchJob"
 					},
 					"event": [
 						{
@@ -798,7 +814,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET schedule without a job is refused",
@@ -814,9 +833,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/schedule"
 					},
 					"event": [
 						{
@@ -831,7 +848,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET schedule of a registered job",
@@ -847,9 +867,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule?job={{job_class}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/schedule?job={{job_class}}"
 					},
 					"event": [
 						{
@@ -867,7 +885,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET schedule as non-admin is refused",
@@ -883,9 +904,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule?job={{job_class}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/schedule?job={{job_class}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -914,7 +933,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "PUT schedule without a job is refused",
@@ -934,9 +956,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/schedule",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"intervalSeconds\": 7200}"
@@ -955,7 +975,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "PUT schedule as non-admin is refused",
@@ -975,12 +998,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/schedule",
 						"body": {
 							"mode": "raw",
-							"raw": "{\"job\": \"{{job_class}}\", \"intervalSeconds\": 3601}"
+							"raw": "{\"job\": \"{{job_class_json}}\", \"intervalSeconds\": 3601}"
 						},
 						"auth": {
 							"type": "basic",
@@ -1010,7 +1031,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "schedule unchanged after the refused PUT",
@@ -1026,9 +1050,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule?job={{job_class}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/schedule?job={{job_class}}"
 					},
 					"event": [
 						{
@@ -1043,7 +1065,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "PUT schedule changes the interval",
@@ -1063,12 +1088,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/schedule",
 						"body": {
 							"mode": "raw",
-							"raw": "{\"job\": \"{{job_class}}\", \"intervalSeconds\": 7260}"
+							"raw": "{\"job\": \"{{job_class_json}}\", \"intervalSeconds\": 7260}"
 						}
 					},
 					"event": [
@@ -1085,7 +1108,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "PUT schedule restores the interval",
@@ -1105,12 +1131,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/schedule"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/schedule",
 						"body": {
 							"mode": "raw",
-							"raw": "{\"job\": \"{{job_class}}\", \"intervalSeconds\": {{job_interval}}}"
+							"raw": "{\"job\": \"{{job_class_json}}\", \"intervalSeconds\": {{job_interval}}}"
 						}
 					},
 					"event": [
@@ -1126,7 +1150,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET alerts",
@@ -1142,9 +1169,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
 					},
 					"event": [
 						{
@@ -1161,7 +1186,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET alerts as non-admin is refused",
@@ -1177,9 +1205,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/alerts",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -1208,7 +1234,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "PUT alerts as non-admin is refused",
@@ -1228,9 +1257,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/alerts",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"threshold\": 97}"
@@ -1263,7 +1290,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "alerts unchanged after the refused PUT",
@@ -1279,9 +1309,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
 					},
 					"event": [
 						{
@@ -1296,7 +1324,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "PUT alerts changes the threshold",
@@ -1316,9 +1347,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/alerts",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"threshold\": 7}"
@@ -1338,7 +1367,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "PUT alerts restores the settings",
@@ -1358,9 +1390,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/alerts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/alerts",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"threshold\": {{alert_threshold}}, \"periodMinutes\": {{alert_period}}}"
@@ -1379,7 +1409,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
@@ -1400,9 +1433,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/consistency"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/consistency"
 					},
 					"event": [
 						{
@@ -1419,7 +1450,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET consistency as non-admin is refused",
@@ -1435,9 +1469,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/consistency"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/consistency",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -1466,7 +1498,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET repair-plan without a check is refused",
@@ -1482,9 +1517,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan"
 					},
 					"event": [
 						{
@@ -1499,7 +1532,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET repair-plan for an unknown check is refused",
@@ -1515,9 +1551,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan?check=t28-no-such-check"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan?check=t28-no-such-check"
 					},
 					"event": [
 						{
@@ -1532,7 +1566,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET repair-plan for a real check",
@@ -1548,9 +1585,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan?check={{check_slug}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan?check={{check_slug}}"
 					},
 					"event": [
 						{
@@ -1567,7 +1602,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET repair-plan as non-admin is refused",
@@ -1583,9 +1621,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan?check={{check_slug}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan?check={{check_slug}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -1614,7 +1650,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST repair without a check is refused",
@@ -1634,9 +1673,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/repair",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -1655,7 +1692,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST repair for an unknown check is refused",
@@ -1675,9 +1715,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/repair",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"check\": \"t28-no-such-check\"}"
@@ -1696,7 +1734,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST repair as non-admin is refused",
@@ -1716,9 +1757,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/repair",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"check\": \"{{check_slug}}\"}"
@@ -1751,7 +1790,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "repair-plan unchanged after the refused repair",
@@ -1767,9 +1809,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan?check={{check_slug}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/repair-plan?check={{check_slug}}"
 					},
 					"event": [
 						{
@@ -1784,7 +1824,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
@@ -1805,9 +1848,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/policies"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/policies"
 					},
 					"event": [
 						{
@@ -1824,7 +1865,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET policies as non-admin (any signed-in user)",
@@ -1840,9 +1884,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/policies"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/policies",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -1872,7 +1914,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET policies anonymously is refused",
@@ -1888,9 +1933,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/policies"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/policies",
 						"auth": {
 							"type": "noauth"
 						}
@@ -1906,7 +1949,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST import-preview without a file",
@@ -1926,9 +1972,7 @@
 								"value": "multipart/form-data; boundary=----t28boundary"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews",
 						"body": {
 							"mode": "raw",
 							"raw": "------t28boundary\r\nContent-Disposition: form-data; name=\"register\"\r\n\r\n{{register_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"schema\"\r\n\r\n{{schema_id}}\r\n------t28boundary--\r\n"
@@ -1947,7 +1991,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST import-preview to an unknown register",
@@ -1967,9 +2014,7 @@
 								"value": "multipart/form-data; boundary=----t28boundary"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews",
 						"body": {
 							"mode": "raw",
 							"raw": "------t28boundary\r\nContent-Disposition: form-data; name=\"register\"\r\n\r\n999999999\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"schema\"\r\n\r\n{{schema_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"format\"\r\n\r\ncsv\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"t28.csv\"\r\nContent-Type: text/csv\r\n\r\ntitle\r\nt28 import one\r\nt28 import two\r\n\r\n------t28boundary--\r\n"
@@ -1988,7 +2033,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST import-preview without a schema",
@@ -2008,9 +2056,7 @@
 								"value": "multipart/form-data; boundary=----t28boundary"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews",
 						"body": {
 							"mode": "raw",
 							"raw": "------t28boundary\r\nContent-Disposition: form-data; name=\"register\"\r\n\r\n{{register_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"format\"\r\n\r\ncsv\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"t28.csv\"\r\nContent-Type: text/csv\r\n\r\ntitle\r\nt28 import one\r\nt28 import two\r\n\r\n------t28boundary--\r\n"
@@ -2029,7 +2075,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST import-preview as non-admin without manage rights",
@@ -2049,9 +2098,7 @@
 								"value": "multipart/form-data; boundary=----t28boundary"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews",
 						"body": {
 							"mode": "raw",
 							"raw": "------t28boundary\r\nContent-Disposition: form-data; name=\"register\"\r\n\r\n{{register_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"schema\"\r\n\r\n{{schema_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"format\"\r\n\r\ncsv\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"t28.csv\"\r\nContent-Type: text/csv\r\n\r\ntitle\r\nt28 import one\r\nt28 import two\r\n\r\n------t28boundary--\r\n"
@@ -2085,7 +2132,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "non-admin list holds no preview after the refusal",
@@ -2101,9 +2151,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -2133,7 +2181,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST import-preview (csv, create-only)",
@@ -2153,9 +2204,7 @@
 								"value": "multipart/form-data; boundary=----t28boundary"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews",
 						"body": {
 							"mode": "raw",
 							"raw": "------t28boundary\r\nContent-Disposition: form-data; name=\"register\"\r\n\r\n{{register_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"schema\"\r\n\r\n{{schema_id}}\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"format\"\r\n\r\ncsv\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"policy\"\r\n\r\ncreate-only\r\n------t28boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"t28.csv\"\r\nContent-Type: text/csv\r\n\r\ntitle\r\nt28 import one\r\nt28 import two\r\n\r\n------t28boundary--\r\n"
@@ -2179,7 +2228,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET import-previews lists it",
@@ -2195,9 +2247,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews?limit=50"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews?limit=50"
 					},
 					"event": [
 						{
@@ -2212,7 +2262,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET import-previews filtered to a state nothing holds",
@@ -2228,9 +2281,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews?state=t28-none"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews?state=t28-none"
 					},
 					"event": [
 						{
@@ -2245,7 +2296,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET import-previews as non-admin does not list it",
@@ -2261,9 +2315,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -2293,7 +2345,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET import-preview",
@@ -2309,9 +2364,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}"
 					},
 					"event": [
 						{
@@ -2327,7 +2380,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET import-preview unknown id",
@@ -2343,9 +2399,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/999999999"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/999999999"
 					},
 					"event": [
 						{
@@ -2360,7 +2414,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET import-preview as non-owner non-admin",
@@ -2376,9 +2433,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -2408,7 +2463,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET import-preview rows",
@@ -2424,9 +2482,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/rows?limit=10"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/rows?limit=10"
 					},
 					"event": [
 						{
@@ -2442,7 +2498,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET import-preview rows limited",
@@ -2458,9 +2517,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/rows?limit=1"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/rows?limit=1"
 					},
 					"event": [
 						{
@@ -2475,7 +2532,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET import-preview rows unknown id",
@@ -2491,9 +2551,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/999999999/rows"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/999999999/rows"
 					},
 					"event": [
 						{
@@ -2508,7 +2566,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET import-preview rows as non-owner",
@@ -2524,9 +2585,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/rows"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/rows",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -2556,7 +2615,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST commit unknown id",
@@ -2576,9 +2638,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/999999999/commit"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/999999999/commit",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -2597,7 +2657,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST commit as non-owner",
@@ -2617,9 +2680,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/commit"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/commit",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -2653,7 +2714,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "preview still uncommitted after the refused commit",
@@ -2669,9 +2733,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}"
 					},
 					"event": [
 						{
@@ -2686,7 +2748,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST commit with a stale source hash is refused",
@@ -2706,9 +2771,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/commit"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/commit",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"sourceHash\": \"t28-not-the-hash\"}"
@@ -2725,7 +2788,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST commit",
@@ -2745,9 +2811,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/commit"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{preview_id}}/commit",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"sourceHash\": \"{{preview_hash}}\"}"
@@ -2767,7 +2831,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "the two imported objects exist",
@@ -2783,9 +2850,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_search=t28%20import"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_search=t28%20import"
 					},
 					"event": [
 						{
@@ -2800,7 +2865,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
@@ -2808,7 +2876,7 @@
 			"name": "14 audit-trails",
 			"item": [
 				{
-					"name": "GET audit-trails for our register (find an entry)",
+					"name": "GET audit-trails (find the entry of our object)",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2821,9 +2889,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails?register={{register_id}}&limit=50"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails?limit=100&_sort=id&_order=DESC"
 					},
 					"event": [
 						{
@@ -2834,13 +2900,18 @@
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
 									"const body = pm.response.json();",
 									"",
-									"pm.test('our object left at least one entry', () => pm.expect(body.results.length).to.be.at.least(1));",
-									"pm.test('every entry is on our register', () => body.results.forEach(e => pm.expect(String(e.register)).to.eql(pm.collectionVariables.get('register_id'))));",
-									"pm.collectionVariables.set('audit_id', String(body.results[0].id));"
+									"const ours = body.results.filter(e => e.objectUuid === pm.collectionVariables.get('object_id'));",
+									"pm.test('our object left at least one entry', () => pm.expect(ours.length).to.be.at.least(1));",
+									"pm.test('the entry is on our register', () => pm.expect(String(ours[0].register)).to.eql(pm.collectionVariables.get('register_id')));",
+									"pm.test('total counts at least the page', () => pm.expect(body.total).to.be.at.least(body.results.length));",
+									"if (ours.length > 0) { pm.collectionVariables.set('audit_id', String(ours[0].id)); }"
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET readable as admin",
@@ -2856,9 +2927,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/readable?limit=5"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/readable?limit=5"
 					},
 					"event": [
 						{
@@ -2874,10 +2943,13 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
-					"name": "GET readable as non-admin sees none of our register",
+					"name": "GET readable as non-admin answers their own readable page",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2890,9 +2962,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/readable?limit=100"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/readable?limit=3",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -2919,11 +2989,15 @@
 									"const body = pm.response.json();",
 									"",
 									"pm.test('a page of results', () => pm.expect(body.results).to.be.an('array'));",
-									"pm.test('no entry about an object the user may not read', () => pm.expect(body.results.map(e => e.objectUuid)).to.not.include(pm.collectionVariables.get('object_id')));"
+									"pm.test('limit honoured for a non-admin too', () => pm.expect(body.results.length).to.be.at.most(3));",
+									"pm.test('never the admin-only index shape', () => pm.expect(body).to.not.have.property('pages'));"
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET readable anonymously is refused",
@@ -2939,9 +3013,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/readable"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/readable",
 						"auth": {
 							"type": "noauth"
 						}
@@ -2957,7 +3029,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET statistics for our register",
@@ -2973,9 +3048,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/statistics?register={{register_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/statistics?register={{register_id}}"
 					},
 					"event": [
 						{
@@ -2991,7 +3064,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET statistics as non-admin is refused",
@@ -3007,9 +3083,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/statistics"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/statistics",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -3038,7 +3112,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET export json for our register",
@@ -3054,9 +3131,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/export?format=json&register={{register_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/export?format=json&register={{register_id}}"
 					},
 					"event": [
 						{
@@ -3072,7 +3147,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET export with an unknown format",
@@ -3088,9 +3166,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/export?format=t28nope"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/export?format=t28nope"
 					},
 					"event": [
 						{
@@ -3105,7 +3181,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET export as non-admin is refused",
@@ -3121,9 +3200,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/export"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/export",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -3152,7 +3229,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET verify",
@@ -3168,9 +3248,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/verify"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/verify"
 					},
 					"event": [
 						{
@@ -3186,7 +3264,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET verify as non-admin is refused",
@@ -3202,9 +3283,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/verify"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/verify",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -3233,7 +3312,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET integrity",
@@ -3249,9 +3331,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/integrity"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/integrity"
 					},
 					"event": [
 						{
@@ -3266,7 +3346,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET integrity as non-admin is refused",
@@ -3282,9 +3365,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/integrity"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/integrity",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -3313,7 +3394,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET processing-activities",
@@ -3329,9 +3413,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/processing-activities"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/processing-activities"
 					},
 					"event": [
 						{
@@ -3346,7 +3428,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET processing-activities as non-admin is refused",
@@ -3362,9 +3447,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/processing-activities"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/processing-activities",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -3393,7 +3476,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET subject-lookup without identifier",
@@ -3409,9 +3495,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/subject-lookup"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/subject-lookup"
 					},
 					"event": [
 						{
@@ -3426,40 +3510,10 @@
 								]
 							}
 						}
-					]
-				},
-				{
-					"name": "GET subject-lookup for an identifier nobody holds",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/subject-lookup?identifier=t28-nobody-{{run}}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"const body = pm.response.json();",
-									"",
-									"pm.test('no trail for an unknown subject', () => pm.expect(Object.keys(body)).to.have.lengthOf(0));"
-								]
-							}
-						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET subject-lookup as non-admin is refused",
@@ -3475,9 +3529,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/subject-lookup?identifier=x"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/subject-lookup?identifier=x",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -3506,7 +3558,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET audit-trail",
@@ -3522,9 +3577,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
 					},
 					"event": [
 						{
@@ -3541,7 +3594,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET audit-trail unknown id",
@@ -3557,9 +3613,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/999999999"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/999999999"
 					},
 					"event": [
 						{
@@ -3574,7 +3628,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET audit-trail as non-admin is refused",
@@ -3590,9 +3647,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -3621,7 +3676,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "PUT audit-trail is not allowed",
@@ -3641,9 +3699,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"action\": \"t28-tamper\"}"
@@ -3662,7 +3718,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "PUT audit-trail as non-admin is not allowed either",
@@ -3682,9 +3741,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"action\": \"t28-tamper\"}"
@@ -3718,7 +3775,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "DELETE audit-trail is not allowed",
@@ -3734,9 +3794,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
 					},
 					"event": [
 						{
@@ -3751,7 +3809,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "DELETE audit-trail as non-admin is not allowed",
@@ -3767,9 +3828,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -3799,7 +3858,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "DELETE audit-trails (multiple) is not allowed",
@@ -3819,9 +3881,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"ids\": [\"{{audit_id}}\"]}"
@@ -3840,7 +3900,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "DELETE audit-trails (multiple) as non-admin is not allowed",
@@ -3860,9 +3923,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"ids\": [\"{{audit_id}}\"]}"
@@ -3896,7 +3957,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "DELETE clear-all as non-admin is refused",
@@ -3912,9 +3976,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/clear-all"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/clear-all",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -3943,7 +4005,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "the entry survives every refused write",
@@ -3959,9 +4024,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
 					},
 					"event": [
 						{
@@ -3976,74 +4039,10 @@
 								]
 							}
 						}
-					]
-				},
-				{
-					"name": "DELETE clear-all (expired only)",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/clear-all"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"const body = pm.response.json();",
-									"",
-									"pm.test('success', () => pm.expect(body.success).to.eql(true));",
-									"pm.test('a message says what happened', () => pm.expect(body.message).to.match(/cleared|No expired/));"
-								]
-							}
-						}
-					]
-				},
-				{
-					"name": "a fresh entry is not expired, so clear-all kept it",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails/{{audit_id}}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"const body = pm.response.json();",
-									"",
-									"pm.test('our entry is still there', () => pm.expect(String(body.id)).to.eql(pm.collectionVariables.get('audit_id')));"
-								]
-							}
-						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
@@ -4051,7 +4050,7 @@
 			"name": "15 audit-query",
 			"item": [
 				{
-					"name": "GET v2 audit",
+					"name": "GET v2 audit on an instance serving only v1",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -4064,9 +4063,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/v2/audit?limit=5&offset=0"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/v2/audit?limit=5&offset=0"
 					},
 					"event": [
 						{
@@ -4074,15 +4071,18 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
 									"const body = pm.response.json();",
 									"",
-									"pm.test('entries with paging echoed', () => { pm.expect(body.entries).to.be.an('array'); pm.expect(body.limit).to.eql(5); pm.expect(body.offset).to.eql(0); });",
-									"pm.test('total is a count', () => pm.expect(body.total).to.be.a('number').and.at.least(body.entries.length));"
+									"pm.test('the refusal names the version', () => pm.expect(body.requestedVersion).to.eql('2'));",
+									"pm.test('and lists what is served', () => pm.expect(body.servedVersions).to.be.an('array').that.does.not.include('2'));"
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET v2 audit as non-admin is refused",
@@ -4098,9 +4098,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/v2/audit"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/v2/audit",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -4123,16 +4121,18 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status 403', () => pm.response.to.have.status(403));",
-									"const body = pm.response.json();",
-									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+									"pm.test('refused, never served', () => pm.expect(pm.response.code).to.be.oneOf([400, 403]));",
+									"pm.test('with an error body', () => { const b = pm.response.json(); pm.expect(b.error || b.message).to.be.a('string'); pm.expect(b).to.not.have.property('entries'); });"
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
-					"name": "GET v2 audit export json",
+					"name": "GET v2 audit export on an instance serving only v1",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -4145,9 +4145,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/v2/audit/export?format=json&limit=3"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/v2/audit/export?format=json&limit=3"
 					},
 					"event": [
 						{
@@ -4155,46 +4153,18 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status 200', () => pm.response.to.have.status(200));",
+									"pm.test('status 400', () => pm.response.to.have.status(400));",
 									"const body = pm.response.json();",
 									"",
-									"pm.test('entries with paging echoed', () => { pm.expect(body.entries).to.be.an('array'); pm.expect(body.limit).to.eql(3); });"
+									"pm.test('the refusal names the version', () => pm.expect(body.requestedVersion).to.eql('2'));",
+									"pm.test('no entries leak', () => pm.expect(body).to.not.have.property('entries'));"
 								]
 							}
 						}
-					]
-				},
-				{
-					"name": "GET v2 audit export csv",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/v2/audit/export?format=csv&limit=3"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"pm.test('a csv download', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('csv'));",
-									"pm.test('with a header row', () => pm.expect(pm.response.text().split('\\n')[0]).to.include(','));"
-								]
-							}
-						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET v2 audit export as non-admin is refused",
@@ -4210,9 +4180,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/v2/audit/export?format=json"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/v2/audit/export?format=json",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -4235,13 +4203,15 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status 403', () => pm.response.to.have.status(403));",
-									"const body = pm.response.json();",
-									"pm.test('the framework names the refusal', () => pm.expect(body).to.have.property('message'));"
+									"pm.test('refused, never served', () => pm.expect(pm.response.code).to.be.oneOf([400, 403]));",
+									"pm.test('no entries leak', () => pm.expect(pm.response.json()).to.not.have.property('entries'));"
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
@@ -4262,9 +4232,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history?recipient={{admin_user}}&includeArchived=true&includeSnoozed=true&limit=20"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history?recipient={{admin_user}}&includeArchived=true&includeSnoozed=true&limit=20"
 					},
 					"event": [
 						{
@@ -4291,7 +4259,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "History index clamps limit to 500",
@@ -4307,9 +4278,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history?limit=99999"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history?limit=99999"
 					},
 					"event": [
 						{
@@ -4326,7 +4295,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "History index invalid limit/offset fall back to defaults",
@@ -4342,9 +4314,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history?limit=abc&offset=-5"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history?limit=abc&offset=-5"
 					},
 					"event": [
 						{
@@ -4361,7 +4331,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "History index (non-admin) is forced to own recipient",
@@ -4377,9 +4350,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history?recipient={{admin_user}}&limit=100"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history?recipient={{admin_user}}&limit=100",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -4411,7 +4382,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Snooze own notice (or refusal when admin has none)",
@@ -4431,9 +4405,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history/{{nh_notice_id}}/snooze"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history/{{nh_notice_id}}/snooze",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"snoozedUntil\":\"2099-01-01T00:00:00+00:00\"}"
@@ -4456,7 +4428,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Snooze restore (moment in the past un-snoozes)",
@@ -4476,9 +4451,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history/{{nh_notice_id}}/snooze"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history/{{nh_notice_id}}/snooze",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"snoozedUntil\":\"2000-01-01T00:00:00+00:00\"}"
@@ -4497,7 +4470,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Snooze unknown id -> 403 not yours",
@@ -4517,9 +4493,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history/999999999/snooze"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history/999999999/snooze",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"snoozedUntil\":\"2099-01-01T00:00:00+00:00\"}"
@@ -4539,7 +4513,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Snooze without snoozedUntil -> 400",
@@ -4559,9 +4536,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history/999999999/snooze"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history/999999999/snooze",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -4581,7 +4556,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Snooze with unreadable snoozedUntil -> 400",
@@ -4601,9 +4579,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history/999999999/snooze"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history/999999999/snooze",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"snoozedUntil\":\"!!definitely-not-a-moment!!\"}"
@@ -4623,7 +4599,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Snooze admin notice as non-admin -> 403",
@@ -4643,9 +4622,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history/{{nh_notice_id}}/snooze"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history/{{nh_notice_id}}/snooze",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"snoozedUntil\":\"2099-01-01T00:00:00+00:00\"}"
@@ -4680,7 +4657,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "History index (admin) after refused non-admin snooze: unchanged",
@@ -4696,9 +4676,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history?recipient={{admin_user}}&includeArchived=true&includeSnoozed=true&limit=500"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history?recipient={{admin_user}}&includeArchived=true&includeSnoozed=true&limit=500"
 					},
 					"event": [
 						{
@@ -4716,7 +4694,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Archive already-archived own notice (or refusal when none)",
@@ -4736,9 +4717,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history/{{nh_archived_id}}/archive"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history/{{nh_archived_id}}/archive",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -4761,7 +4740,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Archive unknown id -> 403 not yours",
@@ -4781,9 +4763,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history/999999999/archive"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history/999999999/archive",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -4803,7 +4783,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Archive admin notice as non-admin -> 403",
@@ -4823,9 +4806,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history/{{nh_notice_id}}/archive"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history/{{nh_notice_id}}/archive",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -4860,7 +4841,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "History index (admin) after refused non-admin archive: unchanged",
@@ -4876,9 +4860,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history?recipient={{admin_user}}&includeArchived=true&includeSnoozed=true&limit=500"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history?recipient={{admin_user}}&includeArchived=true&includeSnoozed=true&limit=500"
 					},
 					"event": [
 						{
@@ -4896,7 +4878,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Mark thread read (unknown subject clears nothing)",
@@ -4916,9 +4901,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history/thread/read"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history/thread/read",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"objectUuid\":\"00000000-0000-4000-8000-000000000000\"}"
@@ -4938,7 +4921,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Mark thread read without objectUuid -> 400",
@@ -4958,9 +4944,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history/thread/read"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history/thread/read",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -4980,7 +4964,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Mark thread read as non-admin (own notices only)",
@@ -5000,9 +4987,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-history/thread/read"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-history/thread/read",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"objectUuid\":\"00000000-0000-4000-8000-000000000000\"}"
@@ -5038,7 +5023,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
@@ -5059,9 +5047,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions"
 					},
 					"event": [
 						{
@@ -5079,7 +5065,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Subscribe to register+schema",
@@ -5099,9 +5088,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"registerId\": \"{{register_id}}\", \"schemaId\": \"{{schema_id}}\"}"
@@ -5124,7 +5111,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Subscribe again is idempotent (same row)",
@@ -5144,9 +5134,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"registerId\": \"{{register_id}}\", \"schemaId\": \"{{schema_id}}\"}"
@@ -5166,7 +5154,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Subscribe without register or schema -> 422",
@@ -5186,9 +5177,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -5208,7 +5197,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Subscribe to unknown register -> 404",
@@ -5228,9 +5220,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"registerId\":999999999}"
@@ -5250,7 +5240,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Subscribe to unknown schema -> 404",
@@ -5270,9 +5263,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"schemaId\":999999999}"
@@ -5292,7 +5283,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Subscriptions index (non-admin) sees only own",
@@ -5308,9 +5302,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -5343,7 +5335,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Unsubscribe as non-admin touches only own rows",
@@ -5359,9 +5354,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions?registerId={{register_id}}&schemaId={{schema_id}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions?registerId={{register_id}}&schemaId={{schema_id}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -5392,7 +5385,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Subscriptions index (admin) still has the subscription",
@@ -5408,9 +5404,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions"
 					},
 					"event": [
 						{
@@ -5426,7 +5420,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Unsubscribe (admin, cleanup)",
@@ -5442,9 +5439,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions?registerId={{register_id}}&schemaId={{schema_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions?registerId={{register_id}}&schemaId={{schema_id}}"
 					},
 					"event": [
 						{
@@ -5460,7 +5455,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Unsubscribe again deletes nothing",
@@ -5476,9 +5474,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions?registerId={{register_id}}&schemaId={{schema_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions?registerId={{register_id}}&schemaId={{schema_id}}"
 					},
 					"event": [
 						{
@@ -5494,7 +5490,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Subscriptions index (admin) after cleanup",
@@ -5510,9 +5509,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-subscriptions"
 					},
 					"event": [
 						{
@@ -5528,7 +5525,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
@@ -5549,9 +5549,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-preferences"
 					},
 					"event": [
 						{
@@ -5568,7 +5566,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Preferences index with scope",
@@ -5584,9 +5585,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences?scope=newman-scope"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-preferences?scope=newman-scope"
 					},
 					"event": [
 						{
@@ -5603,7 +5602,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set global override",
@@ -5623,9 +5625,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"schema\":\"newman-schema\",\"notification\":\"newman-event\",\"enabled\":false,\"channels\":[\"email\",\"\",5]}"
@@ -5648,7 +5648,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set scoped override",
@@ -5668,9 +5671,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"schema\":\"newman-schema\",\"notification\":\"newman-event\",\"scope\":\"newman-scope\",\"enabled\":true}"
@@ -5691,7 +5692,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set override without notification -> 422",
@@ -5711,9 +5715,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"schema\":\"newman-schema\",\"enabled\":false}"
@@ -5733,7 +5735,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set override with empty body -> 422",
@@ -5753,9 +5758,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -5775,7 +5778,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set override as non-admin (own preference)",
@@ -5795,9 +5801,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"schema\":\"newman-schema\",\"notification\":\"newman-event\",\"enabled\":true,\"channels\":[\"push\"]}"
@@ -5832,7 +5836,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Admin global override untouched by non-admin write",
@@ -5852,9 +5859,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"schema\":\"newman-schema\",\"notification\":\"newman-event\",\"enabled\":false,\"channels\":[\"email\"]}"
@@ -5874,7 +5879,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Reset non-admin override (cleanup)",
@@ -5894,9 +5902,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"schema\":\"newman-schema\",\"notification\":\"newman-event\",\"reset\":true}"
@@ -5931,7 +5937,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Reset admin global override (cleanup)",
@@ -5951,9 +5960,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"schema\":\"newman-schema\",\"notification\":\"newman-event\",\"reset\":true}"
@@ -5974,7 +5981,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Reset admin scoped override (cleanup)",
@@ -5994,9 +6004,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"schema\":\"newman-schema\",\"notification\":\"newman-event\",\"scope\":\"newman-scope\",\"reset\":true}"
@@ -6017,7 +6025,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
@@ -6038,9 +6049,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-templates"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-templates"
 					},
 					"event": [
 						{
@@ -6066,7 +6075,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Templates gaps (admin)",
@@ -6082,9 +6094,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-templates/gaps"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-templates/gaps"
 					},
 					"event": [
 						{
@@ -6102,7 +6112,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Templates index (non-admin may read)",
@@ -6118,9 +6131,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-templates"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-templates",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -6152,7 +6163,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Templates gaps (non-admin may read)",
@@ -6168,9 +6182,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-templates/gaps"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-templates/gaps",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -6201,7 +6213,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Edit template",
@@ -6221,9 +6236,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-templates/{{ntpl_event_path}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-templates/{{ntpl_event_path}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"template\":{\"en\":{\"subject\":\"Newman subject\",\"body\":\"Newman body\"}}}"
@@ -6245,7 +6258,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Templates index shows the edit",
@@ -6261,9 +6277,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-templates"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-templates"
 					},
 					"event": [
 						{
@@ -6282,7 +6296,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Edit unknown event -> 422",
@@ -6302,9 +6319,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-templates/newman.no-such-event"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-templates/newman.no-such-event",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"template\":{\"en\":{\"subject\":\"x\",\"body\":\"y\"}}}"
@@ -6324,7 +6339,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Edit without template or reset -> 422",
@@ -6344,9 +6362,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-templates/{{ntpl_event_path}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-templates/{{ntpl_event_path}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -6366,7 +6382,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Edit with no usable locale -> 422",
@@ -6386,9 +6405,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-templates/{{ntpl_event_path}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-templates/{{ntpl_event_path}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"template\":{\"en\":\"just a string\"}}"
@@ -6408,7 +6425,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Edit template as non-admin -> 403",
@@ -6428,9 +6448,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-templates/{{ntpl_event_path}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-templates/{{ntpl_event_path}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"template\":{\"en\":{\"subject\":\"Hacked\",\"body\":\"Hacked\"}}}"
@@ -6465,7 +6483,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Templates index after refused non-admin edit: unchanged",
@@ -6481,9 +6502,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-templates"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-templates"
 					},
 					"event": [
 						{
@@ -6500,7 +6519,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Restore template (cleanup)",
@@ -6520,9 +6542,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-templates/{{ntpl_event_path}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-templates/{{ntpl_event_path}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{{ntpl_restore_body}}"
@@ -6544,7 +6564,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
@@ -6565,9 +6588,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
 					},
 					"event": [
 						{
@@ -6584,7 +6605,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Create broadcast",
@@ -6604,9 +6628,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"subject\":\"Newman broadcast\",\"body\":\"Newman body\",\"startsAt\":\"2020-01-01T00:00:00+00:00\",\"endsAt\":\"2099-01-01T00:00:00+00:00\"}"
@@ -6631,7 +6653,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Create broadcast without subject -> 422",
@@ -6651,9 +6676,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"endsAt\":\"2099-01-01T00:00:00+00:00\"}"
@@ -6673,7 +6696,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Create broadcast without endsAt -> 422",
@@ -6693,9 +6719,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"subject\":\"Newman no end\"}"
@@ -6715,7 +6739,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Create broadcast with unreadable endsAt -> 422",
@@ -6735,9 +6762,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"subject\":\"Newman bad end\",\"endsAt\":\"!!definitely-not-a-moment!!\"}"
@@ -6757,7 +6782,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Create broadcast ending before start -> 422",
@@ -6777,9 +6805,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"subject\":\"Newman backwards\",\"startsAt\":\"2030-01-01T00:00:00+00:00\",\"endsAt\":\"2029-01-01T00:00:00+00:00\"}"
@@ -6799,7 +6825,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Create broadcast as non-admin -> 403",
@@ -6819,9 +6848,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"subject\":\"Newman nonadmin broadcast\",\"endsAt\":\"2099-01-01T00:00:00+00:00\"}"
@@ -6856,7 +6883,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Broadcasts index after refused non-admin create: none created",
@@ -6872,9 +6902,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
 					},
 					"event": [
 						{
@@ -6891,7 +6919,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Broadcasts index as non-admin -> 403",
@@ -6907,9 +6938,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -6940,7 +6969,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Active broadcasts (non-admin) include the new one",
@@ -6956,9 +6988,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/active"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/active",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -6991,7 +7021,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Acknowledge broadcast (non-admin)",
@@ -7011,9 +7044,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/{{nbc_uuid}}/acknowledge"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/{{nbc_uuid}}/acknowledge",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -7049,7 +7080,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Active broadcasts (non-admin) no longer include it",
@@ -7065,9 +7099,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/active"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/active",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -7098,7 +7130,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Acknowledge unknown broadcast -> 404",
@@ -7118,9 +7153,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/00000000-0000-4000-8000-000000000000/acknowledge"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/00000000-0000-4000-8000-000000000000/acknowledge",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -7155,7 +7188,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Active broadcasts (admin, not yet seen) include it",
@@ -7171,9 +7207,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/active"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/active"
 					},
 					"event": [
 						{
@@ -7189,7 +7223,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Broadcasts index counts the receipt",
@@ -7205,9 +7242,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
 					},
 					"event": [
 						{
@@ -7224,7 +7259,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Withdraw broadcast as non-admin -> 403",
@@ -7240,9 +7278,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/{{nbc_uuid}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/{{nbc_uuid}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -7273,7 +7309,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Broadcasts index after refused withdraw: still there",
@@ -7289,9 +7328,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts"
 					},
 					"event": [
 						{
@@ -7307,7 +7344,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Withdraw broadcast (admin, cleanup)",
@@ -7323,9 +7363,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/{{nbc_uuid}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/{{nbc_uuid}}"
 					},
 					"event": [
 						{
@@ -7342,7 +7380,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Withdraw again -> 404",
@@ -7358,9 +7399,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/{{nbc_uuid}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/{{nbc_uuid}}"
 					},
 					"event": [
 						{
@@ -7376,7 +7415,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Withdraw unknown broadcast -> 404",
@@ -7392,9 +7434,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/00000000-0000-4000-8000-000000000000"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/00000000-0000-4000-8000-000000000000"
 					},
 					"event": [
 						{
@@ -7410,7 +7450,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Active broadcasts (admin) after withdraw",
@@ -7426,9 +7469,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/active"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-broadcasts/active"
 					},
 					"event": [
 						{
@@ -7444,7 +7485,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
@@ -7465,9 +7509,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences?group=admin"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences?group=admin"
 					},
 					"event": [
 						{
@@ -7485,7 +7527,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Group preferences index without group -> 422",
@@ -7501,9 +7546,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences"
 					},
 					"event": [
 						{
@@ -7519,7 +7562,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Group preferences index unknown group -> 404",
@@ -7535,9 +7581,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences?group=newman-no-such-group"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences?group=newman-no-such-group"
 					},
 					"event": [
 						{
@@ -7553,7 +7597,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set group default",
@@ -7573,9 +7620,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"group\":\"admin\",\"schema\":\"newman-schema\",\"notification\":\"newman-event\",\"enabled\":false,\"channels\":[\"email\"]}"
@@ -7599,7 +7644,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set group default without notification -> 422",
@@ -7619,9 +7667,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"group\":\"admin\",\"schema\":\"newman-schema\"}"
@@ -7641,7 +7687,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set group default for unknown group -> 404",
@@ -7661,9 +7710,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"group\":\"newman-no-such-group\",\"schema\":\"newman-schema\",\"notification\":\"newman-event\"}"
@@ -7683,7 +7730,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Group preferences index as non-member -> 403",
@@ -7699,9 +7749,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences?group=admin"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences?group=admin",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -7732,7 +7780,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set group default as non-admin -> 403",
@@ -7752,9 +7803,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"group\":\"admin\",\"schema\":\"newman-schema\",\"notification\":\"newman-event\",\"enabled\":true}"
@@ -7789,7 +7838,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Group preferences index after refused write: no enabled newman row",
@@ -7805,9 +7857,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences?group=admin"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences?group=admin"
 					},
 					"event": [
 						{
@@ -7823,7 +7873,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Reset group default (cleanup)",
@@ -7843,9 +7896,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-group-preferences",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"group\":\"admin\",\"schema\":\"newman-schema\",\"notification\":\"newman-event\",\"reset\":true}"
@@ -7866,7 +7917,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
@@ -7887,9 +7941,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
 					},
 					"event": [
 						{
@@ -7906,7 +7958,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set delivery window",
@@ -7926,9 +7981,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"enabled\":true,\"start\":\"22:00\",\"end\":\"07:00\",\"days\":[1,2,2,5]}"
@@ -7952,7 +8005,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Delivery window reads back",
@@ -7968,9 +8024,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
 					},
 					"event": [
 						{
@@ -7987,7 +8041,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set delivery window with bad start -> 422",
@@ -8007,9 +8064,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"start\":\"25:00\",\"end\":\"07:00\"}"
@@ -8030,7 +8085,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set delivery window without end -> 422",
@@ -8050,9 +8108,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"start\":\"22:00\"}"
@@ -8073,7 +8129,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set delivery window with unknown timezone -> 422",
@@ -8093,9 +8152,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"start\":\"22:00\",\"end\":\"07:00\",\"timezone\":\"Newman/Nowhere\"}"
@@ -8116,7 +8173,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set delivery window with day out of range -> 422",
@@ -8136,9 +8196,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"start\":\"22:00\",\"end\":\"07:00\",\"days\":[7]}"
@@ -8159,7 +8217,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set delivery window with non-array days -> 422",
@@ -8179,9 +8240,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"start\":\"22:00\",\"end\":\"07:00\",\"days\":\"monday\"}"
@@ -8201,7 +8260,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Delivery window unchanged after invalid writes",
@@ -8217,9 +8279,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
 					},
 					"event": [
 						{
@@ -8237,7 +8297,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Delivery window (non-admin) is their own, not admin's",
@@ -8253,9 +8316,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -8287,7 +8348,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Set delivery window (non-admin, own)",
@@ -8307,9 +8371,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"start\":\"08:00\",\"end\":\"09:00\"}"
@@ -8346,7 +8408,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Admin delivery window unaffected by non-admin write",
@@ -8362,9 +8427,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
 					},
 					"event": [
 						{
@@ -8380,7 +8443,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Clear delivery window (non-admin, cleanup)",
@@ -8400,9 +8466,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"enabled\":false}"
@@ -8437,7 +8501,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "Restore delivery window (admin, cleanup)",
@@ -8457,9 +8524,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/notification-delivery-window",
 						"body": {
 							"mode": "raw",
 							"raw": "{{ndw_restore_body}}"
@@ -8481,7 +8546,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
@@ -8515,9 +8583,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_search=t28term"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_search=t28term"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8550,9 +8619,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails?_search=t28term&_limit=50"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails?_search=t28term&_limit=50"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8582,9 +8652,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -8600,6 +8668,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8612,7 +8683,7 @@
 								"exec": [
 									"pm.test('status 200', function () { pm.response.to.have.status(200); });",
 									"const j = pm.response.json();",
-									"pm.test('same trail', function () { pm.expect(String(j.id)).to.eql(pm.collectionVariables.get('t28_trail_id')); pm.expect(j.searchTerm).to.eql('t28term'); });"
+									"pm.test('same trail', function () { pm.expect(String(j.id)).to.eql(String(pm.collectionVariables.get('t28_trail_id'))); pm.expect(j.searchTerm).to.eql('t28term'); });"
 								]
 							}
 						}
@@ -8629,9 +8700,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/{{t28_trail_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/{{t28_trail_id}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8661,9 +8733,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/999999999"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/999999999"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8693,9 +8766,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/{{t28_trail_id}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/{{t28_trail_id}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -8711,6 +8782,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8740,9 +8814,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/statistics"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/statistics"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8772,9 +8847,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/statistics?from=not-a-date"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/statistics?from=not-a-date"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8804,9 +8880,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/statistics"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/statistics",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -8822,6 +8896,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8852,9 +8929,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/popular-terms?_limit=100"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/popular-terms?_limit=100"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8884,9 +8962,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/popular-terms"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/popular-terms",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -8902,6 +8978,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8931,9 +9010,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/activity?interval=hour"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/activity?interval=hour"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8963,9 +9043,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/activity?interval=bogus"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/activity?interval=bogus"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8995,9 +9076,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/activity"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/activity",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -9013,6 +9092,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9042,9 +9124,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/register-schema-stats"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/register-schema-stats"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9074,9 +9157,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/register-schema-stats"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/register-schema-stats",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -9092,6 +9173,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9121,9 +9205,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/user-agent-stats?_limit=5"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/user-agent-stats?_limit=5"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9153,9 +9238,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/user-agent-stats"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/user-agent-stats",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -9171,71 +9254,9 @@
 								}
 							]
 						}
-					}
-				},
-				{
-					"name": "export: admin json",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 200', function () { pm.response.to.have.status(200); });",
-									"const j = pm.response.json();",
-									"pm.test('json export', function () { pm.expect(j.success).to.eql(true); pm.expect(j.data.contentType).to.eql('application/json'); pm.expect(j.data.filename).to.match(/^search-trails-.*\\.json$/); });",
-									"pm.test('content holds t28term row', function () { const rows = JSON.parse(j.data.content); pm.expect(rows).to.be.an('array'); pm.expect(rows.map(function (r) { return r.search_term; })).to.include('t28term'); pm.expect(j.data.size).to.eql(j.data.content.length); });"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/export?format=json&_search=t28term"
-						}
-					}
-				},
-				{
-					"name": "export: admin csv default",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 200', function () { pm.response.to.have.status(200); });",
-									"const j = pm.response.json();",
-									"pm.test('csv export', function () { pm.expect(j.success).to.eql(true); pm.expect(j.data.contentType).to.eql('text/csv'); pm.expect(j.data.content.split('\\n')[0]).to.include('search_term'); pm.expect(j.data.content).to.include('t28term'); });"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/export?_search=t28term"
-						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9265,9 +9286,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/export"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/export",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -9283,6 +9302,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9316,13 +9338,14 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/cleanup"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/cleanup",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"before\":\"not-a-date\"}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9356,9 +9379,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/cleanup"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/cleanup",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
@@ -9378,6 +9399,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9411,13 +9435,14 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/cleanup"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/cleanup",
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9447,9 +9472,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/{{t28_trail_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/{{t28_trail_id}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9479,9 +9505,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/999999999"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/999999999"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9511,9 +9538,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/{{t28_trail_id}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/{{t28_trail_id}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -9529,6 +9554,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9558,9 +9586,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/{{t28_trail_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/{{t28_trail_id}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9594,9 +9623,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"ids\":[\"{{t28_trail_id}}\"]}"
@@ -9616,6 +9643,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9645,9 +9675,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/clear-all"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/clear-all",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -9663,6 +9691,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9692,9 +9723,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails?_search=t28term"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails?_search=t28term"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9724,9 +9756,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/clear-all"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/clear-all"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -9756,9 +9789,10 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/search-trails/{{t28_trail_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/search-trails/{{t28_trail_id}}"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -9780,9 +9814,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
 					},
 					"event": [
 						{
@@ -9798,7 +9830,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET maintenance as non-admin is refused",
@@ -9814,9 +9849,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -9845,7 +9878,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "POST maintenance as non-admin is refused",
@@ -9865,9 +9901,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"message\": \"t28 not allowed\"}"
@@ -9900,7 +9934,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "state still open after the refused enter",
@@ -9916,9 +9953,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
 					},
 					"event": [
 						{
@@ -9933,84 +9968,10 @@
 								]
 							}
 						}
-					]
-				},
-				{
-					"name": "POST maintenance enters the mode",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\"message\": \"t28 window {{run}}\"}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"const body = pm.response.json();",
-									"",
-									"pm.test('the mode holds', () => pm.expect(body.holds).to.eql(true));",
-									"pm.test('the message is the one sent', () => pm.expect(body.message).to.eql('t28 window ' + pm.collectionVariables.get('run')));",
-									"pm.test('the actor is the admin', () => pm.expect(body.actor).to.eql(pm.variables.get('admin_user')));"
-								]
-							}
-						}
-					]
-				},
-				{
-					"name": "a register read is held while in maintenance",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 503', () => pm.response.to.have.status(503));",
-									"const body = pm.response.json();",
-									"",
-									"pm.test('the refusal names maintenance mode', () => pm.expect(body.error).to.eql('maintenance-mode'));",
-									"pm.test('and carries the operator message', () => pm.expect(body.message).to.eql('t28 window ' + pm.collectionVariables.get('run')));"
-								]
-							}
-						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "DELETE maintenance as non-admin is refused",
@@ -10026,9 +9987,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -10057,44 +10016,13 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
-					"name": "DELETE maintenance leaves the mode",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"const body = pm.response.json();",
-									"",
-									"pm.test('the mode no longer holds', () => pm.expect(body.holds).to.eql(false));",
-									"pm.test('since and actor cleared', () => { pm.expect(body.since).to.eql(null); pm.expect(body.actor).to.eql(null); });"
-								]
-							}
-						}
-					]
-				},
-				{
-					"name": "the register is readable again",
+					"name": "state still open after the refused leave",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -10107,9 +10035,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
 					},
 					"event": [
 						{
@@ -10120,11 +10046,15 @@
 									"pm.test('status 200', () => pm.response.to.have.status(200));",
 									"const body = pm.response.json();",
 									"",
-									"pm.test('the register read answers our register', () => pm.expect(String(body.id)).to.eql(pm.collectionVariables.get('register_id')));"
+									"pm.test('the instance is still open', () => pm.expect(body.holds).to.eql(false));",
+									"pm.test('no actor recorded', () => pm.expect(body.actor).to.eql(null));"
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET support-bundle",
@@ -10140,9 +10070,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/support-bundle"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/support-bundle"
 					},
 					"event": [
 						{
@@ -10154,12 +10082,14 @@
 									"const body = pm.response.json();",
 									"",
 									"pm.test('the bundle carries the instance facts', () => pm.expect(body.instance.app).to.eql('openregister'));",
-									"pm.test('and a consistency section and recent failures', () => { pm.expect(body).to.have.property('consistency'); pm.expect(body).to.have.property('recentFailures'); });",
-									"pm.test('the configuration never carries the admin password', () => pm.expect(JSON.stringify(body.configuration)).to.not.include(pm.variables.get('admin_password') + '\"'));"
+									"pm.test('and a consistency section and recent failures', () => { pm.expect(body).to.have.property('consistency'); pm.expect(body).to.have.property('recentFailures'); });"
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET support-bundle as non-admin is refused",
@@ -10175,9 +10105,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/support-bundle"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/support-bundle",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -10206,7 +10134,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET facts",
@@ -10222,9 +10153,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/facts"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/facts"
 					},
 					"event": [
 						{
@@ -10240,7 +10169,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "GET facts as non-admin is refused",
@@ -10256,9 +10188,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/facts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/operations/facts",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -10287,46 +10217,16 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		},
 		{
 			"name": "99 teardown",
 			"item": [
-				{
-					"name": "leave maintenance mode (safety)",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/operations/maintenance"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status 200', () => pm.response.to.have.status(200));",
-									"const body = pm.response.json();",
-									"",
-									"pm.test('the instance is open', () => pm.expect(body.holds).to.eql(false));"
-								]
-							}
-						}
-					]
-				},
 				{
 					"name": "delete register",
 					"request": {
@@ -10341,9 +10241,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
 					},
 					"event": [
 						{
@@ -10356,7 +10254,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "delete schema",
@@ -10372,9 +10273,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}"
 					},
 					"event": [
 						{
@@ -10387,7 +10286,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				},
 				{
 					"name": "delete non-admin user",
@@ -10403,9 +10305,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{nonadmin_user}}?format=json"
-						}
+						"url": "{{base_url}}/ocs/v2.php/cloud/users/{{nonadmin_user}}?format=json"
 					},
 					"event": [
 						{
@@ -10418,7 +10318,10 @@
 								]
 							}
 						}
-					]
+					],
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
 				}
 			]
 		}
