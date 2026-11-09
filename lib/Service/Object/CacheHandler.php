@@ -244,42 +244,90 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	private ?MagicMapperInterface $objectMapper = null;
 
 	/**
+	 * The organisation entity mapper
+	 *
+	 * @var OrganisationMapperInterface
+	 */
+	private readonly OrganisationMapperInterface $organisationMapper;
+
+	/**
+	 * Logger for performance monitoring
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * User session for cache key generation
+	 *
+	 * @var IUserSession|null
+	 */
+	private readonly ?IUserSession $userSession;
+
+	/**
+	 * Register mapper for magic table queries
+	 *
+	 * @var RegisterMapperInterface|null
+	 */
+	private readonly ?RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema mapper for magic table queries
+	 *
+	 * @var SchemaMapperInterface|null
+	 */
+	private readonly ?SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Database connection for magic table queries
+	 *
+	 * @var IDBConnection|null
+	 */
+	private readonly ?IDBConnection $db;
+
+	/**
+	 * Group manager for the admin-override arm of the name scope
+	 *
+	 * @var IGroupManager|null
+	 */
+	private readonly ?IGroupManager $groupManager;
+
+	/**
+	 * App config for the multitenancy switches read by the name scope
+	 *
+	 * @var IAppConfig|null
+	 */
+	private readonly ?IAppConfig $appConfig;
+
+	/**
 	 * Constructor for CacheHandler
 	 *
-	 * @param OrganisationMapperInterface $organisationMapper The organisation entity mapper
-	 * @param LoggerInterface $logger Logger for performance monitoring
-	 * @param ICacheFactory|null $cacheFactory Cache factory for query result caching
-	 * @param IUserSession|null $userSession User session for cache key generation
-	 * @param IAppContainer|null $container Container for lazy loading dependencies (optional)
-	 * @param RegisterMapperInterface|null $registerMapper Register mapper for magic table queries
-	 * @param SchemaMapperInterface|null $schemaMapper Schema mapper for magic table queries
-	 * @param IDBConnection|null $db Database connection for magic table queries
-	 * @param IGroupManager|null $groupManager Group manager for the admin-override arm of the name scope
-	 * @param IAppConfig|null $appConfig App config for the multitenancy switches read by the name scope
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud constructor injection:
-	 * every parameter is a distinct collaborator resolved by the DI container, and the
-	 * two added by SEC-CTRL-2 step 2 are the same pair Db\MultiTenancyTrait consumes.
+	 * @param CacheHandlerStores    $stores    Organisation mapper plus the magic-table register/schema mappers and connection
+	 * @param CacheHandlerRuntime   $runtime   Logger, distributed cache factory and lazy-loading container
+	 * @param CacheNameScopeSources $nameScope User session, group manager and app config the name scope reads
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly LoggerInterface $logger,
-		?ICacheFactory $cacheFactory = null,
-		private readonly ?IUserSession $userSession = null,
-		?IAppContainer $container = null,
-		private readonly ?RegisterMapperInterface $registerMapper = null,
-		private readonly ?SchemaMapperInterface $schemaMapper = null,
-		private readonly ?IDBConnection $db = null,
-		private readonly ?IGroupManager $groupManager = null,
-		private readonly ?IAppConfig $appConfig = null,
+		CacheHandlerStores $stores,
+		CacheHandlerRuntime $runtime,
+		CacheNameScopeSources $nameScope,
 	) {
+		$this->organisationMapper = $stores->organisationMapper;
+		$this->registerMapper     = $stores->registerMapper;
+		$this->schemaMapper       = $stores->schemaMapper;
+		$this->db                 = $stores->db;
+		$this->logger             = $runtime->logger;
+		$this->container          = $runtime->container;
+		$this->userSession        = $nameScope->userSession;
+		$this->groupManager       = $nameScope->groupManager;
+		$this->appConfig          = $nameScope->appConfig;
+
 		// Initialize query cache if available.
-		if ($cacheFactory !== null) {
+		if ($runtime->cacheFactory !== null) {
 			try {
-				$this->queryCache = $cacheFactory->createDistributed('openregister_query_results');
-				$this->nameDistributedCache = $cacheFactory->createDistributed('openregister_object_names');
+				$this->queryCache = $runtime->cacheFactory->createDistributed('openregister_query_results');
+				$this->nameDistributedCache = $runtime->cacheFactory->createDistributed('openregister_object_names');
 			} catch (\Exception $e) {
 				$this->logger->warning(
 					message: '[CacheHandler] Failed to initialize distributed caches',
@@ -291,8 +339,6 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 				);
 			}
 		}
-
-		$this->container = $container;
 	}//end __construct()
 
 	/**
@@ -1541,7 +1587,6 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 *
 	 * @param string|int $identifier Object ID or UUID
 	 * @param string $name Object name to cache
-	 * @param int $ttl Cache TTL in seconds (default: 24 hours)
 	 * @param string|null $organisation Owning organisation UUID (SEC-CTRL-2 step 2)
 	 * @param string|null $source Where the name came from: NAME_SOURCE_ORGANISATION or
 	 *                            "<registerId>:<schemaId>" (see objectNameSource()). Without
@@ -1554,14 +1599,13 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	public function setObjectName(
 		string|int $identifier,
 		string $name,
-		int $ttl = 86400,
 		?string $organisation = null,
 		?string $source = null,
 	): void {
 		$key = (string)$identifier;
 
-		// Enforce maximum cache TTL.
-		$ttl = min($ttl, self::MAX_CACHE_TTL);
+		// Names are cached for the maximum TTL (24 hours); no caller asked for less.
+		$ttl = self::MAX_CACHE_TTL;
 
 		// Store in in-memory cache, together with the tenancy of the entity the
 		// name belongs to (SEC-CTRL-2 step 2). Without the second map the cache
