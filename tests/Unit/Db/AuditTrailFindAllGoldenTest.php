@@ -105,9 +105,7 @@ class AuditTrailFindAllGoldenTest extends TestCase {
 
 		$mapper = new AuditTrailMapper(
 			$db,
-			$this->createMock(IUserSession::class),
-			$this->createMock(IRequest::class),
-			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), new NullLogger())
+			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), new NullLogger(), $this->createMock(IUserSession::class), $this->createMock(IRequest::class))
 		);
 
 		$outcome = [];

@@ -189,9 +189,7 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 		$this->queuedRows = [[['total' => '7', 'size' => '1']]];
 		$mapper = new AuditTrailMapper(
 			$db,
-			$this->createMock(IUserSession::class),
-			$this->createMock(IRequest::class),
-			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), new NullLogger())
+			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), new NullLogger(), $this->createMock(IUserSession::class), $this->createMock(IRequest::class))
 		);
 		$this->assertSame(
 			['total' => 0, 'creates' => 0, 'updates' => 0, 'deletes' => 0, 'reads' => 0],
@@ -218,9 +216,7 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$db,
-			$this->createMock(IUserSession::class),
-			$this->createMock(IRequest::class),
-			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), $logger)
+			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), $logger, $this->createMock(IUserSession::class), $this->createMock(IRequest::class))
 		);
 	}//end failingMapper()
 
@@ -230,9 +226,7 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$db,
-			$this->createMock(IUserSession::class),
-			$this->createMock(IRequest::class),
-			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), new NullLogger())
+			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), new NullLogger(), $this->createMock(IUserSession::class), $this->createMock(IRequest::class))
 		);
 	}//end mapper()
 }//end class

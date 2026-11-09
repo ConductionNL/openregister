@@ -46,9 +46,7 @@ class AuditTrailScalarFilterTest extends TestCase {
 		$this->database = new MigratedSqliteDatabase(test: $this, tables: ['openregister_audit_trails']);
 		$this->mapper   = new AuditTrailMapper(
 			db: $this->database->idbConnection(),
-			userSession: $this->createMock(IUserSession::class),
-			request: $this->createMock(IRequest::class),
-			services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger())
+			services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger(), userSession: $this->createMock(IUserSession::class), request: $this->createMock(IRequest::class))
 		);
 
 		$rows = [

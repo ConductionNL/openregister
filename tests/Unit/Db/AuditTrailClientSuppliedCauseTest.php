@@ -79,9 +79,7 @@ final class AuditTrailClientSuppliedCauseTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$this->createMock(IDBConnection::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IRequest::class),
-			new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class))
+			new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class), $this->createMock(IUserSession::class), $this->createMock(IRequest::class))
 		);
 	}//end mapper()
 

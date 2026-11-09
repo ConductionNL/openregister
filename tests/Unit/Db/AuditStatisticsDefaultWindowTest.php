@@ -46,9 +46,7 @@ final class AuditStatisticsDefaultWindowTest extends TestCase {
 		$this->database = new MigratedSqliteDatabase($this, ['openregister_audit_trails']);
 		$this->mapper = new AuditTrailMapper(
 			db: $this->database->idbConnection(),
-			userSession: $this->createMock(IUserSession::class),
-			request: $this->createMock(IRequest::class),
-			services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger())
+			services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger(), userSession: $this->createMock(IUserSession::class), request: $this->createMock(IRequest::class))
 		);
 		$this->row(id: 1, age: '-1 hour');
 		$this->row(id: 2, age: '-48 hours');

@@ -318,7 +318,7 @@ final class AuditTrailMapperWritePathGoldenTest extends TestCase {
 			}
 		);
 
-		$mapper = new AuditTrailMapper($db, $this->session(uid: null), $this->request(), new AuditTrailMapperServices($this->container(window: null), $this->logger()));
+		$mapper = new AuditTrailMapper($db, new AuditTrailMapperServices($this->container(window: null), $this->logger(), $this->session(uid: null), $this->request()));
 		try {
 			$inserted = $mapper->insertAuditTrails($entries(), $chunkSize);
 		} catch (\Throwable $e) {
@@ -394,7 +394,7 @@ final class AuditTrailMapperWritePathGoldenTest extends TestCase {
 			$db = $database->idbConnection();
 		}
 
-		return new AuditTrailMapper($db, $this->session(uid: $uid), $this->request(), new AuditTrailMapperServices($this->container(window: $window), $this->logger()));
+		return new AuditTrailMapper($db, new AuditTrailMapperServices($this->container(window: $window), $this->logger(), $this->session(uid: $uid), $this->request()));
 	}//end sqliteMapper()
 
 	/**

@@ -477,9 +477,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$this->createMock(IDBConnection::class),
-			$this->userSession,
-			$request,
-			new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class))
+			new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class), $this->userSession, $request)
 		);
 	}//end auditMapper()
 }//end class
