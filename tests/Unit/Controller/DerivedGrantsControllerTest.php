@@ -46,7 +46,6 @@ class DerivedGrantsControllerTest extends TestCase {
 	 */
 	private function controllerFor(DerivedGrantStore $store): DerivedGrantsController {
 		return new DerivedGrantsController(
-			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			store: $store
 		);
