@@ -1216,21 +1216,34 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		?int $registerId = null,
 		?int $schemaId = null,
 	): void {
-		$startTime = microtime(true);
-		$change    = (new ObjectChange(object: $object, operation: $operation))->within(registerId: $registerId, schemaId: $schemaId);
+		$this->invalidateChange(
+			change: (new ObjectChange(object: $object, operation: $operation))->within(registerId: $registerId, schemaId: $schemaId)
+		);
+	}//end invalidateForObjectChange()
 
+	/**
+	 * Refresh the changed object's own entries and clear the schema-wide caches of one change.
+	 *
+	 * @param ObjectChange $change The changed object, the operation, and the register and schema it changed in
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function invalidateChange(ObjectChange $change): void {
+		$startTime = microtime(true);
 		$this->refreshChangedObject(change: $change);
 		$this->clearSchemaRelatedCaches(change: $change);
 
 		$this->runtime->logger->info(
 			message: '[CacheHandler] Schema-wide cache invalidated for CRUD operation',
 			context: ['file' => __FILE__, 'line' => __LINE__] + $change->facts() + [
-				'objectId' => $object?->getId(),
+				'objectId' => $change->object?->getId(),
 				'executionTime' => round((microtime(true) - $startTime) * 1000, 2).'ms',
 				'scope' => 'all_users_in_schema',
 			]
 		);
-	}//end invalidateForObjectChange()
+	}//end invalidateChange()
 
 	/**
 	 * Forget a changed object and remember its new name.
@@ -2455,9 +2468,9 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			return [];
 		}
 
-		$results = [];
+		$run = new MagicNameLoadRun(uuidList: $uuidList);
 		try {
-			$this->batchLoadNamesFromRegisters(uuidList: $uuidList, results: $results);
+			$this->batchLoadNamesFromRegisters(run: $run);
 		} catch (\Exception $e) {
 			$this->runtime->logger->warning(
 				message: '[CacheHandler] Failed to batch load names from magic tables',
@@ -2465,7 +2478,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			);
 		}//end try
 
-		return $results;
+		return $run->results;
 	}//end batchLoadNamesFromMagicTables()
 
 	/**
@@ -2482,22 +2495,20 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	/**
 	 * Walk the magic tables register by register, querying each for the UUIDs not resolved yet.
 	 *
-	 * Stops as soon as every UUID is resolved. Names found before a failure stay in $results.
+	 * Stops as soon as every UUID is resolved. Names found before a failure stay in the run's results.
 	 *
-	 * @param array                                                                              $uuidList The UUID-like identifiers to look up.
-	 * @param array<string, array{name: string, organisation: string|null, source: string|null}> $results  Map of UUID to name,
-	 *                                                                                                     owning organisation and name source.
+	 * @param MagicNameLoadRun $run The UUID-like identifiers to look up; the names found are added to its results.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function batchLoadNamesFromRegisters(array $uuidList, array &$results): void {
-		$registers = $this->stores->registerMapper->findAll();
-		$schemaMap = $this->loadSchemasOfRegisters(registers: $registers);
+	private function batchLoadNamesFromRegisters(MagicNameLoadRun $run): void {
+		$registers      = $this->stores->registerMapper->findAll();
+		$run->schemaMap = $this->loadSchemasOfRegisters(registers: $registers);
 
 		foreach ($registers as $register) {
-			if ($this->batchLoadNamesFromRegister(register: $register, schemaMap: $schemaMap, uuidList: $uuidList, results: $results) === true) {
+			if ($this->batchLoadNamesFromRegister(run: $run, register: $register) === true) {
 				break;
 			}
 		}
@@ -2506,59 +2517,42 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	/**
 	 * Query one register's magic tables for the UUIDs not resolved yet.
 	 *
-	 * @param Register                                                                           $register  The register.
-	 * @param array                                                                              $schemaMap The schemas keyed by id.
-	 * @param array                                                                              $uuidList  The UUID-like identifiers to look up.
-	 * @param array<string, array{name: string, organisation: string|null, source: string|null}> $results   Names found so far.
+	 * @param MagicNameLoadRun $run      The UUIDs asked, the schemas keyed by id, and the names found so far.
+	 * @param Register         $register The register.
 	 *
 	 * @return bool True when every UUID is resolved and the walk must stop
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function batchLoadNamesFromRegister(Register $register, array $schemaMap, array $uuidList, array &$results): bool {
+	private function batchLoadNamesFromRegister(MagicNameLoadRun $run, Register $register): bool {
 		foreach ($register->getSchemas() ?? [] as $schemaId) {
-			if (count($results) >= count($uuidList)) {
+			if (count($run->results) >= count($run->uuidList)) {
 				return true;
 			}
 
-			if ($this->isNameTable(register: $register, schema: ($schemaMap[(int)$schemaId] ?? null), schemaId: (int)$schemaId) === false) {
+			// Only a known schema that the register keeps in a magic table holds names.
+			$schema = ($run->schemaMap[(int)$schemaId] ?? null);
+			if ($schema === null || $register->isMagicMappingEnabledForSchema(schemaId: (int)$schemaId, schemaSlug: $schema->getSlug()) === false) {
 				continue;
 			}
 
-			$remainingUuids = array_diff($uuidList, array_keys($results));
+			$remainingUuids = array_diff($run->uuidList, array_keys($run->results));
 			if (empty($remainingUuids) === true) {
 				return false;
 			}
 
 			$tableResults = $this->queryTableForNames(
-				tableName: '*PREFIX*openregister_table_' . $register->getId() . '_' . $schemaId,
-				uuids: array_values($remainingUuids),
-				source: self::objectNameSource(register: $register->getId(), schema: $schemaId)
+				query: new NameTableQuery(
+					tableName: '*PREFIX*openregister_table_' . $register->getId() . '_' . $schemaId,
+					uuids: array_values($remainingUuids),
+					source: self::objectNameSource(register: $register->getId(), schema: $schemaId)
+				)
 			);
-			$results = array_merge($results, $tableResults);
+			$run->results = array_merge($run->results, $tableResults);
 		}//end foreach
 
 		return false;
 	}//end batchLoadNamesFromRegister()
-
-	/**
-	 * Whether a register keeps this schema's objects in a magic table.
-	 *
-	 * @param Register $register The register.
-	 * @param mixed    $schema   The schema entity, or null when unknown.
-	 * @param int      $schemaId The schema id.
-	 *
-	 * @return bool True when the schema is known and magic-mapped in the register
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function isNameTable(Register $register, mixed $schema, int $schemaId): bool {
-		if ($schema === null) {
-			return false;
-		}
-
-		return $register->isMagicMappingEnabledForSchema(schemaId: $schemaId, schemaSlug: $schema->getSlug());
-	}//end isNameTable()
 
 	/**
 	 * Load every schema the registers list in one query, keyed by schema id.
@@ -2587,21 +2581,19 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	/**
 	 * Query a single magic table for names by UUIDs.
 	 *
-	 * @param string $tableName The table name, with the prefix or its `*PREFIX*` placeholder.
-	 * @param array $uuids Array of UUIDs to look up.
-	 * @param string|null $source The table's name source, "<registerId>:<schemaId>".
+	 * @param NameTableQuery $query The table (with the prefix or its `*PREFIX*` placeholder), the UUIDs to look up
+	 *                              and the table's name source, "<registerId>:<schemaId>".
 	 *
 	 * @return array<string, array{name: string, organisation: string|null, source: string|null}> Map of UUID to
 	 *                                                                                            name, owning organisation and name source.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
-	private function queryTableForNames(string $tableName, array $uuids, ?string $source = null): array {
-		if (empty($uuids) === true) {
+	private function queryTableForNames(NameTableQuery $query): array {
+		if (empty($query->uuids) === true) {
 			return [];
 		}
 
-		$query = new NameTableQuery(tableName: $tableName, uuids: $uuids, source: $source);
 		foreach (self::NAME_COLUMNS as $nameColumn) {
 			if ($this->readsNamesFromColumn(query: $query, column: $nameColumn) === true) {
 				return $query->names;

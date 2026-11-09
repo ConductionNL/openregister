@@ -50,6 +50,8 @@ final class CachedName {
 	 * The envelope the distributed name cache stores: the name with what decides its visibility.
 	 *
 	 * @return array{n: string, o: string|null, s: string|null}
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	public function envelope(): array {
 		return ['n' => $this->name, 'o' => $this->organisation, 's' => $this->source];
