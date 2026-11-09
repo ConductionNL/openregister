@@ -49,9 +49,9 @@ jest.mock('../../store/store.js', () => ({
 		refreshSchemaList: () => Promise.resolve(),
 	},
 }))
-jest.mock('vue-material-design-icons/Cancel.vue', () => ({ __esModule: true, default: mockStub('Cancel') }))
-jest.mock('vue-material-design-icons/ContentSaveOutline.vue', () => ({ __esModule: true, default: mockStub('ContentSaveOutline') }))
-jest.mock('vue-material-design-icons/Plus.vue', () => ({ __esModule: true, default: mockStub('Plus') }))
+jest.mock('vue-material-design-icons/Cancel.vue', () => ({ __esModule: true, default: mockStub('Cancel') }), { virtual: true })
+jest.mock('vue-material-design-icons/ContentSaveOutline.vue', () => ({ __esModule: true, default: mockStub('ContentSaveOutline') }), { virtual: true })
+jest.mock('vue-material-design-icons/Plus.vue', () => ({ __esModule: true, default: mockStub('Plus') }), { virtual: true })
 jest.mock('../../components/shared/CloseCancelButton.vue', () => ({ __esModule: true, default: mockStub('CloseCancelButton') }))
 
 /**
@@ -154,5 +154,43 @@ describe('EditSchemaProperty relation fields (DOM golden)', () => {
 		const html = await render(property, arrayBlock)
 		expect(html).not.toBe('absent')
 		expect(html).toMatchSnapshot()
+	})
+})
+
+describe('EditSchemaProperty relation fields (writes)', () => {
+	it('writes each field a relation block changes into the property form', async () => {
+		schemaStore.schemaPropertyKey = 'p'
+		schemaStore.schemaItem = { title: 'S', properties: { p: { type: 'array', items: { type: 'object', ...RELATION } } } }
+		const wrapper = mount(EditSchemaProperty, {
+			global: { stubs: Object.fromEntries(NC.map((name) => [name, mockStub(name)])) },
+		})
+		await flushPromises()
+		const block = wrapper.findComponent({ name: 'SchemaRelationFields' })
+		const vm = wrapper.vm
+		block.vm.$emit('set', vm.properties.items, 'writeBack', false)
+		block.vm.$emit('set', vm.properties.objectConfiguration, 'handling', 'uri')
+		block.vm.$emit('set', vm.properties.items.objectConfiguration, 'queryParams', 'x=y')
+		const afterSet = {
+			writeBack: vm.properties.items.writeBack,
+			handling: vm.properties.objectConfiguration.handling,
+			queryParams: vm.properties.items.objectConfiguration.queryParams,
+		}
+		block.vm.$emit('inversedByChange', { value: 'other' })
+		const afterInversed = {
+			inversedBy: vm.properties.inversedBy,
+			items: vm.properties.items.inversedBy,
+			queryParams: vm.properties.items.objectConfiguration.queryParams,
+		}
+		block.vm.$emit('schemaChange', { id: 's2' })
+		const afterSchema = { ref: vm.properties.$ref, items: vm.properties.items.$ref, inversedBy: vm.properties.items.inversedBy }
+		block.vm.$emit('registerChange', { id: 'r2' })
+		const afterRegister = { register: vm.properties.items.register, ref: vm.properties.items.$ref }
+		expect({ afterSet, afterInversed, afterSchema, afterRegister }).toEqual({
+			afterSet: { writeBack: false, handling: 'uri', queryParams: 'x=y' },
+			afterInversed: { inversedBy: 'other', items: 'other', queryParams: '' },
+			afterSchema: { ref: 's2', items: 's2', inversedBy: '' },
+			afterRegister: { register: 'r2', ref: '' },
+		})
+		wrapper.unmount()
 	})
 })
