@@ -4,7 +4,7 @@ exports[`ReimportDescriptorDialog (DOM golden) renders the question 1`] = `
 "<!-- Re-importing takes the file's authorization over a local change, and
 	     re-imports the whole app's configuration where it has a base
 	     document: say so before it runs, not after. -->
-<x-ncdialog open="true" name="t:Re-import {register}? {&quot;register&quot;:&quot;Reg&quot;}" size="small">
+<x-ncdialog name="t:Re-import {register}? {&quot;register&quot;:&quot;Reg&quot;}" size="small" noclose="false" class="">
   <slot-actions>
     <x-ncbutton disabled="false" data-testid="cn-dialog-actions-cancel">
       <slot-default>t:Cancel</slot-default>
@@ -14,6 +14,7 @@ exports[`ReimportDescriptorDialog (DOM golden) renders the question 1`] = `
     </x-ncbutton>
   </slot-actions>
   <slot-default>
+    <!--v-if-->
     <p>t:Re-importing {app} takes the authorization of its schemas from the file, replacing any change made on this instance, and may re-import every register of the app, not only {register}. {"app":"app","register":"Reg"}</p>
   </slot-default>
 </x-ncdialog>"

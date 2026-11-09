@@ -26,10 +26,13 @@ jest.mock('@nextcloud/l10n', () => ({
 jest.mock('@nextcloud/axios', () => jest.fn(() => Promise.resolve({})))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
 jest.mock('@nextcloud/vue', () => mockLibrary())
-// The real CnDialogActions, drawn with the stand-ins above, so the golden
-// shows the buttons the shared footer really renders.
+// The real CnDialog and CnDialogActions, drawn with the stand-ins above, so
+// the golden shows what the shared frame and footer really render.
 jest.mock('@conduction/nextcloud-vue', () => ({
 	__esModule: true,
+	CnDialog: jest.requireActual(
+		'@conduction/nextcloud-vue/dist/esm/components/CnDialog/CnDialog.vue.js',
+	).default,
 	CnDialogActions: jest.requireActual(
 		'@conduction/nextcloud-vue/dist/esm/components/CnDialogActions/CnDialogActions.vue.js',
 	).default,
@@ -37,6 +40,10 @@ jest.mock('@conduction/nextcloud-vue', () => ({
 jest.mock(
 	'@conduction/nextcloud-vue/dist/esm/components/CnIcon/CnIcon.vue.js',
 	() => mockModule('CnIcon'),
+)
+jest.mock(
+	'@conduction/nextcloud-vue/dist/esm/components/CnDialogHeader/CnDialogHeader.vue.js',
+	() => mockModule('CnDialogHeader'),
 )
 jest.mock('vue-codemirror6', () => mockModule('CodeMirror'))
 jest.mock('@codemirror/lang-json', () => ({
@@ -268,8 +275,7 @@ describe('ReimportDescriptorDialog (DOM golden)', () => {
 		const buttons = wrapper.findAllComponents({ name: 'NcButton' })
 		await buttons[0].vm.$emit('click')
 		await buttons[1].vm.$emit('click')
-		await wrapper.findComponent({ name: 'NcDialog' }).vm.$emit('update:open', false)
-		await wrapper.findComponent({ name: 'NcDialog' }).vm.$emit('update:open', true)
+		await wrapper.findComponent({ name: 'NcDialog' }).vm.$emit('closing')
 		expect(Object.keys(wrapper.emitted())).toEqual(
 			expect.arrayContaining(['cancel', 'confirm']),
 		)
