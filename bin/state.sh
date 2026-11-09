@@ -24,6 +24,13 @@ _now() { date -u +%s; }
 st_sync() {
 	_g fetch -q origin "$ST_BRANCH" || return 2
 	_g merge -q --no-edit "origin/$ST_BRANCH" >/dev/null 2>&1 && return 0
+	# Conflicts only in cache/ (derived data such as class-times.json): take the remote copy.
+	local unmerged
+	unmerged=$(_g diff --name-only --diff-filter=U)
+	if [ -n "$unmerged" ] && ! grep -qv '^cache/' <<<"$unmerged"; then
+		while read -r f; do _g checkout -q --theirs -- "$f" && _g add -- "$f"; done <<<"$unmerged"
+		_g commit -q --no-edit -m "state: merge (cache conflict resolved to remote)" -m "$TRAILER" >/dev/null 2>&1 && return 0
+	fi
 	_g merge --abort 2>/dev/null
 	return 3
 }
