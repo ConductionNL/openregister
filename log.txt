@@ -442,3 +442,4 @@
 2026-11-09T17:26:23Z integrator-20261109T152612-5367949c CONFLICT-DEV #7676 b05c580f
 2026-11-09T17:26:38Z integrator-20261109T152612-5367949c CONFLICT-DEV #7701 aadd9d43
 2026-11-09T17:26:53Z integrator-20261109T152612-5367949c CONFLICT-DEV #7721 06e07913
+2026-11-09T17:30:52Z integrator-20261109T152612-5367949c RED tree c90ede73b8 prs 1 front=skip: Tests: 52825, Assertions: 172023, Errors: 8, Failures: 14, Warnings: 3, Deprecations: 4, P; first failures: OCA\OpenRegister\Tests\Unit\AppHost\Scheduling\ManifestScheduleEndToEndTest::testACronScheduleInAPublishedMani;OCA\OpenRegister\Tests\Unit\AppHost\Scheduling\ManifestScheduleEndToEndTest::testAFlowAnAuthorDrewIsNotAskedFo;OCA\OpenRegister\Tests\Unit\AppHost\Scheduling\ManifestScheduleEndToEndTest::testAMemberWhoLeftStopsTheSchedul
