@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -78,12 +79,11 @@ class DuplicateController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                      $appName  The application name.
 	 * @param IRequest                    $request  The current request.
 	 * @param DuplicateControllerServices $services The duplicate-detection API services.
 	 */
-	public function __construct(string $appName, IRequest $request, DuplicateControllerServices $services) {
-		parent::__construct(appName: $appName, request: $request);
+	public function __construct(IRequest $request, DuplicateControllerServices $services) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->duplicates    = $services->duplicates;
 		$this->dismissals    = $services->dismissals;
