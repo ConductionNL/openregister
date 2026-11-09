@@ -462,6 +462,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -514,6 +517,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -566,6 +572,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -762,6 +771,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -811,10 +823,10 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 200 or 400 or 502 or 503', () => pm.expect(pm.response.code).to.be.oneOf([200,400,502,503]));",
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
 									"pm.test('success is false', () => pm.expect(b).to.have.nested.property('success', false));",
-									"pm.test('names why it failed', () => pm.expect(String(b.error || b.message)).to.not.equal(''));"
+									"pm.test('error mentions Connection failed', () => pm.expect(String(b['error'])).to.include(\"Connection failed\"));"
 								]
 							}
 						}
@@ -892,6 +904,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -941,10 +956,10 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 200 or 400 or 502 or 503', () => pm.expect(pm.response.code).to.be.oneOf([200,400,502,503]));",
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
 									"pm.test('success is false', () => pm.expect(b).to.have.nested.property('success', false));",
-									"pm.test('names why it failed', () => pm.expect(String(b.error || b.message)).to.not.equal(''));"
+									"pm.test('error mentions Connection failed', () => pm.expect(String(b['error'])).to.include(\"Connection failed\"));"
 								]
 							}
 						}
@@ -1022,6 +1037,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1113,6 +1131,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -1164,7 +1185,7 @@
 								"exec": [
 									"pm.test('status is 403', () => pm.expect(pm.response.code).to.be.oneOf([403]));",
 									"const b = pm.response.json();",
-									"pm.test('answer names the error', () => { pm.expect(b).to.have.property('error'); pm.expect(String(b['error'])).to.not.equal(''); });"
+									"pm.test('message is \"Logged in account must be an admin\"', () => pm.expect(b).to.have.nested.property('message', \"Logged in account must be an admin\"));"
 								]
 							}
 						}
@@ -1201,6 +1222,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1289,7 +1313,7 @@
 								"exec": [
 									"pm.test('status is 403', () => pm.expect(pm.response.code).to.be.oneOf([403]));",
 									"const b = pm.response.json();",
-									"pm.test('answer names the error', () => { pm.expect(b).to.have.property('error'); pm.expect(String(b['error'])).to.not.equal(''); });"
+									"pm.test('message is \"Logged in account must be an admin\"', () => pm.expect(b).to.have.nested.property('message', \"Logged in account must be an admin\"));"
 								]
 							}
 						}
@@ -1330,6 +1354,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -1337,80 +1364,6 @@
 		{
 			"name": "03 objects: batch, validate, counts, exists",
 			"item": [
-				{
-					"name": "Vectorize batch without an LLM",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 200 or 400 or 422 or 503', () => pm.expect(pm.response.code).to.be.oneOf([200,400,422,503]));",
-									"const b = pm.response.json();",
-									"pm.test('answer says whether it ran', () => pm.expect(b).to.have.property('success'));",
-									"if (b.success === false) { pm.test('failure names why', () => pm.expect(String(b.error || b.message)).to.not.equal('')); }"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/vectorize/batch",
-						"body": {
-							"mode": "raw",
-							"raw": "{\n \"limit\": 1\n}"
-						}
-					}
-				},
-				{
-					"name": "Vectorization stats",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
-									"const b = pm.response.json();",
-									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
-									"pm.test('body has stats', () => pm.expect(b).to.have.nested.property('stats'));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/vectorize/stats"
-					}
-				},
 				{
 					"name": "Validate without register and schema",
 					"event": [
@@ -1460,7 +1413,9 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('validation answers a result', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('statistics.processed is 3', () => pm.expect(b).to.have.nested.property('statistics.processed', 3));",
+									"pm.test('statistics.failed is 0', () => pm.expect(b).to.have.nested.property('statistics.failed', 0));"
 								]
 							}
 						}
@@ -1693,6 +1648,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1732,6 +1690,9 @@
 						"auth": {
 							"type": "noauth"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1784,7 +1745,8 @@
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
 									"pm.test('one answer per probe', () => pm.expect(b.probes).to.have.lengthOf(1));",
-									"pm.test('admin learns alpha exists', () => pm.expect(JSON.stringify(b.probes[0])).to.match(/\"exists\":true|\"found\":true|\"count\":1/));"
+									"pm.test('probes[0].exists is true', () => pm.expect(b).to.have.nested.property('probes[0].exists', true));",
+									"pm.test('probes[0].matches is 1', () => pm.expect(b).to.have.nested.property('probes[0].matches', 1));"
 								]
 							}
 						}
@@ -1873,9 +1835,10 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 200 or 501', () => pm.expect(pm.response.code).to.be.oneOf([200,501]));",
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"if (pm.response.code === 200) { pm.test('is a FeatureCollection', () => pm.expect(b.type).to.equal('FeatureCollection')); pm.test('objects without geometry are omitted', () => pm.expect(b.features).to.eql([])); } else { pm.test('names the missing builder', () => pm.expect(b.error).to.equal('Geo feature builder not configured')); }"
+									"pm.test('type is \"FeatureCollection\"', () => pm.expect(b).to.have.nested.property('type', \"FeatureCollection\"));",
+									"pm.test('objects without geometry are omitted', () => pm.expect(b.features).to.eql([]));"
 								]
 							}
 						}
@@ -1907,9 +1870,10 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 406 or 501', () => pm.expect(pm.response.code).to.be.oneOf([406,501]));",
+									"pm.test('status is 406', () => pm.expect(pm.response.code).to.be.oneOf([406]));",
 									"const b = pm.response.json();",
-									"pm.test('refusal is explained', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('names the supported CRSs', () => pm.expect(b.supported).to.include('EPSG:4326'));",
+									"pm.test('error mentions Unsupported CRS', () => pm.expect(String(b['error'])).to.include(\"Unsupported CRS\"));"
 								]
 							}
 						}
@@ -1937,9 +1901,10 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 200 or 403 or 404 or 501', () => pm.expect(pm.response.code).to.be.oneOf([200,403,404,501]));",
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"if (pm.response.code === 200) { pm.test('non-admin sees no features', () => pm.expect(b.features).to.eql([])); }"
+									"pm.test('type is \"FeatureCollection\"', () => pm.expect(b).to.have.nested.property('type', \"FeatureCollection\"));",
+									"pm.test('objects without geometry are omitted', () => pm.expect(b.features).to.eql([]));"
 								]
 							}
 						}
@@ -1976,6 +1941,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -1986,9 +1954,10 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 200 or 501', () => pm.expect(pm.response.code).to.be.oneOf([200,501]));",
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"if (pm.response.code === 200) { pm.test('is a FeatureCollection', () => pm.expect(b.type).to.equal('FeatureCollection')); } else { pm.test('names the missing builder', () => pm.expect(b.error).to.equal('Geo feature builder not configured')); }"
+									"pm.test('type is \"FeatureCollection\"', () => pm.expect(b).to.have.nested.property('type', \"FeatureCollection\"));",
+									"pm.test('objects without geometry are omitted', () => pm.expect(b.features).to.eql([]));"
 								]
 							}
 						}
@@ -2020,9 +1989,10 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 200 or 403 or 404 or 501', () => pm.expect(pm.response.code).to.be.oneOf([200,403,404,501]));",
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"if (pm.response.code === 200) { pm.test('non-admin sees no features', () => pm.expect(b.features).to.eql([])); }"
+									"pm.test('type is \"FeatureCollection\"', () => pm.expect(b).to.have.nested.property('type', \"FeatureCollection\"));",
+									"pm.test('objects without geometry are omitted', () => pm.expect(b.features).to.eql([]));"
 								]
 							}
 						}
@@ -2059,6 +2029,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2071,8 +2044,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers availability', () => pm.expect(b).to.have.property('available'));",
-									"pm.test('suggestions is a list', () => pm.expect(b.suggestions).to.be.an('array'));"
+									"pm.test('available is false', () => pm.expect(b).to.have.nested.property('available', false));",
+									"pm.test('no suggestions without a geocoder', () => pm.expect(b.suggestions).to.eql([]));"
 								]
 							}
 						}
@@ -2130,40 +2103,6 @@
 					}
 				},
 				{
-					"name": "Export for an unknown register",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
-									"const b = pm.response.json();",
-									"pm.test('answer names the error', () => { pm.expect(b).to.have.property('error'); pm.expect(String(b['error'])).to.not.equal(''); });"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/t23-no-register-{{run}}/{{schemaId}}/export?type=csv"
-					}
-				},
-				{
 					"name": "Export CSV as non-admin",
 					"event": [
 						{
@@ -2171,8 +2110,10 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 200 or 403 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,403,404]));",
-									"pm.test('non-admin export holds no admin-only object', () => pm.expect(pm.response.text()).to.not.include('alpha'));"
+									"pm.test('status is 403', () => pm.expect(pm.response.code).to.be.oneOf([403]));",
+									"const b = pm.response.json();",
+									"pm.test('error is \"EXPORT_REFUSED\"', () => pm.expect(b).to.have.nested.property('error', \"EXPORT_REFUSED\"));",
+									"pm.test('rule is \"export-right-missing\"', () => pm.expect(b).to.have.nested.property('rule', \"export-right-missing\"));"
 								]
 							}
 						}
@@ -2209,6 +2150,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -2251,16 +2195,16 @@
 					}
 				},
 				{
-					"name": "Reference options for title",
+					"name": "Reference options for a non-reference property",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 200 or 404 or 422', () => pm.expect(pm.response.code).to.be.oneOf([200,404,422]));",
+									"pm.test('status is 422', () => pm.expect(pm.response.code).to.be.oneOf([422]));",
 									"const b = pm.response.json();",
-									"pm.test('answers options or names why', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('message is \"title does not name a schema to read options from.\"', () => pm.expect(b).to.have.nested.property('message', \"'title' does not name a schema to read options from.\"));"
 								]
 							}
 						}
@@ -2282,40 +2226,6 @@
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectA}}/reference-options?property=title"
-					}
-				},
-				{
-					"name": "Reference options for an unknown object",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
-									"const b = pm.response.json();",
-									"pm.test('names the error', () => pm.expect(String(b.error || b.message)).to.not.equal(''));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-0000000000t2/reference-options?property=title"
 					}
 				},
 				{
@@ -2354,40 +2264,6 @@
 					}
 				},
 				{
-					"name": "Contracts of an unknown object",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
-									"const b = pm.response.json();",
-									"pm.test('names the error', () => pm.expect(String(b.error || b.message)).to.not.equal(''));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-0000000000t2/contracts"
-					}
-				},
-				{
 					"name": "Referenced-by of object A",
 					"event": [
 						{
@@ -2397,7 +2273,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers a body', () => pm.expect(b).to.be.an('object'));"
+									"pm.test('answers for object A', () => pm.expect(b.object.id).to.equal(pm.collectionVariables.get('objectA')));",
+									"pm.test('total is 0', () => pm.expect(b).to.have.nested.property('total', 0));"
 								]
 							}
 						}
@@ -2463,9 +2340,10 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 403 or 404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
 									"const b = pm.response.json();",
-									"pm.test('refusal names the error', () => pm.expect(String(b.error || b.message)).to.not.equal(''));"
+									"pm.test('admin-only object is not revealed', () => pm.expect(b).to.not.have.property('groups'));",
+									"pm.test('answer names the error', () => { pm.expect(b).to.have.property('error'); pm.expect(String(b['error'])).to.not.equal(''); });"
 								]
 							}
 						}
@@ -2502,6 +2380,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2514,7 +2395,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers a body', () => pm.expect(b).to.be.an('object'));"
+									"pm.test('type is \"FeatureCollection\"', () => pm.expect(b).to.have.nested.property('type', \"FeatureCollection\"));",
+									"pm.test('no geometry, no features', () => pm.expect(b.features).to.eql([]));"
 								]
 							}
 						}
@@ -2580,9 +2462,10 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 403 or 404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
 									"const b = pm.response.json();",
-									"pm.test('refusal names the error', () => pm.expect(String(b.error || b.message)).to.not.equal(''));"
+									"pm.test('admin-only object is not revealed', () => pm.expect(b).to.not.have.property('features'));",
+									"pm.test('answer names the error', () => { pm.expect(b).to.have.property('error'); pm.expect(String(b['error'])).to.not.equal(''); });"
 								]
 							}
 						}
@@ -2619,6 +2502,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2698,9 +2584,9 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 200 or 403 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,403,404]));",
+									"pm.test('status is 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
 									"const b = pm.response.json();",
-									"if (pm.response.code === 200) { pm.test('non-admin reads no entries', () => pm.expect(b.results).to.eql([])); } else { pm.test('refusal names the error', () => pm.expect(String(b.error || b.message)).to.not.equal('')); }"
+									"pm.test('message is \"Object not found\"', () => pm.expect(b).to.have.nested.property('message', \"Object not found\"));"
 								]
 							}
 						}
@@ -2737,31 +2623,9 @@
 								}
 							]
 						}
-					}
-				},
-				{
-					"name": "Download files of object A",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
-									"pm.test('answers a zip', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('zip'));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "*/*"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectA}}/files/download"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2806,8 +2670,9 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 403 or 404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
-									"pm.test('no archive is handed out', () => pm.expect(String(pm.response.headers.get('Content-Type'))).to.not.include('zip'));"
+									"pm.test('status is 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
+									"const b = pm.response.json();",
+									"pm.test('error is \"Object not found\"', () => pm.expect(b).to.have.nested.property('error', \"Object not found\"));"
 								]
 							}
 						}
@@ -2836,6 +2701,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -2880,6 +2748,9 @@
 						"auth": {
 							"type": "noauth"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -2930,7 +2801,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers who else is present', () => pm.expect(b).to.have.property('present'));"
+									"pm.test('present lists the others', () => pm.expect(b.present).to.be.an('array'));",
+									"pm.test('beatSeconds is 30', () => pm.expect(b).to.have.nested.property('beatSeconds', 30));"
 								]
 							}
 						}
@@ -2968,7 +2840,7 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers present', () => pm.expect(b).to.have.property('present'));"
+									"pm.test('present is a list', () => pm.expect(b.present).to.be.an('array'));"
 								]
 							}
 						}
@@ -3059,6 +2931,9 @@
 						"auth": {
 							"type": "noauth"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3069,9 +2944,9 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 403 or 404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
 									"const b = pm.response.json();",
-									"pm.test('refusal names the error', () => pm.expect(String(b.error || b.message)).to.not.equal(''));"
+									"pm.test('error is \"Object not found\"', () => pm.expect(b).to.have.nested.property('error', \"Object not found\"));"
 								]
 							}
 						}
@@ -3108,6 +2983,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3177,6 +3055,9 @@
 						"auth": {
 							"type": "noauth"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3288,40 +3169,9 @@
 						"auth": {
 							"type": "noauth"
 						}
-					}
-				},
-				{
-					"name": "Unlock (DELETE) an unknown object",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
-									"const b = pm.response.json();",
-									"pm.test('answer names the error', () => { pm.expect(b).to.have.property('error'); pm.expect(String(b['error'])).to.not.equal(''); });"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-0000000000t2/lock"
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3334,7 +3184,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('lock answer is an object', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('locked is true', () => pm.expect(b).to.have.nested.property('locked', true));",
+									"pm.test('answers object A', () => pm.expect(b.uuid).to.equal(pm.collectionVariables.get('objectA')));"
 								]
 							}
 						}
@@ -3370,9 +3221,9 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 403 or 404 or 409', () => pm.expect(pm.response.code).to.be.oneOf([403,404,409]));",
+									"pm.test('status is 403', () => pm.expect(pm.response.code).to.be.oneOf([403]));",
 									"const b = pm.response.json();",
-									"pm.test('refusal names the error', () => pm.expect(String(b.error || b.message)).to.not.equal(''));"
+									"pm.test('error is \"User does not have permission to unlock this object\"', () => pm.expect(b).to.have.nested.property('error', \"User does not have permission to unlock this object\"));"
 								]
 							}
 						}
@@ -3409,6 +3260,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3421,7 +3275,9 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers the release', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('the lock was still held after the refused unlock', () => pm.expect(b).to.have.nested.property('released', true));",
+									"pm.test('locked is false', () => pm.expect(b).to.have.nested.property('locked', false));",
+									"pm.test('message is \"Object unlocked successfully\"', () => pm.expect(b).to.have.nested.property('message', \"Object unlocked successfully\"));"
 								]
 							}
 						}
@@ -3562,94 +3418,6 @@
 							"mode": "raw",
 							"raw": "{\"target\": \"{{objectC}}\", \"object\": {\"title\": \"gamma\"}}"
 						}
-					}
-				},
-				{
-					"name": "Merge as non-admin",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 403 or 404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
-									"const b = pm.response.json();",
-									"pm.test('refusal names the error', () => pm.expect(String(b.error || b.message)).to.not.equal(''));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectB}}/merge",
-						"body": {
-							"mode": "raw",
-							"raw": "{\"target\": \"{{objectA}}\", \"object\": {\"title\": \"hijacked\"}}"
-						},
-						"auth": {
-							"type": "basic",
-							"basic": [
-								{
-									"key": "username",
-									"value": "{{userId}}",
-									"type": "string"
-								},
-								{
-									"key": "password",
-									"value": "{{userPassword}}",
-									"type": "string"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Re-read object A (after refused merge)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
-									"const b = pm.response.json();",
-									"pm.test('object A still has its title', () => pm.expect(b.title).to.equal('alpha'));",
-									"pm.test('object A still has its count', () => pm.expect(b.count).to.equal(1));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectA}}"
 					}
 				},
 				{
@@ -3917,6 +3685,9 @@
 						"auth": {
 							"type": "noauth"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -3927,9 +3698,9 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 403 or 404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));",
+									"pm.test('status is 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
 									"const b = pm.response.json();",
-									"pm.test('refusal names the error', () => pm.expect(String(b.error || b.message)).to.not.equal(''));"
+									"pm.test('error is \"Object not found\"', () => pm.expect(b).to.have.nested.property('error', \"Object not found\"));"
 								]
 							}
 						}
@@ -3970,6 +3741,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4017,7 +3791,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('merge answers a result', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('sourceObject.title is \"beta\"', () => pm.expect(b).to.have.nested.property('sourceObject.title', \"beta\"));"
 								]
 							}
 						}
@@ -4055,7 +3830,9 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('migration answers a result', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('statistics.objectsMigrated is 1', () => pm.expect(b).to.have.nested.property('statistics.objectsMigrated', 1));",
+									"pm.test('statistics.objectsFailed is 0', () => pm.expect(b).to.have.nested.property('statistics.objectsFailed', 0));"
 								]
 							}
 						}
@@ -4093,7 +3870,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('move answers a result', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('moved is true', () => pm.expect(b).to.have.nested.property('moved', true));",
+									"pm.test('moved to the target schema', () => pm.expect(String(b.to.schema)).to.equal(pm.collectionVariables.get('targetSchemaId')));"
 								]
 							}
 						}
@@ -4210,6 +3988,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4294,6 +4075,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4306,7 +4090,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers a body', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('data is a list', () => pm.expect(b.data).to.be.an('array'));"
 								]
 							}
 						}
@@ -4338,9 +4123,10 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 200 or 403', () => pm.expect(pm.response.code).to.be.oneOf([200,403]));",
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers a body', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('data is a list', () => pm.expect(b.data).to.be.an('array'));"
 								]
 							}
 						}
@@ -4377,6 +4163,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4431,6 +4220,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4441,9 +4233,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 200 or 400 or 422 or 503', () => pm.expect(pm.response.code).to.be.oneOf([200,400,422,503]));",
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers success', () => pm.expect(b).to.have.property('success'));"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('data.entity_type is \"file\"', () => pm.expect(b).to.have.nested.property('data.entity_type', \"file\"));",
+									"pm.test('nothing vectorized without an LLM', () => pm.expect(b.data.vectorized).to.equal(0));"
 								]
 							}
 						}
@@ -4523,6 +4317,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4535,7 +4332,9 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('message is \"File discovery completed\"', () => pm.expect(b).to.have.nested.property('message', \"File discovery completed\"));",
+									"pm.test('reports a total', () => pm.expect(b.data.total).to.be.a('number'));"
 								]
 							}
 						}
@@ -4615,6 +4414,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4627,7 +4429,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('message is \"Batch extraction completed\"', () => pm.expect(b).to.have.nested.property('message', \"Batch extraction completed\"));"
 								]
 							}
 						}
@@ -4707,6 +4510,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4719,7 +4525,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('message is \"Retry completed\"', () => pm.expect(b).to.have.nested.property('message', \"Retry completed\"));"
 								]
 							}
 						}
@@ -4799,6 +4606,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -4811,7 +4621,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('message is \"Cleanup completed\"', () => pm.expect(b).to.have.nested.property('message', \"Cleanup completed\"));"
 								]
 							}
 						}
@@ -4921,6 +4732,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -5009,6 +4823,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5137,6 +4954,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5189,6 +5009,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5388,6 +5211,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5440,6 +5266,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5604,6 +5433,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5695,6 +5527,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -5782,6 +5617,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5834,6 +5672,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -5846,7 +5687,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers the clear', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('type is \"names\"', () => pm.expect(b).to.have.nested.property('type', \"names\"));",
+									"pm.test('body has results.names', () => pm.expect(b).to.have.nested.property('results.names'));"
 								]
 							}
 						}
@@ -5884,7 +5726,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers the warmup', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('body has after.name_cache_size', () => pm.expect(b).to.have.nested.property('after.name_cache_size'));"
 								]
 							}
 						}
@@ -5962,6 +5805,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6046,6 +5892,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6137,6 +5986,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6263,7 +6115,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers the invalidation', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('message is \"App store cache invalidated successfully\"', () => pm.expect(b).to.have.nested.property('message', \"App store cache invalidated successfully\"));"
 								]
 							}
 						}
@@ -6341,6 +6194,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -6474,6 +6330,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6602,6 +6461,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6614,7 +6476,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers the clear', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('cleared.ip_address is \"203.0.113.24\"', () => pm.expect(b).to.have.nested.property('cleared.ip_address', \"203.0.113.24\"));"
 								]
 							}
 						}
@@ -6692,6 +6555,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -6709,7 +6575,9 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('report is an object', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('body has meetsAllFloors', () => pm.expect(b).to.have.nested.property('meetsAllFloors'));",
+									"pm.test('failing is a list of control ids', () => pm.expect(b.failing).to.be.an('array'));",
+									"pm.test('controls are listed', () => pm.expect(b.controls.length).to.be.above(0));"
 								]
 							}
 						}
@@ -6779,6 +6647,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -6866,6 +6737,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7032,6 +6906,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7084,6 +6961,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7136,6 +7016,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7171,6 +7054,9 @@
 						"auth": {
 							"type": "noauth"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7222,6 +7108,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7311,6 +7200,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7350,6 +7242,9 @@
 						"auth": {
 							"type": "noauth"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7440,6 +7335,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7522,6 +7420,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7799,7 +7700,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers a prediction', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('objects_to_process is 10', () => pm.expect(b).to.have.nested.property('objects_to_process', 10));"
 								]
 							}
 						}
@@ -7877,6 +7779,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7889,7 +7794,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers a result', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('message is \"Mass validation completed successfully\"', () => pm.expect(b).to.have.nested.property('message', \"Mass validation completed successfully\"));"
 								]
 							}
 						}
@@ -7967,6 +7873,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -7979,7 +7888,8 @@
 								"exec": [
 									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers a result', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('body has summary.validation_success_rate', () => pm.expect(b).to.have.nested.property('summary.validation_success_rate'));",
+									"pm.test('valid plus invalid is the total', () => pm.expect(b.valid_objects + b.invalid_objects).to.equal(b.total_objects));"
 								]
 							}
 						}
@@ -8057,6 +7967,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
@@ -8072,9 +7985,9 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('status is 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));",
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
 									"const b = pm.response.json();",
-									"pm.test('answers a manifest or names its absence', () => pm.expect(b).to.be.an('object').that.is.not.empty);"
+									"pm.test('body has $schema', () => pm.expect(b).to.have.nested.property('$schema'));"
 								]
 							}
 						}
@@ -8099,6 +8012,9 @@
 						"auth": {
 							"type": "noauth"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8136,6 +8052,9 @@
 						"auth": {
 							"type": "noauth"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8173,6 +8092,9 @@
 						"auth": {
 							"type": "noauth"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8256,6 +8178,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8291,6 +8216,9 @@
 						"auth": {
 							"type": "noauth"
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				},
 				{
@@ -8356,6 +8284,9 @@
 								}
 							]
 						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
 					}
 				}
 			]
