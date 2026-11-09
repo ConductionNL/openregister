@@ -122,7 +122,7 @@ class RenderObjectTest extends TestCase {
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: $translationHandler,
-					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationStatus: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
 					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
 				),
@@ -1621,7 +1621,7 @@ class RenderObjectTest extends TestCase {
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationStatus: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
 					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
 				),
@@ -1671,7 +1671,7 @@ class RenderObjectTest extends TestCase {
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationStatus: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
 					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
 				),
@@ -4572,7 +4572,7 @@ class RenderObjectTest extends TestCase {
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationStatus: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
 					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
 				),
@@ -4944,7 +4944,7 @@ class RenderObjectTest extends TestCase {
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationStatus: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
 					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
 				),
@@ -6532,7 +6532,7 @@ class RenderObjectTest extends TestCase {
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: $translationHandler,
-					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationStatus: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
 					languageService: $languageService
 				),
@@ -7114,7 +7114,7 @@ class RenderObjectTest extends TestCase {
 				logger: $runtime->logger,
 				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(
 					objectSourceRegistry: $registry,
-					fieldEncryptionHandler: $runtime->extensions->fieldEncryptionHandler,
+					fieldEncryption: $runtime->extensions->fieldEncryption,
 					lensResolver: $runtime->extensions->lensResolver
 				),
 				request: $runtime->request,

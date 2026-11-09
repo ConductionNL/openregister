@@ -38,15 +38,15 @@ final class RenderReadExtensions {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectSourceRegistry|null    $objectSourceRegistry   Resolves object-source providers for `$ref` extends into virtual schemas.
-	 * @param FieldEncryptionHandler|null  $fieldEncryptionHandler Field-level encryption handler (x-openregister-encrypted).
-	 * @param LensResolver|null            $lensResolver           Resolves a schema's declared lenses at read time.
+	 * @param ObjectSourceRegistry|null   $objectSourceRegistry Resolves object-source providers for `$ref` extends into virtual schemas.
+	 * @param FieldEncryptionHandler|null $fieldEncryption      Field-level encryption handler (x-openregister-encrypted).
+	 * @param LensResolver|null           $lensResolver         Resolves a schema's declared lenses at read time.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function __construct(
 		public readonly ?ObjectSourceRegistry $objectSourceRegistry = null,
-		public readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
+		public readonly ?FieldEncryptionHandler $fieldEncryption = null,
 		public readonly ?LensResolver $lensResolver = null,
 	) {
 	}//end __construct()

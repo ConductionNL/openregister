@@ -112,7 +112,7 @@ class RenderObjectLanguageMetaGoldenTest extends TestCase {
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: $this->translations,
-					translationStatusService: $this->createMock(TranslationStatusService::class),
+					translationStatus: $this->createMock(TranslationStatusService::class),
 					translationMapper: $this->mapper,
 					languageService: $languages
 				),

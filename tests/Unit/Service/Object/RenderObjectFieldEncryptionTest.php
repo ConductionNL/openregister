@@ -116,7 +116,7 @@ class RenderObjectFieldEncryptionTest extends TestCase {
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: $translationHandler,
-					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationStatus: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
 					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
 				),
@@ -129,7 +129,7 @@ class RenderObjectFieldEncryptionTest extends TestCase {
 			),
 			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
 				logger: $logger,
-				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(objectSourceRegistry: null, fieldEncryptionHandler: $this->fieldEncryptionHandler),
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(objectSourceRegistry: null, fieldEncryption: $this->fieldEncryptionHandler),
 				request: null
 			),
 			propertyRbacHandler: $this->propertyRbacHandler

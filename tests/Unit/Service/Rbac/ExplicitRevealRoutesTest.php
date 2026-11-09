@@ -273,6 +273,6 @@ class ExplicitRevealRoutesTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($masker);
 
-		return new \OCA\OpenRegister\Service\Object\RenderRuntime(logger: $this->createMock(\Psr\Log\LoggerInterface::class), extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(fieldEncryptionHandler: $encryption), container: $container);
+		return new \OCA\OpenRegister\Service\Object\RenderRuntime(logger: $this->createMock(\Psr\Log\LoggerInterface::class), extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(fieldEncryption: $encryption), container: $container);
 	}//end maskingRuntime()
 }//end class

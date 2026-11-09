@@ -186,7 +186,7 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: $translations,
-					translationStatusService: $this->createMock(TranslationStatusService::class),
+					translationStatus: $this->createMock(TranslationStatusService::class),
 					translationMapper: $this->createMock(TranslationMapper::class),
 					languageService: $this->createMock(LanguageService::class)
 				),

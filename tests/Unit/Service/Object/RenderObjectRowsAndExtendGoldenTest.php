@@ -233,7 +233,7 @@ class RenderObjectRowsAndExtendGoldenTest extends TestCase {
 				'enrichers'          => new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 					translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 						translationHandler: $translation,
-						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+						translationStatus: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 						translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapperInterface::class),
 						languageService: $language
 					),

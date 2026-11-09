@@ -865,10 +865,10 @@ class RenderObject implements RenderObjectInterface {
 	 */
 	private function decryptRedactedRow(RowRedaction $pass, array $data): array {
 		if ($pass->doGated === true
-			&& $this->runtime->extensions->fieldEncryptionHandler !== null
+			&& $this->runtime->extensions->fieldEncryption !== null
 			&& $pass->schema->hasEncryptedProperties() === true
 		) {
-			return $this->runtime->extensions->fieldEncryptionHandler->decryptProperties(data: $data, schema: $pass->schema);
+			return $this->runtime->extensions->fieldEncryption->decryptProperties(data: $data, schema: $pass->schema);
 		}
 
 		return $data;
@@ -3000,11 +3000,11 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function decryptRenderedProperties(?Schema $schema, array $objectData): array {
-		if ($this->runtime->extensions->fieldEncryptionHandler === null || $schema === null || $schema->hasEncryptedProperties() === false) {
+		if ($this->runtime->extensions->fieldEncryption === null || $schema === null || $schema->hasEncryptedProperties() === false) {
 			return $objectData;
 		}
 
-		return $this->runtime->extensions->fieldEncryptionHandler->decryptProperties(data: $objectData, schema: $schema);
+		return $this->runtime->extensions->fieldEncryption->decryptProperties(data: $objectData, schema: $schema);
 	}//end decryptRenderedProperties()
 
 	/**
@@ -3199,7 +3199,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function setTranslationCompleteness(ObjectEntity $entity, Schema $schema): void {
-		$completeness = $this->enrichers->translations->translationStatusService->completenessForObject((string) $entity->getUuid(), $schema);
+		$completeness = $this->enrichers->translations->translationStatus->completenessForObject((string) $entity->getUuid(), $schema);
 		if (count($completeness) > 0) {
 			$entity->setTranslationCompleteness($completeness);
 		}

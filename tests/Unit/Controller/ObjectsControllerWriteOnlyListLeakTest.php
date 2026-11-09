@@ -258,7 +258,7 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: new \OCA\OpenRegister\Service\Object\TranslationHandler($languageService, $this->createMock(LoggerInterface::class)),
-					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationStatus: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
 					languageService: $languageService
 				),

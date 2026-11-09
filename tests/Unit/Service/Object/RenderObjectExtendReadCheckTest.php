@@ -217,7 +217,7 @@ return new RenderObject(
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: $dependencies['translationHandler'],
-					translationStatusService: $dependencies['translationStatusService'],
+					translationStatus: $dependencies['translationStatusService'],
 					translationMapper: $dependencies['translationMapper'],
 					languageService: $dependencies['languageService']
 				),

@@ -108,7 +108,7 @@ class RenderObjectLensRowsTest extends TestCase {
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\TranslationHandler::class),
-					translationStatusService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationStatus: $this->createMock(originalClassName: \OCA\OpenRegister\Service\TranslationStatusService::class),
 					translationMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\TranslationMapper::class),
 					languageService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\LanguageService::class)
 				),

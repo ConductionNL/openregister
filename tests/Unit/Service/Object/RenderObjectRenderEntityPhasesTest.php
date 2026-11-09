@@ -128,7 +128,7 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: $this->translationHandler,
-					translationStatusService: $this->translationStatus,
+					translationStatus: $this->translationStatus,
 					translationMapper: $this->createMock(TranslationMapper::class),
 					languageService: $this->createMock(LanguageService::class)
 				),
@@ -141,7 +141,7 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 			),
 			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
 				logger: $this->logger,
-				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(objectSourceRegistry: null, fieldEncryptionHandler: null, lensResolver: $lens),
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(objectSourceRegistry: null, fieldEncryption: null, lensResolver: $lens),
 				request: $request,
 				container: $container
 			),

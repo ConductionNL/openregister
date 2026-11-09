@@ -35,16 +35,16 @@ final class RenderTranslations {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param TranslationHandler              $translationHandler       Resolves translatable properties.
-	 * @param TranslationStatusService        $translationStatusService Per-object translation status.
-	 * @param TranslationMapperInterface      $translationMapper        The translation store.
-	 * @param LanguageService                 $languageService          Source-language resolution.
+	 * @param TranslationHandler         $translationHandler Resolves translatable properties.
+	 * @param TranslationStatusService   $translationStatus  Per-object translation status.
+	 * @param TranslationMapperInterface $translationMapper  The translation store.
+	 * @param LanguageService            $languageService    Source-language resolution.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function __construct(
 		public readonly TranslationHandler $translationHandler,
-		public readonly TranslationStatusService $translationStatusService,
+		public readonly TranslationStatusService $translationStatus,
 		public readonly TranslationMapperInterface $translationMapper,
 		public readonly LanguageService $languageService,
 	) {

@@ -118,7 +118,7 @@ class RenderObjectDeepTest extends TestCase {
 			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
 				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
 					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationStatus: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
 					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
 				),
