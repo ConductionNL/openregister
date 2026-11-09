@@ -107,21 +107,17 @@ class FlowRecipientAddresses {
 	 * With `$acceptAddresses` (the email channel) its addresses are taken out
 	 * first and returned as candidates for the caller to screen.
 	 *
-	 * @param string $field The field name.
-	 * @param array $json The item's json.
-	 * @param bool $acceptAddresses Whether addresses are candidates (email) or unknowns.
+	 * @param string          $field  The field name.
+	 * @param RecipientLookup $lookup The item's json, and whether addresses are candidates (email) or unknowns.
 	 *
 	 * @return array{uids: array<int, string>, addresses: array<int, array{address: string, name: string}>, unknown: array<int, string>}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the channel takes addresses is a
-	 * fact about the channel, not a mode of this method's own.
-	 *
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-notification-step-reads-role-fields-on-the-item
 	 */
-	public function resolveTemplate(string $field, array $json, bool $acceptAddresses): array {
-		$value = $this->normaliseRoleValue(value: ($json[$field] ?? null));
+	public function resolveTemplate(string $field, RecipientLookup $lookup): array {
+		$value = $this->normaliseRoleValue(value: ($lookup->json[$field] ?? null));
 		$addresses = [];
-		if ($acceptAddresses === true) {
+		if ($lookup->acceptAddresses === true) {
 			$split = $this->splitAddresses(value: $value);
 			$value = $split['rest'];
 			$addresses = $split['addresses'];
@@ -177,8 +173,6 @@ class FlowRecipientAddresses {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	public function screenAddresses(array $addresses, array $json, string $mode): array {
-		$allowed = [];
-		$refused = [];
 		// Only the object mode reads the item; collecting its addresses is a
 		// pure read, so doing it once up front changes no outcome.
 		$onItem = [];
@@ -186,56 +180,37 @@ class FlowRecipientAddresses {
 			$onItem = $this->addressesOnItem(value: $json);
 		}
 
-		foreach ($addresses as $candidate) {
-			$address = trim($candidate['address']);
-			$key = strtolower($address);
-
-			$reason = $this->refusalFor(address: $address, mode: $mode, onItem: $onItem);
-			if ($reason !== '') {
-				$refused[$key . '|' . $reason] = ['recipient' => $address, 'reason' => $reason];
-				continue;
-			}
-
-			// Keyed case-insensitively, so one person is mailed once per item
-			// however many fields spell their address.
-			if (isset($allowed[$key]) === false) {
-				$allowed[$key] = $candidate['name'];
-			}
-		}//end foreach
-
-		return ['allowed' => $allowed, 'refused' => $refused];
+		return self::screenUnder(addresses: $addresses, policy: new ExternalRecipientPolicy(mode: $mode, onItem: $onItem));
 	}//end screenAddresses()
 
 	/**
-	 * Why one address may not be mailed, or an empty string when it may.
+	 * Split the candidates into the allowed and the refused under one policy.
 	 *
-	 * The checks run in a fixed order — a malformed address is refused as
-	 * malformed whatever the mode; the closed mode refuses everything else;
-	 * the object mode refuses what the item does not carry.
+	 * @param array<int, array{address: string, name: string}> $addresses The candidates.
+	 * @param ExternalRecipientPolicy                          $policy    The mode, and the item's addresses.
 	 *
-	 * @param string              $address The trimmed address.
-	 * @param string              $mode    The external-recipient mode.
-	 * @param array<string, true> $onItem  The item's addresses (object mode only).
-	 *
-	 * @return string The refusal reason, or '' when the address is allowed.
+	 * @return array{allowed: array<string, string>, refused: array<string, array{recipient: string, reason: string}>}
 	 *
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
-	private function refusalFor(string $address, string $mode, array $onItem): string {
-		if (filter_var($address, FILTER_VALIDATE_EMAIL) === false) {
-			return FlowMessagingService::REFUSED_INVALID_ADDRESS;
+	private static function screenUnder(array $addresses, ExternalRecipientPolicy $policy): array {
+		$allowed = [];
+		$refused = [];
+		foreach ($addresses as $candidate) {
+			$address = trim($candidate['address']);
+			$key = strtolower($address);
+			$reason = $policy->refusalFor(address: $address);
+			if ($reason !== '') {
+				$refused[$key . '|' . $reason] = ['recipient' => $address, 'reason' => $reason];
+			} else if (isset($allowed[$key]) === false) {
+				// Keyed case-insensitively, so one person is mailed once per item
+				// however many fields spell their address.
+				$allowed[$key] = $candidate['name'];
+			}
 		}
 
-		if ($mode === FlowMessagingService::EXTERNAL_NONE) {
-			return FlowMessagingService::REFUSED_EXTERNAL_OFF;
-		}
-
-		if ($mode === FlowMessagingService::EXTERNAL_OBJECT && isset($onItem[strtolower($address)]) === false) {
-			return FlowMessagingService::REFUSED_NOT_ON_ITEM;
-		}
-
-		return '';
-	}//end refusalFor()
+		return ['allowed' => $allowed, 'refused' => $refused];
+	}//end screenUnder()
 
 	/**
 	 * Every string on the item that could be an address, normalised.
@@ -472,45 +447,48 @@ class FlowRecipientAddresses {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	public function resolveRecipients(mixed $recipients, array $json, bool $acceptAddresses = false): array {
+		return $this->resolveAll(recipients: $recipients, lookup: new RecipientLookup(json: $json, acceptAddresses: $acceptAddresses));
+	}//end resolveRecipients()
+
+	/**
+	 * Resolve every recipient entry against one item, de-duplicated.
+	 *
+	 * @param mixed           $recipients The config value: one entry or a list.
+	 * @param RecipientLookup $lookup     The item's json, and whether addresses are candidates.
+	 *
+	 * @return array{uids: array<int, string>, addresses: array<int, array{address: string, name: string}>, unknown: array<int, string>}
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function resolveAll(mixed $recipients, RecipientLookup $lookup): array {
 		$uids = [];
 		$addresses = [];
 		$unknown = [];
-
 		if (is_string($recipients) === true) {
 			$recipients = [$recipients];
 		}
 
 		foreach ((array)$recipients as $entry) {
-			$resolved = $this->resolveEntry(entry: $entry, json: $json, acceptAddresses: $acceptAddresses);
-			if ($resolved === null) {
-				continue;
-			}
+			$resolved = $this->resolveEntry(entry: $entry, lookup: $lookup);
+			array_push($uids, ...($resolved['uids'] ?? []));
+			array_push($addresses, ...($resolved['addresses'] ?? []));
+			array_push($unknown, ...($resolved['unknown'] ?? []));
+		}
 
-			array_push($uids, ...$resolved['uids']);
-			array_push($addresses, ...$resolved['addresses']);
-			array_push($unknown, ...$resolved['unknown']);
-		}//end foreach
-
-		return [
-			'uids' => array_values(array_unique($uids)),
-			'addresses' => $addresses,
-			'unknown' => array_values(array_unique($unknown)),
-		];
-	}//end resolveRecipients()
+		return ['uids' => array_values(array_unique($uids)), 'addresses' => $addresses, 'unknown' => array_values(array_unique($unknown))];
+	}//end resolveAll()
 
 	/**
-	 * Resolve one recipient entry: a `{{ item.field }}` template or a literal.
+	 * Resolve one recipient entry: a `{{ field }}` template or a literal.
 	 *
-	 * @param mixed                $entry           The entry.
-	 * @param array<string, mixed> $json            The item's data.
-	 * @param bool                 $acceptAddresses Whether external addresses are accepted.
+	 * @param mixed           $entry  The entry.
+	 * @param RecipientLookup $lookup The item's json, and whether addresses are candidates.
 	 *
 	 * @return array{uids: array<int, string>, addresses: array<int, array{address: string, name: string}>, unknown: array<int, string>}|null
-	 *         Null for an entry that is not a non-blank string.
 	 *
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
-	private function resolveEntry(mixed $entry, array $json, bool $acceptAddresses): ?array {
+	private function resolveEntry(mixed $entry, RecipientLookup $lookup): ?array {
 		if (is_string($entry) === false || trim($entry) === '') {
 			return null;
 		}
@@ -519,9 +497,9 @@ class FlowRecipientAddresses {
 
 		$matches = [];
 		if (preg_match('/^\{\{\s*(?:item\.)?([a-zA-Z0-9_.-]+)\s*\}\}$/', $entry, $matches) === 1) {
-			return $this->resolveTemplate(field: $matches[1], json: $json, acceptAddresses: $acceptAddresses);
+			return $this->resolveTemplate(field: $matches[1], lookup: $lookup);
 		}
 
-		return $this->resolveLiteral(entry: $entry, acceptAddresses: $acceptAddresses);
+		return $this->resolveLiteral(entry: $entry, acceptAddresses: $lookup->acceptAddresses);
 	}//end resolveEntry()
 }//end class
