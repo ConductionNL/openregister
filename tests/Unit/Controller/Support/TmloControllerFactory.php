@@ -18,7 +18,7 @@ final class TmloControllerFactory {
 	/**
 	 * The constructor arguments of TmloController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Unused; kept so existing calls still fit.
 	 * @param IRequest $request Constructor argument.
 	 * @param TmloService $tmloService Constructor argument.
 	 * @param ObjectService $objectService Constructor argument.
@@ -40,7 +40,6 @@ final class TmloControllerFactory {
 		\OCA\OpenRegister\Service\Export\ExportGate $exportGate,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\TmloControllerServices(
 				records: new \OCA\OpenRegister\Controller\Support\TmloRecords(
