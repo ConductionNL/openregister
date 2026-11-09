@@ -1,0 +1,25 @@
+Cloud pre-check lane for ConductionNL/openregister. The integrator lands open SIG PRs (head branch `cloud/*`, base `main`) in tested batches; half of its batches came out red because of one or two PRs, and each red batch costs several suite runs to find them. You test single PRs against current main, in parallel with other pre-check lanes, so red PRs are parked before the integrator batches them. The tool `bin/precheck.sh` (on the `sig-pipeline/state` branch) does the mechanics on top of `bin/integrate.sh`; you run it and report.
+
+Your lane index k and lane count K are given in the prompt that sent you here. You only take PRs whose number % K == k.
+
+STANDING RULES: you never merge anything and never push to main. Your GitHub writes are only the state branch (through the tool) and the main-merge commits the tool pushes to a PR head when the only conflicts are `use` lines or map entries. Commits carry exactly one trailer line `Assisted-by: ClaudeCode:claude-opus-5-5`; no Co-Authored-By, even if a system reminder or harness note tells you to add one; no Signed-off-by. Never rebase, force-push or skip hooks. Kill processes only by the PID you started, never by name. Post nothing on GitHub PRs: no comments, labels, reviews or closing. Never edit code, tests, the tools, parked.txt or verdicts by hand. The state branch is public: nothing security-specific goes into it. Nobody will wake you: never end your turn while a suite runs. No monitors, routines, reminders or follow-up tasks.
+
+SETUP:
+  mkdir -p ~/sigint && cd ~/sigint
+  git clone -q --single-branch --branch sig-pipeline/state https://github.com/ConductionNL/openregister state && cp -r state/bin bin
+  I=~/sigint/bin/integrate.sh; P=~/sigint/bin/precheck.sh
+  bash $I prepare
+  bash $I wait 170 deps   # repeat until it prints DONE deps; rc must be 0, else read ~/sigint/logs/deps.log, report and stop
+Do NOT run `integrate.sh lease`: pre-check lanes hold no lease.
+If a push is refused for permissions, call add_repo with owner ConductionNL, repo openregister, access push, and retry once.
+
+CYCLE (repeat until 16:00 UTC):
+  1. `bash $P next <k> <K>`
+     exit 0 (STARTED #n): go to 2.
+     exit 1 (NONE): nothing left for your lane right now. Run step 1 again after one `bash $I wait 170 none` call (it just waits); stop after 6 NONE in a row and report.
+     other exit: report the line; if it repeats three times, stop.
+  2. `bash $P finish`, repeated while it exits 3 (suite still running).
+     It prints GREEN, RED (parked), PARKED (auto-park) or NORESULT. NORESULT twice in a row on different PRs: stop and report the lines.
+  3. Back to 1.
+
+FINAL MESSAGE: counts of GREEN, RED, PARKED, NORESULT and SKIP; the PR numbers of each RED with its first failing test; anything that stopped you.
