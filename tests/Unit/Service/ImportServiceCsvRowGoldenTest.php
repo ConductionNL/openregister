@@ -92,15 +92,10 @@ class ImportServiceCsvRowGoldenTest extends TestCase {
 		$codec = $this->createMock(TranslationCsvCodec::class);
 		$codec->method('unflattenFromCsv')->willReturnCallback(static fn (array $row) => $row);
 		$service = new ImportService(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(ObjectService::class),
-			$this->createMock(LoggerInterface::class),
-			$groups,
-			$codec,
-			$this->createMock(AuditTrailMapper::class),
-			new MappingEngine($this->passThroughL10n()),
-			$this->createMock(ValidateObject::class),
-			$this->createMock(ContainerInterface::class)
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->createMock(SchemaMapper::class), $this->createMock(ObjectService::class), $this->createMock(AuditTrailMapper::class), $this->createMock(ValidateObject::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($codec, new MappingEngine($this->passThroughL10n())),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($this->createMock(ContainerInterface::class), new \OCA\OpenRegister\Listener\NotifyPushBatch(), $this->createMock(LoggerInterface::class)),
+			$groups
 		);
 
 		$user = null;
