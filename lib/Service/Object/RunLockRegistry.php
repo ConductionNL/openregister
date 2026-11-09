@@ -83,24 +83,24 @@ class RunLockRegistry implements RunLockReleaseInterface {
 	 * all. The TTL still bounds a lock whose row is missing.
 	 *
 	 * @param ObjectEntity $object The locked object.
-	 * @param string|null $runUuid The holding run, or null for a user lock.
-	 * @param string|null $nodeId The flow node that took it.
+	 * @param LockRunStep  $step   The holding run (null for a user lock) and the flow node that took it.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
 	 */
-	public function record(ObjectEntity $object, ?string $runUuid, ?string $nodeId): void {
-		if (trim((string)$runUuid) === '') {
+	public function record(ObjectEntity $object, LockRunStep $step): void {
+		$runUuid = trim((string)$step->runUuid);
+		if ($runUuid === '') {
 			return;
 		}
 
 		try {
-			$this->registry->record(lock: $this->lockRowFor(object: $object, runUuid: trim($runUuid), nodeId: $nodeId));
+			$this->registry->record(lock: $this->lockRowFor(object: $object, step: new LockRunStep($runUuid, $step->nodeId)));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[RunLockRegistry] Could not record a run lock; the lock itself stands',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'runUuid' => $runUuid, 'error' => $e->getMessage()]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'runUuid' => $step->runUuid, 'error' => $e->getMessage()]
 			);
 		}//end try
 	}//end record()
@@ -108,15 +108,14 @@ class RunLockRegistry implements RunLockReleaseInterface {
 	/**
 	 * The registry row of a run's lock on an object, expiring with the lock.
 	 *
-	 * @param ObjectEntity $object  The locked object.
-	 * @param string       $runUuid The run, trimmed.
-	 * @param string|null  $nodeId  The flow node.
+	 * @param ObjectEntity $object The locked object.
+	 * @param LockRunStep  $step   The run, trimmed, and the flow node.
 	 *
 	 * @return RunObjectLock The row
 	 *
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
 	 */
-	private function lockRowFor(ObjectEntity $object, string $runUuid, ?string $nodeId): RunObjectLock {
+	private function lockRowFor(ObjectEntity $object, LockRunStep $step): RunObjectLock {
 		$payload = ($object->getLocked() ?? []);
 		$expires = null;
 		if (isset($payload['expiration']) === true) {
@@ -124,11 +123,11 @@ class RunLockRegistry implements RunLockReleaseInterface {
 		}
 
 		$row = new RunObjectLock();
-		$row->setRunUuid($runUuid);
+		$row->setRunUuid((string)$step->runUuid);
 		$row->setObjectUuid((string)$object->getUuid());
 		$row->setRegisterId((string)$object->getRegister());
 		$row->setSchemaId((string)$object->getSchema());
-		$row->setNodeId($nodeId);
+		$row->setNodeId($step->nodeId);
 		$row->setLockedAt(new DateTime());
 		$row->setExpiresAt($expires);
 

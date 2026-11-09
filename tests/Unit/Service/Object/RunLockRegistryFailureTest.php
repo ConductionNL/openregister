@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RunObjectLock;
 use OCA\OpenRegister\Db\RunObjectLockMapperInterface;
+use OCA\OpenRegister\Service\Object\LockRunStep;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -104,8 +105,8 @@ class RunLockRegistryFailureTest extends TestCase {
 	public function testBlankRunIsNotRecorded(): void {
 		$this->registry->expects($this->never())->method('record');
 
-		$this->locks()->record(object: new ObjectEntity(), runUuid: '  ', nodeId: 'n');
-		$this->locks()->record(object: new ObjectEntity(), runUuid: null, nodeId: 'n');
+		$this->locks()->record(object: new ObjectEntity(), step: new LockRunStep('  ', 'n'));
+		$this->locks()->record(object: new ObjectEntity(), step: new LockRunStep(null, 'n'));
 	}//end testBlankRunIsNotRecorded()
 
 	/**
@@ -130,7 +131,7 @@ class RunLockRegistryFailureTest extends TestCase {
 		$this->logger->expects($this->once())->method('warning')
 			->with('[RunLockRegistry] Could not record a run lock; the lock itself stands');
 
-		$this->locks()->record(object: $object, runUuid: ' r-1 ', nodeId: 'node-2');
+		$this->locks()->record(object: $object, step: new LockRunStep(' r-1 ', 'node-2'));
 
 		$this->assertSame('r-1', $recorded->getRunUuid());
 		$this->assertSame('o-1', $recorded->getObjectUuid());
@@ -153,7 +154,7 @@ class RunLockRegistryFailureTest extends TestCase {
 			}
 		);
 
-		$this->locks()->record(object: new ObjectEntity(), runUuid: 'r-1', nodeId: null);
+		$this->locks()->record(object: new ObjectEntity(), step: new LockRunStep('r-1', null));
 
 		$this->assertNull($recorded->getExpiresAt());
 	}//end testLockWithoutExpirationRecordsNoExpiry()
