@@ -318,7 +318,7 @@ class FeatureToggleService {
 		unset($this->memo[$app]);
 
 		$after = $this->merged(app: $app, declarations: $declarations);
-		$this->audit(app: $app, before: $before, after: $after);
+		$this->audit(app: $app, change: new ToggleChange(before: $before, after: $after));
 
 		return $after;
 	}//end update()
@@ -359,15 +359,14 @@ class FeatureToggleService {
 	 * Never throws: the toggle has already been written, so failing here would
 	 * report a failed save for a change that happened.
 	 *
-	 * @param string              $app    The app.
-	 * @param array<string, bool> $before The map before.
-	 * @param array<string, bool> $after  The map after.
+	 * @param string       $app    The app.
+	 * @param ToggleChange $change The merged map before and after the write.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
 	 */
-	private function audit(string $app, array $before, array $after): void {
+	private function audit(string $app, ToggleChange $change): void {
 		try {
 			$auditor = $this->container->get(self::AUDITOR);
 			if (method_exists($auditor, 'recordUpdate') === false) {
@@ -376,8 +375,8 @@ class FeatureToggleService {
 
 			$auditor->recordUpdate(
 				$app,
-				$this->prefixed(map: $before),
-				$this->prefixed(map: $after),
+				$this->prefixed(map: $change->before),
+				$this->prefixed(map: $change->after),
 				[]
 			);
 		} catch (Throwable $e) {
