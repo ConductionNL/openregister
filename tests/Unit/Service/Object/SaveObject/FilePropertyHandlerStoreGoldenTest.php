@@ -223,18 +223,18 @@ class FilePropertyHandlerStoreGoldenTest extends TestCase {
 		$big = ['content' => 'abc', 'mimeType' => 'text/plain', 'extension' => 'txt', 'size' => 3000000];
 		$exe = ['content' => 'abc', 'mimeType' => 'application/x-sh', 'extension' => 'sh', 'size' => 3];
 		return [
-			'no rules'          => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($ok, [], 'f')),
-			'allowed type'      => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($ok, ['allowedTypes' => ['text/plain']], 'f')),
-			'refused type'      => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($ok, ['allowedTypes' => ['image/png', 'image/gif']], 'f', 2)),
-			'empty types'       => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($ok, ['allowedTypes' => []], 'f')),
-			'within size'       => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($ok, ['maxSize' => 3], 'f')),
-			'over size'         => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($ok, ['maxSize' => 2], 'f')),
-			'size zero'         => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($big, ['maxSize' => 0], 'f')),
-			'editor megabytes'  => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($big, ['fileConfiguration' => ['maxSize' => 2]], 'f', 0)),
-			'exe refused'       => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($exe, [], 'f')),
-			'exe allowed'       => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($exe, ['allowExecutables' => true], 'f')),
-			'exe before type'   => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($exe, ['allowedTypes' => ['image/png'], 'maxSize' => 1], 'f')),
-			'type before size'  => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($big, ['allowedTypes' => ['image/png'], 'maxSize' => 1], 'f')),
+			'no rules'          => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($ok, new FileStoreRequest(new ObjectEntity(), 'f', [], null))),
+			'allowed type'      => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($ok, new FileStoreRequest(new ObjectEntity(), 'f', ['allowedTypes' => ['text/plain']], null))),
+			'refused type'      => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($ok, new FileStoreRequest(new ObjectEntity(), 'f', ['allowedTypes' => ['image/png', 'image/gif']], 2))),
+			'empty types'       => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($ok, new FileStoreRequest(new ObjectEntity(), 'f', ['allowedTypes' => []], null))),
+			'within size'       => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($ok, new FileStoreRequest(new ObjectEntity(), 'f', ['maxSize' => 3], null))),
+			'over size'         => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($ok, new FileStoreRequest(new ObjectEntity(), 'f', ['maxSize' => 2], null))),
+			'size zero'         => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($big, new FileStoreRequest(new ObjectEntity(), 'f', ['maxSize' => 0], null))),
+			'editor megabytes'  => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($big, new FileStoreRequest(new ObjectEntity(), 'f', ['fileConfiguration' => ['maxSize' => 2]], 0))),
+			'exe refused'       => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($exe, new FileStoreRequest(new ObjectEntity(), 'f', [], null))),
+			'exe allowed'       => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($exe, new FileStoreRequest(new ObjectEntity(), 'f', ['allowExecutables' => true], null))),
+			'exe before type'   => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($exe, new FileStoreRequest(new ObjectEntity(), 'f', ['allowedTypes' => ['image/png'], 'maxSize' => 1], null))),
+			'type before size'  => $this->outcome(fn () => $this->handler()->validateFileAgainstConfig($big, new FileStoreRequest(new ObjectEntity(), 'f', ['allowedTypes' => ['image/png'], 'maxSize' => 1], null))),
 		];
 	}//end validateScenarios()
 
