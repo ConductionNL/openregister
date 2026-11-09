@@ -38,21 +38,21 @@ final class PartyAddressUnionRun {
 	/**
 	 * The surviving party.
 	 *
-	 * @var ObjectEntity
+	 * @var ObjectEntity|null
 	 */
-	public ObjectEntity $survivor;
+	public ?ObjectEntity $survivor = null;
 
 	/**
 	 * The party merged away.
 	 *
-	 * @var ObjectEntity
+	 * @var ObjectEntity|null
 	 */
-	public ObjectEntity $loser;
+	public ?ObjectEntity $loser = null;
 
 	/**
 	 * The carry-over: survivor uuid and the survivor's party declaration.
 	 *
-	 * @var PartyCarryOver
+	 * @var PartyCarryOver|null
 	 */
-	public PartyCarryOver $step;
+	public ?PartyCarryOver $step = null;
 }//end class

@@ -59,9 +59,9 @@ final class ObjectEventSlugMapRun {
 	/**
 	 * The local cache holding resolved maps; set before the cache lookup.
 	 *
-	 * @var ICache
+	 * @var ICache|null
 	 */
-	public ICache $cache;
+	public ?ICache $cache = null;
 
 	/**
 	 * The map's key in the local cache; set before the cache lookup.
