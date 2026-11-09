@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportDuplicates;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportRun;
 use OCA\OpenRegister\Service\Configuration\SeedImport;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -223,13 +224,10 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->mappingMapper->method('createFromArray')
 			->willReturn($newMapping);
 
-		$result = $this->invokeMethod($this->handler, 'importMapping', [
-			['slug' => 'test-mapping', 'name' => 'Test'],
-			['test-mapping' => 5],
-			$config,
-			'1.0.0',
-			false,
-		]);
+		$run = new ImportRun(data: [], configuration: $config);
+		$run->slugsAndIdsMap = ['test-mapping' => 5];
+		$run->version = '1.0.0';
+		$result = $this->invokeMethod($this->handler, 'importMapping', [$run, ['slug' => 'test-mapping', 'name' => 'Test']]);
 
 		$this->assertInstanceOf(Mapping::class, $result);
 		$this->assertSame(10, $result->getId());
@@ -251,13 +249,10 @@ class ImportHandlerCoverageTest extends TestCase {
 				return $mapping;
 			});
 
-		$result = $this->invokeMethod($this->handler, 'importMapping', [
-			['slug' => 'no-version-mapping', 'name' => 'Test'],
-			[],
-			$config,
-			'2.0.0',
-			false,
-		]);
+		$run = new ImportRun(data: [], configuration: $config);
+		$run->slugsAndIdsMap = [];
+		$run->version = '2.0.0';
+		$result = $this->invokeMethod($this->handler, 'importMapping', [$run, ['slug' => 'no-version-mapping', 'name' => 'Test']]);
 
 		$this->assertInstanceOf(Mapping::class, $result);
 

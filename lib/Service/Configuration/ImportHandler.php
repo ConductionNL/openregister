@@ -1067,27 +1067,16 @@ class ImportHandler {
 	 * Creates a new mapping or updates an existing one based on slug matching.
 	 * Follows the same find-or-create pattern used by importSchema and importRegister.
 	 *
-	 * @param array $data The mapping data from the JSON config.
-	 * @param array $slugsAndIdsMap Existing slug-to-ID map for lookups.
-	 * @param Configuration|null $configuration The configuration entity for tracking.
-	 * @param string|null $version The configuration version.
-	 * @param bool $force Force import regardless of version.
+	 * @param ImportRun $run  The import: its slug-to-ID map, configuration, version and force flag.
+	 * @param array     $data The mapping data from the JSON config.
 	 *
 	 * @return Mapping|null The imported mapping entity or null if skipped.
 	 *
 	 * @throws Exception If import fails.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
-	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function importMapping(
-		array $data,
-		array $slugsAndIdsMap,
-		?Configuration $configuration = null,
-		?string $version = null,
-		bool $force = false,
-	): ?Mapping {
+	private function importMapping(ImportRun $run, array $data): ?Mapping {
 		$slug = $data['slug'] ?? $data['name'] ?? null;
 
 		if ($slug === null) {
@@ -1099,15 +1088,14 @@ class ImportHandler {
 		}
 
 		// Associate mapping with the configuration.
-		if ($configuration !== null) {
-			$data['configurations'] = [$configuration->getUuid()];
-		}
+		$data['configurations'] = [$run->configuration->getUuid()];
+		$version = $run->version;
 
 		// Check if mapping already exists by slug.
 		$existingMapping = null;
-		if (isset($slugsAndIdsMap[$slug]) === true) {
+		if (isset($run->slugsAndIdsMap[$slug]) === true) {
 			try {
-				$existingMapping = $this->mappingMapper->find(id: $slugsAndIdsMap[$slug], includeNullOrg: true);
+				$existingMapping = $this->mappingMapper->find(id: $run->slugsAndIdsMap[$slug], includeNullOrg: true);
 			} catch (Exception $e) {
 				$this->logger->debug(
 					message: '[ImportHandler] Existing mapping lookup failed, will create new',
@@ -1126,7 +1114,7 @@ class ImportHandler {
 			$importedVersion = $data['version'] ?? $version ?? '0.0.1';
 			$existingVersion = $existingMapping->getVersion() ?? '0.0.0';
 
-			if ($force === false && version_compare($importedVersion, $existingVersion, '<=') === true) {
+			if ($run->force === false && version_compare($importedVersion, $existingVersion, '<=') === true) {
 				$this->logger->debug(
 					message: "[ImportHandler] Skipping mapping '{$slug}': v{$importedVersion} <= v{$existingVersion}",
 					context: ['file' => __FILE__, 'line' => __LINE__]
@@ -2736,13 +2724,7 @@ class ImportHandler {
 	 */
 	private function importMappingComponent(ImportRun $run, ImportComponent $component): void {
 		try {
-			$mapping = $this->importMapping(
-				data: $component->data,
-				slugsAndIdsMap: $run->slugsAndIdsMap,
-				configuration: $run->configuration,
-				version: $run->version,
-				force: $run->force
-			);
+			$mapping = $this->importMapping(run: $run, data: $component->data);
 			$mappingId = null;
 			if ($mapping !== null) {
 				$run->result['mappings'][] = $mapping;
