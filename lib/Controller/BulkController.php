@@ -498,6 +498,15 @@ class BulkController extends Controller {
 		$requestedCount = count($objects);
 
 		if ($stream === true) {
+			// Each streamed row goes straight to the save handler, past the per-row
+			// create, update, draft and organisation checks of the default path.
+			if ($this->manageGate()->isAdministrator() === false) {
+				return new JSONResponse(
+					data: ['error' => 'Streaming bulk saves are for administrators. Send the batch without "stream".'],
+					statusCode: Http::STATUS_FORBIDDEN
+				);
+			}
+
 			$status = $this->objectService->saveObjectsStreaming(
 				objects: $objects,
 				register: $register,
@@ -633,7 +642,7 @@ class BulkController extends Controller {
 	 *
 	 * Request body:
 	 *  - `objects`  (required) the rows to write.
-	 *  - `stream`   (optional) row-at-a-time write path — see writeBatch().
+	 *  - `stream`   (optional) row-at-a-time write path, for administrators only — see writeBatch().
 	 *  - `partial`  (optional) opt into best-effort semantics: a batch with
 	 *               rejected rows still answers 200 instead of 422. It does NOT
 	 *               make `success` true — see bulkSaveResponse() for why.
