@@ -18,19 +18,19 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Party;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The party schemas, for callers that search across them.
  *
- * The container binds it to {@see PartyService} in ContractBindings.
+ * The container binds it to {@see \OCA\OpenRegister\Service\Party\PartyService} in ContractBindings.
  */
 interface PartySchemaCatalogueInterface {
 
 	/**
 	 * Every schema on the instance that declares itself a party schema.
 	 *
-	 * @return array<int, array{schema: \OCA\OpenRegister\Db\Schema, definition: PartyDefinition}> The party schemas.
+	 * @return array<int, array{schema: \OCA\OpenRegister\Db\Schema, definition: \OCA\OpenRegister\Service\Party\PartyDefinition}> The party schemas.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */

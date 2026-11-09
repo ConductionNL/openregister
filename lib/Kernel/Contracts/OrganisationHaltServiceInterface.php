@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Flow\Oversight;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use InvalidArgumentException;
 

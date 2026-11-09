@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Flow;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Answers whether a user belongs to an organisation.

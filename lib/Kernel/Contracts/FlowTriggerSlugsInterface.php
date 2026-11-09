@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Flow;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Register and schema slugs for a trigger subject, typed for the trigger listener.

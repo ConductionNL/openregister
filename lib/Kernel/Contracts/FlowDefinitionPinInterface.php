@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Flow;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Pins a flow definition, typed for the repair step that backfills run pins.

@@ -1815,6 +1815,61 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\EventCatalogServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\EventCatalogServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowConsentSweepInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowConsentSweepInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPinInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowDefinitionPinInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowDryRunServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowDryRunServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowPublishedGraphInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowPublishedGraphInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowRunVersionPinInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowRunVersionPinInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowTenantMembershipInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowTenantMembershipInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowTriggerSlugsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowTriggerSlugsInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\Oversight\\OrganisationHaltServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\OrganisationHaltServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Party\\PartyIndicatorGuardInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PartyIndicatorGuardInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Party\\PartySchemaCatalogueInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PartySchemaCatalogueInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }
