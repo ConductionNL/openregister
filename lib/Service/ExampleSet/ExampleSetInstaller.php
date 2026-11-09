@@ -606,7 +606,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$report['changes'][$name] = 'kept';
 			if (isset($record['changes'][$name]) === true) {
 				$made   = $this->changes->follow(change: $change, entry: $record['changes'][$name], context: $context, refresh: $refresh);
-				$report = $this->record->hold(set: (string) $plan['set'], part: 'changes', name: $name, made: $made, report: $report, record: $record);
+				$followed = new ExampleSetFollowedEntry(part: 'changes', name: $name, made: $made);
+				$report   = $this->record->hold(set: (string) $plan['set'], followed: $followed, report: $report, record: $record);
 				continue;
 			}
 
@@ -1114,7 +1115,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$report['userPreferences'][$name] = 'kept';
 			if (isset($record['userPreferences'][$name]) === true) {
 				$made   = $this->userPreferences->follow(entry: $record['userPreferences'][$name], value: $value, refresh: $refresh && $gaps === []);
-				$report = $this->record->hold(set: (string) $plan['set'], part: 'userPreferences', name: $name, made: $made, report: $report, record: $record);
+				$followed = new ExampleSetFollowedEntry(part: 'userPreferences', name: $name, made: $made);
+				$report   = $this->record->hold(set: (string) $plan['set'], followed: $followed, report: $report, record: $record);
 				continue;
 			}
 
