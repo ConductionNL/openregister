@@ -1830,11 +1830,6 @@
 			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\Dto\\FormDependent",
 			"eager": false,
 			"service": true
-		},
-		"OCA\\OpenRegister\\Listener\\ListenerClassesInterface": {
-			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ListenerClassesInterface",
-			"eager": false,
-			"service": true
 		}
 	}
 }

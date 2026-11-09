@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Kernel\Contracts;
+namespace OCA\OpenRegister\Listener;
 
 /**
  * The class names of listeners that code outside this component registers with
