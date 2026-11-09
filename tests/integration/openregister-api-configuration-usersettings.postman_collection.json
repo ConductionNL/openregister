@@ -20,6 +20,19 @@
       }
     ]
   },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Nextcloud answers a basic-auth request with a session cookie; newman's jar would replay it on the",
+          "// next request and authenticate it as the previous caller. Clear it so each request is only its own auth.",
+          "pm.cookies.jar().clear(pm.variables.replaceIn('{{base_url}}'), () => {});"
+        ]
+      }
+    }
+  ],
   "variable": [
     {
       "key": "base_url",
@@ -2309,6 +2322,28 @@
           "description": "",
           "item": [
             {
+              "name": "GET /organisations/active admin baseline (remember admin's active organisation)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('admin has an active organisation', () => pm.response.to.have.status(200));",
+                      "const a = pm.response.json().activeOrganisation;",
+                      "pm.test('the active organisation has a uuid', () => pm.expect(a && a.uuid).to.be.a('string').and.not.empty);",
+                      "pm.collectionVariables.set('t30_org_admin_active', a.uuid);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/index.php/apps/openregister/api/organisations/active"
+              }
+            },
+            {
               "name": "GET /organisations admin baseline (ensures admin has an organisation and a default exists)",
               "event": [
                 {
@@ -2407,14 +2442,14 @@
               }
             },
             {
-              "name": "POST /organisations same name again -> 409 slug conflict",
+              "name": "POST /organisations same name again -> 409 conflict",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"a second organisation with the same slug is refused\", () => { pm.response.to.have.status(409); const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.to.include(pm.collectionVariables.get('t30_org_x_slug')); });"
+                      "pm.test('a second organisation with the same name is refused', () => { pm.response.to.have.status(409); pm.expect(pm.response.json().error).to.eql('An organisation with this name already exists.'); });"
                     ]
                   }
                 }
@@ -4829,6 +4864,46 @@
           "description": "",
           "item": [
             {
+              "name": "POST /organisations/{uuid}/set-active admin back to its own organisation before the lifecycle",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('admin re-activates its baseline organisation', () => pm.response.to.have.status(200));",
+                      "pm.test('the baseline organisation is active again', () => pm.expect(pm.response.json().activeOrganisation.uuid).to.eql(pm.collectionVariables.get('t30_org_admin_active')));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": "{{base_url}}/index.php/apps/openregister/api/organisations/{{t30_org_admin_active}}/set-active"
+              }
+            },
+            {
+              "name": "GET /organisations/active admin is not on organisation X (X is suspended and deprovisioned next)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('admin active organisation reads', () => pm.response.to.have.status(200));",
+                      "pm.test('admin is not on organisation X', () => pm.expect(pm.response.json().activeOrganisation.uuid).to.not.eql(pm.collectionVariables.get('t30_org_x')));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/index.php/apps/openregister/api/organisations/active"
+              }
+            },
+            {
               "name": "PUT /organisations/{uuid}/suspend user A -> 403",
               "event": [
                 {
@@ -5316,7 +5391,7 @@
       "description": "SearchController::search (GET /api/search). NoAdminRequired, no PublicPage.",
       "item": [
         {
-          "name": "GET /api/search finds the seed object by title",
+          "name": "GET /api/search finds the seed object by a word of its title",
           "event": [
             {
               "listen": "test",
@@ -5327,7 +5402,8 @@
                   "const j = pm.response.json();",
                   "pm.test('results list with numeric total', () => { pm.expect(j.results).to.be.an('array'); pm.expect(j.total).to.be.a('number'); pm.expect(j.facets).to.be.an('array'); });",
                   "pm.test('seed object 1 is among the hits', () => pm.expect(j.results.map(r => r.id)).to.include(pm.collectionVariables.get('object_id')));",
-                  "pm.test('every hit is an openregister object', () => j.results.forEach(r => { pm.expect(r.type).to.eql('object'); pm.expect(r.source).to.eql('openregister'); }));"
+                  "pm.test('every hit is an openregister object', () => j.results.forEach(r => { pm.expect(r.type).to.eql('object'); pm.expect(r.source).to.eql('openregister'); }));",
+                  "pm.test('seed object 2 (title without the word) is not a hit', () => pm.expect(j.results.map(r => r.id)).to.not.include(pm.collectionVariables.get('object2_id')));"
                 ]
               }
             }
@@ -5335,7 +5411,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{base_url}}/index.php/apps/openregister/api/search?query=t30 object one"
+            "url": "{{base_url}}/index.php/apps/openregister/api/search?query=one&limit=200"
           }
         },
         {
