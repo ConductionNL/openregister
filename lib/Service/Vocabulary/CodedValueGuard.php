@@ -83,7 +83,19 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function enforce(array $object, Schema $schema, ?DateTimeInterface $at = null): void {
-		$errors = $this->collectViolations(write: new CodedValueWrite(object: $object, schema: $schema, at: $at));
+		$this->refuse(errors: $this->collectViolations(write: new CodedValueWrite(object: $object, schema: $schema, at: $at)));
+	}//end enforce()
+
+	/**
+	 * Throw the refusals, when there are any.
+	 *
+	 * @param array<string,string> $errors The refusals keyed by property name.
+	 *
+	 * @return void
+	 *
+	 * @throws CodedValueException When at least one coded value is refused.
+	 */
+	private function refuse(array $errors): void {
 		if ($errors === []) {
 			return;
 		}
@@ -92,7 +104,7 @@ class CodedValueGuard implements CodedValueGuardInterface {
 			message: implode(' ', array_values($errors)),
 			errors: $errors
 		);
-	}//end enforce()
+	}//end refuse()
 
 	/**
 	 * Every refusal the object's coded values earn, keyed by property name.
