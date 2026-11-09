@@ -3,6 +3,7 @@
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\SetupController;
+use OCA\OpenRegister\Controller\Support\SetupControllerServices;
 use OCA\OpenRegister\Service\DemoDataService;
 use OCP\IAppConfig;
 use OCP\IRequest;
@@ -32,9 +33,11 @@ class SetupControllerTest extends TestCase {
 
 		$this->controller = new SetupController(
 			$this->createMock(IRequest::class),
-			$this->appConfig,
-			$this->logger,
-			$this->demoData
+			new SetupControllerServices(
+				$this->appConfig,
+				$this->logger,
+				$this->demoData
+			)
 		);
 	}
 
@@ -110,7 +113,7 @@ class SetupControllerTest extends TestCase {
 	public function testTheChoiceIsPersisted(): void {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturn('demo');
-		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+		$controller = new SetupController($request, new SetupControllerServices($this->appConfig, $this->logger, $this->demoData));
 		$this->demoData->method('listChoices')->willReturn([
 			['id' => 'none', 'label' => 'None', 'description' => '', 'objectCount' => 0, 'icon' => ''],
 			['id' => 'demo', 'label' => 'Example data', 'description' => '', 'objectCount' => 66, 'icon' => ''],
@@ -131,7 +134,7 @@ class SetupControllerTest extends TestCase {
 		// failure would surface one step later with no clue why.
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturn('atlantis');
-		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+		$controller = new SetupController($request, new SetupControllerServices($this->appConfig, $this->logger, $this->demoData));
 		$this->demoData->method('listChoices')->willReturn([
 			['id' => 'none', 'label' => 'None', 'description' => '', 'objectCount' => 0, 'icon' => ''],
 		]);
@@ -150,7 +153,7 @@ class SetupControllerTest extends TestCase {
 		// choice either.
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturn(null);
-		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+		$controller = new SetupController($request, new SetupControllerServices($this->appConfig, $this->logger, $this->demoData));
 
 		$this->appConfig->expects($this->never())->method('setValueString');
 
@@ -165,7 +168,7 @@ class SetupControllerTest extends TestCase {
 		// are, so an array must not reach `(string)` and become "Array".
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturn(['demo']);
-		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+		$controller = new SetupController($request, new SetupControllerServices($this->appConfig, $this->logger, $this->demoData));
 		$this->demoData->method('listChoices')->willReturn([
 			['id' => 'demo', 'label' => 'Example data', 'description' => '', 'objectCount' => 1, 'icon' => ''],
 		]);
@@ -182,7 +185,7 @@ class SetupControllerTest extends TestCase {
 		// otherwise reach `(string)` and raise a fatal.
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturn([['demo']]);
-		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+		$controller = new SetupController($request, new SetupControllerServices($this->appConfig, $this->logger, $this->demoData));
 
 		$this->appConfig->expects($this->never())->method('setValueString');
 
@@ -315,7 +318,7 @@ class SetupControllerTest extends TestCase {
 		$request->method('getParam')
 			->willReturnCallback(static fn (string $key) => ($params[$key] ?? null));
 
-		return new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+		return new SetupController($request, new SetupControllerServices($this->appConfig, $this->logger, $this->demoData));
 	}
 
 	public function testTheCardPostsItsDatasetAndTheLoadRecordsTheChoice(): void {

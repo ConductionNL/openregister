@@ -35,7 +35,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\AnalyticsLinksControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\AnalyticsLinkServiceInterface;
@@ -54,20 +56,32 @@ class AnalyticsLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var AnalyticsLinkServiceInterface
+	 */
+	private readonly AnalyticsLinkServiceInterface $analyticsLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param AnalyticsLinkServiceInterface $analyticsLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param AnalyticsLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly AnalyticsLinkServiceInterface $analyticsLinkService,
-		private readonly ObjectOperationsInterface $objectService,
+		AnalyticsLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->analyticsLinkService = $services->analyticsLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**

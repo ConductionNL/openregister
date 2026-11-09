@@ -353,18 +353,16 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 		$this->assertSame('release', end($this->events));
 	}
 
-	public function testPersistMergesExtraMetadataAndWritesPastAccessControl(): void {
+	public function testPersistMirrorsAnActiveStatusAndWritesPastAccessControl(): void {
 		$this->service()->persist(
-			credentialId: 'cred-1',
-			scope: 'personal',
-			set: \OCA\OpenRegister\Service\Credential\OAuth2TokenSet::fromStoredJson(stored: $this->stored(expiresAt: '2030-01-01T00:00:00+00:00')),
-			extraMetadata: ['status' => 'relinked', 'extra' => 1]
+			address: new \OCA\OpenRegister\Service\Credential\TokenSetAddress(credentialId: 'cred-1', scope: 'personal'),
+			set: \OCA\OpenRegister\Service\Credential\OAuth2TokenSet::fromStoredJson(stored: $this->stored(expiresAt: '2030-01-01T00:00:00+00:00'))
 		);
 
 		$this->assertSame(['find', 'put', 'find', 'save'], $this->events);
 		$save = $this->saves[0];
-		$this->assertSame('relinked', $save['status']);
-		$this->assertSame(1, $save['extra']);
+		$this->assertSame('active', $save['status']);
+		$this->assertSame('', $save['lastError']);
 		$this->assertSame('2030-01-01T00:00:00+00:00', $save['expiresAt']);
 		$this->assertSame(['register' => 'credential-broker', 'schema' => 'brokeredcredential', 'uuid' => 'cred-1', '_rbac' => false, '_multitenancy' => false], $save['@args']);
 	}

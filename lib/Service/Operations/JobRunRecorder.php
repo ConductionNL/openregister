@@ -108,29 +108,7 @@ class JobRunRecorder implements JobRunRecorderInterface {
 			return $work();
 		}
 
-		$this->depth[$jobClass] = (($this->depth[$jobClass] ?? 0) + 1);
-		$run = $this->open(jobClass: $jobClass, context: ($context ?? new JobRunContext()));
-		$startedAt = microtime(true);
-
-		try {
-			$result = $work();
-		} catch (Throwable $failure) {
-			$this->close(
-				run: $run,
-				startedAt: $startedAt,
-				outcome: JobRun::OUTCOME_FAILED,
-				message: $this->describe(failure: $failure)
-			);
-			$this->alerts->observeFailure(jobClass: $jobClass);
-			unset($this->depth[$jobClass]);
-
-			throw $failure;
-		}
-
-		$this->close(run: $run, startedAt: $startedAt, outcome: JobRun::OUTCOME_COMPLETED, message: null);
-		unset($this->depth[$jobClass]);
-
-		return $result;
+		return $this->observe(run: $this->start(jobClass: $jobClass, context: ($context ?? new JobRunContext())), work: $work);
 
 	}//end around()
 
@@ -151,6 +129,66 @@ class JobRunRecorder implements JobRunRecorderInterface {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	public function recordAct(string $jobClass, string $actor, array $details, ?string $message = null): ?JobRun {
+		$row = $this->actRow(jobClass: $jobClass, context: new JobRunContext(cause: JobRun::CAUSE_MANUAL, actor: $actor, details: $details));
+		$row->setMessage($message);
+
+		return $this->insertAct(row: $row);
+
+	}//end recordAct()
+
+	/**
+	 * Mark the job class as recording and open its row.
+	 *
+	 * @param string        $jobClass The job class.
+	 * @param JobRunContext $context  The cause, actor, argument and details.
+	 *
+	 * @return RecordingRun The run being recorded.
+	 */
+	private function start(string $jobClass, JobRunContext $context): RecordingRun {
+		$this->depth[$jobClass] = (($this->depth[$jobClass] ?? 0) + 1);
+		$row = $this->open(jobClass: $jobClass, context: $context);
+
+		return new RecordingRun(jobClass: $jobClass, row: $row, startedAt: microtime(true));
+
+	}//end start()
+
+	/**
+	 * Run the work and close the row with its outcome, re-throwing a failure.
+	 *
+	 * @param RecordingRun $run  The run being recorded.
+	 * @param callable     $work The execution to observe.
+	 *
+	 * @return mixed Whatever the work returned.
+	 *
+	 * @throws Throwable Whatever the work threw, after the failure is recorded.
+	 */
+	private function observe(RecordingRun $run, callable $work): mixed {
+		try {
+			$result = $work();
+		} catch (Throwable $failure) {
+			$this->close(run: $run, failure: $this->describe(failure: $failure));
+			$this->alerts->observeFailure(jobClass: $run->jobClass);
+			unset($this->depth[$run->jobClass]);
+
+			throw $failure;
+		}
+
+		$this->close(run: $run, failure: null);
+		unset($this->depth[$run->jobClass]);
+
+		return $result;
+
+	}//end observe()
+
+	/**
+	 * The row of an act that has already happened: an instant, completed.
+	 *
+	 * @param string        $jobClass The act, as a class-shaped name.
+	 * @param JobRunContext $context  The manual cause, the actor and the details.
+	 *
+	 * @return JobRun The unsaved row.
+	 */
+	private function actRow(string $jobClass, JobRunContext $context): JobRun {
 		$now = new DateTime();
 		$run = new JobRun();
 		$run->setJobClass($jobClass);
@@ -158,23 +196,34 @@ class JobRunRecorder implements JobRunRecorderInterface {
 		$run->setEnded($now);
 		$run->setDurationMs(0);
 		$run->setOutcome(JobRun::OUTCOME_COMPLETED);
-		$run->setCause(JobRun::CAUSE_MANUAL);
-		$run->setActor($actor);
-		$run->setMessage($message);
-		$run->setDetails($this->encodedDetails(details: $details));
+		$run->setCause($context->cause);
+		$run->setActor($context->actor);
+		$run->setDetails($this->encodedDetails(details: ($context->details ?? [])));
 
+		return $run;
+
+	}//end actRow()
+
+	/**
+	 * Store the row of an act, or log that it could not be stored.
+	 *
+	 * @param JobRun $row The row to store.
+	 *
+	 * @return JobRun|null The row, or null when the log could not be written.
+	 */
+	private function insertAct(JobRun $row): ?JobRun {
 		try {
-			return $this->runs->insert($run);
+			return $this->runs->insert($row);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				message: '[JobRunRecorder] Could not record the act',
-				context: ['job' => $jobClass, 'exception' => $exception]
+				context: ['job' => $row->getJobClass(), 'exception' => $exception]
 			);
 
 			return null;
 		}
 
-	}//end recordAct()
+	}//end insertAct()
 
 	/**
 	 * Open the row, before the work runs.
@@ -218,29 +267,34 @@ class JobRunRecorder implements JobRunRecorderInterface {
 	/**
 	 * Close the row with its outcome and duration.
 	 *
-	 * @param JobRun|null $run       The open row, or null when opening failed.
-	 * @param float       $startedAt The microtime the work began.
-	 * @param string      $outcome   The outcome constant.
-	 * @param string|null $message   The failure message, when it failed.
+	 * @param RecordingRun $run     The run; its row is null when opening failed.
+	 * @param string|null  $failure The failure message when it failed, null when it completed.
 	 *
 	 * @return void
 	 */
-	private function close(?JobRun $run, float $startedAt, string $outcome, ?string $message): void {
-		if ($run === null) {
+	private function close(RecordingRun $run, ?string $failure): void {
+		$row = $run->row;
+
+		if ($row === null) {
 			return;
 		}
 
-		$run->setEnded(new DateTime());
-		$run->setDurationMs((int)round(((microtime(true) - $startedAt) * 1000)));
-		$run->setOutcome($outcome);
-		$run->setMessage($message);
+		$row->setEnded(new DateTime());
+		$row->setDurationMs((int)round(((microtime(true) - $run->startedAt) * 1000)));
+		$row->setOutcome(JobRun::OUTCOME_FAILED);
+
+		if ($failure === null) {
+			$row->setOutcome(JobRun::OUTCOME_COMPLETED);
+		}
+
+		$row->setMessage($failure);
 
 		try {
-			$this->runs->update($run);
+			$this->runs->update($row);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				message: '[JobRunRecorder] Could not close a run row',
-				context: ['job' => $run->getJobClass(), 'exception' => $exception]
+				context: ['job' => $row->getJobClass(), 'exception' => $exception]
 			);
 		}
 
