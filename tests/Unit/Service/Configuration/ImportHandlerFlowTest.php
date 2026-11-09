@@ -430,6 +430,7 @@ class ImportHandlerFlowTest extends TestCase {
 		]);
 
 		$this->assertInstanceOf(Flow::class, $result);
+		$this->assertSame(FlowVersion::STATUS_DRAFT, $result->getLifecycleStatus());
 	}//end testImportFlowDoesNotFallBackForNonDeadEndRefusal()
 
 	/**
