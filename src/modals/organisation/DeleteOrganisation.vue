@@ -64,6 +64,7 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 <script>
 import { NcNoteCard } from '@nextcloud/vue'
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { runDialogRequest } from '../../composables/dialogRequest.js'
 import { confirmDialogState } from '../shared/confirmDialogState.js'
 
 export default {
@@ -153,31 +154,28 @@ export default {
 		/**
 		 * @spec exclude Delete-confirm handler delegating to organisationStore.deleteOrganisation; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
-		async deleteOrganisation() {
-			this.loading = true
-			this.error = null
+		deleteOrganisation() {
+			return runDialogRequest(
+				this,
+				async () => {
+					const { response } = await organisationStore.deleteOrganisation({
+						...organisationStore.organisationItem,
+					})
 
-			try {
-				const { response } = await organisationStore.deleteOrganisation({
-					...organisationStore.organisationItem,
-				})
+					this.success = response.ok
 
-				this.success = response.ok
-
-				if (response.ok) {
-					// Navigate back to organisations list
-					this.$router.push('/organisation')
-					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
-				}
-			} catch (error) {
-				console.error('Error deleting organisation:', error)
-				this.success = false
-				this.error =
-					error.message
-					|| 'An error occurred while deleting the organisation'
-			} finally {
-				this.loading = false
-			}
+					if (response.ok) {
+						// Navigate back to organisations list
+						this.$router.push('/organisation')
+						this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
+					}
+				},
+				'An error occurred while deleting the organisation',
+				(error) => {
+					console.error('Error deleting organisation:', error)
+					this.success = false
+				},
+			)
 		},
 	},
 }

@@ -1,0 +1,226 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DeleteConfiguration request closes after a success 1`] = `
+{
+  "calls": [
+    [
+      "closeModal",
+    ],
+  ],
+  "seen": [
+    [
+      "loading",
+      true,
+    ],
+    [
+      "error",
+      null,
+    ],
+    [
+      "loading",
+      false,
+    ],
+    [
+      "error",
+      null,
+    ],
+    [
+      "loading",
+      false,
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": false,
+    "success": false,
+  },
+}
+`;
+
+exports[`DeleteConfiguration request shows the error message of a refusal 1`] = `
+{
+  "calls": [],
+  "seen": [
+    [
+      "loading",
+      true,
+    ],
+    [
+      "error",
+      null,
+    ],
+    [
+      "error",
+      "Nope",
+    ],
+    [
+      "loading",
+      false,
+    ],
+  ],
+  "state": {
+    "error": "Nope",
+    "loading": false,
+    "success": false,
+  },
+}
+`;
+
+exports[`DeleteConfiguration request shows the fallback text for a refusal without a message 1`] = `
+{
+  "calls": [],
+  "seen": [
+    [
+      "loading",
+      true,
+    ],
+    [
+      "error",
+      null,
+    ],
+    [
+      "error",
+      "Failed to delete configuration",
+    ],
+    [
+      "loading",
+      false,
+    ],
+  ],
+  "state": {
+    "error": "Failed to delete configuration",
+    "loading": false,
+    "success": false,
+  },
+}
+`;
+
+exports[`DeleteOrganisation request logs and shows the error message of a refusal 1`] = `
+{
+  "calls": [],
+  "logged": 1,
+  "seen": [
+    [
+      "loading",
+      true,
+    ],
+    [
+      "error",
+      null,
+    ],
+    [
+      "success",
+      false,
+    ],
+    [
+      "error",
+      "Nope",
+    ],
+    [
+      "loading",
+      false,
+    ],
+  ],
+  "state": {
+    "error": "Nope",
+    "loading": false,
+    "success": false,
+  },
+}
+`;
+
+exports[`DeleteOrganisation request navigates and schedules the close after a success 1`] = `
+{
+  "calls": [
+    [
+      "router.push",
+      "/organisation",
+    ],
+  ],
+  "seen": [
+    [
+      "loading",
+      true,
+    ],
+    [
+      "error",
+      null,
+    ],
+    [
+      "success",
+      true,
+    ],
+    [
+      "loading",
+      false,
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": false,
+    "success": true,
+  },
+}
+`;
+
+exports[`DeleteOrganisation request records a not-ok answer 1`] = `
+{
+  "calls": [],
+  "seen": [
+    [
+      "loading",
+      true,
+    ],
+    [
+      "error",
+      null,
+    ],
+    [
+      "success",
+      false,
+    ],
+    [
+      "loading",
+      false,
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": false,
+    "success": false,
+  },
+}
+`;
+
+exports[`DeleteOrganisation request shows the fallback text for a refusal without a message 1`] = `
+{
+  "calls": [],
+  "seen": [
+    [
+      "loading",
+      true,
+    ],
+    [
+      "error",
+      null,
+    ],
+    [
+      "success",
+      false,
+    ],
+    [
+      "error",
+      "An error occurred while deleting the organisation",
+    ],
+    [
+      "loading",
+      false,
+    ],
+  ],
+  "state": {
+    "error": "An error occurred while deleting the organisation",
+    "loading": false,
+    "success": false,
+  },
+}
+`;

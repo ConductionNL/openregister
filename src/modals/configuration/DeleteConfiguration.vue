@@ -27,6 +27,7 @@
 <script>
 import Delete from 'vue-material-design-icons/Delete.vue'
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { runDialogRequest } from '../../composables/dialogRequest.js'
 import { configurationStore, navigationStore } from '../../store/store.js'
 
 export default {
@@ -60,20 +61,17 @@ export default {
 		/**
 		 * @spec exclude Delete-confirm handler delegating to configurationStore.deleteConfiguration; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
-		async deleteConfiguration() {
-			this.loading = true
-			this.error = null
-
-			try {
-				await configurationStore.deleteConfiguration(
-					configurationStore.configurationItem,
-				)
-				this.closeModal()
-			} catch (error) {
-				this.error = error.message || 'Failed to delete configuration'
-			} finally {
-				this.loading = false
-			}
+		deleteConfiguration() {
+			return runDialogRequest(
+				this,
+				async () => {
+					await configurationStore.deleteConfiguration(
+						configurationStore.configurationItem,
+					)
+					this.closeModal()
+				},
+				'Failed to delete configuration',
+			)
 		},
 	},
 }
