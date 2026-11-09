@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Party;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Which declared indicator refuses an outbound message to one party. Only the method PartyNotificationService calls.

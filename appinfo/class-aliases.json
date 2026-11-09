@@ -1815,6 +1815,16 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Party\\PartySearchInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PartySearchInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Party\\PartySendRefusalInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PartySendRefusalInterface",
+			"eager": false,
+			"service": true
 		}
 	}
 }
