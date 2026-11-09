@@ -108,22 +108,40 @@ class SchemaRevalidationService implements SchemaRevalidatorInterface {
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function start(int $schemaId, int $registerId, ?array $proposedDefinition = null, ?string $startedBy = null): SchemaRun {
-		$this->assertNoActiveRun(schemaId: $schemaId);
+		$request = new RevalidationRequest(schemaId: $schemaId, registerId: $registerId, proposedDefinition: $proposedDefinition);
+
+		return $this->startRevalidation(request: $request, startedBy: $startedBy);
+	}//end start()
+
+	/**
+	 * Start a revalidation run for a revalidation request.
+	 *
+	 * Refuses a second concurrent run on the same schema, as start() does.
+	 *
+	 * @param RevalidationRequest $request   The schema, register and optional proposed definition.
+	 * @param string|null         $startedBy The starting user.
+	 *
+	 * @return SchemaRun The created run.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function startRevalidation(RevalidationRequest $request, ?string $startedBy = null): SchemaRun {
+		$this->assertNoActiveRun(schemaId: $request->schemaId);
 
 		return $this->runMapper->createFromArray(
 			[
-				'schemaId' => $schemaId,
-				'registerId' => $registerId,
+				'schemaId' => $request->schemaId,
+				'registerId' => $request->registerId,
 				'type' => SchemaRun::TYPE_REVALIDATION,
 				'state' => SchemaRun::STATE_RUNNING,
-				'proposedDefinition' => $proposedDefinition,
-				'total' => $this->countPopulation(schemaId: $schemaId, registerId: $registerId),
+				'proposedDefinition' => $request->proposedDefinition,
+				'total' => $this->countPopulation(schemaId: $request->schemaId, registerId: $request->registerId),
 				'startedBy' => $startedBy,
 				'report' => ['valid' => 0, 'invalid' => 0],
 			]
 		);
 
-	}//end start()
+	}//end startRevalidation()
 
 	/**
 	 * Process one batch of a revalidation run, advancing its cursor.
@@ -185,33 +203,28 @@ class SchemaRevalidationService implements SchemaRevalidatorInterface {
 		if (count($errors) === 0) {
 			$batch->tally(key: 'valid');
 		} else {
-			$this->recordInvalid(batch: $batch, object: $object, errors: $errors);
+			$batch->tally(key: 'invalid');
+			$this->recordEntry(run: $batch->run, entry: $this->invalidEntry(object: $object, errors: $errors));
 		}
 
 		$batch->markProcessed();
 	}//end revalidateOne()
 
 	/**
-	 * Count an invalid object and record its first errors.
+	 * The run entry of an invalid object, carrying its first errors.
 	 *
-	 * @param SchemaRunBatch     $batch  The batch.
 	 * @param ObjectEntity       $object The object.
 	 * @param array<int, string> $errors The validation errors.
 	 *
-	 * @return void
+	 * @return array<string, mixed> The entry.
 	 */
-	private function recordInvalid(SchemaRunBatch $batch, ObjectEntity $object, array $errors): void {
-		$batch->tally(key: 'invalid');
-		$this->recordEntry(
-			run: $batch->run,
-			entry: [
-				'objectUuid' => $object->getUuid(),
-				'outcome' => SchemaRunEntry::OUTCOME_INVALID,
-				'message' => implode('; ', array_slice($errors, 0, self::MAX_ERRORS_PER_OBJECT)),
-			]
-		);
-
-	}//end recordInvalid()
+	private function invalidEntry(ObjectEntity $object, array $errors): array {
+		return [
+			'objectUuid' => $object->getUuid(),
+			'outcome' => SchemaRunEntry::OUTCOME_INVALID,
+			'message' => implode('; ', array_slice($errors, 0, self::MAX_ERRORS_PER_OBJECT)),
+		];
+	}//end invalidEntry()
 
 	/**
 	 * Validate one object against a schema, returning a list of error strings.
