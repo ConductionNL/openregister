@@ -4572,7 +4572,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param RegisterSchema     $registerSchema The register and schema.
 	 * @param SlugBackfillCursor $cursor         Where the page starts and how many rows it reads.
 	 *
-	 * @return array{rows: list<array{id: int, uuid: string, slug: string|null, created: string|null, object: array}>, fetched: int, lastId: int} The page.
+	 * @return array{
+	 *     rows: list<array{id: int, uuid: string, slug: string|null, created: string|null, object: array}>,
+	 *     fetched: int,
+	 *     lastId: int
+	 * } The page.
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function findSlugBackfillPageIn(RegisterSchema $registerSchema, SlugBackfillCursor $cursor): array {
@@ -7601,7 +7605,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end findByRelation()
 
 	/**
-	 * Find the objects of every magic table whose relations hold the given uuid (see findByRelation(), whose search and partial-match arguments are not applied).
+	 * Find the objects of every magic table whose relations hold the given uuid.
+	 *
+	 * See findByRelation(), whose search and partial-match arguments were never applied.
 	 *
 	 * @param string $uuid The UUID to search for.
 	 *
