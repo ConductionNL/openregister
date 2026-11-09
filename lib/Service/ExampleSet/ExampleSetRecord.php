@@ -297,23 +297,35 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 */
 	public static function letGoUndeclared(ExampleSetRecordPart $part, array $fragment, array &$report, array &$record): bool {
-		$declared = self::declared(fragment: $fragment, part: $part);
-		$noun     = $part->noun;
-		$part     = $part->part;
-		$changed  = false;
-		foreach (array_keys((array) ($record[$part] ?? [])) as $name) {
-			$name = (string) $name;
-			if (self::isUndeclared(name: $name, declared: $declared) === false) {
-				continue;
-			}
-
-			unset($record[$part][$name]);
-			$report['left'][] = $noun.' '.$name.': the set no longer declares it';
-			$changed          = true;
+		$held  = array_keys((array) ($record[$part->part] ?? []));
+		$names = self::undeclared(declared: self::declared(fragment: $fragment, part: $part), held: $held);
+		foreach ($names as $name) {
+			unset($record[$part->part][$name]);
+			$report['left'][] = $part->noun.' '.$name.': the set no longer declares it';
 		}
 
-		return $changed;
+		return $names !== [];
 	}//end letGoUndeclared()
+
+	/**
+	 * The held record keys, in order, that are the app's own declarations of the part and that the fragment no
+	 * longer declares.
+	 *
+	 * @param FragmentDeclarations $declared The app's prefix and the record keys the fragment declares.
+	 * @param array<int, int|string> $held   The record keys the part holds.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function undeclared(FragmentDeclarations $declared, array $held): array {
+		$names = [];
+		foreach ($held as $name) {
+			if (self::isUndeclared(name: (string) $name, declared: $declared) === true) {
+				$names[] = (string) $name;
+			}
+		}
+
+		return $names;
+	}//end undeclared()
 
 	/**
 	 * The app's prefix, `<app>/`, and the record keys of the declarations of one part in a fragment.
