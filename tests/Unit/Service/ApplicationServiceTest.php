@@ -43,6 +43,7 @@ class ApplicationServiceTest extends TestCase {
 		$this->applicationMapper
 			->expects($this->once())
 			->method('findAll')
+			->with(null, null, [])
 			->willReturn([$app1, $app2]);
 
 		$result = $this->service->findAll();
@@ -54,6 +55,7 @@ class ApplicationServiceTest extends TestCase {
 		$this->applicationMapper
 			->expects($this->once())
 			->method('findAll')
+			->with(10, 5, ['key' => 'value'])
 			->willReturn([]);
 
 		$result = $this->service->findAll(10, 5, ['key' => 'value']);
