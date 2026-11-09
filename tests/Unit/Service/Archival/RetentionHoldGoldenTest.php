@@ -269,7 +269,7 @@ class RetentionHoldGoldenTest extends TestCase {
 			}
 		);
 
-		return new ArchivalRetentionGuard(schemaMapper: $mapper, logger: $this->createMock(LoggerInterface::class));
+		return new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($mapper, $this->createMock(LoggerInterface::class)));
 	}//end guard()
 
 	public function testTheGuardRefusesHeldArchivalAndUnreadableRecordsOnly(): void {

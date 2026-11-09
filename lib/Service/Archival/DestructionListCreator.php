@@ -85,7 +85,8 @@ class DestructionListCreator implements DestructionListCreatorInterface {
 			throw new InvalidArgumentException('The destruction list could not be built from the archival settings.');
 		}
 
-		$saved = $this->store(location: $location, listData: $listData, judged: $judged);
+		$saved = $this->store(location: $location, listData: $listData);
+		$this->logCreated(saved: $saved, judged: $judged);
 
 		return ['list' => (($saved->getObject() ?? $listData) + ['uuid' => $saved->getUuid()]), 'refused' => $judged['refused']];
 	}//end createFor()
@@ -95,22 +96,29 @@ class DestructionListCreator implements DestructionListCreatorInterface {
 	 *
 	 * @param array{register: mixed, schema: mixed} $location The configured register and schema.
 	 * @param array<string, mixed>                  $listData The built list.
-	 * @param array<string, array<int, mixed>>      $judged   The judged uuids, for the log line.
 	 *
 	 * @return ObjectEntity The stored list.
 	 */
-	private function store(array $location, array $listData, array $judged): ObjectEntity {
+	private function store(array $location, array $listData): ObjectEntity {
 		// The sweep's own save call (DestructionCheckJob::run()): no RBAC or
 		// multitenancy on the list, persisted, silent.
-		$saved = $this->writer->saveObject->saveObject($location['register'], $location['schema'], $listData, null, false, false, true, true);
+		return $this->writer->saveObject->saveObject($location['register'], $location['schema'], $listData, null, false, false, true, true);
+	}//end store()
 
+	/**
+	 * Log the stored list with how many uuids went on it and how many were refused.
+	 *
+	 * @param ObjectEntity                     $saved  The stored list.
+	 * @param array<string, array<int, mixed>> $judged The judged uuids.
+	 *
+	 * @return void
+	 */
+	private function logCreated(ObjectEntity $saved, array $judged): void {
 		$this->logger->info(
 			'[DestructionListCreator] Created destruction list ' . (string)$saved->getUuid()
 			. ' with ' . count($judged['eligible']) . ' entries, ' . count($judged['refused']) . ' refused'
 		);
-
-		return $saved;
-	}//end store()
+	}//end logCreated()
 
 	/**
 	 * The register and schema destruction lists are kept in.
@@ -148,7 +156,11 @@ class DestructionListCreator implements DestructionListCreatorInterface {
 		$judged = ['eligible' => [], 'refused' => []];
 		foreach (array_unique(array_map(static fn ($uuid): string => trim((string)$uuid), $uuids)) as $uuid) {
 			$object = $this->load(uuid: $uuid);
-			$reason = $this->refusalOf(object: $object, today: $today, onOpenLists: $onOpenLists);
+			$reason = self::REFUSAL_NOT_FOUND;
+			if ($object !== null) {
+				$reason = $this->retention->destructionRefusal(object: $object, today: $today, excludeUuids: $onOpenLists);
+			}
+
 			if ($reason !== null) {
 				$judged['refused'][] = ['uuid' => $uuid, 'reason' => $reason];
 				continue;
@@ -159,23 +171,6 @@ class DestructionListCreator implements DestructionListCreatorInterface {
 
 		return $judged;
 	}//end judge()
-
-	/**
-	 * Why this object may not go on a list, or null when it may.
-	 *
-	 * @param ObjectEntity|null  $object      The object, or null when the uuid did not resolve.
-	 * @param string             $today       Today, as Y-m-d.
-	 * @param array<int, string> $onOpenLists Uuids already on an open destruction list.
-	 *
-	 * @return string|null The refusal reason.
-	 */
-	private function refusalOf(?ObjectEntity $object, string $today, array $onOpenLists): ?string {
-		if ($object === null) {
-			return self::REFUSAL_NOT_FOUND;
-		}
-
-		return $this->retention->destructionRefusal(object: $object, today: $today, excludeUuids: $onOpenLists);
-	}//end refusalOf()
 
 	/**
 	 * One object by uuid, or null when there is none.
