@@ -89,16 +89,7 @@ class EmailSender implements EmailSenderInterface {
 			return self::OUTCOME_KILL_SWITCH;
 		}
 
-		try {
-			return $this->sendToUser(uid: $uid, content: new MailContent(subject: $subject, body: $body));
-		} catch (\Throwable $e) {
-			// SMTP not configured is normal in dev containers; the caller
-			// decides whether this outcome escalates.
-			$this->logger->debug(
-				sprintf('[EmailSender] email to "%s" failed (%s)', $uid, $e->getMessage())
-			);
-			return self::OUTCOME_FAILED;
-		}
+		return $this->sendToUser(uid: $uid, content: new MailContent(subject: $subject, body: $body));
 	}//end send()
 
 	/**
@@ -128,21 +119,9 @@ class EmailSender implements EmailSenderInterface {
 		}
 
 		$to = trim($address);
-		if ($to === '') {
-			return self::OUTCOME_NO_ADDRESS;
-		}
+		$content = new MailContent(subject: $subject, body: $body, unsubscribe: $unsubscribe);
 
-		try {
-			$content = new MailContent(subject: $subject, body: $body, unsubscribe: $unsubscribe);
-			$this->deliver(to: [$to => self::nameFor(address: $to, displayName: $displayName)], content: $content);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf('[EmailSender] email to the address of a party failed (%s)', $e->getMessage())
-			);
-			return self::OUTCOME_FAILED;
-		}
-
-		return self::OUTCOME_DISPATCHED;
+		return $this->sendToParty(to: [$to => self::nameFor(address: $to, displayName: $displayName)], content: $content);
 	}//end sendToAddress()
 
 	/**
@@ -160,25 +139,73 @@ class EmailSender implements EmailSenderInterface {
 	 * @param string      $uid     Recipient user UID.
 	 * @param MailContent $content The subject and body.
 	 *
-	 * @return string OUTCOME_NO_ADDRESS or OUTCOME_DISPATCHED.
-	 *
-	 * @throws \Throwable When the user lookup or the handoff fails.
+	 * @return string OUTCOME_NO_ADDRESS, OUTCOME_FAILED or OUTCOME_DISPATCHED.
 	 */
 	private function sendToUser(string $uid, MailContent $content): string {
+		try {
+			$to = $this->addressOf(uid: $uid);
+			if ($to === null) {
+				return self::OUTCOME_NO_ADDRESS;
+			}
+
+			$this->deliver(to: $to, content: $content);
+		} catch (\Throwable $e) {
+			// SMTP not configured is normal in dev containers; the caller
+			// decides whether this outcome escalates.
+			$this->logger->debug(
+				sprintf('[EmailSender] email to "%s" failed (%s)', $uid, $e->getMessage())
+			);
+			return self::OUTCOME_FAILED;
+		}
+
+		return self::OUTCOME_DISPATCHED;
+	}//end sendToUser()
+
+	/**
+	 * The address a user's account holds, mapped to their display name.
+	 *
+	 * @param string $uid The user UID.
+	 *
+	 * @return array<string, string>|null The address and name, or null when the user or the address is missing.
+	 */
+	private function addressOf(string $uid): ?array {
 		$user = $this->userManager->get($uid);
 		if ($user === null) {
-			return self::OUTCOME_NO_ADDRESS;
+			return null;
 		}
 
 		$to = $user->getEMailAddress();
 		if ($to === null || $to === '') {
+			return null;
+		}
+
+		return [$to => $user->getDisplayName()];
+	}//end addressOf()
+
+	/**
+	 * Mail a party at a bare address.
+	 *
+	 * @param array<string, string> $to      The trimmed address mapped to the name to address it to.
+	 * @param MailContent           $content The subject, body and unsubscribe material.
+	 *
+	 * @return string OUTCOME_NO_ADDRESS, OUTCOME_FAILED or OUTCOME_DISPATCHED.
+	 */
+	private function sendToParty(array $to, MailContent $content): string {
+		if (array_key_first($to) === '') {
 			return self::OUTCOME_NO_ADDRESS;
 		}
 
-		$this->deliver(to: [$to => $user->getDisplayName()], content: $content);
+		try {
+			$this->deliver(to: $to, content: $content);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf('[EmailSender] email to the address of a party failed (%s)', $e->getMessage())
+			);
+			return self::OUTCOME_FAILED;
+		}
 
 		return self::OUTCOME_DISPATCHED;
-	}//end sendToUser()
+	}//end sendToParty()
 
 	/**
 	 * Compose the message and hand it to the mailer.

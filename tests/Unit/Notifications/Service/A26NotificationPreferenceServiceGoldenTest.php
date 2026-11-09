@@ -89,12 +89,12 @@ class A26NotificationPreferenceServiceGoldenTest extends TestCase {
 		$out['keys'] = [
 			$service->configKey('case', 'assigned'),
 			$service->configKey($long, 'assigned-to-you'),
-			$service->scopedConfigKey(new \OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress('case', 'assigned', 'register:1')),
-			$service->scopedConfigKey(new \OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress($long, 'assigned', 'register:1')),
-			$service->scopedConfigKey(new \OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress('case', 'assigned', 'domain:x'), 'staff'),
-			$service->scopedConfigKey(new \OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress($long, 'assigned', 'domain:x'), 'staff'),
-			$service->groupConfigKey('staff', new \OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress('case', 'assigned')),
-			$service->groupConfigKey('staff', new \OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress('case', 'assigned', 'schema:2')),
+			$service->scopedConfigKey('register:1', 'case', 'assigned'),
+			$service->scopedConfigKey('register:1', $long, 'assigned'),
+			$service->scopedConfigKey('domain:x', 'case', 'assigned', 'staff'),
+			$service->scopedConfigKey('domain:x', $long, 'assigned', 'staff'),
+			$service->groupConfigKey('staff', 'case', 'assigned'),
+			$service->groupConfigKey('staff', 'case', 'assigned', 'schema:2'),
 		];
 		return $out;
 	}//end staticCases()

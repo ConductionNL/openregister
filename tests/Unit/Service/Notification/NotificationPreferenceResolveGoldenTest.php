@@ -152,7 +152,7 @@ final class NotificationPreferenceResolveGoldenTest extends TestCase {
 			if ($party === 'user') {
 				$key = $keys->configKey(schemaSlug: 'meldingen', notificationKey: 'created');
 				if ($scope !== null) {
-					$key = $keys->scopedConfigKey(address: new \OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress(schemaSlug: 'meldingen', notificationKey: 'created', scope: $scope));
+					$key = $keys->scopedConfigKey(scope: $scope, schemaSlug: 'meldingen', notificationKey: 'created');
 				}
 
 				$store['user|'.$key] = $raw;
@@ -160,7 +160,7 @@ final class NotificationPreferenceResolveGoldenTest extends TestCase {
 			}
 
 			$groupId = substr($party, 6);
-			$store['app|'.$keys->groupConfigKey(groupId: $groupId, address: new \OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress(schemaSlug: 'meldingen', notificationKey: 'created', scope: $scope))] = $raw;
+			$store['app|'.$keys->groupConfigKey(groupId: $groupId, schemaSlug: 'meldingen', notificationKey: 'created', scope: $scope)] = $raw;
 		}
 
 		$config = $this->createMock(IConfig::class);

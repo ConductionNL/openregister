@@ -223,14 +223,28 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	 * scope is an absent row and falls through to the global value with nothing
 	 * to migrate — the same property that makes adding a schema free today.
 	 *
-	 * @param PreferenceAddress $address The schema slug, notification key and scope (`<kind>:<id>`, e.g. `schema:zaak`).
-	 * @param string|null       $groupId The group the default belongs to, or null for a user's own value.
+	 * @param string $scope The scope, spelled `<kind>:<id>` (e.g. `schema:zaak`).
+	 * @param string $schemaSlug The owning schema's slug.
+	 * @param string $notificationKey The notification annotation key.
+	 * @param string|null $groupId The group the default belongs to, or null for a user's own value.
 	 *
 	 * @return string The namespaced config key (<= 64 chars).
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
-	public function scopedConfigKey(PreferenceAddress $address, ?string $groupId = null): string {
+	public function scopedConfigKey(string $scope, string $schemaSlug, string $notificationKey, ?string $groupId = null): string {
+		return $this->scopedKeyFor(address: new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope), groupId: $groupId);
+	}//end scopedConfigKey()
+
+	/**
+	 * The config key for a scoped preference address.
+	 *
+	 * @param PreferenceAddress $address The schema slug, notification key and scope; a null scope reads as ''.
+	 * @param string|null       $groupId The group the default belongs to, or null for a user's own value.
+	 *
+	 * @return string The namespaced config key (<= 64 chars).
+	 */
+	private function scopedKeyFor(PreferenceAddress $address, ?string $groupId = null): string {
 		$prefix = self::SCOPED_KEY_PREFIX;
 		$tail = (string)$address->scope . '/' . $address->schemaSlug . '/' . $address->notificationKey;
 		if ($groupId !== null) {
@@ -239,7 +253,7 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 		}
 
 		return $this->compressedKey(prefix: $prefix, tail: $tail);
-	}//end scopedConfigKey()
+	}//end scopedKeyFor()
 
 	/**
 	 * The prefix and tail as one config key of at most MAX_KEY_LENGTH characters.
@@ -269,16 +283,35 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	/**
 	 * The key a GROUP default is stored under, global or scoped.
 	 *
-	 * @param string            $groupId The group id.
-	 * @param PreferenceAddress $address The schema slug, notification key and scope; a null scope is the group's global default.
+	 * @param string $groupId The group id.
+	 * @param string $schemaSlug The owning schema's slug.
+	 * @param string $notificationKey The notification annotation key.
+	 * @param string|null $scope The scope, or null for the group's global default.
 	 *
 	 * @return string The app-config key.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
-	public function groupConfigKey(string $groupId, PreferenceAddress $address): string {
-		return $this->scopedConfigKey(address: $address->scopedOrGlobal(), groupId: $groupId);
+	public function groupConfigKey(
+		string $groupId,
+		string $schemaSlug,
+		string $notificationKey,
+		?string $scope = null,
+	): string {
+		return $this->groupKeyFor(groupId: $groupId, address: new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope));
 	}//end groupConfigKey()
+
+	/**
+	 * The key a group default for a preference address is stored under.
+	 *
+	 * @param string            $groupId The group id.
+	 * @param PreferenceAddress $address The schema slug, notification key and scope; a null scope is the group's global default.
+	 *
+	 * @return string The app-config key.
+	 */
+	private function groupKeyFor(string $groupId, PreferenceAddress $address): string {
+		return $this->scopedKeyFor(address: $address->scopedOrGlobal(), groupId: $groupId);
+	}//end groupKeyFor()
 
 	/**
 	 * Read a group's stored default, or null when the group has none.
@@ -298,7 +331,7 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 		string $notificationKey,
 		?string $scope = null,
 	): ?array {
-		$key = $this->groupConfigKey(groupId: $groupId, address: new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope));
+		$key = $this->groupKeyFor(groupId: $groupId, address: new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope));
 
 		return self::decodedValue(raw: $this->config->getAppValue(self::APP_NAME, $key, ''));
 	}//end getGroupDefault()
@@ -322,7 +355,7 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	 */
 	public function setGroupDefault(string $groupId, string $schemaSlug, string $notificationKey, ?array $default, ?string $scope = null): void {
 		$address = new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope);
-		$this->writeAppValue(key: $this->groupConfigKey(groupId: $groupId, address: $address), value: $default);
+		$this->writeAppValue(key: $this->groupKeyFor(groupId: $groupId, address: $address), value: $default);
 	}//end setGroupDefault()
 
 	/**
@@ -447,7 +480,7 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	 */
 	private function userConfigKey(PreferenceAddress $address): string {
 		if ($address->scope !== null) {
-			return $this->scopedConfigKey(address: $address);
+			return $this->scopedKeyFor(address: $address);
 		}
 
 		return $this->configKey(schemaSlug: $address->schemaSlug, notificationKey: $address->notificationKey);
