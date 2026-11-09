@@ -5,6 +5,9 @@
 		"description": "Newman API coverage (SIG round t1, lane T25) for TranslationController (setStatus, bulkTranslate), NamesController, DashboardController, LinkedEntityController, AggregationController, QualityController, MergeController (reverse), SurvivorshipController, ContactsController, ContactSearchController, EmailsController, EmailLinksController, PartyController, CalendarEventsController, DeckLinksController, DeckController and TalkLinksController. Each route gets a success path, a missing/unknown id, invalid input where the method validates, and the access answer for a non-admin user without rights next to the admin, with a control read that the refusal changed nothing. Routes that need Mail, Deck or Talk (absent in CI) assert the documented app-not-available answer. The collection seeds its own data: `00 setup` creates a non-admin user, a register, an admin-only schema and two objects; `99 teardown` deletes them. Variables: base_url, admin_user, admin_password.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
+	"protocolProfileBehavior": {
+		"disableCookies": true
+	},
 	"auth": {
 		"type": "basic",
 		"basic": [
@@ -104,9 +107,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json"
-						},
+						"url": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"userid\":\"{{t25_user}}\",\"password\":\"{{t25_password}}\"}",
@@ -143,9 +144,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/registers"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"title\":\"t25 integrations newman register\",\"description\":\"fixture of the translation-names collection\"}",
@@ -185,9 +184,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/schemas"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"title\":\"t25 integrations newman schema\",\"properties\":{\"name\":{\"type\":\"string\",\"title\":\"Name\",\"maxLength\":255},\"email\":{\"type\":\"string\",\"title\":\"Email\",\"maxLength\":255},\"amount\":{\"type\":\"number\",\"title\":\"Amount\"}},\"authorization\":{\"read\":[\"admin\"],\"create\":[\"admin\"],\"update\":[\"admin\"],\"delete\":[\"admin\"]}}",
@@ -228,9 +225,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"schemas\": [\"{{schemaId}}\"]}",
@@ -267,9 +262,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"name\":\"Alpha\",\"email\":\"alpha@example.test\",\"amount\":10}",
@@ -308,9 +301,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"name\":\"Beta\",\"email\":\"beta@example.test\",\"amount\":32}",
@@ -354,9 +345,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/name/en/status"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/name/en/status",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -395,9 +384,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/name/en/status"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/name/en/status",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"status\":\"no-such-status\"}",
@@ -436,9 +423,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/name/en/status"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/name/en/status",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"status\":\"human_reviewed\"}",
@@ -477,9 +462,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/name/en/status"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/name/en/status",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"status\":\"stale\"}",
@@ -533,9 +516,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/bulk-translate"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/bulk-translate",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"from\":\"nl\"}",
@@ -574,9 +555,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/translations/object/00000000-0000-4000-8000-000000000000/bulk-translate"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/00000000-0000-4000-8000-000000000000/bulk-translate",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"from\":\"nl\",\"to\":\"en\"}",
@@ -615,9 +594,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/bulk-translate"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/bulk-translate",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"from\":\"nl\",\"to\":\"en\"}",
@@ -656,9 +633,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/bulk-translate"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/bulk-translate",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"from\":\"nl\",\"to\":\"en\"}",
@@ -717,9 +692,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/names?ids={{objUuid}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/names?ids={{objUuid}}"
 					},
 					"event": [
 						{
@@ -749,9 +722,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/names?ids={{objUuid}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/names?ids={{objUuid}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -796,9 +767,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/names"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/names",
 						"auth": {
 							"type": "noauth"
 						}
@@ -829,9 +798,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/names"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/names",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"ids\": [\"{{objUuid}}\", \"{{obj2Uuid}}\"]}",
@@ -870,9 +837,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/names"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/names",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -911,9 +876,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/names"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/names",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"ids\":[\"  \"]}",
@@ -952,9 +915,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/names"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/names",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"ids\":[\"00000000-0000-4000-8000-000000000000\"]}",
@@ -993,9 +954,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/names"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/names",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"ids\": [\"{{objUuid}}\"]}",
@@ -1054,9 +1013,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard"
 					},
 					"event": [
 						{
@@ -1086,9 +1043,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -1133,9 +1088,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/calculate/{{registerId}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/calculate/{{registerId}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -1174,9 +1127,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/calculate/{{registerId}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/calculate/{{registerId}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -1230,9 +1181,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/audit-trail-actions"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/audit-trail-actions"
 					},
 					"event": [
 						{
@@ -1263,9 +1212,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/audit-trail-actions"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/audit-trail-actions",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -1310,9 +1257,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-register?registerId={{registerId}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-register?registerId={{registerId}}"
 					},
 					"event": [
 						{
@@ -1342,9 +1287,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-register?registerId={{registerId}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-register?registerId={{registerId}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -1389,9 +1332,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-schema?registerId={{registerId}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-schema?registerId={{registerId}}"
 					},
 					"event": [
 						{
@@ -1421,9 +1362,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-schema?registerId={{registerId}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-schema?registerId={{registerId}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -1468,9 +1407,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-size?registerId={{registerId}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-size?registerId={{registerId}}"
 					},
 					"event": [
 						{
@@ -1500,9 +1437,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-size?registerId={{registerId}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-size?registerId={{registerId}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -1547,9 +1482,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/audit-trail?hours=24"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/audit-trail?hours=24"
 					},
 					"event": [
 						{
@@ -1579,9 +1512,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/audit-trail?hours=24"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/audit-trail?hours=24",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -1626,9 +1557,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/audit-trail-distribution?hours=24"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/audit-trail-distribution?hours=24"
 					},
 					"event": [
 						{
@@ -1658,9 +1587,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/audit-trail-distribution?hours=24"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/audit-trail-distribution?hours=24",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -1705,9 +1632,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/most-active-objects?limit=5"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/most-active-objects?limit=5"
 					},
 					"event": [
 						{
@@ -1737,9 +1662,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/most-active-objects?limit=5"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/most-active-objects?limit=5",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -1789,9 +1712,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -1830,9 +1751,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"id\":\"t25-mail-1\"}",
@@ -1871,9 +1790,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/linked/mail/t25-mail-1"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/linked/mail/t25-mail-1"
 					},
 					"event": [
 						{
@@ -1903,9 +1820,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/linked/mail/t25-mail-1"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/linked/mail/t25-mail-1",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -1950,9 +1865,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"id\":\"t25-mail-2\"}",
@@ -2006,9 +1919,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/00000000-0000-4000-8000-000000000000/_linked/mail"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/00000000-0000-4000-8000-000000000000/_linked/mail",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"id\":\"t25-mail-3\"}",
@@ -2047,9 +1958,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail/t25-mail-1"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail/t25-mail-1",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -2094,9 +2003,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/linked/mail/t25-mail-1"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/linked/mail/t25-mail-1"
 					},
 					"event": [
 						{
@@ -2127,9 +2034,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail/t25-mail-1"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail/t25-mail-1"
 					},
 					"event": [
 						{
@@ -2159,9 +2064,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerUuid}}/_linked/mail"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerUuid}}/_linked/mail",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -2200,9 +2103,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerUuid}}/_linked/mail"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerUuid}}/_linked/mail",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"id\":\"t25-reg-mail\"}",
@@ -2241,9 +2142,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerUuid}}/_linked/mail"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerUuid}}/_linked/mail",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"id\":\"x\"}",
@@ -2297,9 +2196,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaUuid}}/_linked/mail"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaUuid}}/_linked/mail",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -2338,9 +2235,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaUuid}}/_linked/mail"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaUuid}}/_linked/mail",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"id\":\"t25-schema-mail\"}",
@@ -2379,9 +2274,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaUuid}}/_linked/mail"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaUuid}}/_linked/mail",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"id\":\"x\"}",
@@ -2440,9 +2333,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/value?metric=sum&field=amount"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/value?metric=sum&field=amount"
 					},
 					"event": [
 						{
@@ -2472,9 +2363,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/999999/{{schemaId}}/value?metric=count"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/999999/{{schemaId}}/value?metric=count"
 					},
 					"event": [
 						{
@@ -2504,9 +2393,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/value?metric=sum&field=amount"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/value?metric=sum&field=amount",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -2551,9 +2438,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/grouped"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/grouped"
 					},
 					"event": [
 						{
@@ -2583,9 +2468,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/grouped?groupBy=name&metric=count"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/grouped?groupBy=name&metric=count"
 					},
 					"event": [
 						{
@@ -2615,9 +2498,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/999999/grouped?groupBy=name"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/999999/grouped?groupBy=name"
 					},
 					"event": [
 						{
@@ -2647,9 +2528,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/grouped?groupBy=name&metric=count"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/grouped?groupBy=name&metric=count",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -2693,9 +2572,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?interval=day&metric=count"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?interval=day&metric=count"
 					},
 					"event": [
 						{
@@ -2725,9 +2602,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/999999/{{schemaId}}/timeseries?interval=day"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/999999/{{schemaId}}/timeseries?interval=day"
 					},
 					"event": [
 						{
@@ -2757,9 +2632,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?interval=fortnight&metric=count"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?interval=fortnight&metric=count"
 					},
 					"event": [
 						{
@@ -2789,9 +2662,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?interval=day&metric=count"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?interval=day&metric=count",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -2840,9 +2711,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/{{schemaId}}/stats"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/{{schemaId}}/stats"
 					},
 					"event": [
 						{
@@ -2872,9 +2741,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/quality/999999/{{schemaId}}/stats"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/quality/999999/{{schemaId}}/stats"
 					},
 					"event": [
 						{
@@ -2904,9 +2771,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/{{schemaId}}/stats"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/{{schemaId}}/stats",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -2950,9 +2815,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/{{schemaId}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/{{schemaId}}"
 					},
 					"event": [
 						{
@@ -2982,9 +2845,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/999999"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/999999"
 					},
 					"event": [
 						{
@@ -3014,9 +2875,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/{{schemaId}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/{{schemaId}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -3065,9 +2924,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/merge/00000000-0000-4000-8000-000000000000/reverse"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/merge/00000000-0000-4000-8000-000000000000/reverse",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -3106,9 +2963,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/merge/{{objUuid}}/reverse"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/merge/{{objUuid}}/reverse",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -3147,9 +3002,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/merge/{{objUuid}}/reverse"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/merge/{{objUuid}}/reverse",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -3203,9 +3056,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}"
 					},
 					"event": [
 						{
@@ -3240,9 +3091,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/sources"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/sources"
 					},
 					"event": [
 						{
@@ -3272,9 +3121,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/00000000-0000-4000-8000-000000000000/sources"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/00000000-0000-4000-8000-000000000000/sources"
 					},
 					"event": [
 						{
@@ -3304,9 +3151,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/sources"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/sources",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -3351,9 +3196,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/override"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/override",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -3392,9 +3235,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/00000000-0000-4000-8000-000000000000/override"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/00000000-0000-4000-8000-000000000000/override",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"attribute\":\"name\",\"value\":\"X\"}",
@@ -3433,9 +3274,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/override"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/override",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"attribute\":\"name\",\"value\":\"Hijacked\"}",
@@ -3489,9 +3328,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}"
 					},
 					"event": [
 						{
@@ -3521,9 +3358,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/override"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/override",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"attribute\":\"name\",\"value\":\"Alpha Pinned\"}",
@@ -3561,9 +3396,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/override"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/override",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"attribute\":\"name\",\"value\":null}",
@@ -3607,9 +3440,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"name\":\"Alpha\",\"email\":\"alpha@example.test\",\"amount\":10}",
@@ -3651,9 +3482,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts"
 					},
 					"event": [
 						{
@@ -3683,9 +3512,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/contacts"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/contacts"
 					},
 					"event": [
 						{
@@ -3715,9 +3542,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -3762,9 +3587,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/new"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/new",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -3803,9 +3626,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/new"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/new",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"userId\":\"admin\"}",
@@ -3844,9 +3665,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/contacts/new"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/contacts/new",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"displayName\":\"T25 Person\"}",
@@ -3885,9 +3704,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/new"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/new",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"displayName\":\"T25 Intruder\"}",
@@ -3941,9 +3758,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -3982,9 +3797,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/contacts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/contacts",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"userId\":\"admin\"}",
@@ -4023,9 +3836,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"userId\":\"{{t25_user}}\"}",
@@ -4079,9 +3890,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"userId\":\"admin\",\"role\":\"owner\"}",
@@ -4121,9 +3930,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/contacts/{{contactUid}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/contacts/{{contactUid}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"role\":\"reviewer\"}",
@@ -4162,9 +3969,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/{{contactUid}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/{{contactUid}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"role\":\"hijacked\"}",
@@ -4218,9 +4023,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/{{contactUid}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/{{contactUid}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"role\":\"reviewer\"}",
@@ -4258,9 +4061,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/contacts/{{contactUid}}/objects"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/contacts/{{contactUid}}/objects"
 					},
 					"event": [
 						{
@@ -4290,9 +4091,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/contacts/t25-no-such-contact/objects"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/contacts/t25-no-such-contact/objects"
 					},
 					"event": [
 						{
@@ -4322,9 +4121,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/contacts/{{contactUid}}/objects"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/contacts/{{contactUid}}/objects",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -4368,9 +4165,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/{{contactUid}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/{{contactUid}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -4415,9 +4210,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts"
 					},
 					"event": [
 						{
@@ -4446,9 +4239,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/t25-no-such-contact"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/t25-no-such-contact"
 					},
 					"event": [
 						{
@@ -4478,9 +4269,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/{{contactUid}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/{{contactUid}}"
 					},
 					"event": [
 						{
@@ -4515,9 +4304,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?search=admin"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?search=admin"
 					},
 					"event": [
 						{
@@ -4547,9 +4334,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search"
 					},
 					"event": [
 						{
@@ -4579,9 +4364,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?search=admin"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?search=admin",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -4626,9 +4409,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?search=admin"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?search=admin",
 						"auth": {
 							"type": "noauth"
 						}
@@ -4664,9 +4445,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails/list"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails/list"
 					},
 					"event": [
 						{
@@ -4696,9 +4475,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails/send"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails/send",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"to\":\"x@example.test\",\"subject\":\"s\",\"body\":\"b\"}",
@@ -4737,9 +4514,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails/direct/1"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails/direct/1"
 					},
 					"event": [
 						{
@@ -4769,9 +4544,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/emails/search?sender=a@example.test"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/emails/search?sender=a@example.test"
 					},
 					"event": [
 						{
@@ -4801,9 +4574,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/emails/search?sender=a@example.test"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/emails/search?sender=a@example.test",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -4848,9 +4619,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/emails/resolve"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/emails/resolve",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"inReplyTo\":\"<none@example.test>\"}",
@@ -4894,9 +4663,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails"
 					},
 					"event": [
 						{
@@ -4926,9 +4693,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/emails"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/emails"
 					},
 					"event": [
 						{
@@ -4958,9 +4723,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -5005,9 +4768,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"mailAccountId\":1,\"messageId\":\"<m@example.test>\"}",
@@ -5046,9 +4807,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/emails/1"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/emails/1"
 					},
 					"event": [
 						{
@@ -5078,9 +4837,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails/1"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails/1",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -5125,9 +4882,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/email/accounts"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/email/accounts"
 					},
 					"event": [
 						{
@@ -5157,9 +4912,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/email/accounts/1/mailboxes"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/email/accounts/1/mailboxes"
 					},
 					"event": [
 						{
@@ -5189,9 +4942,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/email/accounts/1/messages"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/email/accounts/1/messages"
 					},
 					"event": [
 						{
@@ -5226,9 +4977,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties"
 					},
 					"event": [
 						{
@@ -5258,9 +5007,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/parties"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/parties"
 					},
 					"event": [
 						{
@@ -5290,9 +5037,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -5337,9 +5082,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -5378,9 +5121,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"partyUuid\": \"{{obj2Uuid}}\", \"role\": \"applicant\"}",
@@ -5418,9 +5159,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"partyUuid\": \"{{obj2Uuid}}\", \"role\": \"intruder\"}",
@@ -5474,9 +5213,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/primary"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/primary",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -5515,9 +5252,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/primary"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/primary",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"partyUuid\": \"{{obj2Uuid}}\"}",
@@ -5571,9 +5306,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/primary"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/primary",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"partyUuid\": \"{{obj2Uuid}}\", \"role\": \"applicant\"}",
@@ -5611,9 +5344,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/parties/{{obj2Uuid}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/{{obj2Uuid}}"
 					},
 					"event": [
 						{
@@ -5642,9 +5373,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/parties/00000000-0000-4000-8000-000000000000"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/00000000-0000-4000-8000-000000000000"
 					},
 					"event": [
 						{
@@ -5674,9 +5403,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/parties/{{obj2Uuid}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/{{obj2Uuid}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -5721,9 +5448,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/parties/search?q=Beta"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/search?q=Beta"
 					},
 					"event": [
 						{
@@ -5753,9 +5478,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/parties/search"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/search"
 					},
 					"event": [
 						{
@@ -5785,9 +5508,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/parties/search?q=Beta"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/search?q=Beta",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -5831,9 +5552,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/parties/resolve"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/resolve"
 					},
 					"event": [
 						{
@@ -5863,9 +5582,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/parties/resolve?address=nobody-t25@example.test"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/resolve?address=nobody-t25@example.test"
 					},
 					"event": [
 						{
@@ -5895,9 +5612,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/{{obj2Uuid}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/{{obj2Uuid}}",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -5942,9 +5657,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties"
 					},
 					"event": [
 						{
@@ -5973,9 +5686,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/{{obj2Uuid}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/{{obj2Uuid}}"
 					},
 					"event": [
 						{
@@ -6009,9 +5720,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events"
 					},
 					"event": [
 						{
@@ -6041,9 +5750,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events"
 					},
 					"event": [
 						{
@@ -6073,9 +5780,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -6120,9 +5825,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -6161,9 +5864,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"summary\":\"x\"}",
@@ -6202,9 +5903,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"summary\":\"intruder\"}",
@@ -6258,9 +5957,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/link"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/link",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -6299,9 +5996,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events/link"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events/link",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"calendarUri\":\"personal\",\"eventUid\":\"x\"}",
@@ -6340,9 +6035,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/link"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/link",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"calendarUri\":\"personal\",\"eventUid\":\"x\"}",
@@ -6396,9 +6089,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events/t25-uid/link"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events/t25-uid/link"
 					},
 					"event": [
 						{
@@ -6428,9 +6119,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/t25-uid/link"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/t25-uid/link",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -6475,9 +6164,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events/t25-uid"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events/t25-uid"
 					},
 					"event": [
 						{
@@ -6507,9 +6194,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/t25-no-such-event"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/t25-no-such-event"
 					},
 					"event": [
 						{
@@ -6539,9 +6224,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/t25-uid"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/t25-uid",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -6586,9 +6269,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events"
 					},
 					"event": [
 						{
@@ -6618,9 +6299,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/calendar/calendars"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/calendar/calendars"
 					},
 					"event": [
 						{
@@ -6650,9 +6329,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/calendar/calendars"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/calendar/calendars",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -6697,9 +6374,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/calendar/calendars/t25-no-such-calendar/events"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/calendar/calendars/t25-no-such-calendar/events"
 					},
 					"event": [
 						{
@@ -6734,9 +6409,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck"
 					},
 					"event": [
 						{
@@ -6766,9 +6439,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"cardId\":1}",
@@ -6807,9 +6478,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck/new"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck/new",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"title\":\"x\",\"boardId\":1,\"stackId\":1}",
@@ -6848,9 +6517,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck/1"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck/1"
 					},
 					"event": [
 						{
@@ -6880,9 +6547,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/boards"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/boards"
 					},
 					"event": [
 						{
@@ -6912,9 +6577,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/boards/1/stacks"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/boards/1/stacks"
 					},
 					"event": [
 						{
@@ -6944,9 +6607,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}"
 					},
 					"event": [
 						{
@@ -6976,9 +6637,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -7017,9 +6676,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"boardId\":7,\"stackId\":9}",
@@ -7073,9 +6730,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}"
 					},
 					"event": [
 						{
@@ -7110,9 +6765,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck/cards"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck/cards"
 					},
 					"event": [
 						{
@@ -7142,9 +6795,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck/cards"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck/cards",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"boardId\":1,\"stackId\":1,\"title\":\"x\"}",
@@ -7183,9 +6834,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/deck/boards/1/objects"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/deck/boards/1/objects"
 					},
 					"event": [
 						{
@@ -7220,9 +6869,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/talk"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/talk"
 					},
 					"event": [
 						{
@@ -7252,9 +6899,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/talk"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/talk",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"token\":\"abc\"}",
@@ -7293,9 +6938,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/talk/new"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/talk/new",
 						"body": {
 							"mode": "raw",
 							"raw": "{\"name\":\"x\"}",
@@ -7334,9 +6977,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/talk/abc"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/talk/abc"
 					},
 					"event": [
 						{
@@ -7366,9 +7007,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/talk/rooms"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/talk/rooms"
 					},
 					"event": [
 						{
@@ -7398,9 +7037,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/integrations/talk/rooms"
-						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/talk/rooms",
 						"auth": {
 							"type": "basic",
 							"basic": [
@@ -7450,9 +7087,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{obj2Uuid}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{obj2Uuid}}"
 					},
 					"event": [
 						{
@@ -7480,9 +7115,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}"
 					},
 					"event": [
 						{
@@ -7510,9 +7143,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
 					},
 					"event": [
 						{
@@ -7540,9 +7171,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}"
-						}
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}"
 					},
 					"event": [
 						{
@@ -7570,9 +7199,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": {
-							"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{t25_user}}?format=json"
-						}
+						"url": "{{base_url}}/ocs/v2.php/cloud/users/{{t25_user}}?format=json"
 					},
 					"event": [
 						{
