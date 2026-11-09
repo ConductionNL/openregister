@@ -84,6 +84,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LifecycleSeed;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSourceChange;
 use OCA\OpenRegister\Service\Object\SaveObject\FolderBind;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
@@ -2057,11 +2058,7 @@ class SaveObject implements SaveObjectInterface {
 			message: '[SaveObject] UUID provided, checking for existing object'
 		);
 
-		$existingObject = $this->findAndValidateExistingObject(
-			uuid: $call->uuid,
-			register: $call->register,
-			schema: $call->schema
-		);
+		$existingObject = $this->findAndValidateExistingObject(call: $call);
 
 		if ($existingObject !== null) {
 			$this->refuseExistingWhenInsertOnly(call: $call, existingObject: $existingObject);
@@ -2485,9 +2482,7 @@ class SaveObject implements SaveObjectInterface {
 	 * validating the stored object never fails on the caller's permissions;
 	 * the caller's access to the write is decided elsewhere.
 	 *
-	 * @param string $uuid Object UUID.
-	 * @param Register|null $register Optional register for magic mapper routing.
-	 * @param Schema|null $schema Optional schema for magic mapper routing.
+	 * @param ObjectSaveCall $call The save call: the object UUID, and the optional register and schema for magic mapper routing.
 	 *
 	 * @return ObjectEntity|null Existing object or null if not found.
 	 *
@@ -2495,18 +2490,15 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function findAndValidateExistingObject(
-		string $uuid,
-		?Register $register = null,
-		?Schema $schema = null,
-	): ?ObjectEntity {
+	private function findAndValidateExistingObject(ObjectSaveCall $call): ?ObjectEntity {
+		$uuid = (string)$call->uuid;
 		try {
 			// Always disable RBAC and multitenancy for internal object lookup
 			// to avoid permission errors when validating existing objects.
 			$existingObject = $this->objectEntityMapper->find(
 				identifier: $uuid,
-				register: $register,
-				schema: $schema,
+				register: $call->register,
+				schema: $call->schema,
 				includeDeleted: false,
 				_rbac: false,
 				_multitenancy: false
@@ -3108,9 +3100,25 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
 	private function applyOwnerAttribution(ObjectEntity $objectEntity, bool $_unowned = false, ?string $_owner = null): void {
+		$owner = ($this->attributedOwner(_unowned: $_unowned, _owner: $_owner) ?? $this->ownerWithoutSession(objectEntity: $objectEntity));
+		if ($owner !== null) {
+			$objectEntity->setOwner($owner);
+		}
+	}//end applyOwnerAttribution()
+
+	/**
+	 * The owner a new object gets from the write itself: the explicit owner, the system identity, or the session user.
+	 *
+	 * @param bool        $_unowned Stamp the system identity even when a session exists.
+	 * @param string|null $_owner   An explicit owner; wins over the session and the system identity.
+	 *
+	 * @return string|null The owner, or null when there is no session and nothing was asked for.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function attributedOwner(bool $_unowned, ?string $_owner): ?string {
 		if ($_owner !== null && $_owner !== '') {
-			$objectEntity->setOwner($_owner);
-			return;
+			return $_owner;
 		}
 
 		// DELIBERATELY UNOWNED. The system identifier rather than an empty
@@ -3118,24 +3126,32 @@ class SaveObject implements SaveObjectInterface {
 		// REST list path's RBAC filter even for admins (openregister#1617), so
 		// "no owner" has to mean the system, not nobody.
 		if ($_unowned === true) {
-			$objectEntity->setOwner($this->organisationService->getSystemUserId());
-			return;
+			return $this->organisationService->getSystemUserId();
 		}
 
-		$user = $this->userSession->getUser();
-		if ($user !== null) {
-			$objectEntity->setOwner($user->getUID());
-			return;
-		}
+		return $this->userSession->getUser()?->getUID();
+	}//end attributedOwner()
 
+	/**
+	 * The owner a new object gets when there is no session: the system identity, unless it already has one.
+	 *
+	 * @param ObjectEntity $objectEntity Entity being prepared for creation.
+	 *
+	 * @return string|null The system identity, or null to keep the owner it has.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function ownerWithoutSession(ObjectEntity $objectEntity): ?string {
 		// No user session — only fall back to the system identifier when
 		// owner is genuinely missing (empty or null). An explicit non-empty
 		// owner (e.g. set by the caller) is preserved.
 		$currentOwner = $objectEntity->getOwner();
 		if ($currentOwner === null || $currentOwner === '') {
-			$objectEntity->setOwner($this->organisationService->getSystemUserId());
+			return $this->organisationService->getSystemUserId();
 		}
-	}//end applyOwnerAttribution()
+
+		return null;
+	}//end ownerWithoutSession()
 
 	/**
 	 * Prepares an object for update by applying all necessary transformations.
@@ -4381,13 +4397,13 @@ class SaveObject implements SaveObjectInterface {
 
 		if ($uuid === null || $uuid === '') {
 			$entity = $provider->insert(register: $register, schema: $schema, data: $data, config: $config);
-			$this->recordObjectSourceAudit(old: null, new: $entity, action: 'create', silent: $silent);
+			$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'create', old: null, new: $entity), silent: $silent);
 			return $entity;
 		}
 
 		$old = $provider->find(register: $register, schema: $schema, id: $uuid, config: $config);
 		$entity = $provider->update(register: $register, schema: $schema, id: $uuid, data: $data, config: $config);
-		$this->recordObjectSourceAudit(old: $old, new: $entity, action: 'update', silent: $silent);
+		$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'update', old: $old, new: $entity), silent: $silent);
 
 		return $entity;
 	}//end delegateObjectSourceWrite()
@@ -4398,25 +4414,23 @@ class SaveObject implements SaveObjectInterface {
 	 * An audit failure must never mask a successful external write; it degrades
 	 * to a structured secret-free warning.
 	 *
-	 * @param ObjectEntity|null $old The pre-write entity (null on create).
-	 * @param ObjectEntity $new The post-write entity.
-	 * @param string $action The action (`create`|`update`).
-	 * @param bool $silent Whether audit creation is suppressed.
+	 * @param ObjectSourceChange $change What the external write changed, and as which action.
+	 * @param bool               $silent Whether audit creation is suppressed.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function recordObjectSourceAudit(?ObjectEntity $old, ObjectEntity $new, string $action, bool $silent): void {
+	private function recordObjectSourceAudit(ObjectSourceChange $change, bool $silent): void {
 		if ($silent === true) {
 			return;
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrail(old: $old, new: $new, action: $action);
+			$this->auditTrailMapper->createAuditTrail(old: $change->old, new: $change->new, action: $change->action);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				'[SaveObject] audit trail for external ' . $action . ' on uuid ' . ((string)$new->getUuid()) . ' could not be recorded: ' . $e->getMessage(),
+				'[SaveObject] audit trail for external ' . $change->action . ' on uuid ' . ((string)$change->new->getUuid()) . ' could not be recorded: ' . $e->getMessage(),
 				['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
