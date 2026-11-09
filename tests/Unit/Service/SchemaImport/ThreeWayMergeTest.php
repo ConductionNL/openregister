@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\SchemaImport;
 
+use OCA\OpenRegister\Service\SchemaImport\MergeInstruction;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use PHPUnit\Framework\TestCase;
 
@@ -35,7 +36,7 @@ class ThreeWayMergeTest extends TestCase {
 		$current = ['email' => ['type' => 'string']];
 		$incoming = ['email' => ['type' => 'string', 'format' => 'email']];
 
-		$result = $this->merge->compute($baseline, $current, $incoming);
+		$result = $this->merge->compute(new MergeInstruction($baseline, $current, $incoming));
 
 		$this->assertSame(['email'], $result['changed']);
 		$this->assertSame('email', $result['merged']['email']['format']);
@@ -47,7 +48,7 @@ class ThreeWayMergeTest extends TestCase {
 		$current = ['email' => ['type' => 'string'], 'internalNote' => ['type' => 'string']];
 		$incoming = ['email' => ['type' => 'string']];
 
-		$result = $this->merge->compute($baseline, $current, $incoming);
+		$result = $this->merge->compute(new MergeInstruction($baseline, $current, $incoming));
 
 		$this->assertContains('internalNote', $result['keptLocal']);
 		$this->assertArrayHasKey('internalNote', $result['merged']);
@@ -58,7 +59,7 @@ class ThreeWayMergeTest extends TestCase {
 		$current = ['age' => ['type' => 'integer', 'minimum' => 0]];
 		$incoming = ['age' => ['type' => 'integer']];
 
-		$result = $this->merge->compute($baseline, $current, $incoming);
+		$result = $this->merge->compute(new MergeInstruction($baseline, $current, $incoming));
 
 		$this->assertContains('age', $result['keptLocal']);
 		$this->assertSame(0, $result['merged']['age']['minimum']);
@@ -69,7 +70,7 @@ class ThreeWayMergeTest extends TestCase {
 		$current = ['age' => ['type' => 'integer', 'minimum' => 0]];
 		$incoming = ['age' => ['type' => 'number']];
 
-		$result = $this->merge->compute($baseline, $current, $incoming);
+		$result = $this->merge->compute(new MergeInstruction($baseline, $current, $incoming));
 
 		$this->assertSame(['age'], $result['conflicts']);
 		$this->assertFalse($result['applied']);
@@ -82,7 +83,7 @@ class ThreeWayMergeTest extends TestCase {
 		$current = ['age' => ['type' => 'integer', 'minimum' => 0]];
 		$incoming = ['age' => ['type' => 'number']];
 
-		$result = $this->merge->compute($baseline, $current, $incoming, ['age']);
+		$result = $this->merge->compute(new MergeInstruction($baseline, $current, $incoming, ['age']));
 
 		$this->assertSame([], $result['conflicts']);
 		$this->assertTrue($result['applied']);
@@ -94,7 +95,7 @@ class ThreeWayMergeTest extends TestCase {
 		$current = ['deprecated' => ['type' => 'string']];
 		$incoming = [];
 
-		$result = $this->merge->compute($baseline, $current, $incoming);
+		$result = $this->merge->compute(new MergeInstruction($baseline, $current, $incoming));
 
 		$this->assertSame(['deprecated'], $result['removed']);
 	}
@@ -104,7 +105,7 @@ class ThreeWayMergeTest extends TestCase {
 		$current = [];
 		$incoming = ['newProp' => ['type' => 'string']];
 
-		$result = $this->merge->compute($baseline, $current, $incoming);
+		$result = $this->merge->compute(new MergeInstruction($baseline, $current, $incoming));
 
 		$this->assertSame(['newProp'], $result['added']);
 		$this->assertArrayHasKey('newProp', $result['merged']);
@@ -115,7 +116,7 @@ class ThreeWayMergeTest extends TestCase {
 		$current = ['p' => ['format' => 'uri', 'type' => 'string']];
 		$incoming = ['p' => ['type' => 'string', 'format' => 'uri']];
 
-		$result = $this->merge->compute($baseline, $current, $incoming);
+		$result = $this->merge->compute(new MergeInstruction($baseline, $current, $incoming));
 
 		// No change detected despite key ordering differences.
 		$this->assertSame([], $result['changed']);
