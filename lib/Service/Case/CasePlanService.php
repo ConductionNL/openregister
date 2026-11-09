@@ -868,11 +868,13 @@ class CasePlanService implements CasePlanServiceInterface {
 	 */
 	private function insertNode(CasePlanPlacement $placed, CasePlanInsertion $insertion): void {
 		$persisted = $this->store->items->insert($this->mechanics->definitions->rowFrom(placed: $placed, insertion: $insertion));
-		$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_IMPORT, causeRef: $insertion->provenance->flowUuid, actor: $insertion->actor, reason: null);
+		$flowUuid = $insertion->provenance->flowUuid;
+		$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_IMPORT, causeRef: $flowUuid, actor: $insertion->actor, reason: null);
 		$this->mechanics->machine->recordCreationOf(item: $persisted, why: $why);
 
+		$parentId = (int)$persisted->getId();
 		foreach (($placed->node['children'] ?? []) as $position => $child) {
-			$this->insertNode(placed: new CasePlanPlacement(node: $child, parentId: (int)$persisted->getId(), position: (int)$position), insertion: $insertion);
+			$this->insertNode(placed: new CasePlanPlacement(node: $child, parentId: $parentId, position: (int)$position), insertion: $insertion);
 		}
 	}//end insertNode()
 
@@ -919,9 +921,7 @@ class CasePlanService implements CasePlanServiceInterface {
 	 * Evaluate from a listener: a failure is logged, never rethrown into the
 	 * event that caused it.
 	 *
-	 * @param string $objectUuid The object.
-	 * @param string|null $event The event, when any.
-	 * @param array<string, mixed> $payload Its payload.
+	 * @param CasePlanTrigger $trigger The object, and the event with its payload when any.
 	 *
 	 * @return void
 	 *
