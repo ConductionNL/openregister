@@ -33,8 +33,12 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
+use OCA\OpenRegister\Service\Task\TaskCommit;
+use OCA\OpenRegister\Service\Task\TaskIntake;
+use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTables;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -70,15 +74,23 @@ class TaskServiceTimerOutcomeTest extends TestCase {
 
 	private function service(): TaskService {
 		return new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->createMock(TaskCandidateMapper::class),
-			relations: $this->createMock(TaskRelationMapper::class),
-			audits: $this->audits,
 			authorization: $this->createMock(TaskAuthorizationService::class),
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->createMock(IDBConnection::class),
-			logger: new NullLogger(),
-			builder: new TaskBuilder()
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->createMock(TaskCandidateMapper::class),
+					relations: $this->createMock(TaskRelationMapper::class),
+					audits: $this->audits
+				),
+				commit: new TaskCommit(
+					db: $this->createMock(IDBConnection::class),
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder()
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 	}//end service()
 

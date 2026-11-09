@@ -194,65 +194,62 @@ final class NotificationQueueFlushJob extends TimedJob {
 	 */
 	private function processGroup(array $rows, DateTimeImmutable $now): int {
 		$first = $rows[0];
-		$recipient = (string)$first->getRecipient();
 
 		// Window-active blocks the WHOLE group, regardless of digest state
 		// (window-overlap semantics: delivery waits for the later of
 		// quiet-hours-end and digest-due-time).
-		$window = $this->windowService->getForUser(userId: $recipient);
-		if ($window !== null && $this->windowService->isInsideWindow(window: $window, now: $now) === true) {
+		if ($this->insideWindow(recipient: (string)$first->getRecipient(), now: $now) === true) {
 			return 0;
 		}
 
 		$digest = $this->resolveDigestSpec(schemaId: (int)$first->getSchemaId(), ruleKey: (string)$first->getRuleKey());
 
-		$dueRows = $this->dueRows(rows: $rows, digest: $digest, now: $now);
+		// No digest schedule declared (or it was removed from the schema since
+		// the row was queued): the window has cleared, so every row is due.
+		$dueRows = $rows;
+		if ($digest !== null) {
+			$dueRows = array_values(
+				array_filter(
+					$rows,
+					fn (QueuedNotification $row): bool => $this->digestEvaluator->isDue(
+						digest: $digest,
+						enqueuedAt: DateTimeImmutable::createFromInterface($row->getCreatedAt()),
+						now: $now
+					)
+				)
+			);
+		}
+
 		if (count($dueRows) === 0) {
 			return 0;
 		}
 
-		return $this->flushRows(first: $first, recipient: $recipient, dueRows: $dueRows);
+		return $this->flushRows(first: $first, dueRows: $dueRows);
 	}//end processGroup()
 
 	/**
-	 * The rows of a group that are due now.
+	 * Whether the recipient's delivery window holds notifications back right now.
 	 *
-	 * @param array<int, QueuedNotification> $rows   Rows in the group.
-	 * @param array<string, mixed>|null      $digest The rule's digest block, or null.
-	 * @param DateTimeImmutable              $now    Logical "now" for this scan pass.
+	 * @param string            $recipient The group's recipient.
+	 * @param DateTimeImmutable $now       Logical "now" for this scan pass.
 	 *
-	 * @return list<QueuedNotification> The due rows.
+	 * @return bool True when inside an active window.
 	 */
-	private function dueRows(array $rows, ?array $digest, DateTimeImmutable $now): array {
-		$dueRows = [];
-		foreach ($rows as $row) {
-			if ($digest === null) {
-				// No digest schedule declared (or it was removed from the
-				// schema since the row was queued) — the window has
-				// cleared, so the row is due immediately.
-				$dueRows[] = $row;
-				continue;
-			}
+	private function insideWindow(string $recipient, DateTimeImmutable $now): bool {
+		$window = $this->windowService->getForUser(userId: $recipient);
 
-			$enqueuedAt = DateTimeImmutable::createFromInterface($row->getCreatedAt());
-			if ($this->digestEvaluator->isDue(digest: $digest, enqueuedAt: $enqueuedAt, now: $now) === true) {
-				$dueRows[] = $row;
-			}
-		}
-
-		return $dueRows;
-	}//end dueRows()
+		return $window !== null && $this->windowService->isInsideWindow(window: $window, now: $now) === true;
+	}//end insideWindow()
 
 	/**
 	 * Dispatch the due rows as one batch and delete them once dispatched.
 	 *
-	 * @param QueuedNotification             $first     The group's first row (rule key for the log).
-	 * @param string                         $recipient The group's recipient.
-	 * @param array<int, QueuedNotification> $dueRows   The due rows.
+	 * @param QueuedNotification             $first   The group's first row (rule key and recipient for the log).
+	 * @param array<int, QueuedNotification> $dueRows The due rows.
 	 *
 	 * @return int Number of rows flushed (0 when the dispatch failed).
 	 */
-	private function flushRows(QueuedNotification $first, string $recipient, array $dueRows): int {
+	private function flushRows(QueuedNotification $first, array $dueRows): int {
 		try {
 			$this->dispatcher->dispatchQueued(queuedRows: $dueRows);
 		} catch (\Throwable $e) {
@@ -260,7 +257,7 @@ final class NotificationQueueFlushJob extends TimedJob {
 				sprintf(
 					'[NotificationQueueFlushJob] dispatchQueued failed for rule="%s" recipient="%s": %s',
 					$first->getRuleKey(),
-					$recipient,
+					(string)$first->getRecipient(),
 					$e->getMessage()
 				)
 			);

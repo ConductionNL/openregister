@@ -185,8 +185,8 @@ class AnnotationNotificationDispatcherDeliveryWindowTest extends TestCase {
 		$capturedStatus = null;
 		$this->historyMapper->expects($this->atLeastOnce())
 			->method('record')
-			->willReturnCallback(function (string $ruleId, string $channel, string $recipient, string $status, ...$rest) use (&$capturedStatus) {
-				$capturedStatus = $status;
+			->willReturnCallback(function (\OCA\OpenRegister\Notifications\Db\HistoryEntry $entry) use (&$capturedStatus) {
+				$capturedStatus = $entry->delivery->status;
 				return new \OCA\OpenRegister\Notifications\Db\NotificationHistory();
 			});
 
