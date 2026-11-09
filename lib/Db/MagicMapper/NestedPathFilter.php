@@ -127,7 +127,21 @@ class NestedPathFilter {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
 	public function conditions(string $expression, mixed $value, callable $bind, bool $isPostgres): array {
-		$target = new NestedPathTarget(expression: $expression, bind: $bind, isPostgres: $isPostgres);
+		return self::targetConditions(target: new NestedPathTarget(expression: $expression, bind: $bind, isPostgres: $isPostgres), value: $value);
+
+	}//end conditions()
+
+	/**
+	 * The SQL conditions of one path filter on its target.
+	 *
+	 * @param NestedPathTarget $target The expression, its binder and the platform.
+	 * @param mixed            $value  The filter value: a scalar, a list, or an operator bag.
+	 *
+	 * @return list<string> The conditions, all of which must hold.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
+	 */
+	private static function targetConditions(NestedPathTarget $target, mixed $value): array {
 		if (is_array($value) === false) {
 			return [self::scalarCondition(target: $target, value: $value)];
 		}
@@ -142,7 +156,7 @@ class NestedPathFilter {
 			...self::presenceConditions(target: $target, value: $value),
 		];
 
-	}//end conditions()
+	}//end targetConditions()
 
 	/**
 	 * The condition of a value that is not a list or an operator bag.
