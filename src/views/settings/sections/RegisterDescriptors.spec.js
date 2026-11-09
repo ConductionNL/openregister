@@ -65,6 +65,26 @@ jest.mock('@nextcloud/vue', () => {
 	)
 })
 
+// The real CnDialog and CnDialogActions of the re-import question, drawn
+// with the @nextcloud/vue stand-ins above.
+jest.mock('@conduction/nextcloud-vue', () => ({
+	__esModule: true,
+	CnDialog: jest.requireActual(
+		'@conduction/nextcloud-vue/dist/esm/components/CnDialog/CnDialog.vue.js',
+	).default,
+	CnDialogActions: jest.requireActual(
+		'@conduction/nextcloud-vue/dist/esm/components/CnDialogActions/CnDialogActions.vue.js',
+	).default,
+}))
+jest.mock(
+	'@conduction/nextcloud-vue/dist/esm/components/CnIcon/CnIcon.vue.js',
+	() => ({ __esModule: true, default: { name: 'CnIcon', render: () => null } }),
+)
+jest.mock(
+	'@conduction/nextcloud-vue/dist/esm/components/CnDialogHeader/CnDialogHeader.vue.js',
+	() => ({ __esModule: true, default: { name: 'CnDialogHeader', render: () => null } }),
+)
+
 const ROW = {
 	appId: 'dossiq',
 	slug: 'dossiq',
