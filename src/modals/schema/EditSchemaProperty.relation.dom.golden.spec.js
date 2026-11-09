@@ -70,6 +70,8 @@ function mockStub(name) {
 				const plain = Object.fromEntries(
 					Object.entries(attrs)
 						.filter(([key]) => !/^on[A-Z]/.test(key))
+						// Function source differs when coverage instruments it.
+						.map(([key, value]) => [key, typeof value === 'function' ? '[function]' : value])
 						.map(([key, value]) => [key, typeof value === 'object' && value !== null ? JSON.stringify(value) : value]),
 				)
 				return render(

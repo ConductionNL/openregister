@@ -15,6 +15,13 @@ module.exports = {
 		'.+\\.(css|styl|less|sass|scss|png|jpg|ttf|woff|woff2)$':
 			'jest-transform-stub',
 	},
+	globals: {
+		'vue-jest': {
+			transform: {
+				'^js$': require('path').join(__dirname, 'tests/jest/vueScriptTransformer.js'),
+			},
+		},
+	},
 	moduleFileExtensions: ['js', 'json', 'vue', 'ts'],
 	testEnvironment: 'jest-environment-jsdom',
 	setupFiles: ['<rootDir>/tests/jest.setup.js'],
