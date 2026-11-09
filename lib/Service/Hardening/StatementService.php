@@ -164,7 +164,7 @@ class StatementService implements StatementServiceInterface {
 			(string)json_encode($statement)
 		);
 
-		$this->audit->record(fact: 'statement.published', before: $before, after: $version, accepted: true);
+		$this->audit->accepted(fact: 'statement.published', before: $before, after: $version);
 
 		return $statement;
 
@@ -180,7 +180,7 @@ class StatementService implements StatementServiceInterface {
 	public function withdraw(): void {
 		$before = ($this->published()['version'] ?? '');
 		$this->appConfig->setValueString(HardeningPolicy::APP_ID, self::STATEMENT_KEY, '');
-		$this->audit->record(fact: 'statement.withdrawn', before: $before, after: '', accepted: true);
+		$this->audit->accepted(fact: 'statement.withdrawn', before: $before, after: '');
 
 	}//end withdraw()
 
@@ -275,11 +275,10 @@ class StatementService implements StatementServiceInterface {
 		}
 
 		if (trim($version) !== $statement['version']) {
-			$this->audit->record(
+			$this->audit->refused(
 				fact: 'statement.accepted',
 				before: trim($version),
 				after: $statement['version'],
-				accepted: false,
 				refusal: 'The version accepted is not the version in force.',
 			);
 
@@ -300,15 +299,14 @@ class StatementService implements StatementServiceInterface {
 			(string)json_encode($acceptance)
 		);
 
-		$this->audit->record(
+		$this->audit->accepted(
 			fact: 'statement.accepted',
 			before: '',
 			after: [
 				'user' => $userId,
 				'version' => $acceptance['version'],
 				'acceptedAt' => $acceptance['acceptedAt'],
-			],
-			accepted: true,
+			]
 		);
 
 		return $acceptance;

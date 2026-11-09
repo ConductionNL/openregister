@@ -112,16 +112,13 @@ class StateHistoryProjectionListener implements IEventListener {
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	private function project(ObjectTransitionedEvent $event): void {
-		$uuid = (string)$event->getObject()->getUuid();
-		if ($uuid === '') {
+		if ((string)$event->getObject()->getUuid() === '') {
 			return;
 		}
 
 		$this->projector->record(
-			objectUuid: $uuid,
+			move: $event,
 			schema: $this->resolveSchema(event: $event),
-			register: $event->getRegister(),
-			to: $event->getTo(),
 			stampedAt: new DateTime()
 		);
 	}//end project()

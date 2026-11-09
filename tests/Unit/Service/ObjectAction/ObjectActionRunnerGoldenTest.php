@@ -17,6 +17,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\PropertyAlreadySetException;
@@ -52,7 +54,7 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 
 	private ObjectActionStepsFlow&MockObject $steps;
 
-	private ObjectActionAudit&MockObject $audit;
+	private AuditTrailMapperInterface&MockObject $trail;
 
 	private TransitionEngine&MockObject $transitions;
 
@@ -95,13 +97,16 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 		);
 		$this->steps = $this->createMock(ObjectActionStepsFlow::class);
 		$this->steps->method('flowFor')->willReturn('steps-flow');
-		$this->audit = $this->createMock(ObjectActionAudit::class);
-		$this->audit->method('record')->willReturnCallback(
-			function ($object, $definition, $outcome, $digest, $userId): void {
+		// The real ObjectActionAudit writes the entry, so the acting user is
+		// the one its gate reads: record() no longer takes a userId argument.
+		$this->trail = $this->createMock(AuditTrailMapperInterface::class);
+		$this->trail->method('createAuditTrailEntry')->willReturnCallback(
+			function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
 				$this->audited[] = array_combine(
 					['object', 'action', 'kind', 'run', 'inputsDigest', 'changes', 'outcome', 'userId'],
-					[$object, $definition->key, (string)$definition->kind, $outcome->run, $digest, $outcome->changes, $outcome->outcome, $userId]
+					[$object, $context['declaredAction'], $context['kind'], $context['run'], $context['inputsDigest'], $context['changes'], $context['outcome'], $actorId]
 				);
+				return new AuditTrail();
 			}
 		);
 		$this->transitions = $this->createMock(TransitionEngine::class);
@@ -128,7 +133,7 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 		$l10n->method('getLanguageCode')->willReturn('en');
 
 		$checks   = new ObjectActionRunnerChecks(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionGate($this->permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)), new ObjectActionInputs(new OasRequestValidator()));
-		$recorder = new ObjectActionRunRecorder($checks->inputs, $this->audit, $checks->gate);
+		$recorder = new ObjectActionRunRecorder($checks->inputs, new ObjectActionAudit($this->trail, $this->createMock(LoggerInterface::class), $checks->gate));
 
 		return new ObjectActionRunner(
 			$checks,

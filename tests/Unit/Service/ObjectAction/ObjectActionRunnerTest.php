@@ -104,7 +104,7 @@ class ObjectActionRunnerTest extends TestCase {
 		$l10n->method('getLanguageCode')->willReturn('nl');
 
 		$checks   = new ObjectActionRunnerChecks(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionGate($this->permissions, $session, $l10n, $this->elevation), new ObjectActionInputs(new OasRequestValidator()));
-		$recorder = new ObjectActionRunRecorder($checks->inputs, $this->audit, $checks->gate);
+		$recorder = new ObjectActionRunRecorder($checks->inputs, $this->audit);
 
 		return new ObjectActionRunner(
 			$checks,
@@ -265,8 +265,7 @@ class ObjectActionRunnerTest extends TestCase {
 					&& $outcome->changes === [['step' => 'Datum gezet', 'kind' => 'write']]
 					&& $outcome->outcome === 'completed'
 			),
-			$this->stringStartsWith('sha256:'),
-			'anna'
+			$this->stringStartsWith('sha256:')
 		);
 
 		$answer = $this->invoke('publish', ['from' => '2026-11-01']);

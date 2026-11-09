@@ -113,11 +113,10 @@ class ElevationService implements ElevationServiceInterface {
 	public function elevate(string $password): bool {
 		$user = $this->identity->userSession->getUser();
 		if ($user === null || $password === '') {
-			$this->audit->record(
+			$this->audit->refused(
 				fact: 'elevation.refused',
 				before: '',
 				after: '',
-				accepted: false,
 				refusal: 'No signed-in account, or no password given.',
 			);
 
@@ -126,11 +125,10 @@ class ElevationService implements ElevationServiceInterface {
 
 		$uid = $user->getUID();
 		if ($this->identity->users->checkPassword($uid, $password) === false) {
-			$this->audit->record(
+			$this->audit->refused(
 				fact: 'elevation.refused',
 				before: '',
 				after: $uid,
-				accepted: false,
 				refusal: 'The password was not confirmed.',
 			);
 
@@ -139,11 +137,10 @@ class ElevationService implements ElevationServiceInterface {
 
 		$now = $this->time->getTime();
 		$this->identity->session->set(self::SESSION_KEY, $now);
-		$this->audit->record(
+		$this->audit->accepted(
 			fact: 'elevation.granted',
 			before: '',
-			after: ['user' => $uid, 'periodSeconds' => $this->periodSeconds()],
-			accepted: true,
+			after: ['user' => $uid, 'periodSeconds' => $this->periodSeconds()]
 		);
 
 		return true;
@@ -227,11 +224,10 @@ class ElevationService implements ElevationServiceInterface {
 			return;
 		}
 
-		$this->audit->record(
+		$this->audit->refused(
 			fact: 'elevation.lapsed',
 			before: '',
 			after: ($this->identity->userSession->getUser()?->getUID() ?? ''),
-			accepted: false,
 			refusal: 'The administration write was refused: the elevated period had lapsed.',
 		);
 
