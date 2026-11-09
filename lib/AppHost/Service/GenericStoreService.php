@@ -58,9 +58,7 @@ namespace OCA\OpenRegister\AppHost\Service;
 
 use OCA\OpenRegister\AppHost\Store\StorePublishRules;
 use OCA\OpenRegister\Service\Security\SafeFetchUrl;
-use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
-use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -146,8 +144,7 @@ class GenericStoreService {
 	/**
 	 * Constructor.
 	 *
-	 * @param IClientService $clientService Nextcloud HTTP client factory.
-	 * @param IAppConfig $appConfig App config store (registry url / token / register).
+	 * @param StoreRegistryAccess $registry The HTTP client factory and the registry url / token / register config.
 	 * @param LoggerInterface $logger PSR logger — server-side diagnostics only.
 	 * @param StorePublishRules $publishRules The pure body and outcome rules of publish().
 	 * @param LocalStoreRegistry|null $localRegistry Reads a `local` registry from this instance.
@@ -155,8 +152,7 @@ class GenericStoreService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IClientService $clientService,
-		private readonly IAppConfig $appConfig,
+		private readonly StoreRegistryAccess $registry,
 		private readonly LoggerInterface $logger,
 		private readonly StorePublishRules $publishRules = new StorePublishRules(),
 		private readonly ?LocalStoreRegistry $localRegistry = null,
@@ -418,7 +414,7 @@ class GenericStoreService {
 	 */
 	private function registerSlug(StoreDescriptor $descriptor): string {
 		$register = trim(
-			$this->appConfig->getValueString($descriptor->appId, 'registry_register', $descriptor->defaultRegister)
+			$this->registry->appConfig->getValueString($descriptor->appId, 'registry_register', $descriptor->defaultRegister)
 		);
 
 		if ($register === '') {
@@ -463,7 +459,7 @@ class GenericStoreService {
 		}
 
 		$headers = (array)($options['headers'] ?? []);
-		$token = trim($this->appConfig->getValueString($descriptor->appId, 'registry_token', ''));
+		$token = trim($this->registry->appConfig->getValueString($descriptor->appId, 'registry_token', ''));
 		if ($token !== '') {
 			$headers['Authorization'] = 'Bearer ' . $token;
 		}
@@ -475,7 +471,7 @@ class GenericStoreService {
 		$options['allow_redirects'] = false;
 
 		try {
-			$client = $this->clientService->newClient();
+			$client = $this->registry->clientService->newClient();
 			if ($method === 'POST') {
 				return $client->post($url, $options);
 			}
@@ -579,6 +575,6 @@ class GenericStoreService {
 	 * @return string
 	 */
 	private function registryUrl(StoreDescriptor $descriptor): string {
-		return $this->appConfig->getValueString($descriptor->appId, 'registry_url', '');
+		return $this->registry->appConfig->getValueString($descriptor->appId, 'registry_url', '');
 	}//end registryUrl()
 }//end class

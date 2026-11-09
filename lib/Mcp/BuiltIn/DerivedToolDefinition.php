@@ -25,8 +25,9 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 use OCA\OpenRegister\Db\Schema;
 
 /**
- * One schema-derived tool being described: the schema, its slug, the verb,
- * that verb's dialect config and the namespaced tool id.
+ * One schema-derived tool being described: the schema, its slug, the verb
+ * and that verb's dialect config. The namespaced tool id is derived from the
+ * slug and verb by the provider that owns the app id.
  */
 final readonly class DerivedToolDefinition {
 
@@ -37,14 +38,12 @@ final readonly class DerivedToolDefinition {
 	 * @param string               $slug       The schema's slug (id-tail).
 	 * @param string               $verb       One of {@see McpAnnotationValidator::VERBS}.
 	 * @param array<string, mixed> $verbConfig That verb's dialect config (description/scope/filters/hints).
-	 * @param string               $id         The fully-namespaced tool id.
 	 */
 	public function __construct(
 		public Schema $schema,
 		public string $slug,
 		public string $verb,
 		public array $verbConfig,
-		public string $id,
 	) {
 	}//end __construct()
 }//end class

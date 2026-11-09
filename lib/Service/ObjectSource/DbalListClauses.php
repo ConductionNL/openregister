@@ -23,7 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectSource;
 
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
-use OCA\OpenRegister\Db\LikeOperator;
+use OCA\OpenRegister\Db\LikeOperatorInterface;
+use OCA\OpenRegister\Db\LikeOperators;
 
 /**
  * Translates the OR query's filters, `_search` and sort onto one statement,
@@ -84,7 +85,7 @@ final class DbalListClauses {
 		}
 
 		if (self::isLikeFilter(value: $value) === true) {
-			$this->like(column: (string)$column, value: $value[LikeOperator::KEY]);
+			$this->like(column: (string)$column, value: $value[LikeOperatorInterface::KEY]);
 			return;
 		}
 
@@ -113,7 +114,7 @@ final class DbalListClauses {
 	 * @return bool
 	 */
 	private static function isLikeFilter(mixed $value): bool {
-		return is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true;
+		return is_array($value) === true && array_key_exists(LikeOperatorInterface::KEY, $value) === true;
 	}//end isLikeFilter()
 
 	/**
@@ -129,7 +130,7 @@ final class DbalListClauses {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function like(string $column, mixed $value): void {
-		$like = new LikeOperator(databasePlatform: $this->statement->connection->getDatabasePlatform());
+		$like = LikeOperators::forPlatform(databasePlatform: $this->statement->connection->getDatabasePlatform());
 		$placeholders = [];
 		foreach ($like->terms(value: $value) as $term) {
 			$placeholders[] = $this->statement->qb->createNamedParameter($like->pattern(term: $term));
