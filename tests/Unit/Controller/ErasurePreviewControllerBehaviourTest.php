@@ -57,7 +57,7 @@ class ErasurePreviewControllerBehaviourTest extends TestCase {
 	private function controller(array $params = []): ErasurePreviewController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(static fn (string $key): mixed => $params[$key] ?? null);
-		return new ErasurePreviewController('openregister', $request, new ErasurePreviewControllerServices($this->previews, $this->store, $this->runner));
+		return new ErasurePreviewController($request, new ErasurePreviewControllerServices($this->previews, $this->store, $this->runner));
 	}
 
 	private function record(string $uuid, string $status = 'pending'): ErasurePreview {

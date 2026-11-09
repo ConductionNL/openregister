@@ -149,7 +149,6 @@ class FlowRunReadsAccessGoldenTest extends TestCase {
 	 */
 	private function testRuns(): FlowTestRunController {
 		return FlowTestRunControllerFactory::create(
-			appName: 'openregister',
 			request: $this->request,
 			runner: $this->runner,
 			resolvers: $this->resolvers,

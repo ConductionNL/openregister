@@ -131,23 +131,38 @@ class AppImportJobRecorder {
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
 	 */
 	public function record(string $appId, string $importJobId, string $version, int $objectsWritten): bool {
-		$created = $this->auditTrailMapper->countByImportJobId(importJobId: $importJobId, action: 'create');
+		return $this->recordFinished(
+			job: new FinishedImportJob(appId: $appId, importJobId: $importJobId, version: $version, objectsWritten: $objectsWritten)
+		);
+	}//end record()
+
+	/**
+	 * Record a finished job for its app id when it created at least one traceable object.
+	 *
+	 * @param FinishedImportJob $job The job that ended.
+	 *
+	 * @return bool True when the job was recorded.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
+	 */
+	public function recordFinished(FinishedImportJob $job): bool {
+		$created = $this->auditTrailMapper->countByImportJobId(importJobId: $job->importJobId, action: 'create');
 		if ($created === 0) {
-			$this->warnWhenUntraceable(appId: $appId, importJobId: $importJobId, objectsWritten: $objectsWritten);
+			$this->warnWhenUntraceable(job: $job);
 			return false;
 		}
 
-		$jobs = $this->jobs(appId: $appId);
+		$jobs = $this->jobs(appId: $job->appId);
 		$jobs[] = [
-			'jobId' => $importJobId,
-			'version' => $version,
+			'jobId' => $job->importJobId,
+			'version' => $job->version,
 			'created' => $created,
 			'importedAt' => (new DateTimeImmutable())->format(DateTimeInterface::ATOM),
 		];
-		$this->store(appId: $appId, jobs: array_slice($jobs, -self::MAX_JOBS));
+		$this->store(appId: $job->appId, jobs: array_slice($jobs, -self::MAX_JOBS));
 
 		return true;
-	}//end record()
+	}//end recordFinished()
 
 	/**
 	 * The recorded jobs of an app id, oldest first.
@@ -264,18 +279,16 @@ class AppImportJobRecorder {
 	 * but it cannot be removed by job, and an empty list would read as
 	 * "nothing to remove" rather than "nothing was traced".
 	 *
-	 * @param string $appId          The app id the import ran under.
-	 * @param string $importJobId    The job id.
-	 * @param int    $objectsWritten How many objects the import reported writing.
+	 * @param FinishedImportJob $job The job that ended.
 	 *
 	 * @return void
 	 */
-	private function warnWhenUntraceable(string $appId, string $importJobId, int $objectsWritten): void {
-		if ($objectsWritten === 0) {
+	private function warnWhenUntraceable(FinishedImportJob $job): void {
+		if ($job->objectsWritten === 0) {
 			return;
 		}
 
-		if ($this->auditTrailMapper->countByImportJobId(importJobId: $importJobId, action: null) > 0) {
+		if ($this->auditTrailMapper->countByImportJobId(importJobId: $job->importJobId, action: null) > 0) {
 			return;
 		}
 
@@ -283,11 +296,11 @@ class AppImportJobRecorder {
 			message: sprintf(
 				'[AppImportJobRecorder] The import for %s wrote %d object(s) and none carries import job %s. '
 				. 'The audit trail is probably off, so this import cannot be removed by job.',
-				$appId,
-				$objectsWritten,
-				$importJobId
+				$job->appId,
+				$job->objectsWritten,
+				$job->importJobId
 			),
-			context: ['app' => 'openregister', 'importJobId' => $importJobId]
+			context: ['app' => 'openregister', 'importJobId' => $job->importJobId]
 		);
 	}//end warnWhenUntraceable()
 

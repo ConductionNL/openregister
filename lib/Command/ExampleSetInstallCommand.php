@@ -146,11 +146,11 @@ class ExampleSetInstallCommand extends Command {
 			$output->writeln('<comment>Skipped: '.$app.' is not enabled on this instance.</comment>');
 		}
 
-		$this->markDaily(set: (string) $plan['set'], input: $input, output: $output);
+		$output->writeln($this->markDaily(set: (string) $plan['set'], input: $input));
 
 		$adopt = array_values(array_filter(array_map('strval', (array) $input->getOption('adopt'))));
 		if ($input->getOption('check') === true) {
-			return $this->check(plan: $plan, adopt: $adopt, output: $output);
+			return $this->reportCheck(result: $this->installer->check(plan: $plan, adopt: $adopt), output: $output);
 		}
 
 		$password = '';
@@ -184,17 +184,16 @@ class ExampleSetInstallCommand extends Command {
 	/**
 	 * Mark or unmark the set for the daily refresh when `--daily` or `--no-daily` asks.
 	 *
-	 * @param string          $set    The set id.
-	 * @param InputInterface  $input  The command input.
-	 * @param OutputInterface $output The command output.
+	 * @param string         $set   The set id.
+	 * @param InputInterface $input The command input.
 	 *
-	 * @return void
+	 * @return array<int, string> The line naming the daily sets, or none when nothing was asked.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
-	private function markDaily(string $set, InputInterface $input, OutputInterface $output): void {
+	private function markDaily(string $set, InputInterface $input): array {
 		if ($this->daily === null || ($input->getOption('daily') !== true && $input->getOption('no-daily') !== true)) {
-			return;
+			return [];
 		}
 
 		$this->daily->mark(set: $set, daily: ($input->getOption('daily') === true));
@@ -203,20 +202,18 @@ class ExampleSetInstallCommand extends Command {
 			$sets = ['none'];
 		}
 
-		$output->writeln('Daily refresh: '.implode(', ', $sets));
+		return ['Daily refresh: '.implode(', ', $sets)];
 	}//end markDaily()
 
 	/**
-	 * Run only the check.
+	 * Report the outcome of a check-only run.
 	 *
-	 * @param array<string, mixed> $plan   The plan.
-	 * @param array<int, string>   $adopt  Adoptable account ids.
+	 * @param array<string, mixed> $result What the installer's check found.
 	 * @param OutputInterface      $output The command output.
 	 *
 	 * @return int 0 when nothing is refused, 1 otherwise.
 	 */
-	private function check(array $plan, array $adopt, OutputInterface $output): int {
-		$result = $this->installer->check(plan: $plan, adopt: $adopt);
+	private function reportCheck(array $result, OutputInterface $output): int {
 		foreach ($result['registers'] as $slug => $outcome) {
 			$output->writeln('Register '.$slug.': '.self::word(outcome: $outcome));
 		}
@@ -241,7 +238,7 @@ class ExampleSetInstallCommand extends Command {
 		);
 
 		return self::SUCCESS;
-	}//end check()
+	}//end reportCheck()
 
 	/**
 	 * Print refusals, one per line.
