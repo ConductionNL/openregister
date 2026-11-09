@@ -17,7 +17,7 @@ jest.mock('@nextcloud/l10n', () => ({
 	translatePlural: (app, one) => `n:${one}`,
 }))
 jest.mock('@nextcloud/vue', () => jest.requireActual('../../../tests/unit/support/ncGolden.js').ncLibrary())
-jest.mock('vue-material-design-icons/Merge.vue', () => ({ __esModule: true, default: { name: 'Merge', render: () => null } }), { virtual: true })
+jest.mock('vue-material-design-icons/Merge.vue', () => ({ __esModule: true, default: { name: 'Merge', render: () => null } }))
 jest.mock('./RangePager.vue', () => ({ __esModule: true, default: { name: 'RangePager', render: () => null } }))
 jest.mock('../../store/store.js', () => ({
 	qualityStore: {
