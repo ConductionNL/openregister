@@ -45,6 +45,8 @@ final readonly class RelatedRowBlockField {
 	 * Where the condition is written, as a caller would spell it: `path[name]`.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function label(): string {
 		return sprintf('%s[%s]', $this->path, $this->name);
