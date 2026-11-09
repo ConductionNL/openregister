@@ -391,8 +391,7 @@ class HandoffService implements HandoffServiceInterface {
 		$provenance = $this->buildProvenance(source: $plan->source, sourceSchema: $plan->sourceSchema);
 		$contractData = $this->providers->mappingEvaluator->evaluate(
 			mapping: (array)($plan->entry['mapping'] ?? []),
-			sourceData: $plan->source->getObject(),
-			provenance: $provenance
+			source: new HandoffMappingSource(data: $plan->source->getObject(), provenance: $provenance)
 		);
 
 		return $this->translateThroughBinding(provider: $provider, kindUri: $plan->kindUri(), contractData: $contractData);

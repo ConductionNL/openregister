@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace Unit\Service\Handoff;
 
 use OCA\OpenRegister\Service\Handoff\HandoffMappingEvaluator;
+use OCA\OpenRegister\Service\Handoff\HandoffMappingSource;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -63,12 +64,12 @@ class HandoffMappingEvaluatorTest extends TestCase {
 				'requester' => ['semanticRef' => 'client'],
 				'source' => ['provenance' => true],
 			],
-			sourceData: [
+			source: new HandoffMappingSource(data: [
 				'subject' => 'Kapotte lantaarnpaal',
 				'details' => 'Voor de deur',
 				'client' => '11111111-2222-3333-4444-555555555555',
 			],
-			provenance: self::PROVENANCE
+			provenance: self::PROVENANCE)
 		);
 
 		$this->assertSame('Kapotte lantaarnpaal', $result['title']);
@@ -88,11 +89,11 @@ class HandoffMappingEvaluatorTest extends TestCase {
 	public function testTemplateIsHtmlEscaped(): void {
 		$result = $this->evaluator->evaluate(
 			mapping: ['summary' => ['template' => '{{subject}}: {{ghost}} {{nested}}']],
-			sourceData: [
+			source: new HandoffMappingSource(data: [
 				'subject' => '<script>alert("x")</script>',
 				'nested' => ['not' => 'scalar'],
 			],
-			provenance: self::PROVENANCE
+			provenance: self::PROVENANCE)
 		);
 
 		$this->assertSame(
@@ -112,14 +113,14 @@ class HandoffMappingEvaluatorTest extends TestCase {
 		// Envelope shape: only the identifying UUID crosses.
 		$result = $this->evaluator->evaluate(
 			mapping: ['requester' => ['semanticRef' => 'client']],
-			sourceData: [
+			source: new HandoffMappingSource(data: [
 				'client' => [
 					'uuid' => '99999999-8888-7777-6666-555555555555',
 					'name' => 'Acme Gemeente BV',
 					'kvk' => '12345678',
 				],
 			],
-			provenance: self::PROVENANCE
+			provenance: self::PROVENANCE)
 		);
 
 		$this->assertSame('99999999-8888-7777-6666-555555555555', $result['requester']);
@@ -129,8 +130,8 @@ class HandoffMappingEvaluatorTest extends TestCase {
 		// Absent reference (anonymous walk-in) → field omitted entirely.
 		$result = $this->evaluator->evaluate(
 			mapping: ['requester' => ['semanticRef' => 'client']],
-			sourceData: ['subject' => 'Anoniem'],
-			provenance: self::PROVENANCE
+			source: new HandoffMappingSource(data: ['subject' => 'Anoniem'],
+			provenance: self::PROVENANCE)
 		);
 		$this->assertArrayNotHasKey('requester', $result);
 
@@ -150,10 +151,10 @@ class HandoffMappingEvaluatorTest extends TestCase {
 			],
 		];
 
-		$withValue = $this->evaluator->evaluate(mapping: $mapping, sourceData: ['priority' => 'hoog'], provenance: self::PROVENANCE);
+		$withValue = $this->evaluator->evaluate(mapping: $mapping, source: new HandoffMappingSource(data: ['priority' => 'hoog'], provenance: self::PROVENANCE));
 		$this->assertSame('hoog', $withValue['priority']);
 
-		$withoutValue = $this->evaluator->evaluate(mapping: $mapping, sourceData: [], provenance: self::PROVENANCE);
+		$withoutValue = $this->evaluator->evaluate(mapping: $mapping, source: new HandoffMappingSource(data: [], provenance: self::PROVENANCE));
 		$this->assertSame('normal', $withoutValue['priority']);
 
 	}//end testFromWithDefault()
@@ -167,8 +168,8 @@ class HandoffMappingEvaluatorTest extends TestCase {
 	public function testAbsentValuesAreOmitted(): void {
 		$result = $this->evaluator->evaluate(
 			mapping: ['priority' => ['from' => 'priority']],
-			sourceData: [],
-			provenance: self::PROVENANCE
+			source: new HandoffMappingSource(data: [],
+			provenance: self::PROVENANCE)
 		);
 
 		$this->assertSame([], $result);
