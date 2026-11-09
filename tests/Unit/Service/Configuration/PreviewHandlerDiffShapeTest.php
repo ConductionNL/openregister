@@ -32,7 +32,6 @@ use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewMappers;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Pins the exact rows, key order included, before the preview's helpers take value objects.
@@ -64,7 +63,6 @@ final class PreviewHandlerDiffShapeTest extends TestCase {
 
 		$this->handler = new PreviewHandler(
 			new PreviewMappers($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapper::class)),
-			$this->createMock(LoggerInterface::class),
 			$this->fetchHandler
 		);
 	}//end setUp()
