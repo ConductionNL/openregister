@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
+use OCA\OpenRegister\Repair\Support\SubscriptionMigrationRun;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -122,7 +123,7 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep {
 			return;
 		}
 
-		$migrated = $this->migrateAll(rows: $rows, prefs: $prefs, schemaMapper: $schemaMapper);
+		$migrated = $this->migrateAll(run: new SubscriptionMigrationRun(prefs: $prefs, schemaMapper: $schemaMapper), rows: $rows);
 
 		$output->info(sprintf('[OpenRegister] Migrated %d notification subscription override(s).', $migrated));
 		$this->markDone(appConfig: $appConfig);
@@ -169,16 +170,15 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep {
 	/**
 	 * Migrate every legacy subscription row.
 	 *
-	 * @param array<int, array<string, mixed>> $rows         The legacy rows.
-	 * @param NotificationPreferencesInterface $prefs        The preference service.
-	 * @param mixed                            $schemaMapper The schema mapper.
+	 * @param SubscriptionMigrationRun         $run  The preference service and schema mapper.
+	 * @param array<int, array<string, mixed>> $rows The legacy rows.
 	 *
 	 * @return int The number of overrides written.
 	 */
-	private function migrateAll(array $rows, NotificationPreferencesInterface $prefs, mixed $schemaMapper): int {
+	private function migrateAll(SubscriptionMigrationRun $run, array $rows): int {
 		$migrated = 0;
 		foreach ($rows as $row) {
-			$migrated += $this->migrateRow(row: $row, prefs: $prefs, schemaMapper: $schemaMapper);
+			$migrated += $this->migrateRow(run: $run, row: $row);
 		}
 
 		return $migrated;
@@ -187,36 +187,51 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep {
 	/**
 	 * Migrate one legacy subscription row to enabled overrides.
 	 *
-	 * @param array<string, mixed>             $row          The legacy row.
-	 * @param NotificationPreferencesInterface $prefs        The preference service.
-	 * @param mixed                            $schemaMapper The schema mapper.
+	 * @param SubscriptionMigrationRun $run The preference service and schema mapper.
+	 * @param array<string, mixed>     $row The legacy row.
 	 *
 	 * @return int The number of overrides written.
 	 */
-	private function migrateRow(array $row, NotificationPreferencesInterface $prefs, mixed $schemaMapper): int {
+	private function migrateRow(SubscriptionMigrationRun $run, array $row): int {
 		$userId = (string)($row['user_id'] ?? '');
-		$schemaId = ($row['schema_id'] ?? null);
-		if ($userId === '' || $schemaId === null) {
-			// Register-wide (schema_id NULL) subscriptions don't map to a
-			// single schema's keys; leave them for manual review.
-			return 0;
-		}
-
-		$schema = $this->findSchema(schemaMapper: $schemaMapper, schemaId: $schemaId);
-		if ($schema === null) {
-			return 0;
-		}
-
-		$config = ($schema->getConfiguration() ?? []);
-		$notifications = ($config['x-openregister-notifications'] ?? null);
-		if (is_array($notifications) === false) {
+		$schema = $this->subscribedSchema(run: $run, row: $row);
+		$notifications = ($schema?->getConfiguration() ?? [])['x-openregister-notifications'] ?? null;
+		if ($schema === null || is_array($notifications) === false) {
 			return 0;
 		}
 
 		$slug = (string)($schema->getSlug() ?? $schema->getId());
+		foreach (array_keys($notifications) as $key) {
+			$run->prefs->setOverride(
+				userId: $userId,
+				schemaSlug: $slug,
+				notificationKey: (string)$key,
+				override: ['enabled' => true]
+			);
+		}
 
-		return $this->enableAll(prefs: $prefs, userId: $userId, slug: $slug, keys: array_keys($notifications));
+		return count($notifications);
 	}//end migrateRow()
+
+	/**
+	 * The schema a row subscribes to, or null when the row does not map to one.
+	 *
+	 * Register-wide (schema_id NULL) subscriptions don't map to a single
+	 * schema's keys; they are left for manual review, as are rows without a user.
+	 *
+	 * @param SubscriptionMigrationRun $run The preference service and schema mapper.
+	 * @param array<string, mixed>     $row The legacy row.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function subscribedSchema(SubscriptionMigrationRun $run, array $row): ?Schema {
+		$schemaId = ($row['schema_id'] ?? null);
+		if ((string)($row['user_id'] ?? '') === '' || $schemaId === null) {
+			return null;
+		}
+
+		return $this->findSchema(schemaMapper: $run->schemaMapper, schemaId: $schemaId);
+	}//end subscribedSchema()
 
 	/**
 	 * Find the schema a row points at, or null when it cannot be read.
@@ -239,31 +254,6 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep {
 
 		return $schema;
 	}//end findSchema()
-
-	/**
-	 * Write an enabled override for every notification key of one schema.
-	 *
-	 * @param NotificationPreferencesInterface $prefs  The preference service.
-	 * @param string                           $userId The subscribing user.
-	 * @param string                           $slug   The schema slug (or id).
-	 * @param array<int, int|string>           $keys   The notification keys.
-	 *
-	 * @return int The number of overrides written.
-	 */
-	private function enableAll(NotificationPreferencesInterface $prefs, string $userId, string $slug, array $keys): int {
-		$written = 0;
-		foreach ($keys as $key) {
-			$prefs->setOverride(
-				userId: $userId,
-				schemaSlug: $slug,
-				notificationKey: (string)$key,
-				override: ['enabled' => true]
-			);
-			$written++;
-		}
-
-		return $written;
-	}//end enableAll()
 
 	/**
 	 * Persist the run-once marker so subsequent upgrades skip the migration (OPS-8).
