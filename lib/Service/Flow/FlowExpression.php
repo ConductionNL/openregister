@@ -80,22 +80,30 @@ class FlowExpression {
 	 *
 	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
 	 */
-	public static function dataFor(
-		array $item,
-		int $itemIndex = 0,
-		int $itemCount = 1,
-		array $context = [],
-	): array {
+	public static function dataFor(array $item, int $itemIndex = 0, int $itemCount = 1, array $context = []): array {
+		return self::documentFor(item: $item, options: new FlowExpressionDataOptions(itemIndex: $itemIndex, itemCount: $itemCount, context: $context));
+	}//end dataFor()
+
+	/**
+	 * The document an expression is evaluated against, for one item at its place in the list.
+	 *
+	 * @param array                     $item    The current item.
+	 * @param FlowExpressionDataOptions $options Its position, the list size and the run-level metadata.
+	 *
+	 * @return array<string, mixed> The data document.
+	 *
+	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 */
+	public static function documentFor(array $item, FlowExpressionDataOptions $options): array {
 		return [
 			'json' => (array)($item[FlowItems::JSON] ?? []),
 			'binary' => (array)($item[FlowItems::BINARY] ?? []),
-			'itemIndex' => $itemIndex,
-			'itemCount' => $itemCount,
-			'context' => $context,
+			'itemIndex' => $options->itemIndex,
+			'itemCount' => $options->itemCount,
+			'context' => $options->context,
 			'subject' => [],
 		];
-
-	}//end dataFor()
+	}//end documentFor()
 
 	/**
 	 * Evaluate an expression.
