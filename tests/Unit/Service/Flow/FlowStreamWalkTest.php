@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Service\Flow\FlowFiring;
 use OCA\OpenRegister\Service\Flow\FlowFiringResult;
+use OCA\OpenRegister\Service\Flow\ClaimPass;
+use OCA\OpenRegister\Service\Flow\FiringClaim;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
 use OCA\OpenRegister\Service\Flow\FlowStreamHalt;
@@ -153,7 +155,7 @@ class FlowStreamWalkTest extends TestCase {
 		$walk->begin(marking: ['p1' => 1, 'p2' => 1, 'p3' => 1]);
 
 		$walk->exhaust(id: 'a');
-		$this->claims->method('acquire')->willReturn(null);
+		$this->claims->method('claim')->willReturn(null);
 		$this->assertNull($walk->claim(id: 'b', transition: 'T', places: ['p2', 'q']));
 		$this->commit->method('closeStream')->willReturn([]);
 		$walk->park(halt: (new FlowStreamHalt(streamId: 'c', claimed: ['p3'], enabled: false))->because(reason: 'timer'), resumeAt: new DateTime('+1 hour'));
@@ -189,8 +191,11 @@ class FlowStreamWalkTest extends TestCase {
 		$walk = $this->walk();
 		$walk->begin(marking: ['p1' => 1]);
 
-		$this->claims->expects($this->once())->method('acquire')
-			->with('run-1', 'a', 'T', ['p1', 'q'], 'pass-1', null)
+		$this->claims->expects($this->once())->method('claim')
+			->with(
+				$this->equalTo(new FiringClaim(runUuid: 'run-1', streamId: 'a', transition: 'T', places: ['p1', 'q'])),
+				$this->equalTo(new ClaimPass(owner: 'pass-1', runCap: null))
+			)
 			->willReturn(['p1', 'q']);
 		$this->assertSame(['p1', 'q'], $walk->claim(id: 'a', transition: 'T', places: ['p1', 'q']));
 

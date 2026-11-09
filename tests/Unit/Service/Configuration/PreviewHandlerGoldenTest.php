@@ -28,11 +28,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
-use OCA\OpenRegister\Service\Configuration\PreviewMappers;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Runs previewConfigurationChanges() over a fixed corpus of remote documents
@@ -230,12 +229,11 @@ class PreviewHandlerGoldenTest extends TestCase {
 		);
 
 		$handler = new PreviewHandler(
-			mappers: new PreviewMappers(
-				registerMapper: $registerMapper,
-				schemaMapper: $schemaMapper,
-				objectMapper: $objectMapper
+			catalog: new SchemaCatalog(
+				registers: $registerMapper,
+				schemas: $schemaMapper,
+				tables: $objectMapper
 			),
-			logger: $this->createMock(LoggerInterface::class),
 			fetchHandler: $fetchHandler
 		);
 
