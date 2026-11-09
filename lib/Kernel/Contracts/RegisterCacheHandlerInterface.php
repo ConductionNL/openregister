@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\Registers
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -18,7 +18,7 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service\Registers;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The methods of RegisterCacheHandler that callers outside its component use.

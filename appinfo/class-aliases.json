@@ -1815,6 +1815,91 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\AppConfigurationImporterInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AppConfigurationImporterInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\AppRegisterImportRunnerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AppRegisterImportRunnerInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\SettingsServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SettingsServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\UserServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\UserServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\ApiVersion\\ApiCapabilitiesServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ApiCapabilitiesServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\ExternalLink\\ExternalLinkAnnotationValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ExternalLinkAnnotationValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Hinge\\HingeAnnotationValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\HingeAnnotationValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\History\\StateHistoryRebuildInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\StateHistoryRebuildInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Oas\\ProblemDetailsBuilderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ProblemDetailsBuilderInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Object\\DraftExpiryInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DraftExpiryInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Object\\DraftRemovalFrameInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DraftRemovalFrameInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Object\\SchemaUriResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SchemaUriResolverInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Quality\\QualityScorerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\QualityScorerInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Registers\\RegisterCacheHandlerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RegisterCacheHandlerInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Schemas\\SchemaCacheHandlerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SchemaCacheHandlerInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Db\\StateHistoryMapperInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\StateHistoryMapperInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\ChatFamilyControllerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ChatFamilyControllerInterface",
+			"eager": false,
+			"service": true
 		}
 	}
 }

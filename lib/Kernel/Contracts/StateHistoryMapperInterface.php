@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Db
- * @package  OCA\OpenRegister\Db
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Db;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use DateTimeInterface;
 use OCP\AppFramework\Db\Entity;

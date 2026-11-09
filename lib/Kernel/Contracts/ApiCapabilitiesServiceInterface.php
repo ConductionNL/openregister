@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\ApiVersion
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\ApiVersion;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The capability documents the API surface endpoint serves.

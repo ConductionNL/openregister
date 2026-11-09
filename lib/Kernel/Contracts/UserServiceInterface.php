@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use InvalidArgumentException;
 use OCP\IUser;

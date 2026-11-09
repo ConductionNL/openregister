@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\ExternalLink
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\ExternalLink;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Declares only what callers outside the component use of ExternalLinkAnnotationValidator; the rest

@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenRegister\Controller\Support
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller\Support;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Marker for the chat-family controllers ChatCompatMiddleware decorates and may
