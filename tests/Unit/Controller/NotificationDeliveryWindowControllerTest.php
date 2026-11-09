@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Notifications\Controller\NotificationDeliveryWindowController;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationDeliveryWindowControllerServices;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
 use OCP\IConfig;
 use OCP\IRequest;
@@ -36,10 +37,8 @@ class NotificationDeliveryWindowControllerTest extends TestCase {
 		// rather than asserting on mock call shapes only.
 		$this->windowService = new NotificationDeliveryWindowService($config, null);
 		$this->controller = new NotificationDeliveryWindowController(
-			'openregister',
 			$this->request,
-			$this->windowService,
-			$this->userSession
+			new NotificationDeliveryWindowControllerServices($this->windowService, $this->userSession)
 		);
 
 		$store = [];
@@ -81,10 +80,8 @@ class NotificationDeliveryWindowControllerTest extends TestCase {
 		$request->method('getParams')->willReturn($params);
 
 		$controller = new NotificationDeliveryWindowController(
-			'openregister',
 			$request,
-			$this->windowService,
-			$this->userSession
+			new NotificationDeliveryWindowControllerServices($this->windowService, $this->userSession)
 		);
 
 		return $controller->update();
