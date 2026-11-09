@@ -45,8 +45,6 @@ use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCP\IL10N;
-use OCP\IURLGenerator;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
 use UnexpectedValueException;
@@ -85,16 +83,14 @@ class IterateNode extends LogicNodeBase implements IFlowNode, IterateNodeInterfa
 	 * reads from that same registry, so constructor injection would close a
 	 * cycle while the registry is still being populated.
 	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 * @param ContainerInterface $container Resolves the step dispatcher lazily.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
+	 * @param ContainerInterface   $container    Resolves the step dispatcher lazily.
 	 */
 	public function __construct(
-		IL10N $l10n,
-		IURLGenerator $urls,
+		FlowNodePresentation $presentation,
 		private readonly ContainerInterface $container,
 	) {
-		parent::__construct(l10n: $l10n, urls: $urls);
+		parent::__construct(l10n: $presentation->l10n, urls: $presentation->urls);
 	}//end __construct()
 
 	/**

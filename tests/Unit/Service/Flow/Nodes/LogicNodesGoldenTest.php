@@ -107,7 +107,7 @@ final class LogicNodesGoldenTest extends TestCase {
 			new ExplodeNode(l10n: $l10n, urls: $urls),
 			new FilterNode(l10n: $l10n, urls: $urls),
 			new FlowStateNode(l10n: $l10n, urls: $urls),
-			new IterateNode($l10n, $urls, $this->createMock(ContainerInterface::class)),
+			new IterateNode(new FlowNodePresentation(l10n: $l10n, urls: $urls), $this->createMock(ContainerInterface::class)),
 			new MapNode(
 				l10n: $l10n,
 				urls: $urls,
