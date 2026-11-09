@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
+use OCA\OpenRegister\BackgroundJob\DestructionExecutionJobInterface;
 use OCA\OpenRegister\Controller\Support\DestructionListApproval;
 use OCA\OpenRegister\Controller\Support\RetentionControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
@@ -280,7 +280,7 @@ class RetentionController extends Controller {
 		$approval->listData['status'] = 'approved';
 		$listObject->setObject($approval->listData);
 		$this->objectMapper->update($listObject);
-		$this->jobList->add(DestructionExecutionJob::class, ['destructionListUuid' => $approval->id]);
+		$this->jobList->add(DestructionExecutionJobInterface::JOB_CLASS, [DestructionExecutionJobInterface::ARGUMENT_LIST_UUID => $approval->id]);
 		$objectCount = count($approval->listData['objects']);
 		$excludedCount = count($approval->listData['excluded'] ?? []);
 		$this->auditMapper->createAuditTrailEntry(
