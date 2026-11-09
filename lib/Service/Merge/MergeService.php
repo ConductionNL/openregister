@@ -246,9 +246,9 @@ class MergeService implements ObjectMergerInterface {
 		$schema = $this->loadSchema(object: $intoObject);
 		$config = $this->getMergeConfig(schema: $schema);
 
-		$this->guardFullyReadable(fromObject: $fromObject, intoObject: $intoObject, schema: $schema);
+		$pair = new MergePair(fromObject: $fromObject, intoObject: $intoObject, schema: $schema, config: $config);
+		$this->guardFullyReadable(pair: $pair);
 
-		$pair       = new MergePair(fromObject: $fromObject, intoObject: $intoObject, schema: $schema, config: $config);
 		$resolution = $this->recomputeSurvivor(pair: $pair);
 
 		$now = new DateTimeImmutable();
@@ -314,7 +314,8 @@ class MergeService implements ObjectMergerInterface {
 		$schema = $this->loadSchema(object: $intoObject);
 		$config = $this->getMergeConfig(schema: $schema);
 
-		$this->guardFullyReadable(fromObject: $fromObject, intoObject: $intoObject, schema: $schema);
+		$pair = new MergePair(fromObject: $fromObject, intoObject: $intoObject, schema: $schema, config: $config);
+		$this->guardFullyReadable(pair: $pair);
 
 		$statusField = (string)($config['statusField'] ?? self::DEFAULT_STATUS_FIELD);
 		$survivorStatus = (string)($config['survivorStatus'] ?? self::DEFAULT_SURVIVOR_STATUS);
@@ -333,7 +334,6 @@ class MergeService implements ObjectMergerInterface {
 
 		$snapshot = $this->buildSnapshot(from: $fromObject, into: $intoObject);
 		$survivorshipConfig = $this->getSurvivorshipConfig(schema: $schema);
-		$pair = new MergePair(fromObject: $fromObject, intoObject: $intoObject, schema: $schema, config: $config);
 
 		// A decision map is turned into resolver OVERRIDES, which is the whole
 		// of design D-1: `SurvivorshipResolver::resolveGoldenRecord()` has
@@ -348,9 +348,7 @@ class MergeService implements ObjectMergerInterface {
 
 			$decidedOverrides = $this->overridesFromDecisions(
 				choices: $this->fieldChoices(pair: $pair, goldenRecord: $preMergeResolution['goldenRecord']),
-				decisions: $decisions,
-				decidedBy: $mergedBy,
-				reason: $reason
+				decision: new MergeDecision(decisions: $decisions, decidedBy: $mergedBy, reason: $reason)
 			);
 		}//end if
 
@@ -361,23 +359,13 @@ class MergeService implements ObjectMergerInterface {
 		$isReverseFk = $this->sourceRecordResolver->isReverseFk(config: $survivorshipConfig);
 		$relinkedCount = 0;
 		if ($isReverseFk === true) {
-			$reverseFkMoves = $this->relinkReverseFk(
-				fromUuid: $from,
-				intoUuid: $into,
-				config: $survivorshipConfig,
-				register: (string)$fromObject->getRegister()
-			);
+			$reverseFkMoves = $this->relinkReverseFk(pair: $pair);
 			$snapshot['reverseFkMoves'] = $reverseFkMoves;
 			$relinkedCount = count($reverseFkMoves);
 		}
 
 		if ($isReverseFk === false) {
-			$sourceLinkField = (string)($config['sourceLinkField'] ?? '');
-			$relinked = $this->relinkSourceRecords(
-				fromData: $fromData,
-				intoData: $intoData,
-				sourceLinkField: $sourceLinkField
-			);
+			$relinked = $this->relinkSourceRecords(pair: $pair);
 			$intoData = $relinked['intoData'];
 			$relinkedCount = $relinked['count'];
 		}
@@ -393,9 +381,10 @@ class MergeService implements ObjectMergerInterface {
 		);
 
 		// 3. Recompute the survivor over the combined source set, mark it active, persist.
-		$resolution = $this->recomputeSurvivor(
-			pair: $pair,
-			intoDataOverride: $intoData,
+		$resolution = $this->resolver->resolveGoldenRecord(
+			sourceRecords: $this->survivorSources(pair: $pair, intoData: $intoData),
+			config: $survivorshipConfig,
+			trust: $this->survivorTrust(pair: $pair),
 			overrides: $decidedOverrides
 		);
 
@@ -664,15 +653,19 @@ class MergeService implements ObjectMergerInterface {
 	 * Relink the losing object's source records onto the survivor's
 	 * `sourceLinkField`, returning the updated survivor payload + count.
 	 *
-	 * @param array<string, mixed> $fromData Losing object's payload.
-	 * @param array<string, mixed> $intoData Surviving object's payload.
-	 * @param string $sourceLinkField Field holding linked source records.
+	 * Both payloads are read as loaded; the field holding the linked source
+	 * records is the merge annotation's `sourceLinkField`.
+	 *
+	 * @param MergePair $pair Both objects and the `x-openregister-merge` annotation.
 	 *
 	 * @return array{intoData: array<string, mixed>, count: int}
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.3
 	 */
-	private function relinkSourceRecords(array $fromData, array $intoData, string $sourceLinkField): array {
+	private function relinkSourceRecords(MergePair $pair): array {
+		$fromData        = ($pair->fromObject->getObject() ?? []);
+		$intoData        = ($pair->intoObject->getObject() ?? []);
+		$sourceLinkField = (string)($pair->config['sourceLinkField'] ?? '');
 		if ($sourceLinkField === '') {
 			return ['intoData' => $intoData, 'count' => 0];
 		}
@@ -699,26 +692,30 @@ class MergeService implements ObjectMergerInterface {
 	 * per source object), returning the list of moves for the reversal
 	 * snapshot. Unresolvable/failed writes are logged and skipped.
 	 *
-	 * @param string $fromUuid Losing master uuid.
-	 * @param string $intoUuid Surviving master uuid.
-	 * @param array<string, mixed> $config Survivorship config (carrying the reverse-FK `sourceLink`).
-	 * @param string $register Master's register ref — the source register when the
-	 *                         annotation omits one (the magic-table query needs it).
+	 * The survivorship config (carrying the reverse-FK `sourceLink`) is the
+	 * pair's schema's; the losing master's register is the source register
+	 * when the annotation omits one (the magic-table query needs it).
+	 *
+	 * @param MergePair $pair The losing and surviving master, and their schema.
 	 *
 	 * @return array<int, array{sourceUuid: string, referenceField: string, prior: string}>
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#3.2
 	 */
-	private function relinkReverseFk(string $fromUuid, string $intoUuid, array $config, string $register): array {
-		$descriptor = $this->sourceRecordResolver->reverseFkDescriptor(config: $config);
+	private function relinkReverseFk(MergePair $pair): array {
+		$descriptor = $this->sourceRecordResolver->reverseFkDescriptor(
+			config: $this->getSurvivorshipConfig(schema: $pair->schema)
+		);
 		if ($descriptor === null) {
 			return [];
 		}
 
+		$fromUuid       = (string)$pair->fromObject->getUuid();
+		$intoUuid       = (string)$pair->intoObject->getUuid();
 		$referenceField = $descriptor['referenceField'];
 		$sourceRegister = $descriptor['sourceRegister'];
 		if ($sourceRegister === '') {
-			$sourceRegister = $register;
+			$sourceRegister = (string)$pair->fromObject->getRegister();
 		}
 
 		$filters = [
@@ -810,66 +807,82 @@ class MergeService implements ObjectMergerInterface {
 
 	/**
 	 * Recompute the survivor's golden record over the union of both objects'
-	 * linked source records, via the pure `SurvivorshipResolver`.
+	 * linked source records, via the pure `SurvivorshipResolver`, with no
+	 * per-property decisions applied.
 	 *
 	 * @param MergePair $pair Both objects, the resolved schema (survivorship config + trust rows)
 	 *                        and the `x-openregister-merge` annotation.
-	 * @param array<string, mixed>|null $intoDataOverride Already-relinked survivor payload, when available.
-	 * @param mixed $overrides Per-property decisions, forwarded to the resolver's own override map.
 	 *
 	 * @return array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>}
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.2
 	 */
-	private function recomputeSurvivor(MergePair $pair, ?array $intoDataOverride = null, mixed $overrides = null): array {
-		$fromObject = $pair->fromObject;
-		$intoObject = $pair->intoObject;
-		$schema     = $pair->schema;
-		$config     = $pair->config;
-		$survivorshipConfig = $this->getSurvivorshipConfig(schema: $schema);
-
-		$intoData = ($intoDataOverride ?? ($intoObject->getObject() ?? []));
-		$fromData = ($fromObject->getObject() ?? []);
-
-		// Resolve the union of both masters' source records via the mode-aware
-		// resolver. Embedded: reads each payload's `sourceLinkField`. Reverse-FK:
-		// queries each master's uuid — this is correct both for preview (the
-		// loser's sources still point at the loser) and after relink at execute
-		// time (they now point at the survivor; the loser query then yields
-		// none). A single-valued back-reference means no source is double-counted.
-		$sources = array_merge(
-			$this->sourceRecordResolver->resolveSources(
-				masterData: $intoData,
-				masterUuid: (string)$intoObject->getUuid(),
-				config: $survivorshipConfig,
-				masterRegister: (string)$intoObject->getRegister()
-			),
-			$this->sourceRecordResolver->resolveSources(
-				masterData: $fromData,
-				masterUuid: (string)$fromObject->getUuid(),
-				config: $survivorshipConfig,
-				masterRegister: (string)$fromObject->getRegister()
-			)
-		);
-
-		$entityType = (string)(
-			$config['entityType'] ?? $survivorshipConfig['entityType'] ?? ($schema?->getSlug() ?? '')
-		);
-
-		$trustRows = $this->loadTrustRows(entityType: $entityType);
-
+	private function recomputeSurvivor(MergePair $pair): array {
 		return $this->resolver->resolveGoldenRecord(
-			sourceRecords: $sources,
-			config: $survivorshipConfig,
-			trust: new SurvivorshipTrustLookup(
-				entityType: $entityType,
-				trustRows: $trustRows,
-				trustResolver: $this->trustResolver,
-				asOf: new DateTimeImmutable()
-			),
-			overrides: $overrides
+			sourceRecords: $this->survivorSources(pair: $pair, intoData: ($pair->intoObject->getObject() ?? [])),
+			config: $this->getSurvivorshipConfig(schema: $pair->schema),
+			trust: $this->survivorTrust(pair: $pair),
+			overrides: null
 		);
 	}//end recomputeSurvivor()
+
+	/**
+	 * The union of both masters' source records, via the mode-aware resolver.
+	 *
+	 * Embedded: reads each payload's `sourceLinkField`. Reverse-FK: queries
+	 * each master's uuid — this is correct both for preview (the loser's
+	 * sources still point at the loser) and after relink at execute time (they
+	 * now point at the survivor; the loser query then yields none). A
+	 * single-valued back-reference means no source is double-counted.
+	 *
+	 * @param MergePair            $pair     Both objects and their schema.
+	 * @param array<string, mixed> $intoData The survivor payload (already relinked at execute time).
+	 *
+	 * @return array<int, mixed> The source records.
+	 *
+	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.2
+	 */
+	private function survivorSources(MergePair $pair, array $intoData): array {
+		$survivorshipConfig = $this->getSurvivorshipConfig(schema: $pair->schema);
+
+		return array_merge(
+			$this->sourceRecordResolver->resolveSources(
+				masterData: $intoData,
+				masterUuid: (string)$pair->intoObject->getUuid(),
+				config: $survivorshipConfig,
+				masterRegister: (string)$pair->intoObject->getRegister()
+			),
+			$this->sourceRecordResolver->resolveSources(
+				masterData: ($pair->fromObject->getObject() ?? []),
+				masterUuid: (string)$pair->fromObject->getUuid(),
+				config: $survivorshipConfig,
+				masterRegister: (string)$pair->fromObject->getRegister()
+			)
+		);
+	}//end survivorSources()
+
+	/**
+	 * The trust lookup the resolver ranks the pair's source records with.
+	 *
+	 * @param MergePair $pair The pair; its annotation, survivorship block or schema slug names the entity type.
+	 *
+	 * @return SurvivorshipTrustLookup
+	 *
+	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.2
+	 */
+	private function survivorTrust(MergePair $pair): SurvivorshipTrustLookup {
+		$survivorshipConfig = $this->getSurvivorshipConfig(schema: $pair->schema);
+		$entityType         = (string)(
+			$pair->config['entityType'] ?? $survivorshipConfig['entityType'] ?? ($pair->schema?->getSlug() ?? '')
+		);
+
+		return new SurvivorshipTrustLookup(
+			entityType: $entityType,
+			trustRows: $this->loadTrustRows(entityType: $entityType),
+			trustResolver: $this->trustResolver,
+			asOf: new DateTimeImmutable()
+		);
+	}//end survivorTrust()
 
 	/**
 	 * Best-effort restoration of one object's snapshot state. Unresolvable
@@ -1015,9 +1028,8 @@ class MergeService implements ObjectMergerInterface {
 	 * upstream — and compares what they actually carry against what the caller
 	 * may read. The refusal names the properties and never their values.
 	 *
-	 * @param ObjectEntity $fromObject The object that would be merged away.
-	 * @param ObjectEntity $intoObject The object that would survive.
-	 * @param Schema|null $schema The schema both are read under.
+	 * @param MergePair $pair The object that would be merged away, the one that
+	 *                        would survive, and the schema both are read under.
 	 *
 	 * @return void
 	 *
@@ -1025,14 +1037,15 @@ class MergeService implements ObjectMergerInterface {
 	 *
 	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
 	 */
-	private function guardFullyReadable(ObjectEntity $fromObject, ObjectEntity $intoObject, ?Schema $schema): void {
+	private function guardFullyReadable(MergePair $pair): void {
+		$schema = $pair->schema;
 		if ($schema === null || $schema->hasPropertyAuthorization() === false) {
 			return;
 		}
 
 		$unreadable = array_merge(
-			$this->unreadablePropertiesOf(object: $fromObject, schema: $schema),
-			$this->unreadablePropertiesOf(object: $intoObject, schema: $schema)
+			$this->unreadablePropertiesOf(object: $pair->fromObject, schema: $schema),
+			$this->unreadablePropertiesOf(object: $pair->intoObject, schema: $schema)
 		);
 
 		$unreadable = array_values(array_unique($unreadable));
@@ -1046,11 +1059,7 @@ class MergeService implements ObjectMergerInterface {
 		// to be able to see that somebody tried to merge it and was refused,
 		// and an attempt recorded only on the loser is invisible from the one
 		// that survived.
-		$this->auditAttemptedMerge(
-			fromObject: $fromObject,
-			intoObject: $intoObject,
-			properties: $unreadable
-		);
+		$this->auditAttemptedMerge(pair: $pair, properties: $unreadable);
 
 		throw new MergeNotFullyReadableException(
 			message: sprintf(
@@ -1132,22 +1141,21 @@ class MergeService implements ObjectMergerInterface {
 	 * Best-effort: the merge is refused either way, and an audit writer that
 	 * is briefly unavailable must not turn a clean refusal into a 500.
 	 *
-	 * @param ObjectEntity $fromObject The object that would have been merged away.
-	 * @param ObjectEntity $intoObject The object that would have survived.
+	 * @param MergePair          $pair       The object that would have been merged away and the one that would have survived.
 	 * @param array<int, string> $properties The properties that caused the refusal.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
 	 */
-	private function auditAttemptedMerge(ObjectEntity $fromObject, ObjectEntity $intoObject, array $properties): void {
+	private function auditAttemptedMerge(MergePair $pair, array $properties): void {
 		$context = [
-			'from' => (string)$fromObject->getUuid(),
-			'into' => (string)$intoObject->getUuid(),
+			'from' => (string)$pair->fromObject->getUuid(),
+			'into' => (string)$pair->intoObject->getUuid(),
 			'refusedProperties' => $properties,
 		];
 
-		foreach ([$fromObject, $intoObject] as $subject) {
+		foreach ([$pair->fromObject, $pair->intoObject] as $subject) {
 			try {
 				$this->auditTrailMapper->createAuditTrailEntry(
 					object: $subject,
@@ -1258,7 +1266,7 @@ class MergeService implements ObjectMergerInterface {
 
 	/**
 	 * Refuse a decision map that does not describe the preview it claims to
-	 * approve, and otherwise turn it into resolver overrides.
+	 * approve.
 	 *
 	 * A map that names a property the preview never offered, or omits one it
 	 * did, is refused with 422 naming the properties, and nothing is written.
@@ -1267,19 +1275,17 @@ class MergeService implements ObjectMergerInterface {
 	 * at all, and the only way to know the two agreed is to insist that they
 	 * describe the same set.
 	 *
-	 * @param array<string, array<string, mixed>> $choices The preview's per-property offer.
-	 * @param array<string, mixed> $decisions The reviewer's map: property => 'from' | 'into'.
-	 * @param string $decidedBy Acting uid, recorded as the override's author.
-	 * @param string $reason The merge reason, recorded as the override's rationale.
+	 * @param array<string, array<string, mixed>> $choices  The preview's per-property offer.
+	 * @param MergeDecision                       $decision The reviewer's map, author and reason.
 	 *
-	 * @return array<string, array{value: mixed, overriddenBy: string, rationale: string}> Resolver overrides.
+	 * @return void
 	 *
 	 * @throws MergeDecisionException When the map and the preview disagree.
 	 *
 	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
 	 */
-	private function overridesFromDecisions(array $choices, array $decisions, string $decidedBy, string $reason): array {
-		$unknown = array_values(array_diff(array_keys($decisions), array_keys($choices)));
+	private function refuseMismatchedDecisions(array $choices, MergeDecision $decision): void {
+		$unknown = array_values(array_diff(array_keys($decision->decisions), array_keys($choices)));
 		if (count($unknown) > 0) {
 			sort($unknown, SORT_STRING);
 			throw new MergeDecisionException(
@@ -1288,7 +1294,7 @@ class MergeService implements ObjectMergerInterface {
 			);
 		}
 
-		$missing = array_values(array_diff(array_keys($choices), array_keys($decisions)));
+		$missing = array_values(array_diff(array_keys($choices), array_keys($decision->decisions)));
 		if (count($missing) > 0) {
 			sort($missing, SORT_STRING);
 			throw new MergeDecisionException(
@@ -1296,10 +1302,27 @@ class MergeService implements ObjectMergerInterface {
 				properties: $missing
 			);
 		}
+	}//end refuseMismatchedDecisions()
+
+	/**
+	 * Turn a decision map that describes the preview into resolver overrides.
+	 *
+	 * @param array<string, array<string, mixed>> $choices  The preview's per-property offer.
+	 * @param MergeDecision                       $decision The reviewer's map (property => 'from' | 'into'),
+	 *                                                      recorded with its author and rationale.
+	 *
+	 * @return array<string, array{value: mixed, overriddenBy: string, rationale: string}> Resolver overrides.
+	 *
+	 * @throws MergeDecisionException When the map and the preview disagree, or a decision names neither side.
+	 *
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 */
+	private function overridesFromDecisions(array $choices, MergeDecision $decision): array {
+		$this->refuseMismatchedDecisions(choices: $choices, decision: $decision);
 
 		$overrides = [];
-		$invalid = [];
-		foreach ($decisions as $property => $side) {
+		$invalid   = [];
+		foreach ($decision->decisions as $property => $side) {
 			if (in_array($side, ['from', 'into'], true) === false) {
 				$invalid[] = (string)$property;
 				continue;
@@ -1307,8 +1330,8 @@ class MergeService implements ObjectMergerInterface {
 
 			$overrides[(string)$property] = [
 				'value' => $choices[$property][$side],
-				'overriddenBy' => $decidedBy,
-				'rationale' => $reason,
+				'overriddenBy' => $decision->decidedBy,
+				'rationale' => $decision->reason,
 			];
 		}
 
