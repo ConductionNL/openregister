@@ -230,13 +230,10 @@ class UnlockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-step-takes-a-lock-or-parks-the-run-and-retries
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		if ($items === []) {
-			return $items;
+		if ($items !== []) {
+			$actor = $this->actorFor(config: $config, context: $context);
+			$this->unlockAll(actor: $actor, targets: $this->targetsOf(items: $items, config: $config));
 		}
-
-		$actor = $this->actorFor(config: $config, context: $context);
-		$targets = $this->lockContext->targets(items: $items, config: $config, refusal: $this->l10n->t(self::REFUSE_NO_TARGET));
-		$this->unlockAll(actor: $actor, targets: $targets);
 
 		return $items;
 	}//end execute()
@@ -263,6 +260,22 @@ class UnlockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 
 		return new UnlockActor(runUuid: $runUuid, owner: $owner);
 	}//end actorFor()
+
+	/**
+	 * The objects to unlock, refused when the items and the configuration name none.
+	 *
+	 * @param array $items  The incoming items.
+	 * @param array $config The step configuration.
+	 *
+	 * @return array<int, string> The object uuids.
+	 *
+	 * @throws RuntimeException When there is no target.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-step-takes-a-lock-or-parks-the-run-and-retries
+	 */
+	private function targetsOf(array $items, array $config): array {
+		return $this->lockContext->targets(items: $items, config: $config, refusal: $this->l10n->t(self::REFUSE_NO_TARGET));
+	}//end targetsOf()
 
 	/**
 	 * Release the run's lock on every target, as the run's identity.
