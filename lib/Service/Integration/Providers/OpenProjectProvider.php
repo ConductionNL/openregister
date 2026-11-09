@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Db\OpenProjectLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
@@ -138,16 +139,28 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-openproject/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->linkedOrSourced(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), filters: $filters);
+	}//end list()
+
+	/**
+	 * The object's work packages: the link table first, else the external source.
+	 *
+	 * @param ObjectRef           $ref     The owning object.
+	 * @param array<string,mixed> $filters Caller filters, passed to the source.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function linkedOrSourced(ObjectRef $ref, array $filters): array {
 		// Tier-2 path: read from the link table first.
-		$linked = $this->linkedRows(objectId: $objectId);
+		$linked = $this->linkedRows(objectId: $ref->id);
 		if (count($linked) > 0) {
 			return $linked;
 		}
 
 		// Fallback: query the external source through OpenConnector.
-		$query = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $filters);
+		$query = $this->contextQuery(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, filters: $filters);
 		return $this->listFromSource(query: $query);
-	}//end list()
+	}//end linkedOrSourced()
 
 	/**
 	 * The rows of the link table for an object; none when the table cannot be read.
