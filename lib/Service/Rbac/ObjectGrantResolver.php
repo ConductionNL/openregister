@@ -197,8 +197,6 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	 * @return array<string, int> Object UUID => core permission bitmask.
 	 */
 	private function resolve(string $userId): array {
-		$granted = [];
-
 		$manager = $this->shareManager();
 		if ($manager === null) {
 			// Fail CLOSED: an unreachable share manager means "no grants", which
@@ -211,16 +209,13 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 			return [];
 		}
 
+		$run = new ShareGrantRun(manager: $manager, userId: $userId);
 		foreach (self::PRINCIPAL_SHARE_TYPES as $shareType) {
-			$this->collectForType(
-				manager: $manager,
-				userId: $userId,
-				shareType: $shareType,
-				granted: $granted
-			);
+			$run->shareType = $shareType;
+			$this->collectForType(run: $run);
 		}
 
-		return $this->expandDownHierarchies(granted: $granted);
+		return $this->expandDownHierarchies(granted: $run->granted);
 	}//end resolve()
 
 	/**
@@ -404,23 +399,20 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	/**
 	 * Page through one share type, adding folder shares to the grant map.
 	 *
-	 * @param IManager $manager Core share manager.
-	 * @param string $userId The caller.
-	 * @param integer $shareType One of PRINCIPAL_SHARE_TYPES.
-	 * @param array<string, int> $granted Grant map, modified in place.
+	 * @param ShareGrantRun $run The manager, the caller, the share type, and the grant map it fills.
 	 *
 	 * @return void
 	 */
-	private function collectForType(IManager $manager, string $userId, int $shareType, array &$granted): void {
+	private function collectForType(ShareGrantRun $run): void {
 		$page = 0;
 		while ($page < self::MAX_PAGES) {
-			$shares = $this->readPage(manager: $manager, userId: $userId, shareType: $shareType, page: $page);
+			$shares = $this->readPage(run: $run, page: $page);
 			if (empty($shares) === true) {
 				return;
 			}
 
 			foreach ($shares as $share) {
-				$this->absorbShare(share: $share, granted: $granted);
+				$this->absorbShare(share: $share, run: $run);
 			}
 
 			if (count($shares) < self::PAGE_SIZE) {
@@ -435,7 +427,7 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'shareType' => $shareType,
+				'shareType' => $run->shareType,
 				'bound' => (self::PAGE_SIZE * self::MAX_PAGES),
 			]
 		);
@@ -444,18 +436,16 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	/**
 	 * Read one page of one share type, or nothing when the read failed.
 	 *
-	 * @param IManager $manager Core share manager.
-	 * @param string $userId The caller.
-	 * @param integer $shareType One of PRINCIPAL_SHARE_TYPES.
-	 * @param integer $page Zero-based page number.
+	 * @param ShareGrantRun $run  The manager, the caller and the share type.
+	 * @param integer       $page Zero-based page number.
 	 *
 	 * @return IShare[] The shares, empty when the type must be skipped.
 	 */
-	private function readPage(IManager $manager, string $userId, int $shareType, int $page): array {
+	private function readPage(ShareGrantRun $run, int $page): array {
 		try {
-			return $manager->getSharedWith(
-				$userId,
-				$shareType,
+			return $run->manager->getSharedWith(
+				$run->userId,
+				$run->shareType,
 				null,
 				self::PAGE_SIZE,
 				($page * self::PAGE_SIZE)
@@ -466,7 +456,7 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'shareType' => $shareType,
+					'shareType' => $run->shareType,
 					'exception' => $e->getMessage(),
 				]
 			);
@@ -477,12 +467,12 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	/**
 	 * Add one share to the grant map, when it is a folder share on an object.
 	 *
-	 * @param IShare $share The share.
-	 * @param array<string, int> $granted Grant map, modified in place.
+	 * @param IShare        $share The share.
+	 * @param ShareGrantRun $run   The run whose grant map takes the share.
 	 *
 	 * @return void
 	 */
-	private function absorbShare(IShare $share, array &$granted): void {
+	private function absorbShare(IShare $share, ShareGrantRun $run): void {
 		$uuid = $this->shareAttributes->objectUuidOf(share: $share);
 		if ($uuid === null) {
 			return;
@@ -491,8 +481,8 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 		// A caller may hold several grants on one object (directly and
 		// through a group). The widest wins, which is how core itself
 		// composes overlapping shares.
-		$existing = ($granted[$uuid] ?? 0);
-		$granted[$uuid] = ($existing | $share->getPermissions());
+		$existing = ($run->granted[$uuid] ?? 0);
+		$run->granted[$uuid] = ($existing | $share->getPermissions());
 
 		// Extension verbs ride in IShare's attribute bag (ADR-010), not
 		// in the permission integer, because core's bitmask has no room
