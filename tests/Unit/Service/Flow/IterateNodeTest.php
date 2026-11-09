@@ -31,6 +31,7 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -66,7 +67,7 @@ final class IterateNodeTest extends TestCase {
 		$l10n = $this->createMock(originalClassName: IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		return new IterateNode($l10n, $this->createMock(originalClassName: IURLGenerator::class), $container);
+		return new IterateNode(new FlowNodePresentation(l10n: $l10n, urls: $this->createMock(originalClassName: IURLGenerator::class)), $container);
 	}
 
 	/**
