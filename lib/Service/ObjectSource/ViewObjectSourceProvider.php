@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectSource;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -52,6 +53,13 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	private const RESERVED = ['limit', 'offset', 'page', 'sort', 'filters', 'extend', 'fields', 'register', 'schema'];
 
 	/**
+	 * Searches and counts the source table's rows.
+	 *
+	 * @var MagicTableRowReaderInterface
+	 */
+	private readonly MagicTableRowReaderInterface $rows;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ViewSourceMappers $mappers The view mapper and the schema catalog of the source tables.
@@ -63,6 +71,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 		private readonly ViewSourceMappers $mappers,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->rows = $mappers->catalog->tables();
 	}//end __construct()
 
 	/**
@@ -155,7 +164,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 			return [];
 		}
 
-		return $this->mappers->catalog->tables()->searchObjectsInRegisterSchemaTable(
+		return $this->rows->searchObjectsInRegisterSchemaTable(
 			query: self::withPaging(search: $source['query'], query: $request->query),
 			register: $source['register'],
 			schema: $source['schema']
@@ -199,7 +208,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 			return 0;
 		}
 
-		return $this->mappers->catalog->tables()->countObjectsInRegisterSchemaTable(
+		return $this->rows->countObjectsInRegisterSchemaTable(
 			query: $source['query'],
 			register: $source['register'],
 			schema: $source['schema']
