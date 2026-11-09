@@ -40,7 +40,9 @@ use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Service\WebhookRequestOptions;
+use OCA\OpenRegister\Service\WebhookDispatchServices;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Service\WebhookStores;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -123,12 +125,16 @@ class WebhookServiceTest extends TestCase {
 		$this->jobList = $this->createMock(IJobList::class);
 
 		$this->service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList
+			),
+			logger: $this->logger
 		);
 
 		$this->reflection = new \ReflectionClass($this->service);
@@ -410,13 +416,17 @@ class WebhookServiceTest extends TestCase {
 		// Create service WITH CloudEventFormatter.
 		$cloudEventFormatter = $this->createMock(CloudEventFormatter::class);
 		$service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList,
-			cloudEventFormatter: $cloudEventFormatter
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList,
+				cloudEventFormatter: $cloudEventFormatter
+			),
+			logger: $this->logger
 		);
 
 		$reflection = new \ReflectionClass($service);
@@ -606,13 +616,17 @@ class WebhookServiceTest extends TestCase {
 	public function testBuildPayloadWithNullMappingUsesCloudEventsWhenConfigured(): void {
 		$cloudEventFormatter = $this->createMock(CloudEventFormatter::class);
 		$service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList,
-			cloudEventFormatter: $cloudEventFormatter
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList,
+				cloudEventFormatter: $cloudEventFormatter
+			),
+			logger: $this->logger
 		);
 
 		$reflection = new \ReflectionClass($service);
@@ -1671,13 +1685,17 @@ class WebhookServiceTest extends TestCase {
 	public function testInterceptRequestWithCloudEventFormatter(): void {
 		$cloudEventFormatter = $this->createMock(CloudEventFormatter::class);
 		$service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList,
-			cloudEventFormatter: $cloudEventFormatter
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList,
+				cloudEventFormatter: $cloudEventFormatter
+			),
+			logger: $this->logger
 		);
 
 		$request = $this->createMock(\OCP\IRequest::class);
@@ -2175,13 +2193,17 @@ class WebhookServiceTest extends TestCase {
 	public function testInterceptRequestUsesCloudEventFormatterWhenAvailable(): void {
 		$cloudEventFormatter = $this->createMock(CloudEventFormatter::class);
 		$service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList,
-			cloudEventFormatter: $cloudEventFormatter
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList,
+				cloudEventFormatter: $cloudEventFormatter
+			),
+			logger: $this->logger
 		);
 
 		$webhook = $this->createTestWebhook(id: 1, enabled: true);

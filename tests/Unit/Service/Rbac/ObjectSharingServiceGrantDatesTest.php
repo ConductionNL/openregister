@@ -87,17 +87,10 @@ class ObjectSharingServiceGrantDatesTest extends TestCase {
 		$this->times = $this->createMock(ShareTimeWriter::class);
 
 		$this->sharing = new ObjectSharingService(
-			authorizationWriter: $this->createMock(ObjectAuthorizationWriter::class),
-			userSession: $session,
-			groupManager: $groups,
-			folders: $folders,
-			scopeResolver: new ObjectScopeResolver(),
-			grantResolver: $this->createMock(ObjectGrantResolver::class),
-			shareManager: $shares,
-			logger: new NullLogger(),
-			inheritedGrants: $this->createMock(InheritedGrantLister::class),
-			grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
-			shareTimes: $this->times
+			shares: new \OCA\OpenRegister\Service\Rbac\ObjectShareSurface(folders: $folders, shareManager: $shares, shareTimes: $this->times),
+			records: new \OCA\OpenRegister\Service\Rbac\ObjectGrantRecords(authorizationWriter: $this->createMock(ObjectAuthorizationWriter::class), scopeResolver: new ObjectScopeResolver(), grantResolver: $this->createMock(ObjectGrantResolver::class), inheritedGrants: $this->createMock(InheritedGrantLister::class)),
+			context: new \OCA\OpenRegister\Service\Rbac\ObjectSharingContext(userSession: $session, groupManager: $groups, logger: new NullLogger()),
+			grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class))
 		);
 
 		$this->record = new ObjectEntity();
@@ -117,7 +110,7 @@ class ObjectSharingServiceGrantDatesTest extends TestCase {
 		$this->share->expects($this->once())->method('setShareTime')->with($sharedAt);
 		$this->times->expects($this->once())->method('stamp')->with(41, $sharedAt);
 
-		$grant = $this->sharing->grant(object: $this->record, type: 'group', shareWith: 'juridische-zaken', expiresAt: $expires, sharedAt: $sharedAt);
+		$grant = $this->sharing->grantWithTerms(object: $this->record, type: 'group', shareWith: 'juridische-zaken', terms: new \OCA\OpenRegister\Service\Rbac\GrantTerms(expiresAt: $expires, sharedAt: $sharedAt));
 
 		$this->assertSame(expected: 'ocinternal:41', actual: $grant['id']);
 	}//end testAGrantCarriesItsExpiryAndShareTime()
@@ -145,7 +138,7 @@ class ObjectSharingServiceGrantDatesTest extends TestCase {
 		$this->times->expects($this->never())->method('stamp');
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->sharing->grant(object: $this->record, type: 'group', shareWith: 'juridische-zaken', sharedAt: new DateTime('2026-10-06'));
+		$this->sharing->grantWithTerms(object: $this->record, type: 'group', shareWith: 'juridische-zaken', terms: new \OCA\OpenRegister\Service\Rbac\GrantTerms(sharedAt: new DateTime('2026-10-06')));
 	}//end testARefusedGrantWritesNoShareTime()
 
 	/**
