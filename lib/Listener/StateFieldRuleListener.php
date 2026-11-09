@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRulesInterface;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCP\EventDispatcher\Event;
@@ -495,11 +496,13 @@ class StateFieldRuleListener implements IEventListener {
 	 */
 	private function recordRefusal(ObjectEntity $object, string $slug, array $refusal): void {
 		$this->ruleRuns->record(
-			ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_STATE_FIELD_RULE, schemaSlug: $slug, key: (string)$refusal['state']),
-			schemaSlug: $slug,
-			trace: self::traceOf(refusal: $refusal),
-			objectUuid: ($object->getUuid() ?? null),
-			registerSlug: ($object->getRegister() ?? null)
+			subject: new RuleRunSubject(
+				ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_STATE_FIELD_RULE, schemaSlug: $slug, key: (string)$refusal['state']),
+				schemaSlug: $slug,
+				objectUuid: ($object->getUuid() ?? null),
+				registerSlug: ($object->getRegister() ?? null)
+			),
+			trace: self::traceOf(refusal: $refusal)
 		);
 	}//end recordRefusal()
 

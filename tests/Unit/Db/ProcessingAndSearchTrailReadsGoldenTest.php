@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\ProcessingLogMapper;
+use OCA\OpenRegister\Db\SearchTrailCriteria;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -110,7 +111,7 @@ final class ProcessingAndSearchTrailReadsGoldenTest extends TestCase {
 			foreach ([[null, false], ['org-1', false], [null, true], ['', true]] as [$org, $confidential]) {
 				$label = 'filtered ' . var_export($org, true) . ' confidential ' . var_export($confidential, true) . ': ' . $name;
 				$actual[$label] = $this->recorded(
-					fn () => count($this->processingLog()->findFiltered($filters, null, null, $org, $confidential)),
+					fn () => count($this->processingLog()->findFiltered($filters, new \OCA\OpenRegister\Db\ProcessingLogReadScope(null, null, $org, $confidential))),
 					[]
 				);
 			}
@@ -129,7 +130,7 @@ final class ProcessingAndSearchTrailReadsGoldenTest extends TestCase {
 		$actual['counts: no rows'] = $this->recorded(fn () => $this->processingLog()->countByActivity(), [[]]);
 
 		foreach (self::sortCases() as $name => $args) {
-			$actual['search trail: ' . $name] = $this->recorded(fn () => count($this->searchTrails()->findAll(...$args)), []);
+			$actual['search trail: ' . $name] = $this->recorded(fn () => count($this->searchTrails()->findAll(new SearchTrailCriteria(($args[2] ?? []), ($args[4] ?? null)), ($args[0] ?? null), ($args[1] ?? null), ($args[3] ?? []))), []);
 		}
 
 		if (getenv('UPDATE_GOLDEN') === '1') {

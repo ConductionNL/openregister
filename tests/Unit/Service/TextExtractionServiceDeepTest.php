@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
@@ -665,7 +666,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 			'embedding_provider' => null,
 		];
 
-		$chunk = $method->invoke($this->service, new ChunkSource('file', 42, 'admin', 'org1', 1000), $chunkData);
+		$chunk = $method->invoke($this->service, new ChunkSource('file', 42, new ChunkOwnership('admin', 'org1'), 1000), $chunkData);
 		$this->assertInstanceOf(Chunk::class, $chunk);
 		$this->assertEquals('file', $chunk->getSourceType());
 		$this->assertEquals(42, $chunk->getSourceId());

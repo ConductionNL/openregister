@@ -165,7 +165,6 @@ class ApiCallerMiddleware extends Middleware {
 		$path = $this->request->getPathInfo();
 		if (is_string($path) === true && $path !== '') {
 			$this->recorder->record(
-				principal: $this->recorder->principal(),
 				path: $path,
 				method: $this->request->getMethod(),
 				apiVersion: $this->servedVersion,

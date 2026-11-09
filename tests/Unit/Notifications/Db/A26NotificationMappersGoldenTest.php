@@ -38,7 +38,9 @@ use OCA\OpenRegister\Notifications\Db\ObjectPresenceMapper;
 use OCA\OpenRegister\Notifications\Db\ReferencePatternMapper;
 use OCA\OpenRegister\Notifications\Db\TextBlockMapper;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
+use OCA\OpenRegister\Notifications\Db\TimelineEntryScope;
 use OCA\OpenRegister\Notifications\Db\TimelineKindMapper;
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\AppFramework\Db\Entity;
@@ -217,13 +219,13 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'entry findByComment missing'    => [$entries, 'findByComment', [12], [[]], false],
 			'entry findForObject'            => [$entries, 'findForObject', ['o-1'], [[self::ROW]], false],
 			'entry findForObject public'     => [$entries, 'findForObject', ['o-1', 'public', 5, 10], [[]], false],
-			'entry search'                   => [$entries, 'search', ['50%_off'], [[self::ROW]], false],
-			'entry search narrowed'          => [$entries, 'search', ['x', ['o-1', 'o-2'], 'public', 'call', 900], [[]], false],
-			'entry search no objects'        => [$entries, 'search', ['x', []], [], false],
-			'entry search low limit'         => [$entries, 'search', ['x', null, null, null, 0], [[]], false],
-			'entry followUps'                => [$entries, 'findOpenFollowUps', [], [[self::ROW]], false],
-			'entry followUps narrowed'       => [$entries, 'findOpenFollowUps', [['o-1'], 'call', 3], [[]], false],
-			'entry followUps no objects'     => [$entries, 'findOpenFollowUps', [[]], [], false],
+			'entry search'                   => [$entries, 'search', ['50%_off', new TimelineEntryScope()], [[self::ROW]], false],
+			'entry search narrowed'          => [$entries, 'search', ['x', new TimelineEntryScope(['o-1', 'o-2'], 'call', 900), 'public'], [[]], false],
+			'entry search no objects'        => [$entries, 'search', ['x', new TimelineEntryScope([])], [], false],
+			'entry search low limit'         => [$entries, 'search', ['x', new TimelineEntryScope(null, null, 0)], [[]], false],
+			'entry followUps'                => [$entries, 'findOpenFollowUps', [new TimelineEntryScope()], [[self::ROW]], false],
+			'entry followUps narrowed'       => [$entries, 'findOpenFollowUps', [new TimelineEntryScope(['o-1'], 'call', 3)], [[]], false],
+			'entry followUps no objects'     => [$entries, 'findOpenFollowUps', [new TimelineEntryScope([])], [], false],
 			'entry deleteForObject'          => [$entries, 'deleteForObject', ['o-1'], [], false],
 			'entry deleteForComment'         => [$entries, 'deleteForComment', [12], [], false],
 			'kind findBySlug found'          => [$kinds, 'findBySlug', ['s'], [[self::ROW]], false],
@@ -289,11 +291,11 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'watcher countsByObject'         => [$watchers, 'countsByObject', [10], [self::ROWS_TWO], false],
 			'watcher countForObject'         => [$watchers, 'countForObject', ['o-1'], [[self::COUNT_ROW]], false],
 			'watcher countForObject none'    => [$watchers, 'countForObject', ['o-1'], [[]], false],
-			'watcher subscribe existing'     => [$watchers, 'subscribe', ['alice', 'o-1'], [[self::ROW]], false],
-			'watcher subscribe mute'         => [$watchers, 'subscribe', ['alice', 'o-1', null, null, false], [[self::ROW]], false],
-			'watcher subscribe insert'       => [$watchers, 'subscribe', ['alice', 'o-1', 'reg', 'sch', null], [[]], false],
-			'watcher subscribe race'         => [$racing, 'subscribe', ['alice', 'o-1', null, null, false], [[], [self::ROW]], false],
-			'watcher subscribe race lost'    => [$racing, 'subscribe', ['alice', 'o-1'], [[], []], false],
+			'watcher subscribe existing'     => [$watchers, 'subscribe', [self::follow('alice', 'o-1')], [[self::ROW]], false],
+			'watcher subscribe mute'         => [$watchers, 'subscribe', [self::follow('alice', 'o-1'), false], [[self::ROW]], false],
+			'watcher subscribe insert'       => [$watchers, 'subscribe', [self::follow('alice', 'o-1', 'reg', 'sch'), null], [[]], false],
+			'watcher subscribe race'         => [$racing, 'subscribe', [self::follow('alice', 'o-1'), false], [[], [self::ROW]], false],
+			'watcher subscribe race lost'    => [$racing, 'subscribe', [self::follow('alice', 'o-1')], [[], []], false],
 			'watcher unsubscribe'            => [$watchers, 'unsubscribe', ['alice', 'o-1'], [], false],
 			'watcher deleteByObject'         => [$watchers, 'deleteByObject', ['o-1'], [], false],
 			'presence findOne found'         => [$presence, 'findOne', ['alice', 'o-1'], [[self::ROW]], false],
@@ -358,4 +360,16 @@ class A26NotificationMappersGoldenTest extends TestCase {
 
 		return $value;
 	}//end render()
+
+	/**
+	 * An unsaved follow, built the way the mapper's callers build one.
+	 */
+	private static function follow(string $userId, string $objectUuid, ?string $register = null, ?string $schema = null): Watcher {
+		$follow = new Watcher();
+		$follow->setUserId($userId);
+		$follow->setObjectUuid($objectUuid);
+		$follow->setRegister($register);
+		$follow->setSchema($schema);
+		return $follow;
+	}//end follow()
 }//end class

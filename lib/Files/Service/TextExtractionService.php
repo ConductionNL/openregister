@@ -33,6 +33,7 @@ use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler;
@@ -40,6 +41,7 @@ use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionReaders;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionStorage;
+use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionSources;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor;
@@ -131,21 +133,35 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	private const FIXED_SIZE = 'FIXED_SIZE';
 
 	/**
+	 * The file and database stores.
+	 *
+	 * @var TextExtractionStorage
+	 */
+	private readonly TextExtractionStorage $storage;
+
+	/**
+	 * The object, schema and register mappers.
+	 *
+	 * @var TextExtractionObjects
+	 */
+	private readonly TextExtractionObjects $objects;
+
+	/**
 	 * Constructor
 	 *
-	 * @param TextExtractionStorage  $storage     The file and database stores.
+	 * @param TextExtractionSources  $sources     The file stores and the object mappers.
 	 * @param ChunkMapper            $chunkMapper The chunk store, passed on to ObjectHandler.
-	 * @param TextExtractionObjects  $objects     The object, schema and register mappers.
 	 * @param TextExtractionAnalysis $analysis    Entity recognition, settings, risk level and logging.
 	 * @param TextExtractionReaders  $readers     The document readers.
 	 */
 	public function __construct(
-		private readonly TextExtractionStorage $storage,
+		TextExtractionSources $sources,
 		private readonly ChunkMapper $chunkMapper,
-		private readonly TextExtractionObjects $objects,
 		private readonly TextExtractionAnalysis $analysis,
 		private readonly TextExtractionReaders $readers,
 	) {
+		$this->storage = $sources->storage;
+		$this->objects = $sources->objects;
 	}//end __construct()
 
 	/**
@@ -264,8 +280,10 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			source: new ChunkSource(
 				sourceType: 'file',
 				sourceId: $fileId,
-				owner: $payload['owner'] ?? null,
-				organisation: $payload['organisation'] ?? null,
+				ownership: new ChunkOwnership(
+					owner: $payload['owner'] ?? null,
+					organisation: $payload['organisation'] ?? null
+				),
 				sourceTimestamp: $sourceTimestamp
 			),
 			chunks: $chunks,
@@ -582,8 +600,10 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			source: new ChunkSource(
 				sourceType: 'object',
 				sourceId: $objectId,
-				owner: $payload['owner'],
-				organisation: $payload['organisation'],
+				ownership: new ChunkOwnership(
+					owner: $payload['owner'],
+					organisation: $payload['organisation']
+				),
 				sourceTimestamp: $sourceTimestamp
 			),
 			chunks: $chunks,
@@ -856,8 +876,10 @@ class TextExtractionService implements TextExtractionServiceInterface {
 				source: new ChunkSource(
 					sourceType: $source->sourceType,
 					sourceId: $source->sourceId,
-					owner: $payload['owner'] ?? null,
-					organisation: $payload['organisation'] ?? null,
+					ownership: new ChunkOwnership(
+						owner: $payload['owner'] ?? null,
+						organisation: $payload['organisation'] ?? null
+					),
 					sourceTimestamp: $source->sourceTimestamp
 				),
 				payload: $payload

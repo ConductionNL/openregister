@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use DateTime;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
@@ -119,15 +120,12 @@ class RuleRunRecorderTest extends TestCase {
 		$summaries = [];
 
 		$this->recorder(logEnabled: '', rows: $rows, summaries: $summaries)->record(
-			ruleId: 'lifecycleCondition:bezwaar:sluiten',
-			schemaSlug: 'bezwaar',
+			subject: new RuleRunSubject(ruleId: 'lifecycleCondition:bezwaar:sluiten', schemaSlug: 'bezwaar', objectUuid: 'uuid-1', registerSlug: 'zaken'),
 			trace: new RuleTrace(
 				verdict: RuleVocabulary::VERDICT_NO_MATCH,
 				operand: 'bedrag',
 				operandValue: '120'
-			),
-			objectUuid: 'uuid-1',
-			registerSlug: 'zaken'
+			)
 		);
 
 		$this->assertCount(expectedCount: 1, haystack: $rows);
@@ -153,8 +151,7 @@ class RuleRunRecorderTest extends TestCase {
 		$summaries = [];
 
 		$this->recorder(logEnabled: 'false', rows: $rows, summaries: $summaries)->record(
-			ruleId: 'calculation:bezwaar:uiterlijkeDatum',
-			schemaSlug: 'bezwaar',
+			subject: new RuleRunSubject(ruleId: 'calculation:bezwaar:uiterlijkeDatum', schemaSlug: 'bezwaar'),
 			trace: RuleTrace::fired()
 		);
 
@@ -176,8 +173,7 @@ class RuleRunRecorderTest extends TestCase {
 		$summaries = [];
 
 		$this->recorder(logEnabled: '', rows: $rows, summaries: $summaries)->record(
-			ruleId: 'calculation:bezwaar:uiterlijkeDatum',
-			schemaSlug: 'bezwaar',
+			subject: new RuleRunSubject(ruleId: 'calculation:bezwaar:uiterlijkeDatum', schemaSlug: 'bezwaar'),
 			trace: RuleTrace::errored(message: 'Unknown property "ontvangstdatum".')
 		);
 
@@ -205,8 +201,7 @@ class RuleRunRecorderTest extends TestCase {
 			summaries: $summaries,
 			summaryThrows: true
 		)->record(
-			ruleId: 'calculation:bezwaar:uiterlijkeDatum',
-			schemaSlug: 'bezwaar',
+			subject: new RuleRunSubject(ruleId: 'calculation:bezwaar:uiterlijkeDatum', schemaSlug: 'bezwaar'),
 			trace: RuleTrace::fired()
 		);
 
@@ -234,8 +229,7 @@ class RuleRunRecorderTest extends TestCase {
 		$moment = new DateTime('2026-03-04 05:06:07');
 
 		$this->recorder(logEnabled: '', rows: $rows, summaries: $summaries)->record(
-			ruleId: 'calculation:bezwaar:uiterlijkeDatum',
-			schemaSlug: 'bezwaar',
+			subject: new RuleRunSubject(ruleId: 'calculation:bezwaar:uiterlijkeDatum', schemaSlug: 'bezwaar'),
 			trace: RuleTrace::fired(),
 			moment: $moment
 		);

@@ -76,19 +76,8 @@ class RulesValueGoldenTest extends TestCase {
 	}//end testVocabulary()
 
 	public function testDescriptor(): void {
-		$full = new RuleDescriptor(
-			kind: RuleVocabulary::KIND_LIFECYCLE_CONDITION,
-			schemaSlug: 'bezwaar',
-			key: 'sluiten',
-			label: 'Sluiten',
-			source: 'x-openregister-lifecycle.transitions.sluiten.condition',
-			enabled: false,
-			actions: [RuleVocabulary::ACTION_REFUSE_TRANSITION],
-			condition: ['>' => [['var' => 'bedrag'], 5]],
-			maxObjects: 12,
-			scope: ['property' => 'zaaktype', 'value' => 'a']
-		);
-		$minimal = new RuleDescriptor(kind: 'other', schemaSlug: '', key: 'k', label: 'l', source: 's');
+		$full = new RuleDescriptor(origin: new \OCA\OpenRegister\Service\Rules\RuleOrigin(kind: RuleVocabulary::KIND_LIFECYCLE_CONDITION, schemaSlug: 'bezwaar', key: 'sluiten', source: 'x-openregister-lifecycle.transitions.sluiten.condition'), label: 'Sluiten', effect: new \OCA\OpenRegister\Service\Rules\RuleEffect(actions: [RuleVocabulary::ACTION_REFUSE_TRANSITION], condition: ['>' => [['var' => 'bedrag'], 5]], maxObjects: 12, scope: ['property' => 'zaaktype', 'value' => 'a']), enabled: false);
+		$minimal = new RuleDescriptor(origin: new \OCA\OpenRegister\Service\Rules\RuleOrigin(kind: 'other', schemaSlug: '', key: 'k', source: 's'), label: 'l');
 		$this->assertGolden(
 			'descriptor',
 			[

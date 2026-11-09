@@ -30,6 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\TranslationSlot;
+use OCA\OpenRegister\Db\TranslationEdit;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -301,13 +303,8 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 	private function upsertProperty(array $slot, array $byLanguage): void {
 		foreach ($byLanguage as $language => $stringValue) {
 			$this->translationMapper->upsert(
-				objectUuid: $slot['uuid'],
-				property: $slot['property'],
-				language: $language,
-				value: $stringValue,
-				status: null,
-				translator: $slot['translator'],
-				sourceLanguage: $slot['sourceLanguage']
+				slot: new TranslationSlot(objectUuid: $slot['uuid'], property: $slot['property'], language: $language),
+				edit: new TranslationEdit(value: $stringValue, status: null, translator: $slot['translator'], sourceLanguage: $slot['sourceLanguage'])
 			);
 		}
 	}//end upsertProperty()

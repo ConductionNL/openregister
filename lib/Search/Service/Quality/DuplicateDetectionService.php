@@ -171,7 +171,6 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * @param int|string $register Register id, uuid or slug — the boundary the schema resolves inside.
 	 * @param int|string $schema Schema id, uuid or slug.
 	 * @param array<string, mixed> $candidate The unsaved body.
-	 * @param array<int, mixed>|null $matchRules Optional caller-supplied rules; the annotation's when null.
 	 * @param float|null $threshold Optional cut-off; the annotation's, then {@see DedupRuleResolver::DEFAULT_THRESHOLD}, when null.
 	 *
 	 * @return array<int, array{
@@ -183,9 +182,9 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
-	public function checkCandidate($register, $schema, array $candidate, ?array $matchRules = null, ?float $threshold = null): array {
+	public function checkCandidate($register, $schema, array $candidate, ?float $threshold = null): array {
 		$run = $this->ruleResolver->resolve(
-			request: new DedupRun(register: $register, schema: $schema, matchRules: $matchRules, threshold: $threshold)
+			request: new DedupRun(register: $register, schema: $schema, threshold: $threshold)
 		);
 		if ($run === null) {
 			return [];

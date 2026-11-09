@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp\BuiltIn;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
@@ -257,15 +258,12 @@ class AttributeToolProviderTest extends TestCase {
 				string $toolId,
 				string $paramsDigest,
 				array $resultSummary,
-				?int $register,
-				?int $schema,
-				?int $object,
-				?string $objectUuid,
+				AuditedObject $about,
 			) use (&$capturedDigest) {
 				$capturedDigest = $paramsDigest;
 				$this->assertSame('pipelinq.createLead', $toolId);
 				$this->assertFalse($resultSummary['isError']);
-				$this->assertSame('lead-1', $objectUuid);
+				$this->assertSame('lead-1', $about->objectUuid);
 				return $this->createMock(AuditTrail::class);
 			});
 
@@ -287,10 +285,7 @@ class AttributeToolProviderTest extends TestCase {
 				$this->callback(function ($summary) {
 					return $summary['isError'] === true && $summary['errorClass'] === RuntimeException::class;
 				}),
-				null,
-				null,
-				null,
-				null
+				new AuditedObject(null, null, null, null)
 			)
 			->willReturn($this->createMock(AuditTrail::class));
 

@@ -67,7 +67,7 @@ use JsonSerializable;
  *         The repo carries the same suppression shape on VocabularyController,
  *         CodedValueGuard and DestructionScopeService for the same reason.
  */
-class ApiVersion implements JsonSerializable {
+class ApiVersion implements ApiVersionInterface, JsonSerializable {
 
 	/**
 	 * Served, and the answer to a caller that asks for no version in particular.
@@ -163,10 +163,7 @@ class ApiVersion implements JsonSerializable {
 	 * Constructor.
 	 *
 	 * @param string $id Version identifier, digits only.
-	 * @param string $status One of STATUSES.
-	 * @param string|null $deprecatedOn ISO 8601 date the deprecation took effect.
-	 * @param string|null $sunset ISO 8601 date the version stops answering.
-	 * @param string|null $successor Identifier of the version to move to.
+	 * @param ApiVersionLifecycle $lifecycle The status with its dates and successor.
 	 * @param array<int, string> $pathPrefixes Path prefixes this version serves.
 	 * @param string $description A sentence an administrator reads.
 	 *
@@ -176,17 +173,14 @@ class ApiVersion implements JsonSerializable {
 	 */
 	public function __construct(
 		string $id,
-		string $status,
-		?string $deprecatedOn = null,
-		?string $sunset = null,
-		?string $successor = null,
+		ApiVersionLifecycle $lifecycle,
 		array $pathPrefixes = ['/'],
 		string $description = '',
 	) {
 		$this->id = self::requireIdentifier(value: $id, field: 'id');
-		$this->status = self::requireStatus(value: $status);
-		$this->deprecatedOn = self::normaliseDate(value: $deprecatedOn, field: 'deprecatedOn');
-		$this->sunset = self::normaliseDate(value: $sunset, field: 'sunset');
+		$this->status = self::requireStatus(value: $lifecycle->status);
+		$this->deprecatedOn = self::normaliseDate(value: $lifecycle->deprecatedOn, field: 'deprecatedOn');
+		$this->sunset = self::normaliseDate(value: $lifecycle->sunset, field: 'sunset');
 
 		// Assigned through a helper rather than inline. Each of the three obvious
 		// spellings is refused by a different analyser: phpmd refuses the else,
@@ -194,7 +188,7 @@ class ApiVersion implements JsonSerializable {
 		// assignment it can prove always happens, and phpcs refuses the ternary.
 		// A helper that returns the value satisfies all three and reads better
 		// than any of them.
-		$this->successor = self::optionalIdentifier(value: $successor, field: 'successor');
+		$this->successor = self::optionalIdentifier(value: $lifecycle->successor, field: 'successor');
 
 		$this->pathPrefixes = self::normalisePrefixes(values: $pathPrefixes);
 		$this->description = trim($description);
@@ -222,15 +216,65 @@ class ApiVersion implements JsonSerializable {
 
 		return new self(
 			id: self::stringOrEmpty(value: ($declaration['id'] ?? null)),
-			status: self::stringOrEmpty(value: ($declaration['status'] ?? null)),
-			deprecatedOn: self::nullableString(value: ($declaration['deprecatedOn'] ?? null)),
-			sunset: self::nullableString(value: ($declaration['sunset'] ?? null)),
-			successor: self::nullableString(value: ($declaration['successor'] ?? null)),
+			lifecycle: new ApiVersionLifecycle(
+				status: self::stringOrEmpty(value: ($declaration['status'] ?? null)),
+				deprecatedOn: self::nullableString(value: ($declaration['deprecatedOn'] ?? null)),
+				sunset: self::nullableString(value: ($declaration['sunset'] ?? null)),
+				successor: self::nullableString(value: ($declaration['successor'] ?? null)),
+			),
 			pathPrefixes: array_values($prefixes),
 			description: self::stringOrEmpty(value: ($declaration['description'] ?? null)),
 		);
 
 	}//end fromArray()
+
+	/**
+	 * The version identifier a consumer names.
+	 *
+	 * @return string The identifier, digits only.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 */
+	public function identifier(): string {
+		return $this->id;
+
+	}//end identifier()
+
+	/**
+	 * The identifier of the version a caller should move to, or null.
+	 *
+	 * @return string|null The successor's identifier.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 */
+	public function successorIdentifier(): ?string {
+		return $this->successor;
+
+	}//end successorIdentifier()
+
+	/**
+	 * The deprecation date as an HTTP-date, for the RFC 8594 Deprecation header.
+	 *
+	 * @return string|null The HTTP-date, or null when no date is recorded.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 */
+	public function deprecationHttpDate(): ?string {
+		return self::toHttpDate(isoDate: $this->deprecatedOn);
+
+	}//end deprecationHttpDate()
+
+	/**
+	 * The sunset date as an HTTP-date, for the RFC 8594 Sunset header.
+	 *
+	 * @return string|null The HTTP-date, or null when no date is recorded.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 */
+	public function sunsetHttpDate(): ?string {
+		return self::toHttpDate(isoDate: $this->sunset);
+
+	}//end sunsetHttpDate()
 
 	/**
 	 * Whether this version answers at all.

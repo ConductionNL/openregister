@@ -111,7 +111,7 @@ class DuplicateDetectionServiceGoldenTest extends TestCase {
 				'name' => 'acme bv', 'email' => 'INFO@acme.test', 'address' => ['zip' => '1234ab', 'city' => 'Amsterdam'],
 			]]],
 			'check candidate with empty blocking field' => [['call' => 'check', 'candidate' => ['name' => 'Acme', 'address' => ['zip' => ' ']]]],
-			'check candidate without blocking keys' => [['call' => 'check', 'annotation' => null, 'rules' => $rules, 'threshold' => 0.2, 'candidate' => [
+			'check candidate without blocking keys' => [['call' => 'check', 'annotation' => ['matchRules' => $rules], 'threshold' => 0.2, 'candidate' => [
 				'name' => 'Acme B.V.', 'email' => 'info@acme.test',
 			]]],
 			'check candidate with no rules' => [['call' => 'check', 'annotation' => null, 'candidate' => ['name' => 'Acme']]],
@@ -169,7 +169,7 @@ class DuplicateDetectionServiceGoldenTest extends TestCase {
 		$register = ($case['register'] ?? 1);
 		return match ($case['call']) {
 			'find' => $service->findDuplicates($register, 1, ($case['rules'] ?? null), ($case['threshold'] ?? null)),
-			'check' => $service->checkCandidate($register, 1, $case['candidate'], ($case['rules'] ?? null), ($case['threshold'] ?? null)),
+			'check' => $service->checkCandidate($register, 1, $case['candidate'], ($case['threshold'] ?? null)),
 			'threshold' => $service->effectiveThreshold($register, 1, ($case['threshold'] ?? null)),
 			'rules' => $service->effectiveRules($register, 1),
 			'annotation' => $service->dedupAnnotation($register, 1),

@@ -170,12 +170,9 @@ class ManualEntityService {
 	 *   8. Write audit-trail entries.
 	 *   9. Commit. On any exception in steps 4-8, rollback and re-throw.
 	 *
-	 * @param int $fileId Nextcloud file id the manual entity applies to.
-	 * @param string $value Operator-supplied text to add as an anonymisable entity.
-	 * @param string $type Entity type tag (e.g. `PERSON`, `ORGANIZATION`).
-	 * @param bool $wholeWord Wrap the needle in `\b...\b` regex boundaries when true.
-	 * @param bool $caseSensitive Use case-sensitive matching when true.
-	 * @param IUser $actor The acting user (already authenticated upstream).
+	 * @param ManualEntityRequest $request The file, the operator-supplied value and type,
+	 *                                     the match options and the acting user (already
+	 *                                     authenticated upstream).
 	 *
 	 * @return ManualEntityResult The persisted entity + relation rows + match counts.
 	 *
@@ -184,17 +181,8 @@ class ManualEntityService {
 	 *
 	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
-	public function addManualEntity(
-		int $fileId,
-		string $value,
-		string $type,
-		bool $wholeWord,
-		bool $caseSensitive,
-		IUser $actor,
-	): ManualEntityResult {
-		$request = (new ManualEntityRequest(fileId: $fileId, value: $value, type: $type, actor: $actor))
-			->withMatching(wholeWord: $wholeWord, caseSensitive: $caseSensitive);
-		$this->assertFileWriteAccess(fileId: $fileId, actor: $actor);
+	public function addManualEntity(ManualEntityRequest $request): ManualEntityResult {
+		$this->assertFileWriteAccess(fileId: $request->fileId, actor: $request->actor);
 
 		// Run the matcher BEFORE opening the transaction: a regex compile
 		// failure aborts the operation without any DB writes to roll back.
@@ -238,9 +226,7 @@ class ManualEntityService {
 		try {
 			return $this->matcher->match(
 				chunks: $chunks,
-				needle: $request->value,
-				wholeWord: $request->wholeWord(),
-				caseSensitive: $request->caseSensitive(),
+				request: $request,
 				chunkOverlap: $chunkOverlap
 			);
 		} catch (ChunkMatcherException $e) {
@@ -283,7 +269,6 @@ class ManualEntityService {
 				entity: $entity,
 				entityWasNew: $entityWasNew,
 				relations: $insertedRelations,
-				matchCount: count($matches),
 				matchesSkipped: $matchesSkipped
 			);
 			$this->writeAuditTrails(request: $request, result: $result);

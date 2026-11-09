@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ErasurePreview;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 
 /**
  * Runs an approved erasure, destroying through the recorded destruction.
@@ -134,7 +135,6 @@ class ErasureRunner implements ErasureRunnerInterface {
 			rule: 'erasure-preview-stale',
 			reason: 'The records this subject appears on have changed since the preview was approved, '
 				. 'so nothing was erased. Take a new preview and approve that one.',
-			statusCode: 409,
 			context: [
 				'approvedDigest' => $record->getDigest(),
 				'currentDigest' => $freshDigest,
@@ -152,7 +152,7 @@ class ErasureRunner implements ErasureRunnerInterface {
 	 */
 	private function hitsByUuid(string $subject, ?string $type): array {
 		$hits = [];
-		foreach ($this->subjects->findSubjectObjects($subject, $type, 'exact') as $hit) {
+		foreach ($this->subjects->findSubjectObjects(new SubjectQuery(subjectId: $subject, type: $type)) as $hit) {
 			$hits[(string)($hit['object']->getUuid() ?? '')] = $hit;
 		}
 

@@ -54,25 +54,17 @@ class TimeTrackerLinkMapper extends QBMapper implements TimeTrackerLinkMapperInt
 	 * The composite (entry_type + client_id + task_id + time_id) matches
 	 * the unique index. Null id components are matched with `IS NULL`.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param string $entryType The entry kind (`client`|`task`|`time`).
-	 * @param string|null $clientId The client uuid (or null).
-	 * @param string|null $taskId The task uuid (or null).
-	 * @param string|null $timeId The time-entry uuid (or null).
+	 * @param string          $objectUuid The object UUID.
+	 * @param TimeTrackerLink $entry      An unsaved row carrying the entry kind (`client`|`task`|`time`)
+	 *                                    and its client, task and time-entry uuids (each possibly null).
 	 *
 	 * @return TimeTrackerLink|null The link or null if not found.
 	 */
-	public function findByObjectAndEntry(
-		string $objectUuid,
-		string $entryType,
-		string|null $clientId,
-		string|null $taskId,
-		string|null $timeId,
-	): TimeTrackerLink|null {
-		$qb = $this->objectEntryQuery(objectUuid: $objectUuid, entryType: $entryType);
+	public function findByObjectAndEntry(string $objectUuid, TimeTrackerLink $entry): TimeTrackerLink|null {
+		$qb = $this->objectEntryQuery(objectUuid: $objectUuid, entryType: $entry->getEntryType());
 		$this->applyIdComponents(
 			qb: $qb,
-			components: ['client_id' => $clientId, 'task_id' => $taskId, 'time_id' => $timeId]
+			components: ['client_id' => $entry->getClientId(), 'task_id' => $entry->getTaskId(), 'time_id' => $entry->getTimeId()]
 		);
 
 		return $this->findOneOrNull(qb: $qb);

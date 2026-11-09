@@ -125,27 +125,36 @@ interface DestructionReviewServiceInterface {
 	 * transfer list and nowhere else would leave this list saying the entry was
 	 * never decided, which is how a decision history becomes two.
 	 *
+	 * The moment of the decision is now, as the injected clock tells it.
+	 *
 	 * @param array<string, mixed> $listData    The destruction list's own data.
 	 * @param string               $entryUuid   The uuid of the object the entry is about.
-	 * @param string               $answer      One of self::ANSWERS.
-	 * @param string               $reviewer    The user id answering; must be the assigned reviewer.
-	 * @param string               $reason      Why. Required for every answer, not only a retention.
-	 * @param string|null          $newDate     The new archiefactiedatum, required by a retention.
+	 * @param ReviewerAnswer       $given       The answer (one of ANSWERS), its reason (required for every
+	 *                                          answer), the new archiefactiedatum a retention requires, and
+	 *                                          the reviewer, who must be the one assigned.
 	 * @param string|null          $transferRef The transfer list this entry was handed to, if any.
-	 * @param DateTimeInterface|null $decidedAt The moment of the decision; now when omitted.
 	 *
 	 * @return array<string, mixed> The list data, with the entry decided and the history appended.
 	 *
 	 * @throws InvalidArgumentException When the answer, the entry, the reviewer or the reason is wrong.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One decision, and every fact it records.
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	public function recordAnswer(array $listData, string $entryUuid, ReviewerAnswer $given, ?string $transferRef = null): array;
+
+	/**
+	 * A reviewer's answer, as the reviewer gave it.
+	 *
+	 * @param string      $answer   One of the review answers.
+	 * @param string      $reason   Why the reviewer answered this way.
+	 * @param string|null $newDate  The new archiefactiedatum, for a retention.
+	 * @param string|null $reviewer Who answered.
+	 *
+	 * @return ReviewerAnswer The answer, to carry out and then record.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function recordAnswer(
-		array $listData, string $entryUuid, string $answer, string $reviewer,
-		string $reason, ?string $newDate = null, ?string $transferRef = null, ?DateTimeInterface $decidedAt = null,
-	): array;
+	public function reviewerAnswer(string $answer, string $reason, ?string $newDate, ?string $reviewer): ReviewerAnswer;
 
 	/**
 	 * The entries on this list that nobody is accountable for.

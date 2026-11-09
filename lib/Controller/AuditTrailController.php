@@ -540,8 +540,7 @@ class AuditTrailController extends Controller {
 			userId: $user->getUID(),
 			limit: (int)$params['limit'],
 			cursor: $cursor,
-			filters: ($params['filters'] ?? []),
-			search: ($params['search'] ?? null)
+			query: $this->readableLister->query(filters: ($params['filters'] ?? []), search: ($params['search'] ?? null))
 		);
 
 		return new JSONResponse(data: $page);

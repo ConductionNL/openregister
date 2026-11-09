@@ -34,6 +34,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
@@ -125,7 +126,7 @@ final class AuditTrailMapperWritePathGoldenTest extends TestCase {
 			'archival ip blank' => fn (AuditTrailMapper $m) => $m->createAuditTrailEntry($object(), 'link.opened', [], 'link:1', null, '   '),
 			'archival ip empty' => fn (AuditTrailMapper $m) => $m->createAuditTrailEntry($object(), 'link.opened', [], 'link:1', null, ''),
 			'tool dotted no session' => fn (AuditTrailMapper $m) => $m->createToolInvocationEntry('keepiq.lead.search', 'd1', ['count' => 2]),
-			'tool undotted with session' => fn (AuditTrailMapper $m) => $m->createToolInvocationEntry('search', 'd2', [], 1, 2, 3, 'o-3'),
+			'tool undotted with session' => fn (AuditTrailMapper $m) => $m->createToolInvocationEntry('search', 'd2', [], new AuditedObject(1, 2, 3, 'o-3')),
 			'tool trailing dot with session' => fn (AuditTrailMapper $m) => $m->createToolInvocationEntry('keepiq.', 'd3', ['isError' => true]),
 			'refusal minimal' => fn (AuditTrailMapper $m) => $m->createSharedMasterDataRefusalEntry('org-h', 'org-s', 'register'),
 			'refusal empty actor and reference' => fn (AuditTrailMapper $m) => $m->createSharedMasterDataRefusalEntry('org-h', 'org-s', 'schema', ['a' => 1], 4, 5, 'o-1', '', ''),

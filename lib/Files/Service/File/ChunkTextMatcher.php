@@ -49,15 +49,14 @@ class ChunkTextMatcher {
 	private const CONTEXT_WINDOW = 30;
 
 	/**
-	 * Find every occurrence of `$needle` in `$chunks`, deduped by
+	 * Find every occurrence of the request's value in `$chunks`, deduped by
 	 * absolute position across chunk boundaries.
 	 *
 	 * Matches are returned in document order. Empty when no match found.
 	 *
 	 * @param Chunk[] $chunks Chunks for the target file, ordered by chunkIndex.
-	 * @param string $needle Operator-supplied value to match.
-	 * @param bool $wholeWord Wrap the needle in `\b...\b` regex boundaries when true.
-	 * @param bool $caseSensitive Use case-sensitive matching when true.
+	 * @param ManualEntityRequest $request The operator-supplied value (the needle) and its
+	 *                                     whole-word and case-sensitive match options.
 	 * @param int $chunkOverlap Configured chunk overlap (chars). Needles longer than this
 	 *                          cannot reliably be matched per-chunk and are rejected.
 	 *
@@ -66,13 +65,8 @@ class ChunkTextMatcher {
 	 * @throws ChunkMatcherException When the needle is longer than `$chunkOverlap` or the
 	 *                               regex pattern fails to compile.
 	 */
-	public function match(
-		array $chunks,
-		string $needle,
-		bool $wholeWord,
-		bool $caseSensitive,
-		int $chunkOverlap,
-	): array {
+	public function match(array $chunks, ManualEntityRequest $request, int $chunkOverlap): array {
+		$needle = $request->value;
 		if ($needle === '') {
 			return [];
 		}
@@ -97,11 +91,7 @@ class ChunkTextMatcher {
 			return [];
 		}
 
-		$pattern = $this->buildPattern(
-			needle: $needle,
-			wholeWord: $wholeWord,
-			caseSensitive: $caseSensitive
-		);
+		$pattern = $this->buildPattern(request: $request);
 
 		// Per-chunk regex pass. Collect (absoluteStart, absoluteEnd, chunkId,
 		// chunkIndex, chunkRelativeStart) for every hit; the dedup pass below
@@ -150,22 +140,23 @@ class ChunkTextMatcher {
 	/**
 	 * Build the regex pattern from the needle + match options.
 	 *
-	 * @param string $needle Raw needle.
-	 * @param bool $wholeWord Wrap in `\b...\b` when true.
-	 * @param bool $caseSensitive Use the `i` modifier when false.
+	 * Whole-word matching wraps the needle in `\b...\b`; case-insensitive
+	 * matching adds the `i` modifier.
+	 *
+	 * @param ManualEntityRequest $request The raw needle and its match options.
 	 *
 	 * @return string Compiled pattern ready for preg_match_all.
 	 *
 	 * @throws ChunkMatcherException On regex compile failure (malformed Unicode in needle).
 	 */
-	private function buildPattern(string $needle, bool $wholeWord, bool $caseSensitive): string {
-		$quoted = preg_quote($needle, '/');
-		if ($wholeWord === true) {
+	private function buildPattern(ManualEntityRequest $request): string {
+		$quoted = preg_quote($request->value, '/');
+		if ($request->wholeWord() === true) {
 			$quoted = '\b' . $quoted . '\b';
 		}
 
 		$flags = 'u';
-		if ($caseSensitive === false) {
+		if ($request->caseSensitive() === false) {
 			$flags .= 'i';
 		}
 

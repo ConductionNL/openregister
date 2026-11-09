@@ -170,7 +170,7 @@ class FlowTimerEdgeCasesTest extends TestCase {
 		);
 		self::assertSame(['handler'], $rungs[0]['notifyRole']);
 		$fireAt = $this->at('2026-09-20 12:00');
-		$due = $ladder->dueRungs(rungs: $rungs, fireAt: $fireAt, now: $fireAt, firedKeys: [], calendar: $this->calendar);
+		$due = $ladder->dueRungs(timeline: new \OCA\OpenRegister\Service\Flow\Timer\RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: [], calendar: $this->calendar), now: $fireAt);
 		self::assertSame(['b', 'a'], array_map(static fn (array $entry): string => (string)$entry['rung']['key'], $due));
 	}//end testLadderRefusalsNameTheRule()
 

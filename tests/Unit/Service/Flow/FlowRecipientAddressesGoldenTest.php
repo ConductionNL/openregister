@@ -68,10 +68,10 @@ class FlowRecipientAddressesGoldenTest extends TestCase {
 			return in_array($uid, ['alice', 'bob@corp.example', 'carol'], true);
 		});
 		$resolver->method('groupExists')->willReturnCallback(static fn (string $gid): bool => $gid === 'staff');
-		$resolver->method('resolve')->willReturnCallback(function (array $recipientsSpec, array $data): array {
+		$resolver->method('resolveWithDiagnostics')->willReturnCallback(function (array $recipientsSpec, array $data): array {
 			$this->resolveCalls[] = ['spec' => $recipientsSpec, 'data' => $data];
 			if ($recipientsSpec[0]['kind'] === 'groups') {
-				return ['g1' => 'dave', 'g2' => 'erin'];
+				return ['uids' => ['dave', 'erin'], 'unresolved' => []];
 			}
 
 			$found = [];
@@ -81,7 +81,7 @@ class FlowRecipientAddressesGoldenTest extends TestCase {
 				}
 			}
 
-			return $found;
+			return ['uids' => $found, 'unresolved' => []];
 		});
 		$resolver->method('extractUidsFromRelation')->willReturnCallback(static function (mixed $value): array {
 			$out = [];

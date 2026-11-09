@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use DateTime;
 
 /**
  * The methods of ObjectReadStateMapper that callers outside the Db component use.
@@ -81,25 +80,16 @@ interface ObjectReadStateMapperInterface {
 	 * The unique index on (user_id, object_uuid) is the authority: opening an
 	 * object twice refreshes one row rather than writing a second.
 	 *
-	 * @param string $userId The reading user's uid.
-	 * @param string $objectUuid The object's uuid.
-	 * @param string|null $register The object's register, as the caller addressed it.
-	 * @param string|null $schema The object's schema, as the caller addressed it.
-	 * @param array<string, string>|null $subSeen Sub-resource seen moments to merge in.
-	 * @param DateTime|null $seenAt The moment to record, defaulting to now.
+	 * @param ObjectReadState $sighting The row to insert when the user has none:
+	 *        user, object, register and schema as the caller addressed them,
+	 *        sub-resource seen moments to merge in (null for none) and the
+	 *        moment seen (null for now).
 	 *
 	 * @return ObjectReadState The stored row.
 	 *
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
-	public function markSeen(
-		string $userId,
-		string $objectUuid,
-		?string $register = null,
-		?string $schema = null,
-		?array $subSeen = null,
-		?DateTime $seenAt = null
-	): ObjectReadState;
+	public function markSeen(ObjectReadState $sighting): ObjectReadState;
 
 	/**
 	 * Put one object back to unread for one user.

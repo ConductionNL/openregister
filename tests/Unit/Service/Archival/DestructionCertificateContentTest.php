@@ -32,12 +32,14 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\Archival\DestructionInfrastructure;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
+use OCA\OpenRegister\Service\Archival\ApprovalChoice;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\RetentionRules;
@@ -88,9 +90,7 @@ class DestructionCertificateContentTest extends TestCase {
 			->getMock();
 
 		$this->destructionService = new DestructionService(
-			$objectMapper,
-			$appConfig,
-			$this->jobList,
+			new DestructionInfrastructure($objectMapper, $appConfig, $this->jobList),
 			$userSession,
 			$this->createMock(LoggerInterface::class)
 		);
@@ -149,9 +149,7 @@ class DestructionCertificateContentTest extends TestCase {
 		// 1. The archivist approves through the route the ArchivalController drives.
 		$approved = $this->destructionService->approveList(
 			$list,
-			'approve_all',
-			[],
-			[],
+			new ApprovalChoice('approve_all'),
 			false,
 			'list-uuid-42'
 		);
@@ -207,9 +205,7 @@ class DestructionCertificateContentTest extends TestCase {
 				'approvals' => [],
 				'objects' => [['uuid' => 'obj-1', 'schema' => 1, 'classification' => 'V1']],
 			],
-			'approve_all',
-			[],
-			[],
+			new ApprovalChoice('approve_all'),
 			false,
 			'list-uuid-7'
 		);

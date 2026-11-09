@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 
 /**
  * Counts what an erasure would touch, split three ways, writing nothing.
@@ -155,7 +156,7 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	 */
 	private function classifyAll(string $subjectId, ?string $type, string $eraseMode): array {
 		$items = [];
-		foreach ($this->subjects->findSubjectObjects($subjectId, $type, 'exact') as $hit) {
+		foreach ($this->subjects->findSubjectObjects(new SubjectQuery(subjectId: $subjectId, type: $type)) as $hit) {
 			$items[] = $this->classify(
 				object: $hit['object'],
 				subjectId: $subjectId,

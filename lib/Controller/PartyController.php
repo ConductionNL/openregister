@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuardInterface;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
-use OCA\OpenRegister\Service\Party\PartySearchService;
+use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -83,9 +83,9 @@ class PartyController extends Controller {
 	/**
 	 * The capped party query.
 	 *
-	 * @var PartySearchService
+	 * @var PartySearchInterface
 	 */
-	private readonly PartySearchService $search;
+	private readonly PartySearchInterface $search;
 
 	/**
 	 * Constructor.

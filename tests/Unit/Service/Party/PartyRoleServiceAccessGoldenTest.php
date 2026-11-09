@@ -157,7 +157,7 @@ class PartyRoleServiceAccessGoldenTest extends TestCase {
 		$payload = ['partyUuid' => 'party-a', 'role' => $role];
 		try {
 			if ($import === true) {
-				$this->service()->importParty('case-1', 1, $schemaId, $payload, 'app');
+				$this->service()->importParty($this->objectOn('case-1', 1, $schemaId), $payload, 'app');
 			} else {
 				$this->service()->addParty('case-1', 1, $schemaId, $payload);
 			}
@@ -167,6 +167,26 @@ class PartyRoleServiceAccessGoldenTest extends TestCase {
 
 		return 'allowed';
 	}//end outcome()
+
+	/**
+	 * The object a trusted import puts the party on.
+	 *
+	 * @param string $uuid The object uuid.
+	 * @param int $registerId The register id.
+	 * @param int|string|null $schemaId The object's schema id.
+	 *
+	 * @return ObjectEntity The object.
+	 */
+	private function objectOn(string $uuid, int $registerId, int|string|null $schemaId): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid($uuid);
+		$object->setRegister((string) $registerId);
+		if ($schemaId !== null) {
+			$object->setSchema((string) $schemaId);
+		}
+
+		return $object;
+	}//end objectOn()
 
 	/**
 	 * A party of a kind, found by both lookups.

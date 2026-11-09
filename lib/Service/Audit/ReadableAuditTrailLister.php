@@ -137,8 +137,7 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 	 * @param string|null     $userId  The caller, or null when anonymous.
 	 * @param int             $limit   How many readable rows the caller asked for.
 	 * @param int|string|null $cursor  A sealed cursor this list handed out under the same caller, filters and search.
-	 * @param array           $filters Column filters, as `AuditTrailMapper::findAll()` takes them.
-	 * @param string|null     $search  Optional free-text term.
+	 * @param AuditTrailQuery|null $query The filters and search, from {@see query()}; none when null.
 	 *
 	 * @return array{results: array<int, array>, limit: int, cursor: int|string|null, nextCursor: string|null}
 	 *     The page. `nextCursor` is null when the trail was exhausted, and a
@@ -151,8 +150,7 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 		?string $userId,
 		int $limit = 20,
 		int|string|null $cursor = null,
-		array $filters = [],
-		?string $search = null,
+		?AuditTrailQuery $query = null,
 	): array {
 		$limit = max(1, min($limit, self::MAX_LIMIT));
 
@@ -163,8 +161,22 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 			return ['results' => [], 'limit' => $limit, 'cursor' => $cursor, 'nextCursor' => null];
 		}
 
-		return $this->readablePage(userId: $userId, limit: $limit, cursor: $cursor, filters: $filters, search: $search);
+		return $this->readablePage(userId: $userId, limit: $limit, cursor: $cursor, query: ($query ?? new AuditTrailQuery()));
 	}//end page()
+
+	/**
+	 * The query a page is walked under.
+	 *
+	 * @param array       $filters Column filters, as `AuditTrailMapper::findAll()` takes them.
+	 * @param string|null $search  Optional free-text term.
+	 *
+	 * @return AuditTrailQuery The query, to hand to {@see page()}.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
+	 */
+	public function query(array $filters = [], ?string $search = null): AuditTrailQuery {
+		return new AuditTrailQuery(filters: $filters, search: $search);
+	}//end query()
 
 	/**
 	 * One page for a signed-in caller: walk the trail from the sealed cursor and seal where it stopped.
@@ -172,19 +184,18 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 	 * @param string          $userId  The caller.
 	 * @param int             $limit   How many readable rows the page holds, already bounded.
 	 * @param int|string|null $cursor  The sealed cursor handed back, if any.
-	 * @param array           $filters Column filters from the request.
-	 * @param string|null     $search  Optional free-text term.
+	 * @param AuditTrailQuery $query   The column filters and free-text term from the request.
 	 *
 	 * @return array{results: array<int, array>, limit: int, cursor: int|string|null, nextCursor: string|null} The page.
 	 */
-	private function readablePage(string $userId, int $limit, int|string|null $cursor, array $filters, ?string $search): array {
+	private function readablePage(string $userId, int $limit, int|string|null $cursor, AuditTrailQuery $query): array {
 		// Who read an object is shown only to the groups named for it. A search
 		// is matched against what the caller is given, after redaction: matched
 		// in SQL on the stored `changed`, it would tell the caller whether a
 		// hidden property ever held the term.
 		$this->withReads = $this->history->readEvents()->maySeeReadEvents(userId: $userId);
-		$this->search = trim((string)$search);
-		$filters = $this->appliedFilters(filters: $filters);
+		$this->search = trim((string)$query->search);
+		$filters = $this->appliedFilters(filters: $query->filters);
 
 		$scope = $this->cursors->scope(userId: $userId, query: ['filters' => $filters, 'search' => $this->search]);
 		$walk = $this->walk(filters: $filters, offset: $this->cursors->open(cursor: $cursor, scope: $scope), limit: $limit);

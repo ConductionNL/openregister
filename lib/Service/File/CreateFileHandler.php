@@ -23,8 +23,6 @@ namespace OCA\OpenRegister\Service\File;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
@@ -50,7 +48,6 @@ use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
  * @version  1.0.0
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class CreateFileHandler {
 
@@ -134,12 +131,7 @@ class CreateFileHandler {
 	 * in addition to any user-provided tags.
 	 *
 	 * @param ObjectEntity|string $objectEntity The object entity to add the file to.
-	 * @param string $fileName The name of the file to create.
-	 * @param string|resource $content File content: a byte string, or a readable stream resource.
-	 * @param bool $share Whether to create a share link for the file.
-	 * @param array $tags Optional array of tags to attach to the file.
-	 * @param int|string|Schema|null $_schema The register of the object to add the file to (unused).
-	 * @param int|string|Register|null $_register The register of the object to add the file to (unused).
+	 * @param FileUpload $upload The file name, content, share toggle and tags.
 	 * @param int|string|null $registerId The registerId of the object to add the file to.
 	 *
 	 * @return File The created file.
@@ -147,21 +139,11 @@ class CreateFileHandler {
 	 * @throws NotPermittedException If file creation fails due to permissions.
 	 * @throws Exception If file creation fails for other reasons.
 	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag is intentional for simple share toggle.
-	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function addFile(
 		ObjectEntity|string $objectEntity,
-		string $fileName,
-		mixed $content,
-		bool $share = false,
-		array $tags = [],
-		Schema|int|string|null $_schema = null,
-		Register|int|string|null $_register = null,
+		FileUpload $upload,
 		int|string|null $registerId = null,
 	): File {
 		try {
@@ -169,14 +151,14 @@ class CreateFileHandler {
 
 			// Use the new ID-based folder approach.
 			$folder = $this->folderMgmtHandler->getObjectFolder(objectEntity: $objectEntity, registerId: $registerId);
-			$content = $this->decodedContent(content: $content);
-			$this->assertCreatable(objectEntity: $objectEntity, fileName: $fileName, content: $content);
-			$file = $this->writeNewFile(folder: $folder, fileName: $fileName, content: $content);
-			$this->shareIfRequested(file: $file, share: $share);
-			$this->tagNewFile(file: $file, objectEntity: $objectEntity, tags: $tags);
+			$content = $this->decodedContent(content: $upload->content);
+			$this->assertCreatable(objectEntity: $objectEntity, fileName: $upload->fileName, content: $content);
+			$file = $this->writeNewFile(folder: $folder, fileName: $upload->fileName, content: $content);
+			$this->shareIfRequested(file: $file, share: $upload->share);
+			$this->tagNewFile(file: $file, objectEntity: $objectEntity, tags: $upload->tags);
 			return $file;
 		} catch (Exception $e) {
-			throw $this->failure(error: $e, action: 'create', fileName: $fileName);
+			throw $this->failure(error: $e, action: 'create', fileName: $upload->fileName);
 		}
 	}//end addFile()
 
@@ -189,42 +171,28 @@ class CreateFileHandler {
 	 * to "upsert" files.
 	 *
 	 * @param ObjectEntity $objectEntity The object entity to save the file to.
-	 * @param string $fileName The name of the file to save.
-	 * @param string|resource $content File content: a byte string, or a readable stream resource.
-	 * @param bool $share Whether to create a share link for the file (only for new files).
-	 * @param array $tags Optional array of tags to attach to the file.
+	 * @param FileUpload $upload The file name, content, share toggle (only for new files) and tags.
 	 *
 	 * @return File The saved file.
 	 *
 	 * @throws NotPermittedException If file operations fail due to permissions.
 	 * @throws Exception If file operations fail for other reasons.
 	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle.
-	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function saveFile(
-		ObjectEntity $objectEntity,
-		string $fileName,
-		mixed $content,
-		bool $share = false,
-		array $tags = [],
-	): File {
+	public function saveFile(ObjectEntity $objectEntity, FileUpload $upload): File {
 		try {
 			// Check if the file already exists for this object.
-			$existingFile = $this->fileService->getFile(object: $objectEntity, file: $fileName);
-			$this->logUpsert(fileName: $fileName, objectId: $objectEntity->getId(), exists: $existingFile !== null);
+			$existingFile = $this->fileService->getFile(object: $objectEntity, file: $upload->fileName);
+			$this->logUpsert(fileName: $upload->fileName, objectId: $objectEntity->getId(), exists: $existingFile !== null);
 			if ($existingFile === null) {
-				return $this->addFile(objectEntity: $objectEntity, fileName: $fileName, content: $content, share: $share, tags: $tags);
+				return $this->addFile(objectEntity: $objectEntity, upload: $upload);
 			}
 
 			// Update the existing file - pass the object so updateFile can find it in the object folder.
-			return $this->fileService->updateFile(filePath: $existingFile->getId(), content: $content, tags: $tags, object: $objectEntity);
+			return $this->fileService->updateFile(filePath: $existingFile->getId(), content: $upload->content, tags: $upload->tags, object: $objectEntity);
 		} catch (Exception $e) {
-			throw $this->failure(error: $e, action: 'save', fileName: $fileName);
+			throw $this->failure(error: $e, action: 'save', fileName: $upload->fileName);
 		}
 	}//end saveFile()
 

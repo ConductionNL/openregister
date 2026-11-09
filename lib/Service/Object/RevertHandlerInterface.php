@@ -39,8 +39,7 @@ interface RevertHandlerInterface {
 	 * @param string $register The register identifier
 	 * @param string $schema The schema identifier
 	 * @param string $id The object ID
-	 * @param mixed $until The point to revert to (DateTime|string)
-	 * @param bool $overwriteVersion Whether to overwrite the version
+	 * @param RevertPoint $point The point to revert to, and whether to overwrite the version
 	 *
 	 * @return ObjectEntity The reverted object
 	 *
@@ -51,9 +50,7 @@ interface RevertHandlerInterface {
 	 * @throws ValidationException If the restored data fails the current schema
 	 * @throws \Exception If reversion fails
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean needed to control version overwrite behavior
-	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	public function revert(string $register, string $schema, string $id, mixed $until, bool $overwriteVersion = false): ObjectEntity;
+	public function revert(string $register, string $schema, string $id, RevertPoint $point): ObjectEntity;
 }//end interface

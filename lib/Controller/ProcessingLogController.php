@@ -44,6 +44,7 @@ use OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
 use OCA\OpenRegister\Controller\Support\ProcessingLogAccess;
 use OCA\OpenRegister\Controller\Support\ProcessingLogPolicy;
+use OCA\OpenRegister\Db\ProcessingLogReadScope;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -200,10 +201,12 @@ class ProcessingLogController extends Controller {
 	private function filtered(?string $organisationId, bool $includeConfidential): array {
 		return $this->services->logMapper->findFiltered(
 			filters: $this->filters(),
-			from: $this->dateParam(key: 'from'),
-			to: $this->dateParam(key: 'to'),
-			organisationId: $organisationId,
-			includeConfidential: $includeConfidential,
+			scope: new ProcessingLogReadScope(
+				from: $this->dateParam(key: 'from'),
+				to: $this->dateParam(key: 'to'),
+				organisationId: $organisationId,
+				includeConfidential: $includeConfidential
+			),
 			limit: $this->params->boundedInt(key: 'limit', default: 100, max: 1000),
 			offset: $this->params->boundedInt(key: 'offset', default: 0, max: 1000000)
 		);
@@ -249,8 +252,11 @@ class ProcessingLogController extends Controller {
 		}
 
 		$entries = $this->services->logMapper->findBySubject(
-			idType: $subject['idType'], idValue: $subject['idValue'], from: $from, to: $to,
-			organisationId: $scope['organisationId'], includeConfidential: $scope['includeConfidential']
+			idType: $subject['idType'], idValue: $subject['idValue'],
+			scope: new ProcessingLogReadScope(
+				from: $from, to: $to,
+				organisationId: $scope['organisationId'], includeConfidential: $scope['includeConfidential']
+			)
 		);
 
 		return new JSONResponse(data: $this->extractBody(subject: $subject, read: ['from' => $from, 'to' => $to, 'entries' => $entries]));

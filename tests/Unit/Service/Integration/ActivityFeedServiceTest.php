@@ -45,6 +45,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Integration\ActivityFeedMerge;
+use OCA\OpenRegister\Service\Integration\ActivityFeedObject;
 use OCA\OpenRegister\Service\Integration\ActivityFeedService;
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
 use OCA\OpenRegister\Tests\Support\BuildsReaderHistory;
@@ -143,7 +144,7 @@ class ActivityFeedServiceTest extends TestCase {
 			[['id' => 'act1', 'timestamp' => 300, 'affecteduser' => 'bob', 'subject' => 'gedeeld']],
 		);
 
-		$page = $service->page('dossiq', 'case', 'obj-1');
+		$page = $service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'));
 
 		$this->assertSame(['activity', 'audit'], array_column($page['rows'], 'kind'));
 		$this->assertSame([], $page['degraded']);
@@ -152,7 +153,7 @@ class ActivityFeedServiceTest extends TestCase {
 	public function testRowsHandedInByTheCallerAreMergedBeside(): void {
 		$service = $this->service([$this->entry('a1', 'update', 100)]);
 
-		$page = $service->page('dossiq', 'case', 'obj-1', [], [
+		$page = $service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'), [], [
 			'note' => [['id' => 'n1', 'timestamp' => 400, 'summary' => 'gebeld']],
 			'file' => [['id' => 'f1', 'timestamp' => 200, 'summary' => 'gevel.jpg']],
 		]);
@@ -169,7 +170,7 @@ class ActivityFeedServiceTest extends TestCase {
 
 		$service = $this->serviceOver(history: $history);
 
-		$page = $service->page('dossiq', 'case', 'obj-1');
+		$page = $service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'));
 
 		// Empty AND degraded: an object with no history and an object whose
 		// history could not be read must not look the same.
@@ -181,7 +182,7 @@ class ActivityFeedServiceTest extends TestCase {
 		$capture = null;
 		$service = $this->service([$this->entry('a1', 'update', 100)], [], $capture);
 
-		$service->page('dossiq', 'case', 'obj-1', ['pageSize' => 10]);
+		$service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'), ['pageSize' => 10]);
 
 		$this->assertSame(['register' => 'dossiq', 'schema' => 'case', 'id' => 'obj-1', 'params' => ['limit' => 10]], $capture);
 		// NOT narrowed on the action: the reads toggle has to be able to bring
@@ -195,10 +196,10 @@ class ActivityFeedServiceTest extends TestCase {
 			$this->entry('w1', 'update', 100),
 		]);
 
-		$this->assertSame(['w1'], array_column($service->page('dossiq', 'case', 'obj-1')['rows'], 'id'));
+		$this->assertSame(['w1'], array_column($service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'))['rows'], 'id'));
 		$this->assertSame(
 			['r1', 'w1'],
-			array_column($service->page('dossiq', 'case', 'obj-1', ['includeReads' => true])['rows'], 'id')
+			array_column($service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'), ['includeReads' => true])['rows'], 'id')
 		);
 	}//end testReadsAreStillHiddenByDefaultOnceMerged()
 
@@ -207,7 +208,7 @@ class ActivityFeedServiceTest extends TestCase {
 			$this->entry('a1', 'update', 100, ['bsn' => ['old' => '123456782', 'new' => '987654321']]),
 		]);
 
-		$summary = $service->page('dossiq', 'case', 'obj-1')['rows'][0]['summary'];
+		$summary = $service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'))['rows'][0]['summary'];
 
 		$this->assertStringContainsString('bsn', $summary);
 		// The value of a protected field must not travel into a feed that
@@ -221,7 +222,7 @@ class ActivityFeedServiceTest extends TestCase {
 			history: $this->readerHistory(rows: [$this->readerEntry(objectUuid: self::$readableUuid)])
 		);
 
-		$rows = $service->page('5', '7', self::$readableUuid)['rows'];
+		$rows = $service->page(new ActivityFeedObject('5', '7', self::$readableUuid))['rows'];
 
 		$this->assertSame('update: titel', $rows[0]['summary']);
 		$this->assertSame('Alice', $rows[0]['actor']);
@@ -236,7 +237,7 @@ class ActivityFeedServiceTest extends TestCase {
 			)
 		);
 
-		$page = $service->page('5', '7', self::$readableUuid);
+		$page = $service->page(new ActivityFeedObject('5', '7', self::$readableUuid));
 
 		$this->assertSame([], $page['rows']);
 		$this->assertSame([], $page['degraded']);
@@ -250,7 +251,7 @@ class ActivityFeedServiceTest extends TestCase {
 			)
 		);
 
-		$page = $service->page('5', '7', self::$readableUuid);
+		$page = $service->page(new ActivityFeedObject('5', '7', self::$readableUuid));
 
 		$this->assertSame([], $page['rows']);
 		$this->assertSame(['audit'], $page['degraded']);
@@ -259,6 +260,6 @@ class ActivityFeedServiceTest extends TestCase {
 	public function testAnEntryWithNoChangesStillSaysWhatItDid(): void {
 		$service = $this->service([$this->entry('a1', 'create', 100)]);
 
-		$this->assertSame('create', $service->page('dossiq', 'case', 'obj-1')['rows'][0]['summary']);
+		$this->assertSame('create', $service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'))['rows'][0]['summary']);
 	}//end testAnEntryWithNoChangesStillSaysWhatItDid()
 }//end class

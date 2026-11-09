@@ -44,6 +44,7 @@ use OCA\OpenRegister\Notifications\Controller\NotificationTemplatesController;
 use OCA\OpenRegister\Notifications\Db\NotificationBroadcast;
 use OCA\OpenRegister\Notifications\Db\NotificationSubscription;
 use OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper;
+use OCA\OpenRegister\Notifications\Db\BroadcastMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationBroadcastService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -248,7 +249,7 @@ class A26NotificationControllersGoldenTest extends TestCase {
 			class: NotificationBroadcastService::class,
 			returns: [
 				'listAll'     => [['uuid' => 'b-1']],
-				'send'        => static fn (string $subject): NotificationBroadcast => $subject === 'invalid' ? throw new InvalidArgumentException('window too long') : $broadcast,
+				'send'        => static fn (BroadcastMessage $message): NotificationBroadcast => $message->subject === 'invalid' ? throw new InvalidArgumentException('window too long') : $broadcast,
 				'withdraw'    => static fn (string $broadcastUuid): bool => $broadcastUuid === 'b-1',
 				'activeFor'   => [$broadcast],
 				'acknowledge' => static fn (string $broadcastUuid): bool => $broadcastUuid === 'b-1',

@@ -23,6 +23,9 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -291,17 +294,22 @@ class MagicMapperSoftDeleteBatchGoldenTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$db,
-					$schemaMapper,
-					$registerMapper,
-					$this->createMock(IConfig::class),
-					$dispatcher,
-					$this->createMock(IUserSession::class),
-					$this->createMock(IGroupManager::class),
-					$this->createMock(IUserManager::class),
-					$this->createMock(IAppConfig::class),
-					$logger,
-					$this->createMock(SettingsService::class),
-					$container,
+					new MagicMapperLookups(
+						$schemaMapper,
+						$registerMapper,
+						$container
+					),
+					new MagicMapperIdentity(
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class),
+						$this->createMock(IUserManager::class)
+					),
+					new MagicMapperRuntime(
+						$this->createMock(IConfig::class),
+						$this->createMock(IAppConfig::class),
+						$dispatcher,
+						$logger
+					),
 				]
 			)
 			->onlyMethods(['getTableNameForRegisterSchema', 'saveObjectToRegisterSchemaTable'])

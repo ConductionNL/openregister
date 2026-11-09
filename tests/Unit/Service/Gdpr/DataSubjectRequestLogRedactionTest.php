@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectDeadline;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 use OCA\OpenRegister\Service\Gdpr\SubjectRecords;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectEntityIndex;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectLoader;
@@ -79,7 +80,7 @@ class DataSubjectRequestLogRedactionTest extends TestCase {
 				)
 			), new DataSubjectDeadline(), $this->createMock(LoggerInterface::class));
 
-		$result = $service->findSubjectObjects($subject);
+		$result = $service->findSubjectObjects(new SubjectQuery($subject));
 
 		$this->assertSame([], $result);
 		$this->assertCount(1, $contexts);

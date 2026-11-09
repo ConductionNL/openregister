@@ -19,6 +19,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\TranslationEdit;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -91,11 +93,12 @@ class TranslationProjectionGoldenTest extends TestCase {
 
 		$translationMapper = $this->createMock(TranslationMapper::class);
 		$translationMapper->method('upsert')->willReturnCallback(
-			function (...$args) use (&$log, $case) {
+			function (TranslationSlot $slot, TranslationEdit $edit) use (&$log, $case) {
 				if (($case['upsertThrows'] ?? false) === true) {
 					throw new \RuntimeException('db down');
 				}
 
+				$args = [$slot->objectUuid, $slot->property, $slot->language, $edit->value, $edit->status, $edit->translator, $edit->sourceLanguage];
 				$log[] = ['upsert' => $args];
 				return new Translation();
 			}

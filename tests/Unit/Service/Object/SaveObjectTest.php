@@ -2561,12 +2561,12 @@ class SaveObjectTest extends TestCase {
 	}
 
 	public function testDeleteOrphanedRelatedObjectsHandlesDoesNotExist(): void {
-		$this->objectEntityMapper->method('find')
+		$this->objectEntityMapper->expects($this->once())->method('find')
 			->willThrowException(new DoesNotExistException('Not found'));
+		$this->objectEntityMapper->expects($this->never())->method('update');
+		$this->logger->expects($this->never())->method('warning');
 
-		// Should not throw.
 		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['nonexistent-uuid'], $this->orphanScope()]);
-		$this->assertTrue(true);
 	}
 
 	public function testDeleteOrphanedRelatedObjectsHandlesGenericException(): void {

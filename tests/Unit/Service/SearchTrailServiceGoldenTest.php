@@ -62,11 +62,22 @@ class SearchTrailServiceGoldenTest extends TestCase {
 
 	// ── create + self-clearing ──
 
+	/**
+	 * What the service put on the unsaved trail it hands the mapper.
+	 *
+	 * @param SearchTrail $outcome The unsaved trail.
+	 *
+	 * @return array{0: int|null, 1: int|null}
+	 */
+	private static function outcomeOf(SearchTrail $outcome): array {
+		return [$outcome->getResultCount(), $outcome->getTotalResults()];
+	}
+
 	public function testCreatePassesArgumentsAndDoesNotClearByDefault(): void {
 		$trail = new SearchTrail();
 		$this->trailMapper->expects($this->once())->method('createSearchTrail')
-			->willReturnCallback(function (...$args) use ($trail) {
-				$this->assertSame([['q' => 'x', '_limit' => 3], 4, 40, 12.5, 'async'], $args);
+			->willReturnCallback(function (array $query, SearchTrail $outcome, float $responseTime, string $type) use ($trail) {
+				$this->assertSame([['q' => 'x', '_limit' => 3], 4, 40, 12.5, 'async'], [$query, ...self::outcomeOf($outcome), $responseTime, $type]);
 				return $trail;
 			});
 		$this->trailMapper->expects($this->never())->method('clearLogs');
@@ -78,7 +89,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 		$trail = new SearchTrail();
 		$this->trailMapper->method('createSearchTrail')->willReturnCallback(function (...$args) use ($trail) {
 			$this->calls[] = 'create';
-			$this->assertSame([[], 1, 2, 0.0, 'sync'], $args);
+			$this->assertSame([[], 1, 2, 0.0, 'sync'], [$args[0], ...self::outcomeOf($args[1]), $args[2], $args[3]]);
 			return $trail;
 		});
 		$this->trailMapper->expects($this->once())->method('clearLogs')->willReturnCallback(function () {
@@ -275,12 +286,12 @@ class SearchTrailServiceGoldenTest extends TestCase {
 		$queries = [];
 		$this->trailMapper->expects($this->once())->method('findAll')
 			->willReturnCallback(function (...$args) use (&$queries) {
-				$queries['findAll'] = $args;
+				$queries['findAll'] = [$args[1], $args[2], $args[0]->filters, $args[3], $args[0]->search, $args[0]->from, $args[0]->to];
 				return [];
 			});
 		$this->trailMapper->expects($this->once())->method('count')
 			->willReturnCallback(function (...$args) use (&$queries, $total) {
-				$queries['count'] = $args;
+				$queries['count'] = [$args[0]->filters, $args[0]->search, $args[0]->from, $args[0]->to];
 				return $total;
 			});
 		$this->registerMapper->expects($this->never())->method('find');
@@ -298,7 +309,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 	public function testDateFiltersParsedOrIgnored(): void {
 		$captured = [];
 		$this->trailMapper->method('findAll')->willReturnCallback(function (...$args) use (&$captured) {
-			$captured[] = [$args[5], $args[6]];
+			$captured[] = [$args[0]->from, $args[0]->to];
 			return [];
 		});
 		$this->trailMapper->method('count')->willReturn(0);

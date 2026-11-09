@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutor;
+use OCA\OpenRegister\Service\BulkJob\BulkJobPass;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
@@ -142,7 +143,7 @@ final class BulkJobExecutorAccessGoldenTest extends TestCase {
 		$job->setStartedBy('coordinator');
 		$job->setState(BulkJob::STATE_PREVIEWED);
 
-		$this->executor($verdicts)->writePreviewMembers($job, $uuids, $objects, $this->action(), $actor);
+		$this->executor($verdicts)->writePreviewMembers(new BulkJobPass($job, $this->action(), $actor, $objects), $uuids);
 	}
 
 	private function action(): BulkActionInterface {

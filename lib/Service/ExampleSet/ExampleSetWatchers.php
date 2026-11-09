@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use Psr\Container\ContainerInterface;
 
@@ -125,13 +126,7 @@ class ExampleSetWatchers extends ExampleSetEngineRows {
 	public function write(ExampleSetRow $row): array {
 		$data = $row->data;
 		return $this->userObjectWrite(
-			write: fn () => $this->mapper()->subscribe(
-				userId: (string) $data['user'],
-				objectUuid: (string) $data['objectUuid'],
-				register: $this->textOrNull(value: ($data['register'] ?? null)),
-				schema: $this->textOrNull(value: ($data['schema'] ?? null)),
-				notify: ($data['notify'] ?? null)
-			),
+			write: fn () => $this->mapper()->subscribe(watcher: $this->follow(data: $data), notify: ($data['notify'] ?? null)),
 			data: $data
 		);
 	}//end write()
@@ -165,6 +160,22 @@ class ExampleSetWatchers extends ExampleSetEngineRows {
 			remove: fn () => $this->mapper()->unsubscribe(userId: (string) $entry['user'], objectUuid: (string) $entry['objectUuid'])
 		);
 	}//end revert()
+
+	/**
+	 * The unsaved follow a fragment row asks for.
+	 *
+	 * @param array<string, mixed> $data The row's filled fields.
+	 *
+	 * @return Watcher The follow of the row's user on its object, with its register and schema.
+	 */
+	private function follow(array $data): Watcher {
+		$follow = new Watcher();
+		$follow->setUserId((string) $data['user']);
+		$follow->setObjectUuid((string) $data['objectUuid']);
+		$follow->setRegister($this->textOrNull(value: ($data['register'] ?? null)));
+		$follow->setSchema($this->textOrNull(value: ($data['schema'] ?? null)));
+		return $follow;
+	}//end follow()
 
 	/**
 	 * The watcher mapper.

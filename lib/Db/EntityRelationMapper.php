@@ -24,7 +24,6 @@ use DateTime;
 use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
-use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;

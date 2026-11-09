@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
+use OCA\OpenRegister\Service\Archival\SelectielijstStores;
 use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\RetentionStores;
@@ -100,9 +101,11 @@ class RetentionClassificationOverrideTest extends TestCase {
 				$this->createMock(RetentionRowScanner::class),
 				new ArchiveActionDateCalculator($objectMapper, $logger),
 				new SelectielijstResolver(
-				$objectMapper,
-				$this->createMock(SchemaMapper::class),
-				$this->createMock(RegisterMapper::class),
+				new SelectielijstStores(
+					$objectMapper,
+					$this->createMock(SchemaMapper::class),
+					$this->createMock(RegisterMapper::class)
+				),
 				$settings,
 				$logger
 			)
@@ -216,7 +219,9 @@ class RetentionClassificationOverrideTest extends TestCase {
 		$plain->setArchive(['enabled' => true, 'classification' => '1.1']);
 		$this->service->guardClassificationOverride(schema: $plain, data: ['selectielijstCategorie' => '9.9']);
 
-		$this->addToAssertionCount(1);
+		// The same value is refused once the schema does name the property.
+		$this->expectException(ValidationException::class);
+		$this->service->guardClassificationOverride(schema: $this->schema(), data: ['selectielijstCategorie' => '9.9']);
 	}
 
 	public function testAnArchivalAnnotationNamesItsOverridePropertyToo(): void {

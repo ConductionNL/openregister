@@ -397,9 +397,8 @@ class MagicFacetHandler {
 		}
 
 		$run   = new FacetResults(startTime: $startTime, config: $this->normaliseFacetConfig(facetConfig: $facetConfig, schema: $schema));
-		$table = new TableTermsFacet(
-			tableName: $tableName, field: '', baseQuery: $this->withoutFacets(query: $query),
-			isMetadata: false, register: $register, schema: $schema
+		$table = new TermsFacetTable(
+			tableName: $tableName, baseQuery: $this->withoutFacets(query: $query), register: $register, schema: $schema
 		);
 
 		$this->addTableSelfFacets(table: $table, run: $run);
@@ -424,14 +423,14 @@ class MagicFacetHandler {
 	/**
 	 * Compute the metadata (@self) facets of one table.
 	 *
-	 * @param TableTermsFacet $table The table and filters, without a field.
+	 * @param TermsFacetTable $table The table and filters, without a field.
 	 * @param FacetResults    $run   The facet configuration and the results so far.
 	 *
 	 * @return void
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs.
 	 */
-	private function addTableSelfFacets(TableTermsFacet $table, FacetResults $run): void {
+	private function addTableSelfFacets(TermsFacetTable $table, FacetResults $run): void {
 		$run->addSelfFacets(
 			compute: fn (int|string $field, mixed $config): ?array => $this->computeTableFacet(
 				facet: $table->forMetadataField(field: self::METADATA_PREFIX . $field),
@@ -443,7 +442,7 @@ class MagicFacetHandler {
 	/**
 	 * Compute the object field facets of one table that the caller may read.
 	 *
-	 * @param TableTermsFacet $table The table and filters, without a field.
+	 * @param TermsFacetTable $table The table and filters, without a field.
 	 * @param FacetResults    $run   The facet configuration and the results so far.
 	 *
 	 * @return void
@@ -452,7 +451,7 @@ class MagicFacetHandler {
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
-	private function addTablePropertyFacets(TableTermsFacet $table, FacetResults $run): void {
+	private function addTablePropertyFacets(TermsFacetTable $table, FacetResults $run): void {
 		foreach ($run->config as $field => $config) {
 			// 🔴 AN EXPLICITLY REQUESTED FACET OBEYS THE READ RULE TOO. The
 			// guard in expandFacetConfig() covers only the auto-discovered

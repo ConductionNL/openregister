@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
@@ -140,8 +141,7 @@ class CreateFileHandlerTest extends TestCase {
 
 		$result = $this->handler->addFile(
 			objectEntity: $this->createMock(ObjectEntity::class),
-			fileName: 'doc.pdf',
-			content: $stream
+			upload: new FileUpload(fileName: 'doc.pdf', content: $stream, share: false)
 		);
 
 		$this->assertSame($file, $result);
@@ -168,8 +168,7 @@ class CreateFileHandlerTest extends TestCase {
 		try {
 			$this->handler->addFile(
 				objectEntity: $this->createMock(ObjectEntity::class),
-				fileName: 'evil.pdf',
-				content: $stream
+				upload: new FileUpload(fileName: 'evil.pdf', content: $stream, share: false)
 			);
 		} finally {
 			fclose($stream);
@@ -186,8 +185,7 @@ class CreateFileHandlerTest extends TestCase {
 
 		$result = $this->handler->addFile(
 			objectEntity: $this->createMock(ObjectEntity::class),
-			fileName: 'doc.pdf',
-			content: 'plain-string-content'
+			upload: new FileUpload(fileName: 'doc.pdf', content: 'plain-string-content', share: false)
 		);
 
 		$this->assertSame($file, $result);

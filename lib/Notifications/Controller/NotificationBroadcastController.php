@@ -43,6 +43,8 @@ namespace OCA\OpenRegister\Notifications\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
 use DateTime;
+use OCA\OpenRegister\Notifications\Db\BroadcastMessage;
+use OCA\OpenRegister\Notifications\Db\BroadcastWindow;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationBroadcastService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -168,11 +170,9 @@ class NotificationBroadcastController extends Controller {
 	private function sendBroadcast(string $subject, ?string $body, array $window): JSONResponse {
 		try {
 			$broadcast = $this->broadcastService->send(
-				subject: $subject,
-				body: $body,
+				message: new BroadcastMessage(subject: $subject, body: $body),
 				sender: (string)$this->resolveUserId(),
-				startsAt: $window[0],
-				endsAt: $window[1]
+				window: new BroadcastWindow(startsAt: $window[0], endsAt: $window[1])
 			);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);

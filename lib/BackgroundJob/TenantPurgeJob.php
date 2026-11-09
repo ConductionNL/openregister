@@ -33,7 +33,7 @@ use DateInterval;
 use DateTime;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -62,9 +62,9 @@ class TenantPurgeJob extends TimedJob {
 	/**
 	 * Usage mapper
 	 *
-	 * @var TenantUsageMapper
+	 * @var TenantUsageMapperInterface
 	 */
-	private readonly TenantUsageMapper $tenantUsageMapper;
+	private readonly TenantUsageMapperInterface $tenantUsageMapper;
 
 	/**
 	 * Constructor

@@ -161,38 +161,46 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 * @param string $unit The unit.
 	 * @param WorkingCalendar|null $calendar The resolved calendar; required for business units and
 	 *        refused when absent, ignored for hours and calendar days.
-	 * @param WalkCollector|null $collector Records the walk when a diagnostic is asking; the arm path passes none.
 	 *
 	 * @return DateTimeImmutable The resulting instant.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 */
+	public function add(DateTimeInterface $from, float $value, string $unit, ?WorkingCalendar $calendar): DateTimeImmutable {
+		return $this->addWatched(
+			addition: new SlaAddition(
+				start: DateTimeImmutable::createFromInterface($from),
+				value: $value,
+				unit: $unit,
+				calendar: $calendar
+			),
+			collector: null
+		);
+	}//end add()
+
+	/**
+	 * Add an amount of business time to an instant, recording the walk when someone is watching.
+	 *
+	 * @param SlaAddition        $addition  The start, the amount, the unit and the calendar.
+	 * @param WalkCollector|null $collector Records the walk when a diagnostic is asking; the arm path passes none.
+	 *
+	 * @return DateTimeImmutable The resulting instant.
+	 *
 	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
 	 */
-	public function add(
-		DateTimeInterface $from,
-		float $value,
-		string $unit,
-		?WorkingCalendar $calendar,
-		?WalkCollector $collector = null
-	): DateTimeImmutable {
-		$addition = new SlaAddition(
-			start: DateTimeImmutable::createFromInterface($from),
-			value: $value,
-			unit: $unit,
-			calendar: $calendar
-		);
-		$this->validateUnit(unit: $unit);
+	public function addWatched(SlaAddition $addition, ?WalkCollector $collector): DateTimeImmutable {
+		$this->validateUnit(unit: $addition->unit);
 
-		if ($unit === self::UNIT_HOURS) {
+		if ($addition->unit === self::UNIT_HOURS) {
 			return $this->addHours(addition: $addition);
 		}
 
-		if ($unit === self::UNIT_CALENDAR_DAYS) {
-			return $this->addCalendarDays(start: $addition->start, value: $value);
+		if ($addition->unit === self::UNIT_CALENDAR_DAYS) {
+			return $this->addCalendarDays(start: $addition->start, value: $addition->value);
 		}
 
 		return $this->walk(addition: $addition, collector: $collector);
-	}//end add()
+	}//end addWatched()
 
 	/**
 	 * Subtract an amount of business time from an instant.

@@ -22,7 +22,9 @@ namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
-use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -127,17 +129,22 @@ final class MapperWiring {
 	private static function magicMapper(ContainerInterface $container): MagicMapper {
 		return new MagicMapper(
 			db: $container->get('OCP\IDBConnection'),
-			schemaMapper: $container->get(SchemaMapperInterface::class),
-			registerMapper: $container->get(RegisterMapperInterface::class),
-			config: $container->get('OCP\IConfig'),
-			eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-			userSession: $container->get('OCP\IUserSession'),
-			groupManager: $container->get('OCP\IGroupManager'),
-			userManager: $container->get('OCP\IUserManager'),
-			appConfig: $container->get('OCP\IAppConfig'),
-			logger: $container->get('Psr\Log\LoggerInterface'),
-			settingsService: $container->get(AppSettingsInterface::class),
-			container: $container
+			lookups: new MagicMapperLookups(
+				schemaMapper: $container->get(SchemaMapperInterface::class),
+				registerMapper: $container->get(RegisterMapperInterface::class),
+				container: $container
+			),
+			identity: new MagicMapperIdentity(
+				userSession: $container->get('OCP\IUserSession'),
+				groupManager: $container->get('OCP\IGroupManager'),
+				userManager: $container->get('OCP\IUserManager')
+			),
+			runtime: new MagicMapperRuntime(
+				config: $container->get('OCP\IConfig'),
+				appConfig: $container->get('OCP\IAppConfig'),
+				eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+				logger: $container->get('Psr\Log\LoggerInterface')
+			)
 		);
 	}//end magicMapper()
 

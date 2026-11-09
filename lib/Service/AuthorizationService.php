@@ -22,6 +22,7 @@ use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
 use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Service\Audit\TokenContext;
+use OCA\OpenRegister\Service\Audit\NamedIdentifier;
 use OCA\OpenRegister\Service\Audit\TokenIdentity;
 use OCA\OpenRegister\Service\Consumer\ConsumerMapperSource;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
@@ -205,12 +206,9 @@ class AuthorizationService {
 		$this->tokenContext->claim(
 			new TokenIdentity(
 				mechanism: $credential['mechanism'],
-				reference: $credential['reference'],
-				name: $consumer->name,
-				ownerUid: $consumer->userId,
-				ownerName: null,
-				consumerUuid: $consumer->uuid,
-				consumerName: $consumer->name,
+				token: new NamedIdentifier(id: $credential['reference'], name: $consumer->name),
+				owner: new NamedIdentifier(id: $consumer->userId),
+				consumer: new NamedIdentifier(id: $consumer->uuid, name: $consumer->name),
 			)
 		);
 	}//end claimConsumerToken()

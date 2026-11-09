@@ -112,7 +112,7 @@ final class ReadStateAndEmailLinkMapperGoldenTest extends TestCase {
 	public function testOutcomesMatchGolden(): void {
 		$actual = [];
 		foreach (self::seenCases() as $name => [$args, $rows, $failInsert]) {
-			$actual['markSeen / ' . $name] = $this->outcome(mapper: $this->readStateMapper(rows: $rows, failInsert: $failInsert), method: 'markSeen', args: $args);
+			$actual['markSeen / ' . $name] = $this->outcome(mapper: $this->readStateMapper(rows: $rows, failInsert: $failInsert), method: 'markSeen', args: ['sighting' => self::sightingOf(args: $args)]);
 		}
 
 		foreach (self::uuidCases() as $name => [$args, $rows]) {
@@ -137,8 +137,29 @@ final class ReadStateAndEmailLinkMapperGoldenTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('unique violation');
-		$mapper->markSeen(userId: 'alice', objectUuid: 'o-1', seenAt: new DateTime('2026-03-04T05:06:07+00:00'));
+		$mapper->markSeen(sighting: self::sightingOf(args: ['userId' => 'alice', 'objectUuid' => 'o-1', 'seenAt' => new DateTime('2026-03-04T05:06:07+00:00')]));
 	}//end testALostRaceWithoutAWinnerRethrowsTheInsertFailure()
+
+	/**
+	 * The sighting a case describes, built the way the callers build it.
+	 *
+	 * @param array<string, mixed> $args userId, objectUuid and optionally register, schema, subSeen and seenAt.
+	 *
+	 * @return ObjectReadState The unsaved sighting.
+	 */
+	private static function sightingOf(array $args): ObjectReadState {
+		$sighting = new ObjectReadState();
+		$sighting->setUserId($args['userId']);
+		$sighting->setObjectUuid($args['objectUuid']);
+		$sighting->setRegister($args['register'] ?? null);
+		$sighting->setSchema($args['schema'] ?? null);
+		$sighting->setLastSeenAt($args['seenAt'] ?? null);
+		if (array_key_exists('subSeen', $args) === true) {
+			$sighting->setSubSeen($args['subSeen']);
+		}
+
+		return $sighting;
+	}//end sightingOf()
 
 	/**
 	 * A connection whose builders record and serve the given rows.

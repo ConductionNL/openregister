@@ -123,7 +123,7 @@ final class RelatedReadFilter {
 	 *
 	 * Another user's draft is kept from this caller, as on every other path. The
 	 * candidates come from a lookup that applied no access rule, so a draft the
-	 * per-table query left out can reach this list; hasPermission() has no draft rule.
+	 * per-table query left out can reach this list; hasRowPermission() has no draft rule.
 	 *
 	 * @param ObjectEntity $object The object.
 	 * @param Schema       $schema Its schema.
@@ -138,13 +138,6 @@ final class RelatedReadFilter {
 			return false;
 		}
 
-		return $this->rbac->hasPermission(
-			schema: $schema,
-			action: 'read',
-			objectOwner: $object->getOwner(),
-			objectData: $object->getMatchEnvelope(),
-			objectAuthorization: $object->getAuthorization(),
-			objectUuid: $object->getUuid()
-		) === true;
+		return $this->rbac->hasRowPermission(schema: $schema, action: 'read', row: $object) === true;
 	}//end readableUnder()
 }//end class

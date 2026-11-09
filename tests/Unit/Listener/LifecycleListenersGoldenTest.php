@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
+use OCA\OpenRegister\Service\Rules\RuleTrace;
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -1112,8 +1114,8 @@ class LifecycleListenersGoldenTest extends TestCase {
 		);
 		$records = [];
 		$this->ruleRuns->method('record')->willReturnCallback(
-			static function (...$arguments) use (&$records): void {
-				$records[] = $arguments;
+			static function (RuleRunSubject $subject, RuleTrace $trace) use (&$records): void {
+				$records[] = [$subject->ruleId, $subject->schemaSlug, $trace, $subject->objectUuid, $subject->registerSlug];
 			}
 		);
 

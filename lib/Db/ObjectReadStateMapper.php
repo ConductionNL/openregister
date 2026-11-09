@@ -193,42 +193,30 @@ class ObjectReadStateMapper extends QBMapper implements ObjectReadStateMapperInt
 	 * The unique index on (user_id, object_uuid) is the authority: opening an
 	 * object twice refreshes one row rather than writing a second.
 	 *
-	 * @param string $userId The reading user's uid.
-	 * @param string $objectUuid The object's uuid.
-	 * @param string|null $register The object's register, as the caller addressed it.
-	 * @param string|null $schema The object's schema, as the caller addressed it.
-	 * @param array<string, string>|null $subSeen Sub-resource seen moments to merge in.
-	 * @param DateTime|null $seenAt The moment to record, defaulting to now.
+	 * The sighting is the row this write inserts when the user has no row yet:
+	 * its user, object, the register and schema as the caller addressed them,
+	 * the sub-resource seen moments to merge in (null for none) and the moment
+	 * seen (null for now). Building it touches no storage; it is only inserted
+	 * when findOne() finds no row.
+	 *
+	 * @param ObjectReadState $sighting The sighting, as described above.
 	 *
 	 * @return ObjectReadState The stored row.
 	 *
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
-	public function markSeen(
-		string $userId,
-		string $objectUuid,
-		?string $register = null,
-		?string $schema = null,
-		?array $subSeen = null,
-		?DateTime $seenAt = null
-	): ObjectReadState {
-		$now = ($seenAt ?? new DateTime());
+	public function markSeen(ObjectReadState $sighting): ObjectReadState {
+		$subSeen = $sighting->getSubSeen();
+		$now = ($sighting->getLastSeenAt() ?? new DateTime());
 
-		// The row this sighting writes when the user has no row yet. Building
-		// it touches no storage; it is only inserted when findOne() finds none.
-		$row = new ObjectReadState();
-		$row->setUserId($userId);
-		$row->setObjectUuid($objectUuid);
-		$row->setRegister($register);
-		$row->setSchema($schema);
-		$row->setLastSeenAt($now);
-		$row->setSubSeen(($subSeen ?? []));
-		$row->setCreated($now);
+		$sighting->setLastSeenAt($now);
+		$sighting->setSubSeen(($subSeen ?? []));
+		$sighting->setCreated($now);
 
-		$existing = $this->findOne(userId: $userId, objectUuid: $objectUuid);
+		$existing = $this->findOne(userId: (string)$sighting->getUserId(), objectUuid: (string)$sighting->getObjectUuid());
 
-		return $this->refreshSeen(existing: $existing, sighting: $row, subSeen: $subSeen)
-			?? $this->insertSeen(row: $row);
+		return $this->refreshSeen(existing: $existing, sighting: $sighting, subSeen: $subSeen)
+			?? $this->insertSeen(row: $sighting);
 
 	}//end markSeen()
 

@@ -32,22 +32,16 @@ final readonly class BulkJobRequest {
 	/**
 	 * Name the request.
 	 *
-	 * @param string               $actionId      The action to run.
-	 * @param array<string, mixed> $parameters    The action's parameters.
-	 * @param array<string, mixed> $selection     Either `{"ids": [...]}` or `{"query": {...}}`.
-	 * @param string|null          $justification The reason the operator typed.
-	 * @param string               $actorUid      The actor's uid.
-	 * @param int|null             $registerId    The register the selection lives in.
-	 * @param int|null             $schemaId      The schema the selection lives in.
+	 * @param BulkJobActionCall $call          The action to run and its parameters.
+	 * @param BulkJobSelection  $selection     The objects to run it on.
+	 * @param string            $actorUid      The actor's uid.
+	 * @param string|null       $justification The reason the operator typed.
 	 */
 	public function __construct(
-		public string $actionId,
-		public array $parameters,
-		public array $selection,
-		public ?string $justification,
+		public BulkJobActionCall $call,
+		public BulkJobSelection $selection,
 		public string $actorUid,
-		public ?int $registerId,
-		public ?int $schemaId,
+		public ?string $justification,
 	) {
 	}//end __construct()
 }//end class

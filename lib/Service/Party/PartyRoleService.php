@@ -171,9 +171,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * The trusted path an example set writes through: `occ` has no signed-in
 	 * user, so the caller names who links. The same kind and role checks run.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param int $registerId The register id.
-	 * @param int|string|null $schemaId The object's schema id.
+	 * @param ObjectEntity $object The object the party goes on; its uuid, register and schema are recorded.
 	 * @param array<string, mixed> $payload `partyUuid`, `role`, `validFrom`, `validUntil`, `note`, `primary`.
 	 * @param string $linkedBy Who links the party, such as the app that ships an example set.
 	 *
@@ -183,9 +181,14 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
-	public function importParty(string $objectUuid, int $registerId, int|string|null $schemaId, array $payload, string $linkedBy): ContactLink {
+	public function importParty(ObjectEntity $object, array $payload, string $linkedBy): ContactLink {
+		$schemaId = $object->getSchema();
 		return $this->linkParty(
-			target: new PartyLinkTarget(objectUuid: $objectUuid, registerId: $registerId, schemaId: self::intOrNull(value: $schemaId)),
+			target: new PartyLinkTarget(
+				objectUuid: (string)$object->getUuid(),
+				registerId: (int)$object->getRegister(),
+				schemaId: self::intOrNull(value: $schemaId)
+			),
 			schemaId: $schemaId,
 			payload: $payload,
 			linkedBy: $linkedBy

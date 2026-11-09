@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
 use OCA\OpenRegister\Controller\FlowRunMigrationController;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
@@ -166,7 +167,7 @@ class FlowRunMigrationAccessGoldenTest extends TestCase {
 		$this->flows->method('find')->willReturn(new Flow());
 		$this->params = ['mapping' => 'n1=n2', 'targetVersion' => '3', 'reason' => 'fix'];
 		$this->migrations->expects($this->once())->method('migrate')
-			->with('run-1', 3, 'fix', 'alice', [])
+			->with('run-1', $this->equalTo(new FlowRunMigrationTarget(3, 'fix', 'alice', [])))
 			->willReturn(['dryRun' => false, 'migrated' => false, 'errors' => ['x']]);
 
 		$response = $this->controller()->migrate('run-1');
@@ -181,7 +182,7 @@ class FlowRunMigrationAccessGoldenTest extends TestCase {
 		$this->flows->method('find')->willReturn(new Flow());
 		$this->params = ['mapping' => ['n1' => 'n2']];
 		$this->migrations->expects($this->once())->method('migrate')
-			->with('run-1', 0, '', 'alice', ['n1' => 'n2'])
+			->with('run-1', $this->equalTo(new FlowRunMigrationTarget(0, '', 'alice', ['n1' => 'n2'])))
 			->willReturn(['dryRun' => false, 'migrated' => true]);
 
 		$this->assertSame(200, $this->controller()->migrate('run-1')->getStatus());
@@ -192,7 +193,7 @@ class FlowRunMigrationAccessGoldenTest extends TestCase {
 		$this->flows->method('find')->willReturn(new Flow());
 		$this->params = ['reason' => ' upgrade ', 'sourceVersion' => '1', 'targetVersion' => '2', 'mapping' => 7];
 		$this->migrations->expects($this->once())->method('migrateRunsOfVersion')
-			->with('flow-1', 1, 2, 'upgrade', 'alice', [])
+			->with('flow-1', 1, $this->equalTo(new FlowRunMigrationTarget(2, 'upgrade', 'alice', [])))
 			->willReturn(['moved' => 4]);
 
 		$response = $this->controller()->migrateRuns('flow-1');

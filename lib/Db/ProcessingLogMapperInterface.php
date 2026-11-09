@@ -51,10 +51,7 @@ interface ProcessingLogMapperInterface {
 	 * here: unlike the per-subject extract, it goes to the FG or the auditor.
 	 *
 	 * @param array<string, mixed> $filters register_id, schema_id, activity_id, actor, action, subject_id_type, subject_id_value.
-	 * @param DateTime|null $from Inclusive lower bound.
-	 * @param DateTime|null $to Inclusive upper bound.
-	 * @param string|null $organisationId Tenant scope (null = all, admin only).
-	 * @param bool $includeConfidential Whether to include confidential entries (FG only).
+	 * @param ProcessingLogReadScope|null $scope Period, tenant scope and confidentiality; null for the defaults.
 	 * @param int $limit Page size.
 	 * @param int $offset Page offset.
 	 *
@@ -64,10 +61,7 @@ interface ProcessingLogMapperInterface {
 	 */
 	public function findFiltered(
 		array $filters = [],
-		?DateTime $from = null,
-		?DateTime $to = null,
-		?string $organisationId = null,
-		bool $includeConfidential = false,
+		?ProcessingLogReadScope $scope = null,
 		int $limit = 100,
 		int $offset = 0,
 	): array;
@@ -80,21 +74,11 @@ interface ProcessingLogMapperInterface {
 	 *
 	 * @param string $idType Subject identifier type (e.g. `BSN`).
 	 * @param string $idValue Subject identifier value.
-	 * @param DateTime|null $from Inclusive lower bound.
-	 * @param DateTime|null $to Inclusive upper bound.
-	 * @param string|null $organisationId Tenant scope (null = all, admin only).
-	 * @param bool $includeConfidential Whether to include confidential entries (FG only).
+	 * @param ProcessingLogReadScope|null $scope Period, tenant scope and confidentiality; null for the defaults.
 	 *
 	 * @return ProcessingLogEntry[]
 	 */
-	public function findBySubject(
-		string $idType,
-		string $idValue,
-		?DateTime $from = null,
-		?DateTime $to = null,
-		?string $organisationId = null,
-		bool $includeConfidential = false,
-	): array;
+	public function findBySubject(string $idType, string $idValue, ?ProcessingLogReadScope $scope = null): array;
 
 	/**
 	 * Count entries attributed to each activity, optionally per register.

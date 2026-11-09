@@ -34,6 +34,7 @@ use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -402,11 +403,13 @@ class LifecycleValidationListener implements IEventListener {
 		}
 
 		$this->ruleRuns->record(
-			ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_LIFECYCLE_CONDITION, schemaSlug: $slug, key: $attempt->action),
-			schemaSlug: $slug,
-			trace: $this->conditionTrace(attempt: $attempt, refusal: $refusal),
-			objectUuid: ($attempt->edit->object()->getUuid() ?? null),
-			registerSlug: ($attempt->edit->object()->getRegister() ?? null)
+			subject: new RuleRunSubject(
+				ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_LIFECYCLE_CONDITION, schemaSlug: $slug, key: $attempt->action),
+				schemaSlug: $slug,
+				objectUuid: ($attempt->edit->object()->getUuid() ?? null),
+				registerSlug: ($attempt->edit->object()->getRegister() ?? null)
+			),
+			trace: $this->conditionTrace(attempt: $attempt, refusal: $refusal)
 		);
 	}//end recordCondition()
 

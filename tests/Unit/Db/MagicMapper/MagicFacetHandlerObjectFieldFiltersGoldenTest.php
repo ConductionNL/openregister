@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\TableTermsFacet;
+use OCA\OpenRegister\Db\MagicMapper\TermsFacetTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -37,6 +38,7 @@ use ReflectionProperty;
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFacetFieldLabel
  * @uses   \OCA\OpenRegister\Db\MagicMapper\TableTermsFacet
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\TermsFacetTable
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Support\FilterParams
@@ -124,7 +126,7 @@ class MagicFacetHandlerObjectFieldFiltersGoldenTest extends TestCase {
 		}
 
 		$method = new ReflectionMethod(MagicFacetHandler::class, 'applyObjectFieldFilters');
-		$facet  = new TableTermsFacet('openregister_table_1_1', 'title', $query, false, new Register(), $schema);
+		$facet  = (new TermsFacetTable('openregister_table_1_1', $query, new Register(), $schema))->forPropertyField('title');
 		$method->invoke($facets, $this->queryBuilder(), $facet);
 	}//end apply()
 

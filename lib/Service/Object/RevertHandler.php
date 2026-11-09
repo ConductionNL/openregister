@@ -95,27 +95,23 @@ class RevertHandler implements RevertHandlerInterface {
 	/**
 	 * RevertHandler constructor.
 	 *
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper.
+	 * @param RevertStores $stores The audit trail, the object mapper and the save-path validator.
 	 * @param ContainerInterface $container DI container.
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher.
-	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper.
 	 * @param PermissionCheckInterface $permissionHandler Permission handler for RBAC.
-	 * @param ObjectValidatorInterface $validateHandler Schema validator of the save path.
 	 */
 	public function __construct(
-		AuditTrailMapperInterface $auditTrailMapper,
+		RevertStores $stores,
 		ContainerInterface $container,
 		IEventDispatcher $eventDispatcher,
-		MagicMapperInterface $objectEntityMapper,
 		PermissionCheckInterface $permissionHandler,
-		ObjectValidatorInterface $validateHandler,
 	) {
-		$this->auditTrailMapper = $auditTrailMapper;
+		$this->auditTrailMapper = $stores->auditTrailMapper;
 		$this->container = $container;
 		$this->eventDispatcher = $eventDispatcher;
-		$this->objectEntityMapper = $objectEntityMapper;
+		$this->objectEntityMapper = $stores->objectEntityMapper;
 		$this->permissionHandler = $permissionHandler;
-		$this->validateHandler = $validateHandler;
+		$this->validateHandler = $stores->validateHandler;
 	}//end __construct()
 
 	/**
@@ -124,8 +120,7 @@ class RevertHandler implements RevertHandlerInterface {
 	 * @param string $register The register identifier
 	 * @param string $schema The schema identifier
 	 * @param string $id The object ID
-	 * @param mixed $until The point to revert to (DateTime|string)
-	 * @param bool $overwriteVersion Whether to overwrite the version
+	 * @param RevertPoint $point The point to revert to, and whether to overwrite the version
 	 *
 	 * @return ObjectEntity The reverted object
 	 *
@@ -136,11 +131,9 @@ class RevertHandler implements RevertHandlerInterface {
 	 * @throws ValidationException If the restored data fails the current schema
 	 * @throws \Exception If reversion fails
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean needed to control version overwrite behavior
-	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	public function revert(string $register, string $schema, string $id, mixed $until, bool $overwriteVersion = false): ObjectEntity {
+	public function revert(string $register, string $schema, string $id, RevertPoint $point): ObjectEntity {
 		// Get the object with RBAC and multitenancy enforced (tenant-scoped find).
 		$context = $this->objectEntityMapper->findAcrossAllSources(identifier: $id, includeDeleted: false);
 
@@ -155,10 +148,14 @@ class RevertHandler implements RevertHandlerInterface {
 		$this->assertMayRevert(context: $context);
 
 		// Revert from the object just checked: looked up again, the URL id could name another row.
-		$revertedObject = $this->auditTrailMapper->revertObject(identifier: $context['object'], until: $until, overwriteVersion: $overwriteVersion);
+		$revertedObject = $this->auditTrailMapper->revertObject(
+			identifier: $context['object'],
+			until: $point->until,
+			overwriteVersion: $point->overwriteVersion
+		);
 		$savedObject = $this->saveReverted(reverted: $revertedObject, context: $context);
 
-		$this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent(object: $savedObject, until: $until));
+		$this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent(object: $savedObject, until: $point->until));
 
 		return $savedObject;
 	}//end revert()

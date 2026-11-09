@@ -124,21 +124,19 @@ class ReadStateService implements ReadStateServiceInterface {
 		$uuid = $this->requireUuid(object: $object);
 		$now = new DateTime();
 
-		$subSeen = null;
+		$sighting = new ObjectReadState();
+		$sighting->setUserId($uid);
+		$sighting->setObjectUuid($uuid);
+		$sighting->setRegister($register);
+		$sighting->setSchema($schema);
+		$sighting->setLastSeenAt($now);
 		if ($subResource !== null && $subResource !== '') {
-			$subSeen = [$subResource => $now->format(DateTimeInterface::ATOM)];
+			$sighting->setSubSeen([$subResource => $now->format(DateTimeInterface::ATOM)]);
 		}
 
 		$this->forgetMemo();
 
-		return $this->mapper->markSeen(
-			userId: $uid,
-			objectUuid: $uuid,
-			register: $register,
-			schema: $schema,
-			subSeen: $subSeen,
-			seenAt: $now
-		);
+		return $this->mapper->markSeen(sighting: $sighting);
 
 	}//end markRead()
 

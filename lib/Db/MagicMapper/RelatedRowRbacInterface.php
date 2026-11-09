@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 
 /**
@@ -57,8 +58,6 @@ interface RelatedRowRbacInterface {
 	 * @param string      $action              CRUD action to check
 	 * @param string|null $objectOwner         Optional object owner for ownership check
 	 * @param array|null  $objectData          Optional object data for conditional checks
-	 * @param array|null  $objectAuthorization Optional per-object `_authorization`, carrying its scope
-	 * @param string|null $objectUuid          Optional object UUID, for per-object grant resolution
 	 *
 	 * @return bool True if user has permission
 	 *
@@ -71,9 +70,22 @@ interface RelatedRowRbacInterface {
 		string $action,
 		?string $objectOwner = null,
 		?array $objectData = null,
-		?array $objectAuthorization = null,
-		?string $objectUuid = null,
 	): bool;
+
+	/**
+	 * Check if a user has permission to perform an action on one stored row.
+	 *
+	 * @param Schema       $schema Schema to check
+	 * @param string       $action CRUD action to check
+	 * @param ObjectEntity $row    The stored row: owner, match envelope, own `_authorization` and uuid
+	 *
+	 * @return bool True if user has permission
+	 *
+	 * @see MagicRbacHandler::hasRowPermission()
+	 *
+	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 */
+	public function hasRowPermission(Schema $schema, string $action, ObjectEntity $row): bool;
 
 	/**
 	 * The RBAC row predicate for rows carried under an alias in a subquery.

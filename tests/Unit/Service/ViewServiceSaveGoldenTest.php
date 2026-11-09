@@ -22,6 +22,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
 use OCA\OpenRegister\Search\Service\ViewService;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -151,7 +153,7 @@ final class ViewServiceSaveGoldenTest extends TestCase {
 	public function testPresentationValidation(?array $presentation, string $expected): void {
 		$service = $this->service(self::stored(false));
 		try {
-			$view = $service->create('N', 'D', 'alice', false, false, ['schemas' => ['s1']], $presentation);
+			$view = $service->create(new ViewDefinition('N', 'D', ['schemas' => ['s1']], $presentation), new ViewAudience('alice', false, false));
 			$outcome = 'ok';
 			$this->assertSame($presentation, $view->getPresentation());
 		} catch (InvalidArgumentException $e) {

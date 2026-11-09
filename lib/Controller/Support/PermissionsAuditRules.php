@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionReportScopeInterface;
@@ -37,7 +37,7 @@ final class PermissionsAuditRules {
 	 * Bundle the services.
 	 *
 	 * @param PermissionCatalogueInterface   $catalogue    The grantable set, for the declared/undeclared split.
-	 * @param DenyEnforcementMode   $enforcement  The staging switch, reported beside every rule.
+	 * @param DenyEnforcementModeInterface   $enforcement  The staging switch, reported beside every rule.
 	 * @param DenyResolverInterface          $denyResolver The one reader of the deny grammar.
 	 * @param PermissionReportScopeInterface $scope        Resolves which registers and schemas a report covers.
 	 *
@@ -45,7 +45,7 @@ final class PermissionsAuditRules {
 	 */
 	public function __construct(
 		public readonly PermissionCatalogueInterface $catalogue,
-		public readonly DenyEnforcementMode $enforcement,
+		public readonly DenyEnforcementModeInterface $enforcement,
 		public readonly DenyResolverInterface $denyResolver,
 		public readonly PermissionReportScopeInterface $scope,
 	) {

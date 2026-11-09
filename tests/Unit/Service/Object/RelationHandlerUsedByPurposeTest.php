@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use OCA\OpenRegister\Service\Object\RelationLookup;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -93,11 +94,13 @@ class RelationHandlerUsedByPurposeTest extends TestCase {
 		);
 
 		$handler = new RelationHandler(
-			objectEntityMapper: $magic,
-			schemaMapper: $schemaMapper,
+			stores: new RelationHandlerStores(
+				objects: $magic,
+				schemas: $schemaMapper,
+				registers: $registerMapper
+			),
 			rbacHandler: $this->createMock(MagicRbacHandler::class),
 			logger: $this->createMock(LoggerInterface::class),
-			registerMapper: $registerMapper,
 			purposeGuard: $guard
 		);
 

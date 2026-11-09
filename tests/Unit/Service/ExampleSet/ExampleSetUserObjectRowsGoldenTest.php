@@ -173,17 +173,19 @@ class ExampleSetUserObjectRowsGoldenTest extends TestCase {
 	public function testReadStateWrite(): void {
 		$mapper = $this->createMock(ObjectReadStateMapper::class);
 		$mapper->expects($this->exactly(2))->method('markSeen')->willReturnCallback(
-			function (...$args) {
+			function (ObjectReadState $sighting) {
 				static $call = 0;
 				$call++;
+				$args = [$sighting->getUserId(), $sighting->getObjectUuid(), $sighting->getRegister(), $sighting->getSchema(), $sighting->getSubSeen()];
 				if ($call === 1) {
-					$this->assertSame(['alice', 'o-1', 'r', 's', null], array_slice($args, 0, 5));
-					$this->assertInstanceOf(DateTime::class, $args[5]);
-					$this->assertSame('2025-03-04T05:06:07+00:00', $args[5]->format('c'));
+					$this->assertSame(['alice', 'o-1', 'r', 's', null], $args);
+					$this->assertInstanceOf(DateTime::class, $sighting->getLastSeenAt());
+					$this->assertSame('2025-03-04T05:06:07+00:00', $sighting->getLastSeenAt()->format('c'));
 					return $this->createMock(ObjectReadState::class);
 				}
 
-				$this->assertSame(['bob', 'o-2', null, null, null, null], $args);
+				$this->assertSame(['bob', 'o-2', null, null, null], $args);
+				$this->assertNull($sighting->getLastSeenAt());
 				throw new RuntimeException('db down');
 			}
 		);
@@ -208,8 +210,8 @@ class ExampleSetUserObjectRowsGoldenTest extends TestCase {
 		$mapper = $this->createMock(WatcherMapperInterface::class);
 		$seen   = [];
 		$mapper->expects($this->exactly(2))->method('subscribe')->willReturnCallback(
-			function (...$args) use (&$seen) {
-				$seen[] = $args;
+			function (Watcher $follow, ?bool $notify) use (&$seen) {
+				$seen[] = [$follow->getUserId(), $follow->getObjectUuid(), $follow->getRegister(), $follow->getSchema(), $notify];
 				if (count($seen) === 2) {
 					throw new RuntimeException('no table');
 				}

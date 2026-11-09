@@ -108,24 +108,20 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 	/**
 	 * Record one evaluation.
 	 *
-	 * @param string $ruleId The derived rule id.
-	 * @param string $schemaSlug The slug of the schema the rule is declared on.
+	 * @param RuleRunSubject $subject The rule evaluated and the object it was evaluated on.
 	 * @param RuleTrace $trace The verdict and the operand that decided it.
-	 * @param string|null $objectUuid The object evaluated, when there was one.
-	 * @param string|null $registerSlug The register the object lives in.
 	 * @param DateTime|null $moment The moment of evaluation; defaults to now.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function record(string $ruleId, string $schemaSlug, RuleTrace $trace,
-		?string $objectUuid = null, ?string $registerSlug = null, ?DateTime $moment = null): void {
+	public function record(RuleRunSubject $subject, RuleTrace $trace, ?DateTime $moment = null): void {
 		$run = new RuleRun();
-		$run->setRuleId($ruleId);
-		$run->setSchemaSlug($schemaSlug);
-		$run->setRegisterSlug($registerSlug);
-		$run->setObjectUuid($objectUuid);
+		$run->setRuleId($subject->ruleId);
+		$run->setSchemaSlug($subject->schemaSlug);
+		$run->setRegisterSlug($subject->registerSlug);
+		$run->setObjectUuid($subject->objectUuid);
 		$run->setCreated($moment ?? new DateTime());
 
 		$this->recordSummary(run: $run, trace: $trace);

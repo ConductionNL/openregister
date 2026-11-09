@@ -46,7 +46,6 @@ final class FileExtractionControllerFactory {
 		?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Files\Controller\Support\FileExtractionControllerServices(
 				mappers: new \OCA\OpenRegister\Files\Controller\Support\FileExtractionMappers(

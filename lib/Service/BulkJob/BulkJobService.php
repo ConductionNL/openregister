@@ -196,13 +196,10 @@ class BulkJobService implements BulkJobServiceInterface {
 	): BulkJob {
 		return $this->preview(
 			request: new BulkJobRequest(
-				actionId: $actionId,
-				parameters: $parameters,
-				selection: $selection,
-				justification: $justification,
+				call: new BulkJobActionCall(actionId: $actionId, parameters: $parameters),
+				selection: new BulkJobSelection(criteria: $selection, registerId: $registerId, schemaId: $schemaId),
 				actorUid: $actorUid,
-				registerId: $registerId,
-				schemaId: $schemaId
+				justification: $justification
 			)
 		);
 	}//end create()
@@ -219,26 +216,26 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
 	 */
 	private function preview(BulkJobRequest $request): BulkJob {
-		$action = $this->actions->registry->get(id: $request->actionId);
-		$action->validateParameters(parameters: $request->parameters);
-		$this->guards()->assertScope(registerId: $request->registerId, schemaId: $request->schemaId);
+		$action = $this->actions->registry->get(id: $request->call->actionId);
+		$action->validateParameters(parameters: $request->call->parameters);
+		$this->guards()->assertScope(registerId: $request->selection->registerId, schemaId: $request->selection->schemaId);
 
-		$selectionType = $this->selectionTypeOf(selection: $request->selection);
+		$selectionType = $this->selectionTypeOf(selection: $request->selection->criteria);
 		$ceiling = $this->getCeiling();
 
 		$uuids = $this->actions->resolver->resolveUuids(
 			selectionType: $selectionType,
-			selection: $request->selection,
-			registerId: $request->registerId,
-			schemaId: $request->schemaId,
+			selection: $request->selection->criteria,
+			registerId: $request->selection->registerId,
+			schemaId: $request->selection->schemaId,
 			ceiling: $ceiling
 		);
 
 		$this->guards()->assertCeiling(count: count($uuids), ceiling: $ceiling);
 
-		$objects = $this->actions->resolver->hydrate(uuids: $uuids, registerId: $request->registerId, schemaId: $request->schemaId);
+		$objects = $this->actions->resolver->hydrate(uuids: $uuids, registerId: $request->selection->registerId, schemaId: $request->selection->schemaId);
 		$this->actions->executor->assertGuards(action: $action, objects: $objects);
-		$this->guards()->assertUndoCeiling(action: $action, objects: $objects, parameters: $request->parameters);
+		$this->guards()->assertUndoCeiling(action: $action, objects: $objects, parameters: $request->call->parameters);
 
 		$job = $this->store->jobMapper->createFromArray(
 			array_merge(
@@ -248,11 +245,13 @@ class BulkJobService implements BulkJobServiceInterface {
 		);
 
 		$this->actions->executor->writePreviewMembers(
-			job: $job,
-			uuids: $uuids,
-			objects: $objects,
-			action: $action,
-			actor: $this->environment->userManager->get($request->actorUid)
+			pass: new BulkJobPass(
+				job: $job,
+				action: $action,
+				actor: $this->environment->userManager->get($request->actorUid),
+				objects: $objects
+			),
+			uuids: $uuids
 		);
 
 		// The cursor is still zero, so refreshCounts reports nothing walked
@@ -273,12 +272,12 @@ class BulkJobService implements BulkJobServiceInterface {
 	 */
 	private function previewRow(BulkJobRequest $request, string $selectionType, array $uuids): array {
 		return [
-			'action' => $request->actionId,
-			'parameters' => $request->parameters,
+			'action' => $request->call->actionId,
+			'parameters' => $request->call->parameters,
 			'selectionType' => $selectionType,
-			'selection' => $this->normaliseSelection(selection: $request->selection, selectionType: $selectionType, uuids: $uuids),
-			'registerId' => $request->registerId,
-			'schemaId' => $request->schemaId,
+			'selection' => $this->normaliseSelection(selection: $request->selection->criteria, selectionType: $selectionType, uuids: $uuids),
+			'registerId' => $request->selection->registerId,
+			'schemaId' => $request->selection->schemaId,
 			'justification' => $request->justification,
 			'state' => BulkJob::STATE_PREVIEWED,
 			'total' => count($uuids),
@@ -579,13 +578,14 @@ class BulkJobService implements BulkJobServiceInterface {
 			schemaId: $job->getSchemaId()
 		);
 
-		$this->actions->executor->writePreviewMembers(
-			job: $job,
-			uuids: $added,
-			objects: $objects,
-			action: $action,
-			actor: $this->environment->userManager->get((string)$job->getStartedBy()),
-			addedAtCommit: true
+		$this->actions->executor->writeAddedMembers(
+			pass: new BulkJobPass(
+				job: $job,
+				action: $action,
+				actor: $this->environment->userManager->get((string)$job->getStartedBy()),
+				objects: $objects
+			),
+			uuids: $added
 		);
 
 		$job->setTotal(($job->getTotal() + count($added)));

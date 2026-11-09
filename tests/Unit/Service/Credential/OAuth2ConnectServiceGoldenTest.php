@@ -29,6 +29,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\OAuth2AuthorizationRequest;
+use OCA\OpenRegister\Service\Credential\TokenSetAddress;
 use OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientResolver;
 use OCA\OpenRegister\Service\Credential\OAuth2CodeExchange;
@@ -80,9 +82,7 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		$url = $this->service(provider: $this->mastodon())->authorizationUrl(
 			provider: $this->mastodon(),
 			claims: ['p' => 'mastodon', 'u' => 'alice', 'h' => 'https://Mastodon.Example/', 'sc' => ['read', 'write'], 'cl' => 'CID', 'cr' => 'CREF'],
-			redirectUri: 'https://home.example/cb',
-			state: 'STATE',
-			challenge: 'CHALLENGE'
+			request: new OAuth2AuthorizationRequest(redirectUri: 'https://home.example/cb', state: 'STATE', challenge: 'CHALLENGE')
 		);
 
 		$this->assertSame(
@@ -100,9 +100,7 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		$url = $this->service(provider: $this->github())->authorizationUrl(
 			provider: $this->github(),
 			claims: ['p' => 'github', 'u' => 'bob'],
-			redirectUri: 'https://home.example/cb',
-			state: 'S',
-			challenge: 'C'
+			request: new OAuth2AuthorizationRequest(redirectUri: 'https://home.example/cb', state: 'S', challenge: 'C')
 		);
 
 		$this->assertSame(
@@ -118,7 +116,7 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('the catalogue names no authorizationEndpoint for this provider');
 
-		$this->service(provider: $provider)->authorizationUrl(provider: $provider, claims: [], redirectUri: 'r', state: 's', challenge: 'c');
+		$this->service(provider: $provider)->authorizationUrl(provider: $provider, claims: [], request: new OAuth2AuthorizationRequest(redirectUri: 'r', state: 's', challenge: 'c'));
 	}
 
 	public function testOauth2ProviderRefusesUnknownAndBlocklessEntries(): void {
@@ -466,8 +464,8 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		$refresh->method('storedSet')->willReturn(OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'STORED_AT']));
 
 		$identities = $this->createMock(OAuth2AccountIdentity::class);
-		$identities->method('record')->willReturnCallback(function (array $provider, string $credentialId, string $scope, OAuth2TokenSet $set, string $owner): void {
-			$this->records[] = ['credentialId' => $credentialId, 'scope' => $scope, 'owner' => $owner];
+		$identities->method('record')->willReturnCallback(function (array $provider, TokenSetAddress $address, OAuth2TokenSet $set, string $owner): void {
+			$this->records[] = ['credentialId' => $address->credentialId, 'scope' => $address->scope, 'owner' => $owner];
 		});
 
 		$clients = $this->createMock(OAuth2ClientResolver::class);

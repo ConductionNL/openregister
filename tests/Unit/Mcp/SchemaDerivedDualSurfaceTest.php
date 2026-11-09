@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -370,10 +371,7 @@ class SchemaDerivedDualSurfaceTest extends TestCase {
 				'pipelinq.lead.get',
 				$this->matchesRegularExpression('/^[a-f0-9]{64}$/'),
 				$this->callback(fn ($summary) => $summary['isError'] === false),
-				null,
-				1,
-				null,
-				'uuid-9'
+				new AuditedObject(null, 1, null, 'uuid-9')
 			);
 
 		$facade = $this->buildFacade();

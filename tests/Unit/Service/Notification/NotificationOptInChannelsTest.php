@@ -7,6 +7,7 @@ namespace Unit\Service\Notification;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -55,8 +56,7 @@ class NotificationOptInChannelsTest extends TestCase {
 			$config,
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(LoggerInterface::class),
-			$groupManager,
-			$userManager
+			new UserGroupServices($groupManager, $userManager)
 		);
 	}
 

@@ -165,9 +165,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 */
 	private function import(string $app, ObjectEntity $object, array $data): void {
 		$this->roles()->importParty(
-			objectUuid: (string) $data['objectUuid'],
-			registerId: (int) $object->getRegister(),
-			schemaId: $object->getSchema(),
+			object: $object,
 			payload: array_diff_key($data, ['objectUuid' => true]),
 			linkedBy: $app
 		);

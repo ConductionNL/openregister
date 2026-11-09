@@ -58,6 +58,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
@@ -1397,6 +1398,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * @psalm-param   array<int, string> $tags
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_schema and $_register stay in this fixed public signature; moved here from CreateFileHandler.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
 	 */
@@ -1412,12 +1414,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	): File {
 		return $this->createFileHandler->addFile(
 			objectEntity: $objectEntity,
-			fileName: $fileName,
-			content: $content,
-			share: $share,
-			tags: $tags,
-			_schema: $_schema,
-			_register: $_register,
+			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags),
 			registerId: $registerId
 		);
 	}//end addFile()
@@ -1455,10 +1452,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	): File {
 		return $this->createFileHandler->saveFile(
 			objectEntity: $objectEntity,
-			fileName: $fileName,
-			content: $content,
-			share: $share,
-			tags: $tags
+			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags)
 		);
 	}//end saveFile()
 
@@ -2061,8 +2055,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 		// Use CreateFileHandler to create the file in target object folder.
 		$newFile = $this->createFileHandler->addFile(
 			objectEntity: $targetObject,
-			fileName: $resolvedName,
-			content: $content
+			upload: new FileUpload(fileName: $resolvedName, content: $content, share: false)
 		);
 
 		$sourceUuid = $sourceObject->getUuid();
