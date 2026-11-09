@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\RelationsCollaboration;
 use OCA\OpenRegister\Controller\Support\RelationsControllerServices;
 use OCA\OpenRegister\Controller\Support\RelationsObjectLookup;
@@ -215,7 +216,6 @@ class RelationsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
 	 * @param RelationsControllerServices $services The relations controller services.
 	 *
@@ -224,11 +224,10 @@ class RelationsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		RelationsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->records = $services->records;
 		$this->collaboration = $services->collaboration;

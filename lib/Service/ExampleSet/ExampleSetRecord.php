@@ -370,15 +370,29 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
 	 */
 	public function hold(string $set, ExampleSetFollowedEntry $followed, array $report, array &$record): array {
-		$part = $followed->part;
-		$name = $followed->name;
-		if ($followed->made['entry'] !== $record[$part][$name]) {
-			$record[$part][$name] = $followed->made['entry'];
+		if (self::took(followed: $followed, record: $record) === true) {
 			$this->write(set: $set, record: $record);
 		}
 
 		return self::reported(followed: $followed, report: $report);
 	}//end hold()
+
+	/**
+	 * Put what following made of an entry into the record, when it differs from what the record holds.
+	 *
+	 * @param ExampleSetFollowedEntry $followed The entry's part and record key, and what follow() made.
+	 * @param array<string, mixed>    $record   The record; updated.
+	 *
+	 * @return bool Whether the record changed.
+	 */
+	private static function took(ExampleSetFollowedEntry $followed, array &$record): bool {
+		if ($followed->made['entry'] === $record[$followed->part][$followed->name]) {
+			return false;
+		}
+
+		$record[$followed->part][$followed->name] = $followed->made['entry'];
+		return true;
+	}//end took()
 
 	/**
 	 * The report with a followed entry's failure and write.

@@ -283,6 +283,18 @@ class FlowStateNode extends LogicNodeBase implements IFlowNode, FlowStateNodeInt
 	public function execute(array $items, array $config, array $context): array {
 		$step = new FlowStateStep(state: $this->stateOf(context: $context), config: $config);
 
+		return $this->applyEach(step: $step, items: $items);
+	}//end execute()
+
+	/**
+	 * Apply the operation to every item, in order.
+	 *
+	 * @param FlowStateStep $step  The state handle and configuration.
+	 * @param array         $items The input items.
+	 *
+	 * @return array The output items.
+	 */
+	private function applyEach(FlowStateStep $step, array $items): array {
 		$output = [];
 		foreach ($items as $index => $item) {
 			$output[] = FlowItems::item(
@@ -293,7 +305,7 @@ class FlowStateNode extends LogicNodeBase implements IFlowNode, FlowStateNodeInt
 		}
 
 		return $output;
-	}//end execute()
+	}//end applyEach()
 
 	/**
 	 * The run's flow-state handle.

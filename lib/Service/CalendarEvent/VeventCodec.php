@@ -51,7 +51,8 @@ final class VeventCodec {
 	 */
 	public function calendarData(string $uid, DateTime $dtstart, array $data, array $link): string {
 		$lines = array_merge(
-			$this->eventHeaderLines(uid: $uid, summary: ($data['summary'] ?? 'Untitled event'), dtstart: $dtstart),
+			$this->eventOpeningLines(uid: $uid),
+			$this->eventStartLines(summary: ($data['summary'] ?? 'Untitled event'), dtstart: $dtstart),
 			$this->eventDetailLines(data: $data),
 			$this->eventLinkLines(link: $link),
 			['END:VEVENT', 'END:VCALENDAR']
@@ -97,15 +98,13 @@ final class VeventCodec {
 	}//end requiredStart()
 
 	/**
-	 * The opening lines of a new event, up to and including DTSTART.
+	 * The opening lines of a new event, up to and including DTSTAMP.
 	 *
-	 * @param string   $uid     The event UID.
-	 * @param string   $summary The unescaped summary.
-	 * @param DateTime $dtstart The start time.
+	 * @param string $uid The event UID.
 	 *
 	 * @return list<string> The iCalendar lines.
 	 */
-	private function eventHeaderLines(string $uid, string $summary, DateTime $dtstart): array {
+	private function eventOpeningLines(string $uid): array {
 		return [
 			'BEGIN:VCALENDAR',
 			'VERSION:2.0',
@@ -113,10 +112,23 @@ final class VeventCodec {
 			'BEGIN:VEVENT',
 			'UID:' . $uid,
 			'DTSTAMP:' . gmdate('Ymd\THis\Z'),
+		];
+	}//end eventOpeningLines()
+
+	/**
+	 * The SUMMARY and DTSTART lines of a new event.
+	 *
+	 * @param string   $summary The unescaped summary.
+	 * @param DateTime $dtstart The start time.
+	 *
+	 * @return list<string> The iCalendar lines.
+	 */
+	private function eventStartLines(string $summary, DateTime $dtstart): array {
+		return [
 			'SUMMARY:' . $this->escapeIcalText(text: $summary),
 			'DTSTART:' . $dtstart->format('Ymd\THis\Z'),
 		];
-	}//end eventHeaderLines()
+	}//end eventStartLines()
 
 	/**
 	 * The optional DTEND, LOCATION, DESCRIPTION and ATTENDEE lines of a new event.
