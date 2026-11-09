@@ -190,13 +190,20 @@ class CodedValueGuardTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheSameValueIsAcceptedInsideItsWindow(): void {
-		$this->guard->enforce(
-			object: ['resultaat' => 'urn:ingetrokken'],
-			schema: $this->schemaWith(declaration: []),
-			at: new DateTimeImmutable('2020-06-01')
-		);
+		// The pair is testARetiredValueCannotBeWrittenToday: the same value
+		// and schema, the write date moved past the window, is refused.
+		$refusal = null;
+		try {
+			$this->guard->enforce(
+				object: ['resultaat' => 'urn:ingetrokken'],
+				schema: $this->schemaWith(declaration: []),
+				at: new DateTimeImmutable('2020-06-01')
+			);
+		} catch (CodedValueException $e) {
+			$refusal = $e->getMessage();
+		}
 
-		$this->addToAssertionCount(1);
+		$this->assertNull($refusal, 'A coded value written inside its validity window must be accepted.');
 	}//end testTheSameValueIsAcceptedInsideItsWindow()
 
 	/**

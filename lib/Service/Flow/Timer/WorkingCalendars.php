@@ -32,7 +32,7 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
  * typed as the class because TermDiagnostic::explain() takes one; the
  * endpoints read it through WorkingCalendarInterface.
  */
-final class WorkingCalendars {
+final class WorkingCalendars implements WorkingCalendarDefinitionsInterface {
 
 	/**
 	 * Build and validate a calendar from its stored definition.
@@ -46,4 +46,17 @@ final class WorkingCalendars {
 	public static function fromDefinition(array $definition): WorkingCalendar {
 		return WorkingCalendar::fromArray(definition: $definition);
 	}//end fromDefinition()
+
+	/**
+	 * Build and validate a calendar from its stored definition.
+	 *
+	 * @param array<string, mixed> $definition The `working-calendar` object data.
+	 *
+	 * @return WorkingCalendar The calendar.
+	 *
+	 * @throws FlowTimerValidationException On any refused definition, naming the fault.
+	 */
+	public function parse(array $definition): WorkingCalendar {
+		return self::fromDefinition(definition: $definition);
+	}//end parse()
 }//end class

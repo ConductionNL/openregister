@@ -719,7 +719,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 		$calendarId = $this->resolveCalendarIdForUri(calendars: $calendars, calendarUri: $calendarUri);
 
 		if ($calendarId === null) {
-			throw new Exception('Calendar ' . $calendarUri . ' not found for user');
+			throw new Exception('Calendar ' . $calendarUri . ' not found for user', 404);
 		}
 
 		$scan = new CalendarPickerScan(calendarId: $calendarId, calendarUri: $calendarUri);

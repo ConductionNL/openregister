@@ -31,7 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
+use OCA\OpenRegister\Listener\Support\TaskVtodoWriteBackServices;
+use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskProjectionServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
 use OCP\Calendar\Events\CalendarObjectDeletedEvent;
@@ -48,28 +49,40 @@ use Throwable;
  *
  * @template-implements IEventListener<CalendarObjectUpdatedEvent|CalendarObjectDeletedEvent>
  *
- * @SuppressWarnings(PHPMD.StaticAccess) The identity reader is a stateless
- * parser published by the projector.
- *
  * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-unauthorized-write-back-is-undone-and-explained
  */
 class TaskVtodoWriteBackListener implements IEventListener {
 
 	/**
+	 * Failure-isolated reconciliation.
+	 *
+	 * @var TaskProjectionServiceInterface
+	 */
+	private readonly TaskProjectionServiceInterface $projections;
+
+	/**
+	 * Reads which task a calendar document projects.
+	 *
+	 * @var TaskCalendarDocumentInterface
+	 */
+	private readonly TaskCalendarDocumentInterface $documents;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param TaskVtodoWriteBackGateInterface $gate The one gate.
-	 * @param TaskProjectionServiceInterface $projections Failure-isolated reconciliation.
+	 * @param TaskVtodoWriteBackServices $services The projection side: reconciliation and the document reader.
 	 * @param IUserSession $userSession Names the acting identity, when there is one.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
 		private readonly TaskVtodoWriteBackGateInterface $gate,
-		private readonly TaskProjectionServiceInterface $projections,
+		TaskVtodoWriteBackServices $services,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->projections = $services->projections;
+		$this->documents = $services->documents;
 	}//end __construct()
 
 	/**
@@ -175,7 +188,7 @@ class TaskVtodoWriteBackListener implements IEventListener {
 			return null;
 		}
 
-		return TaskCalendarDocument::taskUuidOf(calendarData: $body);
+		return $this->documents->taskUuidOf(calendarData: $body);
 	}//end projectedTaskOf()
 
 	/**

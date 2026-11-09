@@ -32,6 +32,9 @@ use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
@@ -341,14 +344,20 @@ final class ServiceRegistrar {
 	 */
 	private static function buildCacheHandler(ContainerInterface $container): CacheHandlerInterface {
 			return new CacheHandler(
-				organisationMapper: $container->get(OrganisationMapperInterface::class),
-				logger: $container->get('Psr\Log\LoggerInterface'),
-				cacheFactory: $container->get('OCP\ICacheFactory'),
-				userSession: $container->get('OCP\IUserSession'),
-				container: $container,
-				registerMapper: $container->get(RegisterMapperInterface::class),
-				schemaMapper: $container->get(SchemaMapperInterface::class),
-				db: $container->get('OCP\IDBConnection')
+				stores: new CacheHandlerStores(
+					organisationMapper: $container->get(OrganisationMapperInterface::class),
+					registerMapper: $container->get(RegisterMapperInterface::class),
+					schemaMapper: $container->get(SchemaMapperInterface::class),
+					db: $container->get('OCP\IDBConnection')
+				),
+				runtime: new CacheHandlerRuntime(
+					logger: $container->get('Psr\Log\LoggerInterface'),
+					cacheFactory: $container->get('OCP\ICacheFactory'),
+					container: $container
+				),
+				nameScope: new CacheNameScopeSources(
+					userSession: $container->get('OCP\IUserSession')
+				)
 			);
 	}//end buildCacheHandler()
 

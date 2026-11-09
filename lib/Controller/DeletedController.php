@@ -775,8 +775,8 @@ class DeletedController extends Controller {
 	 */
 	private function performDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindowInterface $window, bool $force): JSONResponse {
 		try {
-			$scopeReport = $this->services->store->deletion->scope->destroy(object: $object, schema: $schema);
-			$record = $this->services->store->deletion->recorder->record(
+			$scopeReport = $this->services->store->deletion->destruction->scope->destroy(object: $object, schema: $schema);
+			$record = $this->services->store->deletion->destruction->recorder->record(
 				object: $object,
 				scope: $scopeReport,
 				rule: 'destroy-right-granted',
@@ -849,7 +849,7 @@ class DeletedController extends Controller {
 			return new JSONResponse(
 				data: [
 					'objectUuid' => (string)$object->getUuid(),
-					'preview' => $this->services->store->deletion->scope->preview(object: $object, schema: $schema),
+					'preview' => $this->services->store->deletion->destruction->scope->preview(object: $object, schema: $schema),
 					'deletionWindow' => $window?->toArray(),
 					'clocks' => $this->services->store->deletion->clock->clocksFor(object: $object),
 				]

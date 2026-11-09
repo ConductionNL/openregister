@@ -86,43 +86,10 @@ class DelegationService {
 	}//end __construct()
 
 	/**
-	 * Run `$operation` as `$actingAs`, on behalf of `$principal`.
+	 * Run `$operation` as the request's `actingAs`, on behalf of its `principal`.
 	 *
 	 * Acting as yourself short-circuits the store entirely — see
 	 * {@see DelegationResolver} for why that matters beyond speed.
-	 *
-	 * @param string        $principal The uid the work is being done by.
-	 * @param string        $actingAs  The uid whose rights the work should use.
-	 * @param callable      $operation The work.
-	 * @param array         $scope     What the work needs, for scope matching.
-	 * @param DateTime|null $now       The moment to judge liveness at; defaults to now.
-	 *
-	 * @return mixed Whatever the operation returns.
-	 *
-	 * @throws DelegationRefused When no live grant covers the delegation.
-	 *
-	 * @spec openspec/specs/delegation-grants/spec.md
-	 */
-	public function runAsDelegated(
-		string $principal,
-		string $actingAs,
-		callable $operation,
-		array $scope = [],
-		?DateTime $now = null,
-	) {
-		return $this->runDelegated(
-			request: new DelegationRequest(
-				principal: $principal,
-				actingAs: $actingAs,
-				scope: $scope,
-				now: ($now ?? new DateTime())
-			),
-			operation: $operation
-		);
-	}//end runAsDelegated()
-
-	/**
-	 * Resolve the request and run the work under the identity it permits.
 	 *
 	 * @param DelegationRequest $request   Who acts as whom, for what, when.
 	 * @param callable          $operation The work.
@@ -130,8 +97,10 @@ class DelegationService {
 	 * @return mixed Whatever the operation returns.
 	 *
 	 * @throws DelegationRefused When no live grant covers the delegation.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	private function runDelegated(DelegationRequest $request, callable $operation) {
+	public function runAsDelegated(DelegationRequest $request, callable $operation) {
 		$verdict = $this->verdictFor(
 			principal: $request->principal,
 			actingAs: $request->actingAs,
@@ -167,7 +136,7 @@ class DelegationService {
 		);
 
 		return $this->objectService->runAs(user: $user, operation: $operation);
-	}//end runDelegated()
+	}//end runAsDelegated()
 
 	/**
 	 * Log and throw a refused delegation.

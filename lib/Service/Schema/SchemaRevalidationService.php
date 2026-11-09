@@ -51,7 +51,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Population revalidation orchestrator.
  */
-class SchemaRevalidationService {
+class SchemaRevalidationService implements SchemaRevalidatorInterface {
 
 	use SchemaRunPopulation;
 

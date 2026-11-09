@@ -37,7 +37,6 @@ interface ObjectNameWriterInterface {
 	 *
 	 * @param string|int $identifier Object ID or UUID
 	 * @param string $name Object name to cache
-	 * @param int $ttl Cache TTL in seconds (default: 24 hours)
 	 * @param string|null $organisation Owning organisation UUID (SEC-CTRL-2 step 2)
 	 * @param string|null $source Where the name came from: NAME_SOURCE_ORGANISATION or
 	 *                            "<registerId>:<schemaId>" (see objectNameSource()). Without
@@ -47,7 +46,7 @@ interface ObjectNameWriterInterface {
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
-	public function setObjectName(string|int $identifier, string $name, int $ttl = 86400, ?string $organisation = null, ?string $source = null): void;
+	public function setObjectName(string|int $identifier, string $name, ?string $organisation = null, ?string $source = null): void;
 
 	/**
 	 * Get single object name from cache or database

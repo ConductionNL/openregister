@@ -216,9 +216,7 @@ class TaskFormReader {
 
 		return new TaskForm(
 			kind: TaskForm::KIND_FIELDS,
-			schema: trim((string)($record['schema'] ?? '')),
-			action: $action,
-			fields: $fields,
+			native: new TaskFormFields(schema: trim((string)($record['schema'] ?? '')), action: $action, fields: $fields),
 			requireChecklist: self::requireChecklistOf(record: $record)
 		);
 	}//end nativeForm()

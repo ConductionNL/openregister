@@ -85,9 +85,8 @@ class ProvenanceResolverTest extends TestCase {
 		?array $denial = null,
 		bool $denyEnforced = true,
 	): array {
-		return $this->resolver->forActions(
+		return $this->resolver->forPrincipals($principals)->forActions(
 			[$action],
-			$principals,
 			[
 				'object' => $objectAuthorization,
 				'schema' => $schemaAuthorization,
@@ -318,9 +317,8 @@ class ProvenanceResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAWholeVocabularyIsReportedAtOnce(): void {
-		$provenance = $this->resolver->forActions(
+		$provenance = $this->resolver->forPrincipals($this->principals('ana', ['behandelaars']))->forActions(
 			actions: ['read', 'update', 'delete'],
-			principals: $this->principals('ana', ['behandelaars']),
 			blocks: [
 				'schema' => ['read' => ['behandelaars'], 'update' => ['behandelaars']],
 			],

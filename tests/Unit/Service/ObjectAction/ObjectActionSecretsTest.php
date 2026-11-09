@@ -149,12 +149,10 @@ class ObjectActionSecretsTest extends TestCase {
 			}
 		);
 		$service = new \OCA\OpenRegister\Service\Flow\FlowRunService(
-			$this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowRunMapper::class),
-			$states,
-			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowEngine::class),
-			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class),
-			$this->createMock(originalClassName: \Psr\Log\LoggerInterface::class),
-			$this->createMock(originalClassName: \Psr\Container\ContainerInterface::class)
+			stores: new \OCA\OpenRegister\Service\Flow\FlowRunStores(mapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowRunMapper::class), stateMapper: $states),
+			walk: new \OCA\OpenRegister\Service\Flow\FlowRunWalkServices(engine: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowEngine::class), registry: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class)),
+			logger: $this->createMock(originalClassName: \Psr\Log\LoggerInterface::class),
+			container: $this->createMock(originalClassName: \Psr\Container\ContainerInterface::class)
 		);
 		// 'previous' was stored by an earlier run and must come back as loaded.
 		$handle = new \OCA\OpenRegister\Service\Flow\FlowStateHandle(values: ['previous' => '2026']);
@@ -187,12 +185,10 @@ class ObjectActionSecretsTest extends TestCase {
 		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowRunMapper::class);
 		$runs->method('update')->willReturnArgument(0);
 		$service = new \OCA\OpenRegister\Service\Flow\FlowRunService(
-			$runs,
-			$this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
-			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowEngine::class),
-			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class),
-			$this->createMock(originalClassName: \Psr\Log\LoggerInterface::class),
-			$this->createMock(originalClassName: \Psr\Container\ContainerInterface::class)
+			stores: new \OCA\OpenRegister\Service\Flow\FlowRunStores(mapper: $runs, stateMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class)),
+			walk: new \OCA\OpenRegister\Service\Flow\FlowRunWalkServices(engine: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowEngine::class), registry: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class)),
+			logger: $this->createMock(originalClassName: \Psr\Log\LoggerInterface::class),
+			container: $this->createMock(originalClassName: \Psr\Container\ContainerInterface::class)
 		);
 		$run = new \OCA\OpenRegister\Db\FlowRun();
 		$run->setFlowId('f1');

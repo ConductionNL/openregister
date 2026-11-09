@@ -45,15 +45,27 @@ interface ObjectActionRunnerInterface {
 	public function check(ObjectEntity $object, Schema $schema, string $key, array $given): array;
 
 	/**
+	 * The target of a run: the object, its schema, and the register and schema as the caller named them.
+	 *
+	 * @param ObjectEntity $object    The subject.
+	 * @param Schema       $schema    Its schema.
+	 * @param string       $register  The register as the caller named it.
+	 * @param string       $schemaRef The schema as the caller named it.
+	 *
+	 * @return ObjectActionTarget The target.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
+	 */
+	public function target(ObjectEntity $object, Schema $schema, string $register, string $schemaRef): ObjectActionTarget;
+
+	/**
 	 * Run an action on an object.
 	 *
-	 * @param ObjectEntity         $object  The subject.
-	 * @param Schema               $schema  Its schema.
-	 * @param string               $key     The action key.
-	 * @param array<string, mixed> $given   The inputs the caller sent.
-	 * @param array<string, mixed> $subject `{uuid, register, schema}` as the caller named them.
+	 * @param ObjectActionTarget   $target The subject, its schema and its address as the caller named it.
+	 * @param string               $key    The action key.
+	 * @param array<string, mixed> $given  The inputs the caller sent.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The HTTP status and body.
 	 */
-	public function run(ObjectEntity $object, Schema $schema, string $key, array $given, array $subject): array;
+	public function run(ObjectActionTarget $target, string $key, array $given): array;
 }//end interface

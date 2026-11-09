@@ -257,9 +257,7 @@ class HandoffService implements HandoffServiceInterface {
 	): array {
 		return $this->run(
 			request: new HandoffRequest(
-				register: $register,
-				schema: $schema,
-				id: $id,
+				source: new HandoffSourceRef(register: $register, schema: $schema, id: $id),
 				handoffId: $handoffId,
 				deferred: $deferred,
 				correlationId: ($correlationId ?? Uuid::v4()->toRfc4122())
@@ -362,7 +360,7 @@ class HandoffService implements HandoffServiceInterface {
 	 * @throws HandoffException When the object does not exist or declares no such handoff.
 	 */
 	private function plan(HandoffRequest $request): HandoffPlan {
-		$source = $this->loadSource(register: $request->register, schema: $request->schema, id: $request->id);
+		$source = $this->loadSource(register: $request->source->register, schema: $request->source->schema, id: $request->source->id);
 		$sourceSchema = $this->objects->schemaMapper->find(id: (string)$source->getSchema());
 
 		// The declared entry — `handoff-not-declared` when absent.
@@ -426,8 +424,8 @@ class HandoffService implements HandoffServiceInterface {
 				restore: new HandoffSourceRestore(
 					source: $plan->source,
 					snapshot: $sourceSnapshot,
-					registerRef: $plan->request->register,
-					schemaRef: $plan->request->schema
+					registerRef: $plan->request->source->register,
+					schemaRef: $plan->request->source->schema
 				)
 			);
 			throw $e;
@@ -854,8 +852,8 @@ class HandoffService implements HandoffServiceInterface {
 		$data = array_merge($plan->source->getObject(), $set);
 		$this->objects->objectService->saveObject(
 			object: $data,
-			register: $plan->request->register,
-			schema: $plan->request->schema,
+			register: $plan->request->source->register,
+			schema: $plan->request->source->schema,
 			uuid: (string)$plan->source->getUuid()
 		);
 

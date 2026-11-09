@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
@@ -80,42 +81,56 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
 		$this->organisations = $this->createMock(OrganisationService::class);
-		$this->rbac = new PropertyRbacHandler(
-			$session,
-			$groupManager,
-			new ConditionMatcher(
-				$session,
+		$this->rbac = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules(new ConditionMatcher(
+				new ConditionUserResolvers($session),
 				$this->createMock(ContainerInterface::class),
 				new OperatorEvaluator($this->createMock(LoggerInterface::class)),
 				$this->createMock(LoggerInterface::class)
-			),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($session, $groupManager)
-		);
+			), self::stateFieldRuleResolver($session, $groupManager)), logger: $this->createMock(LoggerInterface::class));
 
 		return new SaveObject(
-			$this->createMock(MagicMapper::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(MetadataHydrationHandler::class),
-			$this->createMock(FilePropertyHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
-			$session,
-			$this->createMock(AuditTrailMapper::class),
-			$this->schemaMapper,
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(IURLGenerator::class),
-			$this->organisations,
-			$this->createMock(CacheHandler::class),
-			$this->createMock(SettingsService::class),
-			$this->rbac,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(\OCA\OpenRegister\Service\TmloService::class),
-			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$this->createMock(PermissionHandler::class)
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						objectEntityMapper: $this->createMock(MagicMapper::class),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class),
+						schemaMapper: $this->schemaMapper,
+						registerMapper: $this->createMock(RegisterMapper::class)
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+						settingsService: $this->createMock(SettingsService::class),
+						tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->createMock(CacheHandler::class)
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->createMock(MetadataHydrationHandler::class),
+						filePropertyHandler: $this->createMock(FilePropertyHandler::class),
+						linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $session,
+					urlGenerator: $this->createMock(IURLGenerator::class),
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->organisations
+				)
+			),
+			propertyRbacHandler: $this->rbac,
+			permissionHandler: $this->createMock(PermissionHandler::class),
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 	}//end handlerAs()
 
@@ -165,7 +180,7 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 		$method = new ReflectionMethod(SaveObject::class, 'prepareObjectForUpdate');
 		$method->setAccessible(true);
 
-		return $method->invokeArgs($handler, [$existing, $schema, $data, ['organisation' => 'org-a'], null, null])->getObject();
+		return $method->invokeArgs($handler, [$existing, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, ['organisation' => 'org-a']), null])->getObject();
 	}//end prepareUpdate()
 
 	/**

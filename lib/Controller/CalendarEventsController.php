@@ -418,7 +418,12 @@ class CalendarEventsController extends Controller {
 
 			return new JSONResponse(['results' => $events, 'total' => count($events)]);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			$status = 500;
+			if ($e->getCode() === 404) {
+				$status = 404;
+			}
+
+			return new JSONResponse(['error' => $e->getMessage()], $status);
 		}//end try
 	}//end listCalendarEvents()
 

@@ -169,17 +169,13 @@ class RunActionAction implements RunActionActionInterface {
 			return $this->resultOf(answer: ($checked['refusal'] ?? ['status' => Http::STATUS_OK, 'body' => []]));
 		}
 
-		$run = fn (): array => $this->runner->run(
+		$target = $this->runner->target(
 			object: $object,
 			schema: $schema,
-			key: $key,
-			given: $inputs,
-			subject: [
-				'uuid' => (string)$object->getUuid(),
-				'register' => (string)($parameters['register'] ?? $object->getRegister()),
-				'schema' => (string)($parameters['schema'] ?? $object->getSchema()),
-			]
+			register: (string)($parameters['register'] ?? $object->getRegister()),
+			schemaRef: (string)($parameters['schema'] ?? $object->getSchema())
 		);
+		$run    = fn (): array => $this->runner->run(target: $target, key: $key, given: $inputs);
 
 		if ($actor === null) {
 			return $this->resultOf(answer: $run());

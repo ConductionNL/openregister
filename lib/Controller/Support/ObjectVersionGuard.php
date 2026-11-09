@@ -27,7 +27,6 @@ use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ConflictReportInterface;
-use OCA\OpenRegister\Service\Object\ConflictReports;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -130,7 +129,7 @@ final class ObjectVersionGuard {
 	 */
 	private function report(VersionMismatch $mismatch, SentWrite $write): ?array {
 		try {
-			return ConflictReports::from(container: $this->container)->build(
+			return $this->container->get(ConflictReportInterface::class)->build(
 				stored: $mismatch->stored,
 				schema: $write->schema,
 				sent: $write->data,

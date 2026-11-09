@@ -49,6 +49,8 @@ use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowTenantMembership;
@@ -443,12 +445,13 @@ abstract class ManifestScheduleHarness extends TestCase {
 		);
 
 		return new FlowRunService(
-			$runs,
-			$this->createMock(FlowStateMapper::class),
-			$this->createMock(FlowEngine::class),
-			$this->createMock(FlowNodeRegistry::class),
-			$this->logger,
-			$container
+			stores: new FlowRunStores(
+				mapper: $runs,
+				stateMapper: $this->createMock(FlowStateMapper::class)
+			),
+			walk: new FlowRunWalkServices(engine: $this->createMock(FlowEngine::class), registry: $this->createMock(FlowNodeRegistry::class)),
+			logger: $this->logger,
+			container: $container
 		);
 	}
 

@@ -12,6 +12,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCP\IAppConfig;
@@ -661,7 +662,7 @@ class PermissionHandlerRbacTest extends TestCase {
 	private function buildHandlerWithRealMatcher(): PermissionHandler {
 		$operatorEvaluator = new OperatorEvaluator($this->logger);
 		$realMatcher = new ConditionMatcher(
-			$this->userSession,
+			new ConditionUserResolvers($this->userSession),
 			$this->container,
 			$operatorEvaluator,
 			$this->logger

@@ -317,9 +317,15 @@ class ExportServicePdfTest extends TestCase {
 		$method = new ReflectionMethod(ExportService::class, 'guardPdfRowCap');
 		$method->setAccessible(true);
 
-		// No exception expected — must not throw at exactly the cap.
-		$method->invoke($this->service, ExportService::MAX_PDF_EXPORT_ROWS);
-		$this->addToAssertionCount(1);
+		// The pair is testGuardPdfRowCapThrowsWhenOverCap: one row more is refused.
+		$refusedAt = null;
+		try {
+			$method->invoke($this->service, ExportService::MAX_PDF_EXPORT_ROWS);
+		} catch (ExportTooLargeException $e) {
+			$refusedAt = $e->getRowCount();
+		}
+
+		$this->assertNull($refusedAt, 'An export of exactly MAX_PDF_EXPORT_ROWS rows must not be refused.');
 	}
 
 	public function testExportToPdfShortCircuitsBeforeRenderingWhenOverCap(): void {

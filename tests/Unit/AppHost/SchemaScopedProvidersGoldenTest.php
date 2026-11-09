@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
+use OCA\OpenRegister\AppHost\SchemaScopeLookups;
 use OCA\OpenRegister\AppHost\Reference\AbstractSchemaReferenceProvider;
 use OCA\OpenRegister\AppHost\Search\AbstractSchemaSearchProvider;
 use OCA\OpenRegister\Db\Register;
@@ -96,7 +97,7 @@ class SchemaScopedProvidersGoldenTest extends TestCase {
 	}//end url()
 
 	private function search(): AbstractSchemaSearchProvider {
-		return new class($this->objects, $this->results, $this->registerMapper, $this->schemaMapper, $this->logger) extends AbstractSchemaSearchProvider {
+		return new class($this->objects, $this->results, new SchemaScopeLookups($this->registerMapper, $this->schemaMapper, $this->logger)) extends AbstractSchemaSearchProvider {
 			public function getRegisterSlug(): string {
 				return 'crm';
 			}
@@ -108,7 +109,7 @@ class SchemaScopedProvidersGoldenTest extends TestCase {
 	}//end search()
 
 	private function reference(?string $userId = 'alice'): AbstractSchemaReferenceProvider {
-		return new class($this->previews, $this->registerMapper, $this->schemaMapper, $this->logger, $userId) extends AbstractSchemaReferenceProvider {
+		return new class($this->previews, new SchemaScopeLookups($this->registerMapper, $this->schemaMapper, $this->logger), $userId) extends AbstractSchemaReferenceProvider {
 			public function getRegisterSlug(): string {
 				return 'crm';
 			}

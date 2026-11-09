@@ -49,7 +49,7 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://www.OpenRegister.app
  */
-class RegisterCacheHandler {
+class RegisterCacheHandler implements RegisterCacheHandlerInterface {
 
 	/**
 	 * Register mapper for clearing the request-scoped find cache

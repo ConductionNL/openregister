@@ -21,6 +21,8 @@ use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
@@ -332,12 +334,13 @@ class FlowRunServiceTest extends TestCase {
 
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->service = new FlowRunService(
-			$this->mapper,
-			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
-			$engine,
-			$registry,
-			$this->logger,
-			$container
+			stores: new FlowRunStores(
+				mapper: $this->mapper,
+				stateMapper: $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class)
+			),
+			walk: new FlowRunWalkServices(engine: $engine, registry: $registry),
+			logger: $this->logger,
+			container: $container
 		);
 	}
 
@@ -715,12 +718,13 @@ class FlowRunServiceTest extends TestCase {
 		);
 
 		$service = new FlowRunService(
-			$this->mapper,
-			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
-			$engine,
-			$registry,
-			$this->createMock(LoggerInterface::class),
-			$container
+			stores: new FlowRunStores(
+				mapper: $this->mapper,
+				stateMapper: $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class)
+			),
+			walk: new FlowRunWalkServices(engine: $engine, registry: $registry),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $container
 		);
 
 		$run = $service->queue('f1', user: 'alice');

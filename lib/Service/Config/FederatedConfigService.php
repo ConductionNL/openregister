@@ -234,11 +234,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 *
 	 * @param string $typeId The shareable type id.
 	 * @param array $selection What to share.
-	 * @param string $repo The `owner/repo` to publish into.
-	 * @param string $path The path within the repo for the bundle file.
+	 * @param ConfigPublishTarget $target Where to publish: repo, path, branch and visibility of a created repo.
 	 * @param string $credentialId The broker credential id custodying the GitHub token.
-	 * @param string $branch The branch to publish onto.
-	 * @param bool $private Whether a repo created on demand is private.
 	 *
 	 * @return array `{published: true, path, status}`.
 	 *
@@ -246,23 +243,15 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function publish(
-		string $typeId,
-		array $selection,
-		string $repo,
-		string $path,
-		string $credentialId,
-		string $branch = 'main',
-		bool $private = false,
-	): array {
+	public function publish(string $typeId, array $selection, ConfigPublishTarget $target, string $credentialId): array {
 		$type = $this->typeOrFail(typeId: $typeId);
 
 		// Make the target repo exist and carry the type's discovery topic, so a
 		// freshly published config is findable via discover() (both single-config
 		// and config-set repos rely on this). Best-effort: a failure here still
 		// lets the contents write surface a clear error.
-		$this->ensureRepo(repo: $repo, credentialId: $credentialId, private: $private);
-		$this->setTopics(repo: $repo, topics: [$type->getTopic()], credentialId: $credentialId);
+		$this->ensureRepo(target: $target, credentialId: $credentialId);
+		$this->setTopics(repo: $target->repo, topics: [$type->getTopic()], credentialId: $credentialId);
 
 		$bundle = $this->signer->sign(bundle: $type->serialise(selection: $selection));
 		$content = base64_encode((string)json_encode($bundle, JSON_PRETTY_PRINT));
@@ -273,13 +262,13 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 			credentialId: $credentialId,
 			appId: self::APP_ID,
 			method: 'PUT',
-			path: sprintf('/repos/%s/contents/%s', $repo, ltrim($path, '/')),
+			path: sprintf('/repos/%s/contents/%s', $target->repo, ltrim($target->path, '/')),
 			headers: ['Accept' => 'application/vnd.github+json'],
 			body: (string)json_encode(
 				[
 					'message' => sprintf('Publish %s configuration', $typeId),
 					'content' => $content,
-					'branch' => $branch,
+					'branch' => $target->branch,
 				]
 			)
 		);
@@ -291,8 +280,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 
 		return [
 			'published' => true,
-			'repo' => $repo,
-			'path' => $path,
+			'repo' => $target->repo,
+			'path' => $target->path,
 			'topic' => $type->getTopic(),
 			'status' => $status,
 		];
@@ -307,20 +296,20 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * used, otherwise the authenticated user's; a failure is logged, not fatal
 	 * (the subsequent contents write reports a missing repo clearly).
 	 *
-	 * @param string $repo The `owner/repo`.
-	 * @param string $credentialId The broker credential.
-	 * @param boolean $private Whether a freshly created repo should be private.
+	 * @param ConfigPublishTarget $target       The target: its `owner/repo`, and whether a freshly created repo should be private.
+	 * @param string              $credentialId The broker credential.
 	 *
 	 * @return void
 	 */
-	private function ensureRepo(string $repo, string $credentialId, bool $private = false): void {
+	private function ensureRepo(ConfigPublishTarget $target, string $credentialId): void {
+		$repo = $target->repo;
 		[$owner, $name] = array_pad(explode('/', $repo, 2), 2, '');
 		if ($owner === '' || $name === '') {
 			return;
 		}
 
 		if ($this->repoExists(owner: $owner, name: $name, credentialId: $credentialId) === true
-			|| $this->createRepo(owner: $owner, name: $name, credentialId: $credentialId, private: $private) === true
+			|| $this->createRepo(owner: $owner, name: $name, credentialId: $credentialId, private: $target->private) === true
 		) {
 			return;
 		}

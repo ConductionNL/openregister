@@ -216,8 +216,7 @@ class DeletionWindowService {
 		return new DeletionWindow(
 			destroyableFrom: $destroyableFrom,
 			daysRemaining: $this->daysBetween(from: $moment, to: $destroyableFrom),
-			retentionDays: $retentionDays,
-			source: $source,
+			retention: new DeletionRetention(days: $retentionDays, source: $source),
 			deletedAt: $deletedAt
 		);
 	}//end windowFor()

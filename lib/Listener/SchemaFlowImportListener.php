@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Listener;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -97,7 +97,7 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper $flows The flow store.
+	 * @param FlowMapperInterface $flows The flow store.
 	 * @param LoggerInterface $logger Records what was imported, and what could not be.
 	 * @param ContainerInterface|null $container Resolves the organisation a declared flow
 	 *                                           belongs to. Nullable and LAST so adding it
@@ -106,7 +106,7 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 	 *                                           which is logged rather than silent.
 	 */
 	public function __construct(
-		private readonly FlowMapper $flows,
+		private readonly FlowMapperInterface $flows,
 		private readonly LoggerInterface $logger,
 		private readonly ?ContainerInterface $container = null,
 	) {

@@ -55,7 +55,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/register-service-extensions/spec.md
  */
-final class RegisterSerializer {
+final class RegisterSerializer implements RegisterSerializerInterface {
 
 	/**
 	 * Schemas already fetched this request, keyed by identifier.

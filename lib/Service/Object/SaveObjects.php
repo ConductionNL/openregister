@@ -612,7 +612,12 @@ class SaveObjects {
 		$safeguardStart = microtime(true);
 		$objects = $this->refuseInvalidDecisionTables(objects: $objects, register: $run->register, schema: $run->schema, result: $run->result);
 		$flags   = ['rbac' => $run->rbac, 'validation' => $run->validation, 'multitenancy' => $run->multitenancy];
-		$objects = $this->applyBulkSafeguards(objects: $objects, register: $run->register, schema: $run->schema, flags: $flags, result: $run->result);
+		$objects = $this->applyBulkSafeguards(
+			objects: $objects,
+			defaults: new BulkBatchDefaults(register: $run->register, schema: $run->schema),
+			flags: $flags,
+			result: $run->result
+		);
 		$run->safeguardMs = round((microtime(true) - $safeguardStart) * 1000, 2);
 
 		return $objects;
@@ -920,8 +925,7 @@ class SaveObjects {
 	 * pipeline.
 	 *
 	 * @param array<int, array<string, mixed>> $objects Raw input objects.
-	 * @param Register|string|int|null $register Default register context.
-	 * @param Schema|string|int|null $schema Default schema context (null = mixed-schema).
+	 * @param BulkBatchDefaults $defaults Default register and schema context (schema null = mixed-schema).
 	 * @param array{rbac: bool, validation: bool, multitenancy?: bool} $flags The caller-requested
 	 *                                   RBAC, validation and multitenancy flags (admin may set rbac and multitenancy false).
 	 * @param array $result Result accumulator (mutated in place: `invalid` + `statistics`).
@@ -930,8 +934,7 @@ class SaveObjects {
 	 */
 	private function applyBulkSafeguards(
 		array $objects,
-		Register|string|int|null $register,
-		Schema|string|int|null $schema,
+		BulkBatchDefaults $defaults,
 		array $flags,
 		array &$result,
 	): array {
@@ -940,7 +943,7 @@ class SaveObjects {
 			return $objects;
 		}
 
-		$run = $this->startBulkSafeguardRun(batch: ['objects' => $objects, 'register' => $register, 'schema' => $schema], flags: $flags);
+		$run = $this->startBulkSafeguardRun(objects: $objects, defaults: $defaults, flags: $flags);
 
 		return $this->screenSafeguardBatch(objects: $objects, run: $run, result: $result);
 	}//end applyBulkSafeguards()
@@ -996,19 +999,20 @@ class SaveObjects {
 	 * A group whose probe failed is absent from the map, and the row lookup falls back to
 	 * its own query: an empty map means "not prefetched", never "nothing exists".
 	 *
-	 * @param array{objects: array, register: Register|string|int|null, schema: Schema|string|int|null} $batch The batch
-	 * @param array{rbac: bool, validation: bool, multitenancy?: bool}                                 $flags The caller's flags
+	 * @param array             $objects  The rows of the batch
+	 * @param BulkBatchDefaults $defaults The batch's default register and schema
+	 * @param array{rbac: bool, validation: bool, multitenancy?: bool} $flags The caller's flags
 	 *
 	 * @return BulkSafeguardRun
 	 */
-	private function startBulkSafeguardRun(array $batch, array $flags): BulkSafeguardRun {
+	private function startBulkSafeguardRun(array $objects, BulkBatchDefaults $defaults, array $flags): BulkSafeguardRun {
 		$run             = new BulkSafeguardRun(currentUser: $this->userSession->getUser());
 		$run->isAdmin    = $this->safeguardCallerIsAdmin(run: $run);
 		$run->rbac       = ($flags['rbac'] === true || $run->isAdmin === false);
 		$run->validation = $flags['validation'];
 		$run->multitenancy = (($flags['multitenancy'] ?? true) === true || $run->isAdmin === false);
-		$this->resolveSafeguardDefaults(run: $run, defaults: ['register' => $batch['register'], 'schema' => $batch['schema']]);
-		$run->existingByUuid = $this->prefetchExistingRows(objects: $batch['objects'], run: $run);
+		$this->resolveSafeguardDefaults(run: $run, defaults: ['register' => $defaults->register, 'schema' => $defaults->schema]);
+		$run->existingByUuid = $this->prefetchExistingRows(objects: $objects, run: $run);
 
 		return $run;
 	}//end startBulkSafeguardRun()
