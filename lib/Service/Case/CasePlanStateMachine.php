@@ -106,17 +106,31 @@ class CasePlanStateMachine {
 		$this->table->assertLegal(item: $item, to: $to);
 
 		$why = new CaseTransitionCause(cause: $cause, causeRef: $causeRef, actor: ($actor ?? self::SYSTEM_ACTOR), reason: $reason);
+
+		return $this->commitMove(move: new CasePlanMove(item: $item, to: $to, why: $why, tree: $tree));
+	}//end transition()
+
+	/**
+	 * Apply one legal move in a (possibly nested) transaction; the outermost
+	 * committer dispatches the queued events once the transaction is done.
+	 *
+	 * @param CasePlanMove $move The item, the target state, the cause and the plan when known.
+	 *
+	 * @return CaseItem The item as persisted.
+	 *
+	 * @throws CaseTransitionException When another mover won.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 */
+	private function commitMove(CasePlanMove $move): CaseItem {
 		$outermost = $this->store->db->inTransaction() === false;
-		$persisted = $this->inTransaction(
-			outermost: $outermost,
-			mutation: fn (): CaseItem => $this->apply(move: new CasePlanMove(item: $item, to: $to, why: $why, tree: $tree))
-		);
+		$persisted = $this->inTransaction(outermost: $outermost, mutation: fn (): CaseItem => $this->apply(move: $move));
 		if ($outermost === true) {
 			$this->flushEvents();
 		}
 
 		return $persisted;
-	}//end transition()
+	}//end commitMove()
 
 	/**
 	 * Record a refused attempt. Mutates nothing; appended outside any verb
@@ -136,16 +150,29 @@ class CasePlanStateMachine {
 			return;
 		}
 
+		$denial = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $actor, reason: $reason);
+		$this->appendDenial(attempt: new CasePlanMove(item: $item, to: $to, why: $denial, tree: null));
+	}//end recordDenial()
+
+	/**
+	 * Append a refused attempt's audit row; a failure to append it is logged, not converted.
+	 *
+	 * @param CasePlanMove $attempt The item acted on, the requested state and the denial's cause.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	private function appendDenial(CasePlanMove $attempt): void {
 		try {
-			$denial = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $actor, reason: $reason);
-			$this->store->audits->insert(self::denialOf(attempt: new CasePlanMove(item: $item, to: $to, why: $denial, tree: null)));
+			$this->store->audits->insert(self::denialOf(attempt: $attempt));
 		} catch (Throwable $failure) {
 			$this->store->logger->warning(
 				'[CasePlanStateMachine] Could not record an authorization denial: ' . $failure->getMessage(),
-				['item' => $item->getUuid()]
+				['item' => $attempt->item->getUuid()]
 			);
 		}
-	}//end recordDenial()
+	}//end appendDenial()
 
 	/**
 	 * The audit row of a refused attempt.
