@@ -406,8 +406,15 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\Schema\SchemaVersioningService::class => [
 			'diffService'     => \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
 			'changelogMapper' => \OCA\OpenRegister\Db\SchemaChangelogMapperInterface::class,
-			'runMapper'       => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
-			'runEntryMapper'  => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
+			'runs'            => [
+				\OCA\OpenRegister\Service\Schema\SchemaPopulationRuns::class,
+				[
+					'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
+					'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
+					'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+					'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+				],
+			],
 			'userSession'     => \OCP\IUserSession::class,
 			'logger'          => \Psr\Log\LoggerInterface::class,
 		],
