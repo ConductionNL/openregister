@@ -76,9 +76,11 @@ class ObjectFavouriteControllerA24GoldenTest extends TestCase {
 
 		return new ObjectFavouriteController(
 			request: $this->createMock(IRequest::class),
-			objectService: $objects,
-			favourites: $this->favourites,
-			logger: $this->logger
+			services: new \OCA\OpenRegister\Controller\Support\ObjectFavouriteControllerServices(
+				objectService: $objects,
+				favourites: $this->favourites,
+				logger: $this->logger,
+			)
 		);
 	}
 

@@ -306,7 +306,7 @@ class McpProviderDiscovery {
 			return [];
 		}
 
-		return (new AttributeToolScanner())->scanClasses(appId: $app->appId, classNames: $classNames, logger: $app->logger);
+		return (new AttributeToolScanner())->scanClasses(app: $app, classNames: $classNames);
 	}//end scanAttributedTools()
 
 	/**
