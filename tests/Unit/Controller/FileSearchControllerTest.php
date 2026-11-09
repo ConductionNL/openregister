@@ -43,9 +43,9 @@ class FileSearchControllerTest extends TestCase {
 			services: new FileSearchControllerServices(
 				vectorService: $this->vectorService,
 				chunkMapper: $this->chunkMapper,
-				readScope: $this->passThroughScope()
-			),
-			logger: $this->logger
+				readScope: $this->passThroughScope(),
+				logger: $this->logger
+			)
 		);
 	}
 
