@@ -702,6 +702,73 @@ class ImportHandlerFlowTest extends TestCase {
 	}//end testImportFromJsonRecordsImportedFlowsOnTheConfiguration()
 
 	/**
+	 * importFromJson() takes a flow's uuid from its map key when the entry carries none, and reports it in result['flows'].
+	 */
+	public function testImportFromJsonImportsFlowUnderItsMapKey(): void {
+		$this->flowMapper->method('findByUuid')
+			->willThrowException(new DoesNotExistException('not found'));
+		$this->flowMapper->expects($this->once())->method('insert')
+			->with($this->callback(static fn (Flow $flow): bool => $flow->getUuid() === 'keyed-uuid'));
+
+		$result = $this->handler->importFromJson(
+			data: ['components' => ['flows' => ['keyed-uuid' => ['name' => 'Keyed', 'nodes' => ['n1']]]]],
+			configuration: $this->configuration(),
+			owner: 'alice'
+		);
+
+		$this->assertCount(1, $result['flows']);
+		$this->assertSame('keyed-uuid', $result['flows'][0]->getUuid());
+		$this->assertSame(0, $result['skipped']['flows']);
+	}//end testImportFromJsonImportsFlowUnderItsMapKey()
+
+	/**
+	 * importFromJson() counts a flow that fails in skipped['flows'] and still imports the next one.
+	 */
+	public function testImportFromJsonCountsAFailedFlowAndCarriesOn(): void {
+		// A mapper of its own: setUp()'s insert stub returns its argument for every flow.
+		$insert = $this->createMock(FlowMapper::class);
+		$insert->method('findByUuid')->willThrowException(new DoesNotExistException('not found'));
+		$insert->method('insert')->willReturnCallback(static function (Flow $flow): Flow {
+			if ($flow->getUuid() === 'broken-uuid') {
+				throw new \RuntimeException('insert failed');
+			}
+
+			return $flow;
+		});
+		$this->handler->setFlowMapper($insert);
+
+		$result = $this->handler->importFromJson(
+			data: ['components' => ['flows' => [
+				'broken-uuid' => ['nodes' => ['n1']],
+				'good-uuid' => ['nodes' => ['n1']],
+			]]],
+			configuration: $this->configuration(),
+			owner: 'alice'
+		);
+
+		$this->assertSame(1, $result['skipped']['flows']);
+		$this->assertCount(1, $result['flows']);
+		$this->assertSame('good-uuid', $result['flows'][0]->getUuid());
+	}//end testImportFromJsonCountsAFailedFlowAndCarriesOn()
+
+	/**
+	 * importFromJson() leaves components.flows alone when no FlowMapper was wired.
+	 */
+	public function testImportFromJsonIgnoresFlowsWithoutFlowMapper(): void {
+		$this->handler->setFlowMapper(null);
+		$this->flowMapper->expects($this->never())->method('insert');
+
+		$result = $this->handler->importFromJson(
+			data: ['components' => ['flows' => ['flow-uuid-1' => ['nodes' => ['n1']]]]],
+			configuration: $this->configuration(),
+			owner: 'alice'
+		);
+
+		$this->assertSame([], $result['flows']);
+		$this->assertSame(0, $result['skipped']['flows']);
+	}//end testImportFromJsonIgnoresFlowsWithoutFlowMapper()
+
+	/**
 	 * applyImportedFlowFields() carries every inheritable setting FlowService does, oversightEnabled included.
 	 */
 	public function testApplyImportedFlowFieldsCarriesOversightEnabled(): void {
