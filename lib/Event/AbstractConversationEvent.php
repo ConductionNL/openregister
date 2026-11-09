@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Kernel\Contracts\ConversationInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -32,7 +33,7 @@ abstract class AbstractConversationEvent extends Event {
 	/**
 	 * Constructor for AbstractConversationEvent.
 	 *
-	 * @param ConversationInterface $conversation The entity the event is about.
+	 * @param ConversationInterface&Entity $conversation The entity the event is about.
 	 *
 	 * @return void
 	 */
@@ -43,7 +44,7 @@ abstract class AbstractConversationEvent extends Event {
 	/**
 	 * Get the entity the event is about.
 	 *
-	 * @return ConversationInterface The entity.
+	 * @return ConversationInterface&Entity The entity.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */

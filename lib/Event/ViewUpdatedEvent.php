@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Kernel\Contracts\ViewInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -34,22 +35,22 @@ class ViewUpdatedEvent extends Event {
 	/**
 	 * The updated view state.
 	 *
-	 * @var View The view after update.
+	 * @var ViewInterface&Entity The view after update.
 	 */
 	private ViewInterface $newView;
 
 	/**
 	 * The previous view state.
 	 *
-	 * @var View The view before update.
+	 * @var ViewInterface&Entity The view before update.
 	 */
 	private ViewInterface $oldView;
 
 	/**
 	 * Constructor for ViewUpdatedEvent.
 	 *
-	 * @param ViewInterface $newView The view after update.
-	 * @param ViewInterface $oldView The view before update.
+	 * @param ViewInterface&Entity $newView The view after update.
+	 * @param ViewInterface&Entity $oldView The view before update.
 	 *
 	 * @return void
 	 *
@@ -70,7 +71,7 @@ class ViewUpdatedEvent extends Event {
 	 * event with addMethods(['getView']), which invents the method on the
 	 * mock and never consults the real class.
 	 *
-	 * @return ViewInterface The view after update
+	 * @return ViewInterface&Entity The view after update
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
@@ -81,7 +82,7 @@ class ViewUpdatedEvent extends Event {
 	/**
 	 * Get the updated view
 	 *
-	 * @return ViewInterface The view after update
+	 * @return ViewInterface&Entity The view after update
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
@@ -92,7 +93,7 @@ class ViewUpdatedEvent extends Event {
 	/**
 	 * Get the original view
 	 *
-	 * @return ViewInterface The view before update
+	 * @return ViewInterface&Entity The view before update
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */

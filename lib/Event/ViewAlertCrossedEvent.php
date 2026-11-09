@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Kernel\Contracts\ViewInterface;
 use OCA\OpenRegister\Service\View\ViewAlert;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -55,9 +56,9 @@ class ViewAlertCrossedEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param ViewInterface $view  The view whose count crossed.
-	 * @param ViewAlert     $alert The declaration it crossed.
-	 * @param int           $count The count that crossed it.
+	 * @param ViewInterface&Entity $view  The view whose count crossed.
+	 * @param ViewAlert            $alert The declaration it crossed.
+	 * @param int                  $count The count that crossed it.
 	 */
 	public function __construct(
 		private readonly ViewInterface $view,
@@ -70,7 +71,7 @@ class ViewAlertCrossedEvent extends Event {
 	/**
 	 * The view.
 	 *
-	 * @return ViewInterface The view.
+	 * @return ViewInterface&Entity The view.
 	 */
 	public function getView(): ViewInterface {
 		return $this->view;

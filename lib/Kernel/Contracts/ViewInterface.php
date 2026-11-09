@@ -52,6 +52,8 @@ interface ViewInterface extends JsonSerializable {
 	 * The users who favoured this view.
 	 *
 	 * @return array Array of user IDs who favorited this view
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function getFavoredBy(): array;
 
@@ -59,6 +61,8 @@ interface ViewInterface extends JsonSerializable {
 	 * The users and groups this view is shared with.
 	 *
 	 * @return array The share entries.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function getSharedWith(): array;
 
@@ -66,6 +70,8 @@ interface ViewInterface extends JsonSerializable {
 	 * The access level of this view.
 	 *
 	 * @return string|null The access level, or null when unset.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function getAccess(): ?string;
 
@@ -73,6 +79,8 @@ interface ViewInterface extends JsonSerializable {
 	 * The organisation this view belongs to.
 	 *
 	 * @return string|null The organisation UUID, or null when unset.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function getOrganisation(): ?string;
 }//end interface
