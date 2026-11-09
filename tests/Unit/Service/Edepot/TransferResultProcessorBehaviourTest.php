@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\TransferAuditLog;
 use OCA\OpenRegister\Service\Edepot\TransferContext;
+use OCA\OpenRegister\Service\Edepot\TransferDelivery;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCA\OpenRegister\Service\Edepot\TransferOutcomeRecorder;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
@@ -89,7 +90,7 @@ class TransferResultProcessorBehaviourTest extends TestCase {
 		];
 		$this->logger->expects($this->never())->method('error');
 
-		$out = $this->processor()->process(self::list(), $results, [$a, $b], self::context());
+		$out = $this->processor()->process(self::list(), new TransferDelivery($results, [$a, $b], self::context()));
 
 		$this->assertSame(TransferListService::STATUS_PARTIALLY_FAILED, $out['status']);
 		$this->assertSame(self::AT, $out['transferResult']['completedAt']);
@@ -103,7 +104,7 @@ class TransferResultProcessorBehaviourTest extends TestCase {
 		$b       = self::item('b');
 		$results = [new TransportResult('T1', ['a' => ['accepted' => true, 'reference' => 'R-a']])];
 
-		$out = $this->processor()->process(self::list(), $results, [$a, $b], self::context());
+		$out = $this->processor()->process(self::list(), new TransferDelivery($results, [$a, $b], self::context()));
 
 		$this->assertSame(TransferListService::STATUS_PARTIALLY_FAILED, $out['status']);
 		$this->assertSame('No result', $b['object']->getRetention()['transferErrors'][0]['error']);
@@ -113,7 +114,7 @@ class TransferResultProcessorBehaviourTest extends TestCase {
 		$a       = self::item('a');
 		$results = [new TransportResult('T1', ['a' => ['accepted' => false]])];
 
-		$out = $this->processor()->process(self::list(), $results, [$a], self::context());
+		$out = $this->processor()->process(self::list(), new TransferDelivery($results, [$a], self::context()));
 
 		$this->assertSame(TransferListService::STATUS_FAILED, $out['status']);
 		$this->assertSame('Unknown error', $a['object']->getRetention()['transferErrors'][0]['error']);
@@ -123,7 +124,7 @@ class TransferResultProcessorBehaviourTest extends TestCase {
 		$a = self::item('a');
 		$b = self::item('b');
 
-		$out = $this->processor()->process(self::list(), [new TransportResult('PKG-1')], [$a, $b], self::context());
+		$out = $this->processor()->process(self::list(), new TransferDelivery([new TransportResult('PKG-1')], [$a, $b], self::context()));
 
 		$this->assertSame(TransferListService::STATUS_COMPLETED, $out['status']);
 		$this->assertSame(
@@ -139,7 +140,7 @@ class TransferResultProcessorBehaviourTest extends TestCase {
 	public function testAnOverallSuccessWithoutReferenceUsesAnEmptyOne(): void {
 		$a = self::item('a');
 
-		$out = $this->processor()->process(self::list(), [new TransportResult()], [$a], self::context());
+		$out = $this->processor()->process(self::list(), new TransferDelivery([new TransportResult()], [$a], self::context()));
 
 		$this->assertSame('', $out['transferResult']['objectResults']['a']['reference']);
 	}
@@ -152,7 +153,7 @@ class TransferResultProcessorBehaviourTest extends TestCase {
 			$this->callback(static fn (array $ctx): bool => $ctx['error'] === 'first; second' && $ctx['transferUuid'] === 'tl-1' && $ctx['failedCount'] === 2)
 		);
 
-		$out = $this->processor()->process(self::list(), $results, [$a], self::context());
+		$out = $this->processor()->process(self::list(), new TransferDelivery($results, [$a], self::context()));
 
 		$this->assertSame(TransferListService::STATUS_FAILED, $out['status']);
 		$this->assertSame(['accepted' => false, 'reference' => null, 'error' => 'first'], $out['transferResult']['objectResults']['a']);
@@ -162,13 +163,13 @@ class TransferResultProcessorBehaviourTest extends TestCase {
 		$a       = self::item('a');
 		$results = [new TransportResult('OK'), (new TransportResult('NO'))->failed('late')];
 
-		$out = $this->processor()->process(self::list(), $results, [$a], self::context());
+		$out = $this->processor()->process(self::list(), new TransferDelivery($results, [$a], self::context()));
 
 		$this->assertSame(TransferListService::STATUS_FAILED, $out['status']);
 	}
 
 	public function testNoObjectsCompleteTrivially(): void {
-		$out = $this->processor()->process(self::list(), [new TransportResult('P')], [], self::context());
+		$out = $this->processor()->process(self::list(), new TransferDelivery([new TransportResult('P')], [], self::context()));
 
 		$this->assertSame(TransferListService::STATUS_COMPLETED, $out['status']);
 		$this->assertSame([], $out['transferResult']['objectResults']);
