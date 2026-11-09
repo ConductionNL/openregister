@@ -90,8 +90,14 @@ async function mountTab() {
 	return wrapper
 }
 
-function values (wrapper) {
-  return wrapper.findAll('.extraction-tab__value').map((v) => v.text())
+/**
+ * The texts of the tab's value cells.
+ *
+ * @param {object} wrapper The wrapper
+ * @return {Array<string>} The texts
+ */
+function values(wrapper) {
+	return wrapper.findAll('.extraction-tab__value').map((v) => v.text())
 }
 
 beforeEach(() => {
