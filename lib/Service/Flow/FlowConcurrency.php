@@ -127,7 +127,7 @@ class FlowConcurrency {
 	 * Wait for every promise, at most `$concurrency` in flight, and report each outcome in input order.
 	 *
 	 * @param \Generator $promises    The promises, keyed by input position.
-	 * @param int        $concurrency How many may be in flight at once.
+	 * @param integer    $concurrency How many may be in flight at once.
 	 *
 	 * @return array<int, array{ok: bool, value: mixed, error: Throwable|null}> One result per input, in input order.
 	 */
