@@ -119,3 +119,4 @@
 2026-11-09T13:35:01Z reviewer-20261109T130941-3d335fc3 6973 e37838719e0c24186d8f9279aca58947cbccca7a NOT REVIEWED: still conflicts with main 0a58def603 (main carries the same refactor); merged guard suites cannot run; needs a fresh branch or close
 2026-11-09T13:35:04Z integrator-20261109T130654-5892e14f GREEN tree f145582340 on dev 1ce20f17a9 prs 50 front=ok: Tests: 52004, Assertions: 169543, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-09T13:36:15Z reviewer-20261109T130902-681516c6 6973 e37838719e0c24186d8f9279aca58947cbccca7a NOT REVIEWED: 23-file conflict with main 0a58def603 (main already carries SchemaAnnotationValidators); merged guard suites cannot run; needs a fresh branch or close
+2026-11-09T13:36:23Z integrator-20261109T130654-5892e14f MERGED-TREE f145582340: 50 PRs in one push, main now f145582340 = tested tree
