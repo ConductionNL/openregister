@@ -366,9 +366,22 @@ class AuthorizationServiceHardeningTest extends TestCase {
 
 	public function testALongLifetimeIsStillAccepted(): void {
 		// The 3600 s cap integriq applies is an open question (Q4): not built here.
-		$this->service()->validatePayload(['iat' => time(), 'exp' => time() + 86400]);
-		$this->assertTrue(true);
+		$refusedWith = null;
+		try {
+			$this->service()->validatePayload(['iat' => time(), 'exp' => time() + 86400]);
+		} catch (AuthenticationException $e) {
+			$refusedWith = $e->getMessage();
+		}
+
+		$this->assertNull($refusedWith, 'A 24 h token that has not expired must be accepted.');
 	}//end testALongLifetimeIsStillAccepted()
+
+	public function testTheSameLongLifetimeIsRefusedOnceItHasRunOut(): void {
+		// The pair of the test above: the same 24 h lifetime, ended an hour ago.
+		$this->expectException(AuthenticationException::class);
+		$this->expectExceptionMessage('expired');
+		$this->service()->validatePayload(['iat' => time() - 90000, 'exp' => time() - 3600]);
+	}//end testTheSameLongLifetimeIsRefusedOnceItHasRunOut()
 
 	public function testTheConsumerThatAuthenticatedIsReadBack(): void {
 		$secret = str_repeat('k', 32);
