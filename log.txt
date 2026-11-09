@@ -59,3 +59,4 @@
 2026-11-09T10:27:34Z integrator-20261109T092732-73c42b8a MERGED-TREE ffb115c1ae: 1 PRs, main now b5e3264a98 = tested tree
 2026-11-09T10:27:44Z integrator-20261109T092732-73c42b8a BISECT tree fd13c28591: parked #7576 (HardeningControllerBehaviourTest); other 19 PRs merged in 4 green subtrees
 2026-11-09T10:31:04Z integrator-20261109T092732-73c42b8a GREEN tree 3c6e42185b on dev b5e3264a98 prs 20 front=skip: Tests: 50191, Assertions: 164904, Errors: 7, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 23.
+2026-11-09T10:34:48Z integrator-20261109T092732-73c42b8a MERGED-TREE 3c6e42185b: 20 PRs, main now 3ea114a76f = tested tree
