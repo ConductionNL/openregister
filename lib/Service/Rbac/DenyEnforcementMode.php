@@ -207,18 +207,25 @@ class DenyEnforcementMode implements DenyEnforcementModeInterface {
 		$this->logger->warning(
 			message: '[DenyEnforcementMode] A deny rule would refuse this action; staging, so it was allowed',
 			context: array_merge(
-				[
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'mode' => self::MODE_STAGING,
-					'action' => $action,
-					'userId' => $userId,
-					'principal' => ($denial['principal'] ?? null),
-					'rule' => ($denial['rule'] ?? null),
-					'conditional' => ($denial['conditional'] ?? false),
-				],
+				['file' => __FILE__, 'line' => __LINE__, 'mode' => self::MODE_STAGING, 'action' => $action, 'userId' => $userId],
+				$this->ruleOf(denial: $denial),
 				$context
 			)
 		);
 	}//end record()
+
+	/**
+	 * The rule, the principal it names and whether it is conditional, as a staged record carries them.
+	 *
+	 * @param array<string, mixed> $denial The denial as the resolver returned it.
+	 *
+	 * @return array{principal: mixed, rule: mixed, conditional: mixed} The record's rule part.
+	 */
+	private function ruleOf(array $denial): array {
+		return [
+			'principal' => ($denial['principal'] ?? null),
+			'rule' => ($denial['rule'] ?? null),
+			'conditional' => ($denial['conditional'] ?? false),
+		];
+	}//end ruleOf()
 }//end class

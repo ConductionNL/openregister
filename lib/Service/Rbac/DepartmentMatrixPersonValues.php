@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -115,16 +116,15 @@ class DepartmentMatrixPersonValues {
 			return $this->cache[$key];
 		}
 
+		$who     = new PersonMatch(field: $match, userId: $userId);
 		$persons = $this->persons(
-			schemaRef: $schemaRef,
-			registerRef: trim((string)($source['register'] ?? '')),
-			match: $match,
-			userId: $userId
+			source: new RegisterSchemaRef(register: trim((string)($source['register'] ?? '')), schema: $schemaRef),
+			who: $who
 		);
 
 		$values = [];
 		if ($persons !== null) {
-			$values = self::collect(persons: $persons, property: $property, match: $match, userId: $userId);
+			$values = self::valuesOf(rows: self::matching(persons: $persons, who: $who), property: $property);
 		}
 
 		$this->cache[$key] = $values;
@@ -135,18 +135,17 @@ class DepartmentMatrixPersonValues {
 	/**
 	 * Read the person objects the search returns for the user.
 	 *
-	 * @param string $schemaRef   The person schema's slug or id.
-	 * @param string $registerRef The register's slug or id, or '' to find it.
-	 * @param string $match       The property matched against the user id.
-	 * @param string $userId      The current user.
+	 * @param RegisterSchemaRef $source The person schema's slug or id, and the register's ('' to find it).
+	 * @param PersonMatch       $who    The property matched against the user id, and the current user.
 	 *
 	 * @return array<int, mixed>|null The objects, or null when the source cannot be read.
 	 */
-	private function persons(string $schemaRef, string $registerRef, string $match, string $userId): ?array {
+	private function persons(RegisterSchemaRef $source, PersonMatch $who): ?array {
+		$schemaRef = (string)$source->schema;
 		try {
 			$schema = $this->schemas->find($schemaRef, _multitenancy: false, _rbac: false);
 
-			$registerId = $registerRef;
+			$registerId = (string)$source->register;
 			if ($registerId === '') {
 				$registerId = (string)($this->registers->getFirstRegisterWithSchema((int)$schema->getId()) ?? '');
 			}
@@ -160,7 +159,7 @@ class DepartmentMatrixPersonValues {
 			$persons = $this->objects->searchObjects(
 				query: [
 					'@self' => ['register' => (string)$register->getId(), 'schema' => (string)$schema->getId()],
-					$match => $userId,
+					$who->field => $who->userId,
 					'_limit' => self::PERSON_LIMIT,
 				],
 				_rbac: false,
@@ -198,17 +197,44 @@ class DepartmentMatrixPersonValues {
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md#requirement-a-schema-declares-a-department-by-role-matrix-keyed-on-an-object-field
 	 */
 	public static function collect(array $persons, string $property, string $match, string $userId): array {
-		$values = [];
+		return self::valuesOf(rows: self::matching(persons: $persons, who: new PersonMatch(field: $match, userId: $userId)), property: $property);
+	}//end collect()
+
+	/**
+	 * The bodies of the persons whose match field really holds the user.
+	 *
+	 * @param array<int, mixed> $persons The objects the search returned.
+	 * @param PersonMatch       $who     The property matched against the user id, and the current user.
+	 *
+	 * @return array<int, array> The matching bodies.
+	 */
+	private static function matching(array $persons, PersonMatch $who): array {
+		$rows = [];
 		foreach ($persons as $person) {
 			$data = $person;
 			if ($person instanceof ObjectEntity === true) {
 				$data = ($person->getObject() ?? []);
 			}
 
-			if (is_array($data) === false || (string)($data[$match] ?? '') !== $userId) {
-				continue;
+			if (is_array($data) === true && (string)($data[$who->field] ?? '') === $who->userId) {
+				$rows[] = $data;
 			}
+		}
 
+		return $rows;
+	}//end matching()
+
+	/**
+	 * The property's scalar, non-empty values over the rows, unique.
+	 *
+	 * @param array<int, array> $rows     The matching bodies.
+	 * @param string            $property The property holding the values.
+	 *
+	 * @return string[] The values.
+	 */
+	private static function valuesOf(array $rows, string $property): array {
+		$values = [];
+		foreach ($rows as $data) {
 			foreach ((array)($data[$property] ?? []) as $value) {
 				if (is_scalar($value) === true && (string)$value !== '') {
 					$values[] = (string)$value;
@@ -217,5 +243,5 @@ class DepartmentMatrixPersonValues {
 		}
 
 		return array_values(array_unique($values));
-	}//end collect()
+	}//end valuesOf()
 }//end class

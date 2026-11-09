@@ -79,28 +79,40 @@ class ObjectAccessReport implements ObjectAccessReportInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function setFor(ObjectEntity $object, mixed $registerRef, mixed $schemaRef): array {
-		$register = $this->register(reference: $registerRef);
-		$schema = $this->schema(reference: $schemaRef);
+		return $this->setIn(
+			object: $object,
+			place: new ReportedPlace(register: $this->register(reference: $registerRef), schema: $this->schema(reference: $schemaRef))
+		);
+	}//end setFor()
 
+	/**
+	 * Who holds which right on one object in its resolved register and schema.
+	 *
+	 * @param ObjectEntity  $object The object.
+	 * @param ReportedPlace $place  Its register and schema, either possibly unresolved.
+	 *
+	 * @return array<string, mixed> The access set.
+	 */
+	private function setIn(ObjectEntity $object, ReportedPlace $place): array {
 		$set = $this->holders->holders(
 			blocks: [
 				'object' => $object->getAuthorization(),
-				'schema' => $schema?->getAuthorization(),
-				'register' => $register?->getAuthorization(),
+				'schema' => $place->schema?->getAuthorization(),
+				'register' => $place->register?->getAuthorization(),
 			],
-			roleDefinitions: $this->roleDefinitionsOf(register: $register)
+			roleDefinitions: $this->roleDefinitionsOf(register: $place->register)
 		);
 
 		return [
 			'object' => $object->getUuid(),
-			'register' => $register?->getSlug(),
-			'schema' => $schema?->getSlug(),
+			'register' => $place->register?->getSlug(),
+			'schema' => $place->schema?->getSlug(),
 			'owner' => $object->getOwner(),
 			'holders' => $set['holders'],
 			'denied' => $set['denied'],
 			'denyEnforcement' => $this->enforcement->current(),
 		];
-	}//end setFor()
+	}//end setIn()
 
 	/**
 	 * How that set changed, and what it was at a named moment.
@@ -144,7 +156,7 @@ class ObjectAccessReport implements ObjectAccessReportInterface {
 	 */
 	public function schema(mixed $reference): ?Schema {
 		try {
-			return $this->sources->schemaMapper->find($reference);
+			return $this->sources->catalog->schemas()->find($reference);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -159,7 +171,7 @@ class ObjectAccessReport implements ObjectAccessReportInterface {
 	 */
 	private function register(mixed $reference): ?Register {
 		try {
-			return $this->sources->registerMapper->find($reference);
+			return $this->sources->catalog->registers()->find($reference);
 		} catch (\Throwable $e) {
 			return null;
 		}
