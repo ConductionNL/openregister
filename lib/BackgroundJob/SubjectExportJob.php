@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportAssemblerInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -40,20 +39,26 @@ use Throwable;
  */
 class SubjectExportJob extends QueuedJob {
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Wire the job.
 	 *
-	 * @param ITimeFactory         $time    The clock the job base class needs.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
 	 * @param SubjectExportAssemblerInterface $exports The assembler.
-	 * @param LoggerInterface      $logger  PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		JobRuntime $runtime,
 		private readonly SubjectExportAssemblerInterface $exports,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 
 	}//end __construct()
 

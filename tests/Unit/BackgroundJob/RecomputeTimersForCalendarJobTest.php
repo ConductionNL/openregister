@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob;
 use OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJobServices;
@@ -82,9 +83,8 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 	 */
 	private function job(): RecomputeTimersForCalendarJob {
 		return new RecomputeTimersForCalendarJob(
-			$this->createMock(ITimeFactory::class),
-			new RecomputeTimersForCalendarJobServices($this->timers, $this->service, $this->recompute),
-			$this->logger
+			new JobRuntime($this->createMock(ITimeFactory::class), $this->logger),
+			new RecomputeTimersForCalendarJobServices($this->timers, $this->service, $this->recompute)
 		);
 	}//end job()
 

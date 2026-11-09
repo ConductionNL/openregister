@@ -35,7 +35,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -67,18 +66,24 @@ class SweepExpiredExportRunsJob extends TimedJob {
 	private const PASSES_PER_RUN = 5;
 
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory      $time   The clock the scheduler uses.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
 	 * @param ExportRunRecorder $runs   The export runs.
-	 * @param LoggerInterface   $logger Logger.
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		JobRuntime $runtime,
 		private readonly ExportRunRecorder $runs,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 	}//end __construct()
 
