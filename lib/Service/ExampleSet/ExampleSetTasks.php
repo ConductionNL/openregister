@@ -295,9 +295,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	 */
 	private function waitAndClaim(Task $task, array $data): void {
 		(new ExampleSetFlowRuns(container: $this->container))->fill(
-			runUuid: (string) ($data['runUuid'] ?? ''),
-			nodeId: (string) ($data['nodeId'] ?? ''),
-			taskUuid: (string) $task->getUuid()
+			slot: new ExampleSetRunSlot(runUuid: (string) ($data['runUuid'] ?? ''), nodeId: (string) ($data['nodeId'] ?? ''), taskUuid: (string) $task->getUuid())
 		);
 		(new ExampleSetTaskClaim(container: $this->container))->write(
 			task: $task,

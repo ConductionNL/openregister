@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns;
 use OCP\AppFramework\Db\Entity;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRunSlot;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRunsWrite;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
@@ -236,9 +238,9 @@ class ExampleSetFlowRunsGoldenTest extends TestCase {
 		foreach ($cases as $name => $case) {
 			$count          = 0;
 			$this->inserted = [];
-			$entry          = $this->runs()->write(flow: $case[0], version: $case[1], runs: $case[2], newUuid: function () use (&$count): string {
+			$entry          = $this->runs()->write(write: new ExampleSetRunsWrite(flow: $case[0], version: $case[1], runs: $case[2], newUuid: function () use (&$count): string {
 				return 'uuid-'.++$count;
-			});
+			}));
 			$outcomes[$name] = ['entry' => $entry, 'inserted' => array_map(static fn (FlowRun $run): array => $run->jsonSerialize(), $this->inserted)];
 		}
 
@@ -254,7 +256,7 @@ class ExampleSetFlowRunsGoldenTest extends TestCase {
 		foreach ($cases as $name => $case) {
 			$this->updated = [];
 			$this->gets    = 0;
-			$this->runs()->fill(runUuid: $case[0], nodeId: $case[1], taskUuid: $case[2]);
+			$this->runs()->fill(slot: new ExampleSetRunSlot(runUuid: $case[0], nodeId: $case[1], taskUuid: $case[2]));
 			$outcomes[$name] = ['gets' => $this->gets, 'updated' => array_map(fn (FlowRun $run): array => $this->filled(run: $run), $this->updated)];
 		}
 
