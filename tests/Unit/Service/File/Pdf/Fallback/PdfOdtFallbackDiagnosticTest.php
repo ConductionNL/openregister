@@ -27,6 +27,7 @@ namespace Unit\Service\File\Pdf\Fallback;
 
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\OdtRoundTripRequest;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\PdfOdtFallbackOrchestrator;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use OCP\IAppConfig;
@@ -83,7 +84,7 @@ class PdfOdtFallbackDiagnosticTest extends TestCase {
 		$cause = new PdfAnonymisationException(reason: PdfAnonymisationException::REASON_VALIDATION_FAILED, message: 'Path A failed');
 
 		try {
-			$orchestrator->attempt(pdfBytes: 'fake', substitutions: ['a' => 'b'], cause: $cause);
+			$orchestrator->attempt(request: new OdtRoundTripRequest(pdfBytes: 'fake', substitutions: ['a' => 'b'], cause: $cause));
 		} catch (Throwable $e) {
 			return $e;
 		}
