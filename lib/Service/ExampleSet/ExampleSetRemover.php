@@ -185,7 +185,7 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	 */
 	private function deleteObjects(string $set, array $record, array &$report): array {
 		foreach (array_reverse($record['objects'], true) as $name => $held) {
-			$why = $this->deleteObject(set: $set, name: $name, held: $held, record: $record, report: $report);
+			$why = $this->deleteObject(set: $set, held: new ExampleSetRecordedObject(name: (string) $name, entry: $held), record: $record, report: $report);
 			if ($why !== '') {
 				$report['failed'][] = $held['register'].' '.$held['schema'].' '.$name.' ('.$held['id'].'): '.$why;
 				continue;
@@ -202,20 +202,20 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	/**
 	 * Delete one object the set wrote, its files first; why it stays, or ''.
 	 *
-	 * @param string               $set    The set id.
-	 * @param string               $name   The object's record key.
-	 * @param array<string, mixed> $held   The record entry: register, schema, id.
-	 * @param array<string, mixed> $record The record; loses the deleted files.
-	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 * @param string                   $set    The set id.
+	 * @param ExampleSetRecordedObject $held   The object's record key and entry: register, schema, id.
+	 * @param array<string, mixed>     $record The record; loses the deleted files.
+	 * @param array<string, mixed>     $report The report; counts and failures are added.
 	 *
 	 * @return string
 	 */
-	private function deleteObject(string $set, string $name, array $held, array &$record, array &$report): string {
-		if ($this->deleteFiles(set: $set, name: $name, objectId: (string) $held['id'], record: $record, report: $report) === false) {
+	private function deleteObject(string $set, ExampleSetRecordedObject $held, array &$record, array &$report): string {
+		if ($this->deleteFiles(set: $set, held: $held, record: $record, report: $report) === false) {
 			return 'a file of it stays';
 		}
 
-		return $this->objects->store->deleteRecorded(register: $held['register'], schema: $held['schema'], id: $held['id']);
+		$entry = $held->entry;
+		return $this->objects->store->deleteRecorded(register: $entry['register'], schema: $entry['schema'], id: $entry['id']);
 	}//end deleteObject()
 
 	/**
@@ -331,18 +331,18 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	 *
 	 * Every file that stays is named in the report with the reason.
 	 *
-	 * @param string               $set      The set id.
-	 * @param string               $name     The object's record key.
-	 * @param string               $objectId The object's id.
-	 * @param array<string, mixed> $record   The record; loses the deleted files.
-	 * @param array<string, mixed> $report   The report; counts and failures are added.
+	 * @param string                   $set    The set id.
+	 * @param ExampleSetRecordedObject $held   The object's record key and entry.
+	 * @param array<string, mixed>     $record The record; loses the deleted files.
+	 * @param array<string, mixed>     $report The report; counts and failures are added.
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
-	private function deleteFiles(string $set, string $name, string $objectId, array &$record, array &$report): bool {
-		$left = $this->deleteFilesOf(name: $name, objectId: $objectId, files: ($record['files'][$name] ?? []), report: $report);
+	private function deleteFiles(string $set, ExampleSetRecordedObject $held, array &$record, array &$report): bool {
+		$name = $held->name;
+		$left = $this->deleteFilesOf(name: $name, objectId: (string) $held->entry['id'], files: ($record['files'][$name] ?? []), report: $report);
 		unset($record['files'][$name]);
 		if ($left !== []) {
 			$record['files'][$name] = $left;
