@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ContextsControllerServices;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -74,16 +75,14 @@ class ContextsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                        $appName        The application name.
 	 * @param IRequest                      $request        The current request.
 	 * @param ContextsControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ContextsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->registerMapper = $services->registerMapper;
 		$this->schemaMapper = $services->schemaMapper;
 		$this->contextService = $services->contextService;

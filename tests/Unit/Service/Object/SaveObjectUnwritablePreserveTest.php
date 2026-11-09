@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
+use OCA\OpenRegister\Service\Object\BulkSafeguardRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
@@ -239,16 +240,33 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 		$forged = new ObjectEntity();
 		$forged->setOrganisation('org-b');
 		$forged->setObject(['title' => 'Offerte', 'restricted' => true, '_organisation' => 'org-a', '@self' => ['organisation' => 'org-a']]);
-		[$row, $refusal] = $apply->invoke($bulk, ['title' => 'Offerte v2'], $schema, $forged, false);
+		[$row, $refusal] = $apply->invoke($bulk, ['title' => 'Offerte v2'], self::updateOf(schema: $schema, existing: $forged));
 		$this->assertNull($refusal);
 		$this->assertTrue($row['restricted'] ?? null, 'an org-b row lost a property its caller may not update');
 
 		$own = new ObjectEntity();
 		$own->setOrganisation('org-a');
 		$own->setObject(['title' => 'Offerte', 'restricted' => true]);
-		[$row] = $apply->invoke($bulk, ['title' => 'Offerte v2'], $schema, $own, false);
+		[$row] = $apply->invoke($bulk, ['title' => 'Offerte v2'], self::updateOf(schema: $schema, existing: $own));
 		$this->assertArrayNotHasKey('restricted', $row, 'staff of the record\'s organisation clear it by leaving it out');
 	}//end testABulkRowDecidesTheCarryForwardOnTheRecord()
+
+	/**
+	 * A safeguard pass positioned on an update of a stored row.
+	 *
+	 * @param Schema       $schema   The row's schema.
+	 * @param ObjectEntity $existing The stored row.
+	 *
+	 * @return BulkSafeguardRun The pass.
+	 */
+	private static function updateOf(Schema $schema, ObjectEntity $existing): BulkSafeguardRun {
+		$run              = new BulkSafeguardRun(currentUser: null);
+		$run->rowSchema   = $schema;
+		$run->rowExisting = $existing;
+		$run->rowAction   = 'update';
+
+		return $run;
+	}//end updateOf()
 
 	/**
 	 * Staff of the record's own organisation still clear `restricted` by leaving it out.

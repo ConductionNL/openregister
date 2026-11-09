@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\XwikiLinksController;
+use OCA\OpenRegister\Controller\Support\XwikiLinksControllerServices;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Service\XwikiLinkServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -52,7 +53,7 @@ class XwikiLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->service    = $this->createMock(XwikiLinkServiceInterface::class);
-		$this->controller = new XwikiLinksController('openregister', $this->request, $this->service, $this->objectService);
+		$this->controller = new XwikiLinksController($this->request, new XwikiLinksControllerServices($this->service, $this->objectService));
 	}
 
 	private function link(): XwikiLink {
