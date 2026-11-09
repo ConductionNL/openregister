@@ -65,18 +65,16 @@ class ExampleSetPeople {
 	/**
 	 * Groups, accounts and memberships, each written when the record does not hold it.
 	 *
-	 * @param array<string, mixed> $plan     The plan.
-	 * @param array<int, string>   $adopt    Adoptable account ids.
-	 * @param string               $password The administrator's password, or ''.
-	 * @param array<string, mixed> $report   The report so far.
-	 * @param array<string, mixed> $record   The record; updated and kept after every step.
+	 * @param array<string, mixed>   $plan   The plan.
+	 * @param ExampleSetAccountTerms $terms  The set id, the adoptable account ids and the administrator's password.
+	 * @param array<string, mixed>   $report The report so far.
+	 * @param array<string, mixed>   $record The record; updated and kept after every step.
 	 *
 	 * @return array<string, mixed> The report.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
-	public function install(array $plan, array $adopt, string $password, array $report, array &$record): array {
-		$terms  = new ExampleSetAccountTerms(set: (string) $plan['set'], adopt: $adopt, password: $password);
+	public function install(array $plan, ExampleSetAccountTerms $terms, array $report, array &$record): array {
 		$report = $this->installGroups(plan: $plan, report: $report, record: $record);
 		foreach ($plan['cast']['people'] as $person) {
 			$uid = (string) ($person['uid'] ?? '');

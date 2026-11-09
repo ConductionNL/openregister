@@ -81,8 +81,7 @@ class TokenGrantNarrower {
 	 *
 	 * @param array<string, mixed>|null $authorization The resolved block.
 	 * @param TokenGrant|null           $grant         The grant in force, or null for a session user.
-	 * @param string|null               $schemaSlug    The schema being resolved.
-	 * @param string|null               $registerSlug  Its register.
+	 * @param TokenGrantTarget          $target        The schema being resolved and its register.
 	 * @param DateTimeInterface|null    $now           The moment, for the expiry.
 	 *
 	 * @return array<string, mixed>|null The block to evaluate.
@@ -92,8 +91,7 @@ class TokenGrantNarrower {
 	public function narrow(
 		array|null $authorization,
 		TokenGrant|null $grant,
-		string|null $schemaSlug,
-		string|null $registerSlug,
+		TokenGrantTarget $target,
 		DateTimeInterface|null $now = null
 	): array|null {
 		if ($grant === null) {
@@ -102,12 +100,7 @@ class TokenGrantNarrower {
 
 		$now = ($now ?? new DateTimeImmutable());
 
-		$permitted = $this->permittedVerbs(
-			grant: $grant,
-			schemaSlug: $schemaSlug,
-			registerSlug: $registerSlug,
-			now: $now
-		);
+		$permitted = $this->permittedVerbs(grant: $grant, target: $target, now: $now);
 
 		$block = [];
 		if (is_array($authorization) === true) {
@@ -121,7 +114,7 @@ class TokenGrantNarrower {
 			'verbs' => $permitted,
 			'tokenId' => $grant->tokenId,
 			'expired' => $grant->isExpired(now: $now),
-			'inScope' => $grant->covers(schemaSlug: $schemaSlug, registerSlug: $registerSlug),
+			'inScope' => $grant->covers(schemaSlug: $target->schemaSlug, registerSlug: $target->registerSlug),
 		];
 
 		$block = $this->refuseUnpermitted(block: $block, declared: $this->verbsIn(block: $authorization), permitted: $permitted);
@@ -210,24 +203,18 @@ class TokenGrantNarrower {
 	/**
 	 * The verbs the grant leaves, for this schema, at this moment.
 	 *
-	 * @param TokenGrant        $grant        The grant.
-	 * @param string|null       $schemaSlug   The schema.
-	 * @param string|null       $registerSlug Its register.
-	 * @param DateTimeInterface $now          The moment.
+	 * @param TokenGrant        $grant  The grant.
+	 * @param TokenGrantTarget  $target The schema and its register.
+	 * @param DateTimeInterface $now    The moment.
 	 *
 	 * @return array<int, string> The permitted verbs.
 	 */
-	private function permittedVerbs(
-		TokenGrant $grant,
-		?string $schemaSlug,
-		?string $registerSlug,
-		DateTimeInterface $now
-	): array {
+	private function permittedVerbs(TokenGrant $grant, TokenGrantTarget $target, DateTimeInterface $now): array {
 		if ($grant->isExpired(now: $now) === true) {
 			return [];
 		}
 
-		if ($grant->covers(schemaSlug: $schemaSlug, registerSlug: $registerSlug) === false) {
+		if ($grant->covers(schemaSlug: $target->schemaSlug, registerSlug: $target->registerSlug) === false) {
 			return [];
 		}
 

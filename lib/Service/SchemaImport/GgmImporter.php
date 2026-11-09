@@ -149,10 +149,8 @@ class GgmImporter implements SchemaDialectImporter {
 		];
 
 		return new ImportedSchema(
-			title: (string)$objecttype['naam'],
-			description: (string)($objecttype['definitie'] ?? ''),
-			properties: $properties,
-			jsonld: [],
+			heading: new ImportedSchemaHeading(title: (string)$objecttype['naam'], description: (string)($objecttype['definitie'] ?? '')),
+			definition: new ImportedSchemaDefinition(properties: $properties, jsonld: []),
 			importSource: $importSource,
 			unknownRequested: $unknownRequested
 		);

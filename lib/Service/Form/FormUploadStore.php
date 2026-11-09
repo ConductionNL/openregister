@@ -341,7 +341,8 @@ class FormUploadStore implements FormUploadStoreInterface {
 	 */
 	public function redeem(string $formId, string $property, string $token, ?string $draftId = null): ?array {
 		$claims = new FormUploadClaims(time: $this->time);
-		if ($claims->isClaimedBy(folder: $this->folder(create: false), formId: $formId, token: $token, property: $property, draftId: $draftId) === true) {
+		$claim = new FormUploadClaim(formId: $formId, property: $property, draftId: $draftId);
+		if ($claims->isClaimedBy(folder: $this->folder(create: false), token: $token, claim: $claim) === true) {
 			return null;
 		}
 

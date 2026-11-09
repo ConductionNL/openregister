@@ -54,33 +54,7 @@ use Throwable;
  *
  * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
  */
-class CalendarRecompute {
-
-	/**
-	 * The supersession reason a calendar change carries.
-	 *
-	 * @var string
-	 */
-	public const REASON = 'calendar-changed';
-
-	/**
-	 * Who the ledger records as the actor.
-	 *
-	 * A named machine actor rather than the administrator who edited the
-	 * calendar: the edit and the supersession are different acts, minutes and
-	 * a job apart, and attributing thousands of supersessions to a person who
-	 * pressed Save once reads as though they moved each deadline by hand.
-	 *
-	 * @var string
-	 */
-	public const ACTOR = 'calendar-recompute';
-
-	/**
-	 * How many timers one pass examines before it stores its cursor.
-	 *
-	 * @var int
-	 */
-	public const BATCH = 500;
+class CalendarRecompute implements CalendarRecomputeInterface {
 
 	/**
 	 * Where the "this version has been done" marks are kept.

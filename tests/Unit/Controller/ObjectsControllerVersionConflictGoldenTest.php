@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\Object\ConflictReport;
+use OCA\OpenRegister\Service\Object\ConflictReportInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCP\App\IAppManager;
@@ -160,7 +161,7 @@ class ObjectsControllerVersionConflictGoldenTest extends TestCase {
 		$request->method('getHeader')->willReturnCallback(fn (string $key) => ($key === 'If-Match') ? $header : '');
 
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(ConflictReport::class)->willReturn($report);
+		$container->method('get')->with(ConflictReportInterface::class)->willReturn($report);
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->method('warning')->willReturnCallback(function (string $message): void {

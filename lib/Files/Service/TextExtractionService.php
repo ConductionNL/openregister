@@ -33,7 +33,7 @@ use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership;
+use OCA\OpenRegister\Files\Service\TextExtraction\SourceText;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler;
@@ -220,7 +220,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$payload = $this->extractSourceText(
 			source: new ExtractionSource(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile, method: 'llphant')
 		);
-		$this->indexFilePayload(fileId: $fileId, payload: $payload, sourceTimestamp: $sourceTimestamp, entityTypes: $entityTypes);
+		$this->indexFilePayload(text: new SourceText(payload: $payload, sourceTimestamp: $sourceTimestamp), entityTypes: $entityTypes);
 	}//end extractFile()
 
 	/**
@@ -254,41 +254,28 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			source: new ExtractionSource(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile, method: $method),
 			rawText: $text
 		);
-		$this->indexFilePayload(fileId: $fileId, payload: $payload, sourceTimestamp: (int)($ncFile['mtime'] ?? time()), entityTypes: $entityTypes);
+		$this->indexFilePayload(text: new SourceText(payload: $payload, sourceTimestamp: (int)($ncFile['mtime'] ?? time())), entityTypes: $entityTypes);
 	}//end extractFromProvidedText()
 
 	/**
 	 * Chunk, store and run entity recognition over a file's text payload
 	 *
-	 * @param int        $fileId          The file id.
-	 * @param array      $payload         The text payload.
-	 * @param int        $sourceTimestamp The file's mtime.
-	 * @param array|null $entityTypes     Entity types to detect, or null for all.
+	 * @param SourceText $text        The file's text payload and mtime.
+	 * @param array|null $entityTypes Entity types to detect, or null for all.
 	 *
 	 * @return void
 	 */
-	private function indexFilePayload(int $fileId, array $payload, int $sourceTimestamp, ?array $entityTypes): void {
+	private function indexFilePayload(SourceText $text, ?array $entityTypes): void {
+		$fileId = $text->payload['source_id'];
 		$chunks = $this->textToChunks(
-			payload: $payload,
+			payload: $text->payload,
 			options: [
 				'chunk_size' => self::DEFAULT_CHUNK_SIZE, 'chunk_overlap' => self::DEFAULT_CHUNK_OVERLAP, 'strategy' => self::RECURSIVE_CHARACTER,
 			]
 		);
 
 		// Persist textual chunks and include the metadata chunk at the end.
-		$this->persistChunksForSource(
-			source: new ChunkSource(
-				sourceType: 'file',
-				sourceId: $fileId,
-				ownership: new ChunkOwnership(
-					owner: $payload['owner'] ?? null,
-					organisation: $payload['organisation'] ?? null
-				),
-				sourceTimestamp: $sourceTimestamp
-			),
-			chunks: $chunks,
-			payload: $payload
-		);
+		$this->persistChunksForSource(text: $text, chunks: $chunks);
 
 		if ($this->extractFileEntities(fileId: $fileId, entityTypes: $entityTypes) === false) {
 			return;
@@ -515,7 +502,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$sourceMeta = $objectHandler->getSourceMetadata($objectId);
 		$extractedData = $objectHandler->extractText(sourceId: $objectId, sourceMeta: $sourceMeta, force: $forceReExtract);
 		$payload = $this->objectPayload(objectId: $objectId, extractedData: $extractedData);
-		$this->indexObjectPayload(payload: $payload, sourceTimestamp: $sourceTimestamp);
+		$this->indexObjectPayload(text: new SourceText(payload: $payload, sourceTimestamp: $sourceTimestamp));
 	}//end extractObject()
 
 	/**
@@ -584,31 +571,18 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Chunk and store an object's payload, then run entity recognition over the chunks.
 	 *
-	 * @param array $payload         The object's text payload.
-	 * @param int   $sourceTimestamp The object's modification time.
+	 * @param SourceText $text The object's text payload and modification time.
 	 *
 	 * @return void
 	 */
-	private function indexObjectPayload(array $payload, int $sourceTimestamp): void {
-		$objectId = $payload['source_id'];
+	private function indexObjectPayload(SourceText $text): void {
+		$objectId = $text->payload['source_id'];
 		$chunks = $this->textToChunks(
-			payload: $payload,
-			options: ['source_type' => $payload['source_type'], 'source_id' => $objectId]
+			payload: $text->payload,
+			options: ['source_type' => $text->payload['source_type'], 'source_id' => $objectId]
 		);
 
-		$this->persistChunksForSource(
-			source: new ChunkSource(
-				sourceType: 'object',
-				sourceId: $objectId,
-				ownership: new ChunkOwnership(
-					owner: $payload['owner'],
-					organisation: $payload['organisation']
-				),
-				sourceTimestamp: $sourceTimestamp
-			),
-			chunks: $chunks,
-			payload: $payload
-		);
+		$this->persistChunksForSource(text: $text, chunks: $chunks);
 
 		$this->extractObjectEntities(objectId: $objectId);
 
@@ -853,13 +827,13 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Persist textual chunks for a source.
 	 *
-	 * @param ChunkSource $source The source the chunks belong to.
+	 * @param SourceText                     $text   The source's text payload (also the metadata chunk's) and timestamp.
 	 * @param array<int,array<string,mixed>> $chunks Chunk payloads.
-	 * @param array<string,mixed> $payload Extraction payload for metadata chunk creation.
 	 *
 	 * @return void
 	 */
-	private function persistChunksForSource(ChunkSource $source, array $chunks, array $payload): void {
+	private function persistChunksForSource(SourceText $text, array $chunks): void {
+		$source = $text->chunkSource();
 		$this->storage->db->beginTransaction();
 
 		try {
@@ -872,18 +846,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 				$this->chunkMapper->insert($chunkEntity);
 			}
 
-			$this->persistMetadataChunk(
-				source: new ChunkSource(
-					sourceType: $source->sourceType,
-					sourceId: $source->sourceId,
-					ownership: new ChunkOwnership(
-						owner: $payload['owner'] ?? null,
-						organisation: $payload['organisation'] ?? null
-					),
-					sourceTimestamp: $source->sourceTimestamp
-				),
-				payload: $payload
-			);
+			$this->persistMetadataChunk(source: $source, payload: $text->payload);
 
 			$this->storage->db->commit();
 		} catch (Throwable $throwable) {
@@ -1246,7 +1209,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function discoverFile(array $ncFile): bool {
 		// Extract file directly - chunks will be created.
-		if ($this->extractListedFile(ncFile: $ncFile, force: false, failure: '[TextExtractionService] Failed to extract file') === false) {
+		if ($this->extractListedFile(ncFile: $ncFile, force: false) === false) {
 			return false;
 		}
 
@@ -1258,15 +1221,20 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	}//end discoverFile()
 
 	/**
-	 * Extract one listed file, logging the failure instead of throwing it.
+	 * Extract one listed file, logging the failure instead of throwing it: a
+	 * forced re-extraction is a retry, any other a first extraction.
 	 *
-	 * @param array  $ncFile  The file row (fileid).
-	 * @param bool   $force   Whether to re-extract a file that already has chunks.
-	 * @param string $failure The message logged when the extraction fails.
+	 * @param array $ncFile The file row (fileid).
+	 * @param bool  $force  Whether to re-extract a file that already has chunks (a retry).
 	 *
 	 * @return bool True when the file was extracted.
 	 */
-	private function extractListedFile(array $ncFile, bool $force, string $failure): bool {
+	private function extractListedFile(array $ncFile, bool $force): bool {
+		$failure = '[TextExtractionService] Failed to extract file';
+		if ($force === true) {
+			$failure = '[TextExtractionService] Retry failed for file';
+		}
+
 		try {
 			$this->extractFile(fileId: $ncFile['fileid'], forceReExtract: $force);
 			return true;
@@ -1423,7 +1391,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$untrackedFiles = $this->storage->fileMapper->findUntrackedFiles($limit);
 		$retried        = 0;
 		foreach ($untrackedFiles as $ncFile) {
-			if ($this->extractListedFile(ncFile: $ncFile, force: true, failure: '[TextExtractionService] Retry failed for file') === true) {
+			if ($this->extractListedFile(ncFile: $ncFile, force: true) === true) {
 				$retried++;
 			}
 		}

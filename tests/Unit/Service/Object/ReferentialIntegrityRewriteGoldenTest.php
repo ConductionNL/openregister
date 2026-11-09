@@ -21,6 +21,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
 use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
@@ -76,8 +77,8 @@ class ReferentialIntegrityRewriteGoldenTest extends TestCase {
 	 * @return array<string, array{0: array, 1: DeletionAnalysis, 2: ?string}>
 	 */
 	private function scenarios(): array {
-		$null = static fn (array $target): DeletionAnalysis => new DeletionAnalysis(deletable: true, nullifyTargets: [$target]);
-		$default = static fn (array $target): DeletionAnalysis => new DeletionAnalysis(deletable: true, defaultTargets: [$target]);
+		$null = static fn (array $target): DeletionAnalysis => new DeletionAnalysis(deletable: true, effects: new DeletionEffects(nullifyTargets: [$target]));
+		$default = static fn (array $target): DeletionAnalysis => new DeletionAnalysis(deletable: true, effects: new DeletionEffects(defaultTargets: [$target]));
 		$scalar = ['objectUuid' => 'dep', 'schema' => '3', 'property' => 'parent', 'isArray' => false, 'sourceUuid' => 'root-uuid'];
 		$list = ['parent' => ['a', 'root-uuid', 'b', 'root-uuid'], 'name' => 'n'];
 		return [
@@ -94,7 +95,7 @@ class ReferentialIntegrityRewriteGoldenTest extends TestCase {
 			'default null value'        => [['parent' => 'root-uuid'], $default(['defaultValue' => null] + $scalar), null],
 			'default lookup fails'      => [['parent' => 'root-uuid'], $default(['defaultValue' => 'f'] + $scalar), 'find'],
 			'default update fails'      => [['parent' => 'root-uuid'], $default(['defaultValue' => 'f'] + $scalar), 'update'],
-			'both kinds'                => [['parent' => 'root-uuid'], new DeletionAnalysis(deletable: true, nullifyTargets: [$scalar], defaultTargets: [['defaultValue' => 'd'] + $scalar]), null],
+			'both kinds'                => [['parent' => 'root-uuid'], new DeletionAnalysis(deletable: true, effects: new DeletionEffects(nullifyTargets: [$scalar], defaultTargets: [['defaultValue' => 'd'] + $scalar])), null],
 		];
 	}//end scenarios()
 

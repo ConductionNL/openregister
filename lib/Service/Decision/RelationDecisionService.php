@@ -30,10 +30,8 @@ namespace OCA\OpenRegister\Service\Decision;
 
 use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
-use OCP\IDBConnection;
 use OCP\IUser;
 use Throwable;
 
@@ -65,18 +63,14 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param EntityRelationMapperInterface $relationMapper The relation store and its audited decision write.
-	 * @param DecisionService      $decisions      Records decision objects.
-	 * @param DecisionOwnership    $ownership      The ownership rule.
-	 * @param ReviewPolicyResolver $policies       The relation's policy.
-	 * @param IDBConnection        $db             One transaction for the write and its decision.
+	 * @param RelationDecisionStores $stores    The relation store, the decision store and the transaction.
+	 * @param DecisionOwnership      $ownership The ownership rule.
+	 * @param ReviewPolicyResolver   $policies  The relation's policy.
 	 */
 	public function __construct(
-		private readonly EntityRelationMapperInterface $relationMapper,
-		private readonly DecisionService $decisions,
+		private readonly RelationDecisionStores $stores,
 		private readonly DecisionOwnership $ownership,
 		private readonly ReviewPolicyResolver $policies,
-		private readonly IDBConnection $db,
 	) {
 	}//end __construct()
 
@@ -107,22 +101,22 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 
 		$actorId = $actor->getUID();
 		$linkedUuid = $relation->getDecisionUuid();
-		$current = $this->decisions->find(uuid: $linkedUuid);
+		$current = $this->stores->decisions->find(uuid: $linkedUuid);
 		$this->assertMayChange(relation: $relation, current: $current, linkedUuid: $linkedUuid, actorId: $actorId);
 
 		$before = [$relation->getBases(), $relation->getSkipAnonymization()];
 
-		$given = [];
+		$given = $body;
 		if ($hasNote === true) {
-			$given = [$note];
+			$given[self::NOTE_FIELD] = $note;
 		}
 
-		$this->db->beginTransaction();
+		$this->stores->db->beginTransaction();
 		try {
-			$updated = $this->relationMapper->updateDecisionMetadata(relation: $relation, fields: $body, actingUser: $actor);
+			$updated = $this->stores->relationMapper->updateDecisionMetadata(relation: $relation, fields: $body, actingUser: $actor);
 
-			if ($this->isNewDecision(current: $current, before: $before, updated: $updated, body: $body, note: $given) === false) {
-				$this->db->commit();
+			if ($this->isNewDecision(current: $current, before: $before, updated: $updated, given: $given) === false) {
+				$this->stores->db->commit();
 				return ['relation' => $updated, 'decision' => $current];
 			}
 
@@ -131,29 +125,29 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 				$note = $current->getNote();
 			}
 
-			$decision = $this->decisions->record(
-				subjectType: ReviewPolicyResolver::SUBJECT_TYPE,
-				subjectId: (string)$updated->getId(),
-				verdict: $this->verdictOf(relation: $updated),
-				decidedBy: $actorId,
-				note: $note,
-				supersedes: $current?->getUuid()
-			);
+			$successor = new Decision();
+			$successor->setSubjectType(ReviewPolicyResolver::SUBJECT_TYPE);
+			$successor->setSubjectId((string)$updated->getId());
+			$successor->setVerdict($this->verdictOf(relation: $updated));
+			$successor->setDecidedBy($actorId);
+			$successor->setNote($note);
+			$successor->setSupersedes($current?->getUuid());
+			$decision = $this->stores->decisions->record(decision: $successor);
 			// Compare-and-swap on the link read above: two reviewers taking a
 			// first decision at once cannot both link theirs (the second finds
 			// the link taken and is refused).
-			$updated = $this->relationMapper->linkDecision(
+			$updated = $this->stores->relationMapper->linkDecision(
 				relation: $updated,
 				decisionUuid: (string)$decision->getUuid(),
 				expectedUuid: $linkedUuid,
 				guarded: true
 			);
-			$this->db->commit();
+			$this->stores->db->commit();
 		} catch (DecisionConflictException) {
-			$this->db->rollBack();
+			$this->stores->db->rollBack();
 			throw new DecisionOwnedException(refusal: ['error' => 'decision-owned', 'decision' => null]);
 		} catch (Throwable $error) {
-			$this->db->rollBack();
+			$this->stores->db->rollBack();
 			throw $error;
 		}//end try
 
@@ -206,21 +200,20 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 	 * @param Decision|null        $current The current decision.
 	 * @param array{0: mixed, 1: mixed} $before  Bases and skipAnonymization before the write.
 	 * @param EntityRelation       $updated The relation after the write.
-	 * @param array<string, mixed> $body    The decision fields written.
-	 * @param array<int, string|null> $note    The note given, as a one-item list, or empty when none was given.
+	 * @param array<string, mixed> $given   The decision fields written, plus the note under NOTE_FIELD when one was given.
 	 *
 	 * @return bool True when a new decision is recorded.
 	 */
-	private function isNewDecision(?Decision $current, array $before, EntityRelation $updated, array $body, array $note): bool {
+	private function isNewDecision(?Decision $current, array $before, EntityRelation $updated, array $given): bool {
 		if ($current === null) {
-			return $body !== [] || $note !== [];
+			return $given !== [];
 		}
 
 		if ($before !== [$updated->getBases(), $updated->getSkipAnonymization()]) {
 			return true;
 		}
 
-		return $note !== [] && $note[0] !== $current->getNote();
+		return array_key_exists(self::NOTE_FIELD, $given) === true && $given[self::NOTE_FIELD] !== $current->getNote();
 	}//end isNewDecision()
 
 	/**

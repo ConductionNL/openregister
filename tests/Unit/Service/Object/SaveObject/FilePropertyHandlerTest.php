@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest;
 use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -2052,10 +2053,8 @@ class FilePropertyHandlerTest extends TestCase {
 			->willReturn($fileMock);
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
-			$dataUri,
-			'attachment',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'attachment', ['type' => 'file'], null),
+			$dataUri
 		);
 
 		$this->assertSame(77, $result);
@@ -2075,10 +2074,8 @@ class FilePropertyHandlerTest extends TestCase {
 			->willReturn($fileMock);
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
-			$base64,
-			'binary',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'binary', ['type' => 'file'], null),
+			$base64
 		);
 
 		$this->assertSame(88, $result);
@@ -2102,10 +2099,8 @@ class FilePropertyHandlerTest extends TestCase {
 		];
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
-			$fileObject,
-			'document',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+			$fileObject
 		);
 
 		$this->assertSame(42, $result);
@@ -2118,10 +2113,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectExceptionMessage('Unsupported file input type');
 
 		$this->handler->processSingleFileProperty(
-			$entity,
-			12345,
-			'document',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+			12345
 		);
 	}
 
@@ -2142,10 +2135,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectExceptionMessage('no downloadable URL');
 
 		$this->handler->processSingleFileProperty(
-			$entity,
-			$fileObject,
-			'document',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+			$fileObject
 		);
 	}
 
@@ -2163,10 +2154,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectExceptionMessage('no downloadable URL');
 
 		$this->handler->processSingleFileProperty(
-			$entity,
-			$fileObject,
-			'document',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+			$fileObject
 		);
 	}
 
@@ -2189,10 +2178,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectExceptionMessage('no downloadable URL');
 
 		$this->handler->processSingleFileProperty(
-			$entity,
-			$fileObject,
-			'document',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+			$fileObject
 		);
 	}
 
@@ -2218,11 +2205,8 @@ class FilePropertyHandlerTest extends TestCase {
 			->willReturn($fileMock);
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
-			$dataUri,
-			'images',
-			['type' => 'file'],
-			3
+			new FileStoreRequest($entity, 'images', ['type' => 'file'], 3),
+			$dataUri
 		);
 
 		$this->assertSame(99, $result);
@@ -2773,10 +2757,8 @@ class FilePropertyHandlerTest extends TestCase {
 			);
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
-			'http://93.184.216.34/reports/quarterly.pdf',
-			'document',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+			'http://93.184.216.34/reports/quarterly.pdf'
 		);
 
 		$this->assertSame(4242, $result);
@@ -2816,10 +2798,8 @@ class FilePropertyHandlerTest extends TestCase {
 			);
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
-			'http://93.184.216.34/download',
-			'image',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'image', ['type' => 'file'], null),
+			'http://93.184.216.34/download'
 		);
 
 		$this->assertSame(88, $result);
@@ -2846,10 +2826,8 @@ class FilePropertyHandlerTest extends TestCase {
 
 		try {
 			$this->handler->processSingleFileProperty(
-				$entity,
-				'http://127.0.0.1/latest/meta-data/',
-				'document',
-				['type' => 'file']
+				new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+				'http://127.0.0.1/latest/meta-data/'
 			);
 			$this->fail('Expected a loopback URL to be refused.');
 		} catch (InvalidArgumentException $e) {
@@ -2883,10 +2861,8 @@ class FilePropertyHandlerTest extends TestCase {
 
 		try {
 			$this->handler->processSingleFileProperty(
-				$entity,
-				'http://93.184.216.34/gone.pdf',
-				'document',
-				['type' => 'file']
+				new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+				'http://93.184.216.34/gone.pdf'
 			);
 			$this->fail('Expected an unreachable URL to throw.');
 		} catch (Exception $e) {
@@ -2914,14 +2890,12 @@ class FilePropertyHandlerTest extends TestCase {
 			->willReturn($fileMock);
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
 			[
 				'id' => 'not-numeric',
 				'title' => 'notes.txt',
 				'downloadUrl' => 'http://93.184.216.34/files/notes.txt',
-			],
-			'document',
-			['type' => 'file']
+			]
 		);
 
 		$this->assertSame(1234, $result);
@@ -2944,10 +2918,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectExceptionMessage("has invalid type 'application/pdf'");
 
 		$this->handler->processSingleFileProperty(
-			$entity,
-			'http://93.184.216.34/reports/quarterly.pdf',
-			'image',
-			['type' => 'file', 'allowedTypes' => ['image/png']]
+			new FileStoreRequest($entity, 'image', ['type' => 'file', 'allowedTypes' => ['image/png']], null),
+			'http://93.184.216.34/reports/quarterly.pdf'
 		);
 	}
 }

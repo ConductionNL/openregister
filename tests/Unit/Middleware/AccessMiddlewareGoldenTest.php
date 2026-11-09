@@ -172,8 +172,16 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 			$user = $this->user();
 		}
 
-		$this->tenant($user, $org, $admin)->beforeController('C', 'm');
-		$this->addToAssertionCount(1);
+		$refusedStatus = null;
+		try {
+			$this->tenant($user, $org, $admin)->beforeController('C', 'm');
+		} catch (TenantStatusException $e) {
+			$refusedStatus = $e->getStatus();
+		}
+
+		// The pair is testTenantRefusesTheseStatuses: the same middleware, the
+		// deciding status (or the admin flag for provisioning) flipped.
+		$this->assertNull($refusedStatus, 'The tenant middleware refused a request it must let through.');
 	}
 
 	public function testTenantLetsARequestThroughWhenTheOrganisationCannotLoad(): void {

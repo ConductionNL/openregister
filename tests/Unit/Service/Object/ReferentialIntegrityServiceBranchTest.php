@@ -10,6 +10,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
 use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
 use OCA\OpenRegister\Service\Object\IntegrityStorage;
@@ -178,9 +179,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 	public function testDeletionAnalysisToArray(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [['objectUuid' => 'a']],
-			nullifyTargets: [['objectUuid' => 'b']],
-			defaultTargets: [],
+			effects: new DeletionEffects(cascadeTargets: [['objectUuid' => 'a']], nullifyTargets: [['objectUuid' => 'b']], defaultTargets: []),
 			blockers: [],
 			chainPaths: ['a -> b']
 		);

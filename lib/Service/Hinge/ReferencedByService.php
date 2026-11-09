@@ -113,7 +113,7 @@ class ReferencedByService implements ReferencedByServiceInterface {
 		);
 
 		foreach ($this->magicMapper->getExistingRegisterSchemaTables() as $tableInfo) {
-			$group = $this->readGroup(tableInfo: $tableInfo, page: $page, onlySchema: $onlySchema);
+			$group = $this->readGroup(table: $this->resolveWantedTable(tableInfo: $tableInfo, onlySchema: $onlySchema), page: $page);
 
 			if ($group === null) {
 				continue;
@@ -139,37 +139,34 @@ class ReferencedByService implements ReferencedByServiceInterface {
 	/**
 	 * Read one schema group: its total and one page of summarised records.
 	 *
-	 * @param array            $tableInfo  The register+schema table descriptor.
-	 * @param ReferencedByPage $page       The reference, page and access flag every group is read with.
-	 * @param string|null      $onlySchema Restrict to one schema (id or slug) when given.
+	 * @param ReferencingTable|null $table The resolved table, or null when it is unresolvable or not wanted.
+	 * @param ReferencedByPage      $page  The reference, page and access flag every group is read with.
 	 *
 	 * @return array|null The group, or null when it holds nothing or cannot be read.
 	 */
-	private function readGroup(array $tableInfo, ReferencedByPage $page, ?string $onlySchema): ?array {
-		$resolved = $this->resolveWantedTable(tableInfo: $tableInfo, onlySchema: $onlySchema);
-		if ($resolved === null) {
+	private function readGroup(?ReferencingTable $table, ReferencedByPage $page): ?array {
+		if ($table === null) {
 			return null;
 		}
 
-		$register = $resolved['register'];
-		$schema = $resolved['schema'];
-
-		$found = $this->queryGroup(tableInfo: $tableInfo, register: $register, schema: $schema, page: $page);
+		$found = $this->queryGroup(table: $table, page: $page);
 		if ($found === null) {
 			return null;
 		}
 
+		$statusField = $this->resolveStatusField(schema: $table->schema);
+		$results     = [];
+		foreach ($this->referencingRecords(rows: $found['rows'], targetUuid: $page->targetUuid) as $record) {
+			$results[] = $this->summarise(record: $record, statusField: $statusField);
+		}
+
 		return [
-			'register' => $this->describe(entity: $register),
-			'schema' => $this->describe(entity: $schema),
+			'register' => $this->describe(entity: $table->register),
+			'schema' => $this->describe(entity: $table->schema),
 			'total' => $found['total'],
 			'limit' => $page->limit,
 			'offset' => $page->offset,
-			'results' => $this->summariseRows(
-				rows: $found['rows'],
-				targetUuid: $page->targetUuid,
-				statusField: $this->resolveStatusField(schema: $schema)
-			),
+			'results' => $results,
 		];
 	}//end readGroup()
 
@@ -179,15 +176,15 @@ class ReferencedByService implements ReferencedByServiceInterface {
 	 * @param array       $tableInfo  The register+schema table descriptor.
 	 * @param string|null $onlySchema Restrict to one schema (id or slug) when given.
 	 *
-	 * @return array{register: Register, schema: Schema}|null The pair, or null when unresolvable or not wanted.
+	 * @return ReferencingTable|null The table, or null when unresolvable or not wanted.
 	 */
-	private function resolveWantedTable(array $tableInfo, ?string $onlySchema): ?array {
+	private function resolveWantedTable(array $tableInfo, ?string $onlySchema): ?ReferencingTable {
 		$resolved = $this->resolveTable(tableInfo: $tableInfo);
 		if ($resolved === null) {
 			return null;
 		}
 
-		if ($this->isWanted(schema: $resolved['schema'], onlySchema: $onlySchema) === false) {
+		if ($this->isWanted(schema: $resolved->schema, onlySchema: $onlySchema) === false) {
 			return null;
 		}
 
@@ -215,9 +212,9 @@ class ReferencedByService implements ReferencedByServiceInterface {
 	 *
 	 * @param array $tableInfo The register+schema table descriptor.
 	 *
-	 * @return array{register: Register, schema: Schema}|null The pair, or null when either cannot be found.
+	 * @return ReferencingTable|null The table, or null when its register or schema cannot be found.
 	 */
-	private function resolveTable(array $tableInfo): ?array {
+	private function resolveTable(array $tableInfo): ?ReferencingTable {
 		try {
 			$register = $this->registerMapper->find($tableInfo['registerId']);
 			$schema = $this->schemaMapper->find($tableInfo['schemaId']);
@@ -234,21 +231,21 @@ class ReferencedByService implements ReferencedByServiceInterface {
 			return null;
 		}
 
-		return ['register' => $register, 'schema' => $schema];
+		return new ReferencingTable(tableInfo: $tableInfo, register: $register, schema: $schema);
 	}//end resolveTable()
 
 	/**
 	 * Count one group under the caller's access and, when it holds anything, load its page.
 	 *
-	 * @param array            $tableInfo The register+schema table descriptor.
-	 * @param Register         $register  The table's register.
-	 * @param Schema           $schema    The table's schema.
-	 * @param ReferencedByPage $page      The reference, page and access flag to query with.
+	 * @param ReferencingTable $table The table with its register and schema.
+	 * @param ReferencedByPage $page  The reference, page and access flag to query with.
 	 *
 	 * @return array{total: int, rows: array}|null The total and rows, or null when empty or unreadable.
 	 */
-	private function queryGroup(array $tableInfo, Register $register, Schema $schema, ReferencedByPage $page): ?array {
-		$filters = $page->filters();
+	private function queryGroup(ReferencingTable $table, ReferencedByPage $page): ?array {
+		$filters  = $page->filters();
+		$register = $table->register;
+		$schema   = $table->schema;
 
 		try {
 			$groupTotal = $this->magicMapper->countObjectsInRegisterSchemaTable(
@@ -275,7 +272,7 @@ class ReferencedByService implements ReferencedByServiceInterface {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'table' => ($tableInfo['tableName'] ?? 'unknown'),
+					'table' => ($table->tableInfo['tableName'] ?? 'unknown'),
 					'error' => $e->getMessage(),
 				]
 			);
@@ -286,15 +283,14 @@ class ReferencedByService implements ReferencedByServiceInterface {
 	}//end queryGroup()
 
 	/**
-	 * Summarise the loaded rows, leaving out anything that is not a record and the hinge itself.
+	 * The loaded rows that are referencing records: anything that is not a record and the hinge itself are left out.
 	 *
-	 * @param array       $rows        The rows one group's page returned.
-	 * @param string      $targetUuid  The uuid of the object being read as the hinge.
-	 * @param string|null $statusField The schema's declared lifecycle field, when it has one.
+	 * @param array  $rows       The rows one group's page returned.
+	 * @param string $targetUuid The uuid of the object being read as the hinge.
 	 *
-	 * @return array<int, array> The summaries.
+	 * @return array<int, ObjectEntity> The referencing records.
 	 */
-	private function summariseRows(array $rows, string $targetUuid, ?string $statusField): array {
+	private function referencingRecords(array $rows, string $targetUuid): array {
 		$records = [];
 		foreach ($rows as $row) {
 			if (($row instanceof ObjectEntity) === false) {
@@ -305,11 +301,11 @@ class ReferencedByService implements ReferencedByServiceInterface {
 				continue;
 			}
 
-			$records[] = $this->summarise(record: $row, statusField: $statusField);
+			$records[] = $row;
 		}
 
 		return $records;
-	}//end summariseRows()
+	}//end referencingRecords()
 
 	/**
 	 * Summarise one referencing record: what it is, where it stands, when it moved.

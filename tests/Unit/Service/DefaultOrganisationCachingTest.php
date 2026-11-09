@@ -313,7 +313,54 @@ class DefaultOrganisationCachingTest extends TestCase {
 	 * @return void
 	 */
 	public function testDefaultOrganisationCacheOnFirstTimeCreation(): void {
-		$this->markTestSkipped('OrganisationMapper no longer has findDefault()/createDefault() methods. Default organisation creation was refactored.');
+		// No default organisation is configured, so the first call creates one.
+		$this->organisationMapper->expects($this->once())
+			->method('save')
+			->willReturnCallback($this->savesWithAUuid());
+		$this->organisationMapper->method('update')->willReturnArgument(0);
+
+		$first = $this->organisationService->ensureDefaultOrganisation();
+		$second = $this->organisationService->ensureDefaultOrganisation();
+
+		// Created once, then served from the static cache: the same instance.
+		$this->assertSame('Default Organisation', $first->getName());
+		$this->assertSame($first, $second);
+	}
+
+	/**
+	 * The pair of the test above: with the cache cleared between the two calls
+	 * the second one goes back to the database and creates again.
+	 *
+	 * @return void
+	 */
+	public function testDefaultOrganisationIsCreatedAgainWhenTheCacheIsCleared(): void {
+		$this->organisationMapper->expects($this->exactly(2))
+			->method('save')
+			->willReturnCallback($this->savesWithAUuid());
+		$this->organisationMapper->method('update')->willReturnArgument(0);
+
+		$first = $this->organisationService->ensureDefaultOrganisation();
+		$this->organisationService->clearDefaultOrganisationCache();
+		$second = $this->organisationService->ensureDefaultOrganisation();
+
+		$this->assertNotSame($first, $second);
+	}
+
+	/**
+	 * Stand in for OrganisationMapper::save(), which hands back the row with a uuid.
+	 *
+	 * @return \Closure(Organisation): Organisation
+	 */
+	private function savesWithAUuid(): \Closure {
+		$saved = 0;
+		return static function (Organisation $organisation) use (&$saved): Organisation {
+			$saved++;
+			if ($organisation->getUuid() === null) {
+				$organisation->setUuid('created-org-' . $saved);
+			}
+
+			return $organisation;
+		};
 	}
 
 	/**

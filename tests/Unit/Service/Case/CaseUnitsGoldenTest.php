@@ -47,8 +47,11 @@ use OCA\OpenRegister\Service\Case\CasePlanBringOver;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
 use OCA\OpenRegister\Service\Case\CasePlanEnsurer;
+use OCA\OpenRegister\Service\Case\CasePlanInsertion;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\CasePlanMechanics;
+use OCA\OpenRegister\Service\Case\CasePlanPlacement;
+use OCA\OpenRegister\Service\Case\CasePlanProvenance;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanStore;
@@ -467,17 +470,13 @@ class CaseUnitsGoldenTest extends TestCase {
 		];
 		$rowFrom = static fn (array $node, string $origin, ?string $flowUuid = null, ?int $flowVersion = null): mixed => self::attempt(
 			static fn (): CaseItem => $definitions->rowFrom(
-				node: $node,
-				objectUuid: 'obj',
-				registerId: 1,
-				schemaId: null,
-				parentId: 9,
-				position: 3,
-				settings: ['a' => 1],
-				origin: $origin,
-				actor: 'alice',
-				flowUuid: $flowUuid,
-				flowVersion: $flowVersion
+				placed: new CasePlanPlacement(node: $node, parentId: 9, position: 3),
+				insertion: new CasePlanInsertion(
+					anchor: new CaseAnchor(objectUuid: 'obj', registerId: 1, schemaId: null),
+					settings: ['a' => 1],
+					actor: 'alice',
+					provenance: new CasePlanProvenance(flowUuid: $flowUuid, flowVersion: $flowVersion, origin: $origin)
+				)
 			)
 		);
 		$out['rowFrom']['full'] = $rowFrom($full, CaseItem::ORIGIN_DISCRETIONARY, 'f', 4);
@@ -754,6 +753,9 @@ class CaseUnitsGoldenTest extends TestCase {
 				data: ['key' => 'x5', 'type' => 'humanTask', 'parent' => 'assessment'],
 				uid: 'mallory'
 			)
+		);
+		$out['attach denied at root'] = self::attempt(
+			static fn (): CaseItem => $service->attachAdHoc(objectUuid: $obj, data: ['key' => 'x8', 'type' => 'humanTask'], uid: 'mallory')
 		);
 		$out['attach invalid'] = self::attempt(
 			static fn (): CaseItem => $service->attachAdHoc(

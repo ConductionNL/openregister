@@ -22,7 +22,8 @@ final class FlowTimerDiagnosticControllerFactory {
 	 * @param IRequest $request Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
 	 * @param IGroupManager $groupManager Constructor argument.
-	 * @param TermDiagnostic $diagnostic Constructor argument.
+	 * @param TermDiagnosticInterface $diagnostic Constructor argument.
+	 * @param WorkingCalendarDefinitionsInterface $calendars Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -31,7 +32,8 @@ final class FlowTimerDiagnosticControllerFactory {
 		\OCP\IRequest $request,
 		\OCP\IUserSession $userSession,
 		\OCP\IGroupManager $groupManager,
-		\OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic $diagnostic,
+		\OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface $diagnostic,
+		\OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface $calendars = new \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars(),
 	): array {
 		return [
 			$appName,
@@ -40,6 +42,7 @@ final class FlowTimerDiagnosticControllerFactory {
 				userSession: $userSession,
 				groupManager: $groupManager,
 				diagnostic: $diagnostic,
+				calendars: $calendars,
 			),
 		];
 	}//end args()

@@ -27,9 +27,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\ArchiveHandlerInterface;
+use OCA\OpenRegister\Service\Object\ObjectStateRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -54,7 +56,6 @@ class ObjectStateController extends Controller {
 	/**
 	 * Constructor for the ObjectStateController.
 	 *
-	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param ArchiveHandlerInterface $archiveHandler The archive and freeze verbs.
 	 * @param IUserSession $userSession The user session.
@@ -64,12 +65,11 @@ class ObjectStateController extends Controller {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly ArchiveHandlerInterface $archiveHandler,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -131,11 +131,8 @@ class ObjectStateController extends Controller {
 	 */
 	public function freeze(string $register, string $schema, string $id): JSONResponse {
 		$verb = fn (?string $reason): array => $this->archiveHandler->freeze(
-			identifier: $id,
-			reason: $reason,
-			state: $this->textFromRequest(key: 'state'),
-			register: $register,
-			schema: $schema
+			request: new ObjectStateRequest(identifier: $id, reason: $reason, register: $register, schema: $schema),
+			state: $this->textFromRequest(key: 'state')
 		);
 
 		return $this->asSignedInUser(verb: $verb);

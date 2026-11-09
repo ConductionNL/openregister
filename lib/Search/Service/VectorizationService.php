@@ -24,7 +24,7 @@
 namespace OCA\OpenRegister\Search\Service;
 
 use Exception;
-use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrategyInterface;
+use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorizationRun;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorizedEntity;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;

@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Query\RelatedRowInnerRow;
 use OCA\OpenRegister\Service\Query\RelatedRowLookups;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\Query\RelatedRowSqlTarget;
+use OCA\OpenRegister\Service\Query\RelatedRowSubquery;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -65,6 +66,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSource
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSqlTarget
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowSubquery
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowField
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowBoundCondition
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class RelatedRowQueryGoldenTest extends TestCase {
@@ -245,8 +249,8 @@ class RelatedRowQueryGoldenTest extends TestCase {
 	public function testTheClauseRendersTheExactSql(string $engine, string $storage, string $direction, string $sql): void {
 		$rendered = (new RelatedRowExistsClause())->render(
 			filter: new RelatedRowFilter('cp', 'caseRef', $this->goldenConditions(storage: $storage), $direction),
-			target: new RelatedRowSqlTarget(engine: $engine, table: 'tbl', outerAlias: 't', storage: $storage),
-			inner: new RelatedRowInnerRow(alias: 'r0', accessPredicate: 'r0.o = 1', parameterPrefix: 'p0')
+			subquery: new RelatedRowSubquery(target: new RelatedRowSqlTarget(engine: $engine, table: 'tbl', outerAlias: 't', storage: $storage),
+			inner: new RelatedRowInnerRow(alias: 'r0', accessPredicate: 'r0.o = 1', parameterPrefix: 'p0'))
 		);
 
 		$expected = [
@@ -348,8 +352,8 @@ class RelatedRowQueryGoldenTest extends TestCase {
 
 		(new RelatedRowExistsClause())->render(
 			filter: $filter,
-			target: $target,
-			inner: new RelatedRowInnerRow(alias: 'r0', accessPredicate: $predicate, parameterPrefix: 'p')
+			subquery: new RelatedRowSubquery(target: $target,
+			inner: new RelatedRowInnerRow(alias: 'r0', accessPredicate: $predicate, parameterPrefix: 'p'))
 		);
 	}//end testTheClauseRefusesWithTheExactMessage()
 
@@ -361,8 +365,8 @@ class RelatedRowQueryGoldenTest extends TestCase {
 	public function testAColumnComparisonNeedsNoEngine(): void {
 		$rendered = (new RelatedRowExistsClause())->render(
 			filter: new RelatedRowFilter('cp', 'k', [['field' => 'v', 'operator' => 'gte', 'value' => '1']]),
-			target: new RelatedRowSqlTarget(engine: 'oracle', table: 'tbl', outerAlias: 't', storage: 'columns'),
-			inner: new RelatedRowInnerRow(alias: 'r0', accessPredicate: 'x', parameterPrefix: 'p')
+			subquery: new RelatedRowSubquery(target: new RelatedRowSqlTarget(engine: 'oracle', table: 'tbl', outerAlias: 't', storage: 'columns'),
+			inner: new RelatedRowInnerRow(alias: 'r0', accessPredicate: 'x', parameterPrefix: 'p'))
 		);
 
 		$this->assertSame('EXISTS (SELECT 1 FROM tbl r0 WHERE r0."k" = t._uuid AND r0._deleted IS NULL AND (x) AND r0."v" >= :p_c0)', $rendered['sql']);

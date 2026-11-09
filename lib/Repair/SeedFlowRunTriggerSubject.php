@@ -36,7 +36,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FlowRunListing;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\FlowRunViewer;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectsInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -170,7 +172,10 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 			// 🔴 `findAllRuns()`, NOT `findAll()`. The latter does not exist;
 			// writing it once already produced a repair that threw, reported
 			// itself skipped, and let the upgrade go green having done nothing.
-			$batch = $runs->findAllRuns(limit: $page, offset: $offset);
+			$batch = $runs->findAllRuns(
+				listing: new FlowRunListing(limit: $page, offset: $offset),
+				viewer: new FlowRunViewer(requesterUid: null, ownedFlowIds: [])
+			);
 			$all = array_merge($all, $batch);
 
 			if (count($batch) < $page) {

@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleWrite;
+use OCA\OpenRegister\Service\Lifecycle\TransitionAttempt;
 use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
@@ -102,8 +103,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	private function holds(mixed $rule, array $object): bool {
 		return $this->evaluator()->holds(
 			rule: $rule,
-			write: new LifecycleWrite(newData: $object, oldData: [], schemaSlug: 'bezwaar', field: 'status'),
-			move: new TransitionMove(action: 'beslissen', from: 'in-behandeling', to: 'besloten')
+			attempt: new TransitionAttempt(write: new LifecycleWrite(newData: $object, oldData: [], schemaSlug: 'bezwaar', field: 'status'), move: new TransitionMove(action: 'beslissen', from: 'in-behandeling', to: 'besloten'))
 		);
 
 	}//end holds()

@@ -59,23 +59,37 @@ use Psr\Log\LoggerInterface;
 class ArchiveHandler implements ArchiveHandlerInterface {
 
 	/**
+	 * Audit entries for each transition.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * PSR-3 logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param MagicMapperInterface $magicMapper Object lookup and persistence.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit entries for each transition.
 	 * @param PermissionEnforcementInterface $permissionHandler The `update` gate.
 	 * @param IUserSession $userSession The acting user.
-	 * @param LoggerInterface $logger PSR-3 logger.
+	 * @param ObjectStateRecording $recording The audit trail and the log each transition is recorded in.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $magicMapper,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly PermissionEnforcementInterface $permissionHandler,
 		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		ObjectStateRecording $recording,
 	) {
+		$this->auditTrailMapper = $recording->auditTrailMapper;
+		$this->logger           = $recording->logger;
 	}//end __construct()
 
 	/**
@@ -206,47 +220,22 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	}//end unarchiveRequested()
 
 	/**
-	 * Freeze an object.
+	 * Freeze the object a request names.
 	 *
-	 * @param string $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason Why it is being frozen.
-	 * @param string|null $state The lifecycle state declaring the freeze, when one does.
-	 * @param string|null $register The register the url names, so an object in
-	 *                              another one is not reachable from this address.
-	 * @param string|null $schema The schema the url names, checked the same way.
+	 * @param ObjectStateRequest $request The object (id, uuid, slug or uri), the register and schema
+	 *                                    the url names (so an object in another one is not reachable
+	 *                                    from this address) and why it is being frozen.
+	 * @param string|null        $state   The lifecycle state declaring the freeze, when one does.
 	 *
 	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists.
 	 *
-	 * @return array{uuid: string|null, frozen: array|null} The stored marker.
-	 *
-	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
-	 */
-	public function freeze(
-		string $identifier,
-		?string $reason = null,
-		?string $state = null,
-		?string $register = null,
-		?string $schema = null,
-	): array {
-		return $this->freezeRequested(
-			request: new ObjectStateRequest(identifier: $identifier, reason: $reason, register: $register, schema: $schema),
-			state: $state
-		);
-	}//end freeze()
-
-	/**
-	 * Freeze the object a request names.
-	 *
-	 * @param ObjectStateRequest $request The object, its address and the reason.
-	 * @param string|null        $state   The state the object is frozen in, as the caller names it.
-	 *
 	 * @return array{uuid: string|null, frozen: array|null} The uuid and the freeze marker.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	private function freezeRequested(ObjectStateRequest $request, ?string $state): array {
+	public function freeze(ObjectStateRequest $request, ?string $state = null): array {
 		$context = $this->resolveAndAuthorize(request: $request);
 		$object = $context['object'];
 
@@ -266,7 +255,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 			'uuid' => $saved->getUuid(),
 			'frozen' => $saved->getFrozen(),
 		];
-	}//end freezeRequested()
+	}//end freeze()
 
 	/**
 	 * Unfreeze an object.

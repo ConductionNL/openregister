@@ -32,6 +32,7 @@ use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityManifest;
+use OCA\OpenRegister\AppHost\Observability\ObservabilityProbes;
 use OCA\OpenRegister\AppHost\Observability\PrometheusRenderer;
 use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
@@ -123,7 +124,7 @@ class MetricsEngineGoldenTest extends TestCase {
 		[$descriptors, $available, $cached] = $this->scenarioSetup($scenario);
 
 		$engine = $this->engine(available: $available, cached: $cached, failTable: ($scenario === 'failing'));
-		$output = $engine->render(new ObservabilityManifest('app', [], $descriptors));
+		$output = $engine->render(new ObservabilityManifest('app', new ObservabilityProbes([], $descriptors)));
 
 		return (string)json_encode(
 			[

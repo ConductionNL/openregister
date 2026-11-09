@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\Support\AgentsControllerServices;
 use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -127,7 +128,6 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 	 * Initializes controller with required dependencies for agent operations.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param AgentsControllerServices $services The agents controller services.
 	 * @param string|null $userId Current user ID for RBAC checks
@@ -135,13 +135,12 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		AgentsControllerServices $services,
 		?string $userId,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		// Store dependencies for use in controller methods.
 		$this->agentMapper = $services->agentMapper;

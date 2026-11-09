@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Rbac\TokenGrant;
 use OCA\OpenRegister\Service\Rbac\TokenGrantReach;
 use OCA\OpenRegister\Service\Rbac\TokenGrantTerms;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
+use OCA\OpenRegister\Service\Rbac\TokenGrantTarget;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
 use PHPUnit\Framework\TestCase;
@@ -278,8 +279,7 @@ class TokenGrantTest extends TestCase {
 		$block = $narrower->narrow(
 			authorization: null,
 			grant: $expired,
-			schemaSlug: 'zaak',
-			registerSlug: 'zaken',
+			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
 			now: $this->now()
 		);
 
@@ -308,8 +308,7 @@ class TokenGrantTest extends TestCase {
 		$block = $narrower->narrow(
 			authorization: ['read' => ['medewerkers'], 'update' => ['medewerkers']],
 			grant: $grant,
-			schemaSlug: 'zaak',
-			registerSlug: 'zaken',
+			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
 			now: $this->now()
 		);
 
@@ -341,8 +340,7 @@ class TokenGrantTest extends TestCase {
 		$block = $narrower->narrow(
 			authorization: ['read' => ['medewerkers']],
 			grant: $grant,
-			schemaSlug: 'persoon',
-			registerSlug: 'zaken',
+			target: new TokenGrantTarget(schemaSlug: 'persoon', registerSlug: 'zaken'),
 			now: $this->now()
 		);
 
@@ -367,8 +365,7 @@ class TokenGrantTest extends TestCase {
 		$result = $narrower->narrow(
 			authorization: $block,
 			grant: null,
-			schemaSlug: 'zaak',
-			registerSlug: 'zaken',
+			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
 			now: $this->now()
 		);
 
@@ -391,8 +388,7 @@ class TokenGrantTest extends TestCase {
 		$withoutToken = $narrower->narrow(
 			authorization: $forged,
 			grant: null,
-			schemaSlug: 'zaak',
-			registerSlug: 'zaken',
+			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
 			now: $this->now()
 		);
 		$this->assertArrayNotHasKey(
@@ -407,8 +403,7 @@ class TokenGrantTest extends TestCase {
 				verbs: ['read'],
 				terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00'))
 			),
-			schemaSlug: 'zaak',
-			registerSlug: 'zaken',
+			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
 			now: $this->now()
 		);
 		$this->assertFalse(

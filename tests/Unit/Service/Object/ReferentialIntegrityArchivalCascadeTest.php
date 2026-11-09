@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
 use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
@@ -228,10 +229,12 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [
-				$this->target('child-ordinary', self::SCHEMA_ORDINARY),
-				$this->target('child-retained', self::SCHEMA_ARCHIVAL),
-			]
+			effects: new DeletionEffects(
+				cascadeTargets: [
+					$this->target('child-ordinary', self::SCHEMA_ORDINARY),
+					$this->target('child-retained', self::SCHEMA_ARCHIVAL),
+				]
+			)
 		);
 
 		$result = $this->service->applyDeletionActions($analysis, 'admin', 'parent-uuid', 'org-1', 'parent-slug');
@@ -271,10 +274,12 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [
-				$this->target('retained-a', self::SCHEMA_ARCHIVAL),
-				$this->target('retained-b', self::SCHEMA_ARCHIVAL),
-			]
+			effects: new DeletionEffects(
+				cascadeTargets: [
+					$this->target('retained-a', self::SCHEMA_ARCHIVAL),
+					$this->target('retained-b', self::SCHEMA_ARCHIVAL),
+				]
+			)
 		);
 
 		$result = $this->service->applyDeletionActions($analysis, 'admin', 'parent-uuid');
@@ -301,10 +306,12 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 	public function testARetainedChildReachedTwiceIsReportedOnce(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [
-				$this->target('retained-a', self::SCHEMA_ARCHIVAL, 'refA'),
-				$this->target('retained-a', self::SCHEMA_ARCHIVAL, 'refB'),
-			]
+			effects: new DeletionEffects(
+				cascadeTargets: [
+					$this->target('retained-a', self::SCHEMA_ARCHIVAL, 'refA'),
+					$this->target('retained-a', self::SCHEMA_ARCHIVAL, 'refB'),
+				]
+			)
 		);
 
 		$result = $this->service->applyDeletionActions($analysis, 'admin', 'parent-uuid');
@@ -330,7 +337,7 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [$this->target('child-ordinary', self::SCHEMA_ORDINARY)]
+			effects: new DeletionEffects(cascadeTargets: [$this->target('child-ordinary', self::SCHEMA_ORDINARY)])
 		);
 
 		$result = $this->service->applyDeletionActions($analysis, 'admin', 'parent-uuid');

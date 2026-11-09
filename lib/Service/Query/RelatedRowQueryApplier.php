@@ -146,13 +146,12 @@ class RelatedRowQueryApplier {
 				// case properties by asking who may read cases.
 				accessPredicate: $this->access->predicate(
 					qb: $qb,
-					source: new RelatedRowSource(schema: $schema, tableName: $relatedTable, alias: $alias),
-					scope: $organisationScopeFor($schema, $register->getId())
+					source: new RelatedRowSource(schema: $schema, tableName: $relatedTable, alias: $alias, scope: $organisationScopeFor($schema, $register->getId()))
 				),
 				parameterPrefix: $alias
 			);
 
-			$this->addClause(qb: $qb, rendered: $clause->render(filter: $filter, target: $target, inner: $inner));
+			$this->addClause(qb: $qb, rendered: $clause->render(filter: $filter, subquery: new RelatedRowSubquery(target: $target, inner: $inner)));
 			$applied++;
 		}
 

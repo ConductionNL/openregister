@@ -82,7 +82,10 @@ jest.mock(
 )
 jest.mock(
 	'@conduction/nextcloud-vue/dist/esm/components/CnDialogHeader/CnDialogHeader.vue.js',
-	() => ({ __esModule: true, default: { name: 'CnDialogHeader', render: () => null } }),
+	() => ({
+		__esModule: true,
+		default: { name: 'CnDialogHeader', render: () => null },
+	}),
 )
 
 const ROW = {

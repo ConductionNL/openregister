@@ -287,9 +287,8 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	 * and remove leave what they wrote alone, and the report names each under `left`. An entry another part keys
 	 * by an object (`<app>/<key>#references`) is not a declaration of this part and stays.
 	 *
+	 * @param ExampleSetRecordPart $part     The record part, which is also the fragment's list of declarations, and its noun.
 	 * @param array<string, mixed> $fragment The fragment, as gathered for this run.
-	 * @param string               $part     The record part, which is also the fragment's list of declarations.
-	 * @param string               $noun     The part's word in the report.
 	 * @param array<string, mixed> $report   The report; gains a `left` line per entry let go.
 	 * @param array<string, mixed> $record   The record; loses the entries let go.
 	 *
@@ -297,9 +296,11 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 */
-	public static function letGoUndeclared(array $fragment, string $part, string $noun, array &$report, array &$record): bool {
+	public static function letGoUndeclared(ExampleSetRecordPart $part, array $fragment, array &$report, array &$record): bool {
 		$prefix   = $fragment['app'].'/';
 		$declared = self::declared(fragment: $fragment, part: $part, prefix: $prefix);
+		$noun     = $part->noun;
+		$part     = $part->part;
 		$changed  = false;
 		foreach (array_keys((array) ($record[$part] ?? [])) as $name) {
 			$name = (string) $name;
@@ -319,14 +320,14 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	 * The record keys of the declarations of one part in a fragment.
 	 *
 	 * @param array<string, mixed> $fragment The fragment.
-	 * @param string               $part     The part.
+	 * @param ExampleSetRecordPart $part     The part.
 	 * @param string               $prefix   The app's prefix, `<app>/`.
 	 *
 	 * @return array<string, bool>
 	 */
-	private static function declared(array $fragment, string $part, string $prefix): array {
+	private static function declared(array $fragment, ExampleSetRecordPart $part, string $prefix): array {
 		$declared = [];
-		foreach ((array) ($fragment[$part] ?? []) as $entry) {
+		foreach ((array) ($fragment[$part->part] ?? []) as $entry) {
 			$declared[$prefix.($entry['key'] ?? '')] = true;
 		}
 
@@ -349,26 +350,41 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	/**
 	 * Hold what following a held change or preference made of its entry, and report a write or a failure.
 	 *
-	 * @param string                                                         $set    The set id.
-	 * @param string                                                         $part   `changes` or `userPreferences`.
-	 * @param string                                                         $name   The record key.
-	 * @param array{error: string, entry: array<string, mixed>, wrote: bool} $made   What follow() made.
-	 * @param array<string, mixed>                                           $report The report so far.
-	 * @param array<string, mixed>                                           $record The record; written when the entry changed.
+	 * @param string                  $set      The set id.
+	 * @param ExampleSetFollowedEntry $followed The entry's part and record key, and what follow() made.
+	 * @param array<string, mixed>    $report   The report so far.
+	 * @param array<string, mixed>    $record   The record; written when the entry changed.
 	 *
 	 * @return array<string, mixed> The report.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
 	 */
-	public function hold(string $set, string $part, string $name, array $made, array $report, array &$record): array {
+	public function hold(string $set, ExampleSetFollowedEntry $followed, array $report, array &$record): array {
+		$part = $followed->part;
+		$name = $followed->name;
+		if ($followed->made['entry'] !== $record[$part][$name]) {
+			$record[$part][$name] = $followed->made['entry'];
+			$this->write(set: $set, record: $record);
+		}
+
+		return self::reported(followed: $followed, report: $report);
+	}//end hold()
+
+	/**
+	 * The report with a followed entry's failure and write.
+	 *
+	 * @param ExampleSetFollowedEntry $followed The entry's part and record key, and what follow() made.
+	 * @param array<string, mixed>    $report   The report so far.
+	 *
+	 * @return array<string, mixed> The report.
+	 */
+	private static function reported(ExampleSetFollowedEntry $followed, array $report): array {
+		$part = $followed->part;
+		$name = $followed->name;
+		$made = $followed->made;
 		if ($made['error'] !== '') {
 			$report['dropped'][]  = $part.' '.$name.': not refreshed: '.$made['error'];
 			$report[$part][$name] = 'failed';
-		}
-
-		if ($made['entry'] !== $record[$part][$name]) {
-			$record[$part][$name] = $made['entry'];
-			$this->write(set: $set, record: $record);
 		}
 
 		if ($made['wrote'] === true) {
@@ -376,7 +392,7 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 		}
 
 		return $report;
-	}//end hold()
+	}//end reported()
 
 	/**
 	 * The stored record as JSON text, '' when there is none.
