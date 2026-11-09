@@ -1,0 +1,2712 @@
+{
+ "R01": {
+  "id": "R01",
+  "files": [
+   "lib/Db/ConfigurationMapper.php",
+   "lib/Db/EntityRelationMapper.php",
+   "lib/Db/FlowMapper.php",
+   "lib/Db/ObjectEntity.php",
+   "lib/Db/ProcessingLogMapper.php",
+   "lib/Db/SearchTrailMapper.php",
+   "lib/Service/ExternalLink/ExternalLinkResolver.php"
+  ],
+  "p_files": [
+   "lib/Db/ConfigurationMapper.php",
+   "lib/Db/EntityRelationMapper.php",
+   "lib/Db/FlowMapper.php",
+   "lib/Db/ObjectEntity.php",
+   "lib/Db/ProcessingLogMapper.php",
+   "lib/Db/SearchTrailMapper.php",
+   "lib/Service/ExternalLink/ExternalLinkResolver.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 539,
+   "gt4": 68,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 10,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Db/ObjectEntity.php": [
+    "#5116"
+   ],
+   "lib/Db/ConfigurationMapper.php": [
+    "C06"
+   ],
+   "lib/Db/EntityRelationMapper.php": [
+    "C06"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 529,
+   "gt4": 68,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 3,
+   "loc": 28
+  },
+  "tsv_gain": {
+   "gt2": 511,
+   "gt4": 61,
+   "gt6": 0
+  }
+ },
+ "R02": {
+  "id": "R02",
+  "files": [
+   "lib/Notifications/Service/EmailService.php",
+   "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php",
+   "lib/Notifications/Service/Notification/EmailSender.php",
+   "lib/Notifications/Service/Notification/NcNotificationSender.php",
+   "lib/Notifications/Service/Notification/NotificationPreferenceService.php",
+   "lib/Notifications/Service/PresenceService.php",
+   "lib/Notifications/Service/Timeline/EntryMentionService.php",
+   "lib/Service/RecordTemplate/RecordTemplateInput.php",
+   "lib/Service/RecordTemplate/RecordTemplateService.php"
+  ],
+  "p_files": [
+   "lib/Notifications/Service/EmailService.php",
+   "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php",
+   "lib/Notifications/Service/Notification/EmailSender.php",
+   "lib/Notifications/Service/Notification/NcNotificationSender.php",
+   "lib/Notifications/Service/Notification/NotificationPreferenceService.php",
+   "lib/Notifications/Service/PresenceService.php",
+   "lib/Notifications/Service/Timeline/EntryMentionService.php",
+   "lib/Service/RecordTemplate/RecordTemplateInput.php",
+   "lib/Service/RecordTemplate/RecordTemplateService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 840,
+   "gt4": 243,
+   "gt6": 165
+  },
+  "target": {
+   "gt2": 251,
+   "gt4": 76,
+   "gt6": 76
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php": [
+    "#6215",
+    "#6217"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 589,
+   "gt4": 167,
+   "gt6": 89
+  },
+  "rule4": {
+   "ctors": 7,
+   "loc": 98
+  },
+  "tsv_gain": {
+   "gt2": 511,
+   "gt4": 116,
+   "gt6": 57
+  }
+ },
+ "R03": {
+  "id": "R03",
+  "files": [
+   "lib/Service/Anonymisation/AnonymisationBackendService.php",
+   "lib/Service/Rbac/DenyEnforcementMode.php",
+   "lib/Service/Rbac/DenyEntryMatcher.php",
+   "lib/Service/Rbac/DenyResolver.php",
+   "lib/Service/Rbac/DepartmentMatrixPersonValues.php",
+   "lib/Service/Rbac/DerivedGrantResolver.php",
+   "lib/Service/Rbac/EffectiveAuthorization.php",
+   "lib/Service/Rbac/ExplicitReveal.php",
+   "lib/Service/Rbac/ExternalGrantGuard.php",
+   "lib/Service/Rbac/ExternalGrantLapseNotifier.php",
+   "lib/Service/Rbac/GrantManageGuard.php",
+   "lib/Service/Rbac/GrantRuleFit.php",
+   "lib/Service/Rbac/HierarchyDescent.php",
+   "lib/Service/Rbac/MetadataConditionFindings.php",
+   "lib/Service/Rbac/ObjectAccessReport.php",
+   "lib/Service/Rbac/ObjectAccessReportSources.php",
+   "lib/Service/Rbac/ObjectAuthorizationWriter.php",
+   "lib/Service/Rbac/ObjectLookup.php",
+   "lib/Service/Rbac/ObjectOwnerWriter.php",
+   "lib/Service/Rbac/ObjectScopeResolver.php",
+   "lib/Service/Rbac/ObjectShareReader.php",
+   "lib/Service/Rbac/ObjectSharingContext.php",
+   "lib/Service/Rbac/PermissionCatalogue.php",
+   "lib/Service/Rbac/PrincipalReachService.php",
+   "lib/Service/Rbac/ReachRevocationService.php",
+   "lib/Service/Rbac/SchemaManageGate.php",
+   "lib/Service/Rbac/StoredRuleBlocks.php",
+   "lib/Service/Rbac/TokenGrant.php",
+   "lib/Service/Rbac/TokenGrantNarrower.php",
+   "lib/Service/Rbac/WriteOnlyPathWalker.php"
+  ],
+  "p_files": [
+   "lib/Service/Anonymisation/AnonymisationBackendService.php",
+   "lib/Service/Rbac/DenyEnforcementMode.php",
+   "lib/Service/Rbac/DenyEntryMatcher.php",
+   "lib/Service/Rbac/DenyResolver.php",
+   "lib/Service/Rbac/DepartmentMatrixPersonValues.php",
+   "lib/Service/Rbac/DerivedGrantResolver.php",
+   "lib/Service/Rbac/EffectiveAuthorization.php",
+   "lib/Service/Rbac/ExplicitReveal.php",
+   "lib/Service/Rbac/ExternalGrantGuard.php",
+   "lib/Service/Rbac/ExternalGrantLapseNotifier.php",
+   "lib/Service/Rbac/GrantManageGuard.php",
+   "lib/Service/Rbac/GrantRuleFit.php",
+   "lib/Service/Rbac/HierarchyDescent.php",
+   "lib/Service/Rbac/MetadataConditionFindings.php",
+   "lib/Service/Rbac/ObjectAccessReport.php",
+   "lib/Service/Rbac/ObjectAccessReportSources.php",
+   "lib/Service/Rbac/ObjectAuthorizationWriter.php",
+   "lib/Service/Rbac/ObjectLookup.php",
+   "lib/Service/Rbac/ObjectOwnerWriter.php",
+   "lib/Service/Rbac/ObjectScopeResolver.php",
+   "lib/Service/Rbac/ObjectShareReader.php",
+   "lib/Service/Rbac/ObjectSharingContext.php",
+   "lib/Service/Rbac/PermissionCatalogue.php",
+   "lib/Service/Rbac/PrincipalReachService.php",
+   "lib/Service/Rbac/ReachRevocationService.php",
+   "lib/Service/Rbac/SchemaManageGate.php",
+   "lib/Service/Rbac/StoredRuleBlocks.php",
+   "lib/Service/Rbac/TokenGrant.php",
+   "lib/Service/Rbac/TokenGrantNarrower.php",
+   "lib/Service/Rbac/WriteOnlyPathWalker.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 712,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 164,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 548,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 12,
+   "loc": 86
+  },
+  "tsv_gain": {
+   "gt2": 503,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "R04": {
+  "id": "R04",
+  "files": [
+   "lib/Db/ApplicationMapper.php",
+   "lib/Db/EndpointLogMapper.php",
+   "lib/Db/FlowTriggerMapper.php",
+   "lib/Db/OrganisationMapper.php",
+   "lib/Db/RegisterMapper.php",
+   "lib/Service/Calendar/AppointmentAttendeeService.php",
+   "lib/Service/Calendar/CalendarFeedTokenService.php",
+   "lib/Service/Calendar/DeadlineDateResolver.php",
+   "lib/Service/Calendar/IcalendarWriter.php",
+   "lib/Service/Calendar/ObjectCalendarFeedService.php",
+   "lib/Service/Calendar/ObjectDateDeclaration.php",
+   "lib/Service/Calendar/ObjectDateEventBuilder.php",
+   "lib/Service/Vectorization/Strategies/FileVectorizationStrategy.php",
+   "lib/Service/Vectorization/Strategies/ObjectVectorizationStrategy.php"
+  ],
+  "p_files": [
+   "lib/Db/ApplicationMapper.php",
+   "lib/Db/EndpointLogMapper.php",
+   "lib/Db/FlowTriggerMapper.php",
+   "lib/Db/OrganisationMapper.php",
+   "lib/Db/RegisterMapper.php",
+   "lib/Service/Calendar/AppointmentAttendeeService.php",
+   "lib/Service/Calendar/CalendarFeedTokenService.php",
+   "lib/Service/Calendar/DeadlineDateResolver.php",
+   "lib/Service/Calendar/IcalendarWriter.php",
+   "lib/Service/Calendar/ObjectCalendarFeedService.php",
+   "lib/Service/Calendar/ObjectDateDeclaration.php",
+   "lib/Service/Calendar/ObjectDateEventBuilder.php",
+   "lib/Service/Vectorization/Strategies/FileVectorizationStrategy.php",
+   "lib/Service/Vectorization/Strategies/ObjectVectorizationStrategy.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 711,
+   "gt4": 65,
+   "gt6": 46
+  },
+  "target": {
+   "gt2": 157,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Db/ApplicationMapper.php": [
+    "C06"
+   ],
+   "lib/Db/OrganisationMapper.php": [
+    "C06"
+   ],
+   "lib/Db/RegisterMapper.php": [
+    "C06"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 554,
+   "gt4": 65,
+   "gt6": 46
+  },
+  "rule4": {
+   "ctors": 9,
+   "loc": 90
+  },
+  "tsv_gain": {
+   "gt2": 500,
+   "gt4": 55,
+   "gt6": 36
+  }
+ },
+ "R05": {
+  "id": "R05",
+  "files": [
+   "lib/AppHost/Scheduling/ApplicationRegister.php",
+   "lib/AppHost/Scheduling/ScheduleManifest.php",
+   "lib/Service/Configuration/GitHubHandler.php",
+   "lib/Service/Configuration/GitLabHandler.php",
+   "lib/Service/Configuration/ImportHandler.php"
+  ],
+  "p_files": [
+   "lib/AppHost/Scheduling/ApplicationRegister.php",
+   "lib/AppHost/Scheduling/ScheduleManifest.php",
+   "lib/Service/Configuration/GitHubHandler.php",
+   "lib/Service/Configuration/GitLabHandler.php",
+   "lib/Service/Configuration/ImportHandler.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 848,
+   "gt4": 333,
+   "gt6": 74
+  },
+  "target": {
+   "gt2": 349,
+   "gt4": 32,
+   "gt6": 32
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Configuration/ImportHandler.php": [
+    "#5968"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 499,
+   "gt4": 301,
+   "gt6": 42
+  },
+  "rule4": {
+   "ctors": 3,
+   "loc": 36
+  },
+  "tsv_gain": {
+   "gt2": 485,
+   "gt4": 293,
+   "gt6": 42
+  }
+ },
+ "R06": {
+  "id": "R06",
+  "files": [
+   "lib/AppHost/Search/AbstractSchemaSearchProvider.php",
+   "lib/Controller/Support/ObjectTarget.php",
+   "lib/Controller/Support/ObjectUpdate.php",
+   "lib/Controller/Support/ObjectsTableRead.php",
+   "lib/Controller/Support/RegisterGitHubPublisher.php",
+   "lib/Controller/Support/RelationsObjectLookup.php",
+   "lib/Controller/Support/TaskLeafGuard.php",
+   "lib/Service/Rules/AdministeredValidationEnforcer.php",
+   "lib/Service/Rules/AdministeredValidationRunLog.php",
+   "lib/Service/Rules/AdministeredValidations.php",
+   "lib/Service/Rules/ConditionTracer.php",
+   "lib/Service/Rules/NamedConditionEvaluator.php",
+   "lib/Service/Rules/RelativeTimeCondition.php",
+   "lib/Service/Rules/RuleDescriptor.php",
+   "lib/Service/Rules/RuleEnablementService.php",
+   "lib/Service/Rules/RuleInventoryService.php",
+   "lib/Service/Rules/RuleReplayService.php",
+   "lib/Service/Rules/RuleRunRecorder.php",
+   "lib/Service/Rules/RuleTrialService.php",
+   "lib/Service/Rules/TransitionDocument.php"
+  ],
+  "p_files": [
+   "lib/AppHost/Search/AbstractSchemaSearchProvider.php",
+   "lib/Controller/Support/ObjectTarget.php",
+   "lib/Controller/Support/ObjectUpdate.php",
+   "lib/Controller/Support/ObjectsTableRead.php",
+   "lib/Controller/Support/RegisterGitHubPublisher.php",
+   "lib/Controller/Support/RelationsObjectLookup.php",
+   "lib/Controller/Support/TaskLeafGuard.php",
+   "lib/Service/Rules/AdministeredValidationEnforcer.php",
+   "lib/Service/Rules/AdministeredValidationRunLog.php",
+   "lib/Service/Rules/AdministeredValidations.php",
+   "lib/Service/Rules/ConditionTracer.php",
+   "lib/Service/Rules/NamedConditionEvaluator.php",
+   "lib/Service/Rules/RelativeTimeCondition.php",
+   "lib/Service/Rules/RuleDescriptor.php",
+   "lib/Service/Rules/RuleEnablementService.php",
+   "lib/Service/Rules/RuleInventoryService.php",
+   "lib/Service/Rules/RuleReplayService.php",
+   "lib/Service/Rules/RuleRunRecorder.php",
+   "lib/Service/Rules/RuleTrialService.php",
+   "lib/Service/Rules/TransitionDocument.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 394,
+   "gt4": 24,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 42,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Controller/Support/ObjectTarget.php": [
+    "#6179"
+   ],
+   "lib/Controller/Support/ObjectUpdate.php": [
+    "#6179"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 352,
+   "gt4": 24,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 7,
+   "loc": 52
+  },
+  "tsv_gain": {
+   "gt2": 479,
+   "gt4": 28,
+   "gt6": 0
+  }
+ },
+ "R07": {
+  "id": "R07",
+  "files": [
+   "lib/Mcp/Tool/AbstractTool.php",
+   "lib/Mcp/Tool/AgentTool.php",
+   "lib/Mcp/Tool/ApplicationTool.php",
+   "lib/Mcp/Tool/McpProviderBridge.php",
+   "lib/Mcp/Tool/ObjectsTool.php",
+   "lib/Mcp/Tool/RegisterTool.php",
+   "lib/Mcp/Tool/SchemaTool.php",
+   "lib/Service/Delegation/DelegationConsentService.php",
+   "lib/Service/Delegation/DelegationResolver.php",
+   "lib/Service/Delegation/DelegationService.php",
+   "lib/Service/Merge/MergeService.php"
+  ],
+  "p_files": [
+   "lib/Mcp/Tool/AbstractTool.php",
+   "lib/Mcp/Tool/AgentTool.php",
+   "lib/Mcp/Tool/ApplicationTool.php",
+   "lib/Mcp/Tool/McpProviderBridge.php",
+   "lib/Mcp/Tool/ObjectsTool.php",
+   "lib/Mcp/Tool/RegisterTool.php",
+   "lib/Mcp/Tool/SchemaTool.php",
+   "lib/Service/Delegation/DelegationConsentService.php",
+   "lib/Service/Delegation/DelegationResolver.php",
+   "lib/Service/Delegation/DelegationService.php",
+   "lib/Service/Merge/MergeService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 657,
+   "gt4": 132,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 156,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Merge/MergeService.php": [
+    "#7759"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 501,
+   "gt4": 132,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 7,
+   "loc": 62
+  },
+  "tsv_gain": {
+   "gt2": 479,
+   "gt4": 136,
+   "gt6": 0
+  }
+ },
+ "R08": {
+  "id": "R08",
+  "files": [
+   "lib/Db/MagicMapper/ArrayElementFilter.php",
+   "lib/Db/MagicMapper/MagicBulkHandler.php",
+   "lib/Db/MagicMapper/MagicBulkUpsertSql.php",
+   "lib/Db/MagicMapper/MagicFacetHandler.php",
+   "lib/Db/MagicMapper/MagicMapperIdentity.php",
+   "lib/Db/MagicMapper/MagicMapperLookups.php",
+   "lib/Db/MagicMapper/MagicNumberColumn.php",
+   "lib/Db/MagicMapper/MagicOrganizationHandler.php",
+   "lib/Db/MagicMapper/MagicRbacHandler.php",
+   "lib/Db/MagicMapper/MagicStatisticsHandler.php",
+   "lib/Db/MagicMapper/MagicTableHandler.php",
+   "lib/Db/MagicMapper/NestedPathFilter.php",
+   "lib/Middleware/ApiCallerMiddleware.php",
+   "lib/Middleware/ApiVersionMiddleware.php",
+   "lib/Middleware/EncryptedFieldFilterMiddleware.php",
+   "lib/Middleware/MaintenanceModeMiddleware.php",
+   "lib/Middleware/PublicApiCorsMiddleware.php",
+   "lib/Middleware/RateLimitMiddleware.php",
+   "lib/Middleware/TenantQuotaMiddleware.php",
+   "lib/Middleware/UnknownMetadataFieldMiddleware.php"
+  ],
+  "p_files": [
+   "lib/Db/MagicMapper/ArrayElementFilter.php",
+   "lib/Db/MagicMapper/MagicBulkHandler.php",
+   "lib/Db/MagicMapper/MagicBulkUpsertSql.php",
+   "lib/Db/MagicMapper/MagicFacetHandler.php",
+   "lib/Db/MagicMapper/MagicMapperIdentity.php",
+   "lib/Db/MagicMapper/MagicMapperLookups.php",
+   "lib/Db/MagicMapper/MagicNumberColumn.php",
+   "lib/Db/MagicMapper/MagicOrganizationHandler.php",
+   "lib/Db/MagicMapper/MagicRbacHandler.php",
+   "lib/Db/MagicMapper/MagicStatisticsHandler.php",
+   "lib/Db/MagicMapper/MagicTableHandler.php",
+   "lib/Db/MagicMapper/NestedPathFilter.php",
+   "lib/Middleware/ApiCallerMiddleware.php",
+   "lib/Middleware/ApiVersionMiddleware.php",
+   "lib/Middleware/EncryptedFieldFilterMiddleware.php",
+   "lib/Middleware/MaintenanceModeMiddleware.php",
+   "lib/Middleware/PublicApiCorsMiddleware.php",
+   "lib/Middleware/RateLimitMiddleware.php",
+   "lib/Middleware/TenantQuotaMiddleware.php",
+   "lib/Middleware/UnknownMetadataFieldMiddleware.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 707,
+   "gt4": 120,
+   "gt6": 30
+  },
+  "target": {
+   "gt2": 150,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Db/MagicMapper/MagicBulkHandler.php": [
+    "#4773"
+   ],
+   "lib/Middleware/EncryptedFieldFilterMiddleware.php": [
+    "#6108"
+   ],
+   "lib/Middleware/MaintenanceModeMiddleware.php": [
+    "#4494"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 557,
+   "gt4": 120,
+   "gt6": 30
+  },
+  "rule4": {
+   "ctors": 12,
+   "loc": 109
+  },
+  "tsv_gain": {
+   "gt2": 475,
+   "gt4": 70,
+   "gt6": 8
+  }
+ },
+ "R09": {
+  "id": "R09",
+  "files": [
+   "lib/AppHost/Bootstrap.php",
+   "lib/AppHost/SchemaScopeLookups.php",
+   "lib/Service/Consumer/EndpointAllowList.php",
+   "lib/Service/Consumer/JwtValidator.php",
+   "lib/Service/Consumer/RsaJwsVerifier.php",
+   "lib/Service/File/CreateFileHandler.php",
+   "lib/Service/File/DeleteFileHandler.php",
+   "lib/Service/File/FileBatchHandler.php",
+   "lib/Service/File/FileFormattingHandler.php",
+   "lib/Service/File/FileLockHandler.php",
+   "lib/Service/File/FileVersioningHandler.php",
+   "lib/Service/File/FolderManagementHandler.php",
+   "lib/Service/File/ReadFileHandler.php",
+   "lib/Service/File/UpdateFileHandler.php"
+  ],
+  "p_files": [
+   "lib/AppHost/Bootstrap.php",
+   "lib/AppHost/SchemaScopeLookups.php",
+   "lib/Service/Consumer/EndpointAllowList.php",
+   "lib/Service/Consumer/JwtValidator.php",
+   "lib/Service/Consumer/RsaJwsVerifier.php",
+   "lib/Service/File/CreateFileHandler.php",
+   "lib/Service/File/DeleteFileHandler.php",
+   "lib/Service/File/FileBatchHandler.php",
+   "lib/Service/File/FileFormattingHandler.php",
+   "lib/Service/File/FileLockHandler.php",
+   "lib/Service/File/FileVersioningHandler.php",
+   "lib/Service/File/FolderManagementHandler.php",
+   "lib/Service/File/ReadFileHandler.php",
+   "lib/Service/File/UpdateFileHandler.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 568,
+   "gt4": 13,
+   "gt6": 13
+  },
+  "target": {
+   "gt2": 35,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/File/FolderManagementHandler.php": [
+    "#4508"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 533,
+   "gt4": 13,
+   "gt6": 13
+  },
+  "rule4": {
+   "ctors": 10,
+   "loc": 89
+  },
+  "tsv_gain": {
+   "gt2": 473,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "R10": {
+  "id": "R10",
+  "files": [
+   "lib/Exception/NotAuthorizedException.php",
+   "lib/Exception/ObjectStateWriteException.php",
+   "lib/Exception/RegisterNotFoundException.php",
+   "lib/Service/ObjectSource/CalDavVtodoObjectSourceProvider.php",
+   "lib/Service/ObjectSource/CalendarEventObjectSourceProvider.php",
+   "lib/Service/ObjectSource/ContactsObjectSourceProvider.php",
+   "lib/Service/ObjectSource/CountsThroughFindAll.php",
+   "lib/Service/ObjectSource/DbalObjectSourceProvider.php",
+   "lib/Service/ObjectSource/FederatedObjectSourceProvider.php",
+   "lib/Service/ObjectSource/FilesObjectSourceProvider.php",
+   "lib/Service/ObjectSource/GroupObjectSourceProvider.php",
+   "lib/Service/ObjectSource/OrganisationObjectSourceProvider.php",
+   "lib/Service/ObjectSource/ReadsRowsById.php",
+   "lib/Service/ObjectSource/TablesColumnMapper.php",
+   "lib/Service/ObjectSource/TablesObjectSourceProvider.php",
+   "lib/Service/ObjectSource/TablesSchemaSyncService.php",
+   "lib/Service/ObjectSource/UserDirectoryObjectSourceProvider.php",
+   "lib/Service/ObjectSource/ViewObjectSourceProvider.php",
+   "lib/Service/ObjectSource/ViewSourceMappers.php"
+  ],
+  "p_files": [
+   "lib/Exception/NotAuthorizedException.php",
+   "lib/Exception/ObjectStateWriteException.php",
+   "lib/Exception/RegisterNotFoundException.php",
+   "lib/Service/ObjectSource/CalDavVtodoObjectSourceProvider.php",
+   "lib/Service/ObjectSource/CalendarEventObjectSourceProvider.php",
+   "lib/Service/ObjectSource/ContactsObjectSourceProvider.php",
+   "lib/Service/ObjectSource/CountsThroughFindAll.php",
+   "lib/Service/ObjectSource/DbalObjectSourceProvider.php",
+   "lib/Service/ObjectSource/FederatedObjectSourceProvider.php",
+   "lib/Service/ObjectSource/FilesObjectSourceProvider.php",
+   "lib/Service/ObjectSource/GroupObjectSourceProvider.php",
+   "lib/Service/ObjectSource/OrganisationObjectSourceProvider.php",
+   "lib/Service/ObjectSource/ReadsRowsById.php",
+   "lib/Service/ObjectSource/TablesColumnMapper.php",
+   "lib/Service/ObjectSource/TablesObjectSourceProvider.php",
+   "lib/Service/ObjectSource/TablesSchemaSyncService.php",
+   "lib/Service/ObjectSource/UserDirectoryObjectSourceProvider.php",
+   "lib/Service/ObjectSource/ViewObjectSourceProvider.php",
+   "lib/Service/ObjectSource/ViewSourceMappers.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 616,
+   "gt4": 47,
+   "gt6": 24
+  },
+  "target": {
+   "gt2": 92,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Exception/ObjectStateWriteException.php": [
+    "C15"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 524,
+   "gt4": 47,
+   "gt6": 24
+  },
+  "rule4": {
+   "ctors": 12,
+   "loc": 79
+  },
+  "tsv_gain": {
+   "gt2": 468,
+   "gt4": 47,
+   "gt6": 24
+  }
+ },
+ "R11": {
+  "id": "R11",
+  "files": [
+   "lib/Activity/Provider.php",
+   "lib/Activity/ProviderSubjectHandler.php",
+   "lib/BackgroundJob/AbstractRetentionJob.php",
+   "lib/BackgroundJob/AbstractTextExtractionJob.php",
+   "lib/BackgroundJob/ActorForwardedJob.php",
+   "lib/BackgroundJob/AnnotationNotificationDispatchJob.php",
+   "lib/BackgroundJob/ArchivalRetentionTask.php",
+   "lib/BackgroundJob/AuditSealJob.php",
+   "lib/BackgroundJob/AuditTrailExportJob.php",
+   "lib/BackgroundJob/AutoTransitionJob.php",
+   "lib/BackgroundJob/AvgRetentionJob.php",
+   "lib/BackgroundJob/BackfillCalendarLinksJob.php",
+   "lib/BackgroundJob/BulkJobRunner.php",
+   "lib/BackgroundJob/CacheClearAndWarmJob.php",
+   "lib/BackgroundJob/CasePlanTimerRearmJob.php",
+   "lib/BackgroundJob/ConfigurationCheckJob.php",
+   "lib/BackgroundJob/ConnectionSeamReportJob.php",
+   "lib/BackgroundJob/ConsistencyCheckJob.php",
+   "lib/BackgroundJob/DbalIntrospectionJob.php",
+   "lib/BackgroundJob/DeferredObjectEventJob.php",
+   "lib/BackgroundJob/DraftExpiryJob.php",
+   "lib/BackgroundJob/DsarDpiaDetectionJob.php",
+   "lib/BackgroundJob/DsarRetentionSweepJob.php",
+   "lib/BackgroundJob/ExampleSetDailyRefreshJob.php",
+   "lib/BackgroundJob/ExternalGrantLapseJob.php",
+   "lib/BackgroundJob/FlowRunRetentionJob.php",
+   "lib/BackgroundJob/FlowRunWorker.php",
+   "lib/BackgroundJob/FlowScheduleWorker.php",
+   "lib/BackgroundJob/FlowTimerWorker.php",
+   "lib/BackgroundJob/FormUploadPurgeJob.php",
+   "lib/BackgroundJob/GroupReconcilerJob.php",
+   "lib/BackgroundJob/HandoffQueueDrainJob.php",
+   "lib/BackgroundJob/ImportPreviewRunner.php",
+   "lib/BackgroundJob/LogCleanUpTask.php",
+   "lib/BackgroundJob/OAuth2TokenRefreshJob.php",
+   "lib/BackgroundJob/ObjectCleanupJob.php",
+   "lib/BackgroundJob/ProcessingLogRetentionJob.php",
+   "lib/BackgroundJob/RecomputeTimersForCalendarJob.php",
+   "lib/BackgroundJob/RecordedTimedJob.php",
+   "lib/BackgroundJob/RelatedRetentionRecalculationJob.php",
+   "lib/BackgroundJob/RuleRunRetentionJob.php",
+   "lib/BackgroundJob/SchemaRunJob.php",
+   "lib/BackgroundJob/SourceRecordRecomputeJob.php",
+   "lib/BackgroundJob/StateHistoryRebuildJob.php",
+   "lib/BackgroundJob/SubjectExportJob.php",
+   "lib/BackgroundJob/SweepExpiredExportRunsJob.php",
+   "lib/BackgroundJob/SyncConfigurationsJob.php",
+   "lib/BackgroundJob/SyncDataJob.php",
+   "lib/BackgroundJob/TemporalCalculationSweepJob.php",
+   "lib/BackgroundJob/TenantDeprovisionJob.php",
+   "lib/BackgroundJob/TenantPurgeJob.php",
+   "lib/BackgroundJob/TenantUsageSyncJob.php",
+   "lib/BackgroundJob/TransferCheckJob.php",
+   "lib/BackgroundJob/TransferExecutionJob.php",
+   "lib/BackgroundJob/TranslationProjectionJob.php",
+   "lib/BackgroundJob/ViewAlertSweepJob.php",
+   "lib/BackgroundJob/WebhookDeliveryJob.php",
+   "lib/BackgroundJob/WebhookRetryJob.php"
+  ],
+  "p_files": [
+   "lib/Activity/Provider.php",
+   "lib/Activity/ProviderSubjectHandler.php",
+   "lib/BackgroundJob/AbstractRetentionJob.php",
+   "lib/BackgroundJob/AbstractTextExtractionJob.php",
+   "lib/BackgroundJob/ActorForwardedJob.php",
+   "lib/BackgroundJob/AnnotationNotificationDispatchJob.php",
+   "lib/BackgroundJob/ArchivalRetentionTask.php",
+   "lib/BackgroundJob/AuditSealJob.php",
+   "lib/BackgroundJob/AuditTrailExportJob.php",
+   "lib/BackgroundJob/AutoTransitionJob.php",
+   "lib/BackgroundJob/AvgRetentionJob.php",
+   "lib/BackgroundJob/BackfillCalendarLinksJob.php",
+   "lib/BackgroundJob/BulkJobRunner.php",
+   "lib/BackgroundJob/CacheClearAndWarmJob.php",
+   "lib/BackgroundJob/CasePlanTimerRearmJob.php",
+   "lib/BackgroundJob/ConfigurationCheckJob.php",
+   "lib/BackgroundJob/ConnectionSeamReportJob.php",
+   "lib/BackgroundJob/ConsistencyCheckJob.php",
+   "lib/BackgroundJob/DbalIntrospectionJob.php",
+   "lib/BackgroundJob/DeferredObjectEventJob.php",
+   "lib/BackgroundJob/DraftExpiryJob.php",
+   "lib/BackgroundJob/DsarDpiaDetectionJob.php",
+   "lib/BackgroundJob/DsarRetentionSweepJob.php",
+   "lib/BackgroundJob/ExampleSetDailyRefreshJob.php",
+   "lib/BackgroundJob/ExternalGrantLapseJob.php",
+   "lib/BackgroundJob/FlowRunRetentionJob.php",
+   "lib/BackgroundJob/FlowRunWorker.php",
+   "lib/BackgroundJob/FlowScheduleWorker.php",
+   "lib/BackgroundJob/FlowTimerWorker.php",
+   "lib/BackgroundJob/FormUploadPurgeJob.php",
+   "lib/BackgroundJob/GroupReconcilerJob.php",
+   "lib/BackgroundJob/HandoffQueueDrainJob.php",
+   "lib/BackgroundJob/ImportPreviewRunner.php",
+   "lib/BackgroundJob/LogCleanUpTask.php",
+   "lib/BackgroundJob/OAuth2TokenRefreshJob.php",
+   "lib/BackgroundJob/ObjectCleanupJob.php",
+   "lib/BackgroundJob/ProcessingLogRetentionJob.php",
+   "lib/BackgroundJob/RecomputeTimersForCalendarJob.php",
+   "lib/BackgroundJob/RecordedTimedJob.php",
+   "lib/BackgroundJob/RelatedRetentionRecalculationJob.php",
+   "lib/BackgroundJob/RuleRunRetentionJob.php",
+   "lib/BackgroundJob/SchemaRunJob.php",
+   "lib/BackgroundJob/SourceRecordRecomputeJob.php",
+   "lib/BackgroundJob/StateHistoryRebuildJob.php",
+   "lib/BackgroundJob/SubjectExportJob.php",
+   "lib/BackgroundJob/SweepExpiredExportRunsJob.php",
+   "lib/BackgroundJob/SyncConfigurationsJob.php",
+   "lib/BackgroundJob/SyncDataJob.php",
+   "lib/BackgroundJob/TemporalCalculationSweepJob.php",
+   "lib/BackgroundJob/TenantDeprovisionJob.php",
+   "lib/BackgroundJob/TenantPurgeJob.php",
+   "lib/BackgroundJob/TenantUsageSyncJob.php",
+   "lib/BackgroundJob/TransferCheckJob.php",
+   "lib/BackgroundJob/TransferExecutionJob.php",
+   "lib/BackgroundJob/TranslationProjectionJob.php",
+   "lib/BackgroundJob/ViewAlertSweepJob.php",
+   "lib/BackgroundJob/WebhookDeliveryJob.php",
+   "lib/BackgroundJob/WebhookRetryJob.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 888,
+   "gt4": 21,
+   "gt6": 12
+  },
+  "target": {
+   "gt2": 106,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/BackgroundJob/AnnotationNotificationDispatchJob.php": [
+    "#5046",
+    "#5116"
+   ],
+   "lib/BackgroundJob/AutoTransitionJob.php": [
+    "#5046",
+    "#5116"
+   ],
+   "lib/BackgroundJob/WebhookDeliveryJob.php": [
+    "#5046"
+   ],
+   "lib/BackgroundJob/WebhookRetryJob.php": [
+    "#5046"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 782,
+   "gt4": 21,
+   "gt6": 12
+  },
+  "rule4": {
+   "ctors": 56,
+   "loc": 596
+  },
+  "tsv_gain": {
+   "gt2": 466,
+   "gt4": 15,
+   "gt6": 3
+  }
+ },
+ "R12": {
+  "id": "R12",
+  "files": [
+   "lib/Service/ObjectService.php"
+  ],
+  "p_files": [
+   "lib/Service/ObjectService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 652,
+   "gt4": 423,
+   "gt6": 343
+  },
+  "target": {
+   "gt2": 196,
+   "gt4": 112,
+   "gt6": 92
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/ObjectService.php": [
+    "#5497"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 456,
+   "gt4": 311,
+   "gt6": 251
+  },
+  "rule4": {
+   "ctors": 0,
+   "loc": 0
+  },
+  "tsv_gain": {
+   "gt2": 456,
+   "gt4": 311,
+   "gt6": 251
+  }
+ },
+ "R13": {
+  "id": "R13",
+  "files": [
+   "lib/Db/AuditTrailPageQuery.php",
+   "lib/Db/BulkJobMapper.php",
+   "lib/Db/ConfigurationDraftMapper.php",
+   "lib/Db/DelegationGrantMapper.php",
+   "lib/Db/EmailLinkMapper.php",
+   "lib/Db/JobRunMapper.php",
+   "lib/Db/ObjectReadStateMapper.php",
+   "lib/Db/RuleRunMapper.php",
+   "lib/Db/RuleRunSummaryMapper.php",
+   "lib/Db/SchemaMapper.php",
+   "lib/Db/SequenceMapper.php",
+   "lib/Db/SourceMapper.php",
+   "lib/Db/TranslationMapper.php",
+   "lib/Db/WebhookMapper.php",
+   "lib/WorkflowEngine/RunFlowOperation.php"
+  ],
+  "p_files": [
+   "lib/Db/AuditTrailPageQuery.php",
+   "lib/Db/BulkJobMapper.php",
+   "lib/Db/ConfigurationDraftMapper.php",
+   "lib/Db/DelegationGrantMapper.php",
+   "lib/Db/EmailLinkMapper.php",
+   "lib/Db/JobRunMapper.php",
+   "lib/Db/ObjectReadStateMapper.php",
+   "lib/Db/RuleRunMapper.php",
+   "lib/Db/RuleRunSummaryMapper.php",
+   "lib/Db/SchemaMapper.php",
+   "lib/Db/SequenceMapper.php",
+   "lib/Db/SourceMapper.php",
+   "lib/Db/TranslationMapper.php",
+   "lib/Db/WebhookMapper.php",
+   "lib/WorkflowEngine/RunFlowOperation.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 550,
+   "gt4": 106,
+   "gt6": 38
+  },
+  "target": {
+   "gt2": 113,
+   "gt4": 14,
+   "gt6": 14
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Db/SchemaMapper.php": [
+    "#6215",
+    "#6217",
+    "C06"
+   ],
+   "lib/Db/SourceMapper.php": [
+    "C06"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 437,
+   "gt4": 92,
+   "gt6": 24
+  },
+  "rule4": {
+   "ctors": 3,
+   "loc": 33
+  },
+  "tsv_gain": {
+   "gt2": 436,
+   "gt4": 92,
+   "gt6": 24
+  }
+ },
+ "R14": {
+  "id": "R14",
+  "files": [
+   "lib/Capabilities/IntegrationsCapability.php",
+   "lib/Files/Controller/FileSearchController.php",
+   "lib/Files/Controller/FileSidebarController.php",
+   "lib/Files/Controller/FilesController.php",
+   "lib/Files/Controller/ObjectFolderController.php",
+   "lib/Files/Controller/Settings/FileSettingsController.php",
+   "lib/Files/Controller/Support/FileExtractionPlatform.php",
+   "lib/Files/Controller/Support/FilePlatform.php",
+   "lib/Notifications/Db/MessageMapper.php",
+   "lib/Notifications/Db/NotificationBroadcastMapper.php",
+   "lib/Notifications/Db/NotificationBroadcastReceiptMapper.php",
+   "lib/Notifications/Db/NotificationDedupeStateMapper.php",
+   "lib/Notifications/Db/NotificationDispatchLogMapper.php",
+   "lib/Notifications/Db/NotificationHistoryMapper.php",
+   "lib/Notifications/Db/NotificationQueryTrait.php",
+   "lib/Notifications/Db/NotificationSubscriptionMapper.php",
+   "lib/Notifications/Db/TextBlockMapper.php",
+   "lib/Notifications/Db/TimelineEntryMapper.php"
+  ],
+  "p_files": [
+   "lib/Capabilities/IntegrationsCapability.php",
+   "lib/Files/Controller/FileSearchController.php",
+   "lib/Files/Controller/FileSidebarController.php",
+   "lib/Files/Controller/FilesController.php",
+   "lib/Files/Controller/ObjectFolderController.php",
+   "lib/Files/Controller/Settings/FileSettingsController.php",
+   "lib/Files/Controller/Support/FileExtractionPlatform.php",
+   "lib/Files/Controller/Support/FilePlatform.php",
+   "lib/Notifications/Db/MessageMapper.php",
+   "lib/Notifications/Db/NotificationBroadcastMapper.php",
+   "lib/Notifications/Db/NotificationBroadcastReceiptMapper.php",
+   "lib/Notifications/Db/NotificationDedupeStateMapper.php",
+   "lib/Notifications/Db/NotificationDispatchLogMapper.php",
+   "lib/Notifications/Db/NotificationHistoryMapper.php",
+   "lib/Notifications/Db/NotificationQueryTrait.php",
+   "lib/Notifications/Db/NotificationSubscriptionMapper.php",
+   "lib/Notifications/Db/TextBlockMapper.php",
+   "lib/Notifications/Db/TimelineEntryMapper.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 733,
+   "gt4": 61,
+   "gt6": 32
+  },
+  "target": {
+   "gt2": 283,
+   "gt4": 24,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 450,
+   "gt4": 37,
+   "gt6": 32
+  },
+  "rule4": {
+   "ctors": 3,
+   "loc": 20
+  },
+  "tsv_gain": {
+   "gt2": 436,
+   "gt4": 37,
+   "gt6": 32
+  }
+ },
+ "R15": {
+  "id": "R15",
+  "files": [
+   "lib/Service/ActivityFilterService.php",
+   "lib/Service/AnalyticsLinkService.php",
+   "lib/Service/AnalyticsSeriesService.php",
+   "lib/Service/AuditQueryService.php",
+   "lib/Service/AuthorizationService.php",
+   "lib/Service/BulkTranslationService.php",
+   "lib/Service/CalendarLinkService.php",
+   "lib/Service/CaseTokenService.php",
+   "lib/Service/CaseTypeAuthorizationService.php",
+   "lib/Service/CollectiveLinkService.php",
+   "lib/Service/ConditionMatcher.php",
+   "lib/Service/ConditionUserResolvers.php",
+   "lib/Service/ContactMatchingService.php",
+   "lib/Service/CountedRegisterImport.php",
+   "lib/Service/DeckCardService.php",
+   "lib/Service/DeckLinkService.php",
+   "lib/Service/EmailLinkService.php",
+   "lib/Service/EndpointService.php",
+   "lib/Service/FieldEncryptionHandler.php",
+   "lib/Service/FlowLinkService.php",
+   "lib/Service/FormLinkService.php",
+   "lib/Service/LinkedEntityMappers.php",
+   "lib/Service/MapLinkService.php",
+   "lib/Service/McpDiscoveryService.php",
+   "lib/Service/MigrationPackService.php",
+   "lib/Service/OasService.php",
+   "lib/Service/ObjectRelationCleanupService.php",
+   "lib/Service/OperationsConsoleService.php",
+   "lib/Service/RegisterServiceStorage.php",
+   "lib/Service/RegisterSlugResolver.php",
+   "lib/Service/RetentionStores.php",
+   "lib/Service/ScheduledReportStores.php",
+   "lib/Service/SchemaDeletionStores.php",
+   "lib/Service/ScriptManifestLoader.php",
+   "lib/Service/SearchTrailService.php",
+   "lib/Service/SemanticTypeResolver.php",
+   "lib/Service/SequenceService.php",
+   "lib/Service/SharedSchemaDedupeService.php",
+   "lib/Service/TaskVtodoDocument.php",
+   "lib/Service/TranslationProjectionService.php",
+   "lib/Service/UrnService.php",
+   "lib/Service/UserLinkWriter.php"
+  ],
+  "p_files": [
+   "lib/Service/ActivityFilterService.php",
+   "lib/Service/AnalyticsLinkService.php",
+   "lib/Service/AnalyticsSeriesService.php",
+   "lib/Service/AuditQueryService.php",
+   "lib/Service/AuthorizationService.php",
+   "lib/Service/BulkTranslationService.php",
+   "lib/Service/CalendarLinkService.php",
+   "lib/Service/CaseTokenService.php",
+   "lib/Service/CaseTypeAuthorizationService.php",
+   "lib/Service/CollectiveLinkService.php",
+   "lib/Service/ConditionMatcher.php",
+   "lib/Service/ConditionUserResolvers.php",
+   "lib/Service/ContactMatchingService.php",
+   "lib/Service/CountedRegisterImport.php",
+   "lib/Service/DeckCardService.php",
+   "lib/Service/DeckLinkService.php",
+   "lib/Service/EmailLinkService.php",
+   "lib/Service/EndpointService.php",
+   "lib/Service/FieldEncryptionHandler.php",
+   "lib/Service/FlowLinkService.php",
+   "lib/Service/FormLinkService.php",
+   "lib/Service/LinkedEntityMappers.php",
+   "lib/Service/MapLinkService.php",
+   "lib/Service/McpDiscoveryService.php",
+   "lib/Service/MigrationPackService.php",
+   "lib/Service/OasService.php",
+   "lib/Service/ObjectRelationCleanupService.php",
+   "lib/Service/OperationsConsoleService.php",
+   "lib/Service/RegisterServiceStorage.php",
+   "lib/Service/RegisterSlugResolver.php",
+   "lib/Service/RetentionStores.php",
+   "lib/Service/ScheduledReportStores.php",
+   "lib/Service/SchemaDeletionStores.php",
+   "lib/Service/ScriptManifestLoader.php",
+   "lib/Service/SearchTrailService.php",
+   "lib/Service/SemanticTypeResolver.php",
+   "lib/Service/SequenceService.php",
+   "lib/Service/SharedSchemaDedupeService.php",
+   "lib/Service/TaskVtodoDocument.php",
+   "lib/Service/TranslationProjectionService.php",
+   "lib/Service/UrnService.php",
+   "lib/Service/UserLinkWriter.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 943,
+   "gt4": 140,
+   "gt6": 42
+  },
+  "target": {
+   "gt2": 351,
+   "gt4": 49,
+   "gt6": 10
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/ScriptManifestLoader.php": [
+    "#2061"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 592,
+   "gt4": 91,
+   "gt6": 32
+  },
+  "rule4": {
+   "ctors": 35,
+   "loc": 321
+  },
+  "tsv_gain": {
+   "gt2": 434,
+   "gt4": 83,
+   "gt6": 32
+  }
+ },
+ "R16": {
+  "id": "R16",
+  "files": [
+   "lib/Mcp/Db/AgentMapper.php",
+   "lib/Mcp/Db/ConversationMapper.php",
+   "lib/Repair/InitializeFlowActions.php",
+   "lib/Repair/MigrateApprovalChainsToTasks.php",
+   "lib/Repair/MigrateNotificationSubscriptionsToUserConfig.php",
+   "lib/Repair/RenameDutchColumns.php",
+   "lib/Repair/SeedAppVirtualSchemas.php",
+   "lib/Repair/SeedDirectoryVirtualSchemas.php",
+   "lib/Service/Party/PartyDefinition.php",
+   "lib/Service/Party/PartyLinkWriter.php",
+   "lib/Service/Party/PartyRoleService.php",
+   "lib/Service/Party/PartySearchService.php",
+   "lib/Service/Party/PartyService.php"
+  ],
+  "p_files": [
+   "lib/Mcp/Db/AgentMapper.php",
+   "lib/Mcp/Db/ConversationMapper.php",
+   "lib/Repair/InitializeFlowActions.php",
+   "lib/Repair/MigrateApprovalChainsToTasks.php",
+   "lib/Repair/MigrateNotificationSubscriptionsToUserConfig.php",
+   "lib/Repair/RenameDutchColumns.php",
+   "lib/Repair/SeedAppVirtualSchemas.php",
+   "lib/Repair/SeedDirectoryVirtualSchemas.php",
+   "lib/Service/Party/PartyDefinition.php",
+   "lib/Service/Party/PartyLinkWriter.php",
+   "lib/Service/Party/PartyRoleService.php",
+   "lib/Service/Party/PartySearchService.php",
+   "lib/Service/Party/PartyService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 613,
+   "gt4": 24,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 149,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 464,
+   "gt4": 24,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 9,
+   "loc": 78
+  },
+  "tsv_gain": {
+   "gt2": 430,
+   "gt4": 24,
+   "gt6": 0
+  }
+ },
+ "R17": {
+  "id": "R17",
+  "files": [
+   "lib/Service/AuthorizationAuditService.php",
+   "lib/Service/ContactService.php",
+   "lib/Service/DeepLinkRegistryService.php",
+   "lib/Service/JsonLd/JsonLdSerializer.php",
+   "lib/Service/LogObjectInTable.php",
+   "lib/Service/MappingService.php",
+   "lib/Service/MigrationService.php",
+   "lib/Service/ObjectServiceMapperAdapter.php",
+   "lib/Service/OpenProjectLinkService.php",
+   "lib/Service/PhotoLinkService.php",
+   "lib/Service/PollLinkService.php",
+   "lib/Service/SearchTrailStatistics.php",
+   "lib/Service/ShareLinkService.php",
+   "lib/Service/SharedMasterDataService.php",
+   "lib/Service/TmloService.php",
+   "lib/Service/TranslationStatusService.php"
+  ],
+  "p_files": [
+   "lib/Service/AuthorizationAuditService.php",
+   "lib/Service/ContactService.php",
+   "lib/Service/DeepLinkRegistryService.php",
+   "lib/Service/JsonLd/JsonLdSerializer.php",
+   "lib/Service/LogObjectInTable.php",
+   "lib/Service/MappingService.php",
+   "lib/Service/MigrationService.php",
+   "lib/Service/ObjectServiceMapperAdapter.php",
+   "lib/Service/OpenProjectLinkService.php",
+   "lib/Service/PhotoLinkService.php",
+   "lib/Service/PollLinkService.php",
+   "lib/Service/SearchTrailStatistics.php",
+   "lib/Service/ShareLinkService.php",
+   "lib/Service/SharedMasterDataService.php",
+   "lib/Service/TmloService.php",
+   "lib/Service/TranslationStatusService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 700,
+   "gt4": 71,
+   "gt6": 39
+  },
+  "target": {
+   "gt2": 246,
+   "gt4": 25,
+   "gt6": 15
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/MappingService.php": [
+    "C17"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 454,
+   "gt4": 46,
+   "gt6": 24
+  },
+  "rule4": {
+   "ctors": 8,
+   "loc": 63
+  },
+  "tsv_gain": {
+   "gt2": 409,
+   "gt4": 46,
+   "gt6": 24
+  }
+ },
+ "R18": {
+  "id": "R18",
+  "files": [
+   "lib/Search/Service/Aggregation/AggregationQuery.php",
+   "lib/Search/Service/DashboardMappers.php",
+   "lib/Search/Service/DashboardService.php",
+   "lib/Search/Service/Geo/GeoSpatialEvaluator.php",
+   "lib/Search/Service/GraphQL/GraphQLDataServices.php",
+   "lib/Search/Service/GraphQL/GraphQLService.php",
+   "lib/Search/Service/GraphQL/SchemaGenerator/CompositionHandler.php",
+   "lib/Search/Service/Quality/DedupScoringSources.php",
+   "lib/Search/Service/Quality/SimilarityCalculator.php",
+   "lib/Search/Service/Reporting/ReportRenderService.php",
+   "lib/Search/Service/Reporting/SpreadsheetReportWriter.php",
+   "lib/Search/Service/Search/SearchIndexStores.php",
+   "lib/Search/Service/Vectorization/Handlers/StoredVector.php",
+   "lib/Search/Service/ViewPresentationService.php",
+   "lib/Service/Aggregation/AggregationRunner.php",
+   "lib/Service/Aggregation/MetricExpressionEvaluator.php",
+   "lib/Service/Calculation/AggregateReferenceResolver.php",
+   "lib/Service/Calculation/CalculationEvaluator.php",
+   "lib/Service/Calculation/CalculationPayloadBuilder.php",
+   "lib/Service/Calculation/RateSchedule.php",
+   "lib/Service/Calculation/ReferenceResolver.php",
+   "lib/Service/Calculation/ReferencedCalculationRefresher.php",
+   "lib/Service/Calculation/ReferencedCalculationStores.php",
+   "lib/Service/Calculation/TemporalSweep/TemporalSchemaScan.php"
+  ],
+  "p_files": [
+   "lib/Search/Service/Aggregation/AggregationQuery.php",
+   "lib/Search/Service/DashboardMappers.php",
+   "lib/Search/Service/DashboardService.php",
+   "lib/Search/Service/Geo/GeoSpatialEvaluator.php",
+   "lib/Search/Service/GraphQL/GraphQLDataServices.php",
+   "lib/Search/Service/GraphQL/GraphQLService.php",
+   "lib/Search/Service/GraphQL/SchemaGenerator/CompositionHandler.php",
+   "lib/Search/Service/Quality/DedupScoringSources.php",
+   "lib/Search/Service/Quality/SimilarityCalculator.php",
+   "lib/Search/Service/Reporting/ReportRenderService.php",
+   "lib/Search/Service/Reporting/SpreadsheetReportWriter.php",
+   "lib/Search/Service/Search/SearchIndexStores.php",
+   "lib/Search/Service/Vectorization/Handlers/StoredVector.php",
+   "lib/Search/Service/ViewPresentationService.php",
+   "lib/Service/Aggregation/AggregationRunner.php",
+   "lib/Service/Aggregation/MetricExpressionEvaluator.php",
+   "lib/Service/Calculation/AggregateReferenceResolver.php",
+   "lib/Service/Calculation/CalculationEvaluator.php",
+   "lib/Service/Calculation/CalculationPayloadBuilder.php",
+   "lib/Service/Calculation/RateSchedule.php",
+   "lib/Service/Calculation/ReferenceResolver.php",
+   "lib/Service/Calculation/ReferencedCalculationRefresher.php",
+   "lib/Service/Calculation/ReferencedCalculationStores.php",
+   "lib/Service/Calculation/TemporalSweep/TemporalSchemaScan.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 921,
+   "gt4": 103,
+   "gt6": 70
+  },
+  "target": {
+   "gt2": 477,
+   "gt4": 67,
+   "gt6": 53
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Aggregation/AggregationRunner.php": [
+    "#4404"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 444,
+   "gt4": 36,
+   "gt6": 17
+  },
+  "rule4": {
+   "ctors": 11,
+   "loc": 85
+  },
+  "tsv_gain": {
+   "gt2": 407,
+   "gt4": 36,
+   "gt6": 17
+  }
+ },
+ "R19": {
+  "id": "R19",
+  "files": [
+   "lib/BulkAction/ApplyRuleAction.php",
+   "lib/BulkAction/ExportWholeSetAction.php",
+   "lib/BulkAction/RestorePriorValuesAction.php",
+   "lib/BulkAction/RunActionAction.php",
+   "lib/Service/Dmn/DecisionTableBulkGuard.php",
+   "lib/Service/Dmn/DecisionTableValidator.php",
+   "lib/Service/Portal/PortalPartyResolver.php",
+   "lib/Service/Portal/PortalTaskDeliveryService.php",
+   "lib/Service/Portal/PortalTaskService.php"
+  ],
+  "p_files": [
+   "lib/BulkAction/ApplyRuleAction.php",
+   "lib/BulkAction/ExportWholeSetAction.php",
+   "lib/BulkAction/RestorePriorValuesAction.php",
+   "lib/BulkAction/RunActionAction.php",
+   "lib/Service/Dmn/DecisionTableBulkGuard.php",
+   "lib/Service/Dmn/DecisionTableValidator.php",
+   "lib/Service/Portal/PortalPartyResolver.php",
+   "lib/Service/Portal/PortalTaskDeliveryService.php",
+   "lib/Service/Portal/PortalTaskService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 515,
+   "gt4": 9,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 81,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/BulkAction/ExportWholeSetAction.php": [
+    "#4535"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 434,
+   "gt4": 9,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 5,
+   "loc": 36
+  },
+  "tsv_gain": {
+   "gt2": 401,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "R20": {
+  "id": "R20",
+  "files": [
+   "lib/Service/Object/AdvisoryLockStore.php",
+   "lib/Service/Object/ArchiveHandler.php",
+   "lib/Service/Object/BatchOperationStatus.php",
+   "lib/Service/Object/CascadingHandler.php",
+   "lib/Service/Object/CorrectionService.php",
+   "lib/Service/Object/DraftCallerRule.php",
+   "lib/Service/Object/GetObject.php",
+   "lib/Service/Object/LockHandler.php",
+   "lib/Service/Object/MoveObject.php",
+   "lib/Service/Object/ObjectReadAccess.php",
+   "lib/Service/Object/OrphanDeletionGuard.php",
+   "lib/Service/Object/RevertHandler.php",
+   "lib/Service/Object/RunLockRegistry.php",
+   "lib/Service/Object/SaveObject/BulkObjectSlugs.php",
+   "lib/Service/Object/SaveObject/ObjectSlugLog.php",
+   "lib/Service/Object/SaveObject/ObjectSlugSource.php",
+   "lib/Service/Object/SearchPaging.php",
+   "lib/Service/Object/SearchResponseReports.php",
+   "lib/Service/Object/TranslationHandler.php",
+   "lib/Service/Object/ValidationHandler.php"
+  ],
+  "p_files": [
+   "lib/Service/Object/AdvisoryLockStore.php",
+   "lib/Service/Object/ArchiveHandler.php",
+   "lib/Service/Object/BatchOperationStatus.php",
+   "lib/Service/Object/CascadingHandler.php",
+   "lib/Service/Object/CorrectionService.php",
+   "lib/Service/Object/DraftCallerRule.php",
+   "lib/Service/Object/GetObject.php",
+   "lib/Service/Object/LockHandler.php",
+   "lib/Service/Object/MoveObject.php",
+   "lib/Service/Object/ObjectReadAccess.php",
+   "lib/Service/Object/OrphanDeletionGuard.php",
+   "lib/Service/Object/RevertHandler.php",
+   "lib/Service/Object/RunLockRegistry.php",
+   "lib/Service/Object/SaveObject/BulkObjectSlugs.php",
+   "lib/Service/Object/SaveObject/ObjectSlugLog.php",
+   "lib/Service/Object/SaveObject/ObjectSlugSource.php",
+   "lib/Service/Object/SearchPaging.php",
+   "lib/Service/Object/SearchResponseReports.php",
+   "lib/Service/Object/TranslationHandler.php",
+   "lib/Service/Object/ValidationHandler.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 637,
+   "gt4": 138,
+   "gt6": 89
+  },
+  "target": {
+   "gt2": 161,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 476,
+   "gt4": 138,
+   "gt6": 89
+  },
+  "rule4": {
+   "ctors": 13,
+   "loc": 103
+  },
+  "tsv_gain": {
+   "gt2": 394,
+   "gt4": 138,
+   "gt6": 89
+  }
+ },
+ "R21": {
+  "id": "R21",
+  "files": [
+   "lib/AppHost/Service/FeatureToggleService.php",
+   "lib/AppHost/Service/GenericStoreService.php",
+   "lib/AppHost/Service/LocalStoreRegistry.php",
+   "lib/Notifications/BackgroundJob/NotificationQueueFlushJob.php",
+   "lib/Notifications/BackgroundJob/PresenceExpiryJob.php",
+   "lib/Notifications/BackgroundJob/ScheduledNotificationJob.php",
+   "lib/Notifications/BackgroundJob/ScheduledObjectSources.php",
+   "lib/Notifications/BackgroundJob/ScheduledReportJob.php",
+   "lib/Notifications/BackgroundJob/ScheduledReportRunNowJob.php",
+   "lib/Notifications/BackgroundJob/TaskScheduledNotificationJob.php",
+   "lib/Notifications/BackgroundJob/WebPushDispatchJob.php",
+   "lib/Service/Interaction/FavouriteService.php",
+   "lib/Service/Interaction/ReadHistoryService.php",
+   "lib/Service/Interaction/ReadStateService.php",
+   "lib/Service/Interaction/WatcherService.php"
+  ],
+  "p_files": [
+   "lib/AppHost/Service/FeatureToggleService.php",
+   "lib/AppHost/Service/GenericStoreService.php",
+   "lib/AppHost/Service/LocalStoreRegistry.php",
+   "lib/Notifications/BackgroundJob/NotificationQueueFlushJob.php",
+   "lib/Notifications/BackgroundJob/PresenceExpiryJob.php",
+   "lib/Notifications/BackgroundJob/ScheduledNotificationJob.php",
+   "lib/Notifications/BackgroundJob/ScheduledObjectSources.php",
+   "lib/Notifications/BackgroundJob/ScheduledReportJob.php",
+   "lib/Notifications/BackgroundJob/ScheduledReportRunNowJob.php",
+   "lib/Notifications/BackgroundJob/TaskScheduledNotificationJob.php",
+   "lib/Notifications/BackgroundJob/WebPushDispatchJob.php",
+   "lib/Service/Interaction/FavouriteService.php",
+   "lib/Service/Interaction/ReadHistoryService.php",
+   "lib/Service/Interaction/ReadStateService.php",
+   "lib/Service/Interaction/WatcherService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 518,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 61,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 457,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 13,
+   "loc": 123
+  },
+  "tsv_gain": {
+   "gt2": 385,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "R22": {
+  "id": "R22",
+  "files": [
+   "lib/Files/Db/AnonymisationLogMapper.php",
+   "lib/Files/Db/ChunkMapper.php",
+   "lib/Files/Db/FileMapper.php",
+   "lib/Files/Db/RegisterFolderRecorder.php",
+   "lib/Service/Flow/Bpmn/BpmnMappingReport.php",
+   "lib/Service/Flow/FlowAccess.php",
+   "lib/Service/Flow/FlowEngine.php",
+   "lib/Service/Flow/FlowItemShape.php",
+   "lib/Service/Flow/FlowItems.php",
+   "lib/Service/Flow/FlowRunAssignee.php",
+   "lib/Service/Flow/FlowRunGuard.php",
+   "lib/Service/Flow/FlowStreamPass.php",
+   "lib/Service/Flow/FlowSubjectItems.php",
+   "lib/Service/Flow/FlowTriggerIndex.php",
+   "lib/Service/Flow/FlowTriggerSlugs.php",
+   "lib/Service/Flow/Nodes/ActionInputsNode.php",
+   "lib/Service/Flow/Nodes/EndNode.php",
+   "lib/Service/Flow/Nodes/FlowStateNode.php",
+   "lib/Service/Flow/Nodes/FormFieldsTrait.php",
+   "lib/Service/Flow/Nodes/LinkObjectNode.php",
+   "lib/Service/Flow/Nodes/MessagingNodeBase.php",
+   "lib/Service/Flow/Nodes/ObjectNodeSources.php",
+   "lib/Service/Flow/Nodes/ObjectWriteStores.php",
+   "lib/Service/Flow/Nodes/SetFieldsNode.php",
+   "lib/Service/Flow/Nodes/TriggerScheduleNode.php",
+   "lib/Service/Flow/Timer/FlowTimerSweep.php",
+   "lib/Service/Flow/Timer/WalkCollector.php",
+   "lib/Service/Flow/Timer/WorkingDayRoll.php",
+   "lib/Service/Organisation/OrganisationLifecycleAuditor.php"
+  ],
+  "p_files": [
+   "lib/Files/Db/AnonymisationLogMapper.php",
+   "lib/Files/Db/ChunkMapper.php",
+   "lib/Files/Db/FileMapper.php",
+   "lib/Files/Db/RegisterFolderRecorder.php",
+   "lib/Service/Flow/Bpmn/BpmnMappingReport.php",
+   "lib/Service/Flow/FlowAccess.php",
+   "lib/Service/Flow/FlowEngine.php",
+   "lib/Service/Flow/FlowItemShape.php",
+   "lib/Service/Flow/FlowItems.php",
+   "lib/Service/Flow/FlowRunAssignee.php",
+   "lib/Service/Flow/FlowRunGuard.php",
+   "lib/Service/Flow/FlowStreamPass.php",
+   "lib/Service/Flow/FlowSubjectItems.php",
+   "lib/Service/Flow/FlowTriggerIndex.php",
+   "lib/Service/Flow/FlowTriggerSlugs.php",
+   "lib/Service/Flow/Nodes/ActionInputsNode.php",
+   "lib/Service/Flow/Nodes/EndNode.php",
+   "lib/Service/Flow/Nodes/FlowStateNode.php",
+   "lib/Service/Flow/Nodes/FormFieldsTrait.php",
+   "lib/Service/Flow/Nodes/LinkObjectNode.php",
+   "lib/Service/Flow/Nodes/MessagingNodeBase.php",
+   "lib/Service/Flow/Nodes/ObjectNodeSources.php",
+   "lib/Service/Flow/Nodes/ObjectWriteStores.php",
+   "lib/Service/Flow/Nodes/SetFieldsNode.php",
+   "lib/Service/Flow/Nodes/TriggerScheduleNode.php",
+   "lib/Service/Flow/Timer/FlowTimerSweep.php",
+   "lib/Service/Flow/Timer/WalkCollector.php",
+   "lib/Service/Flow/Timer/WorkingDayRoll.php",
+   "lib/Service/Organisation/OrganisationLifecycleAuditor.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 527,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 99,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 428,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 13,
+   "loc": 106
+  },
+  "tsv_gain": {
+   "gt2": 378,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "R23": {
+  "id": "R23",
+  "files": [
+   "lib/BackgroundJob/Support/ActorForwardingServices.php",
+   "lib/BackgroundJob/Support/ArchivalRetentionSources.php",
+   "lib/BackgroundJob/Support/BackfillCalendarLinksSources.php",
+   "lib/BackgroundJob/Support/DeferredObjectEventLookup.php",
+   "lib/BackgroundJob/Support/RelatedRetentionLookup.php",
+   "lib/Service/CalendarEventService.php",
+   "lib/Service/ConfigurationService.php",
+   "lib/Service/DsarService.php",
+   "lib/Service/LogService.php",
+   "lib/Service/ManifestService.php",
+   "lib/Service/RegisterDescriptorService.php",
+   "lib/Service/ScheduledReportService.php",
+   "lib/Service/SecurityService.php",
+   "lib/Service/SettingsService.php"
+  ],
+  "p_files": [
+   "lib/BackgroundJob/Support/ActorForwardingServices.php",
+   "lib/BackgroundJob/Support/ArchivalRetentionSources.php",
+   "lib/BackgroundJob/Support/BackfillCalendarLinksSources.php",
+   "lib/BackgroundJob/Support/DeferredObjectEventLookup.php",
+   "lib/BackgroundJob/Support/RelatedRetentionLookup.php",
+   "lib/Service/CalendarEventService.php",
+   "lib/Service/ConfigurationService.php",
+   "lib/Service/DsarService.php",
+   "lib/Service/LogService.php",
+   "lib/Service/ManifestService.php",
+   "lib/Service/RegisterDescriptorService.php",
+   "lib/Service/ScheduledReportService.php",
+   "lib/Service/SecurityService.php",
+   "lib/Service/SettingsService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 706,
+   "gt4": 85,
+   "gt6": 38
+  },
+  "target": {
+   "gt2": 274,
+   "gt4": 29,
+   "gt6": 14
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/SettingsService.php": [
+    "#3860"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 432,
+   "gt4": 56,
+   "gt6": 24
+  },
+  "rule4": {
+   "ctors": 13,
+   "loc": 136
+  },
+  "tsv_gain": {
+   "gt2": 372,
+   "gt4": 45,
+   "gt6": 13
+  }
+ },
+ "R24": {
+  "id": "R24",
+  "files": [
+   "lib/Command/Support/RematerialiseStorage.php",
+   "lib/Command/Support/SchemaColumnDriftPass.php",
+   "lib/Db/ApiCallRecordMapper.php",
+   "lib/Db/CaseItemMapper.php",
+   "lib/Db/ConfigurationValueMapper.php",
+   "lib/Db/ConsumerMapper.php",
+   "lib/Db/ContentReportMapper.php",
+   "lib/Db/EndpointMapper.php",
+   "lib/Db/ExportRunMapper.php",
+   "lib/Db/FederatedShareMapper.php",
+   "lib/Db/FlowDefinitionMapper.php",
+   "lib/Db/FlowTimerMapper.php",
+   "lib/Db/ImportPreviewMapper.php",
+   "lib/Db/ImportPreviewRowMapper.php",
+   "lib/Db/JobRunFilter.php",
+   "lib/Db/MappingMapper.php",
+   "lib/Db/MultiTenancyTrait.php",
+   "lib/Db/RecordTemplateMapper.php",
+   "lib/Db/Register.php",
+   "lib/Db/Schema.php",
+   "lib/Db/SchemaChangelogMapper.php",
+   "lib/Db/SchemaRunMapper.php",
+   "lib/Db/StateHistoryMapper.php",
+   "lib/Db/TaskInboxSelection.php",
+   "lib/Db/TaskMapper.php",
+   "lib/Db/TenantUsageMapper.php",
+   "lib/Db/WebhookLogMapper.php"
+  ],
+  "p_files": [
+   "lib/Command/Support/RematerialiseStorage.php",
+   "lib/Command/Support/SchemaColumnDriftPass.php",
+   "lib/Db/ApiCallRecordMapper.php",
+   "lib/Db/CaseItemMapper.php",
+   "lib/Db/ConfigurationValueMapper.php",
+   "lib/Db/ConsumerMapper.php",
+   "lib/Db/ContentReportMapper.php",
+   "lib/Db/EndpointMapper.php",
+   "lib/Db/ExportRunMapper.php",
+   "lib/Db/FederatedShareMapper.php",
+   "lib/Db/FlowDefinitionMapper.php",
+   "lib/Db/FlowTimerMapper.php",
+   "lib/Db/ImportPreviewMapper.php",
+   "lib/Db/ImportPreviewRowMapper.php",
+   "lib/Db/JobRunFilter.php",
+   "lib/Db/MappingMapper.php",
+   "lib/Db/MultiTenancyTrait.php",
+   "lib/Db/RecordTemplateMapper.php",
+   "lib/Db/Register.php",
+   "lib/Db/Schema.php",
+   "lib/Db/SchemaChangelogMapper.php",
+   "lib/Db/SchemaRunMapper.php",
+   "lib/Db/StateHistoryMapper.php",
+   "lib/Db/TaskInboxSelection.php",
+   "lib/Db/TaskMapper.php",
+   "lib/Db/TenantUsageMapper.php",
+   "lib/Db/WebhookLogMapper.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 405,
+   "gt4": 48,
+   "gt6": 20
+  },
+  "target": {
+   "gt2": 59,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Db/ConfigurationValueMapper.php": [
+    "#3860"
+   ],
+   "lib/Db/ExportRunMapper.php": [
+    "#4535"
+   ],
+   "lib/Db/TaskMapper.php": [
+    "C06"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 346,
+   "gt4": 48,
+   "gt6": 20
+  },
+  "rule4": {
+   "ctors": 5,
+   "loc": 61
+  },
+  "tsv_gain": {
+   "gt2": 323,
+   "gt4": 48,
+   "gt6": 20
+  }
+ },
+ "R25": {
+  "id": "R25",
+  "files": [
+   "lib/Service/Decision/DecisionOwnership.php",
+   "lib/Service/Decision/DecisionVisibility.php",
+   "lib/Service/Decision/RelationDecisionService.php",
+   "lib/Service/Hinge/HingeAnnotationValidator.php",
+   "lib/Service/Hinge/InheritedGeoCollector.php",
+   "lib/Service/Hinge/LensResolver.php",
+   "lib/Service/Hinge/ReferencedByService.php",
+   "lib/Service/Search/ObjectSearchResultFormatter.php",
+   "lib/Service/Search/SearchDictionary.php",
+   "lib/Service/Search/SearchDictionaryProvider.php",
+   "lib/Service/Search/SearchTermNode.php",
+   "lib/Service/Search/SearchTermParser.php"
+  ],
+  "p_files": [
+   "lib/Service/Decision/DecisionOwnership.php",
+   "lib/Service/Decision/DecisionVisibility.php",
+   "lib/Service/Decision/RelationDecisionService.php",
+   "lib/Service/Hinge/HingeAnnotationValidator.php",
+   "lib/Service/Hinge/InheritedGeoCollector.php",
+   "lib/Service/Hinge/LensResolver.php",
+   "lib/Service/Hinge/ReferencedByService.php",
+   "lib/Service/Search/ObjectSearchResultFormatter.php",
+   "lib/Service/Search/SearchDictionary.php",
+   "lib/Service/Search/SearchDictionaryProvider.php",
+   "lib/Service/Search/SearchTermNode.php",
+   "lib/Service/Search/SearchTermParser.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 493,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 134,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 359,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 7,
+   "loc": 51
+  },
+  "tsv_gain": {
+   "gt2": 322,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "R26": {
+  "id": "R26",
+  "files": [
+   "lib/Db/Schema/AuthorizationControlKeys.php",
+   "lib/Db/Schema/AuthorizationRulesValidator.php",
+   "lib/Db/Schema/ConfigurationValidator.php",
+   "lib/Service/SharedSchema/SchemaAttribution.php",
+   "lib/Service/SharedSchema/SchemaTableMigrator.php",
+   "lib/Service/SharedSchema/SharedSchemaStore.php",
+   "lib/Service/Survivorship/SourceRecordResolver.php",
+   "lib/Service/Survivorship/SurvivorshipResolver.php",
+   "lib/Service/Survivorship/TrustTierResolver.php"
+  ],
+  "p_files": [
+   "lib/Db/Schema/AuthorizationControlKeys.php",
+   "lib/Db/Schema/AuthorizationRulesValidator.php",
+   "lib/Db/Schema/ConfigurationValidator.php",
+   "lib/Service/SharedSchema/SchemaAttribution.php",
+   "lib/Service/SharedSchema/SchemaTableMigrator.php",
+   "lib/Service/SharedSchema/SharedSchemaStore.php",
+   "lib/Service/Survivorship/SourceRecordResolver.php",
+   "lib/Service/Survivorship/SurvivorshipResolver.php",
+   "lib/Service/Survivorship/TrustTierResolver.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 394,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 71,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 323,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 3,
+   "loc": 20
+  },
+  "tsv_gain": {
+   "gt2": 303,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "R27": {
+  "id": "R27",
+  "files": [
+   "lib/Dto/BulkSaveOutcome.php",
+   "lib/Dto/DeletionAnalysis.php",
+   "lib/Service/ConfigurationDeployment/ConfigurationDraftService.php",
+   "lib/Service/ConfigurationDeployment/ConfigurationExplainer.php",
+   "lib/Service/ConfigurationDeployment/DeploymentOrigin.php",
+   "lib/Service/ConfigurationDeployment/DeploymentService.php",
+   "lib/Service/Query/RelatedRowExistsClause.php",
+   "lib/Service/Query/RelatedRowFilterParser.php",
+   "lib/Service/Query/RelatedRowQueryApplier.php"
+  ],
+  "p_files": [
+   "lib/Dto/BulkSaveOutcome.php",
+   "lib/Dto/DeletionAnalysis.php",
+   "lib/Service/ConfigurationDeployment/ConfigurationDraftService.php",
+   "lib/Service/ConfigurationDeployment/ConfigurationExplainer.php",
+   "lib/Service/ConfigurationDeployment/DeploymentOrigin.php",
+   "lib/Service/ConfigurationDeployment/DeploymentService.php",
+   "lib/Service/Query/RelatedRowExistsClause.php",
+   "lib/Service/Query/RelatedRowFilterParser.php",
+   "lib/Service/Query/RelatedRowQueryApplier.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 374,
+   "gt4": 31,
+   "gt6": 21
+  },
+  "target": {
+   "gt2": 75,
+   "gt4": 10,
+   "gt6": 10
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/ConfigurationDeployment/ConfigurationExplainer.php": [
+    "#3860"
+   ],
+   "lib/Dto/BulkSaveOutcome.php": [
+    "C15"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 299,
+   "gt4": 21,
+   "gt6": 11
+  },
+  "rule4": {
+   "ctors": 2,
+   "loc": 18
+  },
+  "tsv_gain": {
+   "gt2": 281,
+   "gt4": 10,
+   "gt6": 0
+  }
+ },
+ "R28": {
+  "id": "R28",
+  "files": [
+   "lib/Exception/AppendOnlyException.php",
+   "lib/Exception/ArchivalImmutableException.php",
+   "lib/Exception/ArchiveNotOfferedException.php",
+   "lib/Exception/CircularReferenceException.php",
+   "lib/Exception/DuplicateBlockedException.php",
+   "lib/Exception/ExportTooLargeException.php",
+   "lib/Exception/HookStoppedException.php",
+   "lib/Exception/InvalidTransitionInputException.php",
+   "lib/Exception/LockedException.php",
+   "lib/Exception/MergeDecisionException.php",
+   "lib/Exception/MergeNotFullyReadableException.php",
+   "lib/Exception/ObjectExistsException.php",
+   "lib/Exception/PdfAnonymisationException.php",
+   "lib/Exception/ReadOnlyTypeException.php",
+   "lib/Exception/ReferenceValidationException.php",
+   "lib/Exception/ReferentialIntegrityException.php",
+   "lib/Exception/SanitizationException.php",
+   "lib/Exception/SchemaNotInRegisterException.php",
+   "lib/Exception/SharedMasterDataWriteException.php",
+   "lib/Exception/UniqueHintException.php",
+   "lib/Exception/ValidationException.php",
+   "lib/Service/Deletion/DeletedObjectAuthorizer.php",
+   "lib/Service/Deletion/DeletionWindowService.php",
+   "lib/Service/Deletion/DestroyRightService.php",
+   "lib/Service/Deletion/DestructionRecorder.php"
+  ],
+  "p_files": [
+   "lib/Exception/AppendOnlyException.php",
+   "lib/Exception/ArchivalImmutableException.php",
+   "lib/Exception/ArchiveNotOfferedException.php",
+   "lib/Exception/CircularReferenceException.php",
+   "lib/Exception/DuplicateBlockedException.php",
+   "lib/Exception/ExportTooLargeException.php",
+   "lib/Exception/HookStoppedException.php",
+   "lib/Exception/InvalidTransitionInputException.php",
+   "lib/Exception/LockedException.php",
+   "lib/Exception/MergeDecisionException.php",
+   "lib/Exception/MergeNotFullyReadableException.php",
+   "lib/Exception/ObjectExistsException.php",
+   "lib/Exception/PdfAnonymisationException.php",
+   "lib/Exception/ReadOnlyTypeException.php",
+   "lib/Exception/ReferenceValidationException.php",
+   "lib/Exception/ReferentialIntegrityException.php",
+   "lib/Exception/SanitizationException.php",
+   "lib/Exception/SchemaNotInRegisterException.php",
+   "lib/Exception/SharedMasterDataWriteException.php",
+   "lib/Exception/UniqueHintException.php",
+   "lib/Exception/ValidationException.php",
+   "lib/Service/Deletion/DeletedObjectAuthorizer.php",
+   "lib/Service/Deletion/DeletionWindowService.php",
+   "lib/Service/Deletion/DestroyRightService.php",
+   "lib/Service/Deletion/DestructionRecorder.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 385,
+   "gt4": 14,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 119,
+   "gt4": 7,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Exception/LockedException.php": [
+    "C15"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 266,
+   "gt4": 7,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 3,
+   "loc": 20
+  },
+  "tsv_gain": {
+   "gt2": 246,
+   "gt4": 7,
+   "gt6": 0
+  }
+ },
+ "R29": {
+  "id": "R29",
+  "files": [
+   "lib/Db/Tenancy/EntityRbacTrait.php",
+   "lib/Db/Tenancy/OrganisationFilterTrait.php",
+   "lib/Db/Tenancy/TenancyServices.php",
+   "lib/Service/Import/ImportPreviewService.php",
+   "lib/Service/Import/ImportPreviewTargets.php",
+   "lib/Service/Import/MatchResolver.php",
+   "lib/Service/MigrationPack/MappingEngine.php",
+   "lib/Service/MigrationPack/MappingTransformer.php",
+   "lib/Service/MigrationPack/MigrationPackErrorResponder.php"
+  ],
+  "p_files": [
+   "lib/Db/Tenancy/EntityRbacTrait.php",
+   "lib/Db/Tenancy/OrganisationFilterTrait.php",
+   "lib/Db/Tenancy/TenancyServices.php",
+   "lib/Service/Import/ImportPreviewService.php",
+   "lib/Service/Import/ImportPreviewTargets.php",
+   "lib/Service/Import/MatchResolver.php",
+   "lib/Service/MigrationPack/MappingEngine.php",
+   "lib/Service/MigrationPack/MappingTransformer.php",
+   "lib/Service/MigrationPack/MigrationPackErrorResponder.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 278,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 35,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 243,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 3,
+   "loc": 19
+  },
+  "tsv_gain": {
+   "gt2": 230,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "R30": {
+  "id": "R30",
+  "files": [
+   "lib/Event/DeepLinkRegistrationEvent.php",
+   "lib/Event/ObjectEventSubscription.php",
+   "lib/Event/ObjectTransitionedEvent.php",
+   "lib/Event/PermissionsDeclaringEvent.php",
+   "lib/Service/ApplicationService.php",
+   "lib/Service/AvgComplianceService.php",
+   "lib/Service/BookmarkLinkService.php",
+   "lib/Service/OasSources.php",
+   "lib/Service/OrganisationUsageService.php",
+   "lib/Service/Registry/RegistrySubscriptionNotifier.php",
+   "lib/Service/Registry/RegistrySubscriptionService.php",
+   "lib/Service/ScheduledReportOwnerServices.php",
+   "lib/Service/SchemaApplicationMigrator.php",
+   "lib/Service/SchemaTeardownGuard.php",
+   "lib/Service/TenantLifecycleService.php",
+   "lib/Service/WriteCause.php"
+  ],
+  "p_files": [
+   "lib/Event/DeepLinkRegistrationEvent.php",
+   "lib/Event/ObjectEventSubscription.php",
+   "lib/Event/ObjectTransitionedEvent.php",
+   "lib/Event/PermissionsDeclaringEvent.php",
+   "lib/Service/ApplicationService.php",
+   "lib/Service/AvgComplianceService.php",
+   "lib/Service/BookmarkLinkService.php",
+   "lib/Service/OasSources.php",
+   "lib/Service/OrganisationUsageService.php",
+   "lib/Service/Registry/RegistrySubscriptionNotifier.php",
+   "lib/Service/Registry/RegistrySubscriptionService.php",
+   "lib/Service/ScheduledReportOwnerServices.php",
+   "lib/Service/SchemaApplicationMigrator.php",
+   "lib/Service/SchemaTeardownGuard.php",
+   "lib/Service/TenantLifecycleService.php",
+   "lib/Service/WriteCause.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 264,
+   "gt4": 65,
+   "gt6": 20
+  },
+  "target": {
+   "gt2": 51,
+   "gt4": 10,
+   "gt6": 10
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Event/DeepLinkRegistrationEvent.php": [
+    "C11"
+   ],
+   "lib/Event/ObjectEventSubscription.php": [
+    "C11"
+   ],
+   "lib/Service/WriteCause.php": [
+    "C02"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 213,
+   "gt4": 55,
+   "gt6": 10
+  },
+  "rule4": {
+   "ctors": 8,
+   "loc": 61
+  },
+  "tsv_gain": {
+   "gt2": 160,
+   "gt4": 46,
+   "gt6": 10
+  }
+ },
+ "R31": {
+  "id": "R31",
+  "files": [
+   "lib/Search/Command/SearchIndexCommand.php",
+   "lib/Service/Settings/CacheSettingsHandler.php",
+   "lib/Service/Settings/ConfigurationSettingsHandler.php",
+   "lib/Service/Settings/FileSettingsHandler.php",
+   "lib/Service/Settings/OwnSettingsChangeRecorder.php",
+   "lib/Service/Settings/SettingsDirectory.php",
+   "lib/Service/Settings/ValidationOperationsHandler.php",
+   "lib/Service/Sync/HarvestPipelineService.php",
+   "lib/Service/Sync/SyncConflictResolver.php"
+  ],
+  "p_files": [
+   "lib/Search/Command/SearchIndexCommand.php",
+   "lib/Service/Settings/CacheSettingsHandler.php",
+   "lib/Service/Settings/ConfigurationSettingsHandler.php",
+   "lib/Service/Settings/FileSettingsHandler.php",
+   "lib/Service/Settings/OwnSettingsChangeRecorder.php",
+   "lib/Service/Settings/SettingsDirectory.php",
+   "lib/Service/Settings/ValidationOperationsHandler.php",
+   "lib/Service/Sync/HarvestPipelineService.php",
+   "lib/Service/Sync/SyncConflictResolver.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 170,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 5,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Settings/FileSettingsHandler.php": [
+    "#5497"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 165,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 6,
+   "loc": 60
+  },
+  "tsv_gain": {
+   "gt2": 138,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "R32": {
+  "id": "R32",
+  "files": [
+   "lib/AppHost/Controller/GenericDashboardController.php",
+   "lib/AppHost/Controller/GenericHealthController.php",
+   "lib/AppHost/Controller/GenericMetricsController.php",
+   "lib/AppHost/Controller/GenericPreferencesController.php",
+   "lib/AppHost/Controller/GenericSettingsController.php",
+   "lib/AppHost/Controller/GenericStoreController.php",
+   "lib/AppHost/Controller/Support/GenericStorePlatform.php",
+   "lib/Search/Db/ViewMapper.php",
+   "lib/Search/Db/ViewMapperAccess.php",
+   "lib/Service/Config/FederatedConfigService.php",
+   "lib/Service/Config/SchemaShareableConfigScanner.php"
+  ],
+  "p_files": [
+   "lib/AppHost/Controller/GenericDashboardController.php",
+   "lib/AppHost/Controller/GenericHealthController.php",
+   "lib/AppHost/Controller/GenericMetricsController.php",
+   "lib/AppHost/Controller/GenericPreferencesController.php",
+   "lib/AppHost/Controller/GenericSettingsController.php",
+   "lib/AppHost/Controller/GenericStoreController.php",
+   "lib/AppHost/Controller/Support/GenericStorePlatform.php",
+   "lib/Search/Db/ViewMapper.php",
+   "lib/Search/Db/ViewMapperAccess.php",
+   "lib/Service/Config/FederatedConfigService.php",
+   "lib/Service/Config/SchemaShareableConfigScanner.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 188,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 26,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 162,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 5,
+   "loc": 42
+  },
+  "tsv_gain": {
+   "gt2": 137,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "R33": {
+  "id": "R33",
+  "files": [
+   "lib/Controller/Trait/ResolvesLinkedObjectTrait.php",
+   "lib/Controller/Trait/ResolvesRegisterAndSchemaTrait.php",
+   "lib/Service/Hardening/ElevationIdentity.php",
+   "lib/Service/Hardening/HardeningAuditWriter.php",
+   "lib/Service/Hardening/StatementService.php",
+   "lib/Support/FilterParams.php"
+  ],
+  "p_files": [
+   "lib/Controller/Trait/ResolvesLinkedObjectTrait.php",
+   "lib/Controller/Trait/ResolvesRegisterAndSchemaTrait.php",
+   "lib/Service/Hardening/ElevationIdentity.php",
+   "lib/Service/Hardening/HardeningAuditWriter.php",
+   "lib/Service/Hardening/StatementService.php",
+   "lib/Support/FilterParams.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 142,
+   "gt4": 28,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 0,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 142,
+   "gt4": 28,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 2,
+   "loc": 12
+  },
+  "tsv_gain": {
+   "gt2": 136,
+   "gt4": 28,
+   "gt6": 0
+  }
+ },
+ "R34": {
+  "id": "R34",
+  "files": [
+   "lib/Calendar/RegisterCalendar.php",
+   "lib/Calendar/RegisterCalendarProvider.php",
+   "lib/Calendar/RegisterCalendarSources.php",
+   "lib/Service/Mcp/McpAgentScope.php",
+   "lib/Service/SchemaImport/ImportedSchema.php",
+   "lib/Service/SchemaImport/SchemaImportService.php",
+   "lib/Service/SchemaImport/ThreeWayMerge.php"
+  ],
+  "p_files": [
+   "lib/Calendar/RegisterCalendar.php",
+   "lib/Calendar/RegisterCalendarProvider.php",
+   "lib/Calendar/RegisterCalendarSources.php",
+   "lib/Service/Mcp/McpAgentScope.php",
+   "lib/Service/SchemaImport/ImportedSchema.php",
+   "lib/Service/SchemaImport/SchemaImportService.php",
+   "lib/Service/SchemaImport/ThreeWayMerge.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 189,
+   "gt4": 28,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 45,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Mcp/McpAgentScope.php": [
+    "#4641",
+    "C17"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 144,
+   "gt4": 28,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 3,
+   "loc": 26
+  },
+  "tsv_gain": {
+   "gt2": 125,
+   "gt4": 21,
+   "gt6": 0
+  }
+ },
+ "R35": {
+  "id": "R35",
+  "files": [
+   "lib/Middleware/Exception/ApiVersionRefusedException.php",
+   "lib/Middleware/Exception/CallerRefusedException.php",
+   "lib/Service/Notification/NotificationTemplateRegistry.php",
+   "lib/Service/Notification/ReferencedAddressNotifier.php",
+   "lib/Service/Serializer/RegisterSerializer.php"
+  ],
+  "p_files": [
+   "lib/Middleware/Exception/ApiVersionRefusedException.php",
+   "lib/Middleware/Exception/CallerRefusedException.php",
+   "lib/Service/Notification/NotificationTemplateRegistry.php",
+   "lib/Service/Notification/ReferencedAddressNotifier.php",
+   "lib/Service/Serializer/RegisterSerializer.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 165,
+   "gt4": 38,
+   "gt6": 38
+  },
+  "target": {
+   "gt2": 55,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 110,
+   "gt4": 38,
+   "gt6": 38
+  },
+  "rule4": {
+   "ctors": 1,
+   "loc": 6
+  },
+  "tsv_gain": {
+   "gt2": 104,
+   "gt4": 38,
+   "gt6": 38
+  }
+ },
+ "R36": {
+  "id": "R36",
+  "files": [
+   "lib/Search/ObjectsProvider.php",
+   "lib/Service/Dbal/DatabaseIntrospectionService.php",
+   "lib/Service/Oas/OasRbacAnnotator.php",
+   "lib/Service/Oas/ProblemDetailsBuilder.php"
+  ],
+  "p_files": [
+   "lib/Search/ObjectsProvider.php",
+   "lib/Service/Dbal/DatabaseIntrospectionService.php",
+   "lib/Service/Oas/OasRbacAnnotator.php",
+   "lib/Service/Oas/ProblemDetailsBuilder.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 112,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 45,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 67,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 3,
+   "loc": 27
+  },
+  "tsv_gain": {
+   "gt2": 89,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "R37": {
+  "id": "R37",
+  "files": [
+   "lib/ContextChat/ContentProvider.php",
+   "lib/Mcp/BuiltIn/ToolInvocationAudit.php",
+   "lib/Service/Authorization/GrantableRightsIndex.php",
+   "lib/Service/Authorization/GroupDeclarationSources.php"
+  ],
+  "p_files": [
+   "lib/ContextChat/ContentProvider.php",
+   "lib/Mcp/BuiltIn/ToolInvocationAudit.php",
+   "lib/Service/Authorization/GrantableRightsIndex.php",
+   "lib/Service/Authorization/GroupDeclarationSources.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 55,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 19,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 36,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 3,
+   "loc": 25
+  },
+  "tsv_gain": {
+   "gt2": 23,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "R38": {
+  "id": "R38",
+  "files": [
+   "lib/Mcp/Listener/ToolRegistrationListener.php",
+   "lib/Service/Capability/ToolGrantSet.php",
+   "lib/Settings/OpenRegisterAdmin.php"
+  ],
+  "p_files": [
+   "lib/Mcp/Listener/ToolRegistrationListener.php",
+   "lib/Service/Capability/ToolGrantSet.php",
+   "lib/Settings/OpenRegisterAdmin.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 67,
+   "gt4": 10,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 34,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 33,
+   "gt4": 10,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 2,
+   "loc": 23
+  },
+  "tsv_gain": {
+   "gt2": 21,
+   "gt4": 10,
+   "gt6": 0
+  }
+ },
+ "R39": {
+  "id": "R39",
+  "files": [
+   "lib/Service/Chat/ChatProxyHandler.php"
+  ],
+  "p_files": [
+   "lib/Service/Chat/ChatProxyHandler.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 9,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 0,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 9,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "rule4": {
+   "ctors": 1,
+   "loc": 9
+  },
+  "tsv_gain": {
+   "gt2": 3,
+   "gt4": 0,
+   "gt6": 0
+  }
+ }
+}
