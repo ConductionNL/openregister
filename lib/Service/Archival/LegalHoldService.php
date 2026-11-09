@@ -78,9 +78,8 @@ class LegalHoldService implements LegalHoldServiceInterface {
 
 		// One hold per matter (#4172): a second matter adds its own hold
 		// instead of overwriting the first one's reason.
-		$retention = (new LegalHoldLedger())->place(
-			retention: ($object->getRetention() ?? []), reason: $reason, ownerKey: $ownerKey, userId: $userId, now: (new DateTime())->format('c')
-		);
+		$stamp = new HoldStamp(userId: $userId, now: (new DateTime())->format('c'));
+		$retention = (new LegalHoldLedger())->place(retention: ($object->getRetention() ?? []), reason: $reason, ownerKey: $ownerKey, stamp: $stamp);
 		$object->setRetention($retention);
 		$this->records->objectMapper->update($object);
 
@@ -109,8 +108,9 @@ class LegalHoldService implements LegalHoldServiceInterface {
 
 		// A matter lifts only its own hold (#4172); naming no matter lifts
 		// every hold, as a release always did.
+		$stamp = new HoldStamp(userId: $userId, now: (new DateTime())->format('c'));
 		$retention = (new LegalHoldLedger())->release(
-			retention: ($object->getRetention() ?? []), ownerKey: $ownerKey, releaseReason: $reason, userId: $userId, now: (new DateTime())->format('c')
+			retention: ($object->getRetention() ?? []), ownerKey: $ownerKey, releaseReason: $reason, stamp: $stamp
 		);
 		$object->setRetention($retention);
 		$this->records->objectMapper->update($object);

@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryServices;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
@@ -153,9 +154,11 @@ trait BuildsReaderHistory {
 
 		return new ObjectHistoryForReaders(
 			$access,
-			$mapper,
-			new HistoryEntryRedactor($this->readerProperties(groups: $groups)),
-			$registerMapper,
+			new ObjectHistoryServices(
+				$mapper,
+				new HistoryEntryRedactor($this->readerProperties(groups: $groups)),
+				$registerMapper
+			),
 			$guard,
 			$reads
 		);
