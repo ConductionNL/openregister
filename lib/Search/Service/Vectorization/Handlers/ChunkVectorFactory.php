@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Vectorization\Handlers;
 
-use OCA\OpenRegister\Files\Db\Chunk;
-
 /**
  * Builds the vector row of one embedded text chunk.
  *
@@ -35,7 +33,12 @@ final class ChunkVectorFactory implements ChunkVectorFactoryInterface {
 	/**
 	 * The vector row of a chunk: its source, its embedding and its place among its source's chunks.
 	 *
-	 * @param Chunk                $chunk         The chunk.
+	 * @param string|null          $sourceType    The type of the chunk's source.
+	 * @param int|null             $sourceId      The id of the chunk's source.
+	 * @param int                  $chunkIndex    The chunk's place among its source's chunks.
+	 * @param string|null          $text          The chunk's text.
+	 * @param int                  $startOffset   Where the chunk starts in its source.
+	 * @param int                  $endOffset     Where the chunk ends in its source.
 	 * @param array<string, mixed> $embeddingData Its embedding, model and dimensions.
 	 * @param int                  $totalChunks   How many chunks its source has.
 	 *
@@ -43,23 +46,32 @@ final class ChunkVectorFactory implements ChunkVectorFactoryInterface {
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function forChunk(Chunk $chunk, array $embeddingData, int $totalChunks): StoredVector {
+	public function forChunk(
+		?string $sourceType,
+		?int $sourceId,
+		int $chunkIndex,
+		?string $text,
+		int $startOffset,
+		int $endOffset,
+		array $embeddingData,
+		int $totalChunks
+	): StoredVector {
 		return new StoredVector(
-			subject: new VectorSubject(entityType: (string)$chunk->getSourceType(), entityId: (string)$chunk->getSourceId()),
+			subject: new VectorSubject(entityType: (string)$sourceType, entityId: (string)$sourceId),
 			payload: new VectorPayload(
 				embedding: $embeddingData['embedding'],
 				model: (string)$embeddingData['model'],
 				dimensions: (int)$embeddingData['dimensions']
 			),
 			position: new VectorChunkPosition(
-				chunkIndex: (int)$chunk->getChunkIndex(),
+				chunkIndex: $chunkIndex,
 				totalChunks: max(1, $totalChunks),
-				chunkText: substr((string)$chunk->getTextContent(), 0, 500)
+				chunkText: substr((string)$text, 0, 500)
 			),
 			metadata: [
-				'source_id' => $chunk->getSourceId(),
-				'start_offset' => $chunk->getStartOffset(),
-				'end_offset' => $chunk->getEndOffset(),
+				'source_id' => $sourceId,
+				'start_offset' => $startOffset,
+				'end_offset' => $endOffset,
 			]
 		);
 	}//end forChunk()

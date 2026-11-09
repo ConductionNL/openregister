@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Vectorization\Handlers;
 
-use OCA\OpenRegister\Files\Db\Chunk;
-
 /**
  * Builds the vector row of one embedded text chunk, for VectorStorageHandlerInterface::storeVector().
  *
@@ -33,7 +31,12 @@ interface ChunkVectorFactoryInterface {
 	/**
 	 * The vector row of a chunk: its source, its embedding and its place among its source's chunks.
 	 *
-	 * @param Chunk                $chunk         The chunk.
+	 * @param string|null          $sourceType    The type of the chunk's source.
+	 * @param int|null             $sourceId      The id of the chunk's source.
+	 * @param int                  $chunkIndex    The chunk's place among its source's chunks.
+	 * @param string|null          $text          The chunk's text.
+	 * @param int                  $startOffset   Where the chunk starts in its source.
+	 * @param int                  $endOffset     Where the chunk ends in its source.
 	 * @param array<string, mixed> $embeddingData Its embedding, model and dimensions.
 	 * @param int                  $totalChunks   How many chunks its source has.
 	 *
@@ -41,5 +44,14 @@ interface ChunkVectorFactoryInterface {
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function forChunk(Chunk $chunk, array $embeddingData, int $totalChunks): StoredVector;
+	public function forChunk(
+		?string $sourceType,
+		?int $sourceId,
+		int $chunkIndex,
+		?string $text,
+		int $startOffset,
+		int $endOffset,
+		array $embeddingData,
+		int $totalChunks
+	): StoredVector;
 }//end interface
