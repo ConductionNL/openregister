@@ -32,7 +32,7 @@ use OCA\OpenRegister\Exception\OasValidationException;
 /**
  * Collects validation issues for a single OAS generation pass.
  */
-final class OasValidationReport {
+final class OasValidationReport implements OasValidationReportInterface {
 
 	/**
 	 * Severity codes.
