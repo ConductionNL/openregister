@@ -519,12 +519,8 @@ class MagicSearchHandler {
 
 		$this->applyAccessControlFilters(
 			qb: $qb,
-			schema: $schema,
-			_rbac: $_rbac,
-			_multitenancy: $resolvedMultitenancy,
-			multitenancyExplicit: false,
-			registerId: $registerId,
-			tableName: $tableName
+			table: new MagicReadTable(schema: $schema, registerId: $registerId, tableName: $tableName),
+			posture: new ReadPosture(rbac: $_rbac, multitenancy: $resolvedMultitenancy, multitenancyExplicit: false)
 		);
 	}//end applyAccessControlToQuery()
 
@@ -568,11 +564,9 @@ class MagicSearchHandler {
 		$queryBuilder = $this->db->getQueryBuilder();
 		$queryBuilder->from($tableName, 't');
 
-		// Apply basic filters (deleted, archived).
+		// Apply basic filters (deleted, archived, drafts).
 		$this->applyBasicFilters(
 			qb: $queryBuilder,
-			deletedMode: (new DeletedLens())->mode(query: $query),
-			archivedMode: $this->resolveArchivedMode(query: $query),
 			query: $query,
 			schema: $schema,
 			missingColumns: $this->missingMetadataColumns(tableName: $tableName)
@@ -581,12 +575,12 @@ class MagicSearchHandler {
 		// Apply multi-tenancy and RBAC access control filters.
 		$this->applyAccessControlFilters(
 			qb: $queryBuilder,
-			schema: $schema,
-			_rbac: $_rbac,
-			_multitenancy: $_multitenancy,
-			multitenancyExplicit: $multitenancyExplicit,
-			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query)),
-			tableName: $tableName
+			table: new MagicReadTable(
+				schema: $schema,
+				registerId: ($registerId ?? $this->registerIdFromQuery(query: $query)),
+				tableName: $tableName
+			),
+			posture: new ReadPosture(rbac: $_rbac, multitenancy: $_multitenancy, multitenancyExplicit: $multitenancyExplicit)
 		);
 
 		// Apply metadata, object-field and ID filters.
@@ -790,7 +784,8 @@ class MagicSearchHandler {
 			schemaId: $related->getId()
 		);
 
-		if ($this->organisationlessRowsAdmitted(schema: $related, _rbac: $_rbac, multitenancyExplicit: $multitenancyExplicit) === true) {
+		$posture = new ReadPosture(rbac: $_rbac, multitenancy: $resolved, multitenancyExplicit: $multitenancyExplicit);
+		if ($this->organisationlessRowsAdmitted(schema: $related, posture: $posture) === true) {
 			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
 		}
 
@@ -985,7 +980,6 @@ class MagicSearchHandler {
 
 		// Extract options from query.
 		$search = $query['_search'] ?? null;
-		$_rbac = $query['_rbac'] ?? true;
 
 		$conditions = array_merge(
 			$this->lifecycleConditionsSql(
@@ -994,11 +988,8 @@ class MagicSearchHandler {
 			),
 			$this->boundaryConditionsSql(
 				query: $query,
-				schema: $schema,
-				rbac: $_rbac,
-				connection: $connection,
-				registerId: $registerId,
-				tableName: $tableName
+				table: new MagicReadTable(schema: $schema, registerId: $registerId, tableName: $tableName),
+				connection: $connection
 			)
 		);
 
@@ -1114,7 +1105,8 @@ class MagicSearchHandler {
 		}
 
 		$archivedMode = $this->resolveArchivedMode(query: $query);
-		$archived = $this->archivedConditionSql(mode: $archivedMode, columnPrefix: '', missingColumns: $missingColumns);
+		$columns = new LifecycleColumns(prefix: '', missing: $missingColumns);
+		$archived = $this->archivedConditionSql(mode: $archivedMode, columns: $columns);
 		if ($archived !== null) {
 			$conditions[] = $archived;
 		}
@@ -1127,7 +1119,7 @@ class MagicSearchHandler {
 			$owner = (string)$this->db->getQueryBuilder()->getConnection()->quote($userId);
 		}
 
-		$drafts = $this->draftConditionSql(query: $query, columnPrefix: '', owner: $owner, missingColumns: $missingColumns, schema: $schema);
+		$drafts = $this->draftConditionSql(query: $query, columns: $columns, owner: $owner, schema: $schema);
 		if ($drafts !== null) {
 			$conditions[] = $drafts;
 		}
@@ -1162,20 +1154,19 @@ class MagicSearchHandler {
 	 * is exact, not an approximation, and it keeps a table that could not be
 	 * healed answering instead of failing every request.
 	 *
-	 * @param string   $mode           One of the ARCHIVED_* constants.
-	 * @param string   $columnPrefix   The table alias with its dot, or empty.
-	 * @param string[] $missingColumns Metadata columns this table lacks.
+	 * @param string           $mode    One of the ARCHIVED_* constants.
+	 * @param LifecycleColumns $columns The table alias and the metadata columns this table lacks.
 	 *
 	 * @return string|null The predicate, without a leading AND.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
-	private function archivedConditionSql(string $mode, string $columnPrefix, array $missingColumns): ?string {
+	private function archivedConditionSql(string $mode, LifecycleColumns $columns): ?string {
 		if ($mode === self::ARCHIVED_ANY) {
 			return null;
 		}
 
-		if (in_array('_archived', $missingColumns, true) === true) {
+		if ($columns->lacks(column: '_archived') === true) {
 			if ($mode === self::ARCHIVED_ONLY) {
 				return '1=0';
 			}
@@ -1184,10 +1175,10 @@ class MagicSearchHandler {
 		}
 
 		if ($mode === self::ARCHIVED_ONLY) {
-			return $columnPrefix.'_archived IS NOT NULL';
+			return $columns->prefix.'_archived IS NOT NULL';
 		}
 
-		return $columnPrefix.'_archived IS NULL';
+		return $columns->prefix.'_archived IS NULL';
 	}//end archivedConditionSql()
 
 	/**
@@ -1196,22 +1187,21 @@ class MagicSearchHandler {
 	 * Without a `_status` column no row is a draft, so the default lens keeps
 	 * every row and the drafts-only lens is empty.
 	 *
-	 * @param array       $query          The search query.
-	 * @param string      $columnPrefix   The table alias with its dot, or empty.
-	 * @param string|null $owner          The caller, already quoted or bound; null for nobody.
-	 * @param string[]    $missingColumns Metadata columns this table lacks.
-	 * @param Schema|null $schema         The schema being listed, for its draft list default (`draftsListed`).
+	 * @param array            $query   The search query.
+	 * @param LifecycleColumns $columns The table alias and the metadata columns this table lacks.
+	 * @param string|null      $owner   The caller, already quoted or bound; null for nobody.
+	 * @param Schema|null      $schema  The schema being listed, for its draft list default (`draftsListed`).
 	 *
 	 * @return string|null The predicate, without a leading AND.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-schema-must-be-able-to-keep-the-callers-own-drafts-out-of-its-lists
 	 */
-	private function draftConditionSql(array $query, string $columnPrefix, ?string $owner, array $missingColumns, ?Schema $schema = null): ?string {
+	private function draftConditionSql(array $query, LifecycleColumns $columns, ?string $owner, ?Schema $schema = null): ?string {
 		$lens = new DraftListLens();
 		$mode = $lens->modeFor(query: $query, schema: $schema);
 
-		if (in_array('_status', $missingColumns, true) === true) {
+		if ($columns->lacks(column: '_status') === true) {
 			if ($mode === DraftListLens::ONLY) {
 				return '1=0';
 			}
@@ -1219,7 +1209,7 @@ class MagicSearchHandler {
 			return null;
 		}
 
-		return $lens->sql(mode: $mode, columnPrefix: $columnPrefix, owner: $owner);
+		return $lens->sql(mode: $mode, columnPrefix: $columns->prefix, owner: $owner);
 	}//end draftConditionSql()
 
 	/**
@@ -1238,26 +1228,18 @@ class MagicSearchHandler {
 	 * (`multitenancyApplies()`); only the rendering differs, because these
 	 * callers build SQL by string concatenation and cannot bind parameters.
 	 *
-	 * @param array      $query      The query parameters.
-	 * @param Schema     $schema     The schema for property filtering.
-	 * @param mixed      $rbac       The raw `_rbac` flag as the caller wrote it.
-	 * @param mixed      $connection The connection, for value quoting.
-	 * @param integer|null $registerId The register whose table this is built for.
-	 * @param string|null  $tableName  The bare magic table, so a missing `_status` column is left out of the draft predicate.
+	 * @param array          $query      The query parameters, its raw `_rbac` flag as the caller wrote it.
+	 * @param MagicReadTable $table      The table: its schema, register (null: read from the query) and table name.
+	 * @param mixed          $connection The connection, for value quoting.
 	 *
 	 * @return string[] The conditions, without leading AND.
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
 	 */
-	private function boundaryConditionsSql(
-		array $query,
-		Schema $schema,
-		mixed $rbac,
-		mixed $connection,
-		?int $registerId,
-		?string $tableName = null
-	): array {
+	private function boundaryConditionsSql(array $query, MagicReadTable $table, mixed $connection): array {
 		$conditions = [];
+		$schema     = $table->schema;
+		$rbac       = ($query['_rbac'] ?? true);
 
 		$multitenancyExplicit = $this->isExplicitlyTrue(value: $query['_multitenancy_explicit'] ?? false);
 		$resolvedMultitenancy = $this->resolveMultitenancyFlag(
@@ -1276,12 +1258,15 @@ class MagicSearchHandler {
 		if ($multitenancyApplies === true) {
 			$orgCondition = $this->buildOrganizationConditionSql(
 				schema: $schema,
-				registerId: ($registerId ?? $this->registerIdFromQuery(query: $query)),
+				registerId: ($table->registerId ?? $this->registerIdFromQuery(query: $query)),
 				connection: $connection,
 				withOrgless: $this->organisationlessRowsAdmitted(
 					schema: $schema,
-					_rbac: $this->flagFromQuery(value: $rbac),
-					multitenancyExplicit: $multitenancyExplicit
+					posture: new ReadPosture(
+						rbac: $this->flagFromQuery(value: $rbac),
+						multitenancy: $resolvedMultitenancy,
+						multitenancyExplicit: $multitenancyExplicit
+					)
 				)
 			);
 			$crossBranch = null;
@@ -1299,7 +1284,7 @@ class MagicSearchHandler {
 		}
 
 		if ($rbac === true) {
-			$rbacCondition = $this->buildRbacConditionSql(schema: $schema, tableName: $tableName);
+			$rbacCondition = $this->buildRbacConditionSql(schema: $schema, tableName: $table->tableName);
 			if ($rbacCondition !== null) {
 				$conditions[] = $rbacCondition;
 			}
@@ -1465,7 +1450,10 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
 	 */
 	public function organisationlessRowsAdmittedByRbac(Schema $schema): bool {
-		return $this->organisationlessRowsAdmitted(schema: $schema, _rbac: true, multitenancyExplicit: false);
+		return $this->organisationlessRowsAdmitted(
+			schema: $schema,
+			posture: new ReadPosture(rbac: true, multitenancy: true, multitenancyExplicit: false)
+		);
 	}//end organisationlessRowsAdmittedByRbac()
 
 	/**
@@ -1477,16 +1465,13 @@ class MagicSearchHandler {
 	 * through {@see multitenancyApplies()}, unchanged, and an explicit `_multi`
 	 * keeps the strict filter, as it does for a schema's own rules.
 	 *
-	 * @param Schema $schema               The schema being read.
-	 * @param bool   $_rbac                Whether RBAC filtering is on.
-	 * @param bool   $multitenancyExplicit Whether the caller explicitly asked for multitenancy.
+	 * @param Schema      $schema  The schema being read.
+	 * @param ReadPosture $posture The request posture: RBAC on, and whether multitenancy was asked for explicitly.
 	 *
 	 * @return bool True when org-less rows join the caller's organisation scope.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the request posture, mirrored.
 	 */
-	private function organisationlessRowsAdmitted(Schema $schema, bool $_rbac, bool $multitenancyExplicit): bool {
-		if ($_rbac === false || $multitenancyExplicit === true) {
+	private function organisationlessRowsAdmitted(Schema $schema, ReadPosture $posture): bool {
+		if ($posture->rbac === false || $posture->multitenancyExplicit === true) {
 			return false;
 		}
 
@@ -2478,9 +2463,8 @@ class MagicSearchHandler {
 	 * Apply basic filters like deleted status
 	 *
 	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param string $deletedMode Which deleted lens to apply, one of the DeletedLens constants
-	 * @param string $archivedMode Which archive lens to apply, one of the ARCHIVED_* constants
-	 * @param array<string, mixed> $query The search query, for the draft lens (`_drafts`, decision 201)
+	 * @param array<string, mixed> $query The search query, for the deleted (`_deleted`), archive (`_archived`)
+	 *                                    and draft (`_drafts`, decision 201) lenses
 	 * @param Schema|null $schema The schema being listed, for its draft list default (`draftsListed`)
 	 * @param string[] $missingColumns Metadata columns this table could not be given
 	 *
@@ -2489,15 +2473,9 @@ class MagicSearchHandler {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
-	private function applyBasicFilters(
-		IQueryBuilder $qb,
-		string $deletedMode = DeletedLens::EXCLUDE,
-		string $archivedMode = self::ARCHIVED_EXCLUDE,
-		array $query = [],
-		?Schema $schema = null,
-		array $missingColumns = [],
-	): void {
-		$deleted = (new DeletedLens())->condition(mode: $deletedMode, columnPrefix: 't.');
+	private function applyBasicFilters(IQueryBuilder $qb, array $query = [], ?Schema $schema = null, array $missingColumns = []): void {
+		$lens = new DeletedLens();
+		$deleted = $lens->condition(mode: $lens->mode(query: $query), columnPrefix: 't.');
 		if ($deleted !== null) {
 			$qb->andWhere($qb->createFunction($deleted));
 		}
@@ -2506,7 +2484,9 @@ class MagicSearchHandler {
 		// filter the caller has to remember, so a caller who forgets the
 		// parameter gets the working set — the safe answer. Asking for both is
 		// the only way to see an archived row beside an open one.
-		$archivedMissing = in_array('_archived', $missingColumns, true);
+		$archivedMode = $this->resolveArchivedMode(query: $query);
+		$columns = new LifecycleColumns(prefix: 't.', missing: $missingColumns);
+		$archivedMissing = $columns->lacks(column: '_archived');
 		if ($archivedMode === self::ARCHIVED_EXCLUDE && $archivedMissing === false) {
 			$qb->andWhere($qb->expr()->isNull('t._archived'));
 		}
@@ -2532,7 +2512,7 @@ class MagicSearchHandler {
 			$owner = (string)$qb->createNamedParameter($userId);
 		}
 
-		$drafts = $this->draftConditionSql(query: $query, columnPrefix: 't.', owner: $owner, missingColumns: $missingColumns, schema: $schema);
+		$drafts = $this->draftConditionSql(query: $query, columns: $columns, owner: $owner, schema: $schema);
 		if ($drafts !== null) {
 			$qb->andWhere($qb->createFunction($drafts));
 		}
@@ -2678,9 +2658,8 @@ class MagicSearchHandler {
 		if ($crossBranch === null) {
 			$this->organizationHandler->applyOrganizationFilter(
 				qb: $qb,
+				table: new OrganisationScopeTable(registerId: $table['registerId'], schemaId: $table['schemaId']),
 				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-				registerId: $table['registerId'],
-				schemaId: $table['schemaId'],
 				withOrgless: $table['withOrgless']
 			);
 			return;
@@ -2743,27 +2722,19 @@ class MagicSearchHandler {
 	 * - When user HAS RBAC access AND _multi=true: Apply multitenancy AFTER RBAC
 	 * - When user HAS RBAC access AND _multi=false: Skip multitenancy (RBAC handles access)
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param Schema $schema Schema for access control rules
-	 * @param bool $_rbac Whether RBAC filtering is enabled
-	 * @param bool $_multitenancy Whether multitenancy filtering is enabled
-	 * @param bool $multitenancyExplicit Whether multitenancy was explicitly requested
-	 * @param int|null $registerId The register of the table being read, for shared master data
-	 * @param string|null $tableName The bare magic table being read, so a missing `_status` column is left out of the draft predicate
+	 * @param IQueryBuilder  $qb      Query builder to modify
+	 * @param MagicReadTable $table   The table being read: its schema (access control rules), its register
+	 *                                (shared master data) and its name (a missing `_status` column is left out)
+	 * @param ReadPosture    $posture Whether RBAC and multitenancy filtering are on, and whether
+	 *                                multitenancy was explicitly requested
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	private function applyAccessControlFilters(
-		IQueryBuilder $qb,
-		Schema $schema,
-		bool $_rbac,
-		bool $_multitenancy,
-		bool $multitenancyExplicit,
-		?int $registerId = null,
-		?string $tableName = null,
-	): void {
+	private function applyAccessControlFilters(IQueryBuilder $qb, MagicReadTable $table, ReadPosture $posture): void {
+		$schema = $table->schema;
+
 		// Whether the organisation boundary applies is decided in ONE place
 		// (multitenancyApplies), because the string-SQL path renders the same
 		// decision and the two silently disagreeing is what let the UNION path
@@ -2775,9 +2746,9 @@ class MagicSearchHandler {
 		// effect to inherit here.
 		$applyMultitenancy = $this->multitenancyApplies(
 			schema: $schema,
-			_rbac: $_rbac,
-			_multitenancy: $_multitenancy,
-			multitenancyExplicit: $multitenancyExplicit
+			_rbac: $posture->rbac,
+			_multitenancy: $posture->multitenancy,
+			multitenancyExplicit: $posture->multitenancyExplicit
 		);
 
 		if ($applyMultitenancy === true) {
@@ -2789,25 +2760,21 @@ class MagicSearchHandler {
 			$this->applyOrganisationBoundary(
 				qb: $qb,
 				table: [
-					'registerId'  => $registerId,
+					'registerId'  => $table->registerId,
 					'schemaId'    => $schema->getId(),
-					'withOrgless' => $this->organisationlessRowsAdmitted(
-						schema: $schema,
-						_rbac: $_rbac,
-						multitenancyExplicit: $multitenancyExplicit
-					),
+					'withOrgless' => $this->organisationlessRowsAdmitted(schema: $schema, posture: $posture),
 				],
-				crossBranch: $this->crossOrganisationBranch(qb: $qb, schema: $schema, multitenancyExplicit: $multitenancyExplicit)
+				crossBranch: $this->crossOrganisationBranch(qb: $qb, schema: $schema, multitenancyExplicit: $posture->multitenancyExplicit)
 			);
 		}
 
 		// Apply RBAC filtering if enabled.
-		if ($_rbac === true) {
+		if ($posture->rbac === true) {
 			$this->rbacHandler->applyRbacFilters(
 				qb: $qb,
 				schema: $schema,
 				action: 'read',
-				tableName: $tableName
+				tableName: $table->tableName
 			);
 		}
 	}//end applyAccessControlFilters()
