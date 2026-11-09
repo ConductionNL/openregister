@@ -109,7 +109,7 @@ final class C12InterfaceBindingsTest extends TestCase {
 
 		$this->assertTrue(interface_exists($contract), $contract . ' exists');
 		$this->assertContains($contract, class_implements($class), $class . ' implements ' . $contract);
-		$this->assertContains(explode('\\', $contract)[2], ['Service', 'Kernel'], $contract . ' is in lib/Service or lib/Kernel');
+		$this->assertSame('Service', explode('\\', $contract)[2], $contract . ' is in lib/Service');
 	}//end testTheClassImplementsItsInterface()
 
 	/**
