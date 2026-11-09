@@ -30,6 +30,8 @@ use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorEmbeddingHandlers;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -426,9 +428,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 		$queryEmbedding = $queryEmbeddingData['embedding'];
 
 		return $this->handlers->search->semanticSearch(
-			queryEmbedding: $queryEmbedding,
-			limit: $limit,
-			filters: $filters
+			query: new VectorQuery(embedding: $queryEmbedding, limit: $limit, filters: $filters)
 		);
 	}//end semanticSearch()
 
@@ -460,10 +460,8 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 		$queryEmbedding = $queryEmbeddingData['embedding'];
 
 		return $this->handlers->search->hybridSearch(
-			queryEmbedding: $queryEmbedding,
-			keywordResults: $keywordResults,
-			limit: $limit,
-			weights: $weights
+			query: new VectorQuery(embedding: $queryEmbedding, limit: $limit),
+			keyword: new KeywordFusion(results: $keywordResults, weights: $weights)
 		);
 	}//end hybridSearch()
 
