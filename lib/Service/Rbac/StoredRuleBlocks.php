@@ -88,10 +88,22 @@ class StoredRuleBlocks {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function propertyBlocks(Schema $schema, ?Schema $stored, string $name): array {
-		$storedProperties = ($stored?->getProperties() ?? []);
+		return $this->propertyBlocksOf(save: new SchemaSave(schema: $schema, stored: $stored), name: $name);
+	}//end propertyBlocks()
+
+	/**
+	 * The authorization blocks of the properties of one schema save, with what is stored for each.
+	 *
+	 * @param SchemaSave $save The schema and, when saving over one, the stored schema.
+	 * @param string     $name How a message names the schema.
+	 *
+	 * @return array<int, array{authorization: array, context: string, stored: array|null}> The blocks.
+	 */
+	private function propertyBlocksOf(SchemaSave $save, string $name): array {
+		$storedProperties = ($save->stored?->getProperties() ?? []);
 		$blocks = [];
 
-		foreach (($schema->getProperties() ?? []) as $property => $config) {
+		foreach (($save->schema->getProperties() ?? []) as $property => $config) {
 			if (is_array($config) === false || is_array(($config['authorization'] ?? null)) === false) {
 				continue;
 			}
@@ -109,7 +121,7 @@ class StoredRuleBlocks {
 		}
 
 		return $blocks;
-	}//end propertyBlocks()
+	}//end propertyBlocksOf()
 
 	/**
 	 * The stored row, read past the mappers' caches and organisation filter.
