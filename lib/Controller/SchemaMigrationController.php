@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\MigrationStart;
 use OCA\OpenRegister\Controller\Support\PropertyConversionChange;
 use OCA\OpenRegister\Controller\Support\RetentionPlatform;
@@ -77,16 +78,14 @@ class SchemaMigrationController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param SchemaMigrationControllerServices $services The schema migration controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		SchemaMigrationControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->mappers = $services->mappers;
 		$this->domain = $services->domain;
 		$this->platform = $services->platform;

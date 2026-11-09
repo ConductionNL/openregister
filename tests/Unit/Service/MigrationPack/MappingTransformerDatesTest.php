@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\MigrationPack;
 
 use OCA\OpenRegister\Service\MigrationPack\MappingTransformer;
+use OCA\OpenRegister\Service\MigrationPack\TransformRequest;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 
@@ -29,6 +30,19 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\MigrationPack\MappingTransformer
  */
 class MappingTransformerDatesTest extends TestCase {
+
+	/**
+	 * One transform request.
+	 *
+	 * @param mixed                     $value     The source value.
+	 * @param array<string, mixed>|null $transform The transform block.
+	 * @param array<string, mixed>      $row       The source row.
+	 *
+	 * @return TransformRequest
+	 */
+	private static function request(mixed $value, ?array $transform, array $row): TransformRequest {
+		return new TransformRequest(value: $value, transform: $transform, sourceRow: $row);
+	}//end request()
 
 	/**
 	 * The transformer over an l10n that formats its arguments.
@@ -57,7 +71,7 @@ class MappingTransformerDatesTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheTrueShorthandTrims(): void {
-		$this->assertSame(['value' => 'Jansen', 'error' => null], $this->transformer()->apply("  Jansen \n", ['type' => true], []));
+		$this->assertSame(['value' => 'Jansen', 'error' => null], $this->transformer()->apply(self::request("  Jansen \n", ['type' => true], [])));
 
 	}//end testTheTrueShorthandTrims()
 
@@ -69,9 +83,9 @@ class MappingTransformerDatesTest extends TestCase {
 	public function testADateWithoutASourceFormatIsParsedFreely(): void {
 		$this->assertSame(
 			['value' => '01-09-2026', 'error' => null],
-			$this->transformer()->apply('2026-09-01T10:00:00+00:00', ['type' => 'date', 'targetFormat' => 'd-m-Y'], [])
+			$this->transformer()->apply(self::request('2026-09-01T10:00:00+00:00', ['type' => 'date', 'targetFormat' => 'd-m-Y'], []))
 		);
-		$this->assertSame(['value' => '2026-09-01', 'error' => null], $this->transformer()->apply('1 September 2026', ['type' => 'date'], []));
+		$this->assertSame(['value' => '2026-09-01', 'error' => null], $this->transformer()->apply(self::request('1 September 2026', ['type' => 'date'], [])));
 
 	}//end testADateWithoutASourceFormatIsParsedFreely()
 
@@ -81,7 +95,7 @@ class MappingTransformerDatesTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnparseableFreeDateIsANamedError(): void {
-		$result = $this->transformer()->apply('not a date', ['type' => 'date'], []);
+		$result = $this->transformer()->apply(self::request('not a date', ['type' => 'date'], []));
 
 		$this->assertNull($result['value']);
 		$this->assertStringStartsWith('Could not parse date "not a date": ', $result['error']);
