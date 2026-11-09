@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Files\Service\File\FileRestriction;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionService;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionRecords;
@@ -67,10 +68,7 @@ class FileRestrictionServiceTest extends TestCase {
 	public function testARestrictionIsStoredWithWhoSetIt(): void {
 		$this->store->expects($this->once())->method('save')->with(
 			42,
-			['pieter', '1001'],
-			['woo-team'],
-			'Commercially sensitive prices',
-			'pieter',
+			$this->equalTo(new FileRestriction(['pieter', '1001'], ['woo-team'], 'Commercially sensitive prices', 'pieter')),
 			$this->isInstanceOf(\DateTimeImmutable::class)
 		);
 		$this->store->method('find')->willReturn(['fileId' => 42]);

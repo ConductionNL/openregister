@@ -38,10 +38,7 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 
@@ -63,16 +60,12 @@ class SelectielijstResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface            $objectMapper    Reads the stored rows.
-	 * @param SchemaMapperInterface           $schemaMapper    Resolves the schema.
-	 * @param RegisterMapperInterface         $registerMapper  Resolves the register.
+	 * @param SelectielijstStores             $stores          Read the stored rows, the schema and the register.
 	 * @param ArchivalSettingsReaderInterface $settingsHandler Names the register, the schema and the version in use.
-	 * @param LoggerInterface        $logger          Reports a lookup that found nothing applicable.
+	 * @param LoggerInterface                 $logger          Reports a lookup that found nothing applicable.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SelectielijstStores $stores,
 		private readonly ArchivalSettingsReaderInterface $settingsHandler,
 		private readonly LoggerInterface $logger,
 	) {
@@ -181,10 +174,10 @@ class SelectielijstResolver {
 	 * @throws Exception When the register, the schema or the rows cannot be read.
 	 */
 	private function rowsFor(string $category, int $registerId, int $schemaId): array {
-		$register = $this->registerMapper->find($registerId);
-		$schema = $this->schemaMapper->find($schemaId);
+		$register = $this->stores->registerMapper->find($registerId);
+		$schema = $this->stores->schemaMapper->find($schemaId);
 
-		return $this->objectMapper->findAll(
+		return $this->stores->objectMapper->findAll(
 			limit: self::SELECTION_LIST_ROW_CAP,
 			filters: ['object->categorie' => $category],
 			register: $register,
