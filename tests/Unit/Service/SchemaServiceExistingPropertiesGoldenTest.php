@@ -114,7 +114,7 @@ class SchemaServiceExistingPropertiesGoldenTest extends TestCase {
 			$this->createMock(MagicMapper::class),
 			$this->createMock(LoggerInterface::class)
 		);
-		$actual = (new ReflectionMethod(SchemaService::class, 'analyzeExistingProperties'))->invoke($service, $existing, $discovered, []);
+		$actual = (new ReflectionMethod(SchemaService::class, 'analyzeExistingProperties'))->invoke($service, $existing, $discovered);
 		$actual = json_decode(json_encode($actual, JSON_UNESCAPED_UNICODE), true);
 
 		$file = __DIR__ . '/fixtures/schema-existing-properties-golden.json';

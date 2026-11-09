@@ -1507,7 +1507,7 @@ class SchemaServiceTest extends TestCase {
 			],
 		];
 
-		$result = $this->invokePrivate('analyzeExistingProperties', [$existingProperties, $discoveredProperties, []]);
+		$result = $this->invokePrivate('analyzeExistingProperties', [$existingProperties, $discoveredProperties]);
 
 		$this->assertNotEmpty($result);
 		$this->assertEquals('age', $result[0]['property_name']);
@@ -1524,7 +1524,7 @@ class SchemaServiceTest extends TestCase {
 		$discoveredProperties = [];
 		// name not discovered.
 
-		$result = $this->invokePrivate('analyzeExistingProperties', [$existingProperties, $discoveredProperties, []]);
+		$result = $this->invokePrivate('analyzeExistingProperties', [$existingProperties, $discoveredProperties]);
 
 		$this->assertEmpty($result);
 	}
