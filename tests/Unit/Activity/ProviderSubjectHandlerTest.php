@@ -20,17 +20,20 @@ namespace OCA\OpenRegister\Tests\Unit\Activity;
 use OCA\OpenRegister\Activity\ProviderSubjectHandler;
 use OCP\Activity\IEvent;
 use OCP\IL10N;
+use OCP\L10N\IFactory;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Unit tests for ProviderSubjectHandler.
  */
 class ProviderSubjectHandlerTest extends TestCase {
-	private ProviderSubjectHandler $handler;
-
-	protected function setUp(): void {
-		parent::setUp();
-		$this->handler = new ProviderSubjectHandler();
+	/**
+	 * A handler whose l10n factory hands out the given translator.
+	 */
+	private function handlerTranslatingWith(IL10N $l): ProviderSubjectHandler {
+		$factory = $this->createMock(IFactory::class);
+		$factory->method('get')->with('openregister', 'en')->willReturn($l);
+		return new ProviderSubjectHandler($factory);
 	}
 
 	/**
@@ -56,7 +59,8 @@ class ProviderSubjectHandlerTest extends TestCase {
 		$event->expects($this->once())->method('setParsedSubject')->with('Object created: My Object');
 		$event->expects($this->once())->method('setRichSubject');
 
-		$this->handler->applySubjectText($event, $l, ['title' => 'My Object']);
+		$event->method('getSubjectParameters')->willReturn(['title' => 'My Object']);
+		$this->handlerTranslatingWith($l)->applySubjectText($event, 'en');
 	}
 
 	/**
@@ -70,7 +74,8 @@ class ProviderSubjectHandlerTest extends TestCase {
 
 		$event->expects($this->once())->method('setParsedSubject')->with('Register deleted: Test Reg');
 
-		$this->handler->applySubjectText($event, $l, ['title' => 'Test Reg']);
+		$event->method('getSubjectParameters')->willReturn(['title' => 'Test Reg']);
+		$this->handlerTranslatingWith($l)->applySubjectText($event, 'en');
 	}
 
 	/**
@@ -84,7 +89,8 @@ class ProviderSubjectHandlerTest extends TestCase {
 
 		$event->expects($this->once())->method('setParsedSubject')->with('Schema updated: ');
 
-		$this->handler->applySubjectText($event, $l, []);
+		$event->method('getSubjectParameters')->willReturn([]);
+		$this->handlerTranslatingWith($l)->applySubjectText($event, 'en');
 	}
 
 	/**
@@ -107,7 +113,8 @@ class ProviderSubjectHandlerTest extends TestCase {
 			]
 		);
 
-		$this->handler->applySubjectText($event, $l, ['title' => 'Rich Test']);
+		$event->method('getSubjectParameters')->willReturn(['title' => 'Rich Test']);
+		$this->handlerTranslatingWith($l)->applySubjectText($event, 'en');
 	}
 	/**
 	 * Test: an object update that carries the schema title names schema and object.
@@ -130,7 +137,8 @@ class ProviderSubjectHandlerTest extends TestCase {
 			)
 		);
 
-		$this->handler->applySubjectText($event, $l, ['title' => 'Gemeente Demo', 'schema' => 'Client']);
+		$event->method('getSubjectParameters')->willReturn(['title' => 'Gemeente Demo', 'schema' => 'Client']);
+		$this->handlerTranslatingWith($l)->applySubjectText($event, 'en');
 	}
 
 	/**
@@ -144,7 +152,8 @@ class ProviderSubjectHandlerTest extends TestCase {
 
 		$event->expects($this->once())->method('setParsedSubject')->with('Object updated: Gemeente Demo');
 
-		$this->handler->applySubjectText($event, $l, ['title' => 'Gemeente Demo']);
+		$event->method('getSubjectParameters')->willReturn(['title' => 'Gemeente Demo']);
+		$this->handlerTranslatingWith($l)->applySubjectText($event, 'en');
 	}
 
 	/**
@@ -158,6 +167,7 @@ class ProviderSubjectHandlerTest extends TestCase {
 
 		$event->expects($this->once())->method('setParsedSubject')->with('Register updated: CRM');
 
-		$this->handler->applySubjectText($event, $l, ['title' => 'CRM', 'schema' => 'Client']);
+		$event->method('getSubjectParameters')->willReturn(['title' => 'CRM', 'schema' => 'Client']);
+		$this->handlerTranslatingWith($l)->applySubjectText($event, 'en');
 	}
 }
