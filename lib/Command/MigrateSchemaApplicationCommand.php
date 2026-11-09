@@ -110,7 +110,7 @@ class MigrateSchemaApplicationCommand extends Command {
 		}
 
 		if ((bool)$input->getOption('dry-run') === true) {
-			return $this->dryRun(output: $output, from: $from, to: $to, schemas: $schemas, registers: $registers);
+			return $this->dryRun(output: $output, from: $from, to: $to);
 		}
 
 		$result = $this->migrator->migrate(from: $from, to: $to);
@@ -143,17 +143,18 @@ class MigrateSchemaApplicationCommand extends Command {
 	 * what it "would move" without checking whether the real run would refuse
 	 * is worse than no dry run, because it reads as a green light.
 	 *
-	 * @param OutputInterface $output    The console output.
-	 * @param string          $from      The current application id.
-	 * @param string          $to        The new application id.
-	 * @param int             $schemas   Schemas owned by `from`.
-	 * @param int             $registers Registers owned by `from`.
+	 * The counts it reports are read from the migrator here, so the dry run
+	 * reports exactly what it checked.
+	 *
+	 * @param OutputInterface $output The console output.
+	 * @param string          $from   The current application id.
+	 * @param string          $to     The new application id.
 	 *
 	 * @return int 0 when the real run would proceed, 1 when it would refuse.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function dryRun(OutputInterface $output, string $from, string $to, int $schemas, int $registers): int {
+	private function dryRun(OutputInterface $output, string $from, string $to): int {
 		$collisions = $this->migrator->collidingSlugs(from: $from, to: $to);
 		if (empty($collisions) === false) {
 			$this->reportRefusal(output: $output, collisions: $collisions, wouldRefuse: true);
@@ -163,8 +164,8 @@ class MigrateSchemaApplicationCommand extends Command {
 		$output->writeln(
 			sprintf(
 				'<comment>Dry run: would move %d schema(s) and %d register(s) from "%s" to "%s".</comment>',
-				$schemas,
-				$registers,
+				$this->migrator->countFor(table: 'openregister_schemas', application: $from),
+				$this->migrator->countFor(table: 'openregister_registers', application: $from),
 				$from,
 				$to
 			)
