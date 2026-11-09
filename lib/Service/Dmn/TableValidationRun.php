@@ -36,13 +36,6 @@ namespace OCA\OpenRegister\Service\Dmn;
 final class TableValidationRun {
 
 	/**
-	 * The table definition being validated.
-	 *
-	 * @var array<string, mixed>
-	 */
-	public array $table = [];
-
-	/**
 	 * The problems found so far, each naming the offending part.
 	 *
 	 * @var array<int, string>
@@ -63,4 +56,15 @@ final class TableValidationRun {
 	 * @var string
 	 */
 	public string $ruleId = '';
+
+	/**
+	 * Constructor. No column is known until the table's columns are read.
+	 *
+	 * @param array<string, mixed> $table The table definition being validated.
+	 */
+	public function __construct(
+		public readonly array $table,
+	) {
+		$this->columns = new DecisionTableColumns(inputs: [], outputCount: 0);
+	}//end __construct()
 }//end class

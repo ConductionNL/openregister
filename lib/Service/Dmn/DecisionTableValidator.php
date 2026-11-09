@@ -78,8 +78,7 @@ class DecisionTableValidator implements DecisionTableValidatorInterface {
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
 	public function validate(array $table): array {
-		$run = new TableValidationRun();
-		$run->table = $table;
+		$run = new TableValidationRun(table: $table);
 
 		$hitPolicy = strtoupper(trim((string)($table['hitPolicy'] ?? 'UNIQUE')));
 		if (in_array($hitPolicy, DecisionTableEvaluator::IMPLEMENTED_HIT_POLICIES, true) === false) {
