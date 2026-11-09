@@ -82,11 +82,13 @@ class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 	 * so the identity the token will carry is decided at the HTTP boundary and
 	 * is visible there.
 	 *
-	 * @param string $userId The principal the token will name.
-	 * @param string $scopeType `schema` or `view`.
-	 * @param string $scopeId The schema id, or the view uuid.
-	 * @param string|null $label Optional human label.
-	 * @param int|null $ttlSeconds Seconds until the token expires; null never expires.
+	 * The caller names what the token covers on an unsaved token: its scope
+	 * type and scope id, and optionally a label. Everything else (the secret,
+	 * the principal, the moments) is set here.
+	 *
+	 * @param string            $userId     The principal the token will name.
+	 * @param CalendarFeedToken $draft      The unsaved token: scopeType (`schema` or `view`), scopeId and label.
+	 * @param int|null          $ttlSeconds Seconds until the token expires; null never expires.
 	 *
 	 * @return array<string, mixed> The token row plus its subscribable URL.
 	 *
@@ -94,14 +96,8 @@ class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 	 *
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
-	public function mint(
-		string $userId,
-		string $scopeType,
-		string $scopeId,
-		?string $label = null,
-		?int $ttlSeconds = null,
-	): array {
-		$scopeType = trim($scopeType);
+	public function mint(string $userId, CalendarFeedToken $draft, ?int $ttlSeconds=null): array {
+		$scopeType = trim((string)$draft->getScopeType());
 		if (in_array($scopeType, CalendarFeedToken::SCOPE_TYPES, true) === false) {
 			throw new InvalidArgumentException(
 				sprintf(
@@ -112,7 +108,7 @@ class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 			);
 		}
 
-		$scopeId = trim($scopeId);
+		$scopeId = trim((string)$draft->getScopeId());
 		if ($scopeId === '') {
 			throw new InvalidArgumentException('A feed token must name the schema or view it covers.');
 		}
@@ -128,18 +124,16 @@ class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 			$expires = (clone $now)->modify('+' . $ttlSeconds . ' seconds');
 		}
 
-		$entity = new CalendarFeedToken();
-		$entity->setToken($this->secureRandom->generate(self::TOKEN_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC));
-		$entity->setUserId($userId);
-		$entity->setScopeType($scopeType);
-		$entity->setScopeId($scopeId);
-		$entity->setLabel($label);
-		$entity->setCreatedAt($now);
-		$entity->setExpiresAt($expires);
-		$entity->setRevokedAt(null);
-		$entity->setLastReadAt(null);
+		$draft->setToken($this->secureRandom->generate(self::TOKEN_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC));
+		$draft->setUserId($userId);
+		$draft->setScopeType($scopeType);
+		$draft->setScopeId($scopeId);
+		$draft->setCreatedAt($now);
+		$draft->setExpiresAt($expires);
+		$draft->setRevokedAt(null);
+		$draft->setLastReadAt(null);
 
-		$saved = $this->mapper->insert($entity);
+		$saved = $this->mapper->insert($draft);
 
 		$data = $saved->jsonSerialize();
 		$data['url'] = $this->feedUrl(token: (string)$saved->getToken());

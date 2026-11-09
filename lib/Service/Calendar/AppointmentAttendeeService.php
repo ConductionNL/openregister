@@ -33,7 +33,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Calendar;
 
 use DateTime;
-use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -147,7 +146,6 @@ class AppointmentAttendeeService implements AppointmentAttendeeServiceInterface 
 	 * @param string $attendee The invitee identifier, as the object stores it.
 	 * @param string $status One of STATUSES.
 	 * @param string|null $respondedBy The principal that submitted the answer.
-	 * @param DateTimeInterface|null $respondedAt When the answer arrived; defaults to now.
 	 *
 	 * @return array<int, array<string, mixed>> The full response list after the write.
 	 *
@@ -162,7 +160,6 @@ class AppointmentAttendeeService implements AppointmentAttendeeServiceInterface 
 		string $attendee,
 		string $status,
 		?string $respondedBy = null,
-		?DateTimeInterface $respondedAt = null,
 	): array {
 		$attendee = trim($attendee);
 		if ($attendee === '') {
@@ -178,7 +175,7 @@ class AppointmentAttendeeService implements AppointmentAttendeeServiceInterface 
 			);
 		}
 
-		$moment = ($respondedAt ?? new DateTime());
+		$moment = new DateTime();
 
 		$data = $object->getObject();
 		$responses = $this->replaceResponse(
