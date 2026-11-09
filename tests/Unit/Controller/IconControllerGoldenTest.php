@@ -39,7 +39,7 @@ class IconControllerGoldenTest extends TestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->controller = new IconController('openregister', $this->createMock(IRequest::class), new MdiIconSvg());
+		$this->controller = new IconController($this->createMock(IRequest::class), new MdiIconSvg());
 	}
 
 	public function testKnownIcon(): void {
