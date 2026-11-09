@@ -37,14 +37,14 @@ final class SchemaObjectMigrationRun {
 	/**
 	 * The batch the object belongs to.
 	 *
-	 * @var SchemaRunBatch
+	 * @var SchemaRunBatch|null
 	 */
-	public SchemaRunBatch $batch;
+	public ?SchemaRunBatch $batch = null;
 
 	/**
 	 * The object as it was read, before the plan applied.
 	 *
-	 * @var ObjectEntity
+	 * @var ObjectEntity|null
 	 */
-	public ObjectEntity $object;
+	public ?ObjectEntity $object = null;
 }//end class

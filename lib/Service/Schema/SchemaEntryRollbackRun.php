@@ -37,21 +37,21 @@ final class SchemaEntryRollbackRun {
 	/**
 	 * The rollback, as a batch over the run's schema.
 	 *
-	 * @var SchemaRunBatch
+	 * @var SchemaRunBatch|null
 	 */
-	public SchemaRunBatch $batch;
+	public ?SchemaRunBatch $batch = null;
 
 	/**
 	 * The migrated entry being rolled back.
 	 *
-	 * @var SchemaRunEntry
+	 * @var SchemaRunEntry|null
 	 */
-	public SchemaRunEntry $entry;
+	public ?SchemaRunEntry $entry = null;
 
 	/**
 	 * The restored and conflict counts of the whole rollback.
 	 *
-	 * @var SchemaRollbackTally
+	 * @var SchemaRollbackTally|null
 	 */
-	public SchemaRollbackTally $tally;
+	public ?SchemaRollbackTally $tally = null;
 }//end class
