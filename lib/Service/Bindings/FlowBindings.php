@@ -39,5 +39,6 @@ final class FlowBindings {
 	 */
 	public const BINDINGS = [
 		\OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode::class,
+		\OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface::class => \OCA\OpenRegister\Service\Task\TaskCalendarDocument::class,
 	];
 }//end class

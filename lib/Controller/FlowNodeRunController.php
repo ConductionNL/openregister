@@ -56,14 +56,14 @@ use OCA\OpenRegister\Controller\Support\FlowNodeRunControllerServices;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
-use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
+use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraphInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowUnattributed;
+use OCA\OpenRegister\Service\Flow\FlowUnattributedInterface;
 use OCA\OpenRegister\Service\Flow\IFlowDirectlyInvokable;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -331,7 +331,7 @@ class FlowNodeRunController extends Controller {
 				context: ['nodeId' => $call->nodeId],
 				user: $callerUid
 			);
-		} catch (FlowLifecycleRefused $e) {
+		} catch (FlowLifecycleRefusedInterface $e) {
 			return new JSONResponse(
 				[
 					'error' => $e->getMessage(),
@@ -341,12 +341,12 @@ class FlowNodeRunController extends Controller {
 				],
 				Http::STATUS_CONFLICT
 			);
-		} catch (FlowDeadEnd $e) {
+		} catch (FlowDeadEndInterface $e) {
 			return new JSONResponse(
 				['error' => $e->getMessage(), 'nodes' => $e->getNodeIds()],
 				Http::STATUS_CONFLICT
 			);
-		} catch (FlowUnattributed|DelegationRefused $e) {
+		} catch (FlowUnattributedInterface|DelegationRefused $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_CONFLICT);
 		}//end try
 	}//end queueRun()
