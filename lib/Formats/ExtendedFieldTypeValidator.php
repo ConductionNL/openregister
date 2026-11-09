@@ -95,17 +95,32 @@ class ExtendedFieldTypeValidator implements ExtendedFieldTypeValidatorInterface 
 	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-005
 	 */
 	public function validateColor(mixed $value, ?string $format, string $propertyName): ?string {
+		return $this->validateColorProperty(value: $value, property: new FormattedProperty(name: $propertyName, format: $format));
+	}//end validateColor()
+
+	/**
+	 * Validate a `color` value against the declared format of its property.
+	 *
+	 * @param mixed             $value    The colour value submitted by the client.
+	 * @param FormattedProperty $property The property name and its declared `format` (null => hex).
+	 *
+	 * @return string|null Null on success, or the exact 422 error message on failure.
+	 *
+	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-005
+	 */
+	public function validateColorProperty(mixed $value, FormattedProperty $property): ?string {
+		$propertyName = $property->name;
 		if (is_string($value) === false) {
 			return "Property '{$propertyName}': color value must be a string";
 		}
 
-		$problem = $this->colorProblem(value: $value, format: strtolower((string)$format));
+		$problem = $this->colorProblem(value: $value, format: strtolower((string)$property->format));
 		if ($problem === null) {
 			return null;
 		}
 
 		return "Property '{$propertyName}' {$problem}";
-	}//end validateColor()
+	}//end validateColorProperty()
 
 	/**
 	 * What is wrong with a colour string under a lower-cased declared format.
@@ -221,15 +236,28 @@ class ExtendedFieldTypeValidator implements ExtendedFieldTypeValidatorInterface 
 	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
 	 */
 	public function materialiseOccurrences(string $rrule, int $count, ?DateTimeInterface $start = null): array {
+		return $this->occurrencesIn(window: new RecurrenceWindow(rrule: $rrule, count: $count, start: $start));
+	}//end materialiseOccurrences()
+
+	/**
+	 * Materialise the occurrences of a recurrence window; see {@see self::materialiseOccurrences()}.
+	 *
+	 * @param RecurrenceWindow $window The RRULE, the number of occurrences and the start.
+	 *
+	 * @return array<int, string> ISO-8601 occurrence timestamps, or empty on parse failure.
+	 *
+	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
+	 */
+	public function occurrencesIn(RecurrenceWindow $window): array {
 		try {
-			$iterator = new RRuleIterator($rrule, $start ?? new DateTimeImmutable('now'));
-			return $this->collectOccurrences(iterator: $iterator, count: $this->clampCount(count: $count));
+			$iterator = new RRuleIterator($window->rrule, $window->start ?? new DateTimeImmutable('now'));
+			return $this->collectOccurrences(iterator: $iterator, count: $this->clampCount(count: $window->count));
 		} catch (Throwable $e) {
 			// A value that fails to parse here would already have been rejected at
 			// write time; on read we degrade gracefully to no occurrences.
 			return [];
 		}
-	}//end materialiseOccurrences()
+	}//end occurrencesIn()
 
 	/**
 	 * Clamp a requested occurrence count: below 1 means the default, above the maximum means the maximum.
