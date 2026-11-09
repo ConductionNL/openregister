@@ -70,6 +70,9 @@ class ImportHandlerFlowTest extends TestCase {
 	/** @var LoggerInterface&MockObject */
 	private LoggerInterface $logger;
 
+	/** @var ConfigurationMapper&MockObject */
+	private ConfigurationMapper $configurationMapper;
+
 	private ImportHandler $handler;
 
 	/**
@@ -81,12 +84,13 @@ class ImportHandlerFlowTest extends TestCase {
 		$this->flowMapper = $this->createMock(FlowMapper::class);
 		$this->flowVersionService = $this->createMock(FlowVersionService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->configurationMapper = $this->createMock(ConfigurationMapper::class);
 
 		$this->handler = new ImportHandler(
 			schemaMapper:        $this->createMock(SchemaMapper::class),
 			registerMapper:      $this->createMock(RegisterMapper::class),
 			objectEntityMapper:  $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
+			configurationMapper: $this->configurationMapper,
 			mappingMapper:       $this->createMock(MappingMapper::class),
 			client:              $this->createMock(Client::class),
 			appConfig:           $this->createMock(IAppConfig::class),
@@ -639,6 +643,30 @@ class ImportHandlerFlowTest extends TestCase {
 			false,
 		]);
 	}//end testImportFlowRefusedWithoutTriggerValidator()
+
+	/**
+	 * importFromJson() records the imported flow's uuid on the configuration, next to the ones it already tracked.
+	 */
+	public function testImportFromJsonRecordsImportedFlowsOnTheConfiguration(): void {
+		$this->flowMapper->method('findByUuid')
+			->willThrowException(new DoesNotExistException('not found'));
+
+		$configuration = $this->configuration();
+		$configuration->setId(7);
+		$configuration->setFlows(['earlier-flow']);
+
+		$this->configurationMapper->expects($this->once())->method('update')
+			->with($this->identicalTo($configuration))
+			->willReturnArgument(0);
+
+		$this->handler->importFromJson(
+			data: ['components' => ['flows' => ['flow-uuid-1' => ['name' => 'My Flow', 'nodes' => ['n1']]]]],
+			configuration: $configuration,
+			owner: 'alice'
+		);
+
+		$this->assertSame(['earlier-flow', 'flow-uuid-1'], $configuration->getFlows());
+	}//end testImportFromJsonRecordsImportedFlowsOnTheConfiguration()
 
 	/**
 	 * applyImportedFlowFields() carries every inheritable setting FlowService does, oversightEnabled included.

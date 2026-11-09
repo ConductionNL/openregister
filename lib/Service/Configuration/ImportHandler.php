@@ -1782,6 +1782,43 @@ class ImportHandler {
 	}//end publishImportedFlow()
 
 	/**
+	 * Record the imported flows' uuids on the configuration that manages them.
+	 *
+	 * `Configuration.flows` is the list {@see ExportHandler::exportFlows()}
+	 * exports, so without this an import followed by an export of the same
+	 * configuration loses every flow. Merged with the uuids already tracked,
+	 * the way registers and schemas are merged in updateAppConfiguration().
+	 * Written here, not by each caller, because callers persist only the
+	 * registers/schemas/objects they know about (and app imports only when
+	 * one of those is non-empty).
+	 *
+	 * @param Configuration     $configuration The configuration being imported into.
+	 * @param array<int, mixed> $flows         The imported flows.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function recordImportedFlows(Configuration $configuration, array $flows): void {
+		$tracked = ($configuration->getFlows() ?? []);
+		$uuids   = $tracked;
+		foreach ($flows as $flow) {
+			if ($flow instanceof Flow && $flow->getUuid() !== null && in_array($flow->getUuid(), $uuids, true) === false) {
+				$uuids[] = $flow->getUuid();
+			}
+		}
+
+		if ($uuids === $tracked) {
+			return;
+		}
+
+		$configuration->setFlows($uuids);
+		if ($configuration->getId() !== null) {
+			$this->configurationMapper->update($configuration);
+		}
+	}//end recordImportedFlows()
+
+	/**
 	 * Handle duplicate register error during import.
 	 *
 	 * @param string $slug The register slug that has duplicates.
@@ -4126,6 +4163,8 @@ class ImportHandler {
 				message: '[ImportHandler] Flow import completed',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'importedCount' => count($result['flows'])]
 			);
+
+			$this->recordImportedFlows(configuration: $configuration, flows: $result['flows']);
 		}//end if
 
 		// Create or update configuration entity to track imported data.
