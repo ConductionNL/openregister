@@ -630,3 +630,4 @@
 2026-11-09T21:46:19Z reviewer-20261109T214144-be82c866 6973 e37838719e0c24186d8f9279aca58947cbccca7a NOT REVIEWED: 20+ file conflicts with main ecc034faa0 incl add/add LinkExposureInterface, ElementMappingValidatorInterface (main carries the refactor as SchemaDeclarationValidators); merged guard suites cannot run; needs a fresh branch or close
 2026-11-09T21:53:57Z integrator-20261109T214134-37308df4 CONFLICT-DEV #7653 f5eed6aa
 2026-11-09T21:54:09Z integrator-20261109T214134-37308df4 CONFLICT-DEV #7701 aadd9d43
+2026-11-09T21:54:24Z integrator-20261109T214134-37308df4 CONFLICT-DEV #7721 06e07913
