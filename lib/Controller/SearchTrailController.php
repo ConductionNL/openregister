@@ -26,6 +26,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SearchTrailPageLinks;
 use OCA\OpenRegister\Db\SearchTrail;
@@ -117,16 +118,14 @@ class SearchTrailController extends Controller {
 	/**
 	 * Constructor for SearchTrailController
 	 *
-	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param SearchTrailControllerServices $services The services, bundled.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		SearchTrailControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->searchTrailService = $services->searchTrailService;
 		$this->searchTrailMapper = $services->searchTrailMapper;
 		$this->userSession = $services->userSession;
