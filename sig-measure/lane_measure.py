@@ -82,11 +82,12 @@ def exposed(data):
     return {f for f in data['deps'] if any(comp[s] != comp[f] for s in inc[f])}
 
 
-def wide_units(data, files=None, above=4):
+def wide_units(data, files=None, above=4, units=None):
     wanted = set(files) if files is not None else None
+    pairs = {(f, m) for f, m in (units or [])}
     out = []
     for u in data['units']:
-        if u['lang'] == 'php' and u['file'].startswith('lib/') and u['params'] > above and (wanted is None or u['file'] in wanted):
+        if u['lang'] == 'php' and u['file'].startswith('lib/') and u['params'] > above and (wanted is None or u['file'] in wanted or (u['file'], u['name'].split('::')[-1]) in pairs):
             out.append(u)
     return out
 
@@ -126,7 +127,7 @@ def totals(data, m=None):
 def lane_report(data, scope, m=None):
     """Current numbers for one lane's scope, against the before and target recorded at generation."""
     pf = set(scope.get('p_files', []))
-    wide = wide_units(data, pf)
+    wide = wide_units(data, pf, units=scope.get('p_units'))
     gt4 = sum(u['nloc'] for u in wide)
     gt6 = sum(u['nloc'] for u in wide if u['params'] > 6)
     expo = exposed(data)
@@ -135,7 +136,7 @@ def lane_report(data, scope, m=None):
     exposed_loc = sum(data['loc'].get(f, 0) for f in still)
     vf = scope.get('vue_files', [])
     red = sum(data['red'].get(f, 0) for f in vf)
-    w2 = wide_units(data, pf, above=2)
+    w2 = wide_units(data, pf, above=2, units=scope.get('p_units'))
     gt2 = sum(u['nloc'] for u in w2)
     moves = scope.get('moves', [])
     moved_left = [mv['file'] for mv in moves if mv['file'] in data['comp'] and data['comp'][mv['file']] != mv['to']]
