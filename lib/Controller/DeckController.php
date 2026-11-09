@@ -26,6 +26,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\DeckControllerServices;
 use OCA\OpenRegister\Service\DeckCardServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -83,6 +84,17 @@ class DeckController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * List all Deck cards for a specific object: the body of index() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexFor(ObjectRef $ref): JSONResponse {
 		if ($this->deckCardService->isDeckAvailable() === false) {
 			return new JSONResponse(
 				['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
@@ -91,7 +103,7 @@ class DeckController extends Controller {
 		}
 
 		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
+			$object = $this->validateObject(ref: $ref);
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
@@ -104,7 +116,7 @@ class DeckController extends Controller {
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 500);
 		}
-	}//end index()
+	}//end indexFor()
 
 	/**
 	 * Create or link a Deck card to an object.
@@ -121,6 +133,17 @@ class DeckController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
+		return $this->createFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end create()
+
+	/**
+	 * Create or link a Deck card to an object: the body of create() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function createFor(ObjectRef $ref): JSONResponse {
 		if ($this->deckCardService->isDeckAvailable() === false) {
 			return new JSONResponse(
 				['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
@@ -129,7 +152,7 @@ class DeckController extends Controller {
 		}
 
 		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
+			$object = $this->validateObject(ref: $ref);
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
@@ -157,7 +180,7 @@ class DeckController extends Controller {
 
 			return new JSONResponse(['error' => $e->getMessage()], 400);
 		}//end try
-	}//end create()
+	}//end createFor()
 
 	/**
 	 * Find all objects linked to cards on a board.
@@ -196,9 +219,7 @@ class DeckController extends Controller {
 	/**
 	 * Validate that the object exists.
 	 *
-	 * @param string $register The register slug
-	 * @param string $schema The schema slug
-	 * @param string $id The object ID
+	 * @param ObjectRef $ref The register, schema and object the route names
 	 *
 	 * @return \OCA\OpenRegister\Db\ObjectEntity|null
 	 *
@@ -209,14 +230,10 @@ class DeckController extends Controller {
 	 *                               Swallowing it here would collapse "no such object" into the same null this method
 	 *                               returns for other reasons, which the caller could no longer tell apart.
 	 */
-	private function validateObject(
-		string $register,
-		string $schema,
-		string $id,
-	): ?\OCA\OpenRegister\Db\ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+	private function validateObject(ObjectRef $ref): ?\OCA\OpenRegister\Db\ObjectEntity {
+		$this->objectService->setRegister($ref->register);
+		$this->objectService->setSchema($ref->schema);
+		$this->objectService->setObject($ref->id);
 
 		return $this->objectService->getObject();
 	}//end validateObject()
