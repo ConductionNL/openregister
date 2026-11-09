@@ -21,6 +21,7 @@
   re-recorded with every styling pass.
 -->
 <template>
+	<!-- eslint-disable vue/no-undef-components -- registered through pageShellComponents, which the rule cannot follow -->
 	<NcAppContent>
 		<div class="flowPage">
 			<NcLoadingIcon v-if="loading" :size="32" />
@@ -445,14 +446,8 @@ import { CnDataTable, CnStatusBadge } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
+import { pageShellComponents } from '../pageShell.js'
 import {
 	averageDuration,
 	catalogNames,
@@ -479,11 +474,7 @@ export default {
 	components: {
 		CnDataTable,
 		CnStatusBadge,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 		SitemapOutline,
 	},
 

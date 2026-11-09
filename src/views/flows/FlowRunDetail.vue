@@ -26,6 +26,7 @@
   after the styling settles.
 -->
 <template>
+	<!-- eslint-disable vue/no-undef-components -- registered through pageShellComponents, which the rule cannot follow -->
 	<NcAppContent>
 		<div class="runPage">
 			<NcLoadingIcon v-if="loading" :size="32" />
@@ -450,14 +451,8 @@ import { CnStatusBadge } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
 import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline.vue'
+import { pageShellComponents } from '../pageShell.js'
 import {
 	catalogNames,
 	failedStep,
@@ -477,11 +472,7 @@ export default {
 
 	components: {
 		CnStatusBadge,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 		PlayCircleOutline,
 	},
 
