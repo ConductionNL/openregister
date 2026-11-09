@@ -129,12 +129,7 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import CountListItem from '../../components/shared/CountListItem.vue'
-import SidebarStatCard from '../../components/shared/SidebarStatCard.vue'
-import StatisticsSidebarTab from '../../components/shared/StatisticsSidebarTab.vue'
-import ScopeFiltersTab from '../ScopeFiltersTab.vue'
-import SidebarFilterSelect from '../SidebarFilterSelect.vue'
-import TrailUserDateFields from './TrailUserDateFields.vue'
+import { trailSidebar } from '../../composables/trailSidebar.js'
 import eventBus from '../../eventBus.js'
 import {
 	addDateRange,
@@ -147,7 +142,6 @@ import {
 	addJoinedValues,
 	addPresent,
 	addScopeIds,
-	trailUserOptions,
 } from '../../services/trailFilters.js'
 import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
 
@@ -185,12 +179,6 @@ function actionOption(byValue, value) {
 export default {
 	name: 'AuditTrailSideBar',
 	components: {
-		CountListItem,
-		ScopeFiltersTab,
-		SidebarFilterSelect,
-		SidebarStatCard,
-		StatisticsSidebarTab,
-		TrailUserDateFields,
 		NcAppSidebar,
 		NcTextField,
 		NcCheckboxRadioSwitch,
@@ -201,7 +189,10 @@ export default {
 		Eye,
 	},
 
-	mixins: [routeBoundFilters('/audit-trails')],
+	mixins: [
+		routeBoundFilters('/audit-trails'),
+		trailSidebar(() => auditTrailStore.auditTrailList),
+	],
 
 	data() {
 		return {
@@ -226,9 +217,6 @@ export default {
 
 			activeTab: 'filters-tab',
 			selectedActions: [],
-			selectedUsers: [],
-			dateFrom: null,
-			dateTo: null,
 			objectFilter: '',
 			showOnlyWithChanges: false,
 			filteredCount: 0,
@@ -245,13 +233,6 @@ export default {
 	computed: {
 		// A <script setup> binding is not on `this`, and a watch path reads `this`.
 		auditTrailStore: () => auditTrailStore,
-
-		/**
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		userOptions() {
-			return trailUserOptions(auditTrailStore.auditTrailList)
-		},
 	},
 
 	watch: {

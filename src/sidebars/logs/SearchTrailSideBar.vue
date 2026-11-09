@@ -286,12 +286,7 @@ import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Monitor from 'vue-material-design-icons/Monitor.vue'
 import TrendingUp from 'vue-material-design-icons/TrendingUp.vue'
-import CountListItem from '../../components/shared/CountListItem.vue'
-import SidebarStatCard from '../../components/shared/SidebarStatCard.vue'
-import StatisticsSidebarTab from '../../components/shared/StatisticsSidebarTab.vue'
-import ScopeFiltersTab from '../ScopeFiltersTab.vue'
-import SidebarFilterSelect from '../SidebarFilterSelect.vue'
-import TrailUserDateFields from './TrailUserDateFields.vue'
+import { trailSidebar } from '../../composables/trailSidebar.js'
 import eventBus from '../../eventBus.js'
 import {
 	addDateRange,
@@ -304,7 +299,6 @@ import {
 	addJoinedValues,
 	addPresent,
 	addScopeIds,
-	trailUserOptions,
 } from '../../services/trailFilters.js'
 import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
 
@@ -385,12 +379,6 @@ const RANGE_FILTERS = Object.keys(ROUTE_FIELDS)
 export default {
 	name: 'SearchTrailSideBar',
 	components: {
-		CountListItem,
-		ScopeFiltersTab,
-		SidebarFilterSelect,
-		SidebarStatCard,
-		StatisticsSidebarTab,
-		TrailUserDateFields,
 		NcAppSidebar,
 		NcAppSidebarTab,
 		NcSelect,
@@ -402,7 +390,10 @@ export default {
 		Monitor,
 	},
 
-	mixins: [routeBoundFilters('/search-trails')],
+	mixins: [
+		routeBoundFilters('/search-trails'),
+		trailSidebar(() => searchTrailStore.searchTrailList),
+	],
 
 	data() {
 		return {
@@ -438,10 +429,7 @@ export default {
 
 			activeTab: 'filters-tab',
 			selectedSuccessStatus: null,
-			selectedUsers: [],
 			selectedActivityPeriod: { value: 'daily', label: 'Daily' },
-			dateFrom: null,
-			dateTo: null,
 			searchTermFilter: '',
 			executionTimeFrom: '',
 			executionTimeTo: '',
@@ -478,16 +466,6 @@ export default {
 	computed: {
 		// A <script setup> binding is not on `this`, and a watch path reads `this`.
 		searchTrailStore: () => searchTrailStore,
-
-		/**
-		 * Derive the user filter options from the search-trail list.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {Array} User filter options
-		 */
-		userOptions() {
-			return trailUserOptions(searchTrailStore.searchTrailList)
-		},
 
 		/**
 		 * The query complexity levels the distribution shows, in order.
