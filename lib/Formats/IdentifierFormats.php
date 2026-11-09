@@ -30,6 +30,8 @@ use Opis\JsonSchema\Format;
 
 /**
  * Factory for the identifier checks of the Formats component.
+ *
+ * @spec openspec/specs/data-import-export/spec.md
  */
 final class IdentifierFormats {
 
@@ -37,6 +39,8 @@ final class IdentifierFormats {
 	 * The BSN elfproef.
 	 *
 	 * @return Format
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public static function bsn(): Format {
 		return new BsnFormat();
