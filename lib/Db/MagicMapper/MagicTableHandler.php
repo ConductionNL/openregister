@@ -100,8 +100,21 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows table recreation
 	 */
 	public function ensureTableForRegisterSchema(Register $register, Schema $schema, bool $force = false): bool {
-		$target = new MagicTableTarget(register: $register, schema: $schema);
-		$target->cacheKey = $this->magicMapper->getCacheKey(registerId: $register->getId(), schemaId: $schema->getId());
+		return $this->ensureTarget(target: new MagicTableTarget(register: $register, schema: $schema), force: $force);
+	}//end ensureTableForRegisterSchema()
+
+	/**
+	 * Ensure the table of one register+schema target exists and is current.
+	 *
+	 * @param MagicTableTarget $target The register and schema of the table.
+	 * @param bool             $force  Force table recreation even if exists.
+	 *
+	 * @return bool True if table exists/was created successfully
+	 *
+	 * @throws Exception If table creation/update fails
+	 */
+	private function ensureTarget(MagicTableTarget $target, bool $force): bool {
+		$target->cacheKey = $this->magicMapper->getCacheKey(registerId: $target->register->getId(), schemaId: $target->schema->getId());
 
 		// Verified once per process, checked FIRST.
 		//
@@ -127,7 +140,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 			return true;
 		}
 
-		$target->tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$target->tableName = $this->getTableNameForRegisterSchema(register: $target->register, schema: $target->schema);
 		$this->logEnsure(target: $target, force: $force);
 
 		try {
@@ -135,7 +148,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 		} catch (Exception $e) {
 			throw $this->ensureFailure(target: $target, error: $e);
 		}
-	}//end ensureTableForRegisterSchema()
+	}//end ensureTarget()
 
 	/**
 	 * Whether the table's columns were verified this process and its schema version is unchanged.
