@@ -196,15 +196,45 @@ final class FilterParams {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
 	 */
 	public static function forAggregation(array $bracket, array $params, array $controlParams, array $properties): array {
+		$bare = self::bareFilters(candidates: self::filterCandidates(params: $params, controlParams: $controlParams), properties: $properties);
+		$unknown = array_merge($bare['unknown'], self::unknownBracketKeys(bracket: $bracket, properties: $properties));
+
+		return [
+			'filter'  => array_replace($bare['filter'], $bracket),
+			'unknown' => array_values(array_unique($unknown)),
+		];
+	}//end forAggregation()
+
+	/**
+	 * The request parameters that could name a property filter on this aggregation action.
+	 *
+	 * @param array<array-key, mixed> $params        Every request parameter.
+	 * @param string[]                $controlParams The action's control parameters.
+	 *
+	 * @return array<string, mixed> The candidates, in request order.
+	 */
+	private static function filterCandidates(array $params, array $controlParams): array {
 		$reserved = self::reservedForAggregation(controlParams: $controlParams);
+
+		return array_filter(
+			$params,
+			static fn (int|string $key): bool => self::isFilterName(key: $key, reserved: $reserved),
+			ARRAY_FILTER_USE_KEY
+		);
+	}//end filterCandidates()
+
+	/**
+	 * Split candidate bare filters into those naming a declared property and the rest.
+	 *
+	 * @param array<string, mixed>    $candidates The candidate bare filters.
+	 * @param array<array-key, mixed> $properties The schema's declared properties.
+	 *
+	 * @return array{filter: array<string, mixed>, unknown: list<string>}
+	 */
+	private static function bareFilters(array $candidates, array $properties): array {
 		$filter = [];
 		$unknown = [];
-
-		foreach ($params as $key => $value) {
-			if (self::isFilterName(key: $key, reserved: $reserved) === false) {
-				continue;
-			}
-
+		foreach ($candidates as $key => $value) {
 			if (array_key_exists($key, $properties) === false) {
 				$unknown[] = (string)$key;
 				continue;
@@ -213,18 +243,27 @@ final class FilterParams {
 			$filter[$key] = $value;
 		}
 
-		foreach ($bracket as $key => $value) {
-			$filter[$key] = $value;
+		return ['filter' => $filter, 'unknown' => $unknown];
+	}//end bareFilters()
+
+	/**
+	 * The bracket keys that name nothing an aggregation row carries, in bracket order.
+	 *
+	 * @param array<array-key, mixed> $bracket    The `filter[...]` map.
+	 * @param array<array-key, mixed> $properties The schema's declared properties.
+	 *
+	 * @return list<string> The unknown bracket keys.
+	 */
+	private static function unknownBracketKeys(array $bracket, array $properties): array {
+		$unknown = [];
+		foreach (array_keys($bracket) as $key) {
 			if (self::isUnknownBracketKey(key: $key, properties: $properties) === true) {
 				$unknown[] = (string)$key;
 			}
 		}
 
-		return [
-			'filter'  => $filter,
-			'unknown' => array_values(array_unique($unknown)),
-		];
-	}//end forAggregation()
+		return $unknown;
+	}//end unknownBracketKeys()
 
 	/**
 	 * Whether any parameter could become a bare aggregation filter.
@@ -299,35 +338,32 @@ final class FilterParams {
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
 	 */
-	public static function warnUnknownKeys(
-		?LoggerInterface $logger,
-		array $keys,
-		string $endpoint,
-		string $register,
-		string $schema,
-	): void {
+	public static function warnUnknownKeys(?LoggerInterface $logger, array $keys, string $endpoint, string $register, string $schema): void {
 		if ($logger === null || $keys === []) {
 			return;
 		}
 
-		$logger->warning(
-			sprintf(
-				'[OpenRegister] %s: filter key(s) "%s" name no property of schema "%s" in register "%s", so they do not'
-				. ' filter on a property. Check the spelling; an unknown filter key is meant to become an HTTP 400.',
-				$endpoint,
-				implode('", "', $keys),
-				$schema,
-				$register
-			),
-			[
-				'app'      => 'openregister',
-				'endpoint' => $endpoint,
-				'register' => $register,
-				'schema'   => $schema,
-				'keys'     => array_values($keys),
-			]
-		);
+		$context = ['app' => 'openregister', 'endpoint' => $endpoint, 'register' => $register, 'schema' => $schema, 'keys' => array_values($keys)];
+		$logger->warning(self::unknownKeysMessage(context: $context), $context);
 	}//end warnUnknownKeys()
+
+	/**
+	 * The warning line for the unknown filter keys a log context names.
+	 *
+	 * @param array{app: string, endpoint: string, register: string, schema: string, keys: list<string>} $context The log context.
+	 *
+	 * @return string The line.
+	 */
+	private static function unknownKeysMessage(array $context): string {
+		return sprintf(
+			'[OpenRegister] %s: filter key(s) "%s" name no property of schema "%s" in register "%s", so they do not'
+			. ' filter on a property. Check the spelling; an unknown filter key is meant to become an HTTP 400.',
+			$context['endpoint'],
+			implode('", "', $context['keys']),
+			$context['schema'],
+			$context['register']
+		);
+	}//end unknownKeysMessage()
 
 	/**
 	 * The names an aggregation action never reads as a filter: its own control
