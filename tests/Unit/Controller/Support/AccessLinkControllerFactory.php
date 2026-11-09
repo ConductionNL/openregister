@@ -18,7 +18,7 @@ final class AccessLinkControllerFactory {
 	/**
 	 * The constructor arguments of AccessLinkController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param AccessLinkService $links Constructor argument.
 	 * @param AccessLinkReader $reader Constructor argument.
@@ -42,7 +42,6 @@ final class AccessLinkControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\AccessLinkControllerServices(
 				domain: new \OCA\OpenRegister\Controller\Support\AccessLinkDomain(

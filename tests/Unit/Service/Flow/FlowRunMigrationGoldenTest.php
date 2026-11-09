@@ -31,6 +31,8 @@ use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
 use Closure;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FlowRunFilter;
+use OCA\OpenRegister\Db\FlowRunListing;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
@@ -198,7 +200,7 @@ final class FlowRunMigrationGoldenTest extends TestCase {
 			'runsOnVersion' => fn () => array_map(
 				static fn (FlowRun $run): string => (string)$run->getUuid(),
 				$this->service([], $none, ['junk', self::aRun('a', 2, []), self::aRun('b', 3, []), self::aRun('c', 2, [], 'completed'), self::aRun('d', 2, [], 'waiting')], [])
-					->runsOnVersion(flowId: 'flow-1', version: 2, limit: 7)
+					->runsOnVersion(listing: new FlowRunListing(filter: new FlowRunFilter(flowId: 'flow-1'), limit: 7), version: 2)
 			),
 			'migrateRunsOfVersion' => fn () => $this->service(
 				['a' => self::aRun('a', 2, ['review' => 1]), 'd' => self::aRun('d', 2, ['decide' => 1], 'waiting'), 'e' => self::aRun('e', 2, ['intake' => 1])],
