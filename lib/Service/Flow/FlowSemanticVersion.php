@@ -207,7 +207,12 @@ class FlowSemanticVersion implements FlowSemanticVersionInterface {
 	 *
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-a-semantic-version-is-derived-at-publish-from-the-graph
 	 */
-	public function forPublish(?array $publishedGraph, array $candidateGraph, ?string $previousSemver, ?string $requested): string {
+	public function forPublish(
+		?array $publishedGraph,
+		array $candidateGraph,
+		?string $previousSemver,
+		?string $requested
+	): string {
 		$revision = new FlowGraphRevision(published: $publishedGraph, candidate: $candidateGraph, previousSemver: $previousSemver);
 
 		return $this->versionFor(revision: $revision, requested: $requested);
