@@ -141,16 +141,35 @@ The FTE figures, past and current, are to be confirmed by Conduction.
 
 ### Components and how they connect
 
-The diagram shows the components and how they connect. The browser reaches the controllers over REST with JSON. All other arrows are PHP code dependencies (calls, type hints, inheritance). Other apps call OpenRegister through the interfaces in `lib/Contract/`.
-
-The table maps every directory under `lib/` and every production directory at the root to a component. `sigrid.yaml` declares the same split: each directory under `lib/` is a component (`component_base_dirs: ["lib", ""]`).
-
-ARCHITECTURE.md also describes a functional grouping (objects, schemas and registers, access control, retention and more). Those functional components cut across `lib/Service/` and `lib/Db/`, so they do not map to directories one to one. Decoupling them behind interfaces is work in progress (ADR-119, being decided in hydra#774).
+A component is a top-level directory of the repository, as developers see it. This follows SIG's guidance for producers (section 2.2). `sigrid.yaml` declares it with `component_base_dirs: [""]`, and ADR-014 records the decision. Files in the repository root form one more component, "Root files".
 
 | Name | Source code paths | What it does |
 |---|---|---|
-| Web interface | src/, templates/, js/ (3 hand-written scripts), css/, img/ | Vue 3 single-page front end, the PHP templates that mount it, and static scripts for web push and the flow operator. |
+| Backend | lib/ | All production PHP: controllers, services, data access, events, background jobs and the Nextcloud integration points. |
+| Frontend | src/ | Vue single-page app that runs in the browser. |
 | App manifest and routes | appinfo/ | App metadata (info.xml) and the route table (routes.php) that maps URLs to controllers. |
+| Page templates | templates/ | PHP templates that mount the frontend. |
+| Static scripts | js/ (3 hand-written scripts) | Web push client, its service worker and the flow operator. |
+| Development containers | docker/ | Entry points and seed scripts for the development and demo containers. Not shipped. |
+| Root files | webpack.config.js, jest and playwright configs, stylelint.config.js | Build and test configuration. |
+
+The components connect in three ways. The frontend calls the backend's controllers over REST with JSON, on the routes in `appinfo/routes.php`. Other Nextcloud apps call the backend in-process, through the PHP interfaces in `lib/Contract/`. The backend reaches the Nextcloud server through the public `OCP` API.
+
+```mermaid
+flowchart LR
+  UI[Frontend: src/, js/] -->|REST, JSON over HTTPS| BE[Backend: lib/]
+  TPL[Page templates: templates/] -->|loads| UI
+  APP[App manifest and routes: appinfo/] -->|routes to| BE
+  OTHER[Other Nextcloud apps] -->|PHP interfaces in lib/Contract| BE
+  BE -->|OCP API| NC[Nextcloud server]
+```
+
+#### Inside the backend
+
+The backend keeps the Nextcloud layout. ADR-013 sets the rules for its layers: a controller calls services, a service calls mappers, nothing calls back up a layer, and events replace upward calls. Our architecture tests in `tests/Unit/Architecture/` check these rules. The table maps every directory under `lib/` to its role.
+
+| Part | Source code paths | What it does |
+|---|---|---|
 | Controllers | lib/Controller/ | HTTP API and page controllers. They check the caller's rights and hand over to services. |
 | Middleware | lib/Middleware/ | Request pipeline: rate limits, tenant quotas, CORS for public endpoints, request validation, audit of protected field reads. |
 | Services (business logic) | lib/Service/ | All capabilities: objects, schemas and registers, RBAC, configuration and import, flows and rules, retention, credentials. Holds 54% of the PHP code. |
@@ -163,27 +182,13 @@ ARCHITECTURE.md also describes a functional grouping (objects, schemas and regis
 | Events and listeners | lib/Event/, lib/Listener/ | Typed events fired on changes, and the listeners that react to them. |
 | Background and console | lib/BackgroundJob/, lib/Command/, lib/BulkAction/ | Cron jobs (extraction, retention sweeps, audit sealing), occ commands, bulk actions. |
 | Install and upgrade | lib/Migration/, lib/Repair/ | Database migrations (frozen once released) and repair steps. |
-| Contracts and shared code | lib/Contract/, lib/Kernel/, lib/Exception/, lib/Dto/, lib/Support/, lib/Formats/, lib/Twig/, lib/Lifecycle/ | Published interfaces for other apps (ADR-084), internal interfaces between components, exceptions, value objects and helpers. |
+| Contracts and shared code | lib/Contract/, lib/Kernel/, lib/Exception/, lib/Dto/, lib/Support/, lib/Formats/, lib/Twig/, lib/Lifecycle/ | Published interfaces for other apps (ADR-084), internal interfaces between parts, exceptions, value objects and helpers. |
 | Nextcloud integration points | lib/AppInfo/, lib/Calendar/, lib/Contacts/, lib/Dav/, lib/ContextChat/, lib/Federation/, lib/Reference/, lib/Dashboard/, lib/Sections/, lib/Settings/, lib/Capabilities/, lib/WorkflowEngine/ | Bootstrap and the providers Nextcloud loads: calendar, contacts, DAV, Context Chat, federation, link previews, dashboard widgets, settings pages, capabilities, workflow operations. lib/Settings/ also holds shipped register definitions (JSON). |
 | Shipped vocabularies | lib/Resources/, lib/Service/Flow/Bpmn/schema/ | Third-party specifications shipped unchanged (schema.org, TOOI, MDTO, BPMN, GGM). See out of scope. |
 
-```mermaid
-flowchart TB
-  UI[Web interface: src/, js/, templates/] -->|REST, JSON over HTTPS| CTL[Controllers: lib/Controller, appinfo/routes.php]
-  MW[Middleware: lib/Middleware] -->|wraps| CTL
-  CTL --> SVC[Services: lib/Service]
-  CAP[Capability modules: lib/Search, lib/Files, lib/Notifications, lib/Mcp, lib/AppHost] <--> SVC
-  SVC --> DB[Data access: lib/Db]
-  SVC -->|dispatch| EV[Events and listeners: lib/Event, lib/Listener]
-  EV -->|react| SVC
-  JOB[Background and console: lib/BackgroundJob, lib/Command, lib/Repair, lib/Migration] --> SVC
-  SVC -->|implements| K[Contracts and shared: lib/Contract, lib/Kernel, lib/Exception, lib/Dto, lib/Support]
-  OTHER[Other apps] -->|lib/Contract interfaces| SVC
-  DB -->|QueryBuilder| NC[Nextcloud server, OCP]
-  GLUE[Nextcloud integration points: lib/AppInfo, Calendar, Contacts, Dav, Federation, Settings] -->|registers with| NC
-```
+ARCHITECTURE.md also groups the backend by function (objects, schemas and registers, access control, retention and more). That grouping is an internal view, not a SIG component.
 
-*Sources: ARCHITECTURE.md; sigrid.yaml; hydra openspec/architecture/adr-084-openregister-published-contract.md; hydra#774 (draft ADR-119); internal measurement, lib/Service is 212,720 of 391,667 PHP LOC (54%), commit 4eccbfbc, 8 Nov 2026*
+*Sources: ARCHITECTURE.md; sigrid.yaml; openspec/architecture/adr-013-component-dependency-rules.md; openspec/architecture/adr-014-sig-components-are-top-level-directories.md; hydra openspec/architecture/adr-084-openregister-published-contract.md; internal measurement, lib/Service is 212,720 of 391,667 PHP LOC (54%), commit 4eccbfbc, 8 Nov 2026*
 
 ### Code we do not maintain as production code
 
