@@ -29,6 +29,8 @@ use OCA\OpenRegister\Service\Object\DraftOwner;
  *
  * The pair travels together through every step that reads, merges or
  * promotes a draft: only the owner's own draft is ever found.
+ *
+ * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
  */
 final readonly class OwnedDraft {
 

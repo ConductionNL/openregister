@@ -40,7 +40,7 @@ interface FormSubmitServiceInterface {
 	 * administrator still may not write into somebody else's draft by id.
 	 *
 	 * @param array{register?: mixed, schema?: mixed} $destination The destination pair.
-	 * @param FormSubmitter                           $submitter   The draft's uuid, the subject, and the asserted owner (null takes the subject, decision 195).
+	 * @param FormSubmitter                           $submitter   The draft's uuid, the subject, the asserted owner (decision 195).
 	 *
 	 * @return bool True when it is the subject's own draft; false without a draft id.
 	 *
