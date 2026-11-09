@@ -98,6 +98,7 @@ class ClassAliasMapEagerOrderTest extends TestCase {
 	public function testAnEagerClassThatImplementsALaterEagerOldNameLoads(): void {
 		spl_autoload_unregister([ClassAliasMap::class, 'autoload']);
 		(new ReflectionProperty(ClassAliasMap::class, 'autoloaderRegistered'))->setValue(null, false);
+		(new ReflectionProperty(ClassAliasMap::class, 'lazy'))->setValue(null, []);
 
 		$declare = static function (string $class): void {
 			if ($class === self::NEW_CLASS) {
