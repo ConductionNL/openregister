@@ -308,15 +308,8 @@ class CasePlanCascade {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private function take(CaseCascadeStep $step, CasePlanTree $tree): void {
-		$this->machine->transition(
-			item: $step->item,
-			to: $step->to,
-			cause: $step->cause,
-			causeRef: $step->causeRef,
-			actor: $step->actor,
-			reason: $step->reason,
-			tree: $tree
-		);
+		$why = new CaseTransitionCause(cause: $step->cause, causeRef: $step->causeRef, actor: $step->actor, reason: $step->reason);
+		$this->machine->commit(move: new CasePlanMove(item: $step->item, to: $step->to, why: $why, tree: $tree));
 	}//end take()
 
 	/**
@@ -518,12 +511,8 @@ class CasePlanCascade {
 	private function createNextRealisation(CaseItem $previous): void {
 		$clone = self::nextRealisation(previous: $previous, count: (int)$previous->getRealisationCount() + 1);
 		$inserted = $this->store->items->insert($clone);
-		$this->machine->recordCreation(
-			item: $inserted,
-			cause: CaseItemAudit::CAUSE_REALISATION,
-			causeRef: (string)$previous->getUuid(),
-			actor: null
-		);
+		$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_REALISATION, causeRef: (string)$previous->getUuid(), actor: null, reason: null);
+		$this->machine->recordCreationOf(item: $inserted, why: $why);
 	}//end createNextRealisation()
 
 	/**
