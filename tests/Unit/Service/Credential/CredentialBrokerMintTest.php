@@ -37,6 +37,8 @@ namespace Unit\Service\Credential;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
@@ -164,6 +166,22 @@ class CredentialBrokerMintTest extends TestCase {
 
 		$this->assertArrayNotHasKey('scope', $this->savedObject);
 		$this->assertArrayNotHasKey('organisation', $this->savedObject);
+	}
+
+	public function testMintCredentialTakesTheSameMintAsItsParts(): void {
+		$this->stubSaveObject(uuid: 'vo-mint');
+		$this->store->expects($this->once())->method('put')
+			->with('vo-mint', 'org-secret', 'organisation');
+
+		$this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: ' Tender GitHub ', provider: 'github', owner: 'admin-uid'),
+			options: new CredentialMintOptions(allowedApps: ['tender'], secret: "org-secret\n", scope: 'organisation', organisation: 'org-target')
+		);
+
+		$this->assertSame('Tender GitHub', $this->savedObject['name']);
+		$this->assertSame(['tender'], $this->savedObject['allowedApps']);
+		$this->assertSame('organisation', $this->savedObject['scope']);
+		$this->assertSame('org-target', $this->savedObject['organisation']);
 	}
 
 	public function testMintWithoutSecretNeverTouchesTheVault(): void {
