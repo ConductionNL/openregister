@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\ConditionRefusedException;
 use OCA\OpenRegister\Service\Rules\NamedConditionEvaluator;
 use OCA\OpenRegister\Service\Rules\NamedConditionLibrary;
+use OCA\OpenRegister\Service\Rules\RuleAttachment;
 use OCA\OpenRegister\Service\Rules\TransitionDocument;
 use PHPUnit\Framework\TestCase;
 
@@ -397,10 +398,8 @@ class NamedConditionTest extends TestCase {
 	 */
 	public function testARuleReadingThePriorValueWithoutDeclaringItIsRefused(): void {
 		$refusal = $this->transition->refusalFor(
-			ruleName: 'escalatie',
-			node: ['!=' => [['var' => '$before.status'], 'open']],
-			rule: [],
-			trigger: 'update'
+			attachment: new RuleAttachment(ruleName: 'escalatie', declaration: [], trigger: 'update'),
+			node: ['!=' => [['var' => '$before.status'], 'open']]
 		);
 
 		$this->assertNotNull($refusal, 'an undeclared read makes the declaration decoration');
@@ -414,10 +413,8 @@ class NamedConditionTest extends TestCase {
 	 */
 	public function testARuleNeedingABeforeValueCannotBeAttachedToACreate(): void {
 		$refusal = $this->transition->refusalFor(
-			ruleName: 'escalatie',
-			node: ['!=' => [['var' => '$before.status'], 'open']],
-			rule: [TransitionDocument::REQUIRES_PRIOR => true],
-			trigger: 'create'
+			attachment: new RuleAttachment(ruleName: 'escalatie', declaration: [TransitionDocument::REQUIRES_PRIOR => true], trigger: 'create'),
+			node: ['!=' => [['var' => '$before.status'], 'open']]
 		);
 
 		$this->assertNotNull($refusal, 'it would never match, which is worse than failing');
@@ -432,10 +429,8 @@ class NamedConditionTest extends TestCase {
 	public function testTheSameRuleOnAnUpdateTriggerIsAccepted(): void {
 		$this->assertNull(
 			$this->transition->refusalFor(
-				ruleName: 'escalatie',
-				node: ['!=' => [['var' => '$before.status'], 'open']],
-				rule: [TransitionDocument::REQUIRES_PRIOR => true],
-				trigger: 'update'
+				attachment: new RuleAttachment(ruleName: 'escalatie', declaration: [TransitionDocument::REQUIRES_PRIOR => true], trigger: 'update'),
+				node: ['!=' => [['var' => '$before.status'], 'open']]
 			),
 			'the control: a declared prior read on a trigger that has one is fine'
 		);
