@@ -55,4 +55,12 @@ class PropertyCalculationsEdgeTest extends TestCase
 
         $this->assertSame([$other], (new PropertyCalculations())->blockingErrors([$ignored, $other], ['total']));
     }//end testAnIgnoredDependsOnNeverBlocksEvenWhenItNamesAForwardedCalculation()
+
+    public function testADuplicateDeclarationAlwaysBlocksWhileAnUnrelatedErrorDoesNot(): void
+    {
+        $duplicate = ['code' => 'calculation-duplicate-declaration', 'message' => 'Calculation "elsewhere" is declared twice'];
+        $unrelated = ['code' => 'calculation-invalid-expression', 'message' => 'Calculation "elsewhere": bad expression'];
+
+        $this->assertSame([$duplicate], (new PropertyCalculations())->blockingErrors([$duplicate, $unrelated], ['total']));
+    }//end testADuplicateDeclarationAlwaysBlocksWhileAnUnrelatedErrorDoesNot()
 }//end class
