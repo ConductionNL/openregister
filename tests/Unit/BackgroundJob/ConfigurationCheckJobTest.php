@@ -6,6 +6,7 @@ namespace Unit\BackgroundJob;
 
 use Exception;
 use OCA\OpenRegister\BackgroundJob\ConfigurationCheckJob;
+use OCA\OpenRegister\BackgroundJob\Support\ConfigurationCheckServices;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
@@ -38,9 +39,7 @@ class ConfigurationCheckJobTest extends TestCase {
 
 		return new ConfigurationCheckJob(
 			$timeFactory,
-			$this->configurationMapper,
-			$this->configurationService,
-			$this->notificationService,
+			new ConfigurationCheckServices($this->configurationMapper, $this->configurationService, $this->notificationService),
 			$this->appConfig,
 			$this->logger,
 		);
