@@ -81,18 +81,12 @@
 			<div class="settings-group compact">
 				<div class="setting-item">
 					<label for="extraction-scope">Extract Text From</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="fileSettings.extractionScope"
 						inputId="extraction-scope"
 						:inputLabel="t('openregister', 'Extraction Scope')"
 						:options="extractionScopes"
-						@update:modelValue="saveSettings">
-						<template #option="{ label, description }">
-							<LabeledOption
-								:label="label"
-								:description="description" />
-						</template>
-					</NcSelect>
+						@update:modelValue="saveSettings" />
 					<p class="setting-description">
 						Choose which files should have text extracted for search and
 						AI features.
@@ -101,21 +95,14 @@
 
 				<div class="setting-item">
 					<label for="text-extractor">Text Extractor</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="fileSettings.textExtractor"
 						inputId="text-extractor"
 						:inputLabel="t('openregister', 'Text Extraction Engine')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="textExtractors"
-						@update:modelValue="saveSettings">
-						<template #option="{ label, description, icon }">
-							<LabeledOption
-								:label="label"
-								:description="description"
-								:icon="icon"
-								withIcon />
-						</template>
-					</NcSelect>
+						withIcon
+						@update:modelValue="saveSettings" />
 					<p class="setting-description">
 						Choose the text extraction engine for processing documents.
 					</p>
@@ -174,19 +161,13 @@
 
 				<div class="setting-item">
 					<label for="extraction-mode">Extraction Mode</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="fileSettings.extractionMode"
 						inputId="extraction-mode"
 						:inputLabel="t('openregister', 'Extraction Mode')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="extractionModes"
-						@update:modelValue="saveSettings">
-						<template #option="{ label, description }">
-							<LabeledOption
-								:label="label"
-								:description="description" />
-						</template>
-					</NcSelect>
+						@update:modelValue="saveSettings" />
 					<p class="setting-description">
 						Control when extraction happens relative to file upload.
 					</p>
@@ -303,18 +284,12 @@
 			<div class="settings-group compact">
 				<div class="setting-item">
 					<label for="object-extraction-mode">Extraction Mode</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="objectSettings.extractionMode"
 						inputId="object-extraction-mode"
 						:inputLabel="t('openregister', 'Object Extraction Mode')"
 						:options="extractionModes"
-						@update:modelValue="saveObjectSettings">
-						<template #option="{ label, description }">
-							<LabeledOption
-								:label="label"
-								:description="description" />
-						</template>
-					</NcSelect>
+						@update:modelValue="saveObjectSettings" />
 					<p class="setting-description">
 						Control when text extraction happens for OpenRegister
 						objects. Objects contain structured data that is converted to
@@ -350,20 +325,13 @@
 					v-if="fileSettings.entityRecognitionEnabled"
 					class="setting-item">
 					<label for="entity-recognition-method">Detection Method</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="fileSettings.entityRecognitionMethod"
 						inputId="entity-recognition-method"
 						:inputLabel="t('openregister', 'Entity Recognition Method')"
 						:options="entityRecognitionMethods"
-						@update:modelValue="saveSettings">
-						<template #option="{ label, description, icon }">
-							<LabeledOption
-								:label="label"
-								:description="description"
-								:icon="icon"
-								withIcon />
-						</template>
-					</NcSelect>
+						withIcon
+						@update:modelValue="saveSettings" />
 					<p class="setting-description">
 						Choose how entities are detected. Regex is fast and local;
 						external services provide better accuracy for names and
@@ -841,7 +809,6 @@ import {
 	NcButton,
 	NcCheckboxRadioSwitch,
 	NcLoadingIcon,
-	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
 import { mapStores } from 'pinia'
@@ -853,10 +820,10 @@ import InformationIcon from 'vue-material-design-icons/Information.vue'
 import KeyIcon from 'vue-material-design-icons/Key.vue'
 import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import RefreshIcon from 'vue-material-design-icons/Refresh.vue'
-import LabeledOption from '../../../components/shared/LabeledOption.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import ConnectionTestIcon from './ConnectionTestIcon.vue'
+import LabeledSelect from './LabeledSelect.vue'
 import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
 
@@ -1276,7 +1243,6 @@ export default {
 		SettingsCard,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
-		NcSelect,
 		NcButton,
 		NcTextField,
 		NcActions,
@@ -1290,7 +1256,7 @@ export default {
 		AlertCircleIcon,
 		ConnectionTestIcon,
 		DotsVertical,
-		LabeledOption,
+		LabeledSelect,
 	},
 
 	data() {
