@@ -20,6 +20,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
+use OCA\OpenRegister\Service\Survivorship\TrustTuple;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -44,18 +45,12 @@ final class SurvivorshipResolverCandidatesGoldenTest extends TestCase {
 			/**
 			 * {@inheritDoc}
 			 */
-			public function resolveTier(
-				string $entityType,
-				string $attribute,
-				string $sourceSystem,
-				array $trustRows,
-				DateTimeImmutable $asOf,
-			): ?string {
-				if ($attribute === $this->failing) {
+			public function resolveTier(TrustTuple $tuple, array $trustRows, DateTimeImmutable $asOf): ?string {
+				if ($tuple->attribute === $this->failing) {
 					throw new RuntimeException('trust lookup failed');
 				}
 
-				return parent::resolveTier($entityType, $attribute, $sourceSystem, $trustRows, $asOf);
+				return parent::resolveTier($tuple, $trustRows, $asOf);
 			}
 		};
 	}//end failingOn()
