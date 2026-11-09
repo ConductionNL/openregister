@@ -6,3 +6,4 @@ merged.txt merge=union
 log.txt merge=union
 risky-debt.txt merge=union
 queue/red.txt merge=union
+queue/prechecked.txt merge=union
