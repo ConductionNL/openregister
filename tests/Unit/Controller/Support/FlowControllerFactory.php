@@ -18,7 +18,7 @@ final class FlowControllerFactory {
 	/**
 	 * The constructor arguments of FlowController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param EventCatalogService $eventCatalog Constructor argument.
 	 * @param FlowNodeRegistry $nodes Constructor argument.
@@ -42,7 +42,6 @@ final class FlowControllerFactory {
 		\OCA\OpenRegister\Service\Flow\FlowVersionService $flowVersionService,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\FlowControllerServices(
 				catalogue: new \OCA\OpenRegister\Controller\Support\FlowCatalogue(

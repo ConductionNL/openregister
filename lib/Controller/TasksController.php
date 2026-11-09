@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\TasksControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -108,18 +109,16 @@ class TasksController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param TasksControllerServices $services The tasks controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		TasksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->inbox = $services->domain->inbox;
 		$this->userSession = $services->platform->userSession;
 		$this->temporal = $services->domain->temporal;
