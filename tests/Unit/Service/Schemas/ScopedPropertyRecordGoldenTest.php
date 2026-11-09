@@ -30,7 +30,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Schemas;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
+use OCA\OpenRegister\Service\Schemas\ScopedField;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance;
+use OCA\OpenRegister\Service\Schemas\ScopedPropertyPromotion;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -39,6 +41,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance
+ * @uses \OCA\OpenRegister\Service\Schemas\ScopedField
+ * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyPromotion
  */
 final class ScopedPropertyRecordGoldenTest extends TestCase {
 
@@ -89,9 +93,10 @@ final class ScopedPropertyRecordGoldenTest extends TestCase {
 	 */
 	public function testThePromotionRecordIsExact(): void {
 		$record = $this->governance('alice')->promotionRecord(
-			schema: $this->schema(['salary' => ['scope' => 'team-a']]),
-			property: 'salary',
-			scope: 'team-a',
+			promotion: new ScopedPropertyPromotion(
+				schema: $this->schema(['salary' => ['scope' => 'team-a']]),
+				field: new ScopedField(property: 'salary', scope: 'team-a')
+			),
 			stampedAt: new DateTimeImmutable('2026-09-18T10:00:00+02:00')
 		);
 
@@ -115,9 +120,7 @@ final class ScopedPropertyRecordGoldenTest extends TestCase {
 	 */
 	public function testThePromotionRecordWithoutASessionUserHasANullActor(): void {
 		$record = $this->governance(null)->promotionRecord(
-			schema: $this->schema([]),
-			property: 'x',
-			scope: 's',
+			promotion: new ScopedPropertyPromotion(schema: $this->schema([]), field: new ScopedField(property: 'x', scope: 's')),
 			stampedAt: new DateTimeImmutable('2000-01-01T00:00:00+00:00')
 		);
 
@@ -142,11 +145,11 @@ final class ScopedPropertyRecordGoldenTest extends TestCase {
 			]
 		);
 
-		$this->assertSame(2, $governance->countAtScope(schema: $schema, scope: 'team-a'));
-		$this->assertSame(1, $governance->countAtScope(schema: $schema, scope: 'team-a', except: '0'));
-		$this->assertSame(1, $governance->countAtScope(schema: $schema, scope: 'team-a', except: 'b'));
-		$this->assertSame(2, $governance->countAtScope(schema: $schema, scope: 'team-a', except: 'c'));
-		$this->assertSame(0, $governance->countAtScope(schema: $schema, scope: 'team-c'));
+		$this->assertSame(2, $governance->countAtScope(schema: $schema, field: new ScopedField(property: '', scope: 'team-a')));
+		$this->assertSame(1, $governance->countAtScope(schema: $schema, field: new ScopedField(property: '0', scope: 'team-a')));
+		$this->assertSame(1, $governance->countAtScope(schema: $schema, field: new ScopedField(property: 'b', scope: 'team-a')));
+		$this->assertSame(2, $governance->countAtScope(schema: $schema, field: new ScopedField(property: 'c', scope: 'team-a')));
+		$this->assertSame(0, $governance->countAtScope(schema: $schema, field: new ScopedField(property: '', scope: 'team-c')));
 	}
 
 	/**
