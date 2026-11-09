@@ -30,30 +30,17 @@ final class RenderContext {
 	/**
 	 * Constructor.
 	 *
-	 * @param array|string|null $extend     Properties to extend the object with
-	 * @param int               $depth      The depth level for nested rendering
-	 * @param array|null        $filter     Filters the rendered object must match
-	 * @param array|null        $fields     Fields to include in the output
-	 * @param array|null        $unset      Properties to remove from the output
-	 * @param array|null        $registers  Preloaded registers
-	 * @param array|null        $schemas    Preloaded schemas
-	 * @param array|null        $objects    Preloaded objects
-	 * @param array|null        $visitedIds Uuids already rendered on this path
-	 * @param bool              $rbac       Whether access control applies
+	 * @param RenderSelection $selection What the caller asks to see: extend, filter, fields and unset
+	 * @param RenderPreloads  $preloads  The registers, schemas and objects already loaded
+	 * @param RenderPath      $path      The depth and the uuids already rendered on this path
+	 * @param bool            $rbac      Whether access control applies
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A value object carrying every render option
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    The rbac flag is part of the render options
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The rbac flag is part of the render options
 	 */
 	public function __construct(
-		public readonly array|string|null $extend,
-		public readonly int $depth,
-		public readonly ?array $filter,
-		public readonly ?array $fields,
-		public readonly ?array $unset,
-		public readonly ?array $registers,
-		public readonly ?array $schemas,
-		public readonly ?array $objects,
-		public readonly ?array $visitedIds,
+		public readonly RenderSelection $selection,
+		public readonly RenderPreloads $preloads,
+		public readonly RenderPath $path,
 		public readonly bool $rbac,
 	) {
 	}//end __construct()
@@ -68,17 +55,13 @@ final class RenderContext {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function withExtend(array|string|null $extend): self {
-		return new self(
+		$selection = new RenderSelection(
 			extend: $extend,
-			depth: $this->depth,
-			filter: $this->filter,
-			fields: $this->fields,
-			unset: $this->unset,
-			registers: $this->registers,
-			schemas: $this->schemas,
-			objects: $this->objects,
-			visitedIds: $this->visitedIds,
-			rbac: $this->rbac
+			filter: $this->selection->filter,
+			fields: $this->selection->fields,
+			unset: $this->selection->unset
 		);
+
+		return new self(selection: $selection, preloads: $this->preloads, path: $this->path, rbac: $this->rbac);
 	}//end withExtend()
 }//end class

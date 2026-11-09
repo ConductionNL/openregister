@@ -658,11 +658,13 @@ class FilePropertyHandler {
 	 */
 	private function storeFile(FilePropertyTarget $target, mixed $fileInput, ?int $index): int {
 		return $this->processSingleFileProperty(
-			objectEntity: $target->objectEntity,
-			fileInput: $fileInput,
-			propertyName: $target->name,
-			fileConfig: $target->fileConfig,
-			index: $index
+			request: new FileStoreRequest(
+				objectEntity: $target->objectEntity,
+				propertyName: $target->name,
+				fileConfig: $target->fileConfig,
+				index: $index
+			),
+			fileInput: $fileInput
 		);
 	}//end storeFile()
 
@@ -674,22 +676,15 @@ class FilePropertyHandler {
 	 * - URLs (fetches file content from URL)
 	 * - File objects (existing files, returns existing ID or creates copy)
 	 *
-	 * @param ObjectEntity $objectEntity The object entity being saved.
+	 * @param FileStoreRequest $request The object entity being saved, the name of the file property,
+	 *                                  its configuration from the schema and the optional index for
+	 *                                  array properties.
 	 * @param mixed $fileInput The file input (string, URL, or file object).
-	 * @param string $propertyName The name of the file property.
-	 * @param array $fileConfig The file property configuration from schema.
-	 * @param int|null $index Optional index for array properties.
 	 *
-	 * @psalm-param   ObjectEntity $objectEntity
+	 * @psalm-param   FileStoreRequest $request
 	 * @psalm-param   mixed $fileInput
-	 * @psalm-param   string $propertyName
-	 * @psalm-param   array<string, mixed> $fileConfig
-	 * @psalm-param   int|null $index
-	 * @phpstan-param ObjectEntity $objectEntity
+	 * @phpstan-param FileStoreRequest $request
 	 * @phpstan-param mixed $fileInput
-	 * @phpstan-param string $propertyName
-	 * @phpstan-param array<string, mixed> $fileConfig
-	 * @phpstan-param int|null $index
 	 *
 	 * @return int The ID of the created/existing file.
 	 *
@@ -700,8 +695,7 @@ class FilePropertyHandler {
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	public function processSingleFileProperty(ObjectEntity $objectEntity, $fileInput, string $propertyName, array $fileConfig, ?int $index = null): int {
-		$request = new FileStoreRequest(objectEntity: $objectEntity, propertyName: $propertyName, fileConfig: $fileConfig, index: $index);
+	public function processSingleFileProperty(FileStoreRequest $request, $fileInput): int {
 		if (is_string($fileInput) === true) {
 			return $this->processStringFileInput(request: $request, fileInput: $fileInput);
 		}
@@ -710,7 +704,7 @@ class FilePropertyHandler {
 			return $this->processFileObjectInput(request: $request, fileObject: $fileInput);
 		}
 
-		throw new Exception("Unsupported file input type for property '$propertyName'");
+		throw new Exception("Unsupported file input type for property '{$request->propertyName}'");
 	}//end processSingleFileProperty()
 
 	/**

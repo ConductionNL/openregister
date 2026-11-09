@@ -79,6 +79,8 @@ use OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices;
+use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LifecycleSeed;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
@@ -93,6 +95,7 @@ use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
+use OCA\OpenRegister\Service\Quality\UniqueHintScope;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
@@ -302,81 +305,254 @@ class SaveObject implements SaveObjectInterface {
 	private ?OrphanDeletionGuard $orphanGuard = null;
 
 	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectEntityMapper;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $unifiedObjectMapper;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var MetadataHydrationHandler
+	 */
+	private readonly MetadataHydrationHandler $metaHydrationHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var FilePropertyHandler
+	 */
+	private readonly FilePropertyHandler $filePropertyHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var LinkedEntityPropertyHandler
+	 */
+	private readonly LinkedEntityPropertyHandler $linkedEntityHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urlGenerator;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var OrganisationServiceInterface
+	 */
+	private readonly OrganisationServiceInterface $organisationService;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var CacheHandlerInterface
+	 */
+	private readonly CacheHandlerInterface $cacheHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var SettingsServiceInterface
+	 */
+	private readonly SettingsServiceInterface $settingsService;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var ComputedFieldHandler
+	 */
+	private readonly ComputedFieldHandler $computedFieldHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var TranslationHandler
+	 */
+	private readonly TranslationHandler $translationHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var TranslationProjectionService
+	 */
+	private readonly TranslationProjectionService $translationProjectionService;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var TranslationStatusService
+	 */
+	private readonly TranslationStatusService $translationStatusService;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var TmloService
+	 */
+	private readonly TmloService $tmloService;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var IGroupManager|null
+	 */
+	private readonly ?IGroupManager $groupManager;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var IAppConfig|null
+	 */
+	private readonly ?IAppConfig $appConfig;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var IEventDispatcher|null
+	 */
+	private readonly ?IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null
+	 */
+	private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var FieldEncryptionHandler|null
+	 */
+	private readonly ?FieldEncryptionHandler $fieldEncryptionHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var \OCA\OpenRegister\Service\Flow\FlowRunContext|null
+	 */
+	private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var ContainerInterface|null
+	 */
+	private readonly ?ContainerInterface $container;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var UserActivityStamper|null
+	 */
+	private readonly ?UserActivityStamper $userActivity;
+
+	/**
 	 * Constructor for SaveObject handler.
 	 *
-	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper
-	 * @param MagicMapperInterface $unifiedObjectMapper Unified object mapper
-	 * @param MetadataHydrationHandler $metaHydrationHandler Handler for metadata extraction
-	 * @param FilePropertyHandler $filePropertyHandler Handler for file property operations
-	 * @param LinkedEntityPropertyHandler $linkedEntityHandler Linked entity property handler
-	 * @param IUserSession $userSession User session service
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logging changes
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
-	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations
-	 * @param IURLGenerator $urlGenerator URL generator service
-	 * @param OrganisationServiceInterface $organisationService Service for organisation operations
-	 * @param CacheHandlerInterface $cacheHandler Object entity and query cache
-	 * @param SettingsServiceInterface $settingsService Settings service for trail settings
-	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler
-	 * @param ComputedFieldHandler $computedFieldHandler Handler for computed field evaluation
-	 * @param TranslationHandler $translationHandler Handler for translation operations
-	 * @param TranslationProjectionService $translationProjectionService Translation projection service
-	 * @param TranslationStatusService $translationStatusService Translation status service
-	 * @param LoggerInterface $logger Logger interface for logging operations
-	 * @param TmloService $tmloService TMLO archival metadata service
-	 * @param \OCA\OpenRegister\Service\File\FolderManagementHandler $folderManagementHandler Folder access-control gateway
-	 * @param PermissionHandlerInterface $permissionHandler Checks the caller's create rights for each nested object a cascade creates
-	 * @param IGroupManager|null $groupManager Group manager for admin-bypass detection
-	 * @param IAppConfig|null $appConfig App-config reader (admin bypass)
-	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher (reference events)
-	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
-	 * @param FieldEncryptionHandler|null $fieldEncryptionHandler Field-level encryption handler
-	 * @param \OCA\OpenRegister\Service\Flow\FlowRunContext|null $runContext The ambient flow-run stack, so the lock guard can tell which run is writing
-	 * @param ContainerInterface|null $container App container, consulted lazily for the retention service (see resolveRetentionService)
-	 * @param UserActivityStamper|null $userActivity Stamps `@self.lastUserActivity` when a person writes
+	 * The access guards are taken directly; every other collaborator comes in
+	 * the services bundle and is kept on its own typed property.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+	 * @param SaveObjectServices         $services                Mappers, records, runtime, handlers, platform and tenancy.
+	 * @param PropertyRbacHandler        $propertyRbacHandler     Property-level RBAC handler.
+	 * @param PermissionHandlerInterface $permissionHandler       Checks the caller's create rights for each nested object a cascade creates.
+	 * @param FolderManagementHandler    $folderManagementHandler Folder access-control gateway.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly MagicMapperInterface $unifiedObjectMapper,
-		private readonly MetadataHydrationHandler $metaHydrationHandler,
-		private readonly FilePropertyHandler $filePropertyHandler,
-		private readonly LinkedEntityPropertyHandler $linkedEntityHandler,
-		private readonly IUserSession $userSession,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly OrganisationServiceInterface $organisationService,
-		private readonly CacheHandlerInterface $cacheHandler,
-		private readonly SettingsServiceInterface $settingsService,
+		SaveObjectServices $services,
 		private readonly PropertyRbacHandler $propertyRbacHandler,
-		private readonly ComputedFieldHandler $computedFieldHandler,
-		private readonly TranslationHandler $translationHandler,
-		private readonly TranslationProjectionService $translationProjectionService,
-		private readonly TranslationStatusService $translationStatusService,
-		private readonly LoggerInterface $logger,
-		private readonly TmloService $tmloService,
-		private readonly \OCA\OpenRegister\Service\File\FolderManagementHandler $folderManagementHandler,
 		private readonly PermissionHandlerInterface $permissionHandler,
-		private readonly ?IGroupManager $groupManager = null,
-		private readonly ?IAppConfig $appConfig = null,
-		private readonly ?IEventDispatcher $eventDispatcher = null,
-		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
-		private readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
-		private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext = null,
-		private readonly ?ContainerInterface $container = null,
-		private readonly ?UserActivityStamper $userActivity = null,
+		private readonly FolderManagementHandler $folderManagementHandler,
 	) {
+		$mappers = $services->persistence->mappers;
+		$records = $services->persistence->records;
+		$runtime = $services->persistence->runtime;
+		$properties = $services->handlers->properties;
+		$values = $services->handlers->values;
+		$platform = $services->platform;
+		$tenancy = $services->tenancy;
+		$this->objectEntityMapper = $mappers->objectEntityMapper;
+		$this->unifiedObjectMapper = $mappers->unifiedObjectMapper;
+		$this->schemaMapper = $mappers->schemaMapper;
+		$this->registerMapper = $mappers->registerMapper;
+		$this->auditTrailMapper = $records->auditTrailMapper;
+		$this->settingsService = $records->settingsService;
+		$this->tmloService = $records->tmloService;
+		$this->userActivity = $records->userActivity;
+		$this->cacheHandler = $runtime->cacheHandler;
+		$this->objectSourceRegistry = $runtime->objectSourceRegistry;
+		$this->runContext = $runtime->runContext;
+		$this->container = $runtime->container;
+		$this->metaHydrationHandler = $properties->metaHydrationHandler;
+		$this->filePropertyHandler = $properties->filePropertyHandler;
+		$this->linkedEntityHandler = $properties->linkedEntityHandler;
+		$this->computedFieldHandler = $properties->computedFieldHandler;
+		$this->translationHandler = $values->translationHandler;
+		$this->translationProjectionService = $values->translationProjectionService;
+		$this->translationStatusService = $values->translationStatusService;
+		$this->fieldEncryptionHandler = $values->fieldEncryptionHandler;
+		$this->userSession = $platform->userSession;
+		$this->urlGenerator = $platform->urlGenerator;
+		$this->logger = $platform->logger;
+		$this->eventDispatcher = $platform->eventDispatcher;
+		$this->organisationService = $tenancy->organisationService;
+		$this->groupManager = $tenancy->groupManager;
+		$this->appConfig = $tenancy->appConfig;
+
 		$this->versionHandler = new ObjectVersionHandler();
-		$slugLog = new ObjectSlugLog(logger: $logger);
+		$slugLog = new ObjectSlugLog(logger: $this->logger);
 		$this->slugHandler = new ObjectSlugHandler(
-			store: new ObjectSlugStore(magicMapper: $objectEntityMapper, registerMapper: $registerMapper, log: $slugLog),
-			source: new ObjectSlugSource(hydrator: $metaHydrationHandler),
+			store: new ObjectSlugStore(magicMapper: $this->objectEntityMapper, registerMapper: $this->registerMapper, log: $slugLog),
+			source: new ObjectSlugSource(hydrator: $this->metaHydrationHandler),
 			log: $slugLog
 		);
 	}//end __construct()
@@ -2100,8 +2276,7 @@ class SaveObject implements SaveObjectInterface {
 
 		$uniqueHints->check(
 			configuration: ($call->schema->getConfiguration() ?? []),
-			register: $call->registerId,
-			schema: $call->schemaId,
+			scope: new UniqueHintScope(register: $call->registerId, schema: $call->schemaId),
 			data: $call->data
 		);
 	}//end recordUniqueHints()
@@ -2538,8 +2713,7 @@ class SaveObject implements SaveObjectInterface {
 
 		$uniqueHints->check(
 			configuration: ($call->schema->getConfiguration() ?? []),
-			register: $call->register->getId(),
-			schema: $call->schema->getId(),
+			scope: new UniqueHintScope(register: $call->register->getId(), schema: $call->schema->getId()),
 			data: $call->data,
 			selfUuid: ((string)$existingObject->getUuid())
 		);

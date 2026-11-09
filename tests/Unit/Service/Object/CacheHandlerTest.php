@@ -29,6 +29,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\IResult;
 use OCP\IAppConfig;
@@ -136,16 +139,22 @@ class CacheHandlerTest extends TestCase {
 			});
 
 		$this->handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$this->cacheFactory,
-			$this->userSession,
-			$container,
-			null,
-			null,
-			null,
-			null,
-			$this->appConfig
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: null,
+				schemaMapper: null,
+				db: null
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $this->cacheFactory,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession,
+				groupManager: null,
+				appConfig: $this->appConfig
+			)
 		);
 	}
 
@@ -254,16 +263,22 @@ class CacheHandlerTest extends TestCase {
 		}
 
 		return new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$this->cacheFactory,
-			$this->userSession,
-			$container,
-			$registerMapper,
-			$schemaMapper,
-			$db,
-			null,
-			$this->appConfig
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				db: $db
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $this->cacheFactory,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession,
+				groupManager: null,
+				appConfig: $this->appConfig
+			)
 		);
 	}
 
@@ -716,10 +731,16 @@ class CacheHandlerTest extends TestCase {
 	 */
 	public function testClearSearchCacheWithoutDistributedCache(): void {
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			null,
-			$this->userSession
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: null
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		// Should not throw.
@@ -1243,15 +1264,15 @@ class CacheHandlerTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testSetObjectNameEnforcesMaxTtl(): void {
-		// TTL greater than MAX_CACHE_TTL should be clamped.
+	public function testSetObjectNameCachesForMaxTtl(): void {
+		// Names are always cached for MAX_CACHE_TTL.
 		// SEC-CTRL-2 step 2: the KEY is unchanged; the VALUE is a tenancy-bearing
 		// envelope so a shared distributed cache cannot disclose across tenants.
 		$this->nameDistributedCache->expects($this->once())
 			->method('set')
 			->with('name_uuid-1', ['n' => 'Name', 'o' => null, 's' => null], 86400);  // MAX_CACHE_TTL = 86400
 
-		$this->handler->setObjectName('uuid-1', 'Name', 999999);
+		$this->handler->setObjectName('uuid-1', 'Name');
 	}
 
 	/**
@@ -1271,19 +1292,6 @@ class CacheHandlerTest extends TestCase {
 
 		$name = $this->handler->getSingleObjectName('uuid-1');
 		$this->assertSame('Test Name', $name);
-	}
-
-	/**
-	 * Test setObjectName with TTL within limit.
-	 *
-	 * @return void
-	 */
-	public function testSetObjectNameWithTtlWithinLimit(): void {
-		$this->nameDistributedCache->expects($this->once())
-			->method('set')
-			->with('name_uuid-1', ['n' => 'Name', 'o' => null, 's' => null], 3600);
-
-		$this->handler->setObjectName('uuid-1', 'Name', 3600);
 	}
 
 	/**
@@ -2011,10 +2019,16 @@ class CacheHandlerTest extends TestCase {
 	 */
 	public function testConstructorWithoutCacheFactory(): void {
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			null,
-			$this->userSession
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: null
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		// Should still work without distributed cache.
@@ -2036,10 +2050,16 @@ class CacheHandlerTest extends TestCase {
 			->method('warning');
 
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$failingCacheFactory,
-			$this->userSession
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $failingCacheFactory
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		$stats = $handler->getStats();
@@ -2053,10 +2073,16 @@ class CacheHandlerTest extends TestCase {
 	 */
 	public function testConstructorWithNullCacheFactoryAndUserSession(): void {
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			null,
-			$this->userSession
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: null
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		$stats = $handler->getStats();
@@ -2119,10 +2145,16 @@ class CacheHandlerTest extends TestCase {
 	 */
 	public function testGetDistributedNameCacheCountWithoutDistributedCache(): void {
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			null,
-			$this->userSession
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: null
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		$count = $handler->getDistributedNameCacheCount();
@@ -2235,11 +2267,17 @@ class CacheHandlerTest extends TestCase {
 			});
 
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			null,
-			$this->userSession,
-			$container
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: null,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		$handler->setObjectName('uuid-a', 'Name A', source: '1:1');
@@ -2899,14 +2937,20 @@ class CacheHandlerTest extends TestCase {
 			});
 
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$this->cacheFactory,
-			$this->userSession,
-			null,
-			null,
-			null,
-			$db
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: null,
+				schemaMapper: null,
+				db: $db
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $this->cacheFactory,
+				container: null
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		// Call queryTableForNames directly via reflection.
@@ -2945,14 +2989,20 @@ class CacheHandlerTest extends TestCase {
 			->willReturn($stmt);
 
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$this->cacheFactory,
-			$this->userSession,
-			null,
-			null,
-			null,
-			$db
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: null,
+				schemaMapper: null,
+				db: $db
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $this->cacheFactory,
+				container: null
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		$ref = new ReflectionClass($handler);

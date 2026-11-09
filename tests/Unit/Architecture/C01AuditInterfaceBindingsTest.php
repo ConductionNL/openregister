@@ -91,7 +91,7 @@ final class C01AuditInterfaceBindingsTest extends TestCase {
 	 */
 	private const KEPT_CALLERS = [
 		ContentReportService::class => ['Listener/ContentReportRemovalListener.php'],
-		ContentReportMapper::class => ['Service/Audit/ContentReportService.php'],
+		ContentReportMapper::class => [],
 	];
 
 	/**

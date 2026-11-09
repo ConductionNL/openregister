@@ -33,6 +33,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
 use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
 use OCA\OpenRegister\Service\Object\IntegrityStorage;
@@ -191,17 +194,23 @@ class ConfiguredTablePrefixTest extends TestCase {
 		$schemas->method('findMultipleOptimized')->willReturn([7 => $schema]);
 
 		$handler = new CacheHandler(
-			organisationMapper: $this->createMock(OrganisationMapper::class),
-			logger: $this->createMock(LoggerInterface::class),
-			userSession: $this->createMock(IUserSession::class),
-			registerMapper: $registers,
-			schemaMapper: $schemas,
-			db: $this->connection(
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				registerMapper: $registers,
+				schemaMapper: $schemas,
+				db: $this->connection(
 				rows: static fn (string $sql): array => str_contains($sql, 'FROM ' . self::TABLE) === true
 					? [['_uuid' => 'u1', '_organisation' => null, 'name_value' => 'Found']]
 					: []
+			)
 			),
-			groupManager: $this->createMock(IGroupManager::class)
+			runtime: new CacheHandlerRuntime(
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			)
 		);
 
 		$results = [];

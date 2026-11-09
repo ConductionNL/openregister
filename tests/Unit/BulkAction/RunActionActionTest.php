@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IUser;
@@ -35,6 +36,9 @@ class RunActionActionTest extends TestCase {
 		parent::setUp();
 
 		$this->runner = $this->createMock(ObjectActionRunner::class);
+		$this->runner->method('target')->willReturnCallback(
+			static fn (ObjectEntity $object, Schema $schema, string $register, string $schemaRef): ObjectActionTarget => new ObjectActionTarget($object, $schema, $register, $schemaRef)
+		);
 		$this->objects = $this->createMock(ObjectService::class);
 		$schemas = $this->createMock(MacroActionResolver::class);
 		$schemas->method('loadSchema')->willReturn(new Schema());
@@ -79,7 +83,7 @@ class RunActionActionTest extends TestCase {
 		$actor = $this->createMock(IUser::class);
 		$this->objects->expects($this->once())->method('runAs')->with($actor)->willReturnCallback(static fn (IUser $user, callable $run) => $run());
 		$this->runner->expects($this->once())->method('run')
-			->with($this->anything(), $this->anything(), 'assign-to-me', ['note' => 'x'], ['uuid' => 't-1', 'register' => 'tickets', 'schema' => 'ticket'])
+			->with($this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 't-1', 'register' => 'tickets', 'schema' => 'ticket']), 'assign-to-me', ['note' => 'x'])
 			->willReturn(['status' => Http::STATUS_OK, 'body' => []]);
 
 		$result = $this->action->apply($this->object(), ['action' => 'assign-to-me', 'inputs' => ['note' => 'x'], 'register' => 'tickets', 'schema' => 'ticket'], true, $actor);

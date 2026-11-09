@@ -131,36 +131,56 @@ class SaveObjectTest extends TestCase {
 
 		$this->runContext = new \OCA\OpenRegister\Service\Flow\FlowRunContext();
 		$this->handler = new SaveObject(
-			$this->objectEntityMapper,
-			$this->unifiedObjectMapper,
-			$this->metaHydrationHandler,
-			$this->filePropertyHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
-			$this->userSession,
-			$this->auditTrailMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->urlGenerator,
-			$this->organisationService,
-			$this->cacheHandler,
-			$this->settingsService,
-			$this->propertyRbacHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->logger,
-			$this->createMock(\OCA\OpenRegister\Service\TmloService::class),
-			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$permissionHandler,
-			null,
-			null,
-			null,
-			null,
-			null,
-			// The REAL ambient stack, so the lock guard is asked the same
-			// question production asks it: which run is writing.
-			$this->runContext
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						objectEntityMapper: $this->objectEntityMapper,
+						unifiedObjectMapper: $this->unifiedObjectMapper,
+						schemaMapper: $this->schemaMapper,
+						registerMapper: $this->registerMapper
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->auditTrailMapper,
+						settingsService: $this->settingsService,
+						tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->cacheHandler,
+						objectSourceRegistry: null,
+						// The REAL ambient stack, so the lock guard is asked the same
+						// question production asks it: which run is writing.
+						runContext: $this->runContext
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->metaHydrationHandler,
+						filePropertyHandler: $this->filePropertyHandler,
+						linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+						fieldEncryptionHandler: null
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->userSession,
+					urlGenerator: $this->urlGenerator,
+					logger: $this->logger,
+					eventDispatcher: null
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->organisationService,
+					groupManager: null,
+					appConfig: null
+				)
+			),
+			propertyRbacHandler: $this->propertyRbacHandler,
+			permissionHandler: $permissionHandler,
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 	}
 
@@ -1590,30 +1610,50 @@ class SaveObjectTest extends TestCase {
 		$organisationService = $this->createMock(\OCA\OpenRegister\Service\OrganisationService::class);
 		$organisationService->method('hasAccessToOrganisation')->willReturn(false);
 
-		$handler = new \OCA\OpenRegister\Service\Object\SaveObject(
-			objectEntityMapper: $this->objectEntityMapper,
-			unifiedObjectMapper: $this->unifiedObjectMapper,
-			metaHydrationHandler: $this->metaHydrationHandler,
-			filePropertyHandler: $this->filePropertyHandler,
-			linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
-			userSession: $userSession,
-			auditTrailMapper: $this->auditTrailMapper,
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
-			urlGenerator: $this->urlGenerator,
-			organisationService: $organisationService,
-			cacheHandler: $this->cacheHandler,
-			settingsService: $this->settingsService,
+		$handler = new SaveObject(
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						objectEntityMapper: $this->objectEntityMapper,
+						unifiedObjectMapper: $this->unifiedObjectMapper,
+						schemaMapper: $this->schemaMapper,
+						registerMapper: $this->registerMapper
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->auditTrailMapper,
+						settingsService: $this->settingsService,
+						tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->cacheHandler
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->metaHydrationHandler,
+						filePropertyHandler: $this->filePropertyHandler,
+						linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $userSession,
+					urlGenerator: $this->urlGenerator,
+					logger: $this->logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $organisationService,
+					groupManager: $groupManager
+				)
+			),
 			propertyRbacHandler: $this->propertyRbacHandler,
-			computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			logger: $this->logger,
-			tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
-			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
 			permissionHandler: $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class),
-			groupManager: $groupManager
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 
 		$entity = new ObjectEntity();

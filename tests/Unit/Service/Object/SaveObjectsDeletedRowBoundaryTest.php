@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Object\BulkRowChecks;
 use OCA\OpenRegister\Service\Object\BulkSaveReporting;
 use OCA\OpenRegister\Service\Object\BulkSaveSession;
@@ -185,7 +186,7 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 			$groups,
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(MagicMapper::class),
-			new ConditionMatcher($session, $container, new OperatorEvaluator($logger), $logger),
+			new ConditionMatcher(new ConditionUserResolvers($session), $container, new OperatorEvaluator($logger), $logger),
 			$appConfig,
 			$logger,
 			$container

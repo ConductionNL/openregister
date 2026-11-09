@@ -133,7 +133,12 @@ class DelegationResolver {
 			);
 		}
 
-		return $this->judge(candidates: $candidates, principal: $principal, actingAs: $actingAs, now: $now, scope: $scope);
+		return $this->judge(
+			candidates: $candidates,
+			now: $now,
+			scope: $scope,
+			refusal: sprintf('"%s" holds no live grant to act as "%s".', $principal, $actingAs)
+		);
 	}//end resolve()
 
 	/**
@@ -145,19 +150,17 @@ class DelegationResolver {
 	 * is a different conversation from "you asked and were told no".
 	 *
 	 * @param array<int, DelegationGrant> $candidates The candidate grants.
-	 * @param string                      $principal  The acting principal.
-	 * @param string                      $actingAs   The identity sought.
 	 * @param DateTime                    $now        The moment to judge against.
 	 * @param array                       $scope      The scope needed.
+	 * @param string                      $refusal    The detail a refusal carries.
 	 *
 	 * @return DelegationVerdict The verdict.
 	 */
 	private function judge(
 		array $candidates,
-		string $principal,
-		string $actingAs,
 		DateTime $now,
 		array $scope,
+		string $refusal,
 	): DelegationVerdict {
 		$nearest = DelegationVerdict::REASON_NONE;
 
@@ -169,10 +172,7 @@ class DelegationResolver {
 			$nearest = $this->nearer(current: $nearest, candidate: $this->missReason(grant: $grant, now: $now, scope: $scope));
 		}
 
-		return DelegationVerdict::refused(
-			reason: $nearest,
-			detail: sprintf('"%s" holds no live grant to act as "%s".', $principal, $actingAs)
-		);
+		return DelegationVerdict::refused(reason: $nearest, detail: $refusal);
 	}//end judge()
 
 	/**

@@ -93,19 +93,10 @@ final class C03AuditInterfaceBindingsTest extends TestCase {
 	 */
 	private const KEPT_CALLERS = [
 		ProcessingLogMapper::class => [],
-		ProcessingPurposeMapper::class => [
-			'Service/Audit/PurposeRegistry.php',
-		],
+		ProcessingPurposeMapper::class => [],
 		PurposeGuard::class => [],
 		SearchTrailMapper::class => [],
-		VerwerkingsactiviteitMapper::class => [
-			'Service/Audit/PurposeRegistry.php',
-			'Service/AvgComplianceService.php',
-			'Service/AvgRetentionService.php',
-			'Service/Deletion/RetentionClockService.php',
-			'Service/DsarService.php',
-			'Service/ProcessingLogService.php',
-		],
+		VerwerkingsactiviteitMapper::class => [],
 	];
 
 	/**

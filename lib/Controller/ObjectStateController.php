@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\ArchiveHandlerInterface;
+use OCA\OpenRegister\Service\Object\ObjectStateRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -131,11 +132,8 @@ class ObjectStateController extends Controller {
 	 */
 	public function freeze(string $register, string $schema, string $id): JSONResponse {
 		$verb = fn (?string $reason): array => $this->archiveHandler->freeze(
-			identifier: $id,
-			reason: $reason,
-			state: $this->textFromRequest(key: 'state'),
-			register: $register,
-			schema: $schema
+			request: new ObjectStateRequest(identifier: $id, reason: $reason, register: $register, schema: $schema),
+			state: $this->textFromRequest(key: 'state')
 		);
 
 		return $this->asSignedInUser(verb: $verb);

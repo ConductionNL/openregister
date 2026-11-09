@@ -47,7 +47,7 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
  *
  * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
  */
-class TermDiagnostic {
+class TermDiagnostic implements TermDiagnosticInterface {
 
 	/**
 	 * The roll values a caller may ask for, and which this can honour.
