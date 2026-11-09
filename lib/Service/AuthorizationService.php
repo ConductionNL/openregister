@@ -31,11 +31,8 @@ use OCA\OpenRegister\Service\Consumer\JwtValidator;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCP\AppFramework\Http\Response;
 use OCP\ICacheFactory;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
-use OCP\IUserManager;
-use OCP\IUserSession;
 
 /**
  * Service class for handling authorization on incoming calls.
@@ -87,18 +84,15 @@ class AuthorizationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param IUserManager $userManager Nextcloud user manager
-	 * @param IUserSession $userSession Nextcloud user session
-	 * @param ConsumerMapperInterface $consumerMapper Consumer database mapper
+	 * @param SessionPrincipal                                     $principal        Session, user manager, and group lookups for an endpoint allow-list
+	 * @param ConsumerMapperInterface                              $consumerMapper   Consumer database mapper
 	 * @param \OCA\OpenRegister\Service\Rbac\TokenGrantSource|null $tokenGrantSource What the calling token may do
-	 * @param TokenContext|null $tokenContext Carries the calling token to the audit writer
-	 * @param ICacheFactory|null $cacheFactory Distributed cache for jti replay refusal
-	 * @param IGroupManager|null $groupManager Group lookups for an endpoint's users/groups allow-list
-	 * @param IRequest|null $request The current request (the OAuth Bearer guard)
+	 * @param TokenContext|null                                    $tokenContext     Carries the calling token to the audit writer
+	 * @param ICacheFactory|null                                   $cacheFactory     Distributed cache for jti replay refusal
+	 * @param IRequest|null                                        $request          The current request (the OAuth Bearer guard)
 	 */
 	public function __construct(
-		private readonly IUserManager $userManager,
-		private readonly IUserSession $userSession,
+		private readonly SessionPrincipal $principal,
 		private readonly ConsumerMapperInterface $consumerMapper,
 		// BOTH SIDES OF THIS MERGE ADDED A NULLABLE-LAST PARAMETER and neither
 		// replaces the other: `tokenGrantSource` answers what a token may DO,
@@ -108,10 +102,8 @@ class AuthorizationService {
 		private readonly ?\OCA\OpenRegister\Service\Rbac\TokenGrantSource $tokenGrantSource = null,
 		private readonly ?TokenContext $tokenContext = null,
 		private readonly ?ICacheFactory $cacheFactory = null,
-		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?IRequest $request = null,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -153,7 +145,7 @@ class AuthorizationService {
 	 * @return void
 	 */
 	private function actAs(?IUser $user): void {
-		$this->userSession->setVolatileActiveUser($user);
+		$this->principal->userSession->setVolatileActiveUser($user);
 	}//end actAs()
 
 	/**
@@ -297,7 +289,7 @@ class AuthorizationService {
 		$this->bindConsumerGrant(consumer: $issuer, fallbackId: (string)$payload['iss']);
 
 		$this->resolvedConsumer = $issuer;
-		$this->actAs(user: $this->userManager->get((string)$issuer->userId));
+		$this->actAs(user: $this->principal->userManager->get((string)$issuer->userId));
 
 		// The JWT's own id when it carries one, so a single credential can be
 		// revoked by name. The token itself is never passed on: the audit trail
@@ -331,7 +323,7 @@ class AuthorizationService {
 		$this->resolvedConsumer = null;
 		$user = $this->basicUser(header: $header);
 
-		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
+		(new EndpointAllowList(groupManager: $this->principal->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
 		$this->actAs(user: $user);
 
 	}//end authorizeBasic()
@@ -358,7 +350,7 @@ class AuthorizationService {
 		// Limit to 2 parts so a password containing ':' is preserved intact.
 		[$username, $password] = explode(separator: ':', string: $decode, limit: 2);
 
-		$user = $this->userManager->checkPassword($username, $password);
+		$user = $this->principal->userManager->checkPassword($username, $password);
 
 		if ($user === false) {
 			throw new AuthenticationException(message: 'Invalid username or password', details: []);
@@ -392,7 +384,7 @@ class AuthorizationService {
 		$this->assertRequestCarriedBearer();
 		$user = $this->oauthSessionUser();
 
-		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
+		(new EndpointAllowList(groupManager: $this->principal->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
 
 	}//end authorizeOAuth()
 
@@ -445,8 +437,8 @@ class AuthorizationService {
 	 * @throws AuthenticationException If nobody is signed in.
 	 */
 	private function oauthSessionUser(): IUser {
-		$user = $this->userSession->getUser();
-		if ($this->userSession->isLoggedIn() === false || $user === null) {
+		$user = $this->principal->userSession->getUser();
+		if ($this->principal->userSession->isLoggedIn() === false || $user === null) {
 			throw new AuthenticationException(
 				message: 'Not authorized',
 				details: ['reason' => 'The token you used has either expired or was not recognized as a valid token']
@@ -477,8 +469,8 @@ class AuthorizationService {
 	 */
 	public function authorizeNcSession(array $users = [], array $groups = []): void {
 		$this->resolvedConsumer = null;
-		$user = $this->userSession->getUser();
-		if ($this->userSession->isLoggedIn() === false || $user === null) {
+		$user = $this->principal->userSession->getUser();
+		if ($this->principal->userSession->isLoggedIn() === false || $user === null) {
 			throw new AuthenticationException(
 				message: 'Not authorized',
 				details: ['reason' => 'This endpoint requires an authenticated Nextcloud session.']
@@ -492,7 +484,7 @@ class AuthorizationService {
 			);
 		}
 
-		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
+		(new EndpointAllowList(groupManager: $this->principal->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
 
 	}//end authorizeNcSession()
 
@@ -580,7 +572,7 @@ class AuthorizationService {
 	private function actAsEndpointKeyUser(string $header, array $keys): bool {
 		foreach ($keys as $key => $userId) {
 			if (hash_equals((string)$key, $header) === true) {
-				$user = $this->userManager->get((string)$userId);
+				$user = $this->principal->userManager->get((string)$userId);
 				if ($user === null) {
 					throw new AuthenticationException(message: 'Invalid API key', details: []);
 				}
@@ -605,7 +597,7 @@ class AuthorizationService {
 
 		$this->resolvedConsumer = $consumer;
 		if ((string)$consumer->userId !== '') {
-			$this->actAs(user: $this->userManager->get((string)$consumer->userId));
+			$this->actAs(user: $this->principal->userManager->get((string)$consumer->userId));
 		}
 
 		$this->claimConsumerToken(consumer: $consumer, credential: ['mechanism' => 'apiKey', 'reference' => $consumer->uuid]);

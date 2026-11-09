@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use DateTime;
+use OCP\IGroupManager;
+use OCA\OpenRegister\Service\SessionPrincipal;
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
@@ -217,7 +219,7 @@ class PersonLinkWriteGoldenTest extends TestCase {
 		$session->method('getUser')->willReturnOnConsecutiveCalls($admin, $admin, null, null);
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('linkToRoute')->willReturnCallback(fn (string $route, array $args): string => $route.'?'.http_build_query($args));
-		$writer = new UserLinkWriter($links, $users, $session, $urls);
+		$writer = new UserLinkWriter($links, new SessionPrincipal(userSession: $session, groupManager: $this->createMock(IGroupManager::class), userManager: $users), $urls);
 
 		$writer->write('case-1', 5, null, 'jan', null);
 		$writer->write('case-1', 5, 7, 'jan', 'handler');
