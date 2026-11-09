@@ -28,13 +28,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Rules\DependentValueTableInterface;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -70,15 +69,13 @@ class DependentValueListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param DependentValueTableInterface $tables Reads the tables and names what they refuse.
-	 * @param SchemaMapperInterface $schemas Resolves the schema an object belongs to.
-	 * @param LoggerInterface $logger The logger.
+	 * @param EventSchemaLookup $lookup Resolves the object's schema and logs a failure.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly DependentValueTableInterface $tables,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly LoggerInterface $logger,
+		private readonly EventSchemaLookup $lookup,
 	) {
 	}//end __construct()
 
@@ -120,7 +117,7 @@ class DependentValueListener implements IEventListener {
 				$this->refuse(event: $event, violations: $violations);
 			}
 		} catch (Throwable $failure) {
-			$this->logger->warning(
+			$this->lookup->logger->warning(
 				message: '[DependentValueListener] The guard itself failed, allowing the save: ' . $failure->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($failure)]
 			);
@@ -171,7 +168,7 @@ class DependentValueListener implements IEventListener {
 			return null;
 		}
 
-		$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
+		$schema = $this->lookup->catalog->schemas()->find(id: $reference, _rbac: false, _multitenancy: false);
 		$properties = ($schema->getProperties() ?? []);
 		if (is_array($properties) === false || $this->tables->declaresAny(properties: $properties) === false) {
 			return null;

@@ -43,6 +43,11 @@ use OCA\OpenRegister\Service\Handoff\HandoffService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * HandoffListenersTest.
@@ -92,8 +97,7 @@ class HandoffListenersTest extends TestCase {
 
 		$listener = new HandoffLifecycleListener(
 			handoffService: $this->handoffService,
-			schemaMapper: $this->schemaMapper,
-			logger: $this->createMock(LoggerInterface::class),
+			lookup: $this->eventSchemaLookup($this->schemaMapper, $this->createMock(LoggerInterface::class)),
 		);
 		$listener->handle($this->transitionEvent(to: 'won', userId: 'alice'));
 
@@ -113,8 +117,7 @@ class HandoffListenersTest extends TestCase {
 
 		$listener = new HandoffLifecycleListener(
 			handoffService: $this->handoffService,
-			schemaMapper: $this->schemaMapper,
-			logger: $this->createMock(LoggerInterface::class),
+			lookup: $this->eventSchemaLookup($this->schemaMapper, $this->createMock(LoggerInterface::class)),
 		);
 		$listener->handle($this->transitionEvent(to: 'won', userId: null));
 
@@ -146,8 +149,7 @@ class HandoffListenersTest extends TestCase {
 
 		$listener = new HandoffLifecycleListener(
 			handoffService: $this->handoffService,
-			schemaMapper: $this->schemaMapper,
-			logger: $this->createMock(LoggerInterface::class),
+			lookup: $this->eventSchemaLookup($this->schemaMapper, $this->createMock(LoggerInterface::class)),
 		);
 
 		// Must not throw.
@@ -230,4 +232,14 @@ class HandoffListenersTest extends TestCase {
 		);
 
 	}//end transitionEvent()
+
+	/**
+	 * The schema lookup a listener under test resolves through.
+	 */
+	private function eventSchemaLookup(SchemaMapperInterface $schemas, LoggerInterface $logger): EventSchemaLookup {
+		return new EventSchemaLookup(
+			new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $schemas, $this->createMock(MagicMapperInterface::class)),
+			$logger
+		);
+	}
 }//end class
