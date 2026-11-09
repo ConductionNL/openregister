@@ -8,11 +8,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 		v-if="navigationStore.modal === 'downloadObject'"
 		:name="
 			'Download '
-			+ (objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-				|| 'Object')
+			+ (objectName(objectStore.objectItem) || 'Object')
 		"
 		size="normal"
 		noClose>
@@ -24,7 +20,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeModal" />
+			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeDialog" />
 		</template>
 
 		<div v-if="!success" class="formContainer">
@@ -51,6 +47,8 @@ import { NcDialog, NcNoteCard } from '@nextcloud/vue'
 import CodeMirror from 'vue-codemirror6'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { getTheme } from '../../services/getTheme.js'
+import { settleConfirmRequest } from '../shared/confirmDialogState.js'
+import { objectName as nameOf } from './objectName.js'
 
 export default {
 	name: 'DownloadObject',
@@ -89,10 +87,11 @@ export default {
 		json,
 		jsonParseLinter,
 		getTheme,
+		objectName: nameOf,
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
-		closeModal() {
+		closeDialog() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
 			this.success = null
@@ -103,25 +102,17 @@ export default {
 		/**
 		 * @spec exclude Download handler delegating to objectStore.downloadObject; entity export lives in the store, this is modal orchestration plumbing.
 		 */
-		async downloadObject() {
+		downloadObject() {
 			this.loading = true
-
-			try {
-				const response = await objectStore.downloadObject(
-					objectStore.objectItem,
-				)
-				this.success = response.ok
-				this.error = false
-				if (response.ok) {
-					this.closeModalTimeout = setTimeout(this.closeModal, 2000)
-				}
-			} catch (error) {
-				this.success = false
-				this.error =
-					error.message || 'An error occurred while downloading the object'
-			} finally {
-				this.loading = false
-			}
+			return settleConfirmRequest(
+				this,
+				// Started inside the chain, so a store call that throws is shown
+				// like any other failure.
+				Promise.resolve()
+					.then(() => objectStore.downloadObject(objectStore.objectItem))
+					.then((response) => ({ response })),
+				'An error occurred while downloading the object',
+			)
 		},
 	},
 }
