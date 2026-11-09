@@ -33,13 +33,13 @@ final class ObjectGrantRecords {
 	 * Bundle the services.
 	 *
 	 * @param ObjectAuthorizationWriter $authorizationWriter The one writer of the stored authorization block.
-	 * @param ObjectScopeResolver       $scopeResolver       The scope vocabulary.
+	 * @param ObjectScopeResolverInterface $scopeResolver   The scope vocabulary.
 	 * @param ObjectGrantResolver       $grantResolver       The grant resolver, to drop its per-request memo.
 	 * @param InheritedGrantLister      $inheritedGrants     Lists the grants an ancestor's share confers.
 	 */
 	public function __construct(
 		public readonly ObjectAuthorizationWriter $authorizationWriter,
-		public readonly ObjectScopeResolver $scopeResolver,
+		public readonly ObjectScopeResolverInterface $scopeResolver,
 		public readonly ObjectGrantResolver $grantResolver,
 		public readonly InheritedGrantLister $inheritedGrants,
 	) {

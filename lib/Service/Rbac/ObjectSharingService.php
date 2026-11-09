@@ -148,9 +148,9 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 	/**
 	 * The scope vocabulary.
 	 *
-	 * @var ObjectScopeResolver
+	 * @var ObjectScopeResolverInterface
 	 */
-	private readonly ObjectScopeResolver $scopeResolver;
+	private readonly ObjectScopeResolverInterface $scopeResolver;
 
 	/**
 	 * The grant resolver, to drop its per-request memo.
