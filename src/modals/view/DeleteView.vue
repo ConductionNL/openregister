@@ -73,6 +73,7 @@ export default {
 		 * What deleting the view removes, one line each.
 		 *
 		 * @return {string[]} The translated lines.
+		 * @spec exclude Presentational text of the delete dialog's warning.
 		 */
 		deletedParts() {
 			return [
