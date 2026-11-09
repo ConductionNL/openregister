@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Task;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The read of a projected VTODO that callers outside the Service component need.

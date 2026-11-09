@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Lifecycle;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Decide which declared transition an edit of the lifecycle value is.

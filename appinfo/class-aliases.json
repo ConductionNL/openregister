@@ -1815,6 +1815,81 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Lifecycle\\AutoTransitionSelectorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AutoTransitionSelectorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Lifecycle\\LifecycleActionContextInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\LifecycleActionContextInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Lifecycle\\LifecycleActionExecutorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\LifecycleActionExecutorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Lifecycle\\LifecycleAnnotationValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\LifecycleAnnotationValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Lifecycle\\LifecycleTransitionResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\LifecycleTransitionResolverInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Form\\FormDefinitionResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FormDefinitionResolverInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Form\\FormIdempotencyStoreInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FormIdempotencyStoreInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Form\\FormUploadStoreInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FormUploadStoreInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Calculation\\PropertyCalculationsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PropertyCalculationsInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Decision\\ReviewAnnotationValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ReviewAnnotationValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Rules\\DependentValueTableInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DependentValueTableInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Task\\TaskCalendarDocumentInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TaskCalendarDocumentInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Task\\TaskVtodoWriteBackGateInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TaskVtodoWriteBackGateInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Db\\HandoffQueueEntryMapperInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\HandoffQueueEntryMapperInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Db\\TaskCandidateMapperInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TaskCandidateMapperInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }

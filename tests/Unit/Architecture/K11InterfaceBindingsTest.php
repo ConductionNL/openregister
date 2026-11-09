@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Bindings\FlowBindings;
 use OCA\OpenRegister\Service\Flow\FlowAdoptionRefused;
 use OCA\OpenRegister\Service\Flow\FlowAdoptionRefusedInterface;
@@ -34,7 +35,6 @@ use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowUnattributed;
 use OCA\OpenRegister\Service\Flow\FlowUnattributedInterface;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
-use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

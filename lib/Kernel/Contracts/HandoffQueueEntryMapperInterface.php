@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Db;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use OCP\AppFramework\Db\Entity;
 
@@ -37,7 +37,7 @@ interface HandoffQueueEntryMapperInterface {
 	 *
 	 * @param int|null $limit Optional maximum number of entries.
 	 *
-	 * @return list<HandoffQueueEntry> Parked entries.
+	 * @return list<\OCA\OpenRegister\Db\HandoffQueueEntry> Parked entries.
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Scenario: No provider installed, queue mode)
@@ -49,7 +49,7 @@ interface HandoffQueueEntryMapperInterface {
 	 *
 	 * @param string $kindUri The target kind URI.
 	 *
-	 * @return list<HandoffQueueEntry> Parked entries for the kind, oldest first.
+	 * @return list<\OCA\OpenRegister\Db\HandoffQueueEntry> Parked entries for the kind, oldest first.
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Scenario: No provider installed, queue mode)
@@ -61,7 +61,7 @@ interface HandoffQueueEntryMapperInterface {
 	 *
 	 * @param string $sourceObjectUuid The source object's UUID.
 	 *
-	 * @return list<HandoffQueueEntry> Parked entries for the object.
+	 * @return list<\OCA\OpenRegister\Db\HandoffQueueEntry> Parked entries for the object.
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Requirement: Handoff REST surface)
@@ -73,7 +73,7 @@ interface HandoffQueueEntryMapperInterface {
 	 *
 	 * @param Entity $entity The row to insert.
 	 *
-	 * @return HandoffQueueEntry The inserted row, with its id.
+	 * @return \OCA\OpenRegister\Db\HandoffQueueEntry The inserted row, with its id.
 	 */
 	public function insert(Entity $entity): Entity;
 
@@ -82,7 +82,7 @@ interface HandoffQueueEntryMapperInterface {
 	 *
 	 * @param Entity $entity The row to update.
 	 *
-	 * @return HandoffQueueEntry The updated row.
+	 * @return \OCA\OpenRegister\Db\HandoffQueueEntry The updated row.
 	 */
 	public function update(Entity $entity): Entity;
 }//end interface

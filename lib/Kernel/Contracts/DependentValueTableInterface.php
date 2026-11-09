@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Rules;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Read the dependent-value tables of a schema and name the values they refuse.
