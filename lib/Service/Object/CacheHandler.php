@@ -626,25 +626,25 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	}//end hasOrganisationAccess()
 
 	/**
-	 * Record the owning organisation and the source of a cached name.
+	 * Hold a name in the in-memory cache with its owning organisation and its source.
 	 *
-	 * @param string $key The name-cache key (object id or uuid)
-	 * @param string|null $organisation The owning organisation UUID, or null when unknown
-	 * @param string|null $source NAME_SOURCE_ORGANISATION, "<register>:<schema>", or null when unknown
+	 * @param string     $key   The name-cache key (object id or uuid)
+	 * @param CachedName $entry The name, its owning organisation and its source (null when unknown)
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
-	private function rememberNameOrganisation(string $key, ?string $organisation, ?string $source = null): void {
-		$this->nameOrganisations[$key] = $organisation;
-		if ($source === null) {
+	private function rememberName(string $key, CachedName $entry): void {
+		$this->nameCache[$key] = $entry->name;
+		$this->nameOrganisations[$key] = $entry->organisation;
+		if ($entry->source === null) {
 			unset($this->nameSources[$key]);
 			return;
 		}
 
-		$this->nameSources[$key] = $source;
-	}//end rememberNameOrganisation()
+		$this->nameSources[$key] = $entry->source;
+	}//end rememberName()
 
 	/**
 	 * The name source of an object: "<registerId>:<schemaId>", the table its read rule lives on.
@@ -663,26 +663,6 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 
 		return (int)$register . ':' . (int)$schema;
 	}//end objectNameSource()
-
-	/**
-	 * Wrap a name, its owning organisation and its source for the distributed cache.
-	 *
-	 * The distributed name cache is shared by every caller on the instance, so
-	 * what decides visibility has to be stored WITH the value. Keeping the KEY
-	 * unchanged is deliberate: every existing invalidation site removes
-	 * `name_<identifier>` and keeps working untouched.
-	 *
-	 * @param string $name The cached name
-	 * @param string|null $organisation The owning organisation UUID
-	 * @param string|null $source The name source (see $nameSources)
-	 *
-	 * @return array{n: string, o: string|null, s: string|null} The envelope stored in the distributed cache
-	 *
-	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
-	 */
-	private function buildNameEnvelope(string $name, ?string $organisation, ?string $source = null): array {
-		return ['n' => $name, 'o' => $organisation, 's' => $source];
-	}//end buildNameEnvelope()
 
 	/**
 	 * Read a distributed-cache entry as an envelope that can be decided.
@@ -764,75 +744,88 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	private function visibleNames(array $candidates): array {
-		$visible = [];
-		$uuidsBySource = [];
-		foreach ($candidates as $key => $name) {
-			$this->sortNameCandidate(key: (string)$key, name: $name, visible: $visible, uuidsBySource: $uuidsBySource);
+		$run = new NameVisibilityRun(candidates: $candidates);
+		foreach (array_keys($candidates) as $key) {
+			$this->sortNameCandidate(run: $run, key: (string)$key);
 		}
 
 		// Ask the read path per table, remembering each answer per caller (user
 		// plus active organisation): a facet resolves one value per call, and the
 		// same question must not cost the same query twice. A failure is "none".
-		$caller = (string)$this->nameScope->userSession?->getUser()?->getUID() . '|' . $this->getActiveOrganisationCacheScope();
-		$memo = ($this->readabilityMemo[$caller] ?? []);
-		foreach ($uuidsBySource as $source => $uuids) {
-			$memo = $this->memoiseReadability(source: (string)$source, uuids: $uuids, memo: $memo);
-			foreach ($uuids as $uuid) {
-				if (($memo[$uuid] ?? false) === true) {
-					$visible[$uuid] = $candidates[$uuid];
-				}
-			}
+		$caller    = (string)$this->nameScope->userSession?->getUser()?->getUID() . '|' . $this->getActiveOrganisationCacheScope();
+		$run->memo = ($this->readabilityMemo[$caller] ?? []);
+		foreach (array_keys($run->uuidsBySource) as $source) {
+			$this->admitReadable(run: $run, source: (string)$source);
 		}
 
-		$this->readabilityMemo[$caller] = $memo;
+		$this->readabilityMemo[$caller] = $run->memo;
 
-		return $visible;
+		return $run->visible;
 	}//end visibleNames()
+
+	/**
+	 * Admit the names of one source's queued UUIDs that the caller may read.
+	 *
+	 * @param NameVisibilityRun $run    The visibility decision in progress
+	 * @param string            $source The name source ("<registerId>:<schemaId>")
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function admitReadable(NameVisibilityRun $run, string $source): void {
+		$this->memoiseReadability(run: $run, source: $source);
+		foreach ($run->uuidsBySource[$source] as $uuid) {
+			if (($run->memo[$uuid] ?? false) === true) {
+				$run->visible[$uuid] = $run->candidates[$uuid];
+			}
+		}
+	}//end admitReadable()
 
 	/**
 	 * Decide an organisation name now, or queue an object name under its source.
 	 *
 	 * A name without a known source is dropped.
 	 *
-	 * @param string                      $key           The cache key
-	 * @param mixed                       $name          The cached name
-	 * @param array<string, mixed>        $visible       Visible names so far (by reference)
-	 * @param array<string, list<string>> $uuidsBySource Object keys queued per source (by reference)
+	 * @param NameVisibilityRun $run The visibility decision in progress (its visible names and queues grow)
+	 * @param string            $key The cache key of one candidate
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
-	private function sortNameCandidate(string $key, mixed $name, array &$visible, array &$uuidsBySource): void {
+	private function sortNameCandidate(NameVisibilityRun $run, string $key): void {
 		$source = $this->nameSources[$key] ?? null;
 		if ($source === self::NAME_SOURCE_ORGANISATION) {
 			if ($this->hasOrganisationAccess(organisation: ($this->nameOrganisations[$key] ?? null)) === true) {
-				$visible[$key] = $name;
+				$run->visible[$key] = $run->candidates[$key];
 			}
 
 			return;
 		}
 
 		if ($source !== null) {
-			$uuidsBySource[$source][] = $key;
+			$run->uuidsBySource[$source][] = $key;
 		}
 	}//end sortNameCandidate()
 
 	/**
 	 * Ask the read path about the UUIDs of one source not yet in the caller's memo.
 	 *
-	 * @param string              $source The name source ("<registerId>:<schemaId>")
-	 * @param list<string>        $uuids  The UUIDs queued under that source
-	 * @param array<string, bool> $memo   The caller's remembered answers
+	 * The answers are added to the run's memo.
 	 *
-	 * @return array<string, bool> The memo with the new answers added
+	 * @param NameVisibilityRun $run    The visibility decision in progress (its UUIDs queued per source and the caller's memo)
+	 * @param string            $source The name source ("<registerId>:<schemaId>")
+	 *
+	 * @return void
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
-	private function memoiseReadability(string $source, array $uuids, array $memo): array {
-		$unknown = array_values(array_filter($uuids, fn (string $uuid): bool => isset($memo[$uuid]) === false));
+	private function memoiseReadability(NameVisibilityRun $run, string $source): void {
+		$memo    = $run->memo;
+		$unknown = array_values(array_filter($run->uuidsBySource[$source], fn (string $uuid): bool => isset($memo[$uuid]) === false));
 		if (empty($unknown) === true) {
-			return $memo;
+			return;
 		}
 
 		[$registerId, $schemaId] = array_map('intval', explode(':', $source, 2) + [1 => '0']);
@@ -847,10 +840,8 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		}
 
 		foreach ($unknown as $uuid) {
-			$memo[$uuid] = in_array($uuid, $readable, true);
+			$run->memo[$uuid] = in_array($uuid, $readable, true);
 		}
-
-		return $memo;
 	}//end memoiseReadability()
 
 	/**
@@ -1539,37 +1530,25 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		?string $organisation = null,
 		?string $source = null,
 	): void {
-		$key = (string)$identifier;
+		$this->cacheName(key: (string)$identifier, entry: new CachedName(name: $name, organisation: $organisation, source: $source));
+	}//end setObjectName()
 
-		// Names are cached for the maximum TTL (24 hours); no caller asked for less.
-		$ttl = self::MAX_CACHE_TTL;
-
-		// Store in in-memory cache, together with the tenancy of the entity the
-		// name belongs to (SEC-CTRL-2 step 2). Without the second map the cache
-		// is a cross-tenant disclosure channel of its own.
-		$this->nameCache[$key] = $name;
-		$this->rememberNameOrganisation(key: $key, organisation: $organisation, source: $source);
-
-		// Store in distributed cache if available.
-		if ($this->nameDistributedCache !== null) {
-			try {
-				$this->nameDistributedCache->set(
-					'name_' . $key,
-					$this->buildNameEnvelope(name: $name, organisation: $organisation, source: $source),
-					$ttl
-				);
-			} catch (\Exception $e) {
-				$this->runtime->logger->warning(
-					message: '[CacheHandler] Failed to cache object name in distributed cache',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'identifier' => $key,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}
+	/**
+	 * Cache a name in memory and in the distributed cache, for the maximum TTL (24 hours).
+	 *
+	 * The tenancy and source of the entity the name belongs to are stored with it (SEC-CTRL-2
+	 * step 2): without them the cache is a cross-tenant disclosure channel of its own.
+	 *
+	 * @param string     $key   The name-cache key (object id or uuid)
+	 * @param CachedName $entry The name, its owning organisation and its source
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function cacheName(string $key, CachedName $entry): void {
+		$this->rememberName(key: $key, entry: $entry);
+		$this->shareName(key: $key, entry: $entry);
 
 		$this->runtime->logger->debug(
 			message: '[CacheHandler] 💾 OBJECT NAME CACHED',
@@ -1577,11 +1556,41 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'identifier' => $key,
-				'name' => $name,
-				'ttl' => $ttl . 's',
+				'name' => $entry->name,
+				'ttl' => self::MAX_CACHE_TTL . 's',
 			]
 		);
-	}//end setObjectName()
+	}//end cacheName()
+
+	/**
+	 * Store a name's envelope in the distributed cache, when there is one; a failure is logged, not thrown.
+	 *
+	 * @param string     $key   The name-cache key (object id or uuid)
+	 * @param CachedName $entry The name, its owning organisation and its source
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function shareName(string $key, CachedName $entry): void {
+		if ($this->nameDistributedCache === null) {
+			return;
+		}
+
+		try {
+			$this->nameDistributedCache->set('name_' . $key, $entry->envelope(), self::MAX_CACHE_TTL);
+		} catch (\Exception $e) {
+			$this->runtime->logger->warning(
+				message: '[CacheHandler] Failed to cache object name in distributed cache',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifier' => $key,
+					'error' => $e->getMessage(),
+				]
+			);
+		}
+	}//end shareName()
 
 	/**
 	 * Get single object name from cache or database
@@ -1700,8 +1709,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 				return null;
 			}
 
-			$this->nameCache[$key] = $envelope['n'];
-			$this->rememberNameOrganisation(key: $key, organisation: $envelope['o'], source: $envelope['s']);
+			$this->rememberName(key: $key, entry: new CachedName(name: $envelope['n'], organisation: $envelope['o'], source: $envelope['s']));
 			$this->stats['name_hits']++;
 			return ['name' => ($this->visibleNames(candidates: [$key => $envelope['n']])[$key] ?? null)];
 		} catch (\Exception $e) {
@@ -1782,31 +1790,14 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			return null;
 		}
 
-		$uuid = (string)$object->getUuid();
-		$this->rememberFoundObjectName(identifier: $identifier, object: $object, name: $name, source: $source);
+		$uuid  = (string)$object->getUuid();
+		$entry = new CachedName(name: $name, organisation: $object->getOrganisation(), source: $source);
+		foreach (array_unique([(string)$identifier, $uuid]) as $key) {
+			$this->cacheName(key: $key, entry: $entry);
+		}
 
 		return ($this->visibleNames(candidates: [$uuid => $name])[$uuid] ?? null);
 	}//end objectSingleName()
-
-	/**
-	 * Cache a found object's name under the identifier asked for and under its UUID.
-	 *
-	 * @param string|int   $identifier The identifier asked for.
-	 * @param ObjectEntity $object     The found object.
-	 * @param string       $name       The object's name.
-	 * @param string       $source     The object's name source.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
-	 */
-	private function rememberFoundObjectName(string|int $identifier, ObjectEntity $object, string $name, string $source): void {
-		$uuid = (string)$object->getUuid();
-		$this->setObjectName(identifier: $identifier, name: $name, organisation: $object->getOrganisation(), source: $source);
-		if ($uuid !== (string)$identifier) {
-			$this->setObjectName(identifier: $uuid, name: $name, organisation: $object->getOrganisation(), source: $source);
-		}
-	}//end rememberFoundObjectName()
 
 	/**
 	 * The name source of a found object: the register and schema it was found in, else its own.
@@ -1954,8 +1945,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 				return false;
 			}
 
-			$this->nameCache[$key] = $envelope['n'];
-			$this->rememberNameOrganisation(key: $key, organisation: $envelope['o'], source: $envelope['s']);
+			$this->rememberName(key: $key, entry: new CachedName(name: $envelope['n'], organisation: $envelope['o'], source: $envelope['s']));
 			$run->candidates[$key] = $envelope['n'];
 			$this->stats['name_hits']++;
 			return true;
@@ -2274,11 +2264,9 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		foreach ($organisations as $organisation) {
 			$name = $organisation->getName() ?? $organisation->getUuid();
 			if ($organisation->getUuid() !== null && $name !== null) {
-				$this->nameCache[$organisation->getUuid()] = $name;
-				$this->rememberNameOrganisation(
+				$this->rememberName(
 					key: $organisation->getUuid(),
-					organisation: $organisation->getUuid(),
-					source: self::NAME_SOURCE_ORGANISATION
+					entry: new CachedName(name: $name, organisation: $organisation->getUuid(), source: self::NAME_SOURCE_ORGANISATION)
 				);
 			}
 		}
@@ -2316,12 +2304,8 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			return;
 		}
 
-		$this->nameCache[$uuid] = $name;
-		$this->rememberNameOrganisation(
-			key: $uuid,
-			organisation: $object->getOrganisation(),
-			source: self::objectNameSource(register: $object->getRegister(), schema: $object->getSchema())
-		);
+		$source = self::objectNameSource(register: $object->getRegister(), schema: $object->getSchema());
+		$this->rememberName(key: $uuid, entry: new CachedName(name: $name, organisation: $object->getOrganisation(), source: $source));
 	}//end warmObjectName()
 
 	/**
@@ -2430,12 +2414,11 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		}
 
 		$name = ($row['_name'] ?? null);
-		$this->nameCache[$uuid] = $uuid;
-		if ($name !== null && trim($name) !== '') {
-			$this->nameCache[$uuid] = $name;
+		if ($name === null || trim($name) === '') {
+			$name = $uuid;
 		}
 
-		$this->rememberNameOrganisation(key: $uuid, organisation: $row['_organisation'] ?? null, source: $source);
+		$this->rememberName(key: $uuid, entry: new CachedName(name: $name, organisation: $row['_organisation'] ?? null, source: $source));
 		return 1;
 	}//end cacheMagicRow()
 
@@ -2740,12 +2723,12 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function storeNameEnvelope(int|string $identifier, string $name): void {
-		$envelope = $this->buildNameEnvelope(
+		$entry = new CachedName(
 			name: $name,
 			organisation: ($this->nameOrganisations[(string)$identifier] ?? null),
 			source: ($this->nameSources[(string)$identifier] ?? null)
 		);
-		$this->nameDistributedCache->set('name_' . $identifier, $envelope, self::MAX_CACHE_TTL);
+		$this->nameDistributedCache->set('name_' . $identifier, $entry->envelope(), self::MAX_CACHE_TTL);
 	}//end storeNameEnvelope()
 
 	/**
