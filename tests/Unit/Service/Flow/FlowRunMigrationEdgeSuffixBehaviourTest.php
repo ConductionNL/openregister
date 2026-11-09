@@ -33,7 +33,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunCommit
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunMarkingRemap
  */
-class FlowRunMigrationJoinBehaviourTest extends TestCase {
+class FlowRunMigrationEdgeSuffixBehaviourTest extends TestCase {
 
 	public function testAJoinPlaceKeepsItsEdgeSuffixUnderTheMappedNode(): void {
 		$graphs = [
