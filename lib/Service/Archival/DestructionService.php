@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateInterval;
 use DateTime;
+use OCA\OpenRegister\BackgroundJob\DestructionExecutionJobInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
@@ -307,8 +308,8 @@ class DestructionService implements DestructionServiceInterface {
 		$destructionList['status'] = self::STATUS_APPROVED;
 
 		$this->jobList->add(
-			\OCA\OpenRegister\BackgroundJob\DestructionExecutionJob::class,
-			['destructionListUuid' => ($approval->listUuid ?? $destructionList['uuid'] ?? null)]
+			DestructionExecutionJobInterface::JOB_CLASS,
+			[DestructionExecutionJobInterface::ARGUMENT_LIST_UUID => ($approval->listUuid ?? $destructionList['uuid'] ?? null)]
 		);
 
 		$this->logger->info(
