@@ -148,8 +148,8 @@ class MemberOfResolver {
 	 * @spec openspec/changes/access-follows-membership/specs/rbac-scopes/spec.md#requirement-a-match-can-admit-by-the-callers-membership-records
 	 */
 	public function resolveOperators(array $operators, ?string $userId, callable $resolveSibling): ?array {
-		$siblings = array_diff_key($operators, [self::OPERATOR => true]);
-		return $this->narrowed(set: $this->valuesFor(operand: ($operators[self::OPERATOR] ?? null), userId: $userId), siblings: static fn (): array => array_map($resolveSibling, $siblings));
+		$siblings = static fn (): array => array_map($resolveSibling, array_diff_key($operators, [self::OPERATOR => true]));
+		return $this->narrowed(set: $this->valuesFor(operand: ($operators[self::OPERATOR] ?? null), userId: $userId), siblings: $siblings);
 	}//end resolveOperators()
 
 	/**
