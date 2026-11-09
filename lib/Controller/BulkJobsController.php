@@ -254,13 +254,10 @@ class BulkJobsController extends Controller {
 
 		try {
 			$job = $this->service->create(
-				actionId: $action,
-				parameters: $parameters,
-				selection: $selection,
-				justification: $justification,
+				call: $this->service->actionCall(actionId: $action, parameters: $parameters),
+				selection: $this->service->selection(criteria: $selection, registerId: $register, schemaId: $schema),
 				actorUid: $uid,
-				registerId: $register,
-				schemaId: $schema
+				justification: $justification
 			);
 		} catch (BulkJobRefusedException $exception) {
 			return $this->refusal(exception: $exception);

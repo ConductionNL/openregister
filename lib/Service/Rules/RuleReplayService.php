@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Service\Rules;
 use OCA\OpenRegister\BulkAction\ApplyRuleActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\BulkJob\BulkJobActionCall;
+use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
@@ -199,13 +201,13 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 */
 	private function createJob(RuleDescriptor $rule, Schema $schema, array $selection, array $by): BulkJob {
 		return $this->jobs->create(
-			actionId: ApplyRuleActionInterface::ID,
-			parameters: ['schema' => (string)($schema->getSlug() ?? (string)$schema->getId()), 'ruleId' => $rule->getId()],
-			selection: $selection,
-			justification: $by['justification'],
+			call: new BulkJobActionCall(
+				actionId: ApplyRuleActionInterface::ID,
+				parameters: ['schema' => (string)($schema->getSlug() ?? (string)$schema->getId()), 'ruleId' => $rule->getId()]
+			),
+			selection: new BulkJobSelection(criteria: $selection, registerId: $by['registerId'], schemaId: $schema->getId()),
 			actorUid: $by['actorUid'],
-			registerId: $by['registerId'],
-			schemaId: $schema->getId()
+			justification: $by['justification']
 		);
 	}//end createJob()
 

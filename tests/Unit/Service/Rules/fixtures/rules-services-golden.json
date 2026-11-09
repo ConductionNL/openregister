@@ -2696,29 +2696,39 @@
                 "maxObjects": 3,
                 "count": 2,
                 "job": {
-                    "previewed": "openregister:apply-rule"
+                    "previewed": {
+                        "actionId": "openregister:apply-rule",
+                        "parameters": {
+                            "schema": "bezwaar",
+                            "ruleId": "calculation:bezwaar:uiterlijkeDatum"
+                        }
+                    }
                 }
             },
             "calls": [
                 [
                     "create",
                     [
-                        "openregister:apply-rule",
                         {
-                            "schema": "bezwaar",
-                            "ruleId": "calculation:bezwaar:uiterlijkeDatum"
+                            "actionId": "openregister:apply-rule",
+                            "parameters": {
+                                "schema": "bezwaar",
+                                "ruleId": "calculation:bezwaar:uiterlijkeDatum"
+                            }
                         },
                         {
-                            "ids": [
-                                1,
-                                "1",
-                                2
-                            ]
+                            "criteria": {
+                                "ids": [
+                                    1,
+                                    "1",
+                                    2
+                                ]
+                            },
+                            "registerId": 4,
+                            "schemaId": 7
                         },
-                        "reden",
                         "jan",
-                        4,
-                        7
+                        "reden"
                     ]
                 ]
             ]
@@ -2731,7 +2741,13 @@
                 "maxObjects": 3,
                 "count": 2,
                 "job": {
-                    "previewed": "openregister:apply-rule"
+                    "previewed": {
+                        "actionId": "openregister:apply-rule",
+                        "parameters": {
+                            "schema": "bezwaar",
+                            "ruleId": "calculation:bezwaar:uiterlijkeDatum"
+                        }
+                    }
                 }
             },
             "calls": [
@@ -2749,26 +2765,30 @@
                 [
                     "create",
                     [
-                        "openregister:apply-rule",
                         {
-                            "schema": "bezwaar",
-                            "ruleId": "calculation:bezwaar:uiterlijkeDatum"
-                        },
-                        {
-                            "query": {
-                                "_limit": 5,
-                                "_page": 2,
-                                "status": "open",
-                                "@self": {
-                                    "owner": "x",
-                                    "register": 99
-                                }
+                            "actionId": "openregister:apply-rule",
+                            "parameters": {
+                                "schema": "bezwaar",
+                                "ruleId": "calculation:bezwaar:uiterlijkeDatum"
                             }
                         },
-                        "reden",
+                        {
+                            "criteria": {
+                                "query": {
+                                    "_limit": 5,
+                                    "_page": 2,
+                                    "status": "open",
+                                    "@self": {
+                                        "owner": "x",
+                                        "register": 99
+                                    }
+                                }
+                            },
+                            "registerId": null,
+                            "schemaId": 7
+                        },
                         "jan",
-                        null,
-                        7
+                        "reden"
                     ]
                 ]
             ]
@@ -2781,7 +2801,13 @@
                 "maxObjects": null,
                 "count": 1,
                 "job": {
-                    "previewed": "openregister:apply-rule"
+                    "previewed": {
+                        "actionId": "openregister:apply-rule",
+                        "parameters": {
+                            "schema": "bezwaar",
+                            "ruleId": "calculation:bezwaar:termijn"
+                        }
+                    }
                 }
             },
             "calls": [
@@ -2797,20 +2823,24 @@
                 [
                     "create",
                     [
-                        "openregister:apply-rule",
                         {
-                            "schema": "bezwaar",
-                            "ruleId": "calculation:bezwaar:termijn"
-                        },
-                        {
-                            "query": {
-                                "@self": "x"
+                            "actionId": "openregister:apply-rule",
+                            "parameters": {
+                                "schema": "bezwaar",
+                                "ruleId": "calculation:bezwaar:termijn"
                             }
                         },
-                        "reden",
+                        {
+                            "criteria": {
+                                "query": {
+                                    "@self": "x"
+                                }
+                            },
+                            "registerId": 4,
+                            "schemaId": 7
+                        },
                         "jan",
-                        4,
-                        7
+                        "reden"
                     ]
                 ]
             ]
@@ -2823,7 +2853,13 @@
                 "maxObjects": null,
                 "count": 1,
                 "job": {
-                    "previewed": "openregister:apply-rule"
+                    "previewed": {
+                        "actionId": "openregister:apply-rule",
+                        "parameters": {
+                            "schema": "bezwaar",
+                            "ruleId": "calculation:bezwaar:termijn"
+                        }
+                    }
                 }
             },
             "calls": [
@@ -2839,20 +2875,24 @@
                 [
                     "create",
                     [
-                        "openregister:apply-rule",
                         {
-                            "schema": "bezwaar",
-                            "ruleId": "calculation:bezwaar:termijn"
-                        },
-                        {
-                            "query": {
-                                "a": 1
+                            "actionId": "openregister:apply-rule",
+                            "parameters": {
+                                "schema": "bezwaar",
+                                "ruleId": "calculation:bezwaar:termijn"
                             }
                         },
-                        "reden",
+                        {
+                            "criteria": {
+                                "query": {
+                                    "a": 1
+                                }
+                            },
+                            "registerId": null,
+                            "schemaId": 7
+                        },
                         "jan",
-                        null,
-                        7
+                        "reden"
                     ]
                 ]
             ]

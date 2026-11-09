@@ -32,6 +32,8 @@ use OCA\OpenRegister\BulkAction\RunActionActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
+use OCA\OpenRegister\Service\BulkJob\BulkJobActionCall;
+use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use InvalidArgumentException;
 use Throwable;
@@ -78,13 +80,17 @@ class ObjectActionBulk implements ObjectActionBulkInterface {
 		}
 
 		return $this->jobs->create(
-			actionId: RunActionActionInterface::ID,
-			parameters: ['action' => $action, 'inputs' => $inputs, 'register' => $selection->register, 'schema' => $selection->schemaRef],
-			selection: ['ids' => $selection->ids],
-			justification: null,
+			call: new BulkJobActionCall(
+				actionId: RunActionActionInterface::ID,
+				parameters: ['action' => $action, 'inputs' => $inputs, 'register' => $selection->register, 'schema' => $selection->schemaRef]
+			),
+			selection: new BulkJobSelection(
+				criteria: ['ids' => $selection->ids],
+				registerId: $this->registerId(register: $selection->register),
+				schemaId: $selection->schema->getId()
+			),
 			actorUid: $actorUid,
-			registerId: $this->registerId(register: $selection->register),
-			schemaId: $selection->schema->getId()
+			justification: null
 		);
 	}//end start()
 

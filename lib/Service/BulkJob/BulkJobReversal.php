@@ -97,13 +97,13 @@ class BulkJobReversal implements BulkJobReversalInterface {
 		}
 
 		$reversal = $this->service->create(
-			actionId: RestorePriorValuesActionInterface::ID,
-			parameters: [RestorePriorValuesActionInterface::PARAM_JOB => (int)$original->getId()],
-			selection: ['ids' => $uuids],
-			justification: $justification,
+			call: new BulkJobActionCall(
+				actionId: RestorePriorValuesActionInterface::ID,
+				parameters: [RestorePriorValuesActionInterface::PARAM_JOB => (int)$original->getId()]
+			),
+			selection: new BulkJobSelection(criteria: ['ids' => $uuids], registerId: $original->getRegisterId(), schemaId: $original->getSchemaId()),
 			actorUid: $actorUid,
-			registerId: $original->getRegisterId(),
-			schemaId: $original->getSchemaId()
+			justification: $justification
 		);
 
 		$report = ($reversal->getReport() ?? []);
