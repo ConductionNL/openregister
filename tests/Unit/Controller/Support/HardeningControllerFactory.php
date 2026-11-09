@@ -18,7 +18,6 @@ final class HardeningControllerFactory {
 	/**
 	 * The constructor arguments of HardeningController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param HardeningReportService $reportService Constructor argument.
 	 * @param HardeningSettingsService $settingsService Constructor argument.
@@ -28,7 +27,6 @@ final class HardeningControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\Hardening\HardeningReportService $reportService,
 		\OCA\OpenRegister\Service\Hardening\HardeningSettingsService $settingsService,
@@ -36,7 +34,6 @@ final class HardeningControllerFactory {
 		\OCA\OpenRegister\Service\Hardening\ElevationService $elevation,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\HardeningControllerServices(
 				reportService: $reportService,
