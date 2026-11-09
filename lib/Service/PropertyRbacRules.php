@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 
 /**
  * The rule collaborators of PropertyRbacHandler, wired by DI autowiring.
+ *
+ * @spec openspec/specs/row-field-level-security/spec.md#field-level-security
  */
 final class PropertyRbacRules {
 	/**

@@ -28,6 +28,8 @@ use OCP\IUserSession;
 
 /**
  * The caller collaborators of PropertyRbacHandler, wired by DI autowiring.
+ *
+ * @spec openspec/specs/row-field-level-security/spec.md#field-level-security
  */
 final class PropertyRbacCaller {
 	/**
