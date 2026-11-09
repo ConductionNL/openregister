@@ -109,35 +109,30 @@ final class SearchTermNode {
 	}//end __construct()
 
 	/**
-	 * Build a literal term node.
+	 * Build a literal term node without wildcards.
 	 *
-	 * @param string $value            The literal text, wildcards already stripped.
-	 * @param bool   $leadingWildcard  Whether the term began with `*`.
-	 * @param bool   $trailingWildcard Whether the term ended with `*`.
+	 * @param string $value The literal text.
 	 *
-	 * @return self The term node.
+	 * @return self
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The two flags are the term's own
-	 * shape, not a mode switch: `*foo*` sets both and `foo` sets neither, and
-	 * splitting them into four constructors would say less, not more.
 	 */
-	public static function term(
-		string $value,
-		bool $leadingWildcard = false,
-		bool $trailingWildcard = false,
-	): self {
-		return new self(
-			type: self::TYPE_TERM,
-			children: [],
-			literal: new SearchTermLiteral(
-				value: $value,
-				leadingWildcard: $leadingWildcard,
-				trailingWildcard: $trailingWildcard
-			)
-		);
+	public static function term(string $value): self {
+		return self::literal(literal: new SearchTermLiteral(value: $value));
 	}//end term()
+
+	/**
+	 * Build a literal term node from the text and its wildcard flags.
+	 *
+	 * @param SearchTermLiteral $literal The text with the wildcards stripped, and which ends carried one.
+	 *
+	 * @return self
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	public static function literal(SearchTermLiteral $literal): self {
+		return new self(type: self::TYPE_TERM, children: [], literal: $literal);
+	}//end literal()
 
 	/**
 	 * Build a conjunction.

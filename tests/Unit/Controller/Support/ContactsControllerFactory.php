@@ -18,7 +18,7 @@ final class ContactsControllerFactory {
 	/**
 	 * The constructor arguments of ContactsController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param ContactService $contactService Constructor argument.
 	 * @param ObjectService $objectService Constructor argument.
@@ -44,7 +44,6 @@ final class ContactsControllerFactory {
 		\OCA\OpenRegister\Service\Object\PermissionHandler $permissions,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ContactsControllerServices(
 				domain: new \OCA\OpenRegister\Controller\Support\ContactsDomain(
