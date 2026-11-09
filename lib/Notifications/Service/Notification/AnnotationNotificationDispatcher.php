@@ -32,6 +32,10 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Notifications\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
+use OCA\OpenRegister\Notifications\Db\HistoryDelivery;
+use OCA\OpenRegister\Notifications\Db\HistoryEntry;
+use OCA\OpenRegister\Notifications\Db\HistoryNotice;
+use OCA\OpenRegister\Notifications\Db\HistoryTarget;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
@@ -383,16 +387,30 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
 	 */
 	public function dispatchWithSchema(ObjectEntity $object, string $trigger, array $context, Schema $schema): void {
+		$this->fireRules(event: new NotificationEvent(object: $object, trigger: $trigger, context: $context), schema: $schema);
+	}//end dispatchWithSchema()
+
+	/**
+	 * Fire every rule a schema declares for one event.
+	 *
+	 * @param NotificationEvent $event  The object, the trigger and its extras.
+	 * @param Schema            $schema The schema carrying the rules.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
+	 */
+	private function fireRules(NotificationEvent $event, Schema $schema): void {
 		$notifications = $this->getAnnotation(schema: $schema);
 		if ($notifications === null) {
 			return;
 		}
 
-		$this->registerLanguages = $this->resolveRegisterLanguages(object: $object);
+		$this->registerLanguages = $this->resolveRegisterLanguages(object: $event->object);
 
 		// The canonical INotification subject comes from the trigger, not the
 		// rule name, so every schema-declared in-app notification renders.
-		$subjectKey = $this->canonicalSubject(trigger: $trigger);
+		$subjectKey = $this->canonicalSubject(trigger: $event->trigger);
 
 		foreach ($notifications as $name => $spec) {
 			if (is_array($spec) === false) {
@@ -402,15 +420,15 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			$firing = new RuleFiring(
 				ruleId: (string)$name,
 				spec: $spec,
-				object: $object,
+				object: $event->object,
 				schema: $schema,
-				context: $context,
+				context: $event->context,
 				subjectKey: $subjectKey
 			);
-			$this->fireRule(firing: $firing, trigger: $trigger);
+			$this->fireRule(firing: $firing, trigger: $event->trigger);
 		}
 
-	}//end dispatchWithSchema()
+	}//end fireRules()
 
 	/**
 	 * Run one rule through its gates and channels.
@@ -1509,17 +1527,25 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$object = $origin->object;
 		try {
 			$this->historyMapper->record(
-				ruleId: $origin->ruleId,
-				channel: $record->channel,
-				recipient: $record->recipient,
-				status: $record->status,
-				schemaId: self::storedId(value: $object->getSchema()),
-				registerId: self::storedId(value: $object->getRegister()),
-				objectUuid: self::storedId(value: $object->getUuid()),
-				subject: $record->detail->subject,
-				errorMessage: $record->detail->errorMessage,
-				locale: $record->detail->locale,
-				eventId: $origin->eventId
+				entry: new HistoryEntry(
+					delivery: new HistoryDelivery(
+						ruleId: $origin->ruleId,
+						channel: $record->channel,
+						recipient: $record->recipient,
+						status: $record->status
+					),
+					target: new HistoryTarget(
+						schemaId: self::storedId(value: $object->getSchema()),
+						registerId: self::storedId(value: $object->getRegister()),
+						objectUuid: self::storedId(value: $object->getUuid()),
+						eventId: $origin->eventId
+					),
+					notice: new HistoryNotice(
+						subject: $record->detail->subject,
+						errorMessage: $record->detail->errorMessage,
+						locale: $record->detail->locale
+					)
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->debug(

@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplatingInterface;
 use OCA\OpenRegister\Service\Flow\FlowMessagePreview;
+use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\FlowRecipientAddresses;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -71,9 +72,11 @@ class FlowMessagePreviewTest extends TestCase {
 			[['channel' => 'notification', 'to' => ['alice', 'x@example.org'], 'subject' => 'Hi Ann!', 'body' => 'For Ann!']],
 			$this->preview->messages(
 				'notification',
-				['recipients' => ['alice'], 'title' => 'Hi {name}', 'message' => 'For {name}', 'subject' => 'unused'],
-				[['json' => ['name' => 'Ann']]],
-				['tag' => '!']
+				new MessageSend(
+					config: ['recipients' => ['alice'], 'title' => 'Hi {name}', 'message' => 'For {name}', 'subject' => 'unused'],
+					items: [['json' => ['name' => 'Ann']]],
+					context: ['tag' => '!']
+				)
 			)
 		);
 	}
@@ -90,7 +93,7 @@ class FlowMessagePreviewTest extends TestCase {
 
 		$this->assertSame(
 			[['channel' => 'email', 'to' => ['a@example.org', 'b@example.org'], 'subject' => 'S', 'body' => 'B']],
-			$this->preview->messages('email', ['subject' => 'S', 'body' => 'B', 'title' => 'unused'], [[]], [])
+			$this->preview->messages('email', new MessageSend(config: ['subject' => 'S', 'body' => 'B', 'title' => 'unused'], items: [[]], context: []))
 		);
 	}
 
@@ -109,9 +112,11 @@ class FlowMessagePreviewTest extends TestCase {
 			],
 			$this->preview->messages(
 				'talk',
-				['conversation' => ' room-{name} ', 'message' => 'Hello {name}'],
-				[['json' => ['name' => 'Ann']], ['json' => ['name' => 'Bo']]],
-				[]
+				new MessageSend(
+					config: ['conversation' => ' room-{name} ', 'message' => 'Hello {name}'],
+					items: [['json' => ['name' => 'Ann']], ['json' => ['name' => 'Bo']]],
+					context: []
+				)
 			)
 		);
 	}
@@ -123,6 +128,6 @@ class FlowMessagePreviewTest extends TestCase {
 	 */
 	public function testNoItemsNoMessages(): void {
 		$this->addresses->expects($this->never())->method('resolveRecipients');
-		$this->assertSame([], $this->preview->messages('email', [], [], []));
+		$this->assertSame([], $this->preview->messages('email', new MessageSend(config: [], items: [], context: [])));
 	}
 }
