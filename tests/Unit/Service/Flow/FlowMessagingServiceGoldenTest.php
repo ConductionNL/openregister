@@ -27,6 +27,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
@@ -265,7 +266,8 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		$resolver = $this->createMock(NotificationRecipientResolver::class);
 		$resolver->method('userExists')->willReturnCallback(fn (string $uid): bool => in_array($uid, $users, true));
 		$resolver->method('groupExists')->willReturnCallback(fn (string $gid): bool => $gid === 'team');
-		$resolver->method('resolveWithDiagnostics')->willReturnCallback(function (array $recipientsSpec, array $data) use ($users): array {
+		$resolver->method('resolveFromSource')->willReturnCallback(function (array $recipientsSpec, RecipientSource $source) use ($users): array {
+			$data = $source->data;
 			if (($recipientsSpec[0]['kind'] ?? '') === 'groups') {
 				return ['uids' => ['alice', 'bob'], 'unresolved' => []];
 			}
