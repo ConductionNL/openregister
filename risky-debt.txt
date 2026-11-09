@@ -209,3 +209,4 @@ OCA\OpenRegister\Tests\Unit\Service\WebhookServiceTest::testDeliverWebhookReturn
 OCA\OpenRegister\Tests\Unit\Service\WebhookServiceTest::testDeliverWebhookReturnsFalseOnUnexpectedException
 OCA\OpenRegister\Tests\Unit\Service\WebhookServiceTest::testDeliverWebhookReturnsTrueOnSuccess
 OCA\OpenRegister\Tests\Unit\Service\WebhookServiceTest::testDeliverWebhookSchedulesRetryOnFailure
+/root/sigint/or/vendor/composer/ClassLoader.php:576
