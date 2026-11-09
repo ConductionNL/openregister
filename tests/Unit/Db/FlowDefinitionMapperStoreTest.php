@@ -89,6 +89,11 @@ final class FlowDefinitionMapperStoreTest extends TestCase {
 	 * @return FlowDefinition|null
 	 */
 	private function store(FlowDefinitionMapper $mapper): ?FlowDefinition {
-		return $mapper->store('h-1', '{"nodes":[]}', 'flow-1');
+		$definition = new FlowDefinition();
+		$definition->setHash('h-1');
+		$definition->setDefinition('{"nodes":[]}');
+		$definition->setFlowUuid('flow-1');
+
+		return $mapper->store($definition);
 	}//end store()
 }//end class

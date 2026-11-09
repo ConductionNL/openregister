@@ -86,28 +86,23 @@ class FlowDefinitionMapper extends QBMapper implements FlowDefinitionMapperInter
 	 * the row the loser then reads back is byte-identical to the one it tried
 	 * to write — so re-reading is a complete recovery, not a compromise.
 	 *
-	 * @param string $hash       The canonical hash.
-	 * @param string $definition The canonical definition JSON.
-	 * @param string|null $flowUuid The originating flow, for provenance.
+	 * @param FlowDefinition $definition The canonical hash, definition JSON and originating flow; its created stamp is set here.
 	 *
 	 * @return FlowDefinition|null The stored definition, or null when it could not be stored.
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
-	public function store(string $hash, string $definition, ?string $flowUuid = null): ?FlowDefinition {
+	public function store(FlowDefinition $definition): ?FlowDefinition {
+		$hash = $definition->getHash();
 		$existing = $this->findByHash(hash: $hash);
 		if ($existing !== null) {
 			return $existing;
 		}
 
-		$entity = new FlowDefinition();
-		$entity->setHash($hash);
-		$entity->setDefinition($definition);
-		$entity->setFlowUuid($flowUuid);
-		$entity->setCreated(new DateTime());
+		$definition->setCreated(new DateTime());
 
 		try {
-			return $this->insert(entity: $entity);
+			return $this->insert(entity: $definition);
 		} catch (Throwable $e) {
 			// Lost the race, or the write failed. Re-read: on a race this
 			// returns the winner's identical row; on a real failure it
