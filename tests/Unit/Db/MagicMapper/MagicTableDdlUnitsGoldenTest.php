@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkUpsertSql;
@@ -279,7 +280,7 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 		$schema->setTitle('Sch');
 
 		try {
-			$handler->ensureTableForRegisterSchema($register, $schema);
+			$handler->ensureTargetTable(new MagicTableTarget($register, $schema));
 			$this->fail('Expected an exception');
 		} catch (Exception $e) {
 			$this->assertSame("Failed to create/update table for register 'Reg' + schema 'Sch': boom", $e->getMessage());
@@ -304,7 +305,7 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 		$register->setId(5);
 		$schema = new Schema();
 		$schema->setId(12);
-		$this->assertTrue($handler->ensureTableForRegisterSchema($register, $schema, true));
+		$this->assertTrue($handler->ensureTargetTable(new MagicTableTarget($register, $schema), true));
 	}//end testForcedEnsureDropsAndRecreatesAnExistingTable()
 
 	/**

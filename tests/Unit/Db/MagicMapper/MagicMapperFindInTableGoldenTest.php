@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
@@ -221,9 +222,9 @@ class MagicMapperFindInTableGoldenTest extends TestCase {
 				return $table === 'exists';
 			}
 		);
-		$tables->method('ensureTableForRegisterSchema')->willReturnCallback(
-			function (Register $register, Schema $schema, bool $force = false): bool {
-				$this->events[] = ['ensureTable' => [$register->getId(), $schema->getId(), $force]];
+		$tables->method('ensureTargetTable')->willReturnCallback(
+			function (MagicTableTarget $target, bool $force = false): bool {
+				$this->events[] = ['ensureTable' => [$target->register->getId(), $target->schema->getId(), $force]];
 				return true;
 			}
 		);

@@ -613,12 +613,7 @@ class VectorizationService implements VectorizationServiceInterface {
 	 *
 	 * @spec exclude One-line facade delegation to VectorEmbeddings::semanticSearch; no logic of its own.
 	 */
-	public function semanticSearch(
-		string $query,
-		int $limit = 10,
-		array $filters = [],
-		?string $provider = null,
-	): array {
+	public function semanticSearch(string $query, int $limit = 10, array $filters = [], ?string $provider = null): array {
 		return $this->vectorService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
 	}//end semanticSearch()
 

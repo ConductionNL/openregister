@@ -489,7 +489,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 		);
 
 		$statisticsHandler = $this->createMock(MagicStatisticsHandler::class);
-		$statisticsHandler->method('convertRowToObjectEntity')->willReturnCallback(
+		$statisticsHandler->method('toObjectEntity')->willReturnCallback(
 			function (array $row): ObjectEntity {
 				$object = new ObjectEntity();
 				$object->setId($row['_id']);
