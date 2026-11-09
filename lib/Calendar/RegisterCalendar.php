@@ -70,6 +70,13 @@ class RegisterCalendar implements ICalendar {
 	private array $calendarConfig;
 
 	/**
+	 * The schema and calendar configuration, as the transformer takes them
+	 *
+	 * @var CalendarDefinition
+	 */
+	private CalendarDefinition $definition;
+
+	/**
 	 * The MagicMapper for querying objects
 	 *
 	 * @var MagicMapperInterface
@@ -120,6 +127,7 @@ class RegisterCalendar implements ICalendar {
 	) {
 		$this->schema = $schema;
 		$this->calendarConfig = $calendarConfig;
+		$this->definition = new CalendarDefinition(schema: $schema, config: $calendarConfig);
 		$this->magicMapper = $sources->magicMapper;
 		$this->registerMapper = $sources->registerMapper;
 		$this->transformer = $sources->transformer;
@@ -247,9 +255,6 @@ class RegisterCalendar implements ICalendar {
 			return [];
 		}
 
-		// Build query filters from timerange.
-		$filters = $this->buildTimerangeFilters(options: $query->options);
-
 		// Get all registers that use this schema.
 		$registers = $this->findRegistersForSchema(schema: $this->schema);
 
@@ -259,24 +264,24 @@ class RegisterCalendar implements ICalendar {
 
 		$events = [];
 		foreach ($registers as $register) {
-			$this->collectRegisterEvents(register: $register, filters: $filters, query: $query, events: $events);
+			$events = array_merge($events, $this->registerEvents(register: $register, query: $query));
 		}
 
 		return $events;
 	}//end searchEvents()
 
 	/**
-	 * Append the events of one register; a failing register is logged and skipped,
+	 * The events of one register; a failing register is logged and skipped,
 	 * keeping the events it produced before the failure.
 	 *
 	 * @param Register            $register The register.
-	 * @param array|null          $filters  The timerange filters.
-	 * @param CalendarSearchQuery $query    The search arguments.
-	 * @param array               $events   The events collected so far, appended to.
+	 * @param CalendarSearchQuery $query    The search arguments (timerange, pattern, paging).
 	 *
-	 * @return void
+	 * @return array The register's events.
 	 */
-	private function collectRegisterEvents(Register $register, ?array $filters, CalendarSearchQuery $query, array &$events): void {
+	private function registerEvents(Register $register, CalendarSearchQuery $query): array {
+		$events = [];
+		$filters = $this->buildTimerangeFilters(options: $query->options);
 		try {
 			$objects = $this->magicMapper->findAllInRegisterSchemaTable(
 				register: $register,
@@ -287,7 +292,10 @@ class RegisterCalendar implements ICalendar {
 			);
 
 			foreach ($objects as $object) {
-				$this->appendEvent(object: $object, pattern: $query->pattern, events: $events);
+				$event = $this->matchingEvent(object: $object, pattern: $query->pattern);
+				if ($event !== null) {
+					$events[] = $event;
+				}
 			}
 		} catch (\Exception $e) {
 			$this->logger->warning(
@@ -295,35 +303,32 @@ class RegisterCalendar implements ICalendar {
 				['exception' => $e]
 			);
 		}//end try
-	}//end collectRegisterEvents()
+
+		return $events;
+	}//end registerEvents()
 
 	/**
-	 * Transform one object and append its event when it has one and it matches the pattern.
+	 * Transform one object; its event when it has one and it matches the pattern, else null.
 	 *
 	 * @param ObjectEntity $object  The object.
 	 * @param string       $pattern The summary text pattern ('' matches all).
-	 * @param array        $events  The events collected so far, appended to.
 	 *
-	 * @return void
+	 * @return array|null
 	 */
-	private function appendEvent(ObjectEntity $object, string $pattern, array &$events): void {
-		$event = $this->transformer->transform(
-			$object,
-			$this->schema,
-			$this->calendarConfig
-		);
+	private function matchingEvent(ObjectEntity $object, string $pattern): ?array {
+		$event = $this->transformer->transform($object, $this->definition);
 
 		if ($event === null) {
-			return;
+			return null;
 		}
 
 		// Apply text pattern filter on summary.
 		if ($pattern !== '' && $this->matchesPattern(event: $event, pattern: $pattern) === false) {
-			return;
+			return null;
 		}
 
-		$events[] = $event;
-	}//end appendEvent()
+		return $event;
+	}//end matchingEvent()
 
 	/**
 	 * Extract user ID from a principal URI
