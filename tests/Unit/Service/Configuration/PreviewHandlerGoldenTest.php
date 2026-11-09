@@ -32,7 +32,6 @@ use OCA\OpenRegister\Service\Configuration\PreviewMappers;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Runs previewConfigurationChanges() over a fixed corpus of remote documents
@@ -235,7 +234,6 @@ class PreviewHandlerGoldenTest extends TestCase {
 				schemaMapper: $schemaMapper,
 				objectMapper: $objectMapper
 			),
-			logger: $this->createMock(LoggerInterface::class),
 			fetchHandler: $fetchHandler
 		);
 
