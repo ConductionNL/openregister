@@ -585,7 +585,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$this->applyFindFilters(qb: $qb, filters: $filters ?? []);
 		$this->applyChangedSearch(qb: $qb, search: $search);
 		$this->applyFindSort(qb: $qb, sort: $sort ?? []);
-		self::applyPage(qb: $qb, limit: $limit, offset: $offset);
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()
@@ -607,27 +607,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			);
 		}
 	}//end applyChangedSearch()
-
-	/**
-	 * Apply the limit and offset, each only when given.
-	 *
-	 * @param IQueryBuilder $qb     The query being built.
-	 * @param int|null      $limit  The limit, if any.
-	 * @param int|null      $offset The offset, if any.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/enhanced-audit-trail/spec.md
-	 */
-	private static function applyPage(IQueryBuilder $qb, int|null $limit, int|null $offset): void {
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
-	}//end applyPage()
 
 	/**
 	 * Apply the filters of findAll(): system variables (starting with _) and
@@ -659,7 +638,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			}
 
 			if (is_array($value) === true) {
-				$this->applyListFilter(qb: $qb, field: $field, value: $value);
+				$this->applyListFilter(qb: $qb, term: new AuditTrailFilterTerm(field: $field, value: $value));
 				continue;
 			}
 
@@ -696,21 +675,21 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			return $qb->expr()->like('action', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix).'%'));
 		}
 
-		return self::listOrEqualExpression(qb: $qb, term: $term, valueStr: $valueStr);
+		return self::listOrEqualExpression(qb: $qb, term: $term);
 	}//end scalarFilterExpression()
 
 	/**
 	 * The predicate for a comma-separated list (`action=create,update`), or equality.
 	 *
-	 * @param IQueryBuilder        $qb       The query being built.
-	 * @param AuditTrailFilterTerm $term     The column and its value.
-	 * @param string               $valueStr The value cast to string.
+	 * @param IQueryBuilder        $qb   The query being built.
+	 * @param AuditTrailFilterTerm $term The column and its value.
 	 *
 	 * @return string The predicate.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private static function listOrEqualExpression(IQueryBuilder $qb, AuditTrailFilterTerm $term, string $valueStr): string {
+	private static function listOrEqualExpression(IQueryBuilder $qb, AuditTrailFilterTerm $term): string {
+		$valueStr = (string)$term->value;
 		if (strpos($valueStr, ',') !== false) {
 			$values = array_map('trim', explode(',', $valueStr));
 			return $qb->expr()->in($term->field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY));
@@ -762,9 +741,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * list (`field[]=a&field[]=b`) keeps only the rows whose column is one of
 	 * them. The exclusion runs in the query, so a page holds what is left.
 	 *
-	 * @param IQueryBuilder        $qb    The query being built.
-	 * @param string               $field The allowlisted column.
-	 * @param array<string, mixed> $value The operator map or the plain list.
+	 * @param IQueryBuilder        $qb   The query being built.
+	 * @param AuditTrailFilterTerm $term The allowlisted column, and its operator map or plain list.
 	 *
 	 * @return void
 	 *
@@ -772,7 +750,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/changes/audit-trail-not-in-filter/specs/audit-trail-immutable/spec.md#requirement-a-history-read-can-leave-out-actions-and-actors-in-the-query
 	 */
-	private function applyListFilter(IQueryBuilder $qb, string $field, array $value): void {
+	private function applyListFilter(IQueryBuilder $qb, AuditTrailFilterTerm $term): void {
+		$field = $term->field;
+		$value = $term->value;
 		if (array_is_list($value) === true) {
 			$qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($this->listValues(value: $value), IQueryBuilder::PARAM_STR_ARRAY)));
 			return;
@@ -2413,17 +2393,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->isNull('purged_at'));
 
-		if ($onlyActions !== null && $onlyActions !== []) {
-			$qb->andWhere(
-				$qb->expr()->in('action', $qb->createNamedParameter($onlyActions, IQueryBuilder::PARAM_STR_ARRAY))
-			);
-		}
-
-		if ($excludeActions !== []) {
-			$qb->andWhere(
-				$qb->expr()->notIn('action', $qb->createNamedParameter($excludeActions, IQueryBuilder::PARAM_STR_ARRAY))
-			);
-		}
+		self::andActionIn(qb: $qb, onlyActions: $onlyActions);
+		self::andActionNotIn(qb: $qb, excludeActions: $excludeActions);
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
@@ -2504,20 +2475,39 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->isNull('purged_at'));
 
-		if ($onlyActions !== null && $onlyActions !== []) {
-			$qb->andWhere(
-				$qb->expr()->in('action', $qb->createNamedParameter($onlyActions, IQueryBuilder::PARAM_STR_ARRAY))
-			);
-		}
-
-		if ($excludeActions !== []) {
-			$qb->andWhere(
-				$qb->expr()->notIn('action', $qb->createNamedParameter($excludeActions, IQueryBuilder::PARAM_STR_ARRAY))
-			);
-		}
+		self::andActionIn(qb: $qb, onlyActions: $onlyActions);
+		self::andActionNotIn(qb: $qb, excludeActions: $excludeActions);
 
 		return (int)$qb->executeStatement();
 	}//end tombstoneForObject()
+
+	/**
+	 * Restrict a per-object query to these actions; null or empty restricts nothing.
+	 *
+	 * @param IQueryBuilder           $qb          The query being built.
+	 * @param array<int, string>|null $onlyActions The actions, or null for every action.
+	 *
+	 * @return void
+	 */
+	private static function andActionIn(IQueryBuilder $qb, ?array $onlyActions): void {
+		if ($onlyActions !== null && $onlyActions !== []) {
+			$qb->andWhere($qb->expr()->in('action', $qb->createNamedParameter($onlyActions, IQueryBuilder::PARAM_STR_ARRAY)));
+		}
+	}//end andActionIn()
+
+	/**
+	 * Leave these actions out of a per-object query, such as the evidence of a destruction.
+	 *
+	 * @param IQueryBuilder      $qb             The query being built.
+	 * @param array<int, string> $excludeActions The actions never touched.
+	 *
+	 * @return void
+	 */
+	private static function andActionNotIn(IQueryBuilder $qb, array $excludeActions): void {
+		if ($excludeActions !== []) {
+			$qb->andWhere($qb->expr()->notIn('action', $qb->createNamedParameter($excludeActions, IQueryBuilder::PARAM_STR_ARRAY)));
+		}
+	}//end andActionNotIn()
 
 	/**
 	 * Clear all audit trail logs (not just expired ones)
@@ -2964,7 +2954,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-		self::applyActorFilters(qb: $qb, action: $action, from: $from, to: $to);
+		self::andActionIs(qb: $qb, action: $action);
+		self::andCreatedFrom(qb: $qb, from: $from);
+		self::andCreatedUntil(qb: $qb, until: $to);
 
 		$results = $this->findEntities(query: $qb);
 
@@ -2974,7 +2966,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->from($this->getTableName())
 			->where($count->expr()->eq('user', $count->createNamedParameter($userId)));
 
-		self::applyActorFilters(qb: $count, action: $action, from: $from, to: $to);
+		self::andActionIs(qb: $count, action: $action);
+		self::andCreatedFrom(qb: $count, from: $from);
+		self::andCreatedUntil(qb: $count, until: $to);
 
 		$result = $count->executeQuery();
 		$row = $result->fetch();
@@ -2987,39 +2981,18 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end findByActor()
 
 	/**
-	 * The optional action and created-window filters of findByActor(), each only when non-empty.
+	 * The optional action filter of findByActor(), only when non-empty.
 	 *
 	 * @param IQueryBuilder $qb     The query being built.
 	 * @param string|null   $action Action filter.
-	 * @param string|null   $from   Lower bound on `created`.
-	 * @param string|null   $to     Upper bound on `created`.
 	 *
 	 * @return void
 	 */
-	private static function applyActorFilters(IQueryBuilder $qb, string|null $action, string|null $from, string|null $to): void {
-		if (self::isBlank(value: $action) === false) {
+	private static function andActionIs(IQueryBuilder $qb, string|null $action): void {
+		if ($action !== null && $action !== '') {
 			$qb->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($action)));
 		}
-
-		if (self::isBlank(value: $from) === false) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from)));
-		}
-
-		if (self::isBlank(value: $to) === false) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to)));
-		}
-	}//end applyActorFilters()
-
-	/**
-	 * Whether an optional filter value is absent: null or the empty string.
-	 *
-	 * @param string|null $value The value.
-	 *
-	 * @return bool True when the filter does not apply.
-	 */
-	private static function isBlank(string|null $value): bool {
-		return $value === null || $value === '';
-	}//end isBlank()
+	}//end andActionIs()
 
 	/**
 	 * Create one immutable, hash-chained audit record for a write that was
@@ -3196,7 +3169,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->from($this->getTableName())
 			->groupBy('purpose');
 
-		self::applyCreatedWindow(qb: $qb, from: $from, to: $to);
+		self::andCreatedFrom(qb: $qb, from: $from);
+		self::andCreatedUntil(qb: $qb, until: $to);
 
 		$result = $qb->executeQuery();
 		$counts = [];
@@ -3210,27 +3184,43 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end countByPurpose()
 
 	/**
-	 * Bound `created` from below and above, each only when given.
+	 * Bound `created` from below, only when a bound is given.
 	 *
-	 * @param IQueryBuilder $qb   The query being built.
-	 * @param DateTime|null $from Inclusive lower bound.
-	 * @param DateTime|null $to   Inclusive upper bound.
+	 * A DateTime is bound as a date; a string (findByActor()'s ISO-8601 filter)
+	 * is bound as it was given, and an empty one is no bound.
+	 *
+	 * @param IQueryBuilder        $qb   The query being built.
+	 * @param DateTime|string|null $from Inclusive lower bound.
 	 *
 	 * @return void
 	 */
-	private static function applyCreatedWindow(IQueryBuilder $qb, DateTime|null $from, DateTime|null $to): void {
-		if ($from !== null) {
-			$qb->andWhere(
-				$qb->expr()->gte('created', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
+	private static function andCreatedFrom(IQueryBuilder $qb, DateTime|string|null $from): void {
+		if ($from instanceof DateTime) {
+			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
 		}
 
-		if ($to !== null) {
-			$qb->andWhere(
-				$qb->expr()->lte('created', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
+		if (is_string($from) === true && $from !== '') {
+			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from)));
 		}
-	}//end applyCreatedWindow()
+	}//end andCreatedFrom()
+
+	/**
+	 * Bound `created` from above, only when a bound is given; bound the way andCreatedFrom() binds.
+	 *
+	 * @param IQueryBuilder        $qb    The query being built.
+	 * @param DateTime|string|null $until Inclusive upper bound.
+	 *
+	 * @return void
+	 */
+	private static function andCreatedUntil(IQueryBuilder $qb, DateTime|string|null $until): void {
+		if ($until instanceof DateTime) {
+			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+		}
+
+		if (is_string($until) === true && $until !== '') {
+			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($until)));
+		}
+	}//end andCreatedUntil()
 
 	/**
 	 * The count key of a purpose: the purpose as a string, or `null` for none.
