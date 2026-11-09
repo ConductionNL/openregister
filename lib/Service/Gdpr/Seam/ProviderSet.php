@@ -111,7 +111,8 @@ final class ProviderSet {
 	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function resolve(?string $selectorId, object $default, string $defaultId, string $fallbackWarning): object {
-		return $this->resolveOr(selectorId: $selectorId, fallback: new ProviderFallback(default: $default, defaultId: $defaultId, warning: $fallbackWarning));
+		$fallback = new ProviderFallback(default: $default, defaultId: $defaultId, warning: $fallbackWarning);
+		return $this->resolveOr(selectorId: $selectorId, fallback: $fallback);
 
 	}//end resolve()
 
