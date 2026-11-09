@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -151,15 +152,28 @@ class UrnService implements UrnServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-1
 	 */
 	public function build(string $registerSlug, string $schemaSlug, string $uuid): string {
+		return $this->buildFor(ref: new ObjectRef(register: $registerSlug, schema: $schemaSlug, id: $uuid));
+	}//end build()
+
+	/**
+	 * Build the URN of the object a reference names by register and schema slug.
+	 *
+	 * @param ObjectRef $ref The register slug, schema slug and object UUID.
+	 *
+	 * @return string The URN.
+	 *
+	 * @spec openspec/specs/urn-resource-addressing/spec.md
+	 */
+	public function buildFor(ObjectRef $ref): string {
 		return sprintf(
 			'urn:%s:%s:%s:%s:%s',
 			self::DEFAULT_NID,
 			$this->getInstanceSlug(),
-			strtolower($registerSlug),
-			strtolower($schemaSlug),
-			strtolower($uuid)
+			strtolower((string)$ref->register),
+			strtolower((string)$ref->schema),
+			strtolower($ref->id)
 		);
-	}//end build()
+	}//end buildFor()
 
 	/**
 	 * Parse a URN string into its components.
