@@ -103,12 +103,47 @@ class CasePlanStateMachine {
 		?string $reason = null,
 		?CasePlanTree $tree = null,
 	): CaseItem {
-		$this->table->assertLegal(item: $item, to: $to);
+		$why = new CaseTransitionCause(cause: $cause, causeRef: $causeRef, actor: $actor, reason: $reason);
 
-		$why = new CaseTransitionCause(cause: $cause, causeRef: $causeRef, actor: ($actor ?? self::SYSTEM_ACTOR), reason: $reason);
-
-		return $this->commitMove(move: new CasePlanMove(item: $item, to: $to, why: $why, tree: $tree));
+		return $this->commit(move: new CasePlanMove(item: $item, to: $to, why: $why, tree: $tree));
 	}//end transition()
+
+	/**
+	 * Move one item, with everything that entails, in one transaction: the
+	 * move as one value. A cause without an actor is recorded as the system
+	 * ({@see SYSTEM_ACTOR}).
+	 *
+	 * @param CasePlanMove $move The item as read, the target state, the cause and the plan when known.
+	 *
+	 * @return CaseItem The item as persisted.
+	 *
+	 * @throws CaseTransitionException When illegal, or when another mover won.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 */
+	public function commit(CasePlanMove $move): CaseItem {
+		$this->table->assertLegal(item: $move->item, to: $move->to);
+
+		return $this->commitMove(move: self::attributed(move: $move));
+	}//end commit()
+
+	/**
+	 * The move with its actor defaulted to the system.
+	 *
+	 * @param CasePlanMove $move The move.
+	 *
+	 * @return CasePlanMove The move, naming an actor.
+	 */
+	private static function attributed(CasePlanMove $move): CasePlanMove {
+		$why = $move->why;
+		if ($why->actor !== null) {
+			return $move;
+		}
+
+		$system = new CaseTransitionCause(cause: $why->cause, causeRef: $why->causeRef, actor: self::SYSTEM_ACTOR, reason: $why->reason);
+
+		return new CasePlanMove(item: $move->item, to: $move->to, why: $system, tree: $move->tree);
+	}//end attributed()
 
 	/**
 	 * Apply one legal move in a (possibly nested) transaction; the outermost
@@ -146,13 +181,27 @@ class CasePlanStateMachine {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function recordDenial(CaseItem $item, string $to, ?string $actor, string $reason): void {
-		if ($item->getId() === null) {
+		$denial = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $actor, reason: $reason);
+		$this->recordRefusal(attempt: new CasePlanMove(item: $item, to: $to, why: $denial, tree: null));
+	}//end recordDenial()
+
+	/**
+	 * Record a refused attempt as one value: see {@see recordDenial()}. An
+	 * unsaved item is ignored.
+	 *
+	 * @param CasePlanMove $attempt The item acted on, the requested state (or the verb) and the denial's cause.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	public function recordRefusal(CasePlanMove $attempt): void {
+		if ($attempt->item->getId() === null) {
 			return;
 		}
 
-		$denial = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $actor, reason: $reason);
-		$this->appendDenial(attempt: new CasePlanMove(item: $item, to: $to, why: $denial, tree: null));
-	}//end recordDenial()
+		$this->appendDenial(attempt: $attempt);
+	}//end recordRefusal()
 
 	/**
 	 * Append a refused attempt's audit row; a failure to append it is logged, not converted.
@@ -206,9 +255,25 @@ class CasePlanStateMachine {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function recordCreation(CaseItem $item, string $cause, ?string $causeRef, ?string $actor): void {
-		$why = new CaseTransitionCause(cause: $cause, causeRef: $causeRef, actor: ($actor ?? self::SYSTEM_ACTOR), reason: null);
-		$this->store->audits->insert($why->auditFor(item: $item, fromState: '', toState: (string)$item->getState()));
+		$this->recordCreationOf(item: $item, why: new CaseTransitionCause(cause: $cause, causeRef: $causeRef, actor: $actor, reason: null));
 	}//end recordCreation()
+
+	/**
+	 * Audit a row's creation with its cause as one value: see {@see recordCreation()}.
+	 * A cause without an actor is recorded as the system.
+	 *
+	 * @param CaseItem            $item The inserted item.
+	 * @param CaseTransitionCause $why  The cause, its reference and the acting identity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 */
+	public function recordCreationOf(CaseItem $item, CaseTransitionCause $why): void {
+		$actor = ($why->actor ?? self::SYSTEM_ACTOR);
+		$why = new CaseTransitionCause(cause: $why->cause, causeRef: $why->causeRef, actor: $actor, reason: null);
+		$this->store->audits->insert($why->auditFor(item: $item, fromState: '', toState: (string)$item->getState()));
+	}//end recordCreationOf()
 
 	/**
 	 * Dispatch every committed transition's event. Called by the outermost

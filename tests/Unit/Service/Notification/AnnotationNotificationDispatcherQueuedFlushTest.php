@@ -21,6 +21,7 @@ namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Notifications\Db\HistoryEntry;
 use OCA\OpenRegister\Notifications\Db\NotificationHistory;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
@@ -250,8 +251,22 @@ class AnnotationNotificationDispatcherQueuedFlushTest extends TestCase {
 
 		$history = $this->createMock(NotificationHistoryMapper::class);
 		$history->method('record')->willReturnCallback(
-			function (...$args) use ($historyThrows): NotificationHistory {
-				$this->record(what: 'history.record', args: $args);
+			function (HistoryEntry $entry) use ($historyThrows): NotificationHistory {
+				$this->record(what: 'history.record', args: [
+					$entry->delivery->ruleId,
+					$entry->delivery->channel,
+					$entry->delivery->recipient,
+					$entry->delivery->status,
+					$entry->target->schemaId,
+					$entry->target->registerId,
+					$entry->target->objectUuid,
+					$entry->notice->subject,
+					$entry->notice->errorMessage,
+					$entry->notice->locale,
+					null,
+					null,
+					$entry->target->eventId,
+				]);
 				if ($historyThrows === true) {
 					throw new \RuntimeException('db down');
 				}

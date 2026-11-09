@@ -78,8 +78,8 @@ class NotificationDeliveryWindowIntegrationTest extends TestCase {
 
 		$this->historyMapper = $this->createMock(NotificationHistoryMapper::class);
 		$this->historyMapper->method('record')->willReturnCallback(
-			function (string $ruleId, string $channel, string $recipient, string $status, ...$rest) {
-				$this->recordedHistory[] = $status;
+			function (\OCA\OpenRegister\Notifications\Db\HistoryEntry $entry) {
+				$this->recordedHistory[] = $entry->delivery->status;
 				return new \OCA\OpenRegister\Notifications\Db\NotificationHistory();
 			}
 		);
