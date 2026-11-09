@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Db\SearchTrail;
 
 /**
  * The order and the window of one listing. A null limit or offset is not applied.
+ *
+ * @spec openspec/specs/search-trail-recording/spec.md
  */
 final class SearchTrailPage {
 

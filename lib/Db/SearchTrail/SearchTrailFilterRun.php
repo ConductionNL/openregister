@@ -26,6 +26,8 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 
 /**
  * The query and the column one filter is being applied to.
+ *
+ * @spec openspec/specs/search-trail-recording/spec.md
  */
 final class SearchTrailFilterRun {
 
