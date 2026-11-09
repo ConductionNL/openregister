@@ -36,7 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 
 /**
@@ -49,11 +49,11 @@ class MacroActionValidator {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper           $flows      Looks the bound flow up by uuid.
+	 * @param FlowMapperInterface           $flows      Looks the bound flow up by uuid.
 	 * @param FlowTriggerDerivation $derivation Reads a flow's trigger nodes.
 	 */
 	public function __construct(
-		private readonly FlowMapper $flows,
+		private readonly FlowMapperInterface $flows,
 		private readonly FlowTriggerDerivation $derivation,
 	) {
 	}//end __construct()
