@@ -231,14 +231,10 @@ class CasePlanService implements CasePlanServiceInterface {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	public function ensureItems(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, array $history, string $app): array {
-		$actor = $this->systemActor(app: $app);
+		$anchor = new CaseAnchor(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId);
+		$request = new CaseItemsEnsureRequest(anchor: $anchor, definition: $definition, history: $history, actor: $this->systemActor(app: $app));
 
-		return $this->ensurer()->ensure(
-			anchor: new CaseAnchor(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId),
-			definition: $definition,
-			history: $history,
-			actor: $actor
-		);
+		return $this->ensurer()->ensure(request: $request);
 	}//end ensureItems()
 
 	/**
@@ -561,7 +557,7 @@ class CasePlanService implements CasePlanServiceInterface {
 			schemaId: $item->getSchemaId()
 		);
 
-		return $this->mechanics->sentries->entrySentry(item: $item, tree: $tree, object: $object) !== null;
+		return $this->mechanics->sentries->entrySentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: $object)) !== null;
 	}//end isEnableable()
 
 	/**
@@ -729,7 +725,8 @@ class CasePlanService implements CasePlanServiceInterface {
 		try {
 			$this->anchorAccess->authorization->assertMayAct(verb: $verb, item: $move->item, tree: $move->tree, uid: $uid);
 		} catch (CaseAccessDeniedException $denial) {
-			$this->mechanics->machine->recordDenial(item: $move->item, to: $move->to, actor: $uid, reason: $denial->getMessage());
+			$refusal = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $uid, reason: $denial->getMessage());
+			$this->mechanics->machine->recordRefusal(attempt: new CasePlanMove(item: $move->item, to: $move->to, why: $refusal, tree: null));
 
 			throw $denial;
 		}
@@ -774,12 +771,9 @@ class CasePlanService implements CasePlanServiceInterface {
 			$placed = new CasePlanPlacement(node: $node, parentId: $parentId, position: (int)$position);
 			$row = $this->mechanics->definitions->rowFrom(placed: $placed, insertion: $insertion);
 			$persisted = $this->store->items->insert($row);
-			$this->mechanics->machine->recordCreation(
-				item: $persisted,
-				cause: CaseItemAudit::CAUSE_IMPORT,
-				causeRef: $insertion->provenance->flowUuid,
-				actor: $insertion->actor
-			);
+			$flowUuid = $insertion->provenance->flowUuid;
+			$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_IMPORT, causeRef: $flowUuid, actor: $insertion->actor, reason: null);
+			$this->mechanics->machine->recordCreationOf(item: $persisted, why: $why);
 
 			$this->insertNodes(nodes: ($node['children'] ?? []), parentId: (int)$persisted->getId(), insertion: $insertion);
 		}
@@ -818,7 +812,8 @@ class CasePlanService implements CasePlanServiceInterface {
 	private function insertAdHoc(CasePlanPlacement $placed, CasePlanInsertion $insertion): CaseItem {
 		$row = $this->mechanics->definitions->rowFrom(placed: $placed, insertion: $insertion);
 		$persisted = $this->store->items->insert($row);
-		$this->mechanics->machine->recordCreation(item: $persisted, cause: CaseItemAudit::CAUSE_USER, causeRef: 'attach', actor: $insertion->actor);
+		$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: 'attach', actor: $insertion->actor, reason: null);
+		$this->mechanics->machine->recordCreationOf(item: $persisted, why: $why);
 
 		return $persisted;
 	}//end insertAdHoc()
@@ -937,15 +932,7 @@ class CasePlanService implements CasePlanServiceInterface {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
 	private function move(CaseItemMove $move, CaseTransitionCause $why): void {
-		$this->mechanics->machine->transition(
-			item: $move->item,
-			to: $move->to,
-			cause: $why->cause,
-			causeRef: $why->causeRef,
-			actor: $why->actor,
-			reason: $why->reason,
-			tree: $move->tree
-		);
+		$this->mechanics->machine->commit(move: new CasePlanMove(item: $move->item, to: $move->to, why: $why, tree: $move->tree));
 	}//end move()
 
 	/**

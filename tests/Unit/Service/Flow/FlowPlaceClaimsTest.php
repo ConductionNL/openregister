@@ -34,6 +34,8 @@ use OCA\OpenRegister\BackgroundJob\FlowRunWorker;
 use OCA\OpenRegister\Db\FlowClaim;
 use OCA\OpenRegister\Db\FlowClaimMapper;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
+use OCA\OpenRegister\Service\Flow\ClaimPass;
+use OCA\OpenRegister\Service\Flow\FiringClaim;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -195,4 +197,19 @@ class FlowPlaceClaimsTest extends TestCase {
 		$this->assertSame([], $this->claims->acquire(runUuid: 'r2', streamId: 's', transition: 'T', places: [], owner: 'A'));
 		$this->assertSame([], $this->attempts);
 	}//end testDuplicatePlacesAreClaimedOnceAndNoPlacesClaimNothing()
+
+	public function testClaimTakesTheFiringAndThePassAsValues(): void {
+		$taken = $this->claims->claim(
+			firing: new FiringClaim(runUuid: 'r', streamId: 's', transition: 'T', places: ['b', 'a']),
+			pass: new ClaimPass(owner: 'A', runCap: 1)
+		);
+		$this->assertSame(['a', 'b'], $taken);
+		$this->assertSame('A', $this->index['r|a']->getOwner());
+
+		// The run cap travels on the pass: a run at its cap is refused.
+		$this->assertNull($this->claims->claim(
+			firing: new FiringClaim(runUuid: 'r', streamId: 's2', transition: 'T2', places: ['c']),
+			pass: new ClaimPass(owner: 'A', runCap: 1)
+		));
+	}//end testClaimTakesTheFiringAndThePassAsValues()
 }//end class
