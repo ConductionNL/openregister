@@ -579,7 +579,7 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
-@use './cardRules' as *;
+@use './cardRules.scss' as *;
 
 @include view-container-2;
 
