@@ -468,7 +468,8 @@ class CasePlanEnsurer {
 			$row = ($context['existing'][$key] ?? null);
 			$bucket = 'kept';
 			if ($row instanceof CaseItem === false) {
-				$row = $this->insert(node: $node, parentId: $parentId, position: (int)$position, context: $context);
+				$placed = new CasePlanPlacement(node: $node, parentId: $parentId, position: (int)$position);
+				$row = $this->insert(placed: $placed, context: $context);
 				$bucket = 'created';
 			}
 
@@ -481,22 +482,20 @@ class CasePlanEnsurer {
 	 * Insert one missing item with its recorded state, its creation audit and
 	 * its imported history.
 	 *
-	 * @param array<string, mixed> $node The validated node.
-	 * @param int|null $parentId The containing stage's row id.
-	 * @param int $position Its position among its siblings.
+	 * @param CasePlanPlacement $placed The validated node, its containing stage's row id and its position.
 	 * @param array<string, mixed> $context See {@see ensureLevel()}.
 	 *
 	 * @return CaseItem The inserted row.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	private function insert(array $node, ?int $parentId, int $position, array $context): CaseItem {
+	private function insert(CasePlanPlacement $placed, array $context): CaseItem {
 		$actor = (string)$context['actor'];
-		$row = $this->rowFor(node: $node, parentId: $parentId, position: $position, context: $context);
-		$state = self::carryState(row: $row, node: $node);
+		$row = $this->rowFor(placed: $placed, context: $context);
+		$state = self::carryState(row: $row, node: $placed->node);
 		$persisted = $this->store->items->insert($row);
 		$this->auditCreation(item: $persisted, state: $state, actor: $actor);
-		$this->importHistory(item: $persisted, entries: ($context['history'][(string)$node['key']] ?? []), actor: $actor);
+		$this->importHistory(item: $persisted, entries: ($context['history'][(string)$placed->node['key']] ?? []), actor: $actor);
 
 		return $persisted;
 	}//end insert()
@@ -504,26 +503,19 @@ class CasePlanEnsurer {
 	/**
 	 * The unsaved row of one missing item, compiled by the one definition compiler.
 	 *
-	 * @param array<string, mixed> $node The validated node.
-	 * @param int|null $parentId The containing stage's row id.
-	 * @param int $position Its position among its siblings.
+	 * @param CasePlanPlacement $placed The validated node, its containing stage's row id and its position.
 	 * @param array<string, mixed> $context See {@see ensureLevel()}.
 	 *
 	 * @return CaseItem The unsaved row, in `available`.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	private function rowFor(array $node, ?int $parentId, int $position, array $context): CaseItem {
+	private function rowFor(CasePlanPlacement $placed, array $context): CaseItem {
+		$anchor = new CaseAnchor(objectUuid: (string)$context['object'], registerId: $context['register'], schemaId: $context['schema']);
+
 		return $this->definitions->rowFrom(
-			node: $node,
-			objectUuid: (string)$context['object'],
-			registerId: $context['register'],
-			schemaId: $context['schema'],
-			parentId: $parentId,
-			position: $position,
-			settings: $context['settings'],
-			origin: $this->definitions->originOf(node: $node),
-			actor: (string)$context['actor']
+			placed: $placed,
+			insertion: new CasePlanInsertion(anchor: $anchor, settings: $context['settings'], actor: (string)$context['actor'])
 		);
 	}//end rowFor()
 
