@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\GitHubIssueDraft;
 use OCA\OpenRegister\Controller\Support\GitHubIssueListing;
 use OCA\OpenRegister\Controller\Support\GitHubIssuesControllerServices;
@@ -47,7 +48,6 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
-use OCP\ICacheFactory;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -111,25 +111,21 @@ class GitHubIssuesController extends Controller {
 	/**
 	 * GitHubIssuesController constructor.
 	 *
-	 * @param string $appName Nextcloud app name (DI-injected)
 	 * @param IRequest $request Current HTTP request
 	 * @param GitHubIssuesControllerServices $services The git hub issues controller services.
-	 * @param ICacheFactory $cacheFactory Distributed cache factory (read-response cache)
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-3
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		GitHubIssuesControllerServices $services,
-		ICacheFactory $cacheFactory,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
 		$this->guards = $services->domain->guards;
 		$this->validator = $services->domain->validator;
 		$this->rateLimiter = $services->domain->rateLimiter;
-		$this->readCache = $cacheFactory->createDistributed('openregister_github_issues');
+		$this->readCache = $services->platform->cacheFactory->createDistributed('openregister_github_issues');
 	}//end __construct()
 
 	/**
