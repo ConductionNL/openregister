@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\BackgroundJob\SyncDataJob;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
@@ -94,9 +95,8 @@ class SyncDataJobTest extends TestCase {
 			}
 		);
 		$job = new SyncDataJob(
-			$this->createMock(ITimeFactory::class),
-			new SyncDataServices($this->sources, $schedule, $this->fetchers, $this->pipeline),
-			$this->createMock(LoggerInterface::class)
+			new JobRuntime($this->createMock(ITimeFactory::class), $this->createMock(LoggerInterface::class)),
+			new SyncDataServices($this->sources, $schedule, $this->fetchers, $this->pipeline)
 		);
 		$method = (new \ReflectionClass($job))->getMethod('run');
 		$method->invoke($job, null);

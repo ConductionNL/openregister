@@ -31,7 +31,6 @@ use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 
@@ -54,28 +53,34 @@ class SyncConfigurationsJob extends TimedJob {
 	private const SYNC_CHECK_INTERVAL = 3600;
 
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor
 	 *
-	 * @param ITimeFactory                  $time                 Time factory for job scheduling
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
 	 * @param ConfigurationMapperInterface           $configurationMapper  Configuration mapper
 	 * @param AppConfigurationImporterInterface $configurationService Configuration service
 	 * @param GitHubClientInterface         $githubService        GitHub service
 	 * @param GitLabHandlerInterface        $gitlabService        GitLab service
 	 * @param Client                        $httpClient           HTTP client
-	 * @param LoggerInterface               $logger               Logger
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		JobRuntime $runtime,
 		private readonly ConfigurationMapperInterface $configurationMapper,
 		private readonly AppConfigurationImporterInterface $configurationService,
 		private readonly GitHubClientInterface $githubService,
 		private readonly GitLabHandlerInterface $gitlabService,
 		private readonly Client $httpClient,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::SYNC_CHECK_INTERVAL);
 	}//end __construct()
 

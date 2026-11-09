@@ -36,7 +36,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -88,22 +87,34 @@ class TemporalCalculationSweepJob extends TimedJob {
 	private const APP_ID = 'openregister';
 
 	/**
+	 * AppConfig, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory                             $time         Time factory required by parent.
-	 * @param IAppConfig                               $appConfig    App-config reader.
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
 	 * @param TemporalCalculationSweepServiceInterface $sweepService Domain sweep service.
-	 * @param LoggerInterface                          $logger       Logger.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		private readonly IAppConfig $appConfig,
+		ConfiguredJobRuntime $runtime,
 		private readonly TemporalCalculationSweepServiceInterface $sweepService,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		$this->appConfig = $runtime->appConfig;
+		parent::__construct(time: $runtime->time);
 
-		$interval = (int)$appConfig->getValueString(
+		$interval = (int)$this->appConfig->getValueString(
 			app: self::APP_ID,
 			key: self::CONFIG_KEY_INTERVAL,
 			default: (string)self::DEFAULT_INTERVAL_SECONDS

@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\BackgroundJob\Support\TransferCheckServices;
 use OCA\OpenRegister\BackgroundJob\TransferCheckJob;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
@@ -81,10 +82,8 @@ class TransferCheckJobBehaviourTest extends TestCase {
 			static fn (string $app, string $key, string $default = ''): string => $key === 'edepot_endpoint_url' ? 'https://edepot.test' : $default
 		);
 		$job = new TransferCheckJob(
-			$this->createMock(ITimeFactory::class),
-			new TransferCheckServices($retention, $lists, $records),
-			$appConfig,
-			$logger
+			new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $logger),
+			new TransferCheckServices($retention, $lists, $records)
 		);
 		(new \ReflectionMethod($job, 'run'))->invoke($job, null);
 	}
