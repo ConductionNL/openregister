@@ -338,8 +338,10 @@ app's settings register). It does not decide who may read; give those schemas
 a `read` rule.
 
 While the flag is off, OpenRegister logs a deprecation warning the first time a
-write is let through on an unmarked schema, so the log tells you which schemas
-would be affected before you switch it on. `GET /api/capabilities` reports the
+write of each kind is let through on an unmarked schema
+in a request, so the log shows that such writes are happening before you switch
+it on. The warning does not name the schema; `rbac-unmarked-schema-audit.md`
+tracks which schemas are unmarked. `GET /api/capabilities` reports the
 current value as `enforceDefaultClosed`.
 
 To turn it off again:
