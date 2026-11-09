@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Service\Object\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -336,7 +337,8 @@ final class FindAllMappersGoldenTest extends TestCase {
 			$session,
 			$groups,
 			$this->createMock(IAppConfig::class),
-			new NullLogger()
+			new NullLogger(),
+			new EntityEventPublisher($this->createMock(IEventDispatcher::class))
 		);
 	}//end registerMapper()
 
@@ -349,7 +351,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 	 */
 	private function applicationMapper(array $persona): ApplicationMapper {
 		[$session, $groups, $organisations] = $this->caller(persona: $persona);
-		return new ApplicationMapper($this->connection(), new TenancyServices($organisations, $session, $groups), $this->createMock(IEventDispatcher::class));
+		return new ApplicationMapper($this->connection(), new TenancyServices($organisations, $session, $groups), new EntityEventPublisher($this->createMock(IEventDispatcher::class)));
 	}//end applicationMapper()
 
 	/**
@@ -361,7 +363,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 	 */
 	private function sourceMapper(array $persona): SourceMapper {
 		[$session, $groups, $organisations] = $this->caller(persona: $persona);
-		return new SourceMapper($this->connection(), new TenancyServices($organisations, $session, $groups), $this->createMock(IEventDispatcher::class), $this->createMock(IAppConfig::class));
+		return new SourceMapper($this->connection(), new TenancyServices($organisations, $session, $groups), new EntityEventPublisher($this->createMock(IEventDispatcher::class)), $this->createMock(IAppConfig::class));
 	}//end sourceMapper()
 
 	/**

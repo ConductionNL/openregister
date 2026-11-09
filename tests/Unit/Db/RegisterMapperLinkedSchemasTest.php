@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\EntityEventPublisher;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -130,6 +131,7 @@ final class RegisterMapperLinkedSchemasTest extends TestCase {
 					$this->createMock(IGroupManager::class),
 					$this->createMock(IAppConfig::class),
 					$this->createMock(LoggerInterface::class),
+					new EntityEventPublisher($this->createMock(IEventDispatcher::class)),
 				]
 			)
 			->onlyMethods(['find'])

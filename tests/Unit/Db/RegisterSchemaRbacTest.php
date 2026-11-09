@@ -8,6 +8,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\EntityEventPublisher;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -94,6 +95,7 @@ class RegisterSchemaRbacTest extends TestCase {
 					$this->groupManager,
 					$this->appConfig,
 					$this->logger,
+					new EntityEventPublisher($this->eventDispatcher),
 				]
 			)
 			->getMock();

@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskRelation;
 use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
+use OCA\OpenRegister\Service\Object\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 
@@ -152,7 +153,7 @@ class TaskSideMappersTest extends TestCase {
 				$announced[] = $event->getRunUuid() . ':' . $event->getStatus();
 			}
 		);
-		$mapper = new FlowRunMapper(db: $this->connectionWith(), dispatcher: $dispatcher);
+		$mapper = new FlowRunMapper(db: $this->connectionWith(), entityEvents: new EntityEventPublisher($dispatcher));
 
 		$done = new FlowRun();
 		$done->setId(1);

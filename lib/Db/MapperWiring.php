@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
@@ -99,7 +100,8 @@ final class MapperWiring {
 			// argument omitted here is never supplied at all. That is how
 			// RegisterMapper ran with four dead logging branches
 			// (openregister#2820).
-			logger: $container->get('Psr\Log\LoggerInterface')
+			logger: $container->get('Psr\Log\LoggerInterface'),
+			entityEvents: $container->get(EntityEventsInterface::class)
 		);
 	}//end registerMapper()
 
@@ -170,7 +172,7 @@ final class MapperWiring {
 			db: $container->get('OCP\IDBConnection'),
 			auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
 			userSession: $container->get('OCP\IUserSession'),
-			eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+			entityEvents: $container->get(EntityEventsInterface::class),
 			logger: $container->get('Psr\Log\LoggerInterface')
 		);
 	}//end entityRelationMapper()

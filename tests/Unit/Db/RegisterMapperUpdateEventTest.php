@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
+use OCA\OpenRegister\Service\Object\EntityEventPublisher;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -116,7 +117,8 @@ class RegisterMapperUpdateEventTest extends TestCase {
 			$this->createMock(IUserSession::class),
 			$this->createMock(IGroupManager::class),
 			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			new EntityEventPublisher($dispatcher)
 		) extends RegisterMapper {
 			/**
 			 * Return the stored row mapped through the real entity.

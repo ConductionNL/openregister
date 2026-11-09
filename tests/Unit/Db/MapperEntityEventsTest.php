@@ -44,6 +44,8 @@ use OCA\OpenRegister\Db\Support\ConfigServices;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Service\Object\EntityEventPublisher;
 use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -95,7 +97,7 @@ final class MapperEntityEventsTest extends TestCase {
 	}//end setUp()
 
 	public function testApplicationMapperAnnouncesInsertUpdateAndDelete(): void {
-		$mapper = new ApplicationMapper($this->connection(), $this->tenancy(), $this->dispatcher());
+		$mapper = new ApplicationMapper($this->connection(), $this->tenancy(), $this->entityEvents());
 
 		$mapper->insert($this->given(new Application(), ['uuid' => 'a-1', 'organisation' => 'org-1']));
 		$this->queuedRows = [[['id' => 5, 'uuid' => 'a-1', 'organisation' => 'org-1', 'name' => 'Old']]];
@@ -113,7 +115,7 @@ final class MapperEntityEventsTest extends TestCase {
 	}
 
 	public function testConfigurationMapperAnnouncesInsertUpdateAndDelete(): void {
-		$mapper = new ConfigurationMapper($this->connection(), $this->tenancy(), $this->dispatcher());
+		$mapper = new ConfigurationMapper($this->connection(), $this->tenancy(), $this->entityEvents());
 
 		$mapper->insert($this->given(new Configuration(), ['uuid' => 'c-1', 'organisation' => 'org-1']));
 		$this->queuedRows = [[['id' => 6, 'uuid' => 'c-1', 'organisation' => 'org-1', 'title' => 'Old']]];
@@ -131,7 +133,7 @@ final class MapperEntityEventsTest extends TestCase {
 	}
 
 	public function testSourceMapperAnnouncesInsertUpdateAndDelete(): void {
-		$mapper = new SourceMapper($this->connection(), $this->tenancy(), $this->dispatcher(), $this->createMock(IAppConfig::class));
+		$mapper = new SourceMapper($this->connection(), $this->tenancy(), $this->entityEvents(), $this->createMock(IAppConfig::class));
 
 		$mapper->insert($this->given(new Source(), ['uuid' => 's-1', 'organisation' => 'org-1']));
 		$this->queuedRows = [[['id' => 7, 'uuid' => 's-1', 'organisation' => 'org-1', 'title' => 'Old']]];
@@ -154,7 +156,7 @@ final class MapperEntityEventsTest extends TestCase {
 		$mapper = new OrganisationMapper(
 			$this->connection(),
 			new NullLogger(),
-			$this->dispatcher(),
+			$this->entityEvents(),
 			new ConfigServices($this->createMock(IAppConfig::class), $config)
 		);
 
@@ -191,7 +193,8 @@ final class MapperEntityEventsTest extends TestCase {
 			$session,
 			$groups,
 			$this->createMock(IAppConfig::class),
-			new NullLogger()
+			new NullLogger(),
+			$this->entityEvents()
 		);
 
 		$mapper->insert($this->given(new Register(), ['uuid' => 'r-1', 'organisation' => 'org-1']));
@@ -215,7 +218,7 @@ final class MapperEntityEventsTest extends TestCase {
 			$db,
 			$this->createMock(AuditTrailMapperInterface::class),
 			$this->createMock(IUserSession::class),
-			$this->dispatcher(),
+			$this->entityEvents(),
 			new NullLogger()
 		);
 
@@ -236,7 +239,7 @@ final class MapperEntityEventsTest extends TestCase {
 	}
 
 	public function testFlowRunMapperAnnouncesATerminalRunOnly(): void {
-		$mapper = new FlowRunMapper($this->connection(), $this->dispatcher());
+		$mapper = new FlowRunMapper($this->connection(), $this->entityEvents());
 
 		$mapper->update($this->given(new FlowRun(), ['id' => 12, 'uuid' => 'run-1', 'status' => FlowRun::STATUS_COMPLETED]));
 		$mapper->update($this->given(new FlowRun(), ['id' => 13, 'uuid' => 'run-2', 'status' => 'running']));
@@ -252,7 +255,7 @@ final class MapperEntityEventsTest extends TestCase {
 	}
 
 	public function testTaskMapperAnnouncesATerminalTaskOnly(): void {
-		$mapper = new TaskMapper($this->connection(), $this->dispatcher());
+		$mapper = new TaskMapper($this->connection(), $this->entityEvents());
 
 		$mapper->insert($this->given(new Task(), ['uuid' => 't-0', 'state' => Task::STATE_COMPLETED]));
 		$mapper->update($this->given(new Task(), ['id' => 15, 'uuid' => 't-1', 'state' => Task::STATE_COMPLETED]));
@@ -277,7 +280,16 @@ final class MapperEntityEventsTest extends TestCase {
 	}
 
 	/**
-	 * The dispatcher the mapper is built with; records each event and its payload.
+	 * The entity events publisher the mapper is built with, dispatching to the recording dispatcher.
+	 *
+	 * @return EntityEventsInterface
+	 */
+	private function entityEvents(): EntityEventsInterface {
+		return new EntityEventPublisher($this->dispatcher());
+	}//end entityEvents()
+
+	/**
+	 * The dispatcher events reach; records each event and its payload.
 	 *
 	 * @return IEventDispatcher
 	 */

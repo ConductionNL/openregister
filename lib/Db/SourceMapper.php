@@ -24,15 +24,12 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Event\SourceCreatedEvent;
-use OCA\OpenRegister\Event\SourceDeletedEvent;
-use OCA\OpenRegister\Event\SourceUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -86,11 +83,11 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 	protected IGroupManager $groupManager;
 
 	/**
-	 * Event dispatcher for dispatching source events
+	 * Announces source events
 	 *
-	 * @var IEventDispatcher
+	 * @var EntityEventsInterface
 	 */
-	private IEventDispatcher $eventDispatcher;
+	private EntityEventsInterface $entityEvents;
 
 	/**
 	 * Organisation mapper for multi-tenancy
@@ -111,20 +108,20 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 	 *
 	 * @param IDBConnection $db Database connection
 	 * @param TenancyServices $tenancy Organisation mapper, session and groups
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher
+	 * @param EntityEventsInterface $entityEvents Announces source events
 	 * @param IAppConfig $appConfig App configuration
 	 */
 	public function __construct(
 		IDBConnection $db,
 		TenancyServices $tenancy,
-		IEventDispatcher $eventDispatcher,
+		EntityEventsInterface $entityEvents,
 		IAppConfig $appConfig,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_sources', entityClass: Source::class);
 		$this->organisationMapper = $tenancy->organisationMapper;
 		$this->userSession = $tenancy->userSession;
 		$this->groupManager = $tenancy->groupManager;
-		$this->eventDispatcher = $eventDispatcher;
+		$this->entityEvents = $entityEvents;
 		$this->appConfig = $appConfig;
 	}//end __construct()
 
@@ -326,7 +323,7 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 		$entity = parent::insert(entity: $entity);
 
 		// Dispatch creation event.
-		$this->eventDispatcher->dispatchTyped(new SourceCreatedEvent(source: $entity));
+		$this->entityEvents->sourceCreated(source: $entity);
 
 		return $entity;
 	}//end insert()
@@ -356,7 +353,7 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 		$entity = parent::update(entity: $entity);
 
 		// Dispatch update event.
-		$this->eventDispatcher->dispatchTyped(new SourceUpdatedEvent(newSource: $entity, oldSource: $oldEntity));
+		$this->entityEvents->sourceUpdated(newSource: $entity, oldSource: $oldEntity);
 
 		return $entity;
 	}//end update()
@@ -381,7 +378,7 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 		$entity = parent::delete(entity: $entity);
 
 		// Dispatch deletion event.
-		$this->eventDispatcher->dispatchTyped(new SourceDeletedEvent(source: $entity));
+		$this->entityEvents->sourceDeleted(source: $entity);
 
 		return $entity;
 	}//end delete()

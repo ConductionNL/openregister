@@ -23,16 +23,13 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Event\ApplicationCreatedEvent;
-use OCA\OpenRegister\Event\ApplicationDeletedEvent;
-use OCA\OpenRegister\Event\ApplicationUpdatedEvent;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -100,13 +97,13 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 	private readonly IGroupManager $groupManager;
 
 	/**
-	 * Event dispatcher for dispatching application events
+	 * Announces application events
 	 *
-	 * Dispatches events when applications are created, updated, or deleted.
+	 * Announces when applications are created, updated, or deleted.
 	 *
-	 * @var IEventDispatcher Event dispatcher instance
+	 * @var EntityEventsInterface Entity events publisher
 	 */
-	private readonly IEventDispatcher $eventDispatcher;
+	private readonly EntityEventsInterface $entityEvents;
 
 	/**
 	 * Constructor
@@ -116,7 +113,7 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 	 *
 	 * @param IDBConnection $db Database connection for queries
 	 * @param TenancyServices $tenancy Organisation mapper, session and groups for multi-tenancy and RBAC
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher for application events
+	 * @param EntityEventsInterface $entityEvents Announces application events
 	 *
 	 * @return void
 	 */
@@ -124,7 +121,7 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 		IDBConnection $db,
 		// REMOVED: Services should not be in mappers.
 		TenancyServices $tenancy,
-		IEventDispatcher $eventDispatcher,
+		EntityEventsInterface $entityEvents,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_applications', entityClass: Application::class);
@@ -134,7 +131,7 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 		$this->organisationMapper = $tenancy->organisationMapper;
 		$this->userSession = $tenancy->userSession;
 		$this->groupManager = $tenancy->groupManager;
-		$this->eventDispatcher = $eventDispatcher;
+		$this->entityEvents = $entityEvents;
 	}//end __construct()
 
 	/**
@@ -386,7 +383,7 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 		$entity = parent::insert(entity: $entity);
 
 		// Dispatch creation event for other components to react to.
-		$this->eventDispatcher->dispatchTyped(new ApplicationCreatedEvent(application: $entity));
+		$this->entityEvents->applicationCreated(application: $entity);
 
 		return $entity;
 	}//end insert()
@@ -425,9 +422,7 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 		$entity = parent::update(entity: $entity);
 
 		// Dispatch update event with old and new state for other components.
-		$this->eventDispatcher->dispatchTyped(
-			new ApplicationUpdatedEvent(newApplication: $entity, oldApplication: $oldEntity)
-		);
+		$this->entityEvents->applicationUpdated(newApplication: $entity, oldApplication: $oldEntity);
 
 		return $entity;
 	}//end update()
@@ -459,7 +454,7 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 		$entity = parent::delete(entity: $entity);
 
 		// Dispatch deletion event for other components to react to.
-		$this->eventDispatcher->dispatchTyped(new ApplicationDeletedEvent(application: $entity));
+		$this->entityEvents->applicationDeleted(application: $entity);
 
 		return $entity;
 	}//end delete()

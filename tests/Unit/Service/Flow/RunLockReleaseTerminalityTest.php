@@ -58,6 +58,7 @@ use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalkLimits;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalkParts;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
+use OCA\OpenRegister\Service\Object\EntityEventPublisher;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCA\OpenRegister\Tests\Unit\Db\FluentQueryBuilderTrait;
 use OCP\EventDispatcher\Event;
@@ -86,7 +87,7 @@ class InMemoryFlowRunMapper extends FlowRunMapper {
 		IEventDispatcher $dispatcher,
 		private readonly FlowRun $row,
 	) {
-		parent::__construct(db: $db, dispatcher: $dispatcher);
+		parent::__construct(db: $db, entityEvents: new EntityEventPublisher($dispatcher));
 	}
 
 	/**

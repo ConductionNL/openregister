@@ -17,7 +17,8 @@
         "OCP\\IUserSession",
         "OCP\\IGroupManager",
         "OCP\\IAppConfig",
-        "Psr\\Log\\LoggerInterface"
+        "Psr\\Log\\LoggerInterface",
+        "OCA\\OpenRegister\\Kernel\\Contracts\\EntityEventsInterface"
     ],
     "OCA\\OpenRegister\\Db\\WebhookMapper": [
         "OCP\\IDBConnection",
@@ -51,7 +52,7 @@
         "OCP\\IDBConnection",
         "OCA\\OpenRegister\\Db\\AuditTrailMapperInterface",
         "OCP\\IUserSession",
-        "OCP\\EventDispatcher\\IEventDispatcher",
+        "OCA\\OpenRegister\\Kernel\\Contracts\\EntityEventsInterface",
         "Psr\\Log\\LoggerInterface"
     ]
 }
