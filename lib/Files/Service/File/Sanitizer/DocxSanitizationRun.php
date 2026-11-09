@@ -35,6 +35,8 @@ use ZipArchive;
 
 /**
  * One sanitisation run over an open DOCX archive.
+ *
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
 final class DocxSanitizationRun {
 	/**

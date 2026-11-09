@@ -33,8 +33,10 @@ use DOMElement;
 
 /**
  * Relationship entries to drop from one rels part.
+ *
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
-final class RelsPrune {
+final readonly class RelsPrune {
 	/**
 	 * Constructor.
 	 *
@@ -45,9 +47,9 @@ final class RelsPrune {
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	public function __construct(
-		public readonly string $relsName,
-		public readonly array $targetBasenames,
-		public readonly array $hyperlinkIds,
+		public string $relsName,
+		public array $targetBasenames,
+		public array $hyperlinkIds,
 	) {
 	}//end __construct()
 
