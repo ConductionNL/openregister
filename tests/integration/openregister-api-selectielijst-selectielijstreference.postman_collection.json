@@ -3903,7 +3903,7 @@
 										"exec": [
 											"pm.test('status 200', () => pm.response.to.have.status(200))",
 											"const b = pm.response.json()",
-											"pm.test('run is completed (body: ' + JSON.stringify(b).slice(0, 300) + ')', () => pm.expect(b.status).to.eql('completed'))",
+											"pm.test('run ended at its End step: stopped, outcome completed (body: ' + JSON.stringify(b).slice(0, 300) + ')', () => { pm.expect(b.status).to.eql('stopped'); pm.expect(b.outcome).to.eql('completed') })",
 											"pm.test('run belongs to the flow', () => pm.expect(b.flowId).to.eql(pm.collectionVariables.get('t32_fr_flowA')))",
 											"pm.collectionVariables.set('t32_fr_runA', b.uuid)"
 										]
@@ -4176,7 +4176,7 @@
 										"exec": [
 											"pm.test('status 200', () => pm.response.to.have.status(200))",
 											"const b = pm.response.json()",
-											"pm.test('exactly the one run of flow A', () => { pm.expect(b.results).to.have.lengthOf(1); pm.expect(b.results[0].uuid).to.eql(pm.collectionVariables.get('t32_fr_runA')); pm.expect(b.results[0].status).to.eql('completed') })",
+											"pm.test('exactly the one run of flow A', () => { pm.expect(b.results).to.have.lengthOf(1); pm.expect(b.results[0].uuid).to.eql(pm.collectionVariables.get('t32_fr_runA')); pm.expect(b.results[0].status).to.eql('stopped'); pm.expect(b.results[0].outcome).to.eql('completed') })",
 											"pm.test('default paging window', () => { pm.expect(b.limit).to.eql(50); pm.expect(b.offset).to.eql(0) })",
 											"pm.test('history rows are full runs (carry the log)', () => pm.expect(b.results[0].log).to.be.an('array'))"
 										]
@@ -4707,7 +4707,7 @@
 											"const b = pm.response.json()",
 											"const a = b.results[pm.collectionVariables.get('t32_fr_flowA')]",
 											"const bb = b.results[pm.collectionVariables.get('t32_fr_flowB')]",
-											"pm.test('flow A: one run, last is run A completed', () => { pm.expect(a.runsSince).to.eql(1); pm.expect(a.lastRun.uuid).to.eql(pm.collectionVariables.get('t32_fr_runA')); pm.expect(a.lastRun.status).to.eql('completed') })",
+											"pm.test('flow A: one run, last is run A completed', () => { pm.expect(a.runsSince).to.eql(1); pm.expect(a.lastRun.uuid).to.eql(pm.collectionVariables.get('t32_fr_runA')); pm.expect(a.lastRun.status).to.eql('stopped'); pm.expect(a.lastRun.outcome).to.eql('completed') })",
 											"pm.test('flow B: last is run B', () => pm.expect(bb.lastRun.uuid).to.eql(pm.collectionVariables.get('t32_fr_runB')))",
 											"pm.test('since echoed as a string', () => pm.expect(b.since).to.be.a('string').and.not.eql(''))"
 										]
@@ -4846,7 +4846,7 @@
 										"exec": [
 											"pm.test('status 200', () => pm.response.to.have.status(200))",
 											"const b = pm.response.json()",
-											"pm.test('the run we asked for', () => { pm.expect(b.uuid).to.eql(pm.collectionVariables.get('t32_fr_runA')); pm.expect(b.flowId).to.eql(pm.collectionVariables.get('t32_fr_flowA')); pm.expect(b.status).to.eql('completed') })",
+											"pm.test('the run we asked for', () => { pm.expect(b.uuid).to.eql(pm.collectionVariables.get('t32_fr_runA')); pm.expect(b.flowId).to.eql(pm.collectionVariables.get('t32_fr_flowA')); pm.expect(b.status).to.eql('stopped'); pm.expect(b.outcome).to.eql('completed') })",
 											"pm.test('full shape: log array, subjects object', () => { pm.expect(b.log).to.be.an('array'); pm.expect(b.subjects).to.be.an('object') })"
 										]
 									}
@@ -5262,7 +5262,7 @@
 										"exec": [
 											"pm.test('status 200', () => pm.response.to.have.status(200))",
 											"const b = pm.response.json()",
-											"pm.test('still completed', () => pm.expect(b.status).to.eql('completed'))",
+											"pm.test('still completed', () => { pm.expect(b.status).to.eql('stopped'); pm.expect(b.outcome).to.eql('completed') })",
 											"pm.test('trigger is not retry', () => pm.expect(b.trigger).to.not.eql('retry'))"
 										]
 									}
@@ -5334,7 +5334,7 @@
 										"type": "text/javascript",
 										"exec": [
 											"pm.test('status 409', () => pm.response.to.have.status(409))",
-											"pm.test('only a suspended run can be resumed', () => pm.expect(pm.response.json().error).to.eql('Only a suspended run can be resumed; this one is completed.'))"
+											"pm.test('only a suspended run can be resumed', () => pm.expect(pm.response.json().error).to.eql('Only a suspended run can be resumed; this one is stopped.'))"
 										]
 									}
 								}
