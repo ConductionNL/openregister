@@ -26,14 +26,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Service\Auth\LoginSecondFactorGate;
 use OCA\OpenRegister\Service\SecurityService;
 use OCA\OpenRegister\Service\UserService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\ISession;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -78,6 +81,8 @@ class UserController extends Controller {
 	 * @param IUserSession $userSession User session manager
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param IL10N $l10n Localization service
+	 * @param LoginSecondFactorGate $secondFactor Whether a user needs a second factor
+	 * @param ISession $session The session the login writes to
 	 *
 	 * @return void
 	 */
@@ -90,6 +95,8 @@ class UserController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly IL10N $l10n,
+		private readonly LoginSecondFactorGate $secondFactor,
+		private readonly ISession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -239,6 +246,7 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	#[AnonRateLimit(limit: 20, period: 60)]
+	#[BruteForceProtection(action: 'openregister_login')]
 	public function login(): JSONResponse {
 		try {
 			// Memory monitoring: Check initial memory usage to prevent OOM.
@@ -310,6 +318,7 @@ class UserController extends Controller {
 					data: ['error' => 'Invalid username or password'],
 					statusCode: 401
 				);
+				$response->throttle(['action' => 'openregister_login']);
 				return $this->securityService->addSecurityHeaders(response: $response);
 			}
 
@@ -329,8 +338,29 @@ class UserController extends Controller {
 				return $this->securityService->addSecurityHeaders(response: $response);
 			}
 
+			// This login cannot ask for a second factor, so a user who has one, or
+			// must have one, signs in through Nextcloud's own login instead.
+			if ($this->secondFactor->requiresSecondFactor(user: $user) === true) {
+				$this->securityService->recordFailedLoginAttempt(
+					username: $username,
+					ipAddress: $clientIp,
+					reason: 'second_factor_required'
+				);
+
+				$response = new JSONResponse(
+					data: ['error' => 'This account signs in through the Nextcloud login page'],
+					statusCode: 403
+				);
+				$response->throttle(['action' => 'openregister_login']);
+				return $this->securityService->addSecurityHeaders(response: $response);
+			}
+
 			// Authentication successful - record success and clear rate limits.
 			$this->securityService->recordSuccessfulLogin(username: $username, ipAddress: $clientIp);
+
+			// A new session id for the signed-in session, so an id planted before
+			// the login (session fixation) does not become an authenticated one.
+			$this->session->regenerateId(deleteOldSession: true, updateToken: false);
 
 			// Set the user in the session to create login session.
 			$this->userSession->setUser($user);

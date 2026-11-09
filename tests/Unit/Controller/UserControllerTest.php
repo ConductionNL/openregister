@@ -22,6 +22,10 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 class UserControllerTest extends TestCase {
+	private \OCA\OpenRegister\Service\Auth\LoginSecondFactorGate $secondFactor;
+
+	private \OCP\ISession $session;
+
 	/**
 	 * The controller under test.
 	 *
@@ -91,6 +95,8 @@ class UserControllerTest extends TestCase {
 		$this->l10n->method('t')->willReturnArgument(0);
 
 		$this->securityService->method('addSecurityHeaders')->willReturnArgument(0);
+		$this->secondFactor = $this->createMock(\OCA\OpenRegister\Service\Auth\LoginSecondFactorGate::class);
+		$this->session = $this->createMock(\OCP\ISession::class);
 
 		$this->controller = new UserController(
 			'openregister',
@@ -100,7 +106,9 @@ class UserControllerTest extends TestCase {
 			$this->userManager,
 			$this->userSession,
 			$this->logger,
-			$this->l10n
+			$this->l10n,
+			$this->secondFactor,
+			$this->session
 		);
 	}
 
@@ -275,6 +283,61 @@ class UserControllerTest extends TestCase {
 
 		$this->assertEquals(401, $result->getStatus());
 		$this->assertEquals('Account is disabled', $result->getData()['error']);
+	}
+
+	public function testLoginRefusesAUserWithASecondFactor(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
+		$user->method('getUID')->willReturn('testuser');
+
+		$this->securityService->method('getClientIpAddress')->willReturn('127.0.0.1');
+		$this->request->method('getParams')->willReturn(['username' => 'testuser', 'password' => 'correctpass']);
+		$this->securityService->method('validateLoginCredentials')->willReturn([
+			'valid' => true,
+			'credentials' => ['username' => 'testuser', 'password' => 'correctpass'],
+		]);
+		$this->securityService->method('checkLoginRateLimit')->willReturn(['allowed' => true]);
+		$this->userManager->method('checkPassword')->willReturn($user);
+		$this->secondFactor->method('requiresSecondFactor')->with($user)->willReturn(true);
+
+		$this->userSession->expects($this->never())->method('setUser');
+		$this->securityService->expects($this->never())->method('recordSuccessfulLogin');
+
+		$result = $this->controller->login();
+
+		$this->assertEquals(403, $result->getStatus());
+		$this->assertArrayNotHasKey('user', $result->getData());
+		$this->assertTrue($result->isThrottled());
+	}
+
+	public function testLoginRegeneratesTheSessionIdBeforeSigningIn(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
+		$user->method('getUID')->willReturn('testuser');
+
+		$this->securityService->method('getClientIpAddress')->willReturn('127.0.0.1');
+		$this->request->method('getParams')->willReturn(['username' => 'testuser', 'password' => 'correctpass']);
+		$this->securityService->method('validateLoginCredentials')->willReturn([
+			'valid' => true,
+			'credentials' => ['username' => 'testuser', 'password' => 'correctpass'],
+		]);
+		$this->securityService->method('checkLoginRateLimit')->willReturn(['allowed' => true]);
+		$this->userManager->method('checkPassword')->willReturn($user);
+
+		$order = [];
+		$this->session->expects($this->once())->method('regenerateId')->willReturnCallback(
+			static function () use (&$order): void {
+				$order[] = 'regenerate';
+			}
+		);
+		$this->userSession->expects($this->once())->method('setUser')->willReturnCallback(
+			static function () use (&$order): void {
+				$order[] = 'setUser';
+			}
+		);
+
+		$this->assertEquals(200, $this->controller->login()->getStatus());
+		$this->assertSame(['regenerate', 'setUser'], $order);
 	}
 
 	public function testLoginSuccess(): void {
