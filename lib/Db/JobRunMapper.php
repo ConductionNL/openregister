@@ -87,6 +87,22 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 		int $limit = self::DEFAULT_LIMIT,
 		int $offset = 0,
 	): array {
+		$qb = $this->newestFirst(limit: $limit, offset: $offset);
+		$this->narrow(qb: $qb, filter: $filter ?? new JobRunFilter());
+
+		return $this->findEntities(query: $qb);
+
+	}//end findRecent()
+
+	/**
+	 * Every run, newest first (id breaks ties), one page with the limit clamped to 1..MAX_LIMIT.
+	 *
+	 * @param int $limit  The page size asked for.
+	 * @param int $offset The offset asked for; below zero reads as zero.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function newestFirst(int $limit, int $offset): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
@@ -95,11 +111,9 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 			->setMaxResults(max(1, min($limit, self::MAX_LIMIT)))
 			->setFirstResult(max(0, $offset));
 
-		$this->narrow(qb: $qb, filter: $filter ?? new JobRunFilter());
+		return $qb;
 
-		return $this->findEntities(query: $qb);
-
-	}//end findRecent()
+	}//end newestFirst()
 
 	/**
 	 * How many runs match, under the same narrowing.
@@ -122,9 +136,20 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'total'))->from($this->getTableName());
 
-		$filter = new JobRunFilter(jobClass: $jobClass, outcome: $outcome, since: $since, until: $until);
-		$this->narrow(qb: $qb, filter: $filter);
+		$this->narrow(qb: $qb, filter: new JobRunFilter(jobClass: $jobClass, outcome: $outcome, since: $since, until: $until));
 
+		return $this->fetchTotal(qb: $qb);
+
+	}//end countRecent()
+
+	/**
+	 * Run a count query and read its `total` column; no row counts as zero.
+	 *
+	 * @param IQueryBuilder $qb The count query.
+	 *
+	 * @return int The count.
+	 */
+	private function fetchTotal(IQueryBuilder $qb): int {
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
@@ -135,7 +160,7 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 
 		return (int)($row['total'] ?? 0);
 
-	}//end countRecent()
+	}//end fetchTotal()
 
 	/**
 	 * The run currently holding a job, when one holds it.
