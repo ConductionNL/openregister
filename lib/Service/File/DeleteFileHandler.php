@@ -22,7 +22,6 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
@@ -72,13 +71,11 @@ class DeleteFileHandler {
 	 *
 	 * @param DeleteFileSources             $sources              The root folder, the file reader and the logger a delete works with.
 	 * @param FileValidationHandler         $fileValidHandler     File validation handler.
-	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler File ownership handler.
 	 * @param FileLockHandler               $fileLockHandler      Lock handler used to release / verify file locks on delete.
 	 */
 	public function __construct(
 		DeleteFileSources $sources,
 		private readonly FileValidationHandler $fileValidHandler,
-		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
 		private readonly FileLockHandler $fileLockHandler,
 	) {
 		$this->rootFolder = $sources->rootFolder;
