@@ -31,9 +31,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
 use OCA\OpenRegister\Service\Rbac\RecordMetadataConditions;
-use OCP\IGroupManager;
 use OCP\IUser;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -134,25 +132,12 @@ class ConditionMatcher {
 	];
 
 	/**
-	 * User session for current user context.
+	 * Who the current user is: the session, and optionally the group manager
+	 * and the memberOf resolver.
 	 *
-	 * @var IUserSession
+	 * @var ConditionUserResolvers
 	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Group manager for resolving `$user.groups` (optional).
-	 *
-	 * @var IGroupManager|null
-	 */
-	private readonly ?IGroupManager $groupManager;
-
-	/**
-	 * Resolves `$memberOf` (optional).
-	 *
-	 * @var MemberOfResolver|null
-	 */
-	private readonly ?MemberOfResolver $memberOfResolver;
+	private readonly ConditionUserResolvers $users;
 
 	/**
 	 * Constructor for ConditionMatcher
@@ -171,9 +156,7 @@ class ConditionMatcher {
 		private readonly OperatorEvaluator $operatorEvaluator,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->userSession = $users->userSession;
-		$this->groupManager = $users->groupManager;
-		$this->memberOfResolver = $users->memberOfResolver;
+		$this->users = $users;
 		$this->metadataConditions = new RecordMetadataConditions(logger: $logger);
 	}//end __construct()
 
@@ -421,9 +404,9 @@ class ConditionMatcher {
 	 * @return array|null The operators with `$in` over the caller's membership set, or null
 	 */
 	private function resolveMemberOf(mixed $operators): ?array {
-		return $this->memberOfResolver?->resolveOperators(
+		return $this->users->memberOfResolver?->resolveOperators(
 			operators: $operators,
-			userId: $this->userSession->getUser()?->getUID(),
+			userId: $this->users->userSession->getUser()?->getUID(),
 			resolveSibling: fn (mixed $sibling): mixed => $this->resolveDynamicValue(value: $sibling)
 		);
 	}//end resolveMemberOf()
@@ -446,7 +429,7 @@ class ConditionMatcher {
 				property: substr($token, (int)strpos($token, '.') + 1),
 				originalToken: $token
 			),
-			'user' => $this->userSession->getUser()?->getUID(),
+			'user' => $this->users->userSession->getUser()?->getUID(),
 			'userDot' => $this->resolveUserDotProperty(property: substr($token, strlen('$user.')), originalToken: $token),
 			'now' => date('Y-m-d H:i:s'),
 			default => $token,
@@ -510,7 +493,7 @@ class ConditionMatcher {
 			return null;
 		}
 
-		$user = $this->userSession->getUser();
+		$user = $this->users->userSession->getUser();
 		if ($user === null) {
 			// Anonymous principal: no $user.* property is resolvable.
 			return null;
@@ -537,7 +520,7 @@ class ConditionMatcher {
 	 * @return array<int, string> The group IDs.
 	 */
 	private function resolveUserGroups(IUser $user): array {
-		if ($this->groupManager === null) {
+		if ($this->users->groupManager === null) {
 			$this->logger->warning(
 				message: '[ConditionMatcher] $user.groups requested but no IGroupManager available — returning empty array',
 				context: ['file' => __FILE__, 'line' => __LINE__]
@@ -546,7 +529,7 @@ class ConditionMatcher {
 		}
 
 		try {
-			return $this->groupManager->getUserGroupIds($user);
+			return $this->users->groupManager->getUserGroupIds($user);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ConditionMatcher] Failed to resolve $user.groups',
@@ -604,7 +587,7 @@ class ConditionMatcher {
 		// with that admin's organisation inside an evaluation meant to be anonymous,
 		// admitting their tenant's rows to a public read. An organisation
 		// context is a subject of its own for the same reason.
-		$subject = ($this->userSession->getUser()?->getUID() ?? '_anon');
+		$subject = ($this->users->userSession->getUser()?->getUID() ?? '_anon');
 		$contextUuid = OrganisationContext::current();
 		if ($contextUuid !== null) {
 			$subject = 'organisation-context:' . $contextUuid;
