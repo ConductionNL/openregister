@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\BulkJob;
 
 use DateTime;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
-use OCA\OpenRegister\BulkAction\BulkActionResult;
+use OCA\OpenRegister\BulkAction\BulkActionOutcomeInterface;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\BulkJob;
@@ -52,10 +52,6 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The executor is the seam
  * where the selection, the action, access control and the audit trail meet.
- * @SuppressWarnings(PHPMD.StaticAccess) BulkActionResult's named
- * constructors are its only constructor: the class is immutable and its
- * private __construct exists so an outcome cannot be built without saying
- * which of the four it is.
  */
 class BulkJobExecutor {
 
@@ -188,35 +184,39 @@ class BulkJobExecutor {
 	/**
 	 * Write the member rows of a preview, and the counts they add up to.
 	 *
-	 * @param BulkJob $job The job being created.
+	 * @param BulkJobPass        $pass  The job being created, the action to rehearse, its actor and the hydrated selection.
 	 * @param array<int, string> $uuids The selected uuids, in order.
-	 * @param array<string, ObjectEntity> $objects The hydrated selection.
-	 * @param BulkActionInterface $action The action to rehearse.
-	 * @param IUser|null $actor The user the job runs as.
-	 * @param bool $addedAtCommit True when these members appeared at commit.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag marks the member
-	 * rows a grown query selection added, which the report has to name.
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
+	 */
+	public function writePreviewMembers(BulkJobPass $pass, array $uuids): void {
+		foreach ($uuids as $uuid) {
+			$this->memberMapper->createFromArray($this->previewRow(pass: $pass, uuid: $uuid));
+		}
+	}//end writePreviewMembers()
+
+	/**
+	 * Write the member rows a grown query selection added at commit.
+	 *
+	 * The rows are rehearsed exactly as a preview's, and marked as added at
+	 * commit, which the report has to name.
+	 *
+	 * @param BulkJobPass        $pass  The committing job, its action, its actor and the hydrated additions.
+	 * @param array<int, string> $uuids The added uuids, in order.
+	 *
+	 * @return void
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function writePreviewMembers(
-		BulkJob $job,
-		array $uuids,
-		array $objects,
-		BulkActionInterface $action,
-		?IUser $actor,
-		bool $addedAtCommit = false
-	): void {
-		$pass = new BulkJobPass(job: $job, action: $action, actor: $actor, objects: $objects);
+	public function writeAddedMembers(BulkJobPass $pass, array $uuids): void {
 		foreach ($uuids as $uuid) {
 			$row = $this->previewRow(pass: $pass, uuid: $uuid);
-			$row['addedAtCommit'] = $addedAtCommit;
+			$row['addedAtCommit'] = true;
 			$this->memberMapper->createFromArray($row);
 		}
-	}//end writePreviewMembers()
+	}//end writeAddedMembers()
 
 	/**
 	 * Rehearse one selected uuid and build its member row.
@@ -339,11 +339,11 @@ class BulkJobExecutor {
 	 * @param BulkJobPass $pass The preview pass (job, action, actor).
 	 * @param ObjectEntity|null $object The object, or null when unreadable.
 	 *
-	 * @return BulkActionResult What would happen.
+	 * @return BulkActionOutcomeInterface What would happen.
 	 */
-	private function rehearse(BulkJobPass $pass, ?ObjectEntity $object): BulkActionResult {
+	private function rehearse(BulkJobPass $pass, ?ObjectEntity $object): BulkActionOutcomeInterface {
 		if ($object === null) {
-			return BulkActionResult::refused(rule: self::RULE_NOT_VISIBLE);
+			return new BulkJobRefusal(rule: self::RULE_NOT_VISIBLE);
 		}
 
 		$refusal = $this->refusalFor(object: $object, actorUid: (string)$pass->job->getStartedBy());
@@ -372,7 +372,7 @@ class BulkJobExecutor {
 		$object = $pass->object(uuid: (string)$member->getObjectUuid());
 
 		if ($object === null) {
-			$this->recordOutcome(member: $member, result: BulkActionResult::refused(rule: self::RULE_NOT_VISIBLE));
+			$this->recordOutcome(member: $member, result: new BulkJobRefusal(rule: self::RULE_NOT_VISIBLE));
 
 			return;
 		}
@@ -418,13 +418,13 @@ class BulkJobExecutor {
 	 * @param ObjectEntity $object The object.
 	 * @param string $actorUid The actor's uid.
 	 *
-	 * @return BulkActionResult|null The refusal, or null when the write is allowed.
+	 * @return BulkActionOutcomeInterface|null The refusal, or null when the write is allowed.
 	 */
-	private function refusalFor(ObjectEntity $object, string $actorUid): ?BulkActionResult {
+	private function refusalFor(ObjectEntity $object, string $actorUid): ?BulkActionOutcomeInterface {
 		try {
 			$schema = $this->schemaMapper->find($object->getSchema());
 		} catch (\Throwable $exception) {
-			return BulkActionResult::refused(rule: 'the schema of this object could not be resolved, so no write rule could be read');
+			return new BulkJobRefusal(rule: 'the schema of this object could not be resolved, so no write rule could be read');
 		}
 
 		$allowed = $this->permissionHandler->hasPermission(
@@ -439,7 +439,7 @@ class BulkJobExecutor {
 			return null;
 		}
 
-		return BulkActionResult::refused(
+		return new BulkJobRefusal(
 			rule: "the update rule on schema '".$schema->getTitle()."' does not include ".$actorUid
 		);
 	}//end refusalFor()
@@ -477,7 +477,7 @@ class BulkJobExecutor {
 	 * Persist one member's outcome.
 	 *
 	 * @param BulkJobMember $member The member.
-	 * @param BulkActionResult $result The outcome.
+	 * @param BulkActionOutcomeInterface $result The outcome.
 	 * @param bool $written True when a real write landed on this member.
 	 *
 	 * @return void
@@ -486,7 +486,7 @@ class BulkJobExecutor {
 	 * idempotence key and cannot be read off the outcome, which a preview
 	 * also sets.
 	 */
-	private function recordOutcome(BulkJobMember $member, BulkActionResult $result, bool $written = false): void {
+	private function recordOutcome(BulkJobMember $member, BulkActionOutcomeInterface $result, bool $written = false): void {
 		$member->setOutcome($result->getOutcome());
 		$member->setReason($result->getReason());
 
