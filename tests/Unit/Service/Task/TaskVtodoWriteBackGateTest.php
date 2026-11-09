@@ -31,6 +31,7 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskProjectionService;
@@ -87,9 +88,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 				audit: new WriteBackRefusalAudit(audits: $this->audits, logger: $logger),
 				projections: $this->projections,
 				notice: new WriteBackRefusalNotice(
-					inbox: $inbox,
-					dispatcher: $this->dispatcher,
-					rules: new TaskNotificationRules(),
+					notifier: new TaskTransitionNotifier(dispatcher: $this->dispatcher, rules: new TaskNotificationRules(), inbox: $inbox),
 					logger: $logger
 				),
 				logger: $logger

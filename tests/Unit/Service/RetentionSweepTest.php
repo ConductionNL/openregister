@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Archival\RetentionScanStores;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -129,10 +130,7 @@ class RetentionSweepTest extends TestCase {
 				// walked and how, and a mocked scanner would assert only that this
 				// service called something.
 				new RetentionRowScanner(
-					$this->db,
-					$this->registerMapper,
-					$this->schemaMapper,
-					$this->objectMapper,
+					new RetentionScanStores($this->db, $this->registerMapper, $this->schemaMapper, $this->objectMapper),
 					$this->logger
 				),
 				new ArchiveActionDateCalculator($this->objectMapper, $this->logger),

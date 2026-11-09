@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\Archival\DestructionInfrastructure;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -52,9 +53,7 @@ class DestructionServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new DestructionService(
-			$this->objectMapper,
-			$this->appConfig,
-			$this->jobList,
+			new DestructionInfrastructure($this->objectMapper, $this->appConfig, $this->jobList),
 			$this->userSession,
 			$this->logger
 		);

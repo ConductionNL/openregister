@@ -1118,15 +1118,11 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// Best-effort: replaceInPdf returns the residual needles so the file
 		// is still produced with a warning. It throws before anything is
 		// written when a strict run's output cannot be re-read.
-		$residualNeedles = [];
-		$structureResult = null;
-		$replacedBytes = $replacer->replaceInPdf(
+		$redaction = $replacer->replaceInPdf(
 			pdfBytes: $content,
 			substitutions: $job->replacements,
 			strict: $job->isStrict(),
-			residualEntities: $residualNeedles,
-			preserveStructure: $job->preserveStructure(),
-			structureResult: $structureResult
+			preserveStructure: $job->preserveStructure()
 		);
 
 		// Expose the `structurePreservation` result block (REQ-ORTPR-003).
@@ -1135,16 +1131,16 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// (ADR-022, consumed unchanged) — so the measurement taken inside
 		// `replaceInPdf` already reflects the accessibility structure of the
 		// bytes this method goes on to write.
-		$this->lastStructurePreservation = $structureResult;
+		$this->lastStructurePreservation = $redaction->structurePreservation;
 
-		if (empty($residualNeedles) === false) {
+		if (empty($redaction->residualEntities) === false) {
 			$this->lastResidualEntities = $this->residualEntityRecords(
-				needles: $residualNeedles,
+				needles: $redaction->residualEntities,
 				replacements: $job->replacements
 			);
 		}
 
-		$replacedBytes = $this->sanitizePdfMetadata(replacer: $replacer, pdfBytes: $replacedBytes);
+		$replacedBytes = $this->sanitizePdfMetadata(replacer: $replacer, pdfBytes: $redaction->bytes);
 
 		$this->removeExistingOutput(job: $job);
 		$newFile = $job->node->getParent()->newFile(path: $job->outputName, content: $replacedBytes);

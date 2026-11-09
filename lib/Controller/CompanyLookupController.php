@@ -40,7 +40,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactoryInterface;
 use OCA\OpenRegister\Service\Integration\Providers\KvkLookupInterface;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesSearchInterface;
 use OCP\AppFramework\Controller;
@@ -57,18 +58,18 @@ class CompanyLookupController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
 	 * @param KvkLookupInterface $kvkProvider KvK lookup leaf.
 	 * @param OpenCorporatesSearchInterface $openCorporatesProvider OpenCorporates search leaf.
+	 * @param CompanySearchFactoryInterface $searches Builds the search either leaf takes.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly KvkLookupInterface $kvkProvider,
 		private readonly OpenCorporatesSearchInterface $openCorporatesProvider,
+		private readonly CompanySearchFactoryInterface $searches,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -127,7 +128,7 @@ class CompanyLookupController extends Controller {
 			}
 		}
 
-		$search = (new CompanySearch(query: $query, limit: $limit, page: $page))->narrowedBy(criteria: $criteria);
+		$search = $this->searches->search(query: $query, limit: $limit, page: $page)->narrowedBy(criteria: $criteria);
 		$result = $this->kvkProvider->searchCompanies($search);
 
 		return $this->relay(result: $result, sourceLabel: 'kvk');
@@ -160,7 +161,7 @@ class CompanyLookupController extends Controller {
 		$limit = (int)$this->request->getParam('limit', 30);
 		$page = (int)$this->request->getParam('page', 1);
 
-		$search = (new CompanySearch(query: $query, limit: $limit, page: $page))->narrowedBy(criteria: ['jurisdiction' => $jurisdiction]);
+		$search = $this->searches->search(query: $query, limit: $limit, page: $page)->narrowedBy(criteria: ['jurisdiction' => $jurisdiction]);
 		$result = $this->openCorporatesProvider->searchCompanies($search);
 
 		return $this->relay(result: $result, sourceLabel: 'opencorporates');

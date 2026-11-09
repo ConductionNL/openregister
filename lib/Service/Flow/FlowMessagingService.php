@@ -41,10 +41,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\FlowEmailSentEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityFactory;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
+use LogicException;
 use RuntimeException;
 
 /**
@@ -159,11 +159,9 @@ class FlowMessagingService {
 		$logger          = $platform->logger;
 		$this->addresses = new FlowRecipientAddresses(recipientResolver: $recipients->recipientResolver);
 		$this->announcer = new FlowEmailAnnouncer(eventDispatcher: $events, logger: $logger, runContext: $overrides->runContext);
-		$this->optOut    = ($overrides->optOut ?? OptOutAuthorityFactory::create(
-			eventDispatcher: $events,
-			appConfig: $platform->appConfig,
-			logger: $logger
-		));
+		// The container always resolves the bound OptOutAuthorityInterface; a hand-built
+		// service without one could not ask integriq, so it is refused rather than guessed.
+		$this->optOut    = ($overrides->optOut ?? throw new LogicException('FlowMessagingService needs an opt-out authority.'));
 
 	}//end __construct()
 

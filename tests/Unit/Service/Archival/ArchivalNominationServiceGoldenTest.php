@@ -119,6 +119,8 @@ class ArchivalNominationServiceGoldenTest extends TestCase {
 	/**
 	 * Run one nomination and return its clock-free outcome.
 	 *
+	 * With an actor or a reason it is a recomputation, the only nomination that carries them.
+	 *
 	 * @param ArchivalNominationService $service The service.
 	 * @param ObjectEntity              $object  The record.
 	 * @param Schema                    $schema  Its schema.
@@ -128,7 +130,12 @@ class ArchivalNominationServiceGoldenTest extends TestCase {
 	 * @return array<string, mixed> The outcome.
 	 */
 	private function nominateOnce(ArchivalNominationService $service, ObjectEntity $object, Schema $schema, ?string $actor = null, ?string $reason = null): array {
-		$block = $service->nominate(object: $object, schema: $schema, trigger: 'closure', actor: $actor, reason: $reason);
+		if ($actor === null && $reason === null) {
+			$block = $service->nominate(object: $object, schema: $schema);
+			return $this->outcome(block: $block, object: $object);
+		}
+
+		$block = $service->recompute(object: $object, schema: $schema, actor: $actor, reason: $reason);
 		return $this->outcome(block: $block, object: $object);
 	}
 
@@ -162,7 +169,7 @@ class ArchivalNominationServiceGoldenTest extends TestCase {
 			  'block' => array (
 			    'status' => 'nominated',
 			    'at' => '<at>',
-			    'trigger' => 'closure',
+			    'trigger' => 'recompute',
 			    'actor' => 'admin',
 			    'reason' => 'recompute after appeal',
 			    'rule' => 'selection_list',
@@ -176,7 +183,7 @@ class ArchivalNominationServiceGoldenTest extends TestCase {
 			      1 => array (
 			        'status' => 'nominated',
 			        'at' => '<at>',
-			        'trigger' => 'closure',
+			        'trigger' => 'recompute',
 			        'actor' => 'admin',
 			        'reason' => 'recompute after appeal',
 			        'rule' => 'selection_list',
@@ -194,7 +201,7 @@ class ArchivalNominationServiceGoldenTest extends TestCase {
 			    'nomination' => array (
 			      'status' => 'nominated',
 			      'at' => '<at>',
-			      'trigger' => 'closure',
+			      'trigger' => 'recompute',
 			      'actor' => 'admin',
 			      'reason' => 'recompute after appeal',
 			      'rule' => 'selection_list',
@@ -380,7 +387,7 @@ class ArchivalNominationServiceGoldenTest extends TestCase {
 			  'block' => array (
 			    'status' => 'unnominatable',
 			    'at' => '<at>',
-			    'trigger' => 'closure',
+			    'trigger' => 'recompute',
 			    'actor' => 'a',
 			    'unnominatableReason' => 'no selectielijst row matches category 9.9, and neither the schema\'s `archive` block nor its `x-openregister-archival` retention block names a default nomination',
 			  ),
@@ -388,7 +395,7 @@ class ArchivalNominationServiceGoldenTest extends TestCase {
 			    'nomination' => array (
 			      'status' => 'unnominatable',
 			      'at' => '<at>',
-			      'trigger' => 'closure',
+			      'trigger' => 'recompute',
 			      'actor' => 'a',
 			      'unnominatableReason' => 'no selectielijst row matches category 9.9, and neither the schema\'s `archive` block nor its `x-openregister-archival` retention block names a default nomination',
 			    ),
@@ -396,7 +403,7 @@ class ArchivalNominationServiceGoldenTest extends TestCase {
 			      0 => array (
 			        'status' => 'unnominatable',
 			        'at' => '<at>',
-			        'trigger' => 'closure',
+			        'trigger' => 'recompute',
 			        'actor' => 'a',
 			        'unnominatableReason' => 'no selectielijst row matches category 9.9, and neither the schema\'s `archive` block nor its `x-openregister-archival` retention block names a default nomination',
 			      ),
@@ -418,7 +425,7 @@ class ArchivalNominationServiceGoldenTest extends TestCase {
 			  'block' => array (
 			    'status' => 'unnominatable',
 			    'at' => '<at>',
-			    'trigger' => 'closure',
+			    'trigger' => 'recompute',
 			    'reason' => 'why',
 			    'unnominatableReason' => 'the schema names no selectielijst category, and neither the schema\'s `archive` block nor its `x-openregister-archival` retention block names a default nomination',
 			  ),
@@ -427,7 +434,7 @@ class ArchivalNominationServiceGoldenTest extends TestCase {
 			    'nomination' => array (
 			      'status' => 'unnominatable',
 			      'at' => '<at>',
-			      'trigger' => 'closure',
+			      'trigger' => 'recompute',
 			      'reason' => 'why',
 			      'unnominatableReason' => 'the schema names no selectielijst category, and neither the schema\'s `archive` block nor its `x-openregister-archival` retention block names a default nomination',
 			    ),
@@ -435,7 +442,7 @@ class ArchivalNominationServiceGoldenTest extends TestCase {
 			      0 => array (
 			        'status' => 'unnominatable',
 			        'at' => '<at>',
-			        'trigger' => 'closure',
+			        'trigger' => 'recompute',
 			        'reason' => 'why',
 			        'unnominatableReason' => 'the schema names no selectielijst category, and neither the schema\'s `archive` block nor its `x-openregister-archival` retention block names a default nomination',
 			      ),

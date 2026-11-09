@@ -83,16 +83,10 @@ class TransitionEngineProviderWriteTest extends TestCase {
 		$this->actions = new LifecycleActionContext();
 
 		$this->engine = new TransitionEngine(
-			$this->objectService,
-			$this->schemaMapper,
-			$this->dispatcher,
-			$this->createMock(IUserSession::class),
-			$this->permission(),
-			$this->createMock(RegisterMapper::class),
-			$this->appConfig(),
-			$this->logger,
-			new LifecycleWriteBoundary($this->actions),
-			$this->registry
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->createMock(RegisterMapper::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->dispatcher, new LifecycleWriteBoundary($this->actions), $this->registry),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->createMock(IUserSession::class), $this->appConfig(), $this->logger),
+			$this->permission()
 		);
 	}//end setUp()
 
@@ -341,16 +335,10 @@ class TransitionEngineProviderWriteTest extends TestCase {
 		$serverContainer->method('get')->willThrowException($notFound);
 
 		$engine = new TransitionEngine(
-			$this->objectService,
-			$this->schemaMapper,
-			$this->dispatcher,
-			$this->createMock(IUserSession::class),
-			$this->permission(),
-			$this->createMock(RegisterMapper::class),
-			$this->appConfig(),
-			$this->logger,
-			new LifecycleWriteBoundary(new LifecycleActionContext()),
-			new LifecycleActionProviderRegistry($container, $serverContainer, $this->logger)
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->createMock(RegisterMapper::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->dispatcher, new LifecycleWriteBoundary(new LifecycleActionContext()), new LifecycleActionProviderRegistry($container, $serverContainer, $this->logger)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->createMock(IUserSession::class), $this->appConfig(), $this->logger),
+			$this->permission()
 		);
 
 		$this->wire($this->caseObject(), $this->providerAnnotation());

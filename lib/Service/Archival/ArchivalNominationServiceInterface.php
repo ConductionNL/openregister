@@ -54,17 +54,32 @@ interface ArchivalNominationServiceInterface {
 	 * The object is mutated and returned; persisting it is the caller's job, so
 	 * a nomination taken during a write joins that write rather than racing it.
 	 *
-	 * @param ObjectEntity $object  The record whose business use has ended.
-	 * @param Schema       $schema  Its schema, holding the archive block.
-	 * @param string       $trigger What caused this: `closure` or `recompute`.
-	 * @param string|null  $actor   Who asked, for a recomputation.
-	 * @param string|null  $reason  Why they asked, for a recomputation.
+	 * The trigger written on the block is `closure`: the record reached the end of its business use.
+	 *
+	 * @param ObjectEntity $object The record whose business use has ended.
+	 * @param Schema       $schema Its schema, holding the archive block.
 	 *
 	 * @return array<string, mixed> The nomination block that was written.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function nominate(ObjectEntity $object, Schema $schema, string $trigger, ?string $actor = null, ?string $reason = null): array;
+	public function nominate(ObjectEntity $object, Schema $schema): array;
+
+	/**
+	 * Derive this object's archival future again, on request, and write it down.
+	 *
+	 * The trigger written on the block is `recompute`, with who asked and why.
+	 *
+	 * @param ObjectEntity $object The record.
+	 * @param Schema       $schema Its schema, holding the archive block.
+	 * @param string|null  $actor  Who asked.
+	 * @param string|null  $reason Why they asked.
+	 *
+	 * @return array<string, mixed> The nomination block that was written.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	public function recompute(ObjectEntity $object, Schema $schema, ?string $actor, ?string $reason): array;
 	/**
 	 * Whether the lifecycle value the object just reached is one its schema calls an end.
 	 *
