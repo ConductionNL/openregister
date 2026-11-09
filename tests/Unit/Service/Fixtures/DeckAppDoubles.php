@@ -80,11 +80,21 @@ class DeckCardMapperDouble {
 }
 
 /**
- * Double of \OCA\Deck\Service\BoardService and StackService (both expose findAll()).
+ * Double of \OCA\Deck\Service\BoardService and StackService (both expose find() and findAll()).
  */
 class DeckListingServiceDouble {
 	public mixed $result = [];
 	public array $calls = [];
+	public ?\Throwable $findFailure = null;
+	public array $found = [];
+
+	public function find(int $id): mixed {
+		$this->found[] = $id;
+		if ($this->findFailure !== null) {
+			throw $this->findFailure;
+		}
+		return null;
+	}
 
 	public function findAll(...$args): mixed {
 		$this->calls[] = $args;
