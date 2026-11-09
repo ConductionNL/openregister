@@ -25,6 +25,7 @@ namespace Unit\Repair;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Repair\SeedAppVirtualSchemas;
 use OCP\Migration\IOutput;
@@ -73,14 +74,25 @@ class SeedAppVirtualSchemasTest extends TestCase {
 	}//end setUp()
 
 	/**
+	 * A schema catalog serving the current mapper doubles.
+	 *
+	 * @return SchemaCatalogInterface The catalog.
+	 */
+	private function catalog(): SchemaCatalogInterface {
+		$catalog = $this->createMock(SchemaCatalogInterface::class);
+		$catalog->method('registers')->willReturn($this->registerMapper);
+		$catalog->method('schemas')->willReturn($this->schemaMapper);
+		return $catalog;
+	}//end catalog()
+
+	/**
 	 * Build the repair step over the current doubles.
 	 *
 	 * @return SeedAppVirtualSchemas The step under test.
 	 */
 	private function step(): SeedAppVirtualSchemas {
 		return new SeedAppVirtualSchemas(
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			catalog: $this->catalog(),
 			logger: $this->logger
 		);
 	}//end step()

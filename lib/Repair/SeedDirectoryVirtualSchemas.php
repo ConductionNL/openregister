@@ -38,9 +38,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\ObjectSource\NcEntitySemanticMap;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -96,15 +95,13 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register data mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema data mapper.
-	 * @param LoggerInterface $logger Logger for seed diagnostics.
+	 * @param SchemaCatalogInterface $catalog The register and schema mappers.
+	 * @param LoggerInterface        $logger  Logger for seed diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -158,7 +155,7 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 
 			if ($changed === true) {
 				$register->setSchemas($schemaIds);
-				$this->registerMapper->update($register);
+				$this->catalog->registers()->update($register);
 			}
 
 			$output->info('Directory virtual register seeded');
@@ -177,10 +174,10 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 	 */
 	private function ensureRegister(): Register {
 		try {
-			return $this->registerMapper->find(NcEntitySemanticMap::DIRECTORY_REGISTER, _rbac: false, _multitenancy: false);
+			return $this->catalog->registers()->find(NcEntitySemanticMap::DIRECTORY_REGISTER, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			// Not found — create it.
-			return $this->registerMapper->createFromArray(
+			return $this->catalog->registers()->createFromArray(
 				object: [
 					'title' => 'Directory',
 					'slug' => NcEntitySemanticMap::DIRECTORY_REGISTER,
@@ -205,13 +202,13 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 		$readOnly = (($row['writable'] ?? false) === false);
 
 		try {
-			$schema = $this->schemaMapper->find($row['schema'], _rbac: false, _multitenancy: false);
+			$schema = $this->catalog->schemas()->find($row['schema'], _rbac: false, _multitenancy: false);
 
 			return $this->reconcileReadOnly(schema: $schema, readOnly: $readOnly);
 		} catch (Throwable $e) {
 			$properties = (self::SCHEMA_PROPERTIES[$row['schema']] ?? []);
 
-			return $this->schemaMapper->createFromArray(
+			return $this->catalog->schemas()->createFromArray(
 				object: [
 					'title' => $row['schema'],
 					'slug' => $row['schema'],
@@ -268,7 +265,7 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 		$schema->setConfiguration($configuration);
 
 		try {
-			$updated = $this->schemaMapper->update($schema);
+			$updated = $this->catalog->schemas()->update($schema);
 		} catch (Throwable $e) {
 			// LOUD, not swallowed. `run()` catches everything and degrades to a
 			// warning, which is right for "the seed could not create a schema" and
