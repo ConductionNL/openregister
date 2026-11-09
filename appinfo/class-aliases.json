@@ -94,7 +94,7 @@
 		"OCA\\OpenRegister\\Service\\Audit\\PurposeRefusedException": {
 			"class": "OCA\\OpenRegister\\Exception\\PurposeRefusedException",
 			"eager": true,
-			"service": false
+			"service": true
 		},
 		"OCA\\OpenRegister\\Service\\DashboardService": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\DashboardService",
