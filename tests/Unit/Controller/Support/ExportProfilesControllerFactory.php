@@ -18,7 +18,7 @@ final class ExportProfilesControllerFactory {
 	/**
 	 * The constructor arguments of ExportProfilesController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param ExportProfileService $service Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
@@ -36,7 +36,6 @@ final class ExportProfilesControllerFactory {
 		\OCA\OpenRegister\Service\Export\ExportRunRecorder $exportRuns,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ExportProfilesControllerServices(
 				service: $service,
