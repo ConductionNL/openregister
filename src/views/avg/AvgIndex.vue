@@ -1034,7 +1034,7 @@ const TIER_ICONS = {
  * @spec exclude UI plumbing — delegates to the given avgStore seam
  * @param {object} view The AVG view
  * @param {string} field The view property that keeps the seam result
- * @param {Function} seam The store call, given the selected case id
+ * @param {function(string): Promise<object>} seam The store call, given the selected case id
  * @return {Promise<void>}
  */
 async function runSeam(view, field, seam) {
