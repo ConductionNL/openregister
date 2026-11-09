@@ -1033,7 +1033,6 @@ import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
-import { ensureRegisterAndSchemaLists } from '../../composables/registerSchemaLists.js'
 import {
 	codedStoreOptions,
 	emptyCodedConfig,
@@ -2059,8 +2058,15 @@ export default {
 			this.schemaLoading = true
 
 			try {
-				// Load registers and schemas if not already loaded
-				await ensureRegisterAndSchemaLists()
+				// Load registers if not already loaded
+				if (!registerStore.registerList.length) {
+					await registerStore.refreshRegisterList()
+				}
+
+				// Load schemas if not already loaded
+				if (!schemaStore.schemaList.length) {
+					await schemaStore.refreshSchemaList()
+				}
 			} catch (error) {
 				console.error('Error loading registers and schemas:', error)
 			} finally {

@@ -4,8 +4,8 @@
  *
  * @spec exclude Unit test of client-side list loading.
  */
-import { ensureRegisterAndSchemaLists } from './registerSchemaLists.js'
 import { registerStore, schemaStore } from '../store/store.js'
+import { ensureRegisterAndSchemaLists } from './registerSchemaLists.js'
 
 jest.mock('../store/store.js', () => ({
 	registerStore: { registerList: [], refreshRegisterList: jest.fn() },
