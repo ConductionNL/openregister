@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
 use OCA\OpenRegister\Db\ConfigurationValueMapper;
+use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -142,6 +143,7 @@ final class ConfigurationServiceRegistrar {
 					objectEntityMapper: $container->get(MagicMapper::class),
 					configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 					mappingMapper: $container->get(MappingMapper::class),
+					flowMapper: $container->get(FlowMapper::class),
 					logger: $container->get('Psr\Log\LoggerInterface')
 				);
 
@@ -327,6 +329,15 @@ final class ConfigurationServiceRegistrar {
 			'setSelectionListSeeder' => [
 				\OCA\OpenRegister\Service\Archival\SelectionListSeeder::class,
 				'SelectionListSeeder',
+			],
+			// Resolves an existing flow by uuid during import; without it
+			// `components.flows` is not imported at all.
+			'setFlowMapper' => [FlowMapper::class, 'FlowMapper'],
+			// Publishes an imported flow's draft head; without it an imported
+			// flow is written but left as a draft.
+			'setFlowVersionService' => [
+				\OCA\OpenRegister\Service\Flow\FlowVersionService::class,
+				'FlowVersionService',
 			],
 		];
 

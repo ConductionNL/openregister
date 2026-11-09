@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -313,6 +314,8 @@ class ExportHandlerGoldenTest extends TestCase {
 			}
 		);
 
+		$flowMapper = $this->createMock(FlowMapper::class);
+
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->method('warning')->willReturnCallback(
 			function (string|\Stringable $message, array $context = []): void {
@@ -326,6 +329,7 @@ class ExportHandlerGoldenTest extends TestCase {
 			objectEntityMapper: $objectMapper,
 			configurationMapper: $configurationMapper,
 			mappingMapper: $mappingMapper,
+			flowMapper: $flowMapper,
 			logger: $logger
 		);
 
