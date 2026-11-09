@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use Psr\Log\LoggerInterface;
@@ -53,14 +54,14 @@ class ValidationHandler {
 	 * Constructor for ValidationHandler.
 	 *
 	 * @param ValidationErrorResponseInterface $validateHandler Handler for object validation.
-	 * @param ValidationMappers $mappers The object, register, schema and magic-table mappers.
+	 * @param SchemaCatalogInterface $catalog The register, schema and magic-table mappers.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly ValidationErrorResponseInterface $validateHandler,
-		private readonly ValidationMappers $mappers,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -113,7 +114,7 @@ class ValidationHandler {
 		$result = ['valid' => [], 'invalid' => []];
 
 		// The mapper's findBySchema() bypasses RBAC and multi-tenancy.
-		foreach ($this->mappers->objectEntityMapper->findBySchema($schemaId) as $object) {
+		foreach ($this->catalog->tables()->findBySchema($schemaId) as $object) {
 			$data = $object->getObject();
 			$error = $this->silentSaveError(
 				object: $object,
@@ -277,8 +278,8 @@ class ValidationHandler {
 	 */
 	private function loadSchemaAndRegister(int $registerId, int $schemaId): ?array {
 		try {
-			$schema = $this->mappers->schemaMapper->find($schemaId);
-			$register = $this->mappers->registerMapper->find($registerId);
+			$schema = $this->catalog->schemas()->find($schemaId);
+			$register = $this->catalog->registers()->find($registerId);
 
 			return [
 				'schema' => $schema,
@@ -312,7 +313,7 @@ class ValidationHandler {
 	 */
 	private function loadObjectsForValidation(array $loaded, int $schemaId): ?array {
 		try {
-			return $this->mappers->magicMapper->findAllInRegisterSchemaTable($loaded['register'], $loaded['schema']);
+			return $this->catalog->tables()->findAllInRegisterSchemaTable($loaded['register'], $loaded['schema']);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ValidationHandler] Failed to get objects from magic table',
