@@ -35,6 +35,7 @@ use Exception;
 use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\Oas\OasETagComputerInterface;
 use OCA\OpenRegister\Service\OasServiceInterface;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
@@ -85,7 +86,7 @@ class OasController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @psalm-return JSONResponse<200|422|500, array<string, mixed>, array<never, never>>
+	 * @psalm-return JSONResponse<200|404|422|500, array<string, mixed>, array<never, never>>
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
@@ -107,7 +108,7 @@ class OasController extends Controller {
 	 *
 	 * @PublicPage
 	 *
-	 * @psalm-return JSONResponse<200|422|500, array<string, mixed>, array<never, never>>
+	 * @psalm-return JSONResponse<200|404|422|500, array<string, mixed>, array<never, never>>
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
@@ -136,6 +137,8 @@ class OasController extends Controller {
 			$oasData = $this->oasService->createOas($registerId, $strict);
 		} catch (OasValidationException $e) {
 			return $this->strictRejection(e: $e);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}
