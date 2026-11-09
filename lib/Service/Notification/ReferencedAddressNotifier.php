@@ -30,11 +30,8 @@ namespace OCA\OpenRegister\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
 
 /**
@@ -88,20 +85,14 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface          $objects The object layer, for the referenced object.
-	 * @param EmailSenderInterface            $email   The email channel.
-	 * @param OptOutAuthorityInterface        $optOut  Asks integriq whether an address may be mailed.
-	 * @param LoggerInterface        $logger  Logger.
-	 * @param SchemaMapperInterface           $schemas The schemas, for the properties of a referenced object.
-	 * @param RelationCascadeHandler $refs    Resolves a property's `$ref` to a schema id.
+	 * @param ReferenceLookupServices $lookups  The object layer, schemas and `$ref` resolver references are followed with.
+	 * @param AddressDeliveryServices $delivery The email channel and integriq.
+	 * @param LoggerInterface         $logger   Logger.
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objects,
-		private readonly EmailSenderInterface $email,
-		private readonly OptOutAuthorityInterface $optOut,
+		private readonly ReferenceLookupServices $lookups,
+		private readonly AddressDeliveryServices $delivery,
 		private readonly LoggerInterface $logger,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly RelationCascadeHandler $refs,
 	) {
 	}//end __construct()
 
@@ -133,6 +124,7 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 		string $category,
 		?Schema $schema = null,
 	): array {
+		$origin = new ReferenceOrigin(object: $object, data: $data, schema: $schema);
 		$entries = [];
 		foreach ($recipientsSpec as $recipient) {
 			if (is_array($recipient) === false || (string)($recipient['kind'] ?? '') !== self::KIND) {
@@ -140,7 +132,7 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 			}
 
 			$path = trim((string)($recipient['field'] ?? ''));
-			$entries[] = ['field' => $path] + $this->resolveAddress(object: $object, data: $data, path: $path, schema: $schema);
+			$entries[] = ['field' => $path] + $this->resolveAddress(origin: $origin, path: $path);
 		}
 
 		if ($entries === []) {
@@ -154,18 +146,19 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 			}
 		}
 
-		$decisions = $this->optOut->ask(
+		$decisions = $this->delivery->optOut->ask(
 			channel: 'email',
 			category: $category,
 			addresses: $askable,
 			correlationId: 'openregister-email:' . (string)($object->getUuid() ?? '')
 		);
 
+		$mailing = new ClearedMailing(subject: $subject, body: $body, decisions: $decisions);
 		$outcomes = [];
 		foreach ($entries as $entry) {
 			$outcomes[] = [
 				'field' => $entry['field'],
-				'outcome' => $this->sendOne(entry: $entry, decisions: $decisions, subject: $subject, body: $body),
+				'outcome' => $this->sendOne(entry: $entry, mailing: $mailing),
 			];
 		}
 
@@ -182,23 +175,21 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 	 * property's `$ref` names; without a schema to read that from, no
 	 * reference is followed.
 	 *
-	 * @param ObjectEntity         $object The triggering object.
-	 * @param array<string, mixed> $data   Its data.
-	 * @param string               $path   The dotted path, e.g. `supplierRef.contactEmail`.
-	 * @param Schema|null          $schema The triggering object's schema.
+	 * @param ReferenceOrigin $origin The triggering object, its data and its schema.
+	 * @param string          $path   The dotted path, e.g. `supplierRef.contactEmail`.
 	 *
 	 * @return array{address: string|null, reason: string|null}
 	 *
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
 	 */
-	public function resolveAddress(ObjectEntity $object, array $data, string $path, ?Schema $schema = null): array {
+	public function resolveAddress(ReferenceOrigin $origin, string $path): array {
 		$segments = array_values(array_filter(explode('.', $path), static fn (string $segment): bool => $segment !== ''));
 		if ($segments === [] || count($segments) > (self::MAX_HOPS + 1)) {
 			return ['address' => null, 'reason' => self::REASON_NO_REFERENCE];
 		}
 
 		$last = array_pop($segments);
-		$followed = $this->follow(object: $object, data: $data, segments: $segments, schema: $schema);
+		$followed = $this->follow(origin: $origin, segments: $segments);
 		if ($followed['reason'] !== null) {
 			return ['address' => null, 'reason' => $followed['reason']];
 		}
@@ -219,16 +210,14 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 	/**
 	 * Follow each reference segment to the object it names.
 	 *
-	 * @param ObjectEntity         $object   The triggering object.
-	 * @param array<string, mixed> $data     Its data.
-	 * @param array<int, string>   $segments The reference segments, in order.
-	 * @param Schema|null          $schema   The triggering object's schema.
+	 * @param ReferenceOrigin    $origin   The triggering object, its data and its schema.
+	 * @param array<int, string> $segments The reference segments, in order.
 	 *
 	 * @return array{data: array<string, mixed>, reason: string|null} The data reached, or why it was not.
 	 */
-	private function follow(ObjectEntity $object, array $data, array $segments, ?Schema $schema): array {
-		$current = $data;
-		$currentSchema = $schema;
+	private function follow(ReferenceOrigin $origin, array $segments): array {
+		$current = $origin->data;
+		$currentSchema = $origin->schema;
 		foreach ($segments as $segment) {
 			$reference = $this->referenceOf(value: ($current[$segment] ?? null));
 			if ($reference === null) {
@@ -240,11 +229,12 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 				return ['data' => [], 'reason' => self::REASON_REFERENCE_NOT_FOUND];
 			}
 
-			if ($this->sameTenant(origin: $object, related: $related) === false) {
+			if ($this->sameTenant(origin: $origin->object, related: $related) === false) {
 				return ['data' => [], 'reason' => self::REASON_OTHER_TENANT];
 			}
 
-			if ($this->isOfDeclaredSchema(schema: $currentSchema, property: $segment, related: $related) === false) {
+			$declared = $this->declaredReference(schema: $currentSchema, property: $segment);
+			if ($declared === null || $this->isOfDeclaredSchema(property: $declared, related: $related) === false) {
 				return ['data' => [], 'reason' => self::REASON_REFERENCE_NOT_FOUND];
 			}
 
@@ -258,19 +248,18 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 	/**
 	 * Send one resolved entry, or name why it was not sent.
 	 *
-	 * @param array{field: string, address: string|null, reason: string|null} $entry     The entry.
-	 * @param array<string, array<string, mixed>>                              $decisions integriq's answers.
-	 * @param string                                                           $subject   The subject.
-	 * @param string                                                           $body      The body.
+	 * @param array{field: string, address: string|null, reason: string|null} $entry   The entry.
+	 * @param ClearedMailing                                                   $mailing The mail and integriq's answers.
 	 *
 	 * @return string The outcome.
 	 */
-	private function sendOne(array $entry, array $decisions, string $subject, string $body): string {
+	private function sendOne(array $entry, ClearedMailing $mailing): string {
 		if ($entry['address'] === null) {
 			return (string)$entry['reason'];
 		}
 
-		$decision = $this->optOut->decisionFor(decisions: $decisions, address: $entry['address']);
+		$optOut = $this->delivery->optOut;
+		$decision = $optOut->decisionFor(decisions: $mailing->decisions, address: $entry['address']);
 		if (($decision['send'] ?? false) !== true) {
 			if (($decision['code'] ?? '') === OptOutAuthorityInterface::CODE_AUTHORITY_UNAVAILABLE) {
 				return self::OUTCOME_AUTHORITY_UNAVAILABLE;
@@ -284,11 +273,11 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 			$unsubscribe = $decision['unsubscribe'];
 		}
 
-		return $this->email->sendToAddress(
+		return $this->delivery->email->sendToAddress(
 			address: $entry['address'],
 			displayName: '',
-			subject: $subject,
-			body: $this->optOut->withLink(body: $body, unsubscribe: $unsubscribe),
+			subject: $mailing->subject,
+			body: $optOut->withLink(body: $mailing->body, unsubscribe: $unsubscribe),
 			unsubscribe: $unsubscribe
 		);
 	}//end sendOne()
@@ -321,7 +310,7 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 	 */
 	private function findReferenced(string $id): ?ObjectEntity {
 		try {
-			return $this->objects->find(id: $id, _rbac: false, _multitenancy: false, _render: false, _audit: false);
+			return $this->lookups->objects->find(id: $id, _rbac: false, _multitenancy: false, _render: false, _audit: false);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[ReferencedAddressNotifier] reference "%s" did not resolve: %s', $id, $e->getMessage())
@@ -331,19 +320,18 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 	}//end findReferenced()
 
 	/**
-	 * Whether a referenced object is of the schema its reference property points at.
+	 * The reference a schema declares for a property, or null when it declares none.
 	 *
 	 * The property's `$ref` is the only declaration of what the reference may
-	 * name, so a property without one, or one that does not resolve to a schema,
-	 * accepts nothing: the value is data the person saving the object controls.
+	 * name, so a property without one accepts nothing: the value is data the
+	 * person saving the object controls.
 	 *
-	 * @param Schema|null  $schema   The schema that declares the property.
-	 * @param string       $property The reference property.
-	 * @param ObjectEntity $related  The referenced object.
+	 * @param Schema|null $schema   The schema that declares the property.
+	 * @param string      $property The reference property.
 	 *
-	 * @return bool
+	 * @return ReferenceProperty|null
 	 */
-	private function isOfDeclaredSchema(?Schema $schema, string $property, ObjectEntity $related): bool {
+	private function declaredReference(?Schema $schema, string $property): ?ReferenceProperty {
 		$declared = (($schema?->getProperties() ?? [])[$property] ?? null);
 		$ref = null;
 		if (is_array($declared) === true) {
@@ -354,16 +342,30 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 			$this->logger->debug(
 				sprintf('[ReferencedAddressNotifier] property "%s" declares no $ref, so its reference is not followed', $property)
 			);
-			return false;
+			return null;
 		}
 
+		return new ReferenceProperty(name: $property, ref: trim($ref));
+	}//end declaredReference()
+
+	/**
+	 * Whether a referenced object is of the schema its reference property points at.
+	 *
+	 * A `$ref` that does not resolve to a schema accepts nothing.
+	 *
+	 * @param ReferenceProperty $property The reference property and its `$ref`.
+	 * @param ObjectEntity      $related  The referenced object.
+	 *
+	 * @return bool
+	 */
+	private function isOfDeclaredSchema(ReferenceProperty $property, ObjectEntity $related): bool {
 		// System-side: the comparison is metadata, and a writer who cannot read the target schema (an anonymous
 		// form submit, a background job) must not silently turn the rule into one that sends nothing.
-		$expected = $this->refs->resolveSchemaReference(reference: trim($ref), scope: RelationCascadeHandler::SYSTEM_SCOPE);
+		$expected = $this->lookups->refs->resolveSchemaReference(reference: $property->ref, scope: RelationCascadeHandler::SYSTEM_SCOPE);
 		$actual = (string)($related->getSchema() ?? '');
 		if ($expected === null || $actual === '' || $expected !== $actual) {
 			$this->logger->debug(
-				sprintf('[ReferencedAddressNotifier] reference "%s" is not an object of the schema "%s" declares', $property, $ref)
+				sprintf('[ReferencedAddressNotifier] reference "%s" is not an object of the schema "%s" declares', $property->name, $property->ref)
 			);
 			return false;
 		}
@@ -385,7 +387,7 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 		}
 
 		try {
-			return $this->schemas->find(id: $id, _rbac: false, _multitenancy: false);
+			return $this->lookups->schemas->find(id: $id, _rbac: false, _multitenancy: false);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[ReferencedAddressNotifier] schema "%s" could not be read: %s', $id, $e->getMessage())
