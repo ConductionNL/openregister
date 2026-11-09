@@ -147,7 +147,7 @@ class AuditTrailMapperBulkTest extends TestCase {
 			resolver: $this->createMock(\OCA\OpenRegister\Service\Audit\TokenResolver::class)
 		);
 		$this->tokenContext->claim(
-			identity: new \OCA\OpenRegister\Service\Audit\TokenIdentity(mechanism: 'bearer', reference: 'tok-1', consumerName: 'portal')
+			identity: new \OCA\OpenRegister\Service\Audit\TokenIdentity(mechanism: 'bearer', token: new \OCA\OpenRegister\Service\Audit\NamedIdentifier(id: 'tok-1'), consumer: new \OCA\OpenRegister\Service\Audit\NamedIdentifier(name: 'portal'))
 		);
 
 		$trail = \OCA\OpenRegister\Service\OrganisationContext::run(

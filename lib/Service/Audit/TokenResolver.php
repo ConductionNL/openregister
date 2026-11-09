@@ -87,12 +87,8 @@ class TokenResolver {
 		$ownerUid = $this->ownerUid(token: $token);
 		$identity = new TokenIdentity(
 			mechanism: 'app-password',
-			reference: (string)$token->getId(),
-			name: $this->tokenName(token: $token),
-			ownerUid: $ownerUid,
-			ownerName: $this->ownerName(ownerUid: $ownerUid),
-			consumerUuid: null,
-			consumerName: null,
+			token: new NamedIdentifier(id: (string)$token->getId(), name: $this->tokenName(token: $token)),
+			owner: new NamedIdentifier(id: $ownerUid, name: $this->ownerName(ownerUid: $ownerUid)),
 		);
 
 		return $this->withConsumer(identity: $identity, ownerUid: $ownerUid);
@@ -232,15 +228,7 @@ class TokenResolver {
 			return $identity;
 		}
 
-		return new TokenIdentity(
-			mechanism: $identity->mechanism(),
-			reference: $identity->reference(),
-			name: $identity->name(),
-			ownerUid: $identity->ownerUid(),
-			ownerName: $identity->ownerName(),
-			consumerUuid: $consumer->getUuid(),
-			consumerName: $consumer->getName(),
-		);
+		return $identity->withConsumer(consumer: new NamedIdentifier(id: $consumer->getUuid(), name: $consumer->getName()));
 	}//end withConsumer()
 
 	/**
