@@ -153,17 +153,18 @@ trait NotificationQueryTrait {
 	}//end whereScopedOrUnscoped()
 
 	/**
-	 * Narrow to a column value when one is given.
+	 * Narrow to each column value that is given.
 	 *
-	 * @param IQueryBuilder $qb     The query.
-	 * @param string        $column The column.
-	 * @param string|null   $value  The value; null leaves the query alone.
+	 * @param IQueryBuilder              $qb      The query.
+	 * @param array<string, string|null> $columns Column to value; a null value leaves the query alone.
 	 *
 	 * @return void
 	 */
-	private function whereEqualsWhenGiven(IQueryBuilder $qb, string $column, ?string $value): void {
-		if ($value !== null) {
-			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+	private function whereEqualsWhenGiven(IQueryBuilder $qb, array $columns): void {
+		foreach ($columns as $column => $value) {
+			if ($value !== null) {
+				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+			}
 		}
 
 	}//end whereEqualsWhenGiven()

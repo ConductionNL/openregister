@@ -135,7 +135,7 @@ class TimelineEntryMapper extends QBMapper {
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-		$this->whereEqualsWhenGiven(qb: $qb, column: 'visibility', value: $visibility);
+		$this->whereEqualsWhenGiven(qb: $qb, columns: ['visibility' => $visibility]);
 
 		return $this->findEntities(query: $qb);
 	}//end findForObject()
@@ -184,7 +184,7 @@ class TimelineEntryMapper extends QBMapper {
 			->setMaxResults(min(max($search->scope->limit, 1), self::SEARCH_LIMIT));
 
 		$this->whereObjectIn(qb: $qb, objectUuids: $search->scope->objectUuids);
-		$this->whereEqualsWhenGiven(qb: $qb, column: 'visibility', value: $search->visibility);
+		$this->whereEqualsWhenGiven(qb: $qb, columns: ['visibility' => $search->visibility]);
 
 		return $this->findOfKind(qb: $qb, kind: $search->scope->kind);
 	}//end searchEntries()
@@ -224,7 +224,7 @@ class TimelineEntryMapper extends QBMapper {
 	 * @return array<int, TimelineEntry> The entries.
 	 */
 	private function findOfKind(IQueryBuilder $qb, ?string $kind): array {
-		$this->whereEqualsWhenGiven(qb: $qb, column: 'kind', value: $kind);
+		$this->whereEqualsWhenGiven(qb: $qb, columns: ['kind' => $kind]);
 
 		return $this->findEntities(query: $qb);
 	}//end findOfKind()
