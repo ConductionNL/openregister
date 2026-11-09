@@ -64,19 +64,33 @@ class ContactsObjectSourceProvider implements ObjectSourceProvider {
 	private const SEARCH_PROPERTIES = ['FN', 'EMAIL', 'ORG', 'UID'];
 
 	/**
+	 * App availability checks.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IManager $contactsManager Nextcloud contacts (address book) manager.
-	 * @param IAppManager $appManager App availability checks.
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param IManager          $contactsManager Nextcloud contacts (address book) manager.
+	 * @param OptionalAppBridge $app             Whether the app is installed, its services, and the log of failed reads.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IManager $contactsManager,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		OptionalAppBridge $app,
 	) {
+		$this->appManager = $app->appManager;
+		$this->logger = $app->logger;
 	}//end __construct()
 
 	/**

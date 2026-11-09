@@ -76,7 +76,7 @@ class FilesObjectSourceProviderFailureTest extends TestCase {
 		$this->root = $this->createMock(IRootFolder::class);
 		$this->session = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->provider = new FilesObjectSourceProvider(rootFolder: $this->root, userSession: $this->session, logger: $this->logger);
+		$this->provider = new FilesObjectSourceProvider(rootFolder: $this->root, session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $this->session, logger: $this->logger));
 	}//end setUp()
 
 	/**

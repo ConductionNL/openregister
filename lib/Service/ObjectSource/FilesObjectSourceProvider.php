@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -58,19 +59,33 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 	private const SCAN_CAP = 10000;
 
 	/**
+	 * The acting-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRootFolder $rootFolder Nextcloud root folder (per-user home resolution).
-	 * @param IUserSession $userSession Acting-user session for read-scoping.
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param IRootFolder        $rootFolder Nextcloud root folder (per-user home resolution).
+	 * @param LinkSessionRuntime $session    The acting-user session and the logger for read failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IRootFolder $rootFolder,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		LinkSessionRuntime $session,
 	) {
+		$this->userSession = $session->userSession;
+		$this->logger = $session->logger;
 	}//end __construct()
 
 	/**

@@ -157,7 +157,7 @@ class DeckTalkSourcesGoldenTest extends TestCase {
 				$this->log[] = ['log', $level, (string)$message];
 			}
 		};
-		return [$apps, $session, $container, $logger];
+		return [new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $apps, container: $container, logger: $logger), $session];
 	}//end dependencies()
 
 	/**

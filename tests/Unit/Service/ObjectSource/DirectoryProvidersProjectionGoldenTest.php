@@ -144,7 +144,7 @@ class DirectoryProvidersProjectionGoldenTest extends TestCase {
 		$groups->method('get')->willReturnCallback(static fn (string $gid): ?IGroup => ($gid === 'staff' ? $staff : null));
 		$groups->method('search')->willReturn(['x' => $staff, 'y' => $board]);
 
-		$provider = new GroupObjectSourceProvider(groupManager: $groups, userSession: $session, logger: $this->createMock(LoggerInterface::class));
+		$provider = new GroupObjectSourceProvider(groupManager: $groups, session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $session, logger: $this->createMock(LoggerInterface::class)));
 		$found    = [
 			$provider->find(register: $this->register, schema: $this->schema, id: 'staff'),
 			$provider->find(register: $this->register, schema: $this->schema, id: 'none'),
@@ -208,7 +208,7 @@ class DirectoryProvidersProjectionGoldenTest extends TestCase {
 		$apps->method('isEnabledForUser')->willReturn(true);
 		$apps->method('isInstalled')->willReturn(true);
 
-		$provider = new ContactsObjectSourceProvider(contactsManager: $contacts, appManager: $apps, logger: $this->createMock(LoggerInterface::class));
+		$provider = new ContactsObjectSourceProvider(contactsManager: $contacts, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $apps, container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: $this->createMock(LoggerInterface::class)));
 		$found    = [
 			$provider->find(register: $this->register, schema: $this->schema, id: 'c2'),
 			$provider->find(register: $this->register, schema: $this->schema, id: 'sys'),

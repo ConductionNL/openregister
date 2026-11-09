@@ -103,7 +103,7 @@ class ObjectSourcePlumbingTest extends TestCase {
 	 * @return object The provider.
 	 */
 	private function build(string $class, IAppManager $appManager, ContainerInterface $container, LoggerInterface $logger): object {
-		return new $class($appManager, $this->createMock(\OCP\IUserSession::class), $container, $logger);
+		return new $class(new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $container, logger: $logger), $this->createMock(\OCP\IUserSession::class));
 	}//end build()
 
 	/**
@@ -158,7 +158,7 @@ class ObjectSourcePlumbingTest extends TestCase {
 	public function testTablesReaderResolvesServicesTheSameWay(): void {
 		$this->assertServiceResolution(
 			label: 'tables',
-			build: fn (ContainerInterface $container, LoggerInterface $logger): object => new ObjectSource\TablesTableReader($this->createMock(IAppManager::class), $container, $logger)
+			build: fn (ContainerInterface $container, LoggerInterface $logger): object => new ObjectSource\TablesTableReader(app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $this->createMock(IAppManager::class), container: $container, logger: $logger))
 		);
 	}//end testTablesReaderResolvesServicesTheSameWay()
 
