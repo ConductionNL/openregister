@@ -7,3 +7,4 @@
 2026-11-09T07:56:36Z integrator-20261109T074038-899f64ee RED tree 2c4d49babb prs 50 front=red: Tests: 49361, Assertions: 162137, Errors: 28, Failures: 13, Warnings: 1, Deprecations: 4, ; first failures: OCA\OpenRegister\Tests\Unit\AppHost\Observability\Source\ObjectMetricSourceTest::testCountBuildsQueryWithRegis;OCA\OpenRegister\Tests\Unit\AppHost\Observability\Source\ObjectMetricSourceTest::testEmptyRegisterSlugIsNotLoo;OCA\OpenRegister\Tests\Unit\AppHost\Observability\Source\ObjectMetricSourceTest::testGroupByExpandsFacetBucket
 2026-11-09T08:03:32Z reviewer-20261109T071226-fbe34d7d 6973 e37838719e0c not reviewed: still conflicts with main 869b97c27d (merge-tree reports conflicts); third confirmation, needs a fresh branch or close
 2026-11-09T08:44:45Z integrator-20261109T083423-0edcff2f CONFLICT-DEV #6693 aa2e8e6d
+2026-11-09T08:44:58Z integrator-20261109T083423-0edcff2f CONFLICT-DEV #7435 89913c0c
