@@ -29,6 +29,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Notifications\Controller\Support\AddressedObject;
 use OCA\OpenRegister\Notifications\Controller\Support\NotePath;
 use OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices;
+use OCA\OpenRegister\Notifications\Controller\Support\NoteUpdate;
 use OCA\OpenRegister\Notifications\Controller\Support\ObjectNote;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
@@ -490,9 +491,10 @@ class NotesController extends Controller {
 			return $write['refusal'];
 		}
 
+		$update    = new NoteUpdate(target: $target, message: $write['message'], visibility: $write['visibility'], previous: $write['previous']);
 		$mayManage = $this->services->visibility->mayManageObject(object: $object);
-		$note = $this->noteService->updateNote(noteId: $noteId, message: $write['message'], visibility: $write['visibility'], mayManage: $mayManage);
-		$this->recordUpdate(target: $target, write: $write, note: $note);
+		$note = $this->noteService->updateNote(noteId: $noteId, message: $update->message, visibility: $update->visibility, mayManage: $mayManage);
+		$this->recordUpdate(update: $update, note: $note);
 
 		return new JSONResponse(data: $note);
 	}//end updateOn()
@@ -506,27 +508,26 @@ class NotesController extends Controller {
 	 * text that was just rewritten: an index answering with yesterday's
 	 * sentence is worse than no index, because it looks like a hit.
 	 *
-	 * @param ObjectNote                                                                      $target The note and the object it hangs on.
-	 * @param array{refusal: null, message: string|null, visibility: string|null, previous: string|null} $write  The write made.
-	 * @param array<string, mixed>                                                            $note   The updated note.
+	 * @param NoteUpdate           $update The edit made.
+	 * @param array<string, mixed> $note   The updated note.
 	 *
 	 * @return void
 	 */
-	private function recordUpdate(ObjectNote $target, array $write, array $note): void {
-		$object = $target->object;
-		$noteId = $target->noteId;
-		if ($write['message'] !== null) {
+	private function recordUpdate(NoteUpdate $update, array $note): void {
+		$object = $update->target->object;
+		$noteId = $update->target->noteId;
+		if ($update->message !== null) {
 			$this->noteService->auditEdit(object: $object, noteId: $noteId, versions: (int)($note['versionCount'] ?? 0));
 		}
 
 		$this->services->timeline->rewrite(
 			object: $object,
-			rewrite: new NoteRewrite(commentId: $noteId, message: $write['message'], visibility: $write['visibility'])
+			rewrite: new NoteRewrite(commentId: $noteId, message: $update->message, visibility: $update->visibility)
 		);
 
-		if ($write['previous'] !== null) {
+		if ($update->previous !== null) {
 			$to = (string)($note['visibility'] ?? '');
-			$this->services->visibility->auditVisibilityChange(object: $object, noteId: $noteId, from: $write['previous'], to: $to);
+			$this->services->visibility->auditVisibilityChange(object: $object, noteId: $noteId, from: $update->previous, to: $to);
 		}
 	}//end recordUpdate()
 
