@@ -190,7 +190,7 @@ class MatrixRowsFromApps {
 	 * @return array<int, array<string, mixed>> The rows that read.
 	 */
 	private function readable(array $rows, AppRowsRun $run): array {
-		$properties = ($run->schema->getProperties() ?? []);
+		$shape = new MatrixShape(properties: ($run->schema->getProperties() ?? []), field: $run->field);
 		$validator = $this->validator->withDeclaredActions(declaredActions: $run->schema->declaredActionNames());
 		$kept = [];
 		foreach ($rows as $row) {
@@ -198,7 +198,7 @@ class MatrixRowsFromApps {
 				continue;
 			}
 
-			$findings = $validator->findingsForRow(row: $row, properties: $properties, field: $run->field);
+			$findings = $validator->findingsForRow(row: $row, shape: $shape);
 			if ($findings !== []) {
 				$this->logger->warning(
 					message: '[MatrixRowsFromApps] A provider row does not read and was dropped',

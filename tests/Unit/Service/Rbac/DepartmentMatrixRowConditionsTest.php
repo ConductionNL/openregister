@@ -25,6 +25,7 @@ namespace Unit\Service\Rbac;
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
+use OCA\OpenRegister\Service\Rbac\MatrixShape;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -173,7 +174,7 @@ class DepartmentMatrixRowConditionsTest extends TestCase {
 			'code'
 		);
 		$appRowCodes = fn (array $row): array => array_column(
-			$validator->findingsForRow(row: $row, properties: $properties, field: 'assignedGroup'),
+			$validator->findingsForRow(row: $row, shape: new MatrixShape(properties: $properties, field: 'assignedGroup')),
 			'code'
 		);
 		$base = ['value' => 'team-a', 'group' => 'g', 'actions' => ['read']];
@@ -197,7 +198,7 @@ class DepartmentMatrixRowConditionsTest extends TestCase {
 		$validator = new DepartmentMatrixValidator();
 		$properties = ['assignedGroup' => [], 'provider' => []];
 		$codes = fn (array $row): array => array_column(
-			$validator->findingsForRow(row: $row, properties: $properties, field: 'assignedGroup'),
+			$validator->findingsForRow(row: $row, shape: new MatrixShape(properties: $properties, field: 'assignedGroup')),
 			'code'
 		);
 		$compile = fn (array $row): array => (new DepartmentMatrixCompiler())->compile(matrix: $this->matrix(rows: [$row]), ownValues: []);
