@@ -135,8 +135,18 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		string $subjectId, ?string $type = null, string $mode = 'exact', bool $rbac = true, bool $multitenancy = true
 	): array {
 		$query = new SubjectQuery(subjectId: $subjectId, type: $type, mode: $mode);
-		$hits = $this->findSubjectObjects(query: $query, rbac: $rbac, multitenancy: $multitenancy);
 
+		return $this->serialiseHits(hits: $this->findSubjectObjects(query: $query, rbac: $rbac, multitenancy: $multitenancy));
+	}//end findSubjectData()
+
+	/**
+	 * The discovery hits as the HTTP envelope: the object's json and its hits.
+	 *
+	 * @param array<int, array{object: ObjectEntity, gdprEntities: array}> $hits The loaded hits.
+	 *
+	 * @return array<int, array{object: array, gdprEntities: array}>
+	 */
+	private function serialiseHits(array $hits): array {
 		return array_map(
 			static fn (array $hit): array => [
 				'object' => $hit['object']->jsonSerialize(),
@@ -144,7 +154,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 			],
 			$hits
 		);
-	}//end findSubjectData()
+	}//end serialiseHits()
 
 	/**
 	 * The same cross-register discovery, handing back the loaded entities.
@@ -173,7 +183,8 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		}
 
 		$hits = [];
-		foreach ($this->records->index->discover(subjectId: $subjectId, type: $query->type, mode: $query->mode) as $entry) {
+		$trimmed = new SubjectQuery(subjectId: $subjectId, type: $query->type, mode: $query->mode);
+		foreach ($this->records->index->discover(query: $trimmed) as $entry) {
 			$object = $this->records->loader->loadEntry(entry: $entry, rbac: $rbac, multitenancy: $multitenancy);
 			if ($object !== null) {
 				$hits[] = ['object' => $object, 'gdprEntities' => $entry['gdprEntities']];
@@ -296,9 +307,19 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		bool $dryRun = false,
 	): array {
 		$eraseMode = $this->normaliseEraseMode(eraseMode: $eraseMode);
-		$subjectId = trim($subjectId);
-		$grouped = $this->records->index->discover(subjectId: $subjectId, type: $type, mode: 'exact');
-		$request = new ErasureRequest(subjectId: $subjectId, type: $type, eraseMode: $eraseMode, dryRun: $dryRun);
+
+		return $this->eraseFor(request: new ErasureRequest(subjectId: trim($subjectId), type: $type, eraseMode: $eraseMode, dryRun: $dryRun));
+	}//end erase()
+
+	/**
+	 * Erase the subject's data across matching objects, for one normalised request.
+	 *
+	 * @param ErasureRequest $request The erasure: trimmed subject, type filter, normalised mode, dry run.
+	 *
+	 * @return array<string, mixed> The summary.
+	 */
+	private function eraseFor(ErasureRequest $request): array {
+		$grouped = $this->records->index->discover(query: new SubjectQuery(subjectId: $request->subjectId, type: $request->type));
 		$run = new ErasureRun(request: $request, matchedCount: count($grouped));
 
 		foreach ($grouped as $entry) {
@@ -306,7 +327,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		}
 
 		return $run->close();
-	}//end erase()
+	}//end eraseFor()
 
 	/**
 	 * Flag/unflag processing restriction on a single object (art-18).

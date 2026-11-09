@@ -95,11 +95,24 @@ class SubjectExportService implements SubjectExportServiceInterface, SubjectExpo
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function request(string $subject, ?string $type = null, ?string $requestId = null): SubjectExport {
+		return $this->enqueue(request: new SubjectExportRequest(subject: trim($subject), type: $type, requestId: $requestId));
+	}//end request()
+
+	/**
+	 * Record a pending export for the current actor, queue its assembly, audit it.
+	 *
+	 * @param SubjectExportRequest $request The subject, type filter and request id.
+	 *
+	 * @return SubjectExport The recorded request.
+	 *
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
+	 */
+	private function enqueue(SubjectExportRequest $request): SubjectExport {
 		$export = $this->queue->mapper->createFromArray(
 			[
-				'subject' => trim($subject),
-				'subjectType' => $type,
-				'requestId' => $requestId,
+				'subject' => $request->subject,
+				'subjectType' => $request->type,
+				'requestId' => $request->requestId,
 				'status' => SubjectExport::STATUS_PENDING,
 				'requestedBy' => $this->actor(),
 			]
@@ -110,7 +123,7 @@ class SubjectExportService implements SubjectExportServiceInterface, SubjectExpo
 		$this->audit(export: $export, event: 'requested');
 
 		return $export;
-	}//end request()
+	}//end enqueue()
 
 	/**
 	 * Assemble one pending export. Called by the background job.
