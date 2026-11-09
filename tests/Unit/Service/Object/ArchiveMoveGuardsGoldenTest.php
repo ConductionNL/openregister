@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
 use OCA\OpenRegister\Service\Object\MoveObject;
+use OCA\OpenRegister\Service\Object\ObjectStateRecording;
 use OCA\OpenRegister\Service\Object\ObjectValidatorInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -82,10 +83,9 @@ class ArchiveMoveGuardsGoldenTest extends TestCase {
 
 		return new ArchiveHandler(
 			$magic,
-			$this->createMock(AuditTrailMapper::class),
 			$permissions,
 			$session,
-			$this->createMock(LoggerInterface::class)
+			new ObjectStateRecording($this->createMock(AuditTrailMapper::class), $this->createMock(LoggerInterface::class))
 		);
 	}//end archive()
 
