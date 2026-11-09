@@ -113,8 +113,17 @@ class ShippedConfigurationGuard {
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
-	public function guardSchemaUpdate(string $slug, array $live, array $incoming, string $app, string $appVersion, array $decisions = [], bool $record = true): array {
-		$upgrade = new SchemaUpgrade(slug: $slug, live: $live, incoming: new ShippedDefinition(definition: $incoming, app: $app, appVersion: $appVersion));
+	public function guardSchemaUpdate(
+		string $slug,
+		array $live,
+		array $incoming,
+		string $app,
+		string $appVersion,
+		array $decisions = [],
+		bool $record = true
+	): array {
+		$shipped = new ShippedDefinition(definition: $incoming, app: $app, appVersion: $appVersion);
+		$upgrade = new SchemaUpgrade(slug: $slug, live: $live, incoming: $shipped);
 		return $this->guardUpgrade(upgrade: $upgrade, options: new SchemaUpgradeOptions(decisions: $decisions, record: $record));
 	}//end guardSchemaUpdate()
 
@@ -194,7 +203,8 @@ class ShippedConfigurationGuard {
 		$upgrade = $run->upgrade;
 		// While an administrator's re-import is in effect, the merge takes
 		// every authorization block from the file (REQ-LCA-003).
-		$result = $this->merge->merge(baseline: $baseline, live: $upgrade->live, incoming: $upgrade->incoming->definition, decisions: $run->options->decisions);
+		$incoming = $upgrade->incoming->definition;
+		$result = $this->merge->merge(baseline: $baseline, live: $upgrade->live, incoming: $incoming, decisions: $run->options->decisions);
 		$this->recordReplaced(upgrade: $upgrade, roots: $result['replacedLocal']);
 		$this->recordAppliedAuthorization(run: $run, result: $result);
 		$this->recordBaseline(run: $run, definition: $result['baseline']);
@@ -223,7 +233,11 @@ class ShippedConfigurationGuard {
 	 */
 	private function unguardedRelease(SchemaUpgrade $upgrade, Throwable $error): array {
 		$this->logger->error(
-			sprintf('[ShippedConfigurationGuard] %s: guard skipped, importing unguarded but keeping the instance authorization: %s', $upgrade->slug, $error->getMessage())
+			sprintf(
+				'[ShippedConfigurationGuard] %s: guard skipped, importing unguarded but keeping the instance authorization: %s',
+				$upgrade->slug,
+				$error->getMessage()
+			)
 		);
 
 		return [
