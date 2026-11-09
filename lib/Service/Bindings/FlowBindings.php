@@ -37,5 +37,7 @@ final class FlowBindings {
 	 *
 	 * @var array<class-string, class-string>
 	 */
-	public const BINDINGS = [];
+	public const BINDINGS = [
+		\OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode::class,
+	];
 }//end class
