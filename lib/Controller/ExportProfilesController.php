@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ExportProfilesControllerServices;
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Service\Export\ExportProfileServiceInterface;
@@ -92,18 +93,16 @@ class ExportProfilesController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string               $appName      Application name.
 	 * @param IRequest             $request      HTTP request.
 	 * @param ExportProfilesControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ExportProfilesControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->service = $services->service;
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;

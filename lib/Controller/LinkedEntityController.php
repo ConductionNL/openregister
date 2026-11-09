@@ -22,6 +22,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\LinkedEntityControllerServices;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
@@ -79,16 +80,14 @@ class LinkedEntityController extends Controller {
 	/**
 	 * Constructor for LinkedEntityController.
 	 *
-	 * @param string $appName The app name
 	 * @param IRequest $request The request object
 	 * @param LinkedEntityControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		LinkedEntityControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->linkedEntityService = $services->linkedEntityService;
 		$this->logger = $services->logger;
 		$this->userSession = $services->userSession;

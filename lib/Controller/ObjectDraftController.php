@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -117,16 +118,14 @@ class ObjectDraftController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string          $appName    App name.
 	 * @param IRequest        $request    Request.
 	 * @param ObjectDraftControllerServices $services The object draft controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectDraftControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->objects = $services->domain->objects;
 		$this->registers = $services->domain->registers;
 		$this->schemas = $services->domain->schemas;

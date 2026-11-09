@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\PartyControllerServices;
 use OCA\OpenRegister\Controller\Support\PartyObjectAccess;
 use OCA\OpenRegister\Db\ContactLink;
@@ -90,16 +91,14 @@ class PartyController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param PartyControllerServices $services The party controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		PartyControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->objectAccess = new PartyObjectAccess(objects: $services->domain->objects, permissions: $services->search->permissions);
 		$this->roles = $services->domain->roles;
 		$this->parties = $services->domain->parties;

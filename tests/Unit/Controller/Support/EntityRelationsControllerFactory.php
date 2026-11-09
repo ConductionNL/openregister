@@ -18,7 +18,7 @@ final class EntityRelationsControllerFactory {
 	/**
 	 * The constructor arguments of EntityRelationsController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param EntityRelationMapper $entityRelationMapper Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
@@ -50,7 +50,6 @@ final class EntityRelationsControllerFactory {
 		\OCA\OpenRegister\Service\Decision\DecisionVisibility $decisionVisibility,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\EntityRelationsControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\EntityRelationsMappers(
