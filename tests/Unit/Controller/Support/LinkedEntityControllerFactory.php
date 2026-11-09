@@ -18,7 +18,7 @@ final class LinkedEntityControllerFactory {
 	/**
 	 * The constructor arguments of LinkedEntityController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param LinkedEntityServiceInterface $linkedEntityService Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
@@ -36,7 +36,6 @@ final class LinkedEntityControllerFactory {
 		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\LinkedEntityControllerServices(
 				linkedEntityService: $linkedEntityService,

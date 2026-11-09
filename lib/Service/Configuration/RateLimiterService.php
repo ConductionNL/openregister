@@ -156,21 +156,36 @@ class RateLimiterService implements RateLimiterServiceInterface {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
 	 */
 	public function consumeDistinctKeyBudget(string $bucketKey, string $distinctKey, int $maxKeys, int $windowSeconds): ?int {
-		[$bucket, $age] = $this->liveBucket(bucket: $this->cache->get($bucketKey), windowSeconds: $windowSeconds);
+		$budget = new DistinctKeyBudget(bucketKey: $bucketKey, maxKeys: $maxKeys, windowSeconds: $windowSeconds);
+		return $this->consumeFromBudget(budget: $budget, distinctKey: $distinctKey);
+	}//end consumeDistinctKeyBudget()
+
+	/**
+	 * Count `$distinctKey` against a distinct-key budget; see consumeDistinctKeyBudget().
+	 *
+	 * @param DistinctKeyBudget $budget      The bucket, its maximum and its window.
+	 * @param string            $distinctKey The value being counted (e.g. the read cache key).
+	 *
+	 * @return int|null Null when within budget, retry-after seconds (≥ 1) when exhausted.
+	 *
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-19
+	 */
+	public function consumeFromBudget(DistinctKeyBudget $budget, string $distinctKey): ?int {
+		[$bucket, $age] = $this->liveBucket(bucket: $this->cache->get($budget->bucketKey), windowSeconds: $budget->windowSeconds);
 
 		$keys = (array)($bucket['keys'] ?? []);
 		if (in_array($distinctKey, $keys, true) === false) {
 			$keys[] = $distinctKey;
 		}
 
-		if (count($keys) > $maxKeys) {
-			return max(1, $windowSeconds - $age);
+		if (count($keys) > $budget->maxKeys) {
+			return max(1, $budget->windowSeconds - $age);
 		}
 
 		$bucket['keys'] = $keys;
-		$this->cache->set($bucketKey, $bucket, $windowSeconds);
+		$this->cache->set($budget->bucketKey, $bucket, $budget->windowSeconds);
 		return null;
-	}//end consumeDistinctKeyBudget()
+	}//end consumeFromBudget()
 
 	/**
 	 * The stored bucket and its age, or a fresh bucket of age 0 when none is

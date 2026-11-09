@@ -117,18 +117,42 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function record(RuleRunSubject $subject, RuleTrace $trace, ?DateTime $moment = null): void {
+		$this->recordRun(run: $this->runOf(subject: $subject, moment: ($moment ?? new DateTime())), trace: $trace);
+	}//end record()
+
+	/**
+	 * The run row for one evaluation, before its verdict is known.
+	 *
+	 * @param RuleRunSubject $subject The rule evaluated and the object it was evaluated on.
+	 * @param DateTime       $moment  The moment of evaluation.
+	 *
+	 * @return RuleRun The row.
+	 */
+	private function runOf(RuleRunSubject $subject, DateTime $moment): RuleRun {
 		$run = new RuleRun();
 		$run->setRuleId($subject->ruleId);
 		$run->setSchemaSlug($subject->schemaSlug);
 		$run->setRegisterSlug($subject->registerSlug);
 		$run->setObjectUuid($subject->objectUuid);
-		$run->setCreated($moment ?? new DateTime());
+		$run->setCreated($moment);
 
+		return $run;
+	}//end runOf()
+
+	/**
+	 * Update the summary and, when the detail log is on, write the run row.
+	 *
+	 * @param RuleRun   $run   The evaluation.
+	 * @param RuleTrace $trace The verdict and the operand that decided it.
+	 *
+	 * @return void
+	 */
+	private function recordRun(RuleRun $run, RuleTrace $trace): void {
 		$this->recordSummary(run: $run, trace: $trace);
 		if ($this->detailEnabled() === true) {
 			$this->recordDetail(run: $run, trace: $trace);
 		}
-	}//end record()
+	}//end recordRun()
 
 	/**
 	 * Update the rule's summary row: its last run and, on an error, its last error.
@@ -148,7 +172,7 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 				error: $this->errorOf(trace: $trace)
 			);
 		} catch (Throwable $e) {
-			$this->warn(what: 'update the summary', run: $run, failure: $e);
+			$this->warn(what: 'update the summary for rule ' . $run->getRuleId(), failure: $e);
 		}
 	}//end recordSummary()
 
@@ -185,22 +209,21 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 
 			$this->stores->runs->insert($run);
 		} catch (Throwable $e) {
-			$this->warn(what: 'write a run row', run: $run, failure: $e);
+			$this->warn(what: 'write a run row for rule ' . $run->getRuleId(), failure: $e);
 		}
 	}//end recordDetail()
 
 	/**
 	 * Report a log write that failed, without letting it reach the save.
 	 *
-	 * @param string $what What could not be done, in words.
-	 * @param RuleRun $run The evaluation being logged.
+	 * @param string    $what    What could not be done for which rule, in words.
 	 * @param Throwable $failure Why.
 	 *
 	 * @return void
 	 */
-	private function warn(string $what, RuleRun $run, Throwable $failure): void {
+	private function warn(string $what, Throwable $failure): void {
 		$this->logger->warning(
-			'[RuleRunRecorder] Could not ' . $what . ' for rule ' . $run->getRuleId() . ': ' . $failure->getMessage(),
+			'[RuleRunRecorder] Could not ' . $what . ': ' . $failure->getMessage(),
 			['file' => __FILE__, 'line' => __LINE__]
 		);
 	}//end warn()

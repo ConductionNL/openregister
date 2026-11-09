@@ -58,20 +58,60 @@ final readonly class FormWriteReferences {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function resolveWriteReferences(array $object, array $ids, bool $pending): array {
+		if ($pending === true) {
+			return $this->withPlaceholders(object: $object);
+		}
+
+		return $this->withEarlierIds(object: $object, ids: $ids);
+	}//end resolveWriteReferences()
+
+	/**
+	 * Replace `{ "$write": "<as>" }` values with the placeholder id, while validating before any write.
+	 *
+	 * @param array<string, mixed> $object The object.
+	 *
+	 * @return array<string, mixed> The object.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
+	 */
+	public function withPlaceholders(array $object): array {
+		foreach ($object as $property => $value) {
+			if ($this->writeReferenceOf(value: $value) !== null) {
+				$object[$property] = FormSubmitService::PENDING_ID;
+			}
+		}
+
+		return $object;
+	}//end withPlaceholders()
+
+	/**
+	 * Replace `{ "$write": "<as>" }` values with the id of that earlier write of this submit.
+	 *
+	 * @param array<string, mixed>  $object The object.
+	 * @param array<string, string> $ids    Ids of earlier writes, by `as`.
+	 *
+	 * @return array<string, mixed> The object.
+	 *
+	 * @throws FormSubmitRefusedException 422 when a reference names no earlier write.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
+	 */
+	public function withEarlierIds(array $object, array $ids): array {
 		foreach ($object as $property => $value) {
 			$name = $this->writeReferenceOf(value: $value);
 			if ($name === null) {
 				continue;
 			}
 
-			$object[$property] = FormSubmitService::PENDING_ID;
-			if ($pending === false) {
-				$object[$property] = $this->earlierId(ids: $ids, name: $name, property: (string)$property);
+			if (isset($ids[$name]) === false) {
+				$this->refuseUnknown(name: $name, property: (string)$property);
 			}
+
+			$object[$property] = $ids[$name];
 		}
 
 		return $object;
-	}//end resolveWriteReferences()
+	}//end withEarlierIds()
 
 	/**
 	 * The write a `{ "$write": "<as>" }` value names, or null for any other value.
@@ -89,26 +129,21 @@ final readonly class FormWriteReferences {
 	}//end writeReferenceOf()
 
 	/**
-	 * The id of an earlier write of this submit.
+	 * Refuse a reference to a write this submit has not made.
 	 *
-	 * @param array<string, string> $ids      Ids of earlier writes, by `as`.
-	 * @param string                $name     The write referenced.
-	 * @param string                $property The property holding the reference.
+	 * @param string $name     The write referenced.
+	 * @param string $property The property holding the reference.
 	 *
-	 * @return string The id.
+	 * @return never
 	 *
-	 * @throws FormSubmitRefusedException 422 when the reference names no earlier write.
+	 * @throws FormSubmitRefusedException Always, 422.
 	 */
-	private function earlierId(array $ids, string $name, string $property): string {
-		if (isset($ids[$name]) === false) {
-			$message = $this->l10n->t('Write "%1$s" is referenced before it is made.', [$name]);
-			throw new FormSubmitRefusedException(
-				message: $message,
-				status: 422,
-				findings: [['property' => $property, 'code' => 'write-unknown', 'message' => $message]]
-			);
-		}
-
-		return $ids[$name];
-	}//end earlierId()
+	private function refuseUnknown(string $name, string $property): never {
+		$message = $this->l10n->t('Write "%1$s" is referenced before it is made.', [$name]);
+		throw new FormSubmitRefusedException(
+			message: $message,
+			status: 422,
+			findings: [['property' => $property, 'code' => 'write-unknown', 'message' => $message]]
+		);
+	}//end refuseUnknown()
 }//end class

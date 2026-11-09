@@ -104,7 +104,6 @@ class McpServerControllerTest extends TestCase {
 		$this->agentScope->method('filterListing')->willReturnArgument(2);
 
 		$this->controller = McpServerControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->protocolService,
 			$this->toolsService,
@@ -175,7 +174,6 @@ class McpServerControllerTest extends TestCase {
 	 */
 	private function unauthenticatedController(): McpServerController {
 		return McpServerControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->protocolService,
 			$this->toolsService,
@@ -240,7 +238,6 @@ class McpServerControllerTest extends TestCase {
 
 		// Built while nobody is logged in: must not throw.
 		$controller = McpServerControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->protocolService,
 			$this->toolsService,
