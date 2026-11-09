@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Service\Flow\FlowFiring;
 use OCA\OpenRegister\Service\Flow\FlowHopAudit;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
+use OCA\OpenRegister\Service\Flow\FlowRunCommitRows;
 use OCA\OpenRegister\Service\Flow\FlowStreamClosure;
 use OCA\OpenRegister\Service\Flow\FlowStreamRef;
 use OCA\OpenRegister\Service\Flow\FlowStreamRelease;
@@ -155,10 +156,7 @@ class FlowRunCommitTest extends TestCase {
 
 		$this->commit = new FlowRunCommit(
 			db: $db,
-			runs: $runs,
-			streams: $streams,
-			claims: $claims,
-			steps: $steps,
+			rows: new FlowRunCommitRows(runs: $runs, streams: $streams, claims: $claims, steps: $steps),
 			logger: new NullLogger(),
 			hopAudit: $this->hopAudit
 		);
