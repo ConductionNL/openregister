@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use Adbar\Dot;
@@ -98,6 +99,8 @@ use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\LockRunStep;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
@@ -5728,15 +5731,36 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         ?string $runUuid=null,
         ?string $nodeId=null
     ): array {
-        return $this->lockHandler->lock(
-            identifier: $identifier,
-            process: $process,
-            duration: $duration,
-            advisory: $advisory,
-            runUuid: $runUuid,
-            nodeId: $nodeId
-        );
+        return $this->lock(request: new LockRequest(identifier: $identifier, process: $process, duration: $duration, runStep: new LockRunStep(runUuid: $runUuid, nodeId: $nodeId)), advisory: $advisory);
     }//end lockObject()
+
+    /**
+     * Lock an object, as one lock request.
+     *
+     * @param LockRequest $request  The object, process, duration and flow run step of the lock.
+     * @param bool        $advisory When true, treat the identifier as a synthetic
+     *                              pre-creation key and take the appConfig-backed
+     *                              advisory lock without scanning object tables
+     *
+     * @return array Lock information
+     *
+     * @throws \Exception If lock operation fails
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The advisory flag mirrors lockObject() and the lock handler.
+     *
+     * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
+     */
+    public function lock(LockRequest $request, bool $advisory=false): array
+    {
+        return $this->lockHandler->lock(
+            identifier: $request->identifier,
+            process: $request->process,
+            duration: $request->duration,
+            advisory: $advisory,
+            runUuid: $request->runUuid,
+            nodeId: $request->nodeId
+        );
+    }//end lock()
 
     /**
      * Unlock an object
@@ -7113,15 +7137,38 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function deleteObjectsBySchema(int $registerId, int $schemaId, bool $hardDelete=false): array
     {
+        return $this->deleteObjectsOfTable(table: new RegisterSchemaRef(register: $registerId, schema: $schemaId), hardDelete: $hardDelete);
+    }//end deleteObjectsBySchema()
+
+    /**
+     * Delete all objects of one register and schema.
+     *
+     * @param RegisterSchemaRef $table      The register and schema ids whose objects are deleted.
+     * @param bool              $hardDelete Whether to force hard delete (default: false)
+     *
+     * @return (int|string[])[]
+     *
+     * @throws \Exception If the deletion operation fails
+     *
+     * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
+     *
+     * @psalm-return array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, schema_id: int}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The hard/soft toggle mirrors the mapper primitive it wraps.
+     *
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
+     */
+    public function deleteObjectsOfTable(RegisterSchemaRef $table, bool $hardDelete=false): array
+    {
         $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
 
         return $schemaDeletionService->deleteObjectsBySchema(
-            registerId: $registerId,
-            schemaId: $schemaId,
+            registerId: (int) $table->register,
+            schemaId: (int) $table->schema,
             hardDelete: $hardDelete,
             triggeredBy: \OCA\OpenRegister\Service\SchemaDeletionService::TRIGGER_BULK_DELETE
         );
-    }//end deleteObjectsBySchema()
+    }//end deleteObjectsOfTable()
 
     /**
      * Delete all objects belonging to a specific register
