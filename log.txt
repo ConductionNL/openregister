@@ -594,3 +594,4 @@
 2026-11-09T20:13:20Z integrator-20261109T183615-6540b4de RED tree aea8848f3d prs 5 front=skip: Tests: 53914, Assertions: 175242, Errors: 6, Failures: 14, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\Architecture\ComponentDefinitionTest::testEveryFileHasACsvRowAndTheYamlAgrees;OCA\OpenRegister\Tests\Unit\Architecture\ComponentDefinitionTest::testEveryFileMatchesExactlyOneComponent;OCA\OpenRegister\Tests\Unit\Architecture\ComponentDefinitionTest::testYamlIsTheGeneratorsOutput
 2026-11-09T20:13:49Z integrator-20261109T183615-6540b4de CONFLICT-DEV #7653 f5eed6aa
 2026-11-09T20:14:03Z integrator-20261109T183615-6540b4de CONFLICT-DEV #7701 aadd9d43
+2026-11-09T20:14:18Z integrator-20261109T183615-6540b4de CONFLICT-DEV #7721 06e07913
