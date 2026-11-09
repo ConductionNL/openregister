@@ -159,7 +159,7 @@ class HandoffLifecycleListener implements IEventListener {
 		} catch (HandoffException $e) {
 			$this->logDegraded(handoffId: $handoffId, error: $e);
 		} catch (\Throwable $e) {
-			$this->logFailure(object: $object, handoffId: $handoffId, error: $e);
+			$this->logFailure(error: $e, context: ['handoffId' => $handoffId, 'object' => (string)$object->getUuid()]);
 		}
 	}//end executeHandoff()
 
@@ -184,23 +184,17 @@ class HandoffLifecycleListener implements IEventListener {
 	/**
 	 * Log a handoff that failed for a reason other than degradation.
 	 *
-	 * @param ObjectEntity $object    The transitioned object.
-	 * @param string       $handoffId The declared handoff's id.
-	 * @param \Throwable   $error     The failure.
+	 * @param \Throwable            $error   The failure.
+	 * @param array<string, string> $context The declared handoff's id and the transitioned object's uuid.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 */
-	private function logFailure(ObjectEntity $object, string $handoffId, \Throwable $error): void {
+	private function logFailure(\Throwable $error, array $context): void {
 		$this->lookup->logger->warning(
 			message: '[HandoffLifecycleListener] Lifecycle handoff failed: ' . $error->getMessage(),
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'handoffId' => $handoffId,
-				'object' => (string)$object->getUuid(),
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__] + $context
 		);
 	}//end logFailure()
 }//end class

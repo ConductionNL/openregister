@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Rules\DependentValueTableInterface;
+use OCA\OpenRegister\Service\Rules\DependentValueWrite;
 use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -89,13 +90,8 @@ class DependentValueListener implements IEventListener {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ObjectCreatingEvent) {
-			$this->validate(event: $event, object: $event->getObject(), stored: null);
-			return;
-		}
-
-		if ($event instanceof ObjectUpdatingEvent) {
-			$this->validate(event: $event, object: $event->getNewObject(), stored: $event->getOldObject());
+		if ($event instanceof ObjectCreatingEvent || $event instanceof ObjectUpdatingEvent) {
+			$this->validate(event: $event);
 		}
 	}//end handle()
 
@@ -103,16 +99,14 @@ class DependentValueListener implements IEventListener {
 	 * Validate one write against every table its schema declares.
 	 *
 	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
-	 * @param ObjectEntity $object The object the write carries.
-	 * @param ObjectEntity|null $stored The object as it stands, on an update.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function validate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object, ?ObjectEntity $stored): void {
+	private function validate(ObjectCreatingEvent|ObjectUpdatingEvent $event): void {
 		try {
-			$violations = $this->violationsOf(object: $object, stored: $stored);
+			$violations = $this->violationsIn(event: $event);
 			if ($violations !== []) {
 				$this->refuse(event: $event, violations: $violations);
 			}
@@ -123,6 +117,21 @@ class DependentValueListener implements IEventListener {
 			);
 		}//end try
 	}//end validate()
+
+	/**
+	 * What the schema's tables refuse in a write: the new object, and on an update the stored one.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
+	 *
+	 * @return array<int, array<string, string>> The refusals, empty when the write may go ahead.
+	 */
+	private function violationsIn(ObjectCreatingEvent|ObjectUpdatingEvent $event): array {
+		if ($event instanceof ObjectUpdatingEvent) {
+			return $this->violationsOf(object: $event->getNewObject(), stored: $event->getOldObject());
+		}
+
+		return $this->violationsOf(object: $event->getObject(), stored: null);
+	}//end violationsIn()
 
 	/**
 	 * What the schema's tables refuse in this write.
@@ -145,7 +154,7 @@ class DependentValueListener implements IEventListener {
 			return [];
 		}
 
-		return $this->tables->violations(properties: $properties, data: $data, stored: $this->storedData(stored: $stored));
+		return $this->tables->violations(properties: $properties, write: new DependentValueWrite(data: $data, stored: $this->storedData(stored: $stored)));
 	}//end violationsOf()
 
 	/**
