@@ -19,11 +19,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\DraftRemovalFrameInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Object\CorrectionTargets;
 use OCA\OpenRegister\Service\Object\CorrectionTargetsInterface;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
-use OCA\OpenRegister\Service\Object\DraftRemovalFrameInterface;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
