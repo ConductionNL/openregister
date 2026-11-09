@@ -132,11 +132,7 @@ class LifecycleValidationListenerTest extends TestCase {
 		$this->guardContainer = $this->createMock(ContainerInterface::class);
 		$serverContainer = $this->createMock(IServerContainer::class);
 		$serverContainer->method('get')->willThrowException(new \RuntimeException('not found'));
-		$this->guardRegistry = new LifecycleGuardRegistry(
-			$this->guardContainer,
-			$serverContainer,
-			$logger
-		);
+		$this->guardRegistry = new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->guardContainer, $serverContainer, $logger));
 
 		$this->listener = new LifecycleValidationListener(
 			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $logger), $this->userSession, $this->permissionHandler),
