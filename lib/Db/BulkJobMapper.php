@@ -129,9 +129,17 @@ class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
 	 * @return BulkJob[] The actor's jobs.
 	 */
 	public function findByActor(string $startedBy, ?string $state = null, ?int $limit = null, ?int $offset = null): array {
-		$qb = $this->newestFirst(page: new QueryPage(limit: $limit, offset: $offset));
-		$qb->where($qb->expr()->eq('started_by', $qb->createNamedParameter($startedBy)));
-		$this->whereState(qb: $qb, state: $state);
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('started_by', $qb->createNamedParameter($startedBy)))
+			->orderBy('id', 'DESC');
+
+		if ($state !== null) {
+			$qb->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
+		}
+
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByActor()
@@ -146,42 +154,19 @@ class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
 	 * @return BulkJob[] The jobs.
 	 */
 	public function findAllJobs(?string $state = null, ?int $limit = null, ?int $offset = null): array {
-		$qb = $this->newestFirst(page: new QueryPage(limit: $limit, offset: $offset));
-		$this->whereState(qb: $qb, state: $state);
-
-		return $this->findEntities(query: $qb);
-	}//end findAllJobs()
-
-	/**
-	 * Every job, newest first, one page.
-	 *
-	 * @param QueryPage $page The page to take.
-	 *
-	 * @return IQueryBuilder The query.
-	 */
-	private function newestFirst(QueryPage $page): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->orderBy('id', 'DESC');
-		$page->applyTo(qb: $qb);
 
-		return $qb;
-	}//end newestFirst()
-
-	/**
-	 * Narrow to one state; null is no filter.
-	 *
-	 * @param IQueryBuilder $qb    The query.
-	 * @param string|null   $state The state.
-	 *
-	 * @return void
-	 */
-	private function whereState(IQueryBuilder $qb, ?string $state): void {
 		if ($state !== null) {
 			$qb->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
 		}
-	}//end whereState()
+
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+
+		return $this->findEntities(query: $qb);
+	}//end findAllJobs()
 
 	/**
 	 * Read just the state of a job.
