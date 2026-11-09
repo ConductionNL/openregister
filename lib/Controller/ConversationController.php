@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
+use OCA\OpenRegister\Controller\Support\ConversationChange;
 use OCA\OpenRegister\Controller\Support\ConversationFailure;
 use OCA\OpenRegister\Db\FeedbackMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
@@ -360,16 +361,15 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	/**
 	 * Run a write action on a conversation the caller may modify.
 	 *
-	 * @param ConversationFailure $failure       The failure to report when the action throws
-	 * @param string              $deniedMessage The message of the refusal
-	 * @param callable            $action        The action, given the conversation
+	 * @param ConversationChange $change The conversation, the verb its refusal names and the error its failure reports
+	 * @param callable           $action The action, given the conversation
 	 *
 	 * @return JSONResponse The action's response, a refusal (403), not found (404) or the failure (500)
 	 */
-	private function modifying(ConversationFailure $failure, string $deniedMessage, callable $action): JSONResponse {
+	private function modifying(ConversationChange $change, callable $action): JSONResponse {
 		try {
-			$conversation = $this->conversationMapper->findByUuid($failure->uuid);
-			$denied       = $this->modifyDenied(conversation: $conversation, message: $deniedMessage);
+			$conversation = $this->conversationMapper->findByUuid($change->uuid);
+			$denied       = $this->modifyDenied(conversation: $conversation, message: $change->deniedMessage());
 			if ($denied !== null) {
 				return $denied;
 			}
@@ -378,7 +378,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 		} catch (DoesNotExistException $e) {
 			return $this->conversationNotFound();
 		} catch (\Exception $e) {
-			return $this->failed(failure: $failure, e: $e);
+			return $this->failed(failure: $change->failure(), e: $e);
 		}
 	}//end modifying()
 
@@ -538,8 +538,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 */
 	public function update(string $uuid): JSONResponse {
 		return $this->modifying(
-			failure: new ConversationFailure(uuid: $uuid, error: 'Failed to update conversation'),
-			deniedMessage: 'You do not have permission to modify this conversation',
+			change: new ConversationChange(uuid: $uuid, verb: 'modify', error: 'Failed to update conversation'),
 			action: fn (Conversation $conversation): JSONResponse => $this->saveUpdate(conversation: $conversation, uuid: $uuid)
 		);
 	}//end update()
@@ -594,8 +593,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 */
 	public function destroy(string $uuid): JSONResponse {
 		return $this->modifying(
-			failure: new ConversationFailure(uuid: $uuid, error: 'Failed to delete conversation'),
-			deniedMessage: 'You do not have permission to delete this conversation',
+			change: new ConversationChange(uuid: $uuid, verb: 'delete', error: 'Failed to delete conversation'),
 			action: function (Conversation $conversation) use ($uuid): JSONResponse {
 				// An already archived (soft-deleted) conversation is deleted permanently.
 				if ($conversation->getDeletedAt() !== null) {
@@ -633,8 +631,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 */
 	public function restore(string $uuid): JSONResponse {
 		return $this->modifying(
-			failure: new ConversationFailure(uuid: $uuid, error: 'Failed to restore conversation'),
-			deniedMessage: 'You do not have permission to restore this conversation',
+			change: new ConversationChange(uuid: $uuid, verb: 'restore', error: 'Failed to restore conversation'),
 			action: function (Conversation $conversation) use ($uuid): JSONResponse {
 				$conversation = $this->conversationMapper->restore($conversation->getId());
 				$this->logged(message: 'Conversation restored', uuid: $uuid);
@@ -665,8 +662,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 */
 	public function destroyPermanent(string $uuid): JSONResponse {
 		return $this->modifying(
-			failure: new ConversationFailure(uuid: $uuid, error: 'Failed to permanently delete conversation'),
-			deniedMessage: 'You do not have permission to delete this conversation',
+			change: new ConversationChange(uuid: $uuid, verb: 'delete', error: 'Failed to permanently delete conversation'),
 			action: fn (Conversation $conversation): JSONResponse => $this->purge(conversation: $conversation, uuid: $uuid)
 		);
 	}//end destroyPermanent()
