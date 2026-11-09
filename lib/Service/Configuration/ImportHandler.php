@@ -1349,8 +1349,9 @@ class ImportHandler {
 	 *
 	 * @return Flow|null The imported flow entity, or null if skipped.
 	 *
-	 * @throws Exception When the uuid belongs to a flow of another organisation, or a new
-	 *                   flow would have no owner or no organisation.
+	 * @throws Exception When the uuid belongs to a flow of another organisation, a new
+	 *                   flow would have no owner or no organisation, or a draft cannot
+	 *                   be opened on a published flow.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override the unchanged-graph skip
 	 *
@@ -1543,6 +1544,8 @@ class ImportHandler {
 	 *
 	 * @return Flow The flow, with a draft head.
 	 *
+	 * @throws Exception When a draft cannot be opened on a published head.
+	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function ensureFlowIsDraft(Flow $flow): Flow {
@@ -1555,13 +1558,19 @@ class ImportHandler {
 			return $flow;
 		}
 
+		// A failure here must stop the import of this flow: carrying on would
+		// write the imported graph onto the still-published head in place,
+		// which FlowService::save() refuses (refuseEditUnlessDraft). Rethrown
+		// as an Exception so the components.flows loop counts it as skipped.
 		try {
 			$this->flowVersionService->createDraft(flow: $flow);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				message: '[ImportHandler] Could not open a draft for flow "' . $flow->getUuid() . '": ' . $e->getMessage(),
+				message: '[ImportHandler] Could not open a draft for flow "' . $flow->getUuid() . '": ' . $e->getMessage()
+					. '; the flow is skipped',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
+			throw new Exception('Could not open a draft for flow "' . $flow->getUuid() . '": ' . $e->getMessage(), 0, $e);
 		}
 
 		return $flow;

@@ -446,6 +446,33 @@ class ImportHandlerFlowTest extends TestCase {
 	}//end testImportFlowRefusesNewFlowWithoutAnyOwner()
 
 	/**
+	 * importFromJson() skips a published flow whose draft cannot be opened, instead of editing the published head.
+	 */
+	public function testImportFromJsonSkipsFlowWhenCreateDraftFails(): void {
+		$existing = new Flow();
+		$existing->setUuid('flow-uuid-1');
+		$existing->setOrganisation('org-1');
+		$existing->setNodes(['old']);
+		$existing->setLifecycleStatus(FlowVersion::STATUS_PUBLISHED);
+
+		$this->flowMapper->method('findByUuid')->willReturn($existing);
+		$this->flowVersionService->method('createDraft')->willThrowException(new \RuntimeException('db down'));
+		$this->flowMapper->expects($this->never())->method('update');
+		$this->flowVersionService->expects($this->never())->method('publish');
+
+		$result = $this->handler->importFromJson(
+			data: ['components' => ['flows' => ['flow-uuid-1' => ['nodes' => ['new']]]]],
+			configuration: $this->configuration(),
+			owner: 'alice'
+		);
+
+		$this->assertSame(1, $result['skipped']['flows']);
+		$this->assertSame([], $result['flows']);
+		$this->assertSame(['old'], $existing->getNodes());
+		$this->assertSame(FlowVersion::STATUS_PUBLISHED, $existing->getLifecycleStatus());
+	}//end testImportFromJsonSkipsFlowWhenCreateDraftFails()
+
+	/**
 	 * applyImportedFlowFields() carries every inheritable setting FlowService does, oversightEnabled included.
 	 */
 	public function testApplyImportedFlowFieldsCarriesOversightEnabled(): void {
