@@ -72,6 +72,7 @@ class ExampleSetFragmentRowsBehaviourTest extends TestCase {
 					'data' => [
 						'runs' => [
 							['key' => 'done', 'status' => 'completed'],
+							['key' => 'broke', 'status' => 'failed', 'node' => 'mail'],
 							['key' => 'held', 'status' => 'suspended', 'node' => 'approve'],
 							['key' => 'held2', 'status' => 'suspended'],
 							['status' => 'completed'],
@@ -90,6 +91,7 @@ class ExampleSetFragmentRowsBehaviourTest extends TestCase {
 					'uuid' => 'example-set-stand-in:flow:f1',
 					'runs' => [
 						'done' => 'example-set-stand-in:run:f1.done',
+						'broke' => 'example-set-stand-in:run:f1.broke',
 						'held' => 'example-set-stand-in:run:f1.held',
 						'held2' => 'example-set-stand-in:run:f1.held2',
 					],
