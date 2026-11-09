@@ -77,9 +77,7 @@ class SurveyExportShaper {
 	/**
 	 * The rows, one per answer set.
 	 *
-	 * @param array<string, mixed>             $survey     The survey.
-	 * @param array<int, array<string, mixed>> $questions  Its questions.
-	 * @param array<int, array<string, mixed>> $answerSets What came back.
+	 * @param SurveyExport $export The survey, its questions and what came back.
 	 *
 	 * @return array<int, array<string, mixed>> The rows.
 	 *
@@ -87,17 +85,17 @@ class SurveyExportShaper {
 	 *
 	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
-	public function rows(array $survey, array $questions, array $answerSets): array {
-		$disclosure = $this->rules->disclosure(survey: $survey, responseCount: count($answerSets));
+	public function rows(SurveyExport $export): array {
+		$disclosure = $this->rules->disclosure(survey: $export->survey, responseCount: count($export->answerSets));
 		if ($disclosure['withheld'] === true) {
 			throw new RuntimeException($disclosure['reason']);
 		}
 
-		$anonymous = ((string)($survey['anonymity'] ?? SurveyRules::ATTRIBUTED) === SurveyRules::ANONYMOUS);
-		$ordered = $this->ordered(questions: $questions);
+		$anonymous = ((string)($export->survey['anonymity'] ?? SurveyRules::ATTRIBUTED) === SurveyRules::ANONYMOUS);
+		$ordered = $this->ordered(questions: $export->questions);
 		$rows = [];
 
-		foreach ($answerSets as $answerSet) {
+		foreach ($export->answerSets as $answerSet) {
 			$row = [
 				'surveyVersion' => ($answerSet['surveyVersion'] ?? null),
 				'submittedAt' => ($answerSet['submittedAt'] ?? null),
