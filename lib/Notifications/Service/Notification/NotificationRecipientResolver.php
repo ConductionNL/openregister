@@ -286,16 +286,8 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 	 * @return array<int, string>
 	 */
 	private function resolveExpressionEntry(array $entry, RecipientSource $source): array {
-		if ($source->object === null) {
-			return [];
-		}
-
 		return array_values(
-			$this->resolveExpressionRecipients(
-				resolverTag: (string)($entry['resolver'] ?? ''),
-				object: $source->object,
-				context: $source->context
-			)
+			$this->resolveExpressionRecipients(resolverTag: (string)($entry['resolver'] ?? ''), source: $source)
 		);
 	}//end resolveExpressionEntry()
 
@@ -653,14 +645,15 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 	 * its dependencies. Skips silently when the resolver doesn't exist
 	 * or doesn't implement the interface.
 	 *
-	 * @param string $resolverTag DI tag (or FQCN) of the resolver service.
-	 * @param ObjectEntity $object The object whose recipients are being resolved.
-	 * @param array<string, mixed> $context Per-event context passed through to the resolver.
+	 * @param string          $resolverTag DI tag (or FQCN) of the resolver service.
+	 * @param RecipientSource $source      The object whose recipients are being resolved (none: nobody)
+	 *                                     and the per-event context passed through to the resolver.
 	 *
 	 * @return array<int, string>
 	 */
-	private function resolveExpressionRecipients(string $resolverTag, ObjectEntity $object, array $context): array {
-		if ($resolverTag === '' || $this->serverContainer === null) {
+	private function resolveExpressionRecipients(string $resolverTag, RecipientSource $source): array {
+		$object = $source->object;
+		if ($object === null || $resolverTag === '' || $this->serverContainer === null) {
 			return [];
 		}
 
@@ -673,7 +666,7 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 				return [];
 			}
 
-			return array_values($resolver->resolve($object, $context));
+			return array_values($resolver->resolve($object, $source->context));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				sprintf('[NotificationRecipientResolver] expression resolver "%s" failed: %s', $resolverTag, $e->getMessage())
