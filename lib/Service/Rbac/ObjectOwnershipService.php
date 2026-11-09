@@ -55,21 +55,11 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
-use OCP\IGroupManager;
-use OCP\IUserManager;
-use OCP\IUserSession;
-use OCP\Notification\IManager as INotificationManager;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -122,104 +112,6 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	private const MAX_CASCADE_DEPTH = 5;
 
 	/**
-	 * The acting user, which is where an owner comes from.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Who may name a record's owning group: the owner, an administrator,
-	 *
-	 * @var GrantManageGuard
-	 */
-	private readonly GrantManageGuard $grantManage;
-
-	/**
-	 * The rules, for "may this caller edit this record".
-	 *
-	 * @var PermissionCheckInterface
-	 */
-	private readonly PermissionCheckInterface $permissions;
-
-	/**
-	 * Resolves a named new owner, and their display name.
-	 *
-	 * @var IUserManager
-	 */
-	private readonly IUserManager $userManager;
-
-	/**
-	 * The caller's groups, and whether an owning group exists.
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
-
-	/**
-	 * The targeted write of the owner column.
-	 *
-	 * @var ObjectOwnerWriter
-	 */
-	private readonly ObjectOwnerWriter $ownerWriter;
-
-	/**
-	 * The targeted write of the authorization block.
-	 *
-	 * @var ObjectAuthorizationWriter
-	 */
-	private readonly ObjectAuthorizationWriter $authorizationWriter;
-
-	/**
-	 * The hash-sealed trail.
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private readonly AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * Tells the previous owner.
-	 *
-	 * @var INotificationManager
-	 */
-	private readonly INotificationManager $notificationManager;
-
-	/**
-	 * Resolves objects and their children.
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private readonly MagicMapperInterface $magicMapper;
-
-	/**
-	 * Resolves a child's register.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Resolves a child's schema.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Where a transfer is noted.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Writes an audit-trail entry for a change of the owning group. Null only in legacy fixtures.
-	 *
-	 * @var GrantChangeAuditor|null
-	 */
-	private readonly ?GrantChangeAuditor $grantAuditor;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param OwnershipGuards  $guards  The acting user, who may name an owning group, and the permission rules.
@@ -228,25 +120,11 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 * @param OwnershipLog     $log     Where a transfer is noted and a change of the owning group audited.
 	 */
 	public function __construct(
-		OwnershipGuards $guards,
-		OwnershipSources $sources,
-		OwnershipWriters $writers,
-		OwnershipLog $log,
+		private readonly OwnershipGuards $guards,
+		private readonly OwnershipSources $sources,
+		private readonly OwnershipWriters $writers,
+		private readonly OwnershipLog $log,
 	) {
-		$this->userSession = $guards->userSession;
-		$this->grantManage = $guards->grantManage;
-		$this->permissions = $guards->permissions;
-		$this->userManager = $sources->directory->userManager;
-		$this->groupManager = $sources->directory->groupManager;
-		$this->ownerWriter = $writers->ownerWriter;
-		$this->authorizationWriter = $writers->authorizationWriter;
-		$this->auditTrailMapper = $writers->auditTrailMapper;
-		$this->notificationManager = $writers->notificationManager;
-		$this->magicMapper = $sources->lookup->magicMapper;
-		$this->registerMapper = $sources->lookup->registerMapper;
-		$this->schemaMapper = $sources->lookup->schemaMapper;
-		$this->logger = $log->logger;
-		$this->grantAuditor = $log->grantAuditor;
 	}//end __construct()
 
 	/**
@@ -277,6 +155,25 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		ObjectEntity $object,
 		bool $cascade = false,
 	): array {
+		return $this->takeOver(
+			record: new OwnedRecord(register: $register, schema: $schema, object: $object),
+			cascade: $cascade
+		);
+	}//end claim()
+
+	/**
+	 * Take ownership of one record as the acting user, once the rules admit the edit.
+	 *
+	 * @param OwnedRecord $record  The record, its register and schema.
+	 * @param bool        $cascade Whether the change carries to the record's children.
+	 *
+	 * @throws NotAuthorizedException When nobody is signed in, or the rules refuse this caller the edit.
+	 *
+	 * @return array The outcome, as {@see transfer()} describes it.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As on claim().
+	 */
+	private function takeOver(OwnedRecord $record, bool $cascade): array {
 		$actor = $this->callerUid();
 		if ($actor === null) {
 			throw new NotAuthorizedException(message: 'Sign in to take ownership of a record');
@@ -287,17 +184,17 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		// publication without an administrator. Somebody they refuse cannot,
 		// because a handover they could perform would hand them the edit rights
 		// the refusal just withheld.
-		if ($this->mayEdit(schema: $schema, object: $object) === false) {
+		if ($this->mayEdit(schema: $record->schema, object: $record->object) === false) {
 			throw new NotAuthorizedException(
 				message: 'Only somebody who may edit this record can take ownership of it'
 			);
 		}
 
 		return $this->transfer(
-			record: new OwnedRecord(register: $register, schema: $schema, object: $object),
+			record: $record,
 			handover: new OwnershipHandover(newOwner: $actor, cascade: $cascade)
 		);
-	}//end claim()
+	}//end takeOver()
 
 	/**
 	 * Assign one record to a named owner.
@@ -371,10 +268,26 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			throw new InvalidArgumentException('Name at least one record to reassign');
 		}
 
+		return $this->reassignAll(
+			identifiers: $identifiers,
+			reassignment: new OwnershipReassignment(newOwner: $newOwner, cascade: $cascade)
+		);
+	}//end reassignMany()
+
+	/**
+	 * Reassign every named record, one outcome per record, and log the totals.
+	 *
+	 * @param array                 $identifiers  The records, by uuid, id, slug or uri.
+	 * @param OwnershipReassignment $reassignment The new owner and the cascade flag.
+	 *
+	 * @return array{newOwner: string, transferred: array, failed: array, unchanged: array}
+	 */
+	private function reassignAll(array $identifiers, OwnershipReassignment $reassignment): array {
+		$newOwner = $reassignment->newOwner;
 		$buckets = ['transferred' => [], 'unchanged' => [], 'failed' => []];
 
 		foreach ($identifiers as $identifier) {
-			$result = $this->reassignOne(identifier: $identifier, newOwner: $newOwner, cascade: $cascade);
+			$result = $this->reassignOne(identifier: $identifier, reassignment: $reassignment);
 			$buckets[$result['bucket']][] = $result['entry'];
 		}
 
@@ -382,7 +295,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		$unchanged = $buckets['unchanged'];
 		$failed = $buckets['failed'];
 
-		$this->logger->info(
+		$this->log->logger->info(
 			message: '[ObjectOwnershipService] Reassigned records in bulk',
 			context: [
 				'file' => __FILE__,
@@ -400,18 +313,17 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			'unchanged' => $unchanged,
 			'failed' => $failed,
 		];
-	}//end reassignMany()
+	}//end reassignAll()
 
 	/**
 	 * Reassign one record of a bulk run, never throwing.
 	 *
-	 * @param mixed $identifier The record's identifier, as the caller passed it.
-	 * @param string $newOwner The new owner.
-	 * @param bool $cascade Whether to carry the change to children.
+	 * @param mixed                 $identifier   The record's identifier, as the caller passed it.
+	 * @param OwnershipReassignment $reassignment The new owner and the cascade flag.
 	 *
 	 * @return array{bucket: string, entry: mixed} Which result list the record lands in, and its entry.
 	 */
-	private function reassignOne(mixed $identifier, string $newOwner, bool $cascade): array {
+	private function reassignOne(mixed $identifier, OwnershipReassignment $reassignment): array {
 		if (is_string($identifier) === false || $identifier === '') {
 			return [
 				'bucket' => 'failed',
@@ -420,7 +332,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		}
 
 		try {
-			return $this->reassignFound(identifier: $identifier, newOwner: $newOwner, cascade: $cascade);
+			return $this->reassignFound(identifier: $identifier, reassignment: $reassignment);
 		} catch (Throwable $e) {
 			return ['bucket' => 'failed', 'entry' => ['identifier' => $identifier, 'reason' => $e->getMessage()]];
 		}
@@ -429,16 +341,15 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	/**
 	 * Resolve one record by identifier and transfer it.
 	 *
-	 * @param string $identifier The record's identifier.
-	 * @param string $newOwner The new owner.
-	 * @param bool $cascade Whether to carry the change to children.
+	 * @param string                $identifier   The record's identifier.
+	 * @param OwnershipReassignment $reassignment The new owner and the cascade flag.
 	 *
 	 * @return array{bucket: string, entry: mixed} Which result list the record lands in, and its entry.
 	 *
 	 * @throws Throwable When the record cannot be found or transferred.
 	 */
-	private function reassignFound(string $identifier, string $newOwner, bool $cascade): array {
-		$context = $this->magicMapper->findAcrossAllSources(identifier: $identifier);
+	private function reassignFound(string $identifier, OwnershipReassignment $reassignment): array {
+		$context = $this->sources->lookup->magicMapper->findAcrossAllSources(identifier: $identifier);
 		$register = $context['register'];
 		$schema = $context['schema'];
 		if (($register instanceof Register) === false || ($schema instanceof Schema) === false) {
@@ -450,7 +361,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 
 		$outcome = $this->transfer(
 			record: new OwnedRecord(register: $register, schema: $schema, object: $context['object']),
-			handover: new OwnershipHandover(newOwner: $newOwner, cascade: $cascade)
+			handover: $reassignment->handover()
 		);
 
 		if ($outcome['changed'] === false) {
@@ -485,6 +396,25 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		ObjectEntity $object,
 		?string $group,
 	): array {
+		return $this->nameOwnerGroup(
+			record: new OwnedRecord(register: $register, schema: $schema, object: $object),
+			group: $group
+		);
+	}//end setOwnerGroup()
+
+	/**
+	 * Name or clear one record's owning group, once the caller may, and audit it.
+	 *
+	 * @param OwnedRecord $record The record, its register and schema.
+	 * @param string|null $group  The group id, or null to remove the owning group.
+	 *
+	 * @throws NotAuthorizedException When the caller is neither owner nor administrator.
+	 * @throws InvalidArgumentException When no such group exists.
+	 *
+	 * @return array The stored authorization block.
+	 */
+	private function nameOwnerGroup(OwnedRecord $record, ?string $group): array {
+		$object = $record->object;
 		$this->requireMayNameOwnerGroup(object: $object, group: $group);
 
 		$this->requireKnownGroup(group: $group);
@@ -496,23 +426,23 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 
 		$block = $this->withOwnerGroup(block: $block, group: $group);
 
-		$this->authorizationWriter->writeAuthorizationBlock(
-			register: $register,
-			schema: $schema,
+		$this->writers->authorizationWriter->writeAuthorizationBlock(
+			register: $record->register,
+			schema: $record->schema,
 			objectUuid: (string)$object->getUuid(),
 			block: $block
 		);
 
 		$object->setAuthorization($block);
 
-		$this->grantAuditor?->recordOwnerGroup(
+		$this->log->grantAuditor?->recordOwnerGroup(
 			object: $object,
 			before: $before,
 			after: $this->groupNameOf(value: ($block[ObjectScopeResolver::OWNER_GROUP_KEY] ?? null))
 		);
 
 		return $block;
-	}//end setOwnerGroup()
+	}//end nameOwnerGroup()
 
 	/**
 	 * Refuse an owning group that does not exist; null or '' clears and passes.
@@ -524,7 +454,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 * @throws InvalidArgumentException When a named group does not exist.
 	 */
 	private function requireKnownGroup(?string $group): void {
-		if ($this->namesAGroup(group: $group) === true && $this->groupManager->groupExists($group) === false) {
+		if ($this->namesAGroup(group: $group) === true && $this->sources->directory->groupManager->groupExists($group) === false) {
 			throw new InvalidArgumentException('No such group: ' . $group);
 		}
 	}//end requireKnownGroup()
@@ -615,7 +545,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 
 		$children = $this->handOver(record: $record, handover: $handover);
 
-		$this->logger->info(
+		$this->log->logger->info(
 			message: '[ObjectOwnershipService] A record changed hands',
 			context: [
 				'file' => __FILE__,
@@ -652,7 +582,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		// itself and record a handover that changed nothing.
 		$before = clone $object;
 
-		$this->ownerWriter->writeOwner(
+		$this->writers->ownerWriter->writeOwner(
 			register: $record->register,
 			schema: $record->schema,
 			objectUuid: (string)$object->getUuid(),
@@ -660,7 +590,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		);
 		$object->setOwner($handover->newOwner);
 
-		$this->auditTrailMapper->createAuditTrail(
+		$this->writers->auditTrailMapper->createAuditTrail(
 			old: $before,
 			new: $object,
 			action: self::AUDIT_ACTION
@@ -701,13 +631,14 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			return [];
 		}
 
+		$cascade = new OwnershipCascade(parent: $parent, handover: $handover);
 		$outcomes = [];
 		foreach ($this->childCandidates(uuid: $uuid) as $child) {
 			if ($handover->carries(child: $child, previousOwner: $previousOwner) === false) {
 				continue;
 			}
 
-			$outcome = $this->carryToChild(child: $child, parent: $parent, handover: $handover);
+			$outcome = $this->carryToChild(child: $child, cascade: $cascade);
 			if ($outcome !== null) {
 				$outcomes[] = $outcome;
 			}
@@ -737,9 +668,9 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 */
 	private function childCandidates(string $uuid): array {
 		try {
-			return $this->magicMapper->findByRelationUsingRelationsColumn($uuid);
+			return $this->sources->lookup->magicMapper->findByRelationUsingRelationsColumn($uuid);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->log->logger->warning(
 				message: '[ObjectOwnershipService] Could not read the children of a record',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'error' => $e->getMessage()]
 			);
@@ -750,20 +681,19 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	/**
 	 * Carry a handover to one child, or null when that failed (logged).
 	 *
-	 * @param ObjectEntity $child The child.
-	 * @param OwnedRecord $parent The parent being handed over.
-	 * @param OwnershipHandover $handover The run.
+	 * @param ObjectEntity     $child   The child.
+	 * @param OwnershipCascade $cascade The parent being handed over, and the run.
 	 *
 	 * @return array<string, mixed>|null The child's outcome, or null.
 	 */
-	private function carryToChild(ObjectEntity $child, OwnedRecord $parent, OwnershipHandover $handover): ?array {
+	private function carryToChild(ObjectEntity $child, OwnershipCascade $cascade): ?array {
 		try {
 			return $this->transfer(
-				record: $this->childRecord(child: $child, depth: ($parent->depth + 1)),
-				handover: $handover
+				record: $this->childRecord(child: $child, depth: $cascade->childDepth()),
+				handover: $cascade->handover
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->log->logger->warning(
 				message: '[ObjectOwnershipService] Could not carry a handover to a child record',
 				context: [
 					'file' => __FILE__,
@@ -787,8 +717,8 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 * @throws Throwable When its register or schema cannot be found.
 	 */
 	private function childRecord(ObjectEntity $child, int $depth): OwnedRecord {
-		$childRegister = $this->registerMapper->find((int)$child->getRegister());
-		$childSchema = $this->schemaMapper->find((int)$child->getSchema());
+		$childRegister = $this->sources->lookup->registerMapper->find((int)$child->getRegister());
+		$childSchema = $this->sources->lookup->schemaMapper->find((int)$child->getSchema());
 
 		return new OwnedRecord(register: $childRegister, schema: $childSchema, object: $child, depth: $depth);
 	}//end childRecord()
@@ -816,7 +746,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		}
 
 		try {
-			$notification = $this->notificationManager->createNotification();
+			$notification = $this->writers->notificationManager->createNotification();
 			$notification->setApp('openregister');
 			$notification->setUser($previousOwner);
 			$notification->setDateTime(new DateTime());
@@ -831,9 +761,9 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 					'actor' => ($this->callerUid() ?? $newOwner),
 				]
 			);
-			$this->notificationManager->notify($notification);
+			$this->writers->notificationManager->notify($notification);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->log->logger->warning(
 				message: '[ObjectOwnershipService] Could not tell the previous owner about a handover',
 				context: [
 					'file' => __FILE__,
@@ -858,7 +788,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			return false;
 		}
 
-		return $this->userManager->userExists($previousOwner);
+		return $this->sources->directory->userManager->userExists($previousOwner);
 	}//end shouldNotify()
 
 	/**
@@ -875,7 +805,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 */
 	private function mayEdit(Schema $schema, ObjectEntity $object): bool {
 		try {
-			return $this->permissions->hasPermission(
+			return $this->guards->permissions->hasPermission(
 				schema: $schema,
 				action: 'update',
 				objectOwner: $object->getOwner(),
@@ -883,7 +813,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			);
 		} catch (Throwable $e) {
 			// Fail closed: a verdict that could not be reached is not a yes.
-			$this->logger->warning(
+			$this->log->logger->warning(
 				message: '[ObjectOwnershipService] Could not decide whether the caller may edit; refusing',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
@@ -913,14 +843,14 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		$uid = $this->callerUid();
 		$groups = $this->callerGroups();
 
-		$admittedAs = $this->grantManage->admittedAs(userId: $uid, userGroups: $groups, object: $object);
+		$admittedAs = $this->guards->grantManage->admittedAs(userId: $uid, userGroups: $groups, object: $object);
 		if ($admittedAs === null) {
 			throw new NotAuthorizedException(
 				message: 'Only the owner or an administrator may change who owns this record'
 			);
 		}
 
-		if ($this->grantManage->letsItselfIn(
+		if ($this->guards->grantManage->letsItselfIn(
 			admittedAs: $admittedAs,
 			userId: $uid,
 			userGroups: $groups,
@@ -969,7 +899,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 * @return void
 	 */
 	private function requireExistingUser(string $uid): void {
-		if ($uid === '' || $this->userManager->userExists($uid) === false) {
+		if ($uid === '' || $this->sources->directory->userManager->userExists($uid) === false) {
 			throw new InvalidArgumentException('No such user: ' . $uid);
 		}
 	}//end requireExistingUser()
@@ -980,7 +910,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 * @return string|null The uid, or null when anonymous.
 	 */
 	private function callerUid(): ?string {
-		return $this->userSession->getUser()?->getUID();
+		return $this->guards->userSession->getUser()?->getUID();
 	}//end callerUid()
 
 	/**
@@ -989,12 +919,12 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 * @return string[] The groups, empty when anonymous.
 	 */
 	private function callerGroups(): array {
-		$user = $this->userSession->getUser();
+		$user = $this->guards->userSession->getUser();
 		if ($user === null) {
 			return [];
 		}
 
-		return $this->groupManager->getUserGroupIds($user);
+		return $this->sources->directory->groupManager->getUserGroupIds($user);
 	}//end callerGroups()
 
 }//end class
