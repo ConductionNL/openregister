@@ -257,8 +257,8 @@ final class SaveObjectSaveCallTest extends TestCase {
 		$seen = null;
 		$hints = $this->createMock(UniqueHintChecker::class);
 		$hints->expects($this->once())->method('check')->willReturnCallback(
-			static function (array $configuration, $register, $schema, array $data) use (&$seen): void {
-				$seen = [$configuration, $register, $schema, $data];
+			static function (array $configuration, \OCA\OpenRegister\Service\Quality\UniqueHintScope $scope, array $data) use (&$seen): void {
+				$seen = [$configuration, $scope->register, $scope->schema, $data];
 				throw new RuntimeException('stop');
 			}
 		);

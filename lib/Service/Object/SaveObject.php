@@ -93,6 +93,7 @@ use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
+use OCA\OpenRegister\Service\Quality\UniqueHintScope;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
@@ -2100,8 +2101,7 @@ class SaveObject implements SaveObjectInterface {
 
 		$uniqueHints->check(
 			configuration: ($call->schema->getConfiguration() ?? []),
-			register: $call->registerId,
-			schema: $call->schemaId,
+			scope: new UniqueHintScope(register: $call->registerId, schema: $call->schemaId),
 			data: $call->data
 		);
 	}//end recordUniqueHints()
@@ -2538,8 +2538,7 @@ class SaveObject implements SaveObjectInterface {
 
 		$uniqueHints->check(
 			configuration: ($call->schema->getConfiguration() ?? []),
-			register: $call->register->getId(),
-			schema: $call->schema->getId(),
+			scope: new UniqueHintScope(register: $call->register->getId(), schema: $call->schema->getId()),
 			data: $call->data,
 			selfUuid: ((string)$existingObject->getUuid())
 		);

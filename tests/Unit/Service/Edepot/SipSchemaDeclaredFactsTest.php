@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator;
 use OCA\OpenRegister\Service\Edepot\MdtoDocumentWriter;
 use OCA\OpenRegister\Service\Edepot\MdtoEventMapper;
+use OCA\OpenRegister\Service\Edepot\MdtoInputReaders;
 use OCA\OpenRegister\Service\Edepot\MdtoPreconditions;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
 use OCA\OpenRegister\Service\Edepot\MdtoValueReader;
@@ -235,7 +236,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 			$sourceReader,
 			$writer,
 			$bestandGenerator,
-			new MdtoPreconditions($appConfig, new NullLogger(), $sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class))
+			new MdtoPreconditions($appConfig, new NullLogger(), new MdtoInputReaders($sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class)))
 		);
 	}//end generator()
 

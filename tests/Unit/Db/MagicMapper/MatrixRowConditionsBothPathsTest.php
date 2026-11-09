@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
@@ -172,12 +173,10 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$matcher = new ConditionMatcher(
-			$session,
+			new ConditionUserResolvers($session, $groups, new MemberOfResolver(new SchemaRegisterLookup($schemas, $registers), $container, $evaluator, new NullLogger())),
 			$container,
 			$evaluator,
-			new NullLogger(),
-			$groups,
-			new MemberOfResolver(new SchemaRegisterLookup($schemas, $registers), $container, $evaluator, new NullLogger())
+			new NullLogger()
 		);
 
 		$permissions = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(

@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
+use OCA\OpenRegister\Service\Quality\UniqueHintScope;
 use OCA\OpenRegister\Service\Quality\UniqueHintWarnings;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -94,7 +95,7 @@ class UniqueHintCheckerAccessGoldenTest extends TestCase {
 	public function testAVisibleHolderIsNamedAndTheReadsAreScopedThenUnscoped(): void {
 		[$checker, $warnings] = $this->checker(['a', 'b'], ['a', 'b', 'hidden']);
 
-		$checker->check($this->configuration(), 4, 'person', ['bsn' => 123], 'b');
+		$checker->check($this->configuration(), new UniqueHintScope(4, 'person'), ['bsn' => 123], 'b');
 
 		$this->assertSame(
 			[['property' => 'bsn', 'matches' => ['a'], 'visible' => true]],
@@ -112,7 +113,7 @@ class UniqueHintCheckerAccessGoldenTest extends TestCase {
 	public function testAHiddenHolderIsReportedWithoutItsUuid(): void {
 		[$checker, $warnings] = $this->checker([], ['hidden']);
 
-		$checker->check($this->configuration(), 4, 'person', ['bsn' => '123']);
+		$checker->check($this->configuration(), new UniqueHintScope(4, 'person'), ['bsn' => '123']);
 
 		$this->assertSame(
 			[['property' => 'bsn', 'matches' => [], 'visible' => false]],
@@ -129,8 +130,8 @@ class UniqueHintCheckerAccessGoldenTest extends TestCase {
 	public function testSelfAndEmptyValuesWarnNothing(): void {
 		[$checker, $warnings] = $this->checker(['self'], ['self']);
 
-		$checker->check($this->configuration(), 4, 'person', ['bsn' => '123'], 'self');
-		$checker->check($this->configuration(), 4, 'person', ['bsn' => '']);
+		$checker->check($this->configuration(), new UniqueHintScope(4, 'person'), ['bsn' => '123'], 'self');
+		$checker->check($this->configuration(), new UniqueHintScope(4, 'person'), ['bsn' => '']);
 
 		$this->assertSame([], $warnings->drain());
 		$this->assertCount(2, $this->reads);

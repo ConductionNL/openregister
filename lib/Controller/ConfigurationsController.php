@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\ConfigurationsControllerServices;
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -57,9 +57,9 @@ class ConfigurationsController extends Controller {
 	/**
 	 * The configuration mapper instance
 	 *
-	 * @var ConfigurationMapper
+	 * @var ConfigurationMapperInterface
 	 */
-	private readonly ConfigurationMapper $configurationMapper;
+	private readonly ConfigurationMapperInterface $configurationMapper;
 
 	/**
 	 * The configuration service instance
