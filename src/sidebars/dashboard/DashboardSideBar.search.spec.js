@@ -12,7 +12,7 @@ jest.mock('@nextcloud/l10n', () => ({
 // exposed on both modules.
 jest.mock('@nextcloud/vue', () => ({ __esModule: true, ...mockLibrary() }))
 jest.mock('vue', () => ({ ...jest.requireActual('vue'), ...mockLibrary() }))
-jest.mock('vue-material-design-icons/Magnify.vue', () => ({ __esModule: true, default: { template: '<i />' } }))
+jest.mock('vue-material-design-icons/Magnify.vue', () => ({ __esModule: true, default: { template: '<i />' } }), { virtual: true })
 jest.mock('../../store/store.js', () => {
 	const { reactive } = jest.requireActual('vue')
 	return {
