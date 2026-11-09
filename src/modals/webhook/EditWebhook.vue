@@ -421,6 +421,7 @@ import {
 	webhookPayload,
 } from '../../services/webhookForm.js'
 import { navigationStore, webhookStore } from '../../store/store.js'
+import { defaultWebhookConfiguration, defaultWebhookItem } from './webhookDefaults.js'
 
 export default {
 	name: 'EditWebhook',
@@ -461,13 +462,7 @@ export default {
 			preview: null,
 			previewError: null,
 			previewing: false,
-			configuration: {
-				sendCloudEvent: true,
-				waitForResponse: false,
-				allowPrivateTargets: false,
-				eventProperty: null,
-				responseMapping: {},
-			},
+			configuration: defaultWebhookConfiguration(),
 
 			availableEvents: [],
 			eventOptions: [],
@@ -636,26 +631,7 @@ export default {
 				this.webhookItem = { ...transferData.webhook }
 				this.loadExistingSelections()
 			} else {
-				this.webhookItem = {
-					name: '',
-					url: '',
-					method: 'POST',
-					enabled: true,
-					events: [],
-					maxRetries: 3,
-					timeout: 30,
-					retryPolicy: 'exponential',
-					secret: null,
-					headers: {},
-					filters: {},
-					configuration: {
-						sendCloudEvent: true,
-						waitForResponse: false,
-						allowPrivateTargets: false,
-						eventProperty: null,
-						responseMapping: {},
-					},
-				}
+				this.webhookItem = defaultWebhookItem()
 				// Default to POST (find it in options since GET is now first).
 				this.selectedMethod = defaultMethodOption(this.httpMethodOptions)
 				this.selectedRetryPolicy = this.retryPolicyOptions[0] // 'exponential'
@@ -753,14 +729,7 @@ export default {
 		 * @spec exclude Form-field binding — sets the sendCloudEvent configuration flag.
 		 */
 		updateSendCloudEvent(value) {
-			if (!this.webhookItem) {
-				this.webhookItem = {}
-			}
-			if (!this.webhookItem.configuration) {
-				this.webhookItem.configuration = {}
-			}
-			this.configuration.sendCloudEvent = value
-			this.webhookItem.configuration.sendCloudEvent = value
+			this.setConfigurationFlag('sendCloudEvent', value)
 		},
 
 		/**
@@ -768,14 +737,7 @@ export default {
 		 * @spec exclude Form-field binding — sets the waitForResponse configuration flag.
 		 */
 		updateWaitForResponse(value) {
-			if (!this.webhookItem) {
-				this.webhookItem = {}
-			}
-			if (!this.webhookItem.configuration) {
-				this.webhookItem.configuration = {}
-			}
-			this.configuration.waitForResponse = value
-			this.webhookItem.configuration.waitForResponse = value
+			this.setConfigurationFlag('waitForResponse', value)
 		},
 
 		/**
@@ -783,14 +745,23 @@ export default {
 		 * @spec exclude Form-field binding — sets the allowPrivateTargets configuration flag.
 		 */
 		updateAllowPrivateTargets(value) {
+			this.setConfigurationFlag('allowPrivateTargets', value)
+		},
+
+		/**
+		 * @param {string} key The configuration flag.
+		 * @param {boolean} value Its new value.
+		 * @spec exclude Form-field binding — sets one flag on both copies of the configuration.
+		 */
+		setConfigurationFlag(key, value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			if (!this.webhookItem.configuration) {
 				this.webhookItem.configuration = {}
 			}
-			this.configuration.allowPrivateTargets = value
-			this.webhookItem.configuration.allowPrivateTargets = value
+			this.configuration[key] = value
+			this.webhookItem.configuration[key] = value
 		},
 
 		/**
@@ -1019,13 +990,7 @@ export default {
 			this.selectedEvent = null
 			this.selectedEventProperty = null
 			this.selectedRetryPolicy = null
-			this.configuration = {
-				sendCloudEvent: true,
-				waitForResponse: false,
-				allowPrivateTargets: false,
-				eventProperty: null,
-				responseMapping: {},
-			}
+			this.configuration = defaultWebhookConfiguration()
 		},
 
 		/**
