@@ -47,20 +47,53 @@ final class ExampleSetConfigValue {
 	public const KIND_GENERATED = 'generated';
 
 	/**
+	 * The app.
+	 *
+	 * @var string
+	 */
+	public readonly string $app;
+
+	/**
+	 * The key.
+	 *
+	 * @var string
+	 */
+	public readonly string $key;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $app   The app.
-	 * @param string $key   The key.
-	 * @param string $value The value as text; ignored when generating or only reading.
-	 * @param string $type  `string`, or `int` for a key the app reads as an integer.
-	 * @param string $kind  One of the KIND_ constants.
+	 * @param ExampleSetConfigKey $at    The app and the key.
+	 * @param string              $value The value as text; ignored when generating or only reading.
+	 * @param string              $type  `string`, or `int` for a key the app reads as an integer.
+	 * @param string              $kind  One of the KIND_ constants.
 	 */
 	public function __construct(
-		public readonly string $app,
-		public readonly string $key,
+		ExampleSetConfigKey $at,
 		public readonly string $value='',
 		public readonly string $type='string',
 		public readonly string $kind=self::KIND_EXACT,
 	) {
+		$this->app = $at->app;
+		$this->key = $at->key;
 	}//end __construct()
+
+	/**
+	 * The kind of a declared entry: generated when it says `generate`, else a floor when it says `atLeast`; generating wins.
+	 *
+	 * @param array<string, mixed> $entry The declared entry.
+	 *
+	 * @return string One of the KIND_ constants.
+	 */
+	public static function kindOf(array $entry): string {
+		if (($entry['generate'] ?? false) === true) {
+			return self::KIND_GENERATED;
+		}
+
+		if (($entry['atLeast'] ?? false) === true) {
+			return self::KIND_FLOOR;
+		}
+
+		return self::KIND_EXACT;
+	}//end kindOf()
 }//end class
