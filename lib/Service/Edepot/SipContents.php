@@ -78,10 +78,12 @@ final class SipContents {
 	/**
 	 * List an added document as an MDTO document of an object, so mets.xml lists it too.
 	 *
-	 * @param string|null                                    $uuid The object uuid.
+	 * @param string|null                                      $uuid The object uuid.
 	 * @param array{path: string, size: int, checksum: string} $row  The manifest row addDocument() returned.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/edepot-bagit-output/spec.md
 	 */
 	public function listAsMetadata(?string $uuid, array $row): void {
 		$this->metadata[$uuid][] = $row;
