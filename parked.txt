@@ -85,3 +85,4 @@ openregister#8084 47d31a294566b7263ae20d228f80eb364b8bc722 bisect-park: FAIL Com
 openregister#8138 f6c0703f2bb6bd807940b156a231481762b76def coordinator-park: functional-component premise dropped (ADR-014), do not merge
 openregister#8106 1963869fe6726a065a129b3390e59fb3e1c9dbab coordinator-park: functional-component premise dropped (ADR-014), do not merge
 openregister#8084 47d31a294566b7263ae20d228f80eb364b8bc722 coordinator-park: functional-component premise dropped (ADR-014), do not merge
+openregister#8058 212f67c26844701b84b46252ed71c4cf72c190a0 coordinator-park: functional-component premise dropped (ADR-014), do not merge
