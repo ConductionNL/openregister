@@ -84,3 +84,4 @@ openregister#7830 7712cd4a43b3667859c924ee271c22c811198a34 bisect-park: Manifest
 openregister#8084 47d31a294566b7263ae20d228f80eb364b8bc722 bisect-park: FAIL ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline; FAIL ComponentDependencyRulesTest::testNoNewFileNamesTheBootstrapNamespace
 openregister#8138 f6c0703f2bb6bd807940b156a231481762b76def coordinator-park: functional-component premise dropped (ADR-014), do not merge
 openregister#8106 1963869fe6726a065a129b3390e59fb3e1c9dbab coordinator-park: functional-component premise dropped (ADR-014), do not merge
+openregister#8084 47d31a294566b7263ae20d228f80eb364b8bc722 coordinator-park: functional-component premise dropped (ADR-014), do not merge
