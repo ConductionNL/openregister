@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryServices;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
@@ -86,9 +87,11 @@ final class ObjectHistoryAfterAMoveTest extends TestCase {
 
 		return new ObjectHistoryForReaders(
 			$access,
-			$audit,
-			$redactor,
-			$registers,
+			new ObjectHistoryServices(
+				$audit,
+				$redactor,
+				$registers
+			),
 			$this->createMock(PurposeGuard::class),
 			$this->createMock(ReadEventVisibility::class)
 		);
