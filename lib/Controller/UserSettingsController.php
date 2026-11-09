@@ -28,6 +28,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Controller\Support\GitHubTokenFailure;
 use OCA\OpenRegister\Controller\Support\UserSettingsControllerServices;
 
 /**
@@ -97,8 +98,7 @@ class UserSettingsController extends Controller {
 	public function getGitHubTokenStatus(): JSONResponse {
 		return $this->forUser(
 			action: fn (IUser $user): JSONResponse => $this->tokenStatus(user: $user),
-			logged: 'Failed to get GitHub token status',
-			failure: static fn (): string => 'Failed to get token status'
+			failure: new GitHubTokenFailure(logged: 'Failed to get GitHub token status', answer: 'Failed to get token status')
 		);
 	}//end getGitHubTokenStatus()
 
@@ -142,8 +142,7 @@ class UserSettingsController extends Controller {
 	public function setGitHubToken(): JSONResponse {
 		return $this->forUser(
 			action: fn (IUser $user): JSONResponse => $this->storeToken(user: $user, token: $this->request->getParams()['token'] ?? null),
-			logged: 'Failed to set GitHub token',
-			failure: static fn (Exception $e): string => 'Failed to save token: ' . $e->getMessage()
+			failure: new GitHubTokenFailure(logged: 'Failed to set GitHub token', answer: 'Failed to save token', appendReason: true)
 		);
 	}//end setGitHubToken()
 
@@ -189,8 +188,7 @@ class UserSettingsController extends Controller {
 	public function removeGitHubToken(): JSONResponse {
 		return $this->forUser(
 			action: fn (IUser $user): JSONResponse => $this->clearToken(user: $user),
-			logged: 'Failed to remove GitHub token',
-			failure: static fn (): string => 'Failed to remove token'
+			failure: new GitHubTokenFailure(logged: 'Failed to remove GitHub token', answer: 'Failed to remove token')
 		);
 	}//end removeGitHubToken()
 
@@ -216,12 +214,11 @@ class UserSettingsController extends Controller {
 	 * Run an action for the session user: 401 without one, a failure logged and answered with a 500.
 	 *
 	 * @param callable(IUser): JSONResponse $action  The action.
-	 * @param string                        $logged  The logged failure message (the exception message is appended).
-	 * @param callable(Exception): string   $failure The failure response message.
+	 * @param GitHubTokenFailure            $failure How a failure is logged and answered.
 	 *
 	 * @return JSONResponse The response.
 	 */
-	private function forUser(callable $action, string $logged, callable $failure): JSONResponse {
+	private function forUser(callable $action, GitHubTokenFailure $failure): JSONResponse {
 		try {
 			$user = $this->userSession->getUser();
 			if ($user === null) {
@@ -231,11 +228,11 @@ class UserSettingsController extends Controller {
 			return $action($user);
 		} catch (Exception $e) {
 			$this->logger->error(
-				message: '[UserSettingsController] ' . $logged . ': ' . $e->getMessage(),
+				message: '[UserSettingsController] ' . $failure->logged . ': ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 
-			return new JSONResponse(data: ['error' => $failure($e)], statusCode: 500);
+			return new JSONResponse(data: ['error' => $failure->answerFor(exception: $e)], statusCode: 500);
 		}//end try
 	}//end forUser()
 

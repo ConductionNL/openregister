@@ -30,6 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\MigrationStart;
+use OCA\OpenRegister\Controller\Support\PropertyConversionChange;
 use OCA\OpenRegister\Controller\Support\RetentionPlatform;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationDomain;
@@ -143,22 +145,23 @@ class SchemaMigrationController extends Controller {
 			return $schema;
 		}
 
-		$change = $this->requestedConversion(schema: $schema);
+		$change = $this->requestedConversion(schema: $schema, schemaId: $id);
 		if ($change instanceof JSONResponse) {
 			return $change;
 		}
 
-		return $this->conversionPreview(conversions: $conversions, schemaId: $id, change: $change);
+		return $this->conversionPreview(conversions: $conversions, change: $change);
 	}//end previewConversion()
 
 	/**
 	 * The property and target type the caller asked to convert, with the current type.
 	 *
-	 * @param Schema $schema The schema the property belongs to.
+	 * @param Schema $schema   The schema the property belongs to.
+	 * @param int    $schemaId The schema id the caller named.
 	 *
-	 * @return array{property: string, from: string, to: string}|JSONResponse The change, or a 422/404 refusal.
+	 * @return PropertyConversionChange|JSONResponse The change, or a 422/404 refusal.
 	 */
-	private function requestedConversion(Schema $schema): array|JSONResponse {
+	private function requestedConversion(Schema $schema, int $schemaId): PropertyConversionChange|JSONResponse {
 		$property = trim((string)$this->request->getParam('property', ''));
 		$target = trim((string)$this->request->getParam('to', ''));
 		if ($property === '' || $target === '') {
@@ -170,30 +173,31 @@ class SchemaMigrationController extends Controller {
 			return new JSONResponse(['error' => sprintf('The schema has no property "%s"', $property)], 404);
 		}
 
-		return ['property' => $property, 'from' => trim((string)($definition['type'] ?? 'string')), 'to' => $target];
+		$from = trim((string)($definition['type'] ?? 'string'));
+
+		return new PropertyConversionChange(schemaId: $schemaId, property: $property, from: $from, to: $target);
 	}//end requestedConversion()
 
 	/**
 	 * Preview a supported conversion over the stored values, or refuse an unsupported one.
 	 *
 	 * @param PropertyConversionServiceInterface $conversions The conversion service.
-	 * @param int $schemaId The schema id.
-	 * @param array{property: string, from: string, to: string} $change The requested change.
+	 * @param PropertyConversionChange           $change      The requested change.
 	 *
 	 * @return JSONResponse The preview, or a 422 refusal with its reason.
 	 */
-	private function conversionPreview(PropertyConversionServiceInterface $conversions, int $schemaId, array $change): JSONResponse {
-		if ($conversions->isSupported(from: $change['from'], to: $change['to']) === false) {
+	private function conversionPreview(PropertyConversionServiceInterface $conversions, PropertyConversionChange $change): JSONResponse {
+		if ($conversions->isSupported(from: $change->from, to: $change->to) === false) {
 			return new JSONResponse(
-				array_merge(['error' => $conversions->refusalReason(from: $change['from'], to: $change['to'])], $change, ['supported' => false]),
+				array_merge(['error' => $conversions->refusalReason(from: $change->from, to: $change->to)], $change->toArray(), ['supported' => false]),
 				422
 			);
 		}
 
-		$values = $this->domain->objectReader->storedValues(schemaId: $schemaId, property: $change['property']);
-		$preview = $conversions->preview(values: $values, from: $change['from'], to: $change['to']);
+		$values = $this->domain->objectReader->storedValues(schemaId: $change->schemaId, property: $change->property);
+		$preview = $conversions->preview(values: $values, from: $change->from, to: $change->to);
 
-		return new JSONResponse(array_replace($preview, $change));
+		return new JSONResponse(array_replace($preview, $change->toArray()));
 	}//end conversionPreview()
 
 	/**
@@ -364,7 +368,7 @@ class SchemaMigrationController extends Controller {
 			return $registerId;
 		}
 
-		return $this->startMigration(id: $id, registerId: $registerId, plan: $plan);
+		return $this->startMigration(start: new MigrationStart(schemaId: $id, registerId: $registerId, plan: $plan));
 	}//end migrate()
 
 	/**
@@ -379,18 +383,16 @@ class SchemaMigrationController extends Controller {
 	/**
 	 * Start a migration run with the requested options and enqueue it.
 	 *
-	 * @param int $id The schema id.
-	 * @param int $registerId The register holding the schema's objects.
-	 * @param array<int|string, mixed> $plan The migration plan.
+	 * @param MigrationStart $start The schema, its register and the migration plan.
 	 *
 	 * @return JSONResponse The created run, or a 422/409 error.
 	 */
-	private function startMigration(int $id, int $registerId, array $plan): JSONResponse {
+	private function startMigration(MigrationStart $start): JSONResponse {
 		try {
 			$run = $this->domain->migrationService->start(
-				schemaId: $id,
-				registerId: $registerId,
-				plan: $plan,
+				schemaId: $start->schemaId,
+				registerId: $start->registerId,
+				plan: $start->plan,
 				options: $this->migrationOptions(), startedBy: $this->currentUid()
 			);
 		} catch (\InvalidArgumentException $e) {
