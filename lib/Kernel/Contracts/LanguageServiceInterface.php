@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The request-language state the language middleware writes and the Db layer reads on LanguageService.

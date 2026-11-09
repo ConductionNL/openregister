@@ -40,7 +40,7 @@ use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderObjectInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandlerInterface;
 use PHPUnit\Framework\TestCase;

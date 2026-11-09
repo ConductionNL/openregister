@@ -24,9 +24,9 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
-use OCA\OpenRegister\Service\Flow\FlowRunContextInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowRunContextInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface;
+use OCA\OpenRegister\Kernel\Contracts\AutoTransitionPassInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

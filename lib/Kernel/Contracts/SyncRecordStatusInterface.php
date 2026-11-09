@@ -22,7 +22,7 @@
  * @link https://OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service\Sync;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Sync record status vocabulary and allowed forward transitions.

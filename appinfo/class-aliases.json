@@ -91,8 +91,23 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DateTimeNormalizerInterface",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetViews": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\ExampleSet\\ExampleSetViews",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\FieldEncryptionHandlerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FieldEncryptionHandlerInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowRunContextInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowRunContextInterface",
 			"eager": false,
 			"service": true
 		},
@@ -191,6 +206,16 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Service\\LanguageServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\LanguageServiceInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Lifecycle\\AutoTransitionPassInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AutoTransitionPassInterface",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Service\\MapsOverviewService": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\MapsOverviewService",
 			"eager": false,
@@ -198,6 +223,11 @@
 		},
 		"OCA\\OpenRegister\\Service\\MetricsService": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\MetricsService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverterInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SchemaTypeConverterInterface",
 			"eager": false,
 			"service": true
 		},
@@ -258,6 +288,11 @@
 		},
 		"OCA\\OpenRegister\\Service\\Search\\SearchIndexMaintenance": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\Search\\SearchIndexMaintenance",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Sync\\SyncRecordStatusInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SyncRecordStatusInterface",
 			"eager": false,
 			"service": true
 		},

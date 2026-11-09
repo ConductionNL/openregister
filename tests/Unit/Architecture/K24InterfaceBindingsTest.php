@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
 use OCA\OpenRegister\Service\Sync\SyncRecordStatus;
-use OCA\OpenRegister\Service\Sync\SyncRecordStatusInterface;
+use OCA\OpenRegister\Kernel\Contracts\SyncRecordStatusInterface;
 use OCA\OpenRegister\Support\RegisterSlugAliases;
 use OCA\OpenRegister\Support\RegisterSlugAliasesInterface;
 use OCA\OpenRegister\WorkflowEngine\RegisterObjectEntity;

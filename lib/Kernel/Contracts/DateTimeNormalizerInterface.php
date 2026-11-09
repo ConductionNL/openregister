@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use DateTimeImmutable;
 use DateTimeZone;

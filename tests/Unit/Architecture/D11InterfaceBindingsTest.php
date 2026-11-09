@@ -34,7 +34,7 @@ use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Service\LanguageService;
-use OCA\OpenRegister\Service\LanguageServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\LanguageServiceInterface;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
 use OCA\OpenRegister\Service\RegisterDescriptorServiceInterface;
 use OCA\OpenRegister\Service\RegisterResolverService;

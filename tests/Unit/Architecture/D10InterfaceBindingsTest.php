@@ -24,9 +24,9 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
-use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
+use OCA\OpenRegister\Kernel\Contracts\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;

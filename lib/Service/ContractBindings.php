@@ -22,9 +22,11 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
+use OCA\OpenRegister\Kernel\Contracts\LanguageServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
@@ -212,7 +214,7 @@ use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolverInterface;
 use OCA\OpenRegister\Service\Federation\ShareGrantor;
 use OCA\OpenRegister\Service\Federation\ShareGrantorInterface;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
-use OCA\OpenRegister\Service\FieldEncryptionHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\FieldEncryptionHandlerInterface;
 use OCA\OpenRegister\Service\Flow\FlowDryRunService;
 use OCA\OpenRegister\Service\Flow\FlowDryRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
@@ -393,7 +395,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugTargetInterface;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
@@ -1167,9 +1169,9 @@ final class ContractBindings {
 		...FlowBindings::BINDINGS,
 		ReferencedAddressNotifierInterface::class => ReferencedAddressNotifier::class,
 		...AccessBindings::BINDINGS,
-		\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface::class => \OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass::class,
+		\OCA\OpenRegister\Kernel\Contracts\AutoTransitionPassInterface::class => \OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass::class,
 		...SchemasBindings::BINDINGS,
-		\OCA\OpenRegister\Service\Flow\FlowRunContextInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunContext::class,
+		\OCA\OpenRegister\Kernel\Contracts\FlowRunContextInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunContext::class,
 		...FeatureBindings::BINDINGS,
 		TrustTierResolverInterface::class => TrustTierResolver::class,
 		...MiscBindings::BINDINGS,

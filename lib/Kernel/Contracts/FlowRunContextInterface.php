@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Flow;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The executing flow step, read-only, for the callers outside the Service component

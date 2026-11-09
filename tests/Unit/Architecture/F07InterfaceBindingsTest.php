@@ -29,7 +29,7 @@ use OCA\OpenRegister\Service\Object\MoveObjectInterface;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugTargetInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandlerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
