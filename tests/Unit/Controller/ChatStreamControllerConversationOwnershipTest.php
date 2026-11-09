@@ -133,7 +133,6 @@ class ChatStreamControllerConversationOwnershipTest extends TestCase {
 
 	private function controller(): OwnershipChatStreamController {
 		return new OwnershipChatStreamController(...ChatStreamControllerFactory::args(
-			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			chatService: $this->createMock(ChatService::class),
 			conversationMapper: $this->conversationMapper,
