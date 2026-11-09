@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Search\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Search\Controller\Support\ViewPatch;
 use OCA\OpenRegister\Search\Db\View;
 use InvalidArgumentException;
@@ -88,12 +89,11 @@ class ViewsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                  $appName  The application name.
 	 * @param IRequest                $request  The current request.
 	 * @param ViewsControllerServices $services The saved-views API services.
 	 */
-	public function __construct(string $appName, IRequest $request, ViewsControllerServices $services) {
-		parent::__construct(appName: $appName, request: $request);
+	public function __construct(IRequest $request, ViewsControllerServices $services) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->viewService             = $services->viewService;
 		$this->viewPresentationService = $services->viewPresentationService;
