@@ -1,13 +1,13 @@
 <?php
 
 /**
- * UniqueHintAnnotationValidatorInterface: what callers outside the Search component use of UniqueHintAnnotationValidator.
+ * UniqueHintAnnotationValidatorInterface: what the unique-hint checker uses of the Search component's UniqueHintAnnotationValidator.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Search
- * @package  OCA\OpenRegister\Search\Service\Quality
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Quality
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Search\Service\Quality;
+namespace OCA\OpenRegister\Service\Quality;
 
 /**
  * Validates `x-openregister-unique-hint` and reads the properties a schema nominates through it.
