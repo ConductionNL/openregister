@@ -65,23 +65,37 @@ final class HealthCheckDescriptor {
 	public const ASSERTIONS = ['present', 'nonEmpty'];
 
 	/**
+	 * Target app id (appEnabled only).
+	 */
+	public readonly ?string $app;
+
+	/**
+	 * AppConfig key (appConfig only).
+	 */
+	public readonly ?string $key;
+
+	/**
+	 * AppConfig assertion (appConfig only).
+	 */
+	public readonly ?string $assert;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $id Stable check id used as the `checks` map key.
 	 * @param string $type One of self::TYPES.
 	 * @param string $severity One of self::SEVERITIES.
-	 * @param string|null $app Target app id (appEnabled only).
-	 * @param string|null $key AppConfig key (appConfig only).
-	 * @param string|null $assert AppConfig assertion (appConfig only).
+	 * @param HealthCheckTarget $target What the check inspects (app, appConfig key, assertion).
 	 */
 	public function __construct(
 		public readonly string $id,
 		public readonly string $type,
 		public readonly string $severity,
-		public readonly ?string $app = null,
-		public readonly ?string $key = null,
-		public readonly ?string $assert = null,
+		HealthCheckTarget $target = new HealthCheckTarget(),
 	) {
+		$this->app    = $target->app;
+		$this->key    = $target->key;
+		$this->assert = $target->assert;
 	}//end __construct()
 
 	/**
@@ -121,9 +135,7 @@ final class HealthCheckDescriptor {
 			id: $id,
 			type: $type,
 			severity: $severity,
-			app: $target['app'],
-			key: $target['key'],
-			assert: $target['assert']
+			target: new HealthCheckTarget(app: $target['app'], key: $target['key'], assert: $target['assert'])
 		);
 	}//end fromArray()
 
