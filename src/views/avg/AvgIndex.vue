@@ -75,7 +75,7 @@
 					</NcEmptyContent>
 
 					<table v-else class="avgTable">
-						<AvgTableHead
+						<TableHeadRow
 							:labels="[
 								t('openregister', 'Name'),
 								t('openregister', 'Code'),
@@ -166,7 +166,7 @@
 					</NcEmptyContent>
 
 					<table v-else class="avgTable">
-						<AvgTableHead
+						<TableHeadRow
 							:labels="[
 								t('openregister', 'Activity'),
 								t('openregister', 'Legal basis'),
@@ -399,7 +399,7 @@
 					</NcEmptyContent>
 
 					<table v-else class="avgTable">
-						<AvgTableHead
+						<TableHeadRow
 							:labels="[
 								t('openregister', 'Schema'),
 								t('openregister', 'Register'),
@@ -530,7 +530,7 @@
 						</NcEmptyContent>
 
 						<table v-else class="avgTable">
-							<AvgTableHead
+							<TableHeadRow
 								:labels="[
 									t('openregister', 'Subject'),
 									t('openregister', 'Type'),
@@ -805,7 +805,7 @@
 								{{ t('openregister', 'No evidence collected yet.') }}
 							</p>
 							<table v-else class="avgTable">
-								<AvgTableHead
+								<TableHeadRow
 									:labels="[
 										t('openregister', 'Source'),
 										t('openregister', 'Status'),
@@ -843,7 +843,7 @@
 								{{ t('openregister', 'No redactions applied.') }}
 							</p>
 							<table v-else class="avgTable">
-								<AvgTableHead
+								<TableHeadRow
 									:labels="[
 										t('openregister', 'Field'),
 										t('openregister', 'Ground'),
@@ -1007,7 +1007,7 @@ import RefreshButton from '../../components/shared/RefreshButton.vue'
 import DenialComposerDialog from '../../dialogs/avg/DenialComposerDialog.vue'
 import EditActivityDialog from '../../dialogs/avg/EditActivityDialog.vue'
 import RedactionDialog from '../../dialogs/avg/RedactionDialog.vue'
-import AvgTableHead from './AvgTableHead.vue'
+import TableHeadRow from './TableHeadRow.vue'
 import {
 	CASE_LIFECYCLE_TRANSITIONS,
 	CASE_STATUS_VOCABULARY,
@@ -1050,7 +1050,7 @@ export default {
 	name: 'AvgIndex',
 
 	components: {
-		AvgTableHead,
+		TableHeadRow,
 		NcAppContent,
 		NcButton,
 		NcActions,
