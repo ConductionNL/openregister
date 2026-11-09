@@ -62,6 +62,8 @@ final class TaskInboxPage {
 	 * @param int                              $total   The total the same predicates count.
 	 *
 	 * @return array{results: array<int, array<string, mixed>>, total: int, limit: int, offset: int} The page.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	public function envelope(array $results, int $total): array {
 		return [

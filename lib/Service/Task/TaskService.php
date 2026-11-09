@@ -1246,8 +1246,9 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * checks in the same order as every verb (exists, authorized, open), so a
 	 * denial here reads in the audit exactly as a denial from the verb would.
 	 *
-	 * @param TaskAct $act The verb about to be attempted and the acting identity.
+	 * @param string $verb The verb about to be attempted.
 	 * @param string $uuid The task uuid.
+	 * @param string|null $actor The acting identity.
 	 *
 	 * @return Task The open, authorized task.
 	 *
