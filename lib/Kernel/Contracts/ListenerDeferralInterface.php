@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Deferral;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Deferring listener work to actor-forwarded chunk jobs.

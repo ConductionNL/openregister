@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Db;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use DateTime;
 use OCP\AppFramework\Db\Entity;
@@ -50,7 +50,7 @@ interface RuleRunMapperInterface {
 	 * @param int $limit How many rows to return, capped at MAX_LIMIT.
 	 * @param int $offset Where to start.
 	 *
-	 * @return array<int, RuleRun> The rows.
+	 * @return array<int, \OCA\OpenRegister\Db\RuleRun> The rows.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
@@ -78,7 +78,7 @@ interface RuleRunMapperInterface {
 	 * @param DateTime|null $since Only runs at or after this moment.
 	 * @param int           $limit How many rows to return, capped at MAX_LIMIT.
 	 *
-	 * @return array<int, RuleRun> The rows, newest first.
+	 * @return array<int, \OCA\OpenRegister\Db\RuleRun> The rows, newest first.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */

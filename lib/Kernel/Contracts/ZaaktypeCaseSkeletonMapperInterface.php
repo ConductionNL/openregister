@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Case;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Mapping a zaaktype onto a case-plan skeleton, as the case controller uses

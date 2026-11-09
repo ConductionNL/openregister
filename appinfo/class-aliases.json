@@ -1815,6 +1815,66 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\FlowTriggerMapperInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowTriggerMapperInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Db\\RuleRunMapperInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RuleRunMapperInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Calculation\\AggregateReferenceResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AggregateReferenceResolverInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Calculation\\TemporalCalculationSweepServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TemporalCalculationSweepServiceInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Case\\CasePlanTimerRearmInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\CasePlanTimerRearmInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Case\\ZaaktypeCaseSkeletonMapperInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ZaaktypeCaseSkeletonMapperInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Deferral\\ListenerDeferralInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ListenerDeferralInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\FlowSemanticVersionInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowSemanticVersionInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\Principal\\PrincipalKindsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PrincipalKindsInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Flow\\Timer\\FlowTimerSweepInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\FlowTimerSweepInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Lifecycle\\StateConditionEvaluatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\StateConditionEvaluatorInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Task\\TaskFormResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TaskFormResolverInterface",
+			"eager": false,
+			"service": true
 		}
 	}
 }

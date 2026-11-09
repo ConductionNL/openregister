@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Case;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use DateTimeInterface;
 

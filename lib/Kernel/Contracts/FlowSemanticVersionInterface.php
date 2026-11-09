@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Flow;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The back-filled semantic version, typed for the repair step that stamps it.

@@ -96,7 +96,7 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityAnnotationValidator;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
-use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\AggregateReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
@@ -114,7 +114,7 @@ use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
 use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresherInterface;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
-use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\TemporalCalculationSweepServiceInterface;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeServiceInterface;
 use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenService;
@@ -128,13 +128,13 @@ use OCA\OpenRegister\Service\Case\CasePlanItemTimersInterface;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
 use OCA\OpenRegister\Service\Case\CasePlanTimerRearm;
-use OCA\OpenRegister\Service\Case\CasePlanTimerRearmInterface;
+use OCA\OpenRegister\Kernel\Contracts\CasePlanTimerRearmInterface;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNodeInterface;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNodeInterface;
 use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
-use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ZaaktypeCaseSkeletonMapperInterface;
 use OCA\OpenRegister\Service\Chat\ChatProxyHandler;
 use OCA\OpenRegister\Service\Chat\ChatProxyHandlerInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
@@ -180,7 +180,7 @@ use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
-use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListenerDeferralInterface;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
 use OCA\OpenRegister\Service\Delegation\DelegationConsentServiceInterface;
@@ -306,7 +306,7 @@ use OCA\OpenRegister\Service\Flow\Principal\UserPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\UserPrincipalResolverInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
-use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerSweepInterface;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
@@ -376,7 +376,7 @@ use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistryInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolverInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
-use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
+use OCA\OpenRegister\Kernel\Contracts\StateConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
@@ -562,7 +562,7 @@ use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
 use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
-use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskFormResolverInterface;
 use OCA\OpenRegister\Service\Task\TaskProjectionService;
 use OCA\OpenRegister\Service\Task\TaskProjectionServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
@@ -1143,7 +1143,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Flow\FlowAccessInterface::class => \OCA\OpenRegister\Service\Flow\FlowAccess::class,
 		\OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface::class => \OCA\OpenRegister\Service\Flow\FlowDefinitionPin::class,
 		\OCA\OpenRegister\Service\Flow\FlowRunAdvancerInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunAdvancer::class,
-		\OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface::class => \OCA\OpenRegister\Service\Flow\FlowSemanticVersion::class,
+		\OCA\OpenRegister\Kernel\Contracts\FlowSemanticVersionInterface::class => \OCA\OpenRegister\Service\Flow\FlowSemanticVersion::class,
 		\OCA\OpenRegister\Service\Flow\FlowTriggerIndexInterface::class => \OCA\OpenRegister\Service\Flow\FlowTriggerIndex::class,
 		\OCA\OpenRegister\Service\Flow\FlowTriggerServiceInterface::class => \OCA\OpenRegister\Service\Flow\FlowTriggerService::class,
 		\OCA\OpenRegister\Service\Flow\FlowTriggerSlugsInterface::class => \OCA\OpenRegister\Service\Flow\FlowTriggerSlugs::class,

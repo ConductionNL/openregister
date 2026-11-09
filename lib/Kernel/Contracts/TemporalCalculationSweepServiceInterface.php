@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Calculation;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Sweep the time-dependent calculations whose value may have moved.
