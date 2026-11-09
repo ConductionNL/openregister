@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -44,6 +46,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use RuntimeException;
 
 class ObjectActionRunnerGoldenTest extends TestCase {
@@ -52,7 +55,7 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 
 	private ObjectActionStepsFlow&MockObject $steps;
 
-	private ObjectActionAudit&MockObject $audit;
+	private AuditTrailMapperInterface&MockObject $trail;
 
 	private TransitionEngine&MockObject $transitions;
 
@@ -95,13 +98,14 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 		);
 		$this->steps = $this->createMock(ObjectActionStepsFlow::class);
 		$this->steps->method('flowFor')->willReturn('steps-flow');
-		$this->audit = $this->createMock(ObjectActionAudit::class);
-		$this->audit->method('record')->willReturnCallback(
-			function ($object, $definition, $outcome, $digest, $userId): void {
+		$this->trail = $this->createMock(AuditTrailMapperInterface::class);
+		$this->trail->method('createAuditTrailEntry')->willReturnCallback(
+			function ($object, $action, $context, $userId): AuditTrail {
 				$this->audited[] = array_combine(
 					['object', 'action', 'kind', 'run', 'inputsDigest', 'changes', 'outcome', 'userId'],
-					[$object, $definition->key, (string)$definition->kind, $outcome->run, $digest, $outcome->changes, $outcome->outcome, $userId]
+					[$object, $context['declaredAction'], $context['kind'], $context['run'], $context['inputsDigest'], $context['changes'], $context['outcome'], $userId]
 				);
+				return new AuditTrail();
 			}
 		);
 		$this->transitions = $this->createMock(TransitionEngine::class);
@@ -128,7 +132,7 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 		$l10n->method('getLanguageCode')->willReturn('en');
 
 		$checks   = new ObjectActionRunnerChecks(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionGate($this->permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)), new ObjectActionInputs(new OasRequestValidator()));
-		$recorder = new ObjectActionRunRecorder($checks->inputs, $this->audit, $checks->gate);
+		$recorder = new ObjectActionRunRecorder($checks->inputs, new ObjectActionAudit($this->trail, $checks->gate, new NullLogger()));
 
 		return new ObjectActionRunner(
 			$checks,

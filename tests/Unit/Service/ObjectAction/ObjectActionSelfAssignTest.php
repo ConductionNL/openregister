@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\EmptyPropertyClaim;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -280,15 +282,16 @@ class ObjectActionSelfAssignTest extends TestCase {
 				return $saved;
 			}
 		);
-		$audit = $this->createMock(ObjectActionAudit::class);
-		$audit->method('record')->willReturnCallback(
-			function ($object, $definition, $outcome, $digest, $userId): void {
-				$this->audited[] = [$object, $definition->key, (string)$definition->kind, $outcome->run, $digest, $outcome->changes, $outcome->outcome, $userId];
+		$trail = $this->createMock(AuditTrailMapperInterface::class);
+		$trail->method('createAuditTrailEntry')->willReturnCallback(
+			function ($object, $action, $context, $userId): AuditTrail {
+				$this->audited[] = [$object, $context['declaredAction'], $context['kind'], $context['run'], $context['inputsDigest'], $context['changes'], $context['outcome'], $userId];
+				return new AuditTrail();
 			}
 		);
 
 		$checks   = new ObjectActionRunnerChecks(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)), new ObjectActionInputs(new OasRequestValidator()));
-		$recorder = new ObjectActionRunRecorder($checks->inputs, $audit, $checks->gate);
+		$recorder = new ObjectActionRunRecorder($checks->inputs, new ObjectActionAudit($trail, $checks->gate, new NullLogger()));
 
 		return new ObjectActionRunner(
 			$checks,
