@@ -172,13 +172,8 @@ class FlowDryRunService implements FlowDryRunServiceInterface {
 	 */
 	private function walk(array $document, ObjectEntity $object): array {
 		$dispatcher = new PreviewStepDispatcher(registry: $this->registry);
-		$result = $this->engine->run(
-			flow: $document,
-			store: new FlowRunMarkingStore(run: new FlowRun()),
-			subject: $object,
-			dispatcher: $dispatcher,
-			context: ['dryRun' => true]
-		);
+		$start = new FlowRunStart(flow: $document, store: new FlowRunMarkingStore(run: new FlowRun()), subject: $object, dispatcher: $dispatcher);
+		$result = $this->engine->run(start: $start->withContext(context: ['dryRun' => true]));
 
 		$answer = [
 			'status' => (string)($result['status'] ?? ''),

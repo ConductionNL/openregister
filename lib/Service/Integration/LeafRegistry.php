@@ -82,9 +82,6 @@ class LeafRegistry implements LeafRegistryInterface {
 	 * @param IntegrationRegistry $integrationRegistry Shared provider registry (data leaves land here).
 	 * @param IAppManager $appManager App manager (usability check).
 	 * @param LoggerInterface $logger Logger for collision, validation, collection warnings.
-	 * @param LeafBundle|null $leafBundleService Answers whether an app's leaf can render. Nullable and last so
-	 *                                           no construction site shifts; absent, one is built from the app
-	 *                                           manager this class already holds.
 	 *
 	 * @return void
 	 */
@@ -93,12 +90,12 @@ class LeafRegistry implements LeafRegistryInterface {
 		private IntegrationRegistry $integrationRegistry,
 		private IAppManager $appManager,
 		private LoggerInterface $logger,
-		// LAST AND NULLABLE so every existing construction keeps working; the
-		// container always supplies it. Built from the app manager this class
-		// already holds when it is absent, so the answer is never a second one.
-		private ?LeafBundle $leafBundleService = null,
 	) {
-		$this->leafBundle = ($leafBundleService ?? new LeafBundle($appManager));
+		// LeafBundle is stateless and only reads the app manager, so the one
+		// built here from the app manager this class already holds is the one
+		// answer to whether a leaf can render; no construction site passed
+		// another.
+		$this->leafBundle = new LeafBundle($appManager);
 	}//end __construct()
 
 	/**

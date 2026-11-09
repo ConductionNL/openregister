@@ -23,7 +23,9 @@ use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\WebhookDispatchServices;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Service\WebhookStores;
 use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -142,12 +144,16 @@ class WebhookServiceDeliverGoldenTest extends TestCase {
 		});
 
 		$service = new WebhookService(
-			webhookMapper: $webhookMapper,
-			logger: $logger,
-			webhookLogMapper: $logMapper,
-			mappingService: $this->createMock(MappingService::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			jobList: $this->createMock(IJobList::class)
+			stores: new WebhookStores(
+				webhookMapper: $webhookMapper,
+				webhookLogMapper: $logMapper,
+				mappingMapper: $this->createMock(MappingMapper::class),
+				mappingService: $this->createMock(MappingService::class)
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->createMock(IJobList::class)
+			),
+			logger: $logger
 		);
 
 		$client = $this->createMock(GuzzleClient::class);
