@@ -166,3 +166,4 @@
 2026-11-09T14:10:30Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7660 d5e9c640
 2026-11-09T14:10:43Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7675 0c3847e7
 2026-11-09T14:10:56Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7676 b05c580f
+2026-11-09T14:14:15Z integrator-20261109T130654-5892e14f RED tree c50a660773 prs 3 front=red: Tests: 52100, Assertions: 169714, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprec; first failures: FAIL src/views/migrationPack/migrationPackTables.dom.golden.spec.js;FAIL src/views/schema/CalendarProviderTab.dom.golden.spec.js
