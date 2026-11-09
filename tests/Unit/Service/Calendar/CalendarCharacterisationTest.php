@@ -638,7 +638,10 @@ class CalendarCharacterisationTest extends TestCase {
 		$builder->expects($this->exactly(4))
 			->method('build')
 			->willReturnCallback(
-				static function (ObjectEntity $object, int|string $schemaId, ObjectDateDeclaration $declaration): ?array {
+				static function (ObjectDateOccurrence $occurrence): ?array {
+					$object = $occurrence->object;
+					$schemaId = $occurrence->schemaId;
+					$declaration = $occurrence->declaration;
 					if ($declaration->property === 'a' && $object->getUuid() === 'object-uuid') {
 						return null;
 					}
