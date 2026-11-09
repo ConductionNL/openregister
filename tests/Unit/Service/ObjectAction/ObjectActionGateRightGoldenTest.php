@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionInvocation;
+use OCA\OpenRegister\Service\ObjectAction\RightCheck;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -97,7 +99,7 @@ class ObjectActionGateRightGoldenTest extends TestCase {
 	 * @return bool The answer.
 	 */
 	private function mayRun(ObjectActionGate $gate, Schema $schema, ObjectActionDefinition $definition, ?ObjectEntity $object): bool {
-		return $gate->mayRun(schema: $schema, right: 'approve', definition: $definition, object: $object);
+		return $gate->mayRun(check: new RightCheck(schema: $schema, right: 'approve', object: $object), definition: $definition);
 	}//end mayRun()
 
 	/**
@@ -109,7 +111,7 @@ class ObjectActionGateRightGoldenTest extends TestCase {
 	 * @return bool The answer.
 	 */
 	private function whenHolds(ObjectActionDefinition $definition, array $inputs): bool {
-		return $this->gate(answer: true)->whenHolds(definition: $definition, object: self::object(), inputs: $inputs);
+		return $this->gate(answer: true)->whenHolds(invocation: new ObjectActionInvocation(definition: $definition, inputs: $inputs), object: self::object());
 	}//end whenHolds()
 
 	/**
