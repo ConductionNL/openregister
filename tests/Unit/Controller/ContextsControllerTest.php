@@ -58,7 +58,6 @@ class ContextsControllerTest extends TestCase {
 		$contextService = new JsonLdContextService($urlGenerator);
 
 		$this->controller = ContextsControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->registerMapper,
 			$this->schemaMapper,
