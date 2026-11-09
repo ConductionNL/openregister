@@ -60,6 +60,7 @@ use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
 use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseStepRunner;
 use OCA\OpenRegister\Service\Case\UnarmedTimerMarkers;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
@@ -858,7 +859,7 @@ class CaseUnitsGoldenTest extends TestCase {
 		$l10n->method('t')->willReturnCallback(static fn (string $text, array $params = []): string => vsprintf($text, $params));
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('imagePath')->willReturn('/icon.svg');
-		$collaborators = ['plans' => $this->service(writes: $writes), 'scope' => $scope, 'session' => $session, 'l10n' => $l10n, 'urls' => $urls];
+		$collaborators = ['steps' => new CaseStepRunner(plans: $this->service(writes: $writes), scope: $scope, session: $session), 'l10n' => $l10n, 'urls' => $urls];
 		$open = new CaseOpenNode(...$collaborators);
 		$advance = new CaseAdvanceNode(...$collaborators);
 		$out = [];
