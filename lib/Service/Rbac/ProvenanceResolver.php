@@ -126,11 +126,26 @@ class ProvenanceResolver {
 	 * @param DenyResolverInterface $denyResolver The one reader of the deny grammar, whose
 	 *                                   entry matcher is shared because grants and
 	 *                                   denies use the same grammar.
+	 * @param array<int, string>    $principals   The caller's principal names; see forPrincipals().
 	 */
 	public function __construct(
 		private readonly DenyResolverInterface $denyResolver = new DenyResolver(),
+		private readonly array $principals = [],
 	) {
 	}//end __construct()
+
+	/**
+	 * The same resolver, reporting for a caller with these principals.
+	 *
+	 * @param array<int, string> $principals The caller's principal names.
+	 *
+	 * @return self The resolver for that caller.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function forPrincipals(array $principals): self {
+		return new self(denyResolver: $this->denyResolver, principals: $principals);
+	}//end forPrincipals()
 
 	/**
 	 * The provenance of every action in one vocabulary.
@@ -139,8 +154,7 @@ class ProvenanceResolver {
 	 * cascade resolves in and an answer that named a broader rule than the one
 	 * that actually decided would send an administrator to the wrong screen.
 	 *
-	 * @param array<int, string>              $actions    The verbs to report on.
-	 * @param array<int, string>              $principals The caller's principal names.
+	 * @param array<int, string>              $actions    The verbs to report on, for the caller of forPrincipals().
 	 * @param array<string, mixed>            $blocks     Keys: object, schema, register, roleDefinitions.
 	 * @param array<string, array|null>       $denials    The denial per action, where there is one.
 	 * @param bool                            $enforced   Whether a denial changes an answer yet.
@@ -151,7 +165,6 @@ class ProvenanceResolver {
 	 */
 	public function forActions(
 		array $actions,
-		array $principals,
 		array $blocks = [],
 		array $denials = [],
 		bool $enforced = true,
@@ -160,7 +173,7 @@ class ProvenanceResolver {
 		foreach ($actions as $action) {
 			$grant = $this->grantFor(
 				action: $action,
-				principals: $principals,
+				principals: $this->principals,
 				levels: $this->levelsOf(
 					objectAuthorization: ($blocks['object'] ?? null),
 					schemaAuthorization: ($blocks['schema'] ?? null),

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IGroupManager;
@@ -125,7 +126,7 @@ class Wave12BulkSafeguardsTest extends TestCase {
 		$reflection->setAccessible(true);
 		return $reflection->invokeArgs(
 			$this->handler,
-			[$objects, $register, $schema, ['rbac' => $_rbac, 'validation' => $_validation], &$result]
+			[$objects, new BulkBatchDefaults($register, $schema), ['rbac' => $_rbac, 'validation' => $_validation], &$result]
 		);
 	}//end callApplyBulkSafeguards()
 

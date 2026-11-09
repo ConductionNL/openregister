@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Consumer\ConsumerSource;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
+use OCA\OpenRegister\Service\Rbac\TokenGrantTarget;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCP\IAppConfig;
 use OCP\ICache;
@@ -191,8 +192,7 @@ class AuthorizationServiceConsumerGrantTest extends TestCase {
 			authorization: $narrower->narrow(
 				authorization: self::BLOCK,
 				grant: $grants->current(),
-				schemaSlug: 'zaak',
-				registerSlug: 'zaken'
+				target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken')
 			),
 			groupId: 'leveranciers',
 			action: $action,
