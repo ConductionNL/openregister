@@ -44,17 +44,9 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 
 	public function testATokenResponseIsReadWithEveryFallback(): void {
 		$now = new DateTimeImmutable('2026-01-01T00:00:00+00:00');
-		$previous = OAuth2TokenSet::fromTokenResponse(
-			response: ['access_token' => 'OLD', 'refresh_token' => 'OLDRT', 'scope' => 'a b'],
-			now: $now
-		)->withAccount(id: '1', handle: 'h', displayName: 'd');
+		$previous = OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'OLD', 'refresh_token' => 'OLDRT', 'scope' => 'a b'], options: new \OCA\OpenRegister\Service\Credential\OAuth2TokenResponseOptions(now: $now))->withAccount(account: new \OCA\OpenRegister\Service\Credential\ConnectedAccount(id: '1', handle: 'h', displayName: 'd'));
 
-		$set = OAuth2TokenSet::fromTokenResponse(
-			response: ['access_token' => ' NEW ', 'expires_in' => '60', 'token_type' => ' ', 'scope' => ''],
-			requestedScopes: [],
-			previous: $previous,
-			now: $now
-		);
+		$set = OAuth2TokenSet::fromTokenResponse(response: ['access_token' => ' NEW ', 'expires_in' => '60', 'token_type' => ' ', 'scope' => ''], options: new \OCA\OpenRegister\Service\Credential\OAuth2TokenResponseOptions(requestedScopes: [], previous: $previous, now: $now));
 
 		$this->assertSame(
 			[
@@ -90,11 +82,7 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 	 * @param string|null $expiresAt The expected expiry.
 	 */
 	public function testTokenResponseScopesAndExpiry(array $extra, array $requested, array $scopes, ?string $expiresAt): void {
-		$set = OAuth2TokenSet::fromTokenResponse(
-			response: array_merge(['access_token' => 'AT'], $extra),
-			requestedScopes: $requested,
-			now: new DateTimeImmutable('2026-01-01T00:00:00+00:00')
-		);
+		$set = OAuth2TokenSet::fromTokenResponse(response: array_merge(['access_token' => 'AT'], $extra), options: new \OCA\OpenRegister\Service\Credential\OAuth2TokenResponseOptions(requestedScopes: $requested, now: new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
 
 		$this->assertSame($scopes, $set->getScopes());
 		$this->assertSame($expiresAt, $set->getExpiresAt()?->format(DATE_ATOM));

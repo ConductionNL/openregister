@@ -236,7 +236,8 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 			instanceBaseUrl: $instanceBaseUrl
 		);
 
-		$tokenSet = OAuth2TokenSet::fromTokenResponse(response: $response, requestedScopes: $flow->scopes(provider: $provider));
+		$options  = new OAuth2TokenResponseOptions(requestedScopes: $flow->scopes(provider: $provider));
+		$tokenSet = OAuth2TokenSet::fromTokenResponse(response: $response, options: $options);
 
 		return $this->writer->store(provider: $provider, flow: $flow, existing: $existing, tokenSet: $tokenSet);
 	}//end complete()

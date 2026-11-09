@@ -437,15 +437,12 @@ class OAuth2RefreshServiceTest extends TestCase {
 	 * @return string The document.
 	 */
 	private function tokenSetJson(int $expiresIn, string $accessToken = 'ACCESS_TOKEN_HERE'): string {
-		return OAuth2TokenSet::fromTokenResponse(
-			response: [
+		return OAuth2TokenSet::fromTokenResponse(response: [
 				'access_token' => $accessToken,
 				'refresh_token' => 'REFRESH_TOKEN_HERE',
 				'expires_in' => $expiresIn,
 				'scope' => 'read:accounts write:statuses',
-			],
-			now: new DateTimeImmutable()
-		)->toStoredJson();
+			], options: new \OCA\OpenRegister\Service\Credential\OAuth2TokenResponseOptions(now: new DateTimeImmutable()))->toStoredJson();
 	}
 
 	/**

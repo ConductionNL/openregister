@@ -140,9 +140,11 @@ class OAuth2AccountIdentity {
 	 */
 	private function withAccount(OAuth2TokenSet $set, array $identity, array $decoded): OAuth2TokenSet {
 		return $set->withAccount(
-			id: $this->fieldAt(payload: $decoded, path: (string)($identity['idField'] ?? '')),
-			handle: $this->fieldAt(payload: $decoded, path: (string)($identity['handleField'] ?? '')),
-			displayName: $this->fieldAt(payload: $decoded, path: (string)($identity['displayNameField'] ?? ''))
+			account: new ConnectedAccount(
+				id: $this->fieldAt(payload: $decoded, path: (string)($identity['idField'] ?? '')),
+				handle: $this->fieldAt(payload: $decoded, path: (string)($identity['handleField'] ?? '')),
+				displayName: $this->fieldAt(payload: $decoded, path: (string)($identity['displayNameField'] ?? ''))
+			)
 		);
 	}//end withAccount()
 

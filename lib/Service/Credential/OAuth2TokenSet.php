@@ -102,10 +102,8 @@ final class OAuth2TokenSet {
 	 * kept: most providers here rotate the access token only, and dropping the
 	 * refresh token would turn every such rotation into the last one.
 	 *
-	 * @param array<string, mixed> $response The decoded token response.
-	 * @param array<int, string> $requestedScopes Scopes to record when the response names none.
-	 * @param self|null $previous The set being replaced, for the refresh token and account fallbacks.
-	 * @param DateTimeImmutable|null $now The clock, injectable for tests.
+	 * @param array<string, mixed>       $response The decoded token response.
+	 * @param OAuth2TokenResponseOptions $options  The requested scopes, the set being replaced and the clock.
 	 *
 	 * @return self The new token set.
 	 *
@@ -113,9 +111,10 @@ final class OAuth2TokenSet {
 	 *
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
-	public static function fromTokenResponse(array $response, array $requestedScopes=[], ?self $previous=null, ?DateTimeImmutable $now=null): self {
+	public static function fromTokenResponse(array $response, OAuth2TokenResponseOptions $options=new OAuth2TokenResponseOptions()): self {
 		$accessToken = self::requiredAccessToken(response: $response);
-		$now = ($now ?? new DateTimeImmutable());
+		$now = ($options->now ?? new DateTimeImmutable());
+		$previous = $options->previous;
 
 		return new self(
 			tokens: new OAuth2Tokens(
@@ -125,7 +124,7 @@ final class OAuth2TokenSet {
 				expiresAt: self::expiryOf(expiresIn: ($response['expires_in'] ?? null), now: $now)
 			),
 			issuance: new OAuth2Issuance(
-				scopes: self::grantedScopes(response: $response, requestedScopes: $requestedScopes, previous: $previous),
+				scopes: self::grantedScopes(response: $response, options: $options),
 				account: self::accountOf(value: $previous?->issuance->account),
 				raw: $response,
 				obtainedAt: $now
@@ -136,20 +135,18 @@ final class OAuth2TokenSet {
 	/**
 	 * Return a copy carrying the provider account identity.
 	 *
-	 * @param string $id The provider's own identifier for the account.
-	 * @param string $handle The account handle as the provider spells it.
-	 * @param string $displayName The account's display name.
+	 * @param ConnectedAccount $account The account the provider named.
 	 *
 	 * @return self A new token set; this one is unchanged.
 	 *
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
 	 */
-	public function withAccount(string $id, string $handle, string $displayName): self {
+	public function withAccount(ConnectedAccount $account): self {
 		return new self(
 			tokens: $this->tokens,
 			issuance: new OAuth2Issuance(
 				scopes: $this->issuance->scopes,
-				account: ['id' => $id, 'handle' => $handle, 'displayName' => $displayName],
+				account: $account->toArray(),
 				raw: $this->issuance->raw,
 				obtainedAt: $this->issuance->obtainedAt
 			)
@@ -327,21 +324,20 @@ final class OAuth2TokenSet {
 	 * The scopes to record: granted, else requested, else the previous set's.
 	 *
 	 * @param array<string, mixed> $response The decoded token response.
-	 * @param array<int, string> $requestedScopes Scopes to record when the response names none.
-	 * @param self|null $previous The set being replaced.
+	 * @param OAuth2TokenResponseOptions $options The requested scopes and the set being replaced.
 	 *
 	 * @return array<int, string> The scopes.
 	 *
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
 	 */
-	private static function grantedScopes(array $response, array $requestedScopes, ?self $previous): array {
+	private static function grantedScopes(array $response, OAuth2TokenResponseOptions $options): array {
 		$scopes = self::stringList(value: ($response['scope'] ?? null));
-		if ($scopes === [] && $requestedScopes !== []) {
-			$scopes = array_values($requestedScopes);
+		if ($scopes === [] && $options->requestedScopes !== []) {
+			$scopes = array_values($options->requestedScopes);
 		}
 
-		if ($scopes === [] && $previous !== null) {
-			$scopes = $previous->issuance->scopes;
+		if ($scopes === [] && $options->previous !== null) {
+			$scopes = $options->previous->issuance->scopes;
 		}
 
 		return $scopes;

@@ -352,7 +352,8 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	private function rotate(OAuth2RefreshTarget $target, OAuth2TokenSet $current): OAuth2TokenSet {
 		$refreshToken = $this->refreshTokenOf(target: $target, current: $current);
 		$response = $this->redeemOrRelink(target: $target, refreshToken: $refreshToken);
-		$rotated = OAuth2TokenSet::fromTokenResponse(response: $response, requestedScopes: $current->getScopes(), previous: $current);
+		$options = new OAuth2TokenResponseOptions(requestedScopes: $current->getScopes(), previous: $current);
+		$rotated = OAuth2TokenSet::fromTokenResponse(response: $response, options: $options);
 		$this->persist(credentialId: $target->credentialId, scope: $target->scope, set: $rotated);
 
 		return $rotated;

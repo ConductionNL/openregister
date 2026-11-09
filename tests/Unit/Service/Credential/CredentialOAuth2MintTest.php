@@ -71,7 +71,7 @@ class CredentialOAuth2MintTest extends TestCase {
 				'expires_in' => 3600,
 				'scope' => 'read:accounts write:statuses',
 			]
-		)->withAccount(id: '42', handle: '@example@mastodon.example', displayName: 'Example');
+		)->withAccount(account: new \OCA\OpenRegister\Service\Credential\ConnectedAccount(id: '42', handle: '@example@mastodon.example', displayName: 'Example'));
 
 		$broker->mint(
 			name: 'Mastodon company account',
