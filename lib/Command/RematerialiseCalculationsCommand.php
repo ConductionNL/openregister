@@ -38,6 +38,7 @@ use OCA\OpenRegister\Command\Support\RematerialiseStorage;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
@@ -179,7 +180,7 @@ class RematerialiseCalculationsCommand extends Command {
 			return Command::FAILURE;
 		}
 
-		$run = new RematerialiseRun(register: $register, schema: $schema, output: $output);
+		$run = new RematerialiseRun(table: new RegisterSchema(register: $register, schema: $schema), output: $output);
 		$run->dryRun = (bool)$input->getOption('dry-run');
 		if ($run->calculations === []) {
 			$output->writeln('<comment>Schema declares no x-openregister-calculations — nothing to do.</comment>');
