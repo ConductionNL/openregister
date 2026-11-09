@@ -433,6 +433,35 @@ class ImportHandlerFlowTest extends TestCase {
 	}//end testImportFlowDoesNotFallBackForNonDeadEndRefusal()
 
 	/**
+	 * importFlow() logs a generic publish() failure and returns the flow without the dead-end fallback patch.
+	 */
+	public function testImportFlowLogsGenericPublishFailureWithoutFallback(): void {
+		$existing = new Flow();
+		$existing->setUuid('flow-uuid-1');
+		$existing->setOrganisation('org-1');
+		$existing->setNodes(['old']);
+		$existing->setLifecycleStatus(FlowVersion::STATUS_DRAFT);
+
+		$this->flowMapper->method('findByUuid')->willReturn($existing);
+		$this->flowVersionService->method('publish')->willThrowException(new \RuntimeException('deadlock'));
+
+		// Only the main persist; the dead-end fallback must not run for this failure.
+		$this->flowMapper->expects($this->once())->method('update')->willReturnArgument(0);
+		$this->logger->expects($this->once())->method('warning')
+			->with($this->stringContains('deadlock'));
+
+		$result = $this->invokeMethod($this->handler, 'importFlow', [
+			['uuid' => 'flow-uuid-1', 'nodes' => ['new']],
+			$this->configuration(),
+			null,
+			false,
+		]);
+
+		$this->assertSame($existing, $result);
+		$this->assertSame(FlowVersion::STATUS_DRAFT, $result->getLifecycleStatus());
+	}//end testImportFlowLogsGenericPublishFailureWithoutFallback()
+
+	/**
 	 * importFlow() leaves a new flow as a draft when no FlowVersionService was wired.
 	 */
 	public function testImportFlowWithoutFlowVersionServiceLeavesFlowUnpublished(): void {
