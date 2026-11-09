@@ -15,7 +15,7 @@ def git(clone, *args):
 
 
 def main(clone, head):
-    base = git(clone, 'rev-parse', 'origin/development').strip()
+    base = git(clone, 'rev-parse', 'origin/main').strip()
     fork = git(clone, 'merge-base', base, head).strip()
     status = {}
     for line in git(clone, 'diff', '-M', '--name-status', fork, head).splitlines():

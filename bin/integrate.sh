@@ -1,17 +1,17 @@
 #!/bin/bash
-# Cloud integrator for ConductionNL/openregister: one integration tree of real PR heads on fresh development,
+# Cloud integrator for ConductionNL/openregister: one integration tree of real PR heads on fresh main,
 # the full PHPUnit Unit suite in shards plus jest/build when the tree touches the frontend, then one GitHub merge
-# per PR into development, only while development and every head are exactly what was tested.
+# per PR into main, only while main and every head are exactly what was tested.
 # Port of ~/sig-lanes/shared/closeout/cloud-list.sh + ~/sig-lanes/batch/batch.sh + apply.sh.
 #
 #   integrate.sh prepare          clones (work dir, state), starts dependency install in the background
 #   integrate.sh lease            take the integrator lease (exit 1: someone else holds it, stop)
 #   integrate.sh select           classify open cloud/* PRs; writes candidates and the needs-review queue
-#   integrate.sh build            integration tree on fresh development (resolves use lines / map entries only)
+#   integrate.sh build            integration tree on fresh main (resolves use lines / map entries only)
 #   integrate.sh test             starts deps check + 4 shards (+ frontend) in the background, returns at once
 #   integrate.sh wait [SECS] [JOB] blocks up to SECS (default 170) for the test run; prints DONE or RUNNING
 #   integrate.sh verdict          GREEN / AUTOPARK / RED / NORESULT, recorded in the state branch
-#   integrate.sh merge            merges each PR of a GREEN tree; exit 5 when development or a head moved
+#   integrate.sh merge            merges each PR of a GREEN tree; exit 5 when main or a head moved
 #   integrate.sh finish           releases the lease
 # Exit codes: 0 ok, 1 nothing to do / lease held, 4 no result, 5 rebuild needed, 6 stop and report.
 set -o pipefail
@@ -78,7 +78,7 @@ phase_prepare() {
 		git -C "$g" config user.name >/dev/null || git -C "$g" config user.name "Claude"
 		git -C "$g" config user.email >/dev/null || git -C "$g" config user.email "noreply@anthropic.com"
 	done
-	git -C "$C" fetch -q origin development && git -C "$C" checkout -q -f -B int origin/development
+	git -C "$C" fetch -q origin main && git -C "$C" checkout -q -f -B int origin/main
 	bg deps composer_deps_entry
 	say "PREPARED work=$W composer install started in the background (integrate.sh wait deps)"
 }
@@ -94,7 +94,7 @@ needs_review() {
 	local n=$1 head=$2 title=$3 fork d
 	[ -n "$title" ] || return 0
 	case "$title" in "[access]"*) return 0;; esac
-	fork=$(git -C "$C" merge-base origin/development "$head" 2>/dev/null) || return 0
+	fork=$(git -C "$C" merge-base origin/main "$head" 2>/dev/null) || return 0
 	d=$(git -C "$C" diff "$fork" "$head" 2>/dev/null) || return 0
 	[ -n "$d" ] || return 0
 	grep -qE "$RISK_PATH" <<<"$d" && return 0
@@ -104,12 +104,12 @@ needs_review() {
 phase_select() {
 	need_state; st_sync
 	local prs refs q n head ref title v prev
-	prs=$(gh api "repos/$R/pulls?state=open&base=development&per_page=100" --paginate \
+	prs=$(gh api "repos/$R/pulls?state=open&base=main&per_page=100" --paginate \
 		-q '.[]|select(.head.ref|startswith("cloud/"))|select(.head.repo.full_name=="'"$R"'")|select(.draft|not)|[.number,.head.sha,.head.ref,.title]|@tsv' 2>&1) \
 		|| { say "SELECT-APIERR ${prs:0:120}"; exit 6; }
 	grep -qE $'^[0-9]+\t[0-9a-f]{40}\t' <<<"$prs" || { [ -z "$prs" ] && { say "SELECT-NONE no open cloud PRs"; : > "$W/cand.tsv"; exit 1; }; say "SELECT-APIERR ${prs:0:120}"; exit 6; }
 	refs=$(awk -F'\t' '{printf "pull/%s/head:refs/remotes/pr/%s ", $1, $1}' <<<"$prs")
-	git -C "$C" fetch -q origin development $refs || { say "SELECT-FETCHERR"; exit 6; }
+	git -C "$C" fetch -q origin main $refs || { say "SELECT-FETCHERR"; exit 6; }
 	: > "$W/cand.tsv"; q=$W/needs-review.tsv; printf '# pr\thead\tlast_approved\treason\n' > "$q"
 	while IFS=$'\t' read -r -u 3 n head ref title; do
 		grep -qE "^openregister#$n $head( |$)" "$ST/parked.txt" 2>/dev/null && continue
@@ -119,7 +119,7 @@ phase_select() {
 		if needs_review "$n" "$head" "$title"; then
 			prev=$(last_approved "$n" "$head")
 			if [ -n "$prev" ] && bash "$BIN/delta.sh" "$C" "$n" "$prev" "$head" >/dev/null 2>&1; then
-				st_append verdicts.txt "$n $head APPROVE clean development merge on top of $prev"
+				st_append verdicts.txt "$n $head APPROVE clean main merge on top of $prev"
 				say "REAPPROVED #$n ${head:0:8} (dev merge only on top of ${prev:0:8})"
 				printf '%s\t%s\t%s\t1\n' "$n" "$head" "$ref" >> "$W/cand.tsv"
 			else
@@ -138,14 +138,14 @@ phase_select() {
 	[ -s "$W/cand.tsv" ] || exit 1
 }
 
-# Merge development into a PR head whose conflicts are only use lines / map entries, and push it (fast-forward).
+# Merge main into a PR head whose conflicts are only use lines / map entries, and push it (fast-forward).
 resolve_on_head() {
 	local n=$1 head=$2 ref=$3 review=$4 wt=$W/res files new
 	git -C "$C" worktree remove -f "$wt" >/dev/null 2>&1; rm -rf "$wt"
 	git -C "$C" worktree add -q -f --detach "$wt" "$head" || return 1
 	(
 		cd "$wt" || exit 1
-		git -c merge.conflictStyle=diff3 merge -q --no-ff --no-commit origin/development >/dev/null 2>&1 && { git merge --abort; exit 1; }
+		git -c merge.conflictStyle=diff3 merge -q --no-ff --no-commit origin/main >/dev/null 2>&1 && { git merge --abort; exit 1; }
 		files=$(git diff --name-only --diff-filter=U)
 		[ -n "$files" ] || { git merge --abort; exit 1; }
 		# shellcheck disable=SC2086
@@ -153,14 +153,14 @@ resolve_on_head() {
 		for f in $files; do case "$f" in *.php) php -l "$f" >/dev/null || { git merge --abort; exit 1; };; esac; done
 		git add -- $files
 		[ -z "$(git diff --name-only --diff-filter=U)" ] || { git merge --abort; exit 1; }
-		git commit -q -m "Merge branch 'development' into $ref" -m "Conflicts resolved in use lines and map entries only: $(echo $files | tr ' ' ',')" -m "$TRAILER" || exit 1
+		git commit -q -m "Merge branch 'main' into $ref" -m "Conflicts resolved in use lines and map entries only: $(echo $files | tr ' ' ',')" -m "$TRAILER" || exit 1
 		git push -q origin "HEAD:refs/heads/$ref" || exit 1
 		echo "$files" > "$RUN/resolved-$n.txt"
 	) >&2 || { git -C "$C" worktree remove -f "$wt" >/dev/null 2>&1; return 1; }
 	new=$(git -C "$wt" rev-parse HEAD)
 	git -C "$C" worktree remove -f "$wt" >/dev/null 2>&1
 	if [ "$review" = 1 ]; then
-		st_append verdicts.txt "$n $new APPROVE integrator: development merge on top of $head, conflicts only in use lines or map entries of $(tr '\n' ',' < "$RUN/resolved-$n.txt")"
+		st_append verdicts.txt "$n $new APPROVE integrator: main merge on top of $head, conflicts only in use lines or map entries of $(tr '\n' ',' < "$RUN/resolved-$n.txt")"
 	fi
 	st_log "RESOLVED #$n ${head:0:8} -> ${new:0:8} use/map lines only"
 	echo "$new"
@@ -171,8 +171,8 @@ phase_build() {
 	[ -s "$W/cand.tsv" ] || { say "BUILD-NONE run select first"; exit 1; }
 	cd "$C" || exit 6
 	rm -f "$RUN/verdict" "$W/tree.env"
-	git merge --abort 2>/dev/null; git fetch -q origin development
-	git checkout -q -f -B int origin/development && git clean -fdq
+	git merge --abort 2>/dev/null; git fetch -q origin main
+	git checkout -q -f -B int origin/main && git clean -fdq
 	local d0 n head ref review now new t inc=0
 	d0=$(git rev-parse HEAD)
 	: > "$W/tree.tsv"; : > "$W/included.txt"
@@ -185,7 +185,7 @@ phase_build() {
 				say "BUILD-RESOLVED #$n ${head:0:8} -> ${new:0:8}"; head=$new
 				git fetch -q origin "pull/$n/head" 2>/dev/null
 			else
-				say "BUILD-CONFLICT-DEV #$n (conflict with development outside use lines / map entries)"; st_log "CONFLICT-DEV #$n ${head:0:8}"; continue
+				say "BUILD-CONFLICT-DEV #$n (conflict with main outside use lines / map entries)"; st_log "CONFLICT-DEV #$n ${head:0:8}"; continue
 			fi
 		fi
 		if git merge -q --no-ff --no-edit -m "int: merge #$n" "$head" >/dev/null 2>&1; then
@@ -204,7 +204,7 @@ phase_build() {
 	fi
 	printf 'D0=%s\nT=%s\nN=%s\n' "$d0" "$(git rev-parse HEAD)" "$inc" > "$W/tree.env"
 	lease_renew "$LEASE" 240 || { say "LEASE-LOST"; exit 6; }
-	say "BUILT tree $(git rev-parse --short HEAD) on development ${d0:0:10}: $inc PRs"
+	say "BUILT tree $(git rev-parse --short HEAD) on main ${d0:0:10}: $inc PRs"
 }
 
 suite() {
@@ -303,8 +303,8 @@ phase_merge() {
 	st_sync
 	local expected=$D0 n head ref review t tree dev now got m mc p1 p2 msg count=0
 	while IFS=$'\t' read -r -u 3 n head ref review t tree; do
-		dev=$(lsr refs/heads/development)
-		[ "$dev" = "$expected" ] || { say "DEV-MOVED development=${dev:0:10} expected=${expected:0:10}; rebuild"; st_log "DEV-MOVED before #$n after $count merges; rebuild"; exit 5; }
+		dev=$(lsr refs/heads/main)
+		[ "$dev" = "$expected" ] || { say "DEV-MOVED main=${dev:0:10} expected=${expected:0:10}; rebuild"; st_log "DEV-MOVED before #$n after $count merges; rebuild"; exit 5; }
 		now=$(lsr "refs/pull/$n/head")
 		[ "$now" = "$head" ] || { say "HEAD-MOVED #$n; rebuild"; st_log "HEAD-MOVED #$n before merge, after $count merges; rebuild"; exit 5; }
 		grep -qE "^openregister#$n $head( |$)" "$ST/parked.txt" && { say "PARKED-MEANWHILE #$n; rebuild"; exit 5; }
@@ -322,7 +322,7 @@ phase_merge() {
 		done
 		[ "$m" = true ] || { say "MERGE-FAILED #$n: ${msg:0:160}"; st_log "MERGE-FAILED #$n: ${msg:0:160}"; exit 6; }
 		mc=$(gh api "repos/$R/pulls/$n" -q .merge_commit_sha)
-		git -C "$C" fetch -q origin development
+		git -C "$C" fetch -q origin main
 		p1=$(git -C "$C" rev-parse "$mc^1" 2>/dev/null); p2=$(git -C "$C" rev-parse "$mc^2" 2>/dev/null)
 		if [ "$p1" != "$expected" ] || [ "$p2" != "$head" ] || [ "$(git -C "$C" rev-parse "$mc^{tree}")" != "$tree" ]; then
 			say "ALERT-POSTCHECK #$n merge commit ${mc:0:10} is not the tested tree; stop"; st_log "ALERT-POSTCHECK #$n merged as ${mc:0:10}, parents or tree differ from the tested tree; stopped"
@@ -331,9 +331,9 @@ phase_merge() {
 		st_append merged.txt "$n $head $mc $tree $(date -u +%FT%TZ)"
 		expected=$mc; count=$((count + 1)); say "MERGED #$n ${head:0:8} as ${mc:0:10}"
 	done 3< "$W/tree.tsv"
-	st_log "MERGED-TREE ${T:0:10}: $count PRs, development now ${expected:0:10} = tested tree"
+	st_log "MERGED-TREE ${T:0:10}: $count PRs, main now ${expected:0:10} = tested tree"
 	rm -f "$RUN/verdict"
-	say "MERGED-TREE $count PRs; development ${expected:0:10} equals the tested tree"
+	say "MERGED-TREE $count PRs; main ${expected:0:10} equals the tested tree"
 }
 
 phase_finish() { need_state; lease_release "$LEASE"; say "LEASE released"; }

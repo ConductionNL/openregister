@@ -176,7 +176,7 @@ def implicate(clone, included, logs, front_log):
     for line in open(included):
         parts = line.split()
         if len(parts) >= 2:
-            base = subprocess.run(['git', '-C', clone, 'merge-base', 'origin/development', parts[1]],
+            base = subprocess.run(['git', '-C', clone, 'merge-base', 'origin/main', parts[1]],
                                   capture_output=True, text=True).stdout.strip()
             changed = subprocess.run(['git', '-C', clone, 'diff', '--name-only', base, parts[1]],
                                      capture_output=True, text=True).stdout.split()
