@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCA\OpenRegister\Mcp\Tool\RegisterTool;
 use OCA\OpenRegister\Mcp\Tool\SchemaTool;
 use OCA\OpenRegister\Service\RegisterServiceInterface;
@@ -142,7 +143,7 @@ class ToolCommandBindingTest extends TestCase
             }
         );
 
-        return new SchemaTool($this->session(), $this->createMock(LoggerInterface::class), $mapper);
+        return new SchemaTool(new ToolCallTrail($this->session(), $this->createMock(LoggerInterface::class)), $mapper);
     }
 
     private function registerTool(): RegisterTool
@@ -161,7 +162,7 @@ class ToolCommandBindingTest extends TestCase
             }
         );
 
-        return new RegisterTool($this->session(), $this->createMock(LoggerInterface::class), $service);
+        return new RegisterTool(new ToolCallTrail($this->session(), $this->createMock(LoggerInterface::class)), $service);
     }
 
     private function objectsTool(): ObjectsTool
@@ -174,6 +175,6 @@ class ToolCommandBindingTest extends TestCase
             }
         );
 
-        return new ObjectsTool($this->session(), $this->createMock(LoggerInterface::class), $service);
+        return new ObjectsTool(new ToolCallTrail($this->session(), $this->createMock(LoggerInterface::class)), $service);
     }
 }

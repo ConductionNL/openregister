@@ -31,6 +31,7 @@ use OCA\OpenRegister\Mcp\Tool\UpdateApplicationCommand;
 use OCA\OpenRegister\Mcp\Tool\UpdateAgentCommand;
 use OCA\OpenRegister\Mcp\Tool\CreateApplicationCommand;
 use OCA\OpenRegister\Mcp\Tool\CreateAgentCommand;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
 use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
 use OCA\OpenRegister\Mcp\Tool\RegisterTool;
@@ -90,7 +91,7 @@ class CrudToolsCharacterisationTest extends TestCase
             }
         );
 
-        return new AgentTool($mapper, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+        return new AgentTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper);
     }
 
     public function testCreateAgentSetsOnlyNonEmptyFieldsAndTheContextOwner(): void
@@ -192,7 +193,7 @@ class CrudToolsCharacterisationTest extends TestCase
             }
         );
 
-        return new ApplicationTool($mapper, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+        return new ApplicationTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper);
     }
 
     public function testCreateApplication(): void
@@ -259,7 +260,7 @@ class CrudToolsCharacterisationTest extends TestCase
                 return $this->storedSchema();
             }
         );
-        $tool = new SchemaTool($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class), $mapper);
+        $tool = new SchemaTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper);
 
         $result = $tool->createSchema(new CreateSchemaCommand('T', ['p' => []], 'D', ['p']));
         $tool->createSchema(new CreateSchemaCommand('T', ['p' => []]));
@@ -293,7 +294,7 @@ class CrudToolsCharacterisationTest extends TestCase
                 return [$this->storedSchema()];
             }
         );
-        $tool = new SchemaTool($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class), $mapper);
+        $tool = new SchemaTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper);
 
         $result = $tool->listSchemas(new ListSchemasQuery(5, 10, 'reg-1'));
         $tool->listSchemas(new ListSchemasQuery());
@@ -349,7 +350,7 @@ class CrudToolsCharacterisationTest extends TestCase
             );
         }
 
-        return new SchemaTool($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class), $mapper, $versioning);
+        return new SchemaTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper, $versioning);
     }
 
     public function testUpdateSchemaWithBreakingChangeBumpsAndRecords(): void
@@ -429,7 +430,7 @@ class CrudToolsCharacterisationTest extends TestCase
             }
         );
 
-        return new RegisterTool($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class), $service);
+        return new RegisterTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $service);
     }
 
     public function testCreateAndUpdateRegister(): void
@@ -495,7 +496,7 @@ class CrudToolsCharacterisationTest extends TestCase
             }
         );
 
-        return new ObjectsTool($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class), $service);
+        return new ObjectsTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $service);
     }
 
     public function testSearchObjectsBuildsFiltersFromTheGivenCriteria(): void

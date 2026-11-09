@@ -16,6 +16,7 @@ use OCA\OpenRegister\Db\ApplicationMapperInterface;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Tool\AgentTool;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -123,7 +124,7 @@ class ToolOperationBindingTest extends TestCase
             }
         );
 
-        return new AgentTool($mapper, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+        return new AgentTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper);
     }
 
     private function applicationTool(): ApplicationTool
@@ -144,6 +145,6 @@ class ToolOperationBindingTest extends TestCase
             }
         );
 
-        return new ApplicationTool($mapper, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+        return new ApplicationTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper);
     }
 }

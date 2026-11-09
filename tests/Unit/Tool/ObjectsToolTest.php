@@ -8,6 +8,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
 use OCA\OpenRegister\Mcp\Tool\CreateObjectCommand;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -27,8 +28,7 @@ class ObjectsToolTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->tool = new ObjectsTool(
-			$this->userSession,
-			$this->logger,
+			new ToolCallTrail($this->userSession, $this->logger),
 			$this->objectService
 		);
 
@@ -105,7 +105,7 @@ class ObjectsToolTest extends TestCase {
 		$noUserSession = $this->createMock(IUserSession::class);
 		$noUserSession->method('getUser')->willReturn(null);
 
-		$tool = new ObjectsTool($noUserSession, $this->logger, $this->objectService);
+		$tool = new ObjectsTool(new ToolCallTrail($noUserSession, $this->logger), $this->objectService);
 
 		$result = $tool->executeFunction('search_objects', []);
 		$this->assertFalse($result['success']);
