@@ -34,7 +34,7 @@ use OCA\OpenRegister\AppHost\SchemaScopeLookups;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
+use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface;
 use OCP\IUser;
 use OCP\Search\IProvider;
 use OCP\Search\ISearchQuery;
@@ -103,7 +103,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 * Constructor for AbstractSchemaSearchProvider.
 	 *
 	 * @param ObjectOperationsInterface $objectService The object service for search operations
-	 * @param ObjectSearchResultFormatter $resultFormatter Shared result-formatting service
+	 * @param ObjectSearchResultFormatterInterface $resultFormatter Shared result-formatting service
 	 * @param SchemaScopeLookups $lookups The register and schema mappers and the logger
 	 *
 	 * @return void
@@ -112,7 +112,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly ObjectSearchResultFormatter $resultFormatter,
+		private readonly ObjectSearchResultFormatterInterface $resultFormatter,
 		SchemaScopeLookups $lookups,
 	) {
 		$this->registerMapper = $lookups->registerMapper;
