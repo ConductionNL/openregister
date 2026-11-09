@@ -30,6 +30,11 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\TasksControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\TaskInboxAudience;
+use OCA\OpenRegister\Db\TaskInboxDueWindow;
+use OCA\OpenRegister\Db\TaskInboxFilter;
+use OCA\OpenRegister\Db\TaskInboxOrder;
+use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskValidationException;
@@ -249,15 +254,12 @@ class TasksController extends Controller {
 		$sort = $filter['sort'];
 
 		return new TaskInboxCriteria(
-			uid: $uid,
-			groupIds: $this->groupIds(),
-			isAdmin: $this->isAdmin(uid: $uid),
-			scope: $filter['scope'],
-			states: $filter['states'],
-			isTerminal: $this->requestedTerminal(),
-			overdueAt: $filter['overdueAt'],
-			sort: ltrim($sort, '-'),
-			sortDescending: str_starts_with($sort, '-'),
+			audience: new TaskInboxAudience(uid: $uid, groupIds: $this->groupIds(), isAdmin: $this->isAdmin(uid: $uid), scope: $filter['scope']),
+			selection: new TaskInboxSelection(
+				filter: new TaskInboxFilter(states: $filter['states'], isTerminal: $this->requestedTerminal()),
+				window: new TaskInboxDueWindow(overdueAt: $filter['overdueAt']),
+				order: new TaskInboxOrder(sort: ltrim($sort, '-'), sortDescending: str_starts_with($sort, '-'))
+			),
 		);
 	}//end criteria()
 
