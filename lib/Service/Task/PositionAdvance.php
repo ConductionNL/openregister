@@ -50,6 +50,10 @@ final class PositionAdvance {
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	public function reason(): string {
-		return sprintf('Position %d approved; position %d is now enabled.', (int)$this->completed->getSequencePosition(), (int)$this->next->getSequencePosition());
+		return sprintf(
+			'Position %d approved; position %d is now enabled.',
+			(int)$this->completed->getSequencePosition(),
+			(int)$this->next->getSequencePosition()
+		);
 	}//end reason()
 }//end class

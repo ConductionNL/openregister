@@ -95,7 +95,13 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 		$task = $this->tasks->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: $actor), uuid: $uuid);
 		$this->submit(submission: new TaskFormSubmission(task: $task, data: $data, actor: $actor));
 
-		return $this->tasks->complete(uuid: $uuid, outcome: $answer->outcome, resultText: $answer->resultText, comment: $answer->comment, actor: $actor);
+		return $this->tasks->complete(
+			uuid: $uuid,
+			outcome: $answer->outcome,
+			resultText: $answer->resultText,
+			comment: $answer->comment,
+			actor: $actor
+		);
 	}//end complete()
 
 	/**
@@ -119,7 +125,8 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 		} catch (TaskFormRefusedException | TaskSubjectWriteRefusedException $refused) {
 			// A refused attempt, distinguishable from a completion: the task
 			// keeps its pre-call state and the audit says somebody tried.
-			$this->tasks->recordRefusedCompletion(task: $task, attempt: new TaskAct(verb: 'complete', actor: $submission->actor, reason: $refused->getMessage()));
+			$attempt = new TaskAct(verb: 'complete', actor: $submission->actor, reason: $refused->getMessage());
+			$this->tasks->recordRefusedCompletion(task: $task, attempt: $attempt);
 
 			throw $refused;
 		}
