@@ -2013,7 +2013,12 @@ class ObjectsController extends Controller {
 				$responseData['facets'] = $facets;
 			}
 		} catch (\Exception $e) {
-			$responseData['@self']['facet_error'] = $e->getMessage();
+			// The driver text can carry SQL and table names: log it, answer a fixed code.
+			$this->logger?->warning(
+				message: '[ObjectsController] Facets could not be computed',
+				context: ['exception' => $e]
+			);
+			$responseData['@self']['facet_error'] = 'facets-unavailable';
 		}
 
 		return $responseData;
