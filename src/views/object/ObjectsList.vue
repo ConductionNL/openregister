@@ -196,6 +196,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import { liveCollectionMethods } from '../../composables/liveCollectionSubscription.js'
 
 export default {
 	name: 'ObjectsList',
@@ -262,16 +263,7 @@ export default {
 		 * @spec exclude list-view watcher; reloads the object list on page change (object-lifecycle contract)
 		 */
 		currentPage(newVal) {
-			this.loading = true
-			objectStore
-				.refreshObjectList({
-					limit: this.limit,
-					page: newVal,
-					search: this.search,
-				})
-				.finally(() => {
-					this.loading = false
-				})
+			this.reloadList(newVal, this.search)
 		},
 
 		/**
@@ -281,16 +273,7 @@ export default {
 		search(newVal) {
 			clearTimeout(this.searchTimeout)
 			this.searchTimeout = setTimeout(() => {
-				this.loading = true
-				objectStore
-					.refreshObjectList({
-						limit: this.limit,
-						page: this.currentPage,
-						search: newVal,
-					})
-					.finally(() => {
-						this.loading = false
-					})
+				this.reloadList(this.currentPage, newVal)
 			}, 700)
 		},
 	},
@@ -312,16 +295,7 @@ export default {
 			this.loading = false
 			return
 		}
-		this.loading = true
-		objectStore
-			.refreshObjectList({
-				limit: this.limit,
-				page: this.currentPage,
-				search: this.search,
-			})
-			.finally(() => {
-				this.loading = false
-			})
+		this.reloadList(this.currentPage, this.search)
 	},
 
 	/**
@@ -335,144 +309,31 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Subscribe to live updates for the currently scoped register+schema
-		 * collection (adopt-live-updates-ui). Events are refetch hints only:
-		 * the liveUpdatesPlugin re-runs fetchCollection with the last-used
-		 * params, so the rendered collection state refreshes reactively.
-		 * Idempotent per type; releases the previous subscription when the
-		 * scope changes. Uses notify_push when available, visibility-gated
-		 * polling otherwise.
-		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 * @return {Promise<void>}
-		 */
-		async syncLiveSubscription() {
-			const type = objectStore.currentType
-			if (typeof objectStore.subscribe !== 'function') {
-				return
-			}
-			if (!type) {
-				this.releaseLiveSubscription()
-				return
-			}
-			if (this.isLiveScope(type)) {
-				return
-			}
-			this.releaseLiveSubscription()
-			try {
-				await this.subscribeLive(type)
-			} catch (e) {
-				this.liveSubscriptionFailed(type, e)
-			}
-		},
+		...liveCollectionMethods({
+			tag: '[ObjectsList]',
+			currentType: () => objectStore.currentType,
+		}),
 
 		/**
-		 * Reset the live state after a subscribe that threw.
+		 * Refetch the object list with the current limit, showing the loader
+		 * while it runs.
 		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 * @param {string} type The collection type
-		 * @param {Error} e What was thrown
+		 * @spec exclude list-view plumbing; reloads the object list (object-lifecycle contract)
+		 * @param {number} page The page to load
+		 * @param {string} search The search term
 		 * @return {void}
 		 */
-		liveSubscriptionFailed(type, e) {
-			this.clearLivePending(type)
-			this.liveHandle = null
-			this.liveType = ''
-			console.warn('[ObjectsList] live subscription failed:', e?.message ?? e)
-		},
-
-		/**
-		 * Whether the live subscription already covers this type, either
-		 * subscribed or still in flight. Re-subscribing an in-flight scope
-		 * would leak the first handle.
-		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 * @param {string} type The collection type
-		 * @return {boolean} True when nothing needs to change
-		 */
-		isLiveScope(type) {
-			return (
-				(this.liveHandle && this.liveType === type)
-				|| this.livePendingType === type
-			)
-		},
-
-		/**
-		 * Register the collection type with the store when it is not known
-		 * yet, so the subscription does not depend on refreshObjectList timing.
-		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 * @param {string} type The collection type
-		 * @return {boolean} False when the register or schema is not in scope
-		 */
-		ensureLiveObjectType(type) {
-			if (objectStore.objectTypes.includes(type)) {
-				return true
-			}
-			const registerId = registerStore.registerItem?.id
-			const schemaId = schemaStore.schemaItem?.id
-			if (!registerId || !schemaId) {
-				return false
-			}
-			objectStore.registerObjectType(type, schemaId, registerId)
-			return true
-		},
-
-		/**
-		 * Subscribe to the collection type and keep the handle, unless the
-		 * type cannot be registered, or the subscription was released while it
-		 * was in flight: then the stale handle is dropped instead of leaked.
-		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 * @param {string} type The collection type
-		 * @return {Promise<void>}
-		 */
-		async subscribeLive(type) {
-			if (!this.ensureLiveObjectType(type)) {
-				return
-			}
-			const epoch = this.liveEpoch
-			this.livePendingType = type
-			this.liveType = type
-			const handle = await objectStore.subscribe(type)
-			this.clearLivePending(type)
-			if (this.liveEpoch !== epoch) {
-				objectStore.unsubscribe(handle)
-				return
-			}
-			this.liveHandle = handle
-		},
-
-		/**
-		 * Clear the in-flight marker when it still belongs to this type.
-		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 * @param {string} type The collection type
-		 * @return {void}
-		 */
-		clearLivePending(type) {
-			if (this.livePendingType === type) {
-				this.livePendingType = ''
-			}
-		},
-
-		/**
-		 * Release the current live collection subscription, if any, and
-		 * invalidate any in-flight subscribe (its resolution unsubscribes
-		 * itself via the epoch check).
-		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 * @return {void}
-		 */
-		releaseLiveSubscription() {
-			this.liveEpoch += 1
-			this.livePendingType = ''
-			if (this.liveHandle && typeof objectStore.unsubscribe === 'function') {
-				objectStore.unsubscribe(this.liveHandle)
-			}
-			this.liveHandle = null
-			this.liveType = ''
+		reloadList(page, search) {
+			this.loading = true
+			objectStore
+				.refreshObjectList({
+					limit: this.limit,
+					page,
+					search,
+				})
+				.finally(() => {
+					this.loading = false
+				})
 		},
 
 		/**
@@ -494,16 +355,7 @@ export default {
 				this.currentPage = 1
 				return
 			}
-			this.loading = true
-			objectStore
-				.refreshObjectList({
-					limit: this.limit,
-					page: 1,
-					search: this.search,
-				})
-				.finally(() => {
-					this.loading = false
-				})
+			this.reloadList(1, this.search)
 		},
 
 		/**

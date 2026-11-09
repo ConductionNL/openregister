@@ -165,6 +165,7 @@ import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import DashboardKpiCard from './DashboardKpiCard.vue'
 import KpiRangeChip from './KpiRangeChip.vue'
+import { liveCollectionMethods } from '../../composables/liveCollectionSubscription.js'
 import {
 	chartRows,
 	dashboardWidgets,
@@ -184,23 +185,6 @@ import { rangeFor, storedRange, storeRange } from './kpiRange.js'
  * debounce the final state after a burst would be missed.
  */
 const LIVE_REFETCH_DEBOUNCE_MS = 750
-
-/**
- * Register a collection type with the package store for the selected
- * register and schema.
- *
- * @param {string} type The collection type
- * @return {boolean} Whether a register and schema were selected
- */
-function registerLiveType(type) {
-	const registerId = registerStore.registerItem?.id
-	const schemaId = schemaStore.schemaItem?.id
-	if (!registerId || !schemaId) {
-		return false
-	}
-	objectStore.registerObjectType(type, schemaId, registerId)
-	return true
-}
 
 export default {
 	name: 'DashboardIndex',
@@ -489,141 +473,22 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Subscribe to live updates for the register+schema collection the
-		 * dashboard is scoped to via the sidebar filter
-		 * (dashboard-live-updates). Reuses the package object store's
-		 * liveUpdatesPlugin — notify_push when available, visibility-gated
-		 * polling otherwise. Events are refetch hints only: the plugin
-		 * refreshes the object collection cache (kept warm by the sidebar's
-		 * own object search) and this view's liveLastEventAt watcher
-		 * debounce-refetches the dashboard aggregates. Idempotent per type;
-		 * releases the previous subscription when the scope changes. No-op
-		 * while the dashboard is unscoped — the or-collection event dialect
-		 * has no wildcard, so "all registers" cannot subscribe.
-		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 * @return {Promise<void>}
-		 */
-		async syncLiveSubscription() {
-			if (typeof objectStore.subscribe !== 'function') {
-				return
-			}
-			const type = this.liveCollectionType
-			if (!type) {
-				this.releaseLiveSubscription()
-				return
-			}
-			if (!this.isLiveFor(type)) {
-				await this.replaceLive(type)
-			}
-		},
-
-		/**
-		 * Drop the current subscription and follow a new scope.
-		 *
-		 * @param {string} type The collection type
-		 * @return {Promise<void>}
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 */
-		async replaceLive(type) {
-			this.releaseLiveSubscription()
-			try {
-				await this.subscribeLive(type)
-			} catch (e) {
-				this.liveFailed(type, e)
-			}
-		},
-
-		/**
-		 * Whether this scope is already followed, or a subscribe for it is in
-		 * flight (re-subscribing would leak the first handle).
-		 *
-		 * @param {string} type The collection type
-		 * @return {boolean} Whether to leave the subscription as it is
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 */
-		isLiveFor(type) {
-			return (
-				Boolean(this.liveHandle && this.liveType === type)
-				|| this.livePendingType === type
-			)
-		},
-
-		/**
-		 * Subscribe to the collection. The type is registered here when the
-		 * sidebar has not done so yet; without a selected register and schema
-		 * nothing subscribes. A subscription released while it was awaited is
-		 * dropped.
-		 *
-		 * @param {string} type The collection type
-		 * @return {Promise<void>}
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 */
-		async subscribeLive(type) {
-			if (!objectStore.objectTypes.includes(type) && !registerLiveType(type)) {
-				return
-			}
-			const epoch = this.liveEpoch
-			this.livePendingType = type
-			this.liveType = type
-			const handle = await objectStore.subscribe(type)
-			this.clearLivePending(type)
-			if (this.liveEpoch !== epoch) {
-				objectStore.unsubscribe(handle)
-				return
-			}
-			this.liveHandle = handle
-		},
-
-		/**
-		 * Forget the pending subscribe for a type, unless a newer one replaced it.
-		 *
-		 * @param {string} type The collection type
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 */
-		clearLivePending(type) {
-			if (this.livePendingType === type) {
-				this.livePendingType = ''
-			}
-		},
-
-		/**
-		 * Reset the live state after a failed subscribe.
-		 *
-		 * @param {string} type The collection type
-		 * @param {*} e The failure
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 */
-		liveFailed(type, e) {
-			this.clearLivePending(type)
-			this.liveHandle = null
-			this.liveType = ''
-			console.warn(
-				'[DashboardIndex] live subscription failed:',
-				e?.message ?? e,
-			)
-		},
-
-		/**
-		 * Release the current live collection subscription, if any, cancel a
-		 * pending debounced refetch, and invalidate any in-flight subscribe
-		 * (its resolution unsubscribes itself via the epoch check).
-		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 * @return {void}
-		 */
-		releaseLiveSubscription() {
-			this.liveEpoch += 1
-			this.livePendingType = ''
-			clearTimeout(this.liveRefetchTimer)
-			this.liveRefetchTimer = null
-			if (this.liveHandle && typeof objectStore.unsubscribe === 'function') {
-				objectStore.unsubscribe(this.liveHandle)
-			}
-			this.liveHandle = null
-			this.liveType = ''
-		},
+		// Live subscription of the register+schema collection the dashboard
+		// is scoped to via the sidebar filter (dashboard-live-updates). The
+		// plugin refreshes the object collection cache (kept warm by the
+		// sidebar's own object search) and this view's liveLastEventAt watcher
+		// debounce-refetches the dashboard aggregates. No-op while the
+		// dashboard is unscoped: the or-collection event dialect has no
+		// wildcard, so "all registers" cannot subscribe. A release also
+		// cancels a pending debounced refetch.
+		...liveCollectionMethods({
+			tag: '[DashboardIndex]',
+			currentType: (vm) => vm.liveCollectionType,
+			onRelease: (vm) => {
+				clearTimeout(vm.liveRefetchTimer)
+				vm.liveRefetchTimer = null
+			},
+		}),
 
 		/**
 		 * Coalesce a burst of live collection events (e.g. a bulk import
