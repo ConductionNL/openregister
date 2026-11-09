@@ -106,18 +106,12 @@ class TransitionEngineSlugContractTest extends TestCase {
 			);
 
 		return new TransitionEngine(
-			$this->objectService,
-			$this->schemaMapper,
-			$this->dispatcher,
-			$this->userSession,
-			$this->permission,
-			$this->registerMapper,
-			$this->appConfig,
-			$this->createMock(\Psr\Log\LoggerInterface::class),
-			new \OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary(
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->registerMapper),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->dispatcher, new \OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary(
 				new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()
-			),
-			$this->createMock(\OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry::class)
+			), $this->createMock(\OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->userSession, $this->appConfig, $this->createMock(\Psr\Log\LoggerInterface::class)),
+			$this->permission
 		);
 
 	}//end engine()
