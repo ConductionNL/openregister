@@ -75,6 +75,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
@@ -700,8 +701,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// degraded table still lacks, so the read predicate does not name a
 		// `_status` column the table could not be given.
 		$this->metadataColumnHealer = new MagicMetadataColumnHealer(
-			db: $this->db,
-			logger: $this->logger,
+			sql: $this->tableSql(),
 			magicMapper: $this,
 			cache: $this->createMetadataColumnCache()
 		);
@@ -718,8 +718,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		);
 
 		$this->organizationHandler = new MagicOrganizationHandler(
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			identity: new MagicMapperIdentity(userSession: $this->userSession, groupManager: $this->groupManager, userManager: $this->userManager),
 			appConfig: $this->appConfig,
 			container: $this->container,
 			logger: $this->logger
@@ -776,9 +775,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function initializeTableHandler(): void {
 		$this->tableHandler = new MagicTableHandler(
-			db: $this->db,
+			sql: $this->tableSql(),
 			appConfig: $this->appConfig,
-			logger: $this->logger,
 			magicMapper: $this,
 			metadataColumns: $this->metadataColumnHealer
 		);
@@ -810,11 +808,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function initializeAnalysisHandlers(): void {
 		$this->bulkHandler = new MagicBulkHandler(
-			db: $this->db,
-			logger: $this->logger,
+			sql: $this->tableSql(),
 			eventDispatcher: $this->eventDispatcher,
-			dateTimeNormalizer: $this->container->get(DateTimeNormalizerInterface::class),
-			config: $this->config
+			dateTimeNormalizer: $this->container->get(DateTimeNormalizerInterface::class)
 		);
 
 		$this->initializeFacetHandler();
@@ -848,10 +844,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function initializeStatisticsHandler(): void {
 		$this->statisticsHandler = new MagicStatisticsHandler(
-			db: $this->db,
-			logger: $this->logger,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			sql: $this->tableSql(),
+			catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this),
 			dateTimeNormalizer: $this->container->get(DateTimeNormalizerInterface::class),
 			schemaTypeConverter: $this->container->get(SchemaTypeConverterInterface::class)
 		);
@@ -877,6 +871,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 		);
 	}//end wireStatisticsCountCallback()
+
+	/**
+	 * What the magic-table handlers need to run hand-built SQL.
+	 *
+	 * @return MagicTableSql The connection, the system config and the logger.
+	 */
+	private function tableSql(): MagicTableSql {
+		return new MagicTableSql(db: $this->db, config: $this->config, logger: $this->logger);
+	}//end tableSql()
 
 	/**
 	 * The distributed cache the metadata-column healer shares across requests.
@@ -1007,8 +1010,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	public function getMetadataColumnHealer(): MagicMetadataColumnHealer {
 		if ($this->metadataColumnHealer === null) {
 			$this->metadataColumnHealer = new MagicMetadataColumnHealer(
-				db: $this->db,
-				logger: $this->logger,
+				sql: $this->tableSql(),
 				magicMapper: $this,
 				cache: $this->createMetadataColumnCache()
 			);
@@ -2938,7 +2940,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return void
 	 */
 	private function createTable(string $tableName, array $columns): void {
-		(new MagicTableCreator(db: $this->db, config: $this->config, logger: $this->logger))->create(tableName: $tableName, columns: $columns);
+		(new MagicTableCreator(sql: $this->tableSql()))->create(tableName: $tableName, columns: $columns);
 	}//end createTable()
 
 	/**
@@ -3657,7 +3659,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private function tableAlterer(): MagicTableAlterer {
 		$sizes = new MagicNumberColumnSizes(db: $this->db, tablePrefix: $this->getTablePrefix());
 
-		return new MagicTableAlterer(db: $this->db, logger: $this->logger, sizes: $sizes);
+		return new MagicTableAlterer(sql: $this->tableSql(), sizes: $sizes);
 	}//end tableAlterer()
 
 	/**

@@ -20,6 +20,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use OCA\OpenRegister\BackgroundJob\BlobMigrationJob;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -149,10 +153,8 @@ class ConfiguredTablePrefixTest extends TestCase {
 	public function testTheTableStatisticsFindTablesUnderAnotherPrefix(): void {
 		$logger = $this->createMock(LoggerInterface::class);
 		$handler = new MagicStatisticsHandler(
-			db: $this->connection(rows: self::catalogue()),
-			logger: $logger,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			sql: new MagicTableSql(db: $this->connection(rows: self::catalogue()), config: $this->createMock(IConfig::class), logger: $logger),
+			catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)),
 			dateTimeNormalizer: new DateTimeNormalizer($logger),
 			schemaTypeConverter: new SchemaTypeConverter()
 		);

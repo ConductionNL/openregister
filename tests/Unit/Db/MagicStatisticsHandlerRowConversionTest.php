@@ -22,6 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
@@ -108,10 +112,8 @@ class MagicStatisticsHandlerRowConversionTest extends TestCase {
 		);
 
 		return new MagicStatisticsHandler(
-			db: $this->createMock(IDBConnection::class),
-			logger: $logger,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			sql: new MagicTableSql(db: $this->createMock(IDBConnection::class), config: $this->createMock(IConfig::class), logger: $logger),
+			catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)),
 			dateTimeNormalizer: $normalizer,
 			schemaTypeConverter: $converter
 		);

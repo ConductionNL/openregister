@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
@@ -242,8 +244,7 @@ class MagicMetadataColumnHealerTest extends TestCase {
 	 */
 	private function healer(): MagicMetadataColumnHealer {
 		return new MagicMetadataColumnHealer(
-			db: $this->db,
-			logger: $this->logger,
+			sql: new MagicTableSql(db: $this->db, config: $this->createMock(IConfig::class), logger: $this->logger),
 			magicMapper: $this->magicMapper,
 			cache: $this->cache
 		);
@@ -258,9 +259,8 @@ class MagicMetadataColumnHealerTest extends TestCase {
 	 */
 	private function tableHandler(?MagicMetadataColumnHealer $healer): MagicTableHandler {
 		return new MagicTableHandler(
-			db: $this->db,
+			sql: new MagicTableSql(db: $this->db, config: $this->createMock(IConfig::class), logger: $this->logger),
 			appConfig: $this->createMock(IAppConfig::class),
-			logger: $this->logger,
 			magicMapper: $this->magicMapper,
 			metadataColumns: $healer
 		);

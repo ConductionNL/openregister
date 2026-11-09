@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCP\IUserManager;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\DeletedLens;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeCondition;
@@ -446,8 +448,7 @@ class MagicOrganizationHandlerGoldenTest extends TestCase {
 			$appConfig = $this->createMock(IAppConfig::class);
 			$appConfig->method('getValueString')->willReturn((string) $config);
 			$handler = new MagicOrganizationHandler(
-				$this->createMock(IUserSession::class),
-				$this->createMock(IGroupManager::class),
+				new MagicMapperIdentity($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(IUserManager::class)),
 				$appConfig,
 				$this->createMock(ContainerInterface::class),
 				$this->createMock(LoggerInterface::class)

@@ -24,8 +24,6 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCP\ICache;
-use OCP\IDBConnection;
-use Psr\Log\LoggerInterface;
 
 /**
  * Finds and adds the metadata columns (`_archived`, `_frozen`, `_status`, ...)
@@ -111,16 +109,14 @@ class MagicMetadataColumnHealer {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection   $db          Connection the ALTER statements run on.
-	 * @param LoggerInterface $logger      Logger.
-	 * @param MagicMapperInterface     $magicMapper Column definitions, column introspection and DDL rendering.
-	 * @param ICache|null     $cache       Distributed cache shared across requests, null for none.
+	 * @param MagicTableSql        $sql         The connection the ALTER statements run on, the table prefix and the logger.
+	 * @param MagicMapperInterface $magicMapper Column definitions, column introspection and DDL rendering.
+	 * @param ICache|null          $cache       Distributed cache shared across requests, null for none.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly LoggerInterface $logger,
+		private readonly MagicTableSql $sql,
 		private readonly MagicMapperInterface $magicMapper,
 		private readonly ?ICache $cache = null,
 	) {
@@ -188,7 +184,7 @@ class MagicMetadataColumnHealer {
 			// The columns could not be read. Do not guess and do not cache:
 			// the query that follows reports the real problem, and the next
 			// request tries again.
-			$this->logger->debug(
+			$this->sql->logger->debug(
 				message: '[MagicMetadataColumnHealer] Could not read columns of '.$tableName.': '.$e->getMessage()
 			);
 			return null;
@@ -273,7 +269,7 @@ class MagicMetadataColumnHealer {
 		$outcome = $this->addAll(tableName: $tableName, missing: $missing ?? $this->inspect(tableName: $tableName));
 
 		if ($outcome['added'] !== []) {
-			$this->logger->info(
+			$this->sql->logger->info(
 				message: '[MagicMetadataColumnHealer] Added missing metadata columns to '.$tableName.': '.implode(', ', $outcome['added'])
 			);
 		}
@@ -409,7 +405,7 @@ class MagicMetadataColumnHealer {
 		}
 
 		try {
-			$this->db->executeStatement($this->magicMapper->buildAddColumnSql(tableName: $tableName, definition: $definition));
+			$this->sql->db->executeStatement($this->magicMapper->buildAddColumnSql(tableName: $tableName, definition: $definition));
 			return null;
 		} catch (\Throwable $e) {
 			// Another request may have added it between our read and our
@@ -459,11 +455,11 @@ class MagicMetadataColumnHealer {
 	 */
 	private function mayAlterNow(): bool {
 		try {
-			if ($this->db->inTransaction() === false) {
+			if ($this->sql->db->inTransaction() === false) {
 				return true;
 			}
 
-			$platform = $this->db->getDatabasePlatform();
+			$platform = $this->sql->db->getDatabasePlatform();
 			return $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 		} catch (\Throwable $e) {
 			return true;
@@ -572,7 +568,7 @@ class MagicMetadataColumnHealer {
 		}
 
 		self::$warned[$tableName] = true;
-		$this->logger->warning(
+		$this->sql->logger->warning(
 			message: '[MagicMetadataColumnHealer] Could not add metadata columns to '.$tableName
 				.'; queries leave them out until this is fixed. Run occ openregister:tables:reconcile --apply '
 				.'as a user allowed to alter tables.',

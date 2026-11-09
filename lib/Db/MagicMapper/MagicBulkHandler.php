@@ -48,9 +48,7 @@ use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\ObjectVersionHandler;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IConfig;
 use OCP\IDBConnection;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -110,18 +108,14 @@ class MagicBulkHandler {
 	/**
 	 * Constructor for MagicBulkHandler
 	 *
-	 * @param IDBConnection $db Database connection for operations
-	 * @param LoggerInterface $logger Logger for debugging and error reporting
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher for business logic hooks
+	 * @param MagicTableSql               $sql                The connection, the table prefix and the logger
+	 * @param IEventDispatcher            $eventDispatcher    Event dispatcher for business logic hooks
 	 * @param DateTimeNormalizerInterface $dateTimeNormalizer Normaliser for user-supplied datetime input
-	 * @param IConfig $config Nextcloud config for reading the table prefix
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly LoggerInterface $logger,
+		private readonly MagicTableSql $sql,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly DateTimeNormalizerInterface $dateTimeNormalizer,
-		private readonly IConfig $config,
 	) {
 		// Try to get max_allowed_packet from database configuration.
 		$this->initializeMaxPacketSize();
@@ -139,7 +133,7 @@ class MagicBulkHandler {
 	 * @return string The full table name including the configured prefix.
 	 */
 	private function getFullTableName(string $tableName): string {
-		return ((string)$this->config->getSystemValue('dbtableprefix', 'oc_')) . $tableName;
+		return ((string)$this->sql->config->getSystemValue('dbtableprefix', 'oc_')) . $tableName;
 	}//end getFullTableName()
 
 	/**
@@ -369,12 +363,12 @@ class MagicBulkHandler {
 		// handler CONSTRUCTOR (lazily instantiated mid-save), so it would
 		// abort any caller-managed transaction wrapping a save (e.g. the
 		// ADR-051 handoff engine). Only probe on MySQL/MariaDB.
-		if ($this->db->getDatabaseProvider() !== \OCP\IDBConnection::PLATFORM_MYSQL) {
+		if ($this->sql->db->getDatabaseProvider() !== \OCP\IDBConnection::PLATFORM_MYSQL) {
 			return 16777216;
 		}
 
 		try {
-			$stmt = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
+			$stmt = $this->sql->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
 			$result = $stmt->fetch();
 
 			if ($result !== false && (($result['Value'] ?? null) !== null)) {
@@ -472,7 +466,7 @@ class MagicBulkHandler {
 			return [];
 		}
 
-		$numberColumnSizes = (new MagicNumberColumnSizes(db: $this->db, tablePrefix: $this->getFullTableName(tableName: '')))->sizes(tableName: $tableName);
+		$numberColumnSizes = (new MagicNumberColumnSizes(db: $this->sql->db, tablePrefix: $this->getFullTableName(tableName: '')))->sizes(tableName: $tableName);
 		foreach ($preparedObjects as $preparedObject) {
 			(new MagicNumberColumn())->assertRowFits(row: $preparedObject, columnSizes: $numberColumnSizes);
 		}
@@ -489,7 +483,7 @@ class MagicBulkHandler {
 		// (e.g. a constraint violation on one row) rolls back the whole chunk
 		// instead of leaving a partial, inconsistent set of rows persisted.
 		foreach ($chunks as $chunkIndex => $chunk) {
-			$this->db->beginTransaction();
+			$this->sql->db->beginTransaction();
 			try {
 				$chunkResults = $this->executeUpsertChunk(
 					chunk: $chunk,
@@ -498,10 +492,10 @@ class MagicBulkHandler {
 					needsPreUpdateState: $needsPreUpdateState
 				);
 
-				$this->db->commit();
+				$this->sql->db->commit();
 			} catch (\Throwable $e) {
-				$this->db->rollBack();
-				$this->logger->error(
+				$this->sql->db->rollBack();
+				$this->sql->logger->error(
 					message: '[MagicBulkHandler] Rolled back bulk upsert chunk after failure',
 					context: [
 						'file' => __FILE__,
@@ -572,7 +566,7 @@ class MagicBulkHandler {
 		}
 
 		$run->collectColumnsAndUuids();
-		$run->isPostgres = $this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+		$run->isPostgres = $this->sql->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 		$run->fullTableName = $this->getFullTableName(tableName: $tableName);
 
 		if (empty($run->uuids) === false) {
@@ -610,7 +604,7 @@ class MagicBulkHandler {
 					continue;
 				}
 
-				$this->logger->debug(
+				$this->sql->logger->debug(
 					message: '[MagicBulkHandler] Dropping column not in table',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'column' => $columnName, 'table' => $tableName]
 				);
@@ -646,7 +640,7 @@ class MagicBulkHandler {
 			if ($uuid === null || $uuid === '') {
 				$uuid = Uuid::v4()->toRfc4122();
 				$objectData['_uuid'] = $uuid;
-				$this->logger->debug(
+				$this->sql->logger->debug(
 					message: '[MagicBulkHandler] Generated missing _uuid for bulk object',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
 				);
@@ -689,7 +683,7 @@ class MagicBulkHandler {
 		}
 
 		try {
-			$existsStmt = $this->db->prepare($run->selectByUuidSql(columns: $existsColumns));
+			$existsStmt = $this->sql->db->prepare($run->selectByUuidSql(columns: $existsColumns));
 			$existsStmt->execute(array_values($run->uuids));
 			foreach ($existsStmt->fetchAll() as $row) {
 				$run->existingUuids[$row['_uuid']] = true;
@@ -700,7 +694,7 @@ class MagicBulkHandler {
 				}
 			}
 
-			$this->logger->debug(
+			$this->sql->logger->debug(
 				message: '[MagicBulkHandler] Pre-upsert UUID check',
 				context: [
 					'file' => __FILE__,
@@ -712,7 +706,7 @@ class MagicBulkHandler {
 				]
 			);
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->sql->logger->warning(
 				message: '[MagicBulkHandler] Failed to check existing UUIDs, will use timestamp-based classification',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
@@ -744,10 +738,10 @@ class MagicBulkHandler {
 		$sql .= implode(', ', $this->buildUpsertUpdateClauses(run: $run));
 
 		try {
-			$stmt = $this->db->prepare($sql);
+			$stmt = $this->sql->db->prepare($sql);
 			$stmt->execute($parameters);
 
-			$this->logger->info(
+			$this->sql->logger->info(
 				message: '[MagicBulkHandler] Executed UPSERT chunk',
 				context: [
 					'file' => __FILE__,
@@ -760,7 +754,7 @@ class MagicBulkHandler {
 				]
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
+			$this->sql->logger->error(
 				message: '[MagicBulkHandler] UPSERT chunk failed',
 				context: [
 					'file' => __FILE__,
@@ -821,7 +815,7 @@ class MagicBulkHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function readBackClassified(MagicUpsertChunkRun $run): array {
-		$stmt = $this->db->prepare($run->selectByUuidSql(columns: '*'));
+		$stmt = $this->sql->db->prepare($run->selectByUuidSql(columns: '*'));
 		$stmt->execute(array_values($run->uuids));
 
 		$completeObjects = [];
@@ -830,7 +824,7 @@ class MagicBulkHandler {
 		}
 
 		$counts = array_count_values(array_column($completeObjects, 'object_status'));
-		$this->logger->info(
+		$this->sql->logger->info(
 			message: '[MagicBulkHandler] Classification complete (using pre-upsert UUID check)',
 			context: [
 				'file' => __FILE__,
@@ -858,7 +852,7 @@ class MagicBulkHandler {
 	 */
 	private function getTableColumns(string $tableName): array {
 		try {
-			$platform = $this->db->getDatabasePlatform();
+			$platform = $this->sql->db->getDatabasePlatform();
 			$isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
 			// Get full table name with the configured database prefix.
@@ -873,7 +867,7 @@ class MagicBulkHandler {
                         WHERE table_name = ? AND table_schema = 'public'";
 			}
 
-			$stmt = $this->db->prepare($sql);
+			$stmt = $this->sql->db->prepare($sql);
 			// MySQL/MariaDB: SHOW COLUMNS doesn't need parameters.
 			$stmtParams = [];
 			if ($isPostgres === true) {
@@ -896,7 +890,7 @@ class MagicBulkHandler {
 				$row = $stmt->fetch();
 			}
 
-			$this->logger->debug(
+			$this->sql->logger->debug(
 				message: '[MagicBulkHandler] Retrieved columns',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $tableName, 'columns' => $columns]
 			);
@@ -904,7 +898,7 @@ class MagicBulkHandler {
 
 			return $columns;
 		} catch (\Exception $e) {
-			$this->logger->error(
+			$this->sql->logger->error(
 				message: '[MagicBulkHandler] Failed to get table columns',
 				context: [
 					'file' => __FILE__,
@@ -955,7 +949,7 @@ class MagicBulkHandler {
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
 	 */
 	public function purgeExpired(Register $register, Schema $schema, string $tableName): int {
-		$qb = $this->db->getQueryBuilder();
+		$qb = $this->sql->db->getQueryBuilder();
 		$qb->delete($tableName)
 			->where($qb->expr()->eq('_register', $qb->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->eq('_schema', $qb->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT)))
@@ -965,7 +959,7 @@ class MagicBulkHandler {
 		$purged = $qb->executeStatement();
 
 		// Info, not debug: this is destruction, and the count is the only record of it.
-		$this->logger->info(
+		$this->sql->logger->info(
 			message: '[MagicBulkHandler] Purged expired raw rows',
 			context: [
 				'file' => __FILE__,
