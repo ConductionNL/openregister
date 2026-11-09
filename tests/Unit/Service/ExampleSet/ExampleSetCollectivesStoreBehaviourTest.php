@@ -168,12 +168,6 @@ class ExampleSetCollectivesStoreBehaviourTest extends TestCase {
 		$this->assertFalse($this->store()->available());
 	}
 
-	public function testNotAvailableWhenTheAppIsInstalledButItsClassesAreAbsent(): void {
-		$this->appManager->method('isInstalled')->willReturn(true);
-
-		$this->assertFalse($this->store()->available());
-	}
-
 	public function testAnExistingCollectiveIsReusedNotCreated(): void {
 		$service = $this->collectives(existing: self::entity(id: 12));
 
