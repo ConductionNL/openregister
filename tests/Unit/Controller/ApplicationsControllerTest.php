@@ -32,7 +32,6 @@ class ApplicationsControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = ApplicationsControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->applicationService,
 			$this->applicationMapper,

@@ -33,11 +33,9 @@ class SchemaImportServiceTest extends TestCase {
 	private SchemaImportService $service;
 
 	protected function setUp(): void {
-		$resourceRoot = dirname(__DIR__, 4) . '/lib/Resources';
 		$this->service = new SchemaImportService(
 			new DialectDetector(),
-			new ThreeWayMerge(),
-			$resourceRoot
+			new ThreeWayMerge()
 		);
 	}
 
