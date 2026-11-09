@@ -111,7 +111,6 @@ use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowLookups;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
-use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Support\OrderParameter;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -132,6 +131,9 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugTargetInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 
 /**
  * Dynamic Schema-Based Table Management Service
@@ -516,40 +518,111 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private ?MagicDroppedProperties $droppedProperties = null;
 
 	/**
+	 * Database connection for table operations.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Mapper for schema operations.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Mapper for register operations.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Container for lazy loading services.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * User session for authentication context.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for RBAC operations.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * User manager for user operations.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Nextcloud config for settings.
+	 *
+	 * @var IConfig
+	 */
+	private readonly IConfig $config;
+
+	/**
+	 * App configuration for feature flags.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Event dispatcher for audit trail events.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Logger for debugging and monitoring.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for MagicMapper service.
 	 *
 	 * Initializes the service with required dependencies for database operations,
 	 * schema and register management, configuration handling, logging, and specialized handlers.
 	 *
-	 * @param IDBConnection $db Database connection for table operations
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations
-	 * @param RegisterMapperInterface $registerMapper Mapper for register operations
-	 * @param IConfig $config Nextcloud config for settings
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher for audit trail events
-	 * @param IUserSession $userSession User session for authentication context
-	 * @param IGroupManager $groupManager Group manager for RBAC operations
-	 * @param IUserManager $userManager User manager for user operations
-	 * @param IAppConfig $appConfig App configuration for feature flags
-	 * @param LoggerInterface $logger Logger for debugging and monitoring
-	 * @param AppSettingsInterface $settingsService Settings service for configuration
-	 * @param ContainerInterface $container Container for lazy loading services
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+	 * @param IDBConnection       $db       Database connection for table operations
+	 * @param MagicMapperLookups  $lookups  Schema and register mappers and the container for lazy loading
+	 * @param MagicMapperIdentity $identity User session, group manager and user manager for RBAC
+	 * @param MagicMapperRuntime  $runtime  System and app config, event dispatcher and logger
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly IConfig $config,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserManager $userManager,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-		private readonly AppSettingsInterface $settingsService,
-		private readonly ContainerInterface $container,
+		IDBConnection $db,
+		MagicMapperLookups $lookups,
+		MagicMapperIdentity $identity,
+		MagicMapperRuntime $runtime,
 	) {
+		$this->db              = $db;
+		$this->schemaMapper    = $lookups->schemaMapper;
+		$this->registerMapper  = $lookups->registerMapper;
+		$this->container       = $lookups->container;
+		$this->userSession     = $identity->userSession;
+		$this->groupManager    = $identity->groupManager;
+		$this->userManager     = $identity->userManager;
+		$this->config          = $runtime->config;
+		$this->appConfig       = $runtime->appConfig;
+		$this->eventDispatcher = $runtime->eventDispatcher;
+		$this->logger          = $runtime->logger;
+
 		// Initialize specialized handlers for modular functionality.
 		//
 		// The circular-construction guard that lived here previously (#1564)
