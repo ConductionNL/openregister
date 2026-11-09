@@ -71,11 +71,7 @@ import {
 						</span>
 						<ManagedBadge :config="getManagingConfiguration(row)" />
 					</div>
-					<span
-						v-if="row.description"
-						class="textDescription textEllipsis"
-						>{{ row.description }}</span
-					>
+					<IndexRowDescription :text="row.description" />
 				</div>
 			</template>
 
@@ -105,6 +101,7 @@ import { NcAppContent } from '@nextcloud/vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ManagedBadge from '../../components/shared/ManagedBadge.vue'
+import IndexRowDescription from '../IndexRowDescription.vue'
 import {
 	headerListData,
 	headerListMethods,
@@ -136,6 +133,7 @@ function schemaFilterValue(schema, field) {
 export default {
 	name: 'SchemasIndex',
 	components: {
+		IndexRowDescription,
 		ActionMenu,
 		NcAppContent,
 		CnIndexPage,
