@@ -62,10 +62,6 @@ class EmailSender implements EmailSenderInterface {
 		private readonly ?NotificationChannelPolicy $channelPolicy = null,
 		private ?UnsubscribeHeaders $unsubscribeHeaders = null,
 	) {
-		if ($this->unsubscribeHeaders === null) {
-			$this->unsubscribeHeaders = new UnsubscribeHeaders(logger: $logger);
-		}
-
 	}//end __construct()
 
 	/**
@@ -222,14 +218,25 @@ class EmailSender implements EmailSenderInterface {
 		$msg->setTo($to);
 		$msg->setSubject($content->subject);
 		$msg->setPlainBody($content->body);
-		if ($content->unsubscribe !== null && $this->unsubscribeHeaders !== null) {
+		if ($content->unsubscribe !== null) {
 			// Best effort: false means the headers could not be set, and
 			// the mail still goes out with the link in its body.
-			$this->unsubscribeHeaders->apply(message: $msg, unsubscribe: $content->unsubscribe);
+			$this->unsubscribeHeaders()->apply(message: $msg, unsubscribe: $content->unsubscribe);
 		}
 
 		$this->mailer->send($msg);
 	}//end deliver()
+
+	/**
+	 * The unsubscribe header helper: the injected one, else one built on first use.
+	 *
+	 * @return UnsubscribeHeaders The helper.
+	 */
+	private function unsubscribeHeaders(): UnsubscribeHeaders {
+		$this->unsubscribeHeaders ??= new UnsubscribeHeaders(logger: $this->logger);
+
+		return $this->unsubscribeHeaders;
+	}//end unsubscribeHeaders()
 
 	/**
 	 * The name to address a bare address to: the display name, else the address.
