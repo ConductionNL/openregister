@@ -40,9 +40,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUser;
-use Psr\Log\LoggerInterface;
 
 /**
  * The built-in inverse of a reversible bulk job.
@@ -78,14 +76,12 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface, Restore
 	/**
 	 * Constructor.
 	 *
-	 * @param BulkJobMemberMapperInterface $memberMapper  The original job's outcomes.
-	 * @param ObjectOperationsInterface       $objectService The object write path.
-	 * @param LoggerInterface     $logger        Logger.
+	 * @param BulkJobMemberMapperInterface $memberMapper The original job's outcomes.
+	 * @param BulkObjectAccess             $access       The object write path and the log.
 	 */
 	public function __construct(
 		private readonly BulkJobMemberMapperInterface $memberMapper,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly LoggerInterface $logger,
+		private readonly BulkObjectAccess $access,
 	) {
 	}//end __construct()
 
@@ -267,7 +263,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface, Restore
 	 */
 	private function write(ObjectEntity $object, array $restore, ?IUser $actor): BulkActionResult {
 		try {
-			$this->objectService->patchObject(
+			$this->access->objects->patchObject(
 				objectId: (string)$object->getUuid(),
 				data: $restore,
 				register: $object->getRegister(),
@@ -275,7 +271,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface, Restore
 				currentUser: $actor
 			);
 		} catch (\Throwable $exception) {
-			$this->logger->warning(
+			$this->access->logger->warning(
 				message: '[BulkAction] Restoring the prior value failed for object',
 				context: [
 					'action' => self::ID,

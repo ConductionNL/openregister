@@ -15,13 +15,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BulkAction;
 
+use Psr\Log\NullLogger;
+use OCA\OpenRegister\BulkAction\BulkObjectAccess;
 use OCA\OpenRegister\BulkAction\RunActionAction;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Flow\FlowService;
-use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Http;
@@ -49,8 +49,7 @@ class RunActionActionSchemaLookupTest extends TestCase {
 	private function action(): RunActionAction {
 		return new RunActionAction(
 			$this->runner,
-			new MacroActionResolver($this->schemas, $this->createMock(FlowService::class)),
-			$this->createMock(ObjectOperationsInterface::class)
+			new BulkObjectAccess($this->createMock(ObjectOperationsInterface::class), $this->schemas, new NullLogger())
 		);
 	}//end action()
 
