@@ -335,4 +335,49 @@ class ToolGrantSetTest extends TestCase {
 		$this->assertSame([], $set->toolIds());
 		$this->assertFalse($set->has(app: 'hermiq', subject: 'listFiles', action: 'listFiles'));
 	}//end testAnEmptyListGrantsNothing()
+
+	/**
+	 * Characterisation of with/without/has at coordinates: allowed and refused.
+	 *
+	 * Pins the outcomes the coordinate methods give before they delegate to a
+	 * value-object form: a repeated grant is stored once, a constrained grant
+	 * sits beside the bare one, removing absent coordinates changes nothing, and
+	 * a sibling action survives the removal of its neighbour.
+	 *
+	 * @return void
+	 */
+	public function testCoordinateMethodsAllowAndRefuseExactly(): void {
+		$set = ToolGrantSet::fromStored([])
+			->with('openregister', 'runFlow', 'runFlow', 'openregister.runFlow')
+			->with('openregister', 'runFlow', 'runFlow', 'openregister.runFlow')
+			->with('openregister', 'runFlow', 'runFlow', 'openregister.runFlow', ['flowId' => 'A'])
+			->with('openregister', 'runFlow', 'stop', 'openregister.stopFlow');
+
+		$this->assertSame(
+			[
+				'openregister' => [
+					'runFlow' => [
+						'runFlow' => ['openregister.runFlow', ['id' => 'openregister.runFlow', 'args' => ['flowId' => 'A']]],
+						'stop'    => ['openregister.stopFlow'],
+					],
+				],
+			],
+			$set->toStored()
+		);
+
+		// Allowed.
+		$this->assertTrue($set->has('openregister', 'runFlow', 'runFlow'));
+		$this->assertTrue($set->has('openregister', 'runFlow', 'stop'));
+		// Refused: every coordinate must match.
+		$this->assertFalse($set->has('openregister', 'runFlow', 'delete'));
+		$this->assertFalse($set->has('openregister', 'flow', 'runFlow'));
+		$this->assertFalse($set->has('hermiq', 'runFlow', 'runFlow'));
+
+		$this->assertSame($set->toStored(), $set->without('hermiq', 'file', 'list')->toStored());
+
+		$after = $set->without('openregister', 'runFlow', 'runFlow');
+		$this->assertFalse($after->has('openregister', 'runFlow', 'runFlow'));
+		$this->assertTrue($after->has('openregister', 'runFlow', 'stop'));
+		$this->assertTrue($set->has('openregister', 'runFlow', 'runFlow'), 'the original set is immutable');
+	}//end testCoordinateMethodsAllowAndRefuseExactly()
 }//end class
