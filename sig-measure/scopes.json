@@ -1,0 +1,3964 @@
+{
+ "M01": {
+  "id": "M01",
+  "files": [
+   "lib/BackgroundJob/ArchivalRowExpiry.php",
+   "lib/BackgroundJob/ExternalGrantLapseJob.php",
+   "lib/Controller/BulkController.php",
+   "lib/Controller/ContentReportController.php",
+   "lib/Controller/PartyController.php",
+   "lib/Controller/RecordTemplatesController.php",
+   "lib/Db/MagicMapper/MagicRowMetadata.php",
+   "lib/Db/MagicMapper/MagicSchemaColumns.php",
+   "lib/Db/MagicMapper/RbacAccessCall.php",
+   "lib/Db/MagicMapper/RbacMatchSql.php",
+   "lib/Db/MagicMapper/RbacQueryMatch.php",
+   "lib/Listener/ContentReportRemovalListener.php",
+   "lib/Listener/PartyMergeListener.php",
+   "lib/Listener/Support/PartyCarryOver.php",
+   "lib/Mcp/BuiltIn/SchemasToolProvider.php",
+   "lib/Repair/MarkImplicitCrossOrganisationReadRules.php",
+   "lib/Search/Db/ViewMapper.php",
+   "lib/Search/Db/ViewMapperInterface.php",
+   "lib/Search/Service/GraphQL/SchemaGenerator/TypeMapperHandler.php",
+   "lib/Search/Service/ViewPresentationService.php",
+   "lib/Service/Archival/RetentionEvaluatorFactory.php",
+   "lib/Service/Audit/AuditTrailCollaborators.php",
+   "lib/Service/Audit/ContentReportService.php",
+   "lib/Service/Audit/ContentReportServiceInterface.php",
+   "lib/Service/Bindings/AccessBindings.php",
+   "lib/Service/Credential/CredentialUpdateRequests.php",
+   "lib/Service/Party/PartyAnnotationValidator.php",
+   "lib/Service/Party/PartyDefinition.php",
+   "lib/Service/Party/PartyService.php",
+   "lib/Service/Rbac/AccessDeclarationValidators.php",
+   "lib/Service/Rbac/ExplicitRevealMasks.php",
+   "lib/Service/Rbac/RbacChecks.php",
+   "lib/Service/Rbac/RbacCollaborators.php",
+   "lib/Service/Rbac/RbacFallbacks.php",
+   "lib/Service/Rbac/RbacRuleChecks.php",
+   "lib/Service/Rbac/ReadRuleTenancy.php",
+   "lib/Service/Rbac/RuleColumns.php",
+   "lib/Service/Rbac/ViewerReach.php"
+  ],
+  "p_files": [
+   "lib/Service/Audit/ContentReportService.php",
+   "lib/Service/Party/PartyAnnotationValidator.php",
+   "lib/Service/Party/PartyService.php",
+   "lib/Service/Rbac/RbacCollaborators.php"
+  ],
+  "i_targets": [
+   "lib/Service/Archival/RetentionEvaluatorFactory.php",
+   "lib/Service/Audit/AuditTrailCollaborators.php",
+   "lib/Service/Audit/ContentReportService.php",
+   "lib/Service/Credential/CredentialUpdateRequests.php",
+   "lib/Service/Party/PartyAnnotationValidator.php",
+   "lib/Service/Party/PartyDefinition.php",
+   "lib/Service/Party/PartyService.php",
+   "lib/Service/Rbac/AccessDeclarationValidators.php",
+   "lib/Service/Rbac/ExplicitRevealMasks.php",
+   "lib/Service/Rbac/RbacChecks.php",
+   "lib/Service/Rbac/RbacCollaborators.php",
+   "lib/Service/Rbac/RbacFallbacks.php",
+   "lib/Service/Rbac/RbacRuleChecks.php",
+   "lib/Service/Rbac/ReadRuleTenancy.php",
+   "lib/Service/Rbac/RuleColumns.php",
+   "lib/Service/Rbac/ViewerReach.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 105,
+   "gt4": 0,
+   "gt6": 0,
+   "exposed": 954
+  },
+  "target": {
+   "gt2": 50,
+   "gt4": 0,
+   "gt6": 0,
+   "exposed": 802
+  },
+  "deferred": [],
+  "away": {
+   "lib/Service/Audit/AuditTrailCollaborators.php": [
+    [
+     "lib/Db/AuditTrailMapper.php",
+     "owned by lane M03"
+    ]
+   ],
+   "lib/Service/Credential/CredentialUpdateRequests.php": [
+    [
+     "lib/Controller/CredentialController.php",
+     "held by open #4548"
+    ]
+   ],
+   "lib/Service/Party/PartyAnnotationValidator.php": [
+    [
+     "lib/Db/SchemaMapper/AdvisoryAnnotationChecks.php",
+     "held by open #6215,#6217"
+    ]
+   ],
+   "lib/Service/Party/PartyDefinition.php": [
+    [
+     "lib/Notifications/Service/Party/PartyNotificationService.php",
+     "owned by lane M12"
+    ]
+   ],
+   "lib/Service/Party/PartyService.php": [
+    [
+     "lib/Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php",
+     "owned by lane M16"
+    ]
+   ],
+   "lib/Service/Rbac/AccessDeclarationValidators.php": [
+    [
+     "lib/Db/RegisterMapper.php",
+     "held by open cloud/c12-rbac-declaration-checks"
+    ],
+    [
+     "lib/Db/Schema/AnnotationVocabulary.php",
+     "held by open cloud/c12-rbac-declaration-checks"
+    ],
+    [
+     "lib/Db/SchemaMapper/AccessDeclarationChecks.php",
+     "held by open cloud/c12-rbac-declaration-checks"
+    ],
+    [
+     "lib/Db/SchemaMapper/AuthorizationBlockCheck.php",
+     "held by open cloud/c12-rbac-declaration-checks"
+    ]
+   ],
+   "lib/Service/Rbac/ExplicitRevealMasks.php": [
+    [
+     "lib/Db/MagicMapper/MagicFacetHandler.php",
+     "owned by lane M30"
+    ],
+    [
+     "lib/Files/Service/Sharing/AccessLinkReader.php",
+     "owned by lane M15"
+    ],
+    [
+     "lib/Mcp/Service/Mcp/McpResourcesService.php",
+     "owned by lane M33"
+    ],
+    [
+     "lib/Search/Service/Search/PropertySearchProfile.php",
+     "owned by lane M08"
+    ]
+   ],
+   "lib/Service/Rbac/RbacChecks.php": [
+    [
+     "lib/Command/UnknownMetadataConditionsCommand.php",
+     "held by open cloud/c12-rbac-declaration-checks"
+    ],
+    [
+     "lib/Controller/SchemasController.php",
+     "held by open #6215,#6217"
+    ],
+    [
+     "lib/Db/RegisterMapper.php",
+     "held by open cloud/c12-rbac-declaration-checks"
+    ],
+    [
+     "lib/Db/SchemaMapper/AuthorizationBlockCheck.php",
+     "held by open cloud/c12-rbac-declaration-checks"
+    ]
+   ],
+   "lib/Service/Rbac/RbacCollaborators.php": [
+    [
+     "lib/Db/MagicMapper/MagicRbacHandler.php",
+     "owned by lane M25"
+    ]
+   ],
+   "lib/Service/Rbac/RbacFallbacks.php": [
+    [
+     "lib/Db/MagicMapper/MagicRbacHandler.php",
+     "owned by lane M25"
+    ]
+   ],
+   "lib/Service/Rbac/RbacRuleChecks.php": [
+    [
+     "lib/Controller/RegistersController.php",
+     "owned by lane M33"
+    ],
+    [
+     "lib/Controller/SchemasController.php",
+     "held by open #6215,#6217"
+    ]
+   ],
+   "lib/Service/Rbac/ReadRuleTenancy.php": [
+    [
+     "lib/Controller/RegistersController.php",
+     "owned by lane M33"
+    ],
+    [
+     "lib/Controller/SchemasController.php",
+     "held by open #6215,#6217"
+    ],
+    [
+     "lib/Db/MagicMapper/MagicRbacHandler.php",
+     "owned by lane M25"
+    ]
+   ],
+   "lib/Service/Rbac/RuleColumns.php": [
+    [
+     "lib/Db/MagicMapper/MagicRbacHandler.php",
+     "owned by lane M25"
+    ]
+   ],
+   "lib/Service/Rbac/ViewerReach.php": [
+    [
+     "lib/Search/Service/ViewService.php",
+     "owned by lane M14"
+    ]
+   ]
+  }
+ },
+ "M02": {
+  "id": "M02",
+  "files": [
+   "lib/BackgroundJob/OAuth2TokenRefreshJob.php",
+   "lib/Controller/DataSubjectRequestController.php",
+   "lib/Controller/ObjectGrantsController.php",
+   "lib/Service/Audit/PurposeRefusedException.php",
+   "lib/Service/Audit/PurposeRegistry.php",
+   "lib/Service/Credential/OAuth2AccountIdentity.php",
+   "lib/Service/Credential/OAuth2ConnectionWriter.php",
+   "lib/Service/Credential/OAuth2CredentialSweepInterface.php",
+   "lib/Service/Credential/OAuth2RefreshService.php",
+   "lib/Service/ExampleSet/ExampleSetGrants.php",
+   "lib/Service/Gdpr/DataSubjectRequestService.php",
+   "lib/Service/Gdpr/DataSubjectRequestServiceInterface.php",
+   "lib/Service/Gdpr/Erasure/ErasurePreviewService.php",
+   "lib/Service/Gdpr/Erasure/ErasureRunner.php",
+   "lib/Service/Gdpr/Retention/RetentionSweepService.php",
+   "lib/Service/Rbac/HierarchyDescender.php",
+   "lib/Service/Rbac/InheritedGrantLister.php",
+   "lib/Service/Rbac/ObjectGrantsReport.php",
+   "lib/Service/Rbac/ObjectGrantsReportInterface.php",
+   "lib/Service/Rbac/ObjectSharingService.php",
+   "lib/Service/Rbac/ObjectSharingServiceInterface.php",
+   "lib/Service/Rbac/ProvenanceResolver.php"
+  ],
+  "p_files": [
+   "lib/Service/Audit/PurposeRefusedException.php",
+   "lib/Service/Credential/OAuth2RefreshService.php",
+   "lib/Service/Gdpr/DataSubjectRequestService.php",
+   "lib/Service/Rbac/HierarchyDescender.php",
+   "lib/Service/Rbac/ObjectGrantsReport.php",
+   "lib/Service/Rbac/ObjectSharingService.php",
+   "lib/Service/Rbac/ProvenanceResolver.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 748,
+   "gt4": 74,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 406,
+   "gt4": 14,
+   "gt6": 0
+  },
+  "deferred": [
+   "lib/Service/Rbac/HierarchyDescender.php HierarchyDescender::childrenOf: caller or builder lib/Service/Rbac/HierarchyGrantExpander.php is in open cloud/c12-rbac-declaration-checks",
+   "lib/Service/Rbac/ProvenanceResolver.php ProvenanceResolver::forActions: caller or builder lib/Service/Object/PermissionHandler.php is in open cloud/b12-permission-refusal-log",
+   "lib/Service/Credential/OAuth2RefreshService.php OAuth2RefreshService::accessTokenFor: caller or builder lib/Service/Credential/CredentialBrokerService.php is in open #4548"
+  ],
+  "away": {}
+ },
+ "M03": {
+  "id": "M03",
+  "files": [
+   "lib/AppHost/Scheduling/ScheduleAuditTrail.php",
+   "lib/Command/RollbackApprovalMigrationCommand.php",
+   "lib/Db/ApiCallKeys.php",
+   "lib/Db/AuditTrail/AuditedObject.php",
+   "lib/Db/AuditTrailMapper.php",
+   "lib/Db/AuditTrailMapperInterface.php",
+   "lib/Db/DbRegistrar.php",
+   "lib/Db/ObjectHandling.php",
+   "lib/Db/OutcomeFilter.php",
+   "lib/Db/PortalTaskDeliveryMapper.php",
+   "lib/Db/QueryPage.php",
+   "lib/Db/TaskMapper.php",
+   "lib/Files/Db/AnonymisationLogMapper.php",
+   "lib/Files/Db/ChunkMapper.php",
+   "lib/Mcp/BuiltIn/AttributeToolProvider.php",
+   "lib/Mcp/BuiltIn/SchemaDerivedToolProvider.php",
+   "lib/Mcp/BuiltIn/ToolInvocationAudit.php",
+   "lib/Mcp/Db/AgentMapper.php",
+   "lib/Notifications/BackgroundJob/TaskNotificationCandidates.php",
+   "lib/Repair/CheckFlowTimerInvariants.php",
+   "lib/Repair/Support/ApprovalTaskStores.php",
+   "lib/Repair/TaskFixtureMappers.php",
+   "lib/Search/Service/DashboardAuditReads.php",
+   "lib/Service/ApiCaller/ApiCallRecorder.php",
+   "lib/Service/Audit/PurposeGuard.php",
+   "lib/Service/Audit/ReadableAuditTrailLister.php",
+   "lib/Service/Audit/ReadableAuditTrailListerInterface.php",
+   "lib/Service/BulkJob/BulkJobService.php",
+   "lib/Service/Case/CaseRealisationTasks.php",
+   "lib/Service/Deletion/DestructionScopeService.php",
+   "lib/Service/ExampleSet/ExampleSetAppointments.php",
+   "lib/Service/Flow/Timer/FlowTimerProjection.php",
+   "lib/Service/Flow/Timer/FlowTimerSweep.php",
+   "lib/Service/Flow/Timer/FlowTimerSweepTasks.php",
+   "lib/Service/Hardening/HardeningAuditWriter.php",
+   "lib/Service/Import/ImportValueCaster.php",
+   "lib/Service/Object/ObjectSlugBackfillLedger.php",
+   "lib/Service/Object/SaveObject/CascadeRules.php",
+   "lib/Service/Party/PartySearchService.php",
+   "lib/Service/Portal/PortalTaskDeliveryService.php",
+   "lib/Service/Portal/PortalTaskSources.php",
+   "lib/Service/Task/TaskBlockerGuard.php",
+   "lib/Service/Task/TaskPerformerResolver.php",
+   "lib/Service/Task/TaskProjectionService.php",
+   "lib/Service/Task/TaskSequenceServices.php",
+   "lib/Service/Task/WriteBack/WriteBackTaskResolver.php"
+  ],
+  "p_files": [
+   "lib/Db/ApiCallKeys.php",
+   "lib/Db/AuditTrailMapper.php",
+   "lib/Db/TaskMapper.php"
+  ],
+  "i_targets": [
+   "lib/Db/ApiCallKeys.php",
+   "lib/Db/AuditTrail/AuditedObject.php",
+   "lib/Db/AuditTrailMapper.php",
+   "lib/Db/ObjectHandling.php",
+   "lib/Db/OutcomeFilter.php",
+   "lib/Db/PortalTaskDeliveryMapper.php",
+   "lib/Db/QueryPage.php",
+   "lib/Db/TaskMapper.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 514,
+   "gt4": 159,
+   "gt6": 35,
+   "exposed": 2168
+  },
+  "target": {
+   "gt2": 356,
+   "gt4": 123,
+   "gt6": 35,
+   "exposed": 2141
+  },
+  "deferred": [
+   "lib/Db/AuditTrailMapper.php AuditTrailMapper::findAll: caller or builder lib/Calendar/RegisterCalendar.php is owned by lane M27",
+   "lib/Db/AuditTrailMapper.php AuditTrailMapper::createAuditTrailEntry: caller or builder lib/Controller/ArchivalController.php is in open cloud/h02-archival-methods",
+   "lib/Db/AuditTrailMapper.php AuditTrailMapper::findByActor: caller or builder lib/Service/UserService.php is owned by lane M34",
+   "lib/Db/AuditTrailMapper.php AuditTrailMapper::createSharedMasterDataRefusalEntry: caller or builder lib/Service/Object/SaveObject.php is in open #5046,#5116",
+   "lib/Db/AuditTrailMapper.php AuditTrailMapper::createExportEntry: caller or builder lib/Service/Export/ExportAuditRecorder.php is owned by lane M37",
+   "lib/Db/AuditTrailMapper.php AuditTrailMapper::createAuditTrail: caller or builder lib/Service/Object/DeleteObject.php is in open #5497",
+   "lib/Db/AuditTrailMapper.php AuditTrailMapper::buildAuditTrail: caller or builder lib/Service/Object/DeleteObject.php is in open #5497",
+   "lib/Db/AuditTrailMapper.php AuditTrailMapper::revertObject: caller or builder lib/Service/Object/RevertHandler.php is in open cloud/h18-wip-engine-ctors",
+   "lib/Db/AuditTrailMapper.php AuditTrailMapper::getStatistics: caller or builder lib/Controller/SchemasController.php is in open #6215,#6217",
+   "lib/Db/AuditTrailMapper.php AuditTrailMapper::findForObjectByAction: caller or builder lib/Controller/DeletedController.php is in open #5046,#5116",
+   "lib/Db/TaskMapper.php TaskMapper::findInbox: caller or builder lib/Service/Task/TaskInboxService.php is owned by lane M18"
+  ],
+  "away": {
+   "lib/Db/AuditTrailMapper.php": [
+    [
+     "lib/AppInfo/Application.php",
+     "off limits this round"
+    ]
+   ],
+   "lib/Db/ObjectHandling.php": [
+    [
+     "lib/Service/Object/ValidateObject.php",
+     "owned by lane M23"
+    ]
+   ],
+   "lib/Db/OutcomeFilter.php": [
+    [
+     "lib/Controller/SchemaMigrationController.php",
+     "owned by lane M37"
+    ],
+    [
+     "lib/Service/Schema/SchemaMigrationService.php",
+     "owned by lane M37"
+    ],
+    [
+     "lib/Service/Schema/SchemaVersioningService.php",
+     "held by open cloud/k29-schema-interfacing"
+    ]
+   ],
+   "lib/Db/PortalTaskDeliveryMapper.php": [
+    [
+     "lib/Service/ServiceRegistrar.php",
+     "held by open cloud/k03-cache-handler-fields"
+    ],
+    [
+     "lib/Service/Task/TaskInboxService.php",
+     "owned by lane M18"
+    ]
+   ],
+   "lib/Db/QueryPage.php": [
+    [
+     "lib/Controller/SchemaMigrationController.php",
+     "owned by lane M37"
+    ]
+   ],
+   "lib/Db/TaskMapper.php": [
+    [
+     "lib/Notifications/BackgroundJob/TaskScheduledNotificationJob.php",
+     "owned by lane M18"
+    ],
+    [
+     "lib/Repair/MigrateApprovalChainsToTasks.php",
+     "owned by lane M30"
+    ],
+    [
+     "lib/Service/Case/CaseRealisationService.php",
+     "owned by lane M18"
+    ],
+    [
+     "lib/Service/ExampleSet/ExampleSetCasePlans.php",
+     "owned by lane M20"
+    ],
+    [
+     "lib/Service/ExampleSet/ExampleSetTasks.php",
+     "owned by lane M18"
+    ],
+    [
+     "lib/Service/Flow/Timer/FlowTimerService.php",
+     "held by open cloud/h18-wip-timer-units"
+    ],
+    [
+     "lib/Service/Flow/Timer/FlowTimerSubjects.php",
+     "held by open cloud/h18-wip-timer-units"
+    ],
+    [
+     "lib/Service/ServiceRegistrar.php",
+     "held by open cloud/k03-cache-handler-fields"
+    ],
+    [
+     "lib/Service/Task/TaskInboxService.php",
+     "owned by lane M18"
+    ],
+    [
+     "lib/Service/Task/TaskMetricsProvider.php",
+     "owned by lane M29"
+    ],
+    [
+     "lib/Service/Task/TaskService.php",
+     "owned by lane M18"
+    ]
+   ]
+  }
+ },
+ "M04": {
+  "id": "M04",
+  "files": [
+   "lib/BackgroundJob/ConfigurationCheckJob.php",
+   "lib/Controller/ConfigurationsController.php",
+   "lib/Db/ConfigurationMapper.php",
+   "lib/Db/MapperWiring.php",
+   "lib/Db/TranslationEdit.php",
+   "lib/Db/TranslationFilter.php",
+   "lib/Db/TranslationSlot.php",
+   "lib/Db/WebhookMapper.php",
+   "lib/Db/WebhookMapperInterface.php",
+   "lib/Service/BulkTranslationService.php",
+   "lib/Service/TranslationProjectionService.php",
+   "lib/Service/TranslationStatusService.php",
+   "lib/Service/WebhookDeliveryRecorder.php"
+  ],
+  "p_files": [
+   "lib/BackgroundJob/ConfigurationCheckJob.php",
+   "lib/Controller/ConfigurationsController.php",
+   "lib/Db/ConfigurationMapper.php",
+   "lib/Db/WebhookMapper.php",
+   "lib/Service/TranslationStatusService.php"
+  ],
+  "i_targets": [
+   "lib/Db/ConfigurationMapper.php",
+   "lib/Db/TranslationEdit.php",
+   "lib/Db/TranslationFilter.php",
+   "lib/Db/TranslationSlot.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 195,
+   "gt4": 104,
+   "gt6": 24,
+   "exposed": 250
+  },
+  "target": {
+   "gt2": 176,
+   "gt4": 50,
+   "gt6": 24,
+   "exposed": 184
+  },
+  "deferred": [
+   "lib/Db/ConfigurationMapper.php ConfigurationMapper::findAll: caller or builder lib/Controller/ConfigurationController.php is owned by lane M37",
+   "lib/Db/ConfigurationMapper.php ConfigurationMapper::findByApp: caller or builder lib/Controller/ConfigurationController.php is owned by lane M37",
+   "lib/Db/ConfigurationMapper.php ConfigurationMapper::updateSyncStatus: caller or builder lib/BackgroundJob/SyncConfigurationsJob.php is owned by lane M37",
+   "lib/Db/WebhookMapper.php WebhookMapper::findAll: caller or builder lib/Controller/OrganisationController.php is in open #4641"
+  ],
+  "away": {
+   "lib/Db/ConfigurationMapper.php": [
+    [
+     "lib/Service/Configuration/ConfigurationServiceRegistrar.php",
+     "held by open #5968"
+    ],
+    [
+     "lib/Service/Configuration/ExportHandler.php",
+     "held by open #5968"
+    ],
+    [
+     "lib/Service/Configuration/ImportHandler.php",
+     "held by open #5968"
+    ]
+   ]
+  }
+ },
+ "M05": {
+  "id": "M05",
+  "files": [
+   "lib/Db/FlowMapper.php",
+   "lib/Db/FlowMapperInterface.php",
+   "lib/Db/IdCursor.php",
+   "lib/Listener/FlowEngineRegistrationListener.php",
+   "lib/Repair/MigrateRenamedFlowNodeTypes.php",
+   "lib/Repair/PurgePhantomMigratedFlows.php",
+   "lib/Repair/TypePerformerReferences.php",
+   "lib/Service/Bindings/FlowBindings.php",
+   "lib/Service/Flow/FlowLocator.php",
+   "lib/Service/Flow/FlowRunAttribution.php",
+   "lib/Service/Flow/FlowRunVersionPin.php",
+   "lib/Service/Flow/FlowService.php",
+   "lib/Service/Flow/Principal/PrincipalReference.php",
+   "lib/WorkflowEngine/RunFlowOperation.php"
+  ],
+  "p_files": [
+   "lib/Db/FlowMapper.php",
+   "lib/Repair/MigrateRenamedFlowNodeTypes.php",
+   "lib/Repair/PurgePhantomMigratedFlows.php",
+   "lib/Repair/TypePerformerReferences.php",
+   "lib/Service/Flow/FlowLocator.php",
+   "lib/Service/Flow/FlowService.php",
+   "lib/WorkflowEngine/RunFlowOperation.php"
+  ],
+  "i_targets": [
+   "lib/Db/FlowMapper.php",
+   "lib/Db/IdCursor.php",
+   "lib/Service/Flow/Principal/PrincipalReference.php",
+   "lib/WorkflowEngine/RunFlowOperation.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 489,
+   "gt4": 243,
+   "gt6": 42,
+   "exposed": 372
+  },
+  "target": {
+   "gt2": 390,
+   "gt4": 74,
+   "gt6": 0,
+   "exposed": 179
+  },
+  "deferred": [
+   "lib/Db/FlowMapper.php FlowMapper::findAllFlows: caller or builder lib/AppHost/Scheduling/ScheduleFlowStore.php is owned by lane M17",
+   "lib/Service/Flow/FlowLocator.php FlowLocator::resolveSubject: caller or builder lib/Service/Flow/FlowRunAdvancer.php is in open #4771",
+   "lib/Service/Flow/FlowLocator.php FlowLocator::flowsForTrigger: caller or builder lib/Service/Flow/FlowTriggerService.php is in open #4771",
+   "lib/Service/Flow/FlowService.php FlowService::findAll: caller or builder lib/Controller/FlowController.php is owned by lane M17",
+   "lib/Service/Flow/FlowService.php FlowService::run: caller or builder lib/Controller/FlowController.php is owned by lane M17"
+  ],
+  "away": {
+   "lib/Db/FlowMapper.php": [
+    [
+     "lib/Service/ExampleSet/ExampleSetFlows.php",
+     "owned by lane M17"
+    ],
+    [
+     "lib/Service/Flow/FlowDelegationCheck.php",
+     "owned by lane M25"
+    ],
+    [
+     "lib/Service/Flow/FlowRunService.php",
+     "held by open #7593"
+    ]
+   ],
+   "lib/Db/IdCursor.php": [
+    [
+     "lib/Service/BulkJob/BulkJobExecutor.php",
+     "owned by lane M33"
+    ],
+    [
+     "lib/Service/BulkJob/BulkJobService.php",
+     "owned by lane M03"
+    ]
+   ]
+  }
+ },
+ "M06": {
+  "id": "M06",
+  "files": [
+   "lib/BackgroundJob/TenantUsageSyncJob.php",
+   "lib/Controller/ConsumersController.php",
+   "lib/Controller/ProcessingLogController.php",
+   "lib/Db/ConsumerMapper.php",
+   "lib/Db/ConsumerMapperInterface.php",
+   "lib/Db/CospendEntryKey.php",
+   "lib/Db/EmptyPropertyClaim.php",
+   "lib/Db/EntityRelationMapper.php",
+   "lib/Db/FormSubmissionRef.php",
+   "lib/Db/JobRunFilter.php",
+   "lib/Db/LikeOperators.php",
+   "lib/Db/MagicMapper/MagicOrganizationHandler.php",
+   "lib/Db/MagicMapper/MagicStatisticsHandler.php",
+   "lib/Db/MagicMapper/OrganisationlessAdmission.php",
+   "lib/Db/ProcessingLogReadScope.php",
+   "lib/Db/RuleRunMapper.php",
+   "lib/Db/RuleRunMapperInterface.php",
+   "lib/Db/SearchTrailCriteria.php",
+   "lib/Db/UsageMeasurement.php",
+   "lib/Files/Db/EntityRelationMapperInterface.php",
+   "lib/Files/Service/File/ManualEntityService.php",
+   "lib/Service/Audit/TokenResolver.php",
+   "lib/Service/Consumer/ConsumerMapperSource.php",
+   "lib/Service/CospendLinkService.php",
+   "lib/Service/FormLinkService.php",
+   "lib/Service/ObjectAction/ObjectActionSelfAssign.php",
+   "lib/Service/ObjectSource/DbalListClauses.php",
+   "lib/Service/Operations/SupportBundleService.php",
+   "lib/Service/OperationsConsoleService.php",
+   "lib/Service/SearchTrailService.php"
+  ],
+  "p_files": [
+   "lib/Db/ConsumerMapper.php",
+   "lib/Db/EntityRelationMapper.php",
+   "lib/Db/MagicMapper/MagicOrganizationHandler.php",
+   "lib/Db/MagicMapper/MagicStatisticsHandler.php",
+   "lib/Db/RuleRunMapper.php",
+   "lib/Service/FormLinkService.php",
+   "lib/Service/SearchTrailService.php"
+  ],
+  "i_targets": [
+   "lib/Db/CospendEntryKey.php",
+   "lib/Db/EmptyPropertyClaim.php",
+   "lib/Db/FormSubmissionRef.php",
+   "lib/Db/JobRunFilter.php",
+   "lib/Db/LikeOperators.php",
+   "lib/Db/MagicMapper/OrganisationlessAdmission.php",
+   "lib/Db/ProcessingLogReadScope.php",
+   "lib/Db/SearchTrailCriteria.php",
+   "lib/Db/UsageMeasurement.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 381,
+   "gt4": 117,
+   "gt6": 0,
+   "exposed": 135
+  },
+  "target": {
+   "gt2": 299,
+   "gt4": 70,
+   "gt6": 0,
+   "exposed": 37
+  },
+  "deferred": [
+   "lib/Db/EntityRelationMapper.php EntityRelationMapper::__construct: caller or builder lib/Db/MapperWiring.php is owned by lane M04",
+   "lib/Db/MagicMapper/MagicOrganizationHandler.php MagicOrganizationHandler::__construct: caller or builder lib/Db/MagicMapper.php is in open #6108",
+   "lib/Db/MagicMapper/MagicOrganizationHandler.php MagicOrganizationHandler::applyOrganizationFilter: caller or builder lib/Db/MagicMapper/MagicSearchHandler.php is in open #6108",
+   "lib/Db/MagicMapper/MagicOrganizationHandler.php MagicOrganizationHandler::resolveOrganizationScope: caller or builder lib/Db/MagicMapper.php is in open #6108",
+   "lib/Db/RuleRunMapper.php RuleRunMapper::findByRule: caller or builder lib/Controller/RulesController.php is owned by lane M17",
+   "lib/Db/RuleRunMapper.php RuleRunMapper::countByRule: caller or builder lib/Controller/RulesController.php is owned by lane M17",
+   "lib/Db/MagicMapper/MagicStatisticsHandler.php MagicStatisticsHandler::__construct: caller or builder lib/Db/MagicMapper.php is in open #6108",
+   "lib/Db/MagicMapper/MagicStatisticsHandler.php MagicStatisticsHandler::getStatistics: caller or builder lib/Db/MagicMapper.php is in open #6108",
+   "lib/Db/MagicMapper/MagicStatisticsHandler.php MagicStatisticsHandler::convertRowToObjectEntity: caller or builder lib/Db/MagicMapper.php is in open #6108"
+  ],
+  "away": {
+   "lib/Db/JobRunFilter.php": [
+    [
+     "lib/Service/Operations/OperationsJobsService.php",
+     "owned by lane M08"
+    ]
+   ],
+   "lib/Db/MagicMapper/OrganisationlessAdmission.php": [
+    [
+     "lib/Service/Aggregation/AggregationRunner.php",
+     "held by open #4404"
+    ]
+   ]
+  }
+ },
+ "M07": {
+  "id": "M07",
+  "files": [
+   "lib/Db/MagicMapper/MagicTableHandler.php",
+   "lib/Db/RuleRunSummaryMapper.php",
+   "lib/Db/RuleRunSummaryMapperInterface.php"
+  ],
+  "p_files": [
+   "lib/Db/MagicMapper/MagicTableHandler.php",
+   "lib/Db/RuleRunSummaryMapper.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 56,
+   "gt4": 29,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 49,
+   "gt4": 8,
+   "gt6": 0
+  },
+  "deferred": [
+   "lib/Db/MagicMapper/MagicTableHandler.php MagicTableHandler::__construct: caller or builder lib/Db/MagicMapper.php is in open #6108",
+   "lib/Db/MagicMapper/MagicTableHandler.php MagicTableHandler::ensureTableForRegisterSchema: caller or builder lib/Db/MagicMapper.php is in open #6108"
+  ],
+  "away": {}
+ },
+ "M08": {
+  "id": "M08",
+  "files": [
+   "lib/Files/BackgroundJob/ChunkVectorizationBatch.php",
+   "lib/Files/BackgroundJob/ChunkVectorizationJob.php",
+   "lib/Search/BackgroundJob/SearchJobHandles.php",
+   "lib/Search/Db/View.php",
+   "lib/Search/Listener/AggregationThresholdListener.php",
+   "lib/Search/Listener/ObjectMetricsListener.php",
+   "lib/Search/SearchWiring.php",
+   "lib/Search/Service/Aggregation/AggregationQuery.php",
+   "lib/Search/Service/Geo/GeoResponseCrsFactory.php",
+   "lib/Search/Service/GraphQL/GraphQLErrorFormatter.php",
+   "lib/Search/Service/Quality/UniqueHintAnnotationValidator.php",
+   "lib/Search/Service/Quality/UniqueHintAnnotationValidatorInterface.php",
+   "lib/Search/Service/Search/PlaceholderResolvers.php",
+   "lib/Search/Service/Search/PropertySearchProfile.php",
+   "lib/Search/Service/SearchAnnotationValidators.php",
+   "lib/Search/Service/Vectorization/Handlers/ChunkVectorSource.php",
+   "lib/Service/Aggregation/AdhocAggregationRun.php",
+   "lib/Service/Aggregation/AggregationRunnerInterface.php",
+   "lib/Service/Calculation/AggregateReferenceResolver.php",
+   "lib/Service/Deferral/ListenerDeferralService.php",
+   "lib/Service/GraphQL/ListAggregations.php",
+   "lib/Service/Object/FacetableFieldDiscovery.php",
+   "lib/Service/Operations/OperationsJobsService.php",
+   "lib/Service/Quality/UniqueHintChecker.php"
+  ],
+  "p_files": [
+   "lib/Search/Service/Aggregation/AggregationQuery.php",
+   "lib/Search/Service/Vectorization/Handlers/ChunkVectorSource.php",
+   "lib/Service/Deferral/ListenerDeferralService.php"
+  ],
+  "i_targets": [
+   "lib/Search/BackgroundJob/SearchJobHandles.php",
+   "lib/Search/Db/View.php",
+   "lib/Search/Listener/AggregationThresholdListener.php",
+   "lib/Search/Listener/ObjectMetricsListener.php",
+   "lib/Search/Service/Aggregation/AggregationQuery.php",
+   "lib/Search/Service/Geo/GeoResponseCrsFactory.php",
+   "lib/Search/Service/GraphQL/GraphQLErrorFormatter.php",
+   "lib/Search/Service/Search/PlaceholderResolvers.php",
+   "lib/Search/Service/Search/PropertySearchProfile.php",
+   "lib/Search/Service/SearchAnnotationValidators.php",
+   "lib/Search/Service/Vectorization/Handlers/ChunkVectorSource.php"
+  ],
+  "moves": [
+   {
+    "file": "lib/Search/Service/Quality/UniqueHintAnnotationValidatorInterface.php",
+    "to": "Service"
+   },
+   {
+    "file": "lib/Files/BackgroundJob/ChunkVectorizationBatch.php",
+    "to": "Search"
+   }
+  ],
+  "before": {
+   "gt2": 126,
+   "gt4": 35,
+   "gt6": 17,
+   "moves_left": 2,
+   "exposed": 616
+  },
+  "target": {
+   "gt2": 95,
+   "gt4": 17,
+   "gt6": 17,
+   "moves_left": 0,
+   "exposed": 596
+  },
+  "deferred": [
+   "lib/Search/Service/Aggregation/AggregationQuery.php AggregationQuery::create: caller or builder lib/Service/Aggregation/AggregationRunner.php is in open #4404",
+   "lib/Service/Deferral/ListenerDeferralService.php ListenerDeferralService::defer: caller or builder lib/Listener/AnnotationNotificationListener.php is in open #5046,#5116"
+  ],
+  "away": {
+   "lib/Search/Service/Aggregation/AggregationQuery.php": [
+    [
+     "lib/Service/Aggregation/AggregationRunner.php",
+     "held by open #4404"
+    ]
+   ],
+   "lib/Search/Db/View.php": [
+    [
+     "lib/BackgroundJob/ViewAlertSweepJob.php",
+     "owned by lane M25"
+    ],
+    [
+     "lib/Event/AbstractViewEvent.php",
+     "off limits this round"
+    ],
+    [
+     "lib/Event/ViewAlertCrossedEvent.php",
+     "off limits this round"
+    ],
+    [
+     "lib/Event/ViewUpdatedEvent.php",
+     "off limits this round"
+    ],
+    [
+     "lib/Mcp/Db/Agent.php",
+     "owned by lane M09"
+    ]
+   ],
+   "lib/Search/Listener/AggregationThresholdListener.php": [
+    [
+     "lib/Listener/ListenerRegistrar.php",
+     "owned by lane M32"
+    ]
+   ],
+   "lib/Search/Listener/ObjectMetricsListener.php": [
+    [
+     "lib/Listener/ListenerRegistrar.php",
+     "owned by lane M32"
+    ]
+   ],
+   "lib/Search/Service/Geo/GeoResponseCrsFactory.php": [
+    [
+     "lib/Controller/ObjectsController.php",
+     "held by open #5046,#5116,#6178,#6179,#6219"
+    ]
+   ],
+   "lib/Search/Service/GraphQL/GraphQLErrorFormatter.php": [
+    [
+     "lib/Service/GraphQL/GraphQLResolver.php",
+     "held by open #6108"
+    ]
+   ],
+   "lib/Search/Service/Search/PlaceholderResolvers.php": [
+    [
+     "lib/Service/Object/SaveObject.php",
+     "held by open #5046,#5116"
+    ]
+   ],
+   "lib/Search/Service/Search/PropertySearchProfile.php": [
+    [
+     "lib/Db/MagicMapper/MagicSearchHandler.php",
+     "held by open #6108"
+    ],
+    [
+     "lib/Service/Schemas/PropertyValidatorHandler.php",
+     "held by open #4496"
+    ]
+   ],
+   "lib/Search/Service/SearchAnnotationValidators.php": [
+    [
+     "lib/Db/SchemaMapper/AdvisoryAnnotationChecks.php",
+     "held by open #6215,#6217"
+    ],
+    [
+     "lib/Db/SchemaMapper/RecordAnnotationRefusals.php",
+     "held by open #6973"
+    ]
+   ]
+  }
+ },
+ "M09": {
+  "id": "M09",
+  "files": [
+   "lib/AppHost/Search/AbstractSchemaSearchProvider.php",
+   "lib/ContextChat/ContentProvider.php",
+   "lib/Controller/AgentsController.php",
+   "lib/Controller/ChatController.php",
+   "lib/Controller/ConversationController.php",
+   "lib/Controller/Support/ChatStreamTurn.php",
+   "lib/Mcp/Db/Agent.php",
+   "lib/Mcp/Db/Conversation.php",
+   "lib/Mcp/Listener/ContextChatSubmissionListener.php",
+   "lib/Mcp/Listener/ContextChatSubmissionListenerInterface.php",
+   "lib/Mcp/McpWiring.php",
+   "lib/Mcp/Service/Chat/StreamYieldChannels.php",
+   "lib/Mcp/Service/Mcp/McpAnnotationValidators.php",
+   "lib/Notifications/Service/Notification/RuleFiring.php",
+   "lib/Notifications/Service/Notification/TalkSender.php",
+   "lib/Notifications/Service/Notification/TalkSenderInterface.php",
+   "lib/Search/ObjectsProvider.php",
+   "lib/Search/ObjectsProviderOutput.php",
+   "lib/Service/Bindings/FeatureBindings.php",
+   "lib/Service/Flow/FlowMessagingService.php",
+   "lib/Service/Integration/LeafBundles.php",
+   "lib/Service/Integration/LeafDescriptor.php",
+   "lib/Service/Integration/PaginatedResults.php",
+   "lib/Service/Integration/QueryTimeContract.php",
+   "lib/Service/Search/ObjectSearchResultFormatter.php",
+   "lib/Service/Search/SearchGrammar.php"
+  ],
+  "p_files": [
+   "lib/Mcp/Listener/ContextChatSubmissionListener.php",
+   "lib/Notifications/Service/Notification/RuleFiring.php",
+   "lib/Notifications/Service/Notification/TalkSender.php",
+   "lib/Service/Integration/LeafDescriptor.php",
+   "lib/Service/Search/ObjectSearchResultFormatter.php"
+  ],
+  "i_targets": [
+   "lib/Mcp/Db/Agent.php",
+   "lib/Mcp/Db/Conversation.php",
+   "lib/Mcp/Listener/ContextChatSubmissionListener.php",
+   "lib/Mcp/Service/Chat/StreamYieldChannels.php",
+   "lib/Mcp/Service/Mcp/McpAnnotationValidators.php",
+   "lib/Service/Integration/LeafBundles.php",
+   "lib/Service/Integration/LeafDescriptor.php",
+   "lib/Service/Integration/PaginatedResults.php",
+   "lib/Service/Integration/QueryTimeContract.php",
+   "lib/Service/Search/ObjectSearchResultFormatter.php",
+   "lib/Service/Search/SearchGrammar.php"
+  ],
+  "moves": [
+   {
+    "file": "lib/Mcp/Listener/ContextChatSubmissionListenerInterface.php",
+    "to": "ContextChat"
+   }
+  ],
+  "before": {
+   "gt2": 173,
+   "gt4": 58,
+   "gt6": 14,
+   "moves_left": 1,
+   "exposed": 726
+  },
+  "target": {
+   "gt2": 110,
+   "gt4": 19,
+   "gt6": 0,
+   "moves_left": 0,
+   "exposed": 550
+  },
+  "deferred": [
+   "lib/Notifications/Service/Notification/TalkSender.php TalkSender::__construct: caller or builder lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php is in open #6215,#6217",
+   "lib/Notifications/Service/Notification/RuleFiring.php RuleFiring::__construct: caller or builder lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php is in open #6215,#6217"
+  ],
+  "away": {
+   "lib/Mcp/Db/Agent.php": [
+    [
+     "lib/Event/AbstractAgentEvent.php",
+     "off limits this round"
+    ],
+    [
+     "lib/Event/AgentUpdatedEvent.php",
+     "off limits this round"
+    ],
+    [
+     "lib/Search/Db/View.php",
+     "owned by lane M08"
+    ],
+    [
+     "lib/Service/Mcp/McpAgentScope.php",
+     "held by open #4641"
+    ]
+   ],
+   "lib/Mcp/Db/Conversation.php": [
+    [
+     "lib/Controller/ChatStreamController.php",
+     "held by open #4641"
+    ],
+    [
+     "lib/Db/FeedbackMapper.php",
+     "owned by lane M12"
+    ],
+    [
+     "lib/Db/FeedbackMapperInterface.php",
+     "owned by lane M12"
+    ],
+    [
+     "lib/Event/AbstractConversationEvent.php",
+     "off limits this round"
+    ],
+    [
+     "lib/Event/ConversationUpdatedEvent.php",
+     "off limits this round"
+    ],
+    [
+     "lib/Notifications/Db/Message.php",
+     "owned by lane M12"
+    ],
+    [
+     "lib/Notifications/Db/MessageMapper.php",
+     "owned by lane M12"
+    ],
+    [
+     "lib/Notifications/Db/MessageMapperInterface.php",
+     "owned by lane M12"
+    ]
+   ],
+   "lib/Mcp/Listener/ContextChatSubmissionListener.php": [
+    [
+     "lib/Listener/ListenerRegistrar.php",
+     "owned by lane M32"
+    ]
+   ],
+   "lib/Mcp/Service/Chat/StreamYieldChannels.php": [
+    [
+     "lib/Controller/ChatStreamController.php",
+     "held by open #4641"
+    ]
+   ],
+   "lib/Mcp/Service/Mcp/McpAnnotationValidators.php": [
+    [
+     "lib/Db/SchemaMapper/ExchangeAnnotationRefusals.php",
+     "held by open #6973"
+    ]
+   ],
+   "lib/Service/Integration/LeafDescriptor.php": [
+    [
+     "lib/Event/RegisterLeafProvidersEvent.php",
+     "off limits this round"
+    ],
+    [
+     "lib/Listener/LeafScriptListener.php",
+     "owned by lane M33"
+    ]
+   ],
+   "lib/Service/Integration/LeafBundles.php": [
+    [
+     "lib/Listener/LeafScriptListener.php",
+     "owned by lane M33"
+    ]
+   ],
+   "lib/Service/Integration/PaginatedResults.php": [
+    [
+     "lib/Controller/ObjectIntegrationsController.php",
+     "owned by lane M11"
+    ]
+   ],
+   "lib/Service/Integration/QueryTimeContract.php": [
+    [
+     "lib/Controller/ObjectIntegrationsController.php",
+     "owned by lane M11"
+    ]
+   ],
+   "lib/Service/Search/SearchGrammar.php": [
+    [
+     "lib/Controller/ObjectsController.php",
+     "held by open #5046,#5116,#6178,#6179,#6219"
+    ],
+    [
+     "lib/Db/MagicMapper/MagicSearchHandler.php",
+     "held by open #6108"
+    ]
+   ]
+  }
+ },
+ "M10": {
+  "id": "M10",
+  "files": [
+   "lib/Controller/AnonymisationBackendController.php",
+   "lib/Db/Schema/LinkedTypesRule.php",
+   "lib/Files/Controller/Settings/FileSettingsController.php",
+   "lib/Files/Service/TextExtraction/EntityRecognitionBackends.php",
+   "lib/Files/Service/TextExtraction/EntityRecognitionHandler.php",
+   "lib/Mcp/McpProviderDiscovery.php",
+   "lib/Mcp/PerAppMcpProviderProbe.php",
+   "lib/Notifications/Service/Notification/NotificationRecipientResolver.php",
+   "lib/Repair/LogDanglingLinkedTypes.php",
+   "lib/Service/Anonymisation/BackendMethodsInterface.php",
+   "lib/Service/Anonymisation/BackendState.php",
+   "lib/Service/Integration/IntegrationCatalogueInterface.php",
+   "lib/Service/Integration/IntegrationIdIndexInterface.php",
+   "lib/Service/Integration/IntegrationWiring.php",
+   "lib/Service/Integration/PropertyReferenceTypeValidator.php",
+   "lib/Service/LinkedEntityIntegrations.php",
+   "lib/Service/LinkedEntityService.php"
+  ],
+  "p_files": [
+   "lib/Files/Service/TextExtraction/EntityRecognitionHandler.php",
+   "lib/Mcp/McpProviderDiscovery.php",
+   "lib/Mcp/PerAppMcpProviderProbe.php",
+   "lib/Notifications/Service/Notification/NotificationRecipientResolver.php"
+  ],
+  "i_targets": [
+   "lib/Repair/LogDanglingLinkedTypes.php"
+  ],
+  "moves": [
+   {
+    "file": "lib/Service/Anonymisation/BackendMethodsInterface.php",
+    "to": "Files"
+   },
+   {
+    "file": "lib/Files/Service/TextExtraction/EntityRecognitionBackends.php",
+    "to": "Service"
+   },
+   {
+    "file": "lib/Service/Integration/IntegrationIdIndexInterface.php",
+    "to": "Db"
+   }
+  ],
+  "before": {
+   "gt2": 537,
+   "gt4": 12,
+   "gt6": 0,
+   "moves_left": 3,
+   "exposed": 170
+  },
+  "target": {
+   "gt2": 235,
+   "gt4": 12,
+   "gt6": 0,
+   "moves_left": 0,
+   "exposed": 0
+  },
+  "deferred": [
+   "lib/Notifications/Service/Notification/NotificationRecipientResolver.php NotificationRecipientResolver::resolveWithDiagnostics: caller or builder lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php is in open #6215,#6217"
+  ],
+  "away": {}
+ },
+ "M11": {
+  "id": "M11",
+  "files": [
+   "lib/Controller/ObjectIntegrationsController.php",
+   "lib/Files/Service/NoteService.php",
+   "lib/Mcp/BuiltIn/IntegrationsToolProvider.php",
+   "lib/Notifications/Controller/NotesController.php",
+   "lib/Notifications/Service/TimelineVisibilityServiceInterface.php",
+   "lib/Search/Service/ExampleSet/ExampleSetViewRowsInterface.php",
+   "lib/Service/ActivityFilterService.php",
+   "lib/Service/Integration/AbstractIntegrationProvider.php",
+   "lib/Service/Integration/BuiltinProviders/NotesProvider.php",
+   "lib/Service/Integration/IntegrationProvider.php",
+   "lib/Service/Integration/Providers/ContactsProvider.php",
+   "lib/Service/Integration/Providers/SharesProvider.php",
+   "lib/Service/Integration/Providers/TalkProvider.php"
+  ],
+  "p_files": [
+   "lib/Controller/ObjectIntegrationsController.php",
+   "lib/Files/Service/NoteService.php",
+   "lib/Notifications/Controller/NotesController.php",
+   "lib/Service/ActivityFilterService.php",
+   "lib/Service/Integration/AbstractIntegrationProvider.php",
+   "lib/Service/Integration/BuiltinProviders/NotesProvider.php",
+   "lib/Service/Integration/Providers/ContactsProvider.php",
+   "lib/Service/Integration/Providers/TalkProvider.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 433,
+   "gt4": 87,
+   "gt6": 15
+  },
+  "target": {
+   "gt2": 355,
+   "gt4": 74,
+   "gt6": 15
+  },
+  "deferred": [
+   "lib/Files/Service/NoteService.php NoteService::createNoteAs: caller or builder in lib/Kernel/Contracts/NoteServiceInterface.php, off limits this round",
+   "lib/Files/Service/NoteService.php NoteService::getNotesForObject: caller or builder in lib/Kernel/Contracts/NoteServiceInterface.php, off limits this round",
+   "lib/Files/Service/NoteService.php NoteService::auditEdit: caller or builder in lib/Kernel/Contracts/NoteServiceInterface.php, off limits this round",
+   "lib/Files/Service/NoteService.php NoteService::createNote: caller or builder in lib/Kernel/Contracts/NoteServiceInterface.php, off limits this round",
+   "lib/Files/Service/NoteService.php NoteService::updateNote: caller or builder in lib/Kernel/Contracts/NoteServiceInterface.php, off limits this round",
+   "lib/Service/Integration/AbstractIntegrationProvider.php AbstractIntegrationProvider::get: caller or builder lib/Service/Integration/IntegrationCatalogueInterface.php is owned by lane M10",
+   "lib/Service/Integration/BuiltinProviders/NotesProvider.php NotesProvider::update: caller or builder lib/Service/Integration/BuiltinProviders/TasksProvider.php is in open cloud/e11-integration-providers",
+   "lib/Service/Integration/BuiltinProviders/NotesProvider.php NotesProvider::create: caller or builder lib/Service/Integration/BuiltinProviders/TagsProvider.php is in open cloud/e11-integration-providers",
+   "lib/Service/Integration/BuiltinProviders/NotesProvider.php NotesProvider::delete: caller or builder lib/Service/Integration/BuiltinProviders/TasksProvider.php is in open cloud/e11-integration-providers",
+   "lib/Service/Integration/Providers/ContactsProvider.php ContactsProvider::update: caller or builder lib/Service/Integration/BuiltinProviders/TasksProvider.php is in open cloud/e11-integration-providers",
+   "lib/Service/Integration/Providers/ContactsProvider.php ContactsProvider::delete: caller or builder lib/Service/Integration/BuiltinProviders/TasksProvider.php is in open cloud/e11-integration-providers"
+  ],
+  "away": {}
+ },
+ "M12": {
+  "id": "M12",
+  "files": [
+   "lib/Controller/ObjectFavouriteController.php",
+   "lib/Db/FeedbackMapper.php",
+   "lib/Db/FeedbackMapperInterface.php",
+   "lib/Mcp/Service/Chat/ConversationManagementHandler.php",
+   "lib/Mcp/Service/Chat/MessageHistoryHandler.php",
+   "lib/Notifications/Db/Message.php",
+   "lib/Notifications/Db/MessageMapper.php",
+   "lib/Notifications/Db/MessageMapperInterface.php",
+   "lib/Notifications/Db/ScheduledReport.php",
+   "lib/Notifications/Db/Watcher.php",
+   "lib/Notifications/Listener/ActivityEventListener.php",
+   "lib/Notifications/Listener/GraphQLSubscriptionListener.php",
+   "lib/Notifications/Listener/NotificationDedupeAnnotationSyncListener.php",
+   "lib/Notifications/Listener/NotificationDedupePruneListener.php",
+   "lib/Notifications/Listener/SystemEntityNotificationListener.php",
+   "lib/Notifications/NotificationsWiring.php",
+   "lib/Notifications/Service/Notification/EmailSender.php",
+   "lib/Notifications/Service/Notification/NotificationAnnotationValidators.php",
+   "lib/Notifications/Service/Party/PartyNotificationService.php",
+   "lib/Service/ExampleSet/ExampleSetWatchers.php",
+   "lib/Service/Interaction/FavouriteService.php",
+   "lib/Service/Interaction/FavouriteServiceInterface.php",
+   "lib/Service/Interaction/WatcherService.php",
+   "lib/Service/Interaction/WatcherServiceInterface.php",
+   "lib/Service/Notification/ReferencedAddressNotifier.php",
+   "lib/Service/ScheduledReportRun.php"
+  ],
+  "p_files": [
+   "lib/Notifications/Service/Notification/EmailSender.php",
+   "lib/Notifications/Service/Party/PartyNotificationService.php",
+   "lib/Service/Notification/ReferencedAddressNotifier.php"
+  ],
+  "i_targets": [
+   "lib/Notifications/Db/Message.php",
+   "lib/Notifications/Db/ScheduledReport.php",
+   "lib/Notifications/Db/Watcher.php",
+   "lib/Notifications/Listener/ActivityEventListener.php",
+   "lib/Notifications/Listener/GraphQLSubscriptionListener.php",
+   "lib/Notifications/Listener/NotificationDedupeAnnotationSyncListener.php",
+   "lib/Notifications/Listener/NotificationDedupePruneListener.php",
+   "lib/Notifications/Listener/SystemEntityNotificationListener.php",
+   "lib/Notifications/Service/Notification/NotificationAnnotationValidators.php"
+  ],
+  "moves": [
+   {
+    "file": "lib/Notifications/Db/Message.php",
+    "to": "Db"
+   }
+  ],
+  "before": {
+   "gt2": 225,
+   "gt4": 102,
+   "gt6": 41,
+   "moves_left": 1,
+   "exposed": 467
+  },
+  "target": {
+   "gt2": 173,
+   "gt4": 93,
+   "gt6": 41,
+   "moves_left": 0,
+   "exposed": 384
+  },
+  "deferred": [
+   "lib/Notifications/Service/Notification/EmailSender.php EmailSender::__construct: caller or builder lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php is in open #6215,#6217",
+   "lib/Notifications/Service/Notification/EmailSender.php EmailSender::sendToAddress: caller or builder lib/Service/Flow/FlowMessagingService.php is owned by lane M09",
+   "lib/Notifications/Service/Notification/EmailSender.php EmailSender::send: caller or builder lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php is in open #6215,#6217",
+   "lib/Notifications/Service/Party/PartyNotificationService.php PartyNotificationService::notifyParties: caller or builder lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php is in open #6215,#6217",
+   "lib/Service/Notification/ReferencedAddressNotifier.php ReferencedAddressNotifier::notify: caller or builder lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php is in open #6215,#6217"
+  ],
+  "away": {
+   "lib/Notifications/Db/ScheduledReport.php": [
+    [
+     "lib/Service/ScheduledReportService.php",
+     "owned by lane M14"
+    ]
+   ],
+   "lib/Notifications/Listener/ActivityEventListener.php": [
+    [
+     "lib/Listener/ListenerRegistrar.php",
+     "owned by lane M32"
+    ]
+   ],
+   "lib/Notifications/Listener/GraphQLSubscriptionListener.php": [
+    [
+     "lib/Listener/ListenerRegistrar.php",
+     "owned by lane M32"
+    ]
+   ],
+   "lib/Notifications/Listener/NotificationDedupeAnnotationSyncListener.php": [
+    [
+     "lib/Listener/ListenerRegistrar.php",
+     "owned by lane M32"
+    ]
+   ],
+   "lib/Notifications/Listener/NotificationDedupePruneListener.php": [
+    [
+     "lib/Listener/ListenerRegistrar.php",
+     "owned by lane M32"
+    ]
+   ],
+   "lib/Notifications/Listener/SystemEntityNotificationListener.php": [
+    [
+     "lib/Listener/ListenerRegistrar.php",
+     "owned by lane M32"
+    ]
+   ],
+   "lib/Notifications/Service/Notification/NotificationAnnotationValidators.php": [
+    [
+     "lib/Db/SchemaMapper/NotificationAnnotationCheck.php",
+     "held by open #6215,#6217"
+    ]
+   ]
+  }
+ },
+ "M13": {
+  "id": "M13",
+  "files": [
+   "lib/Files/Controller/FilesController.php",
+   "lib/Files/Db/File.php",
+   "lib/Files/Db/RegisterFolderRecorder.php",
+   "lib/Files/FilesRegistrar.php",
+   "lib/Files/Service/File/BulkDownloadArchive.php",
+   "lib/Files/Service/File/DocumentProcessingHandler.php",
+   "lib/Files/Service/File/FileAuditHandler.php",
+   "lib/Files/Service/File/Pdf/Fallback/PdfOdtFallbackOrchestrator.php",
+   "lib/Files/Service/File/Pdf/PdfTextReplacer.php",
+   "lib/Search/Service/Vectorization/Strategies/VectorizationStrategyInterface.php",
+   "lib/Search/Service/Vectorization/VectorizationRun.php",
+   "lib/Search/Service/Vectorization/VectorizedEntity.php",
+   "lib/Search/Service/VectorizationService.php",
+   "lib/Search/Service/VectorizationServiceInterface.php",
+   "lib/Service/File/FileFormattingHandler.php",
+   "lib/Service/File/FileHistoryHandlers.php",
+   "lib/Service/File/UpdateFileHandler.php",
+   "lib/Service/FileService.php",
+   "lib/Service/FileServiceInterface.php",
+   "lib/Service/Integration/Providers/ConnectorEntityCallsTrait.php",
+   "lib/Service/Integration/Providers/OpenProjectProvider.php",
+   "lib/Service/Integration/Providers/XwikiProvider.php",
+   "lib/Service/Vectorization/Strategies/FileVectorizationStrategyInterface.php",
+   "lib/Service/Vectorization/Strategies/ObjectVectorizationStrategyInterface.php"
+  ],
+  "p_files": [
+   "lib/Files/Controller/FilesController.php",
+   "lib/Files/Db/RegisterFolderRecorder.php",
+   "lib/Files/Service/File/DocumentProcessingHandler.php",
+   "lib/Files/Service/File/FileAuditHandler.php",
+   "lib/Files/Service/File/Pdf/PdfTextReplacer.php",
+   "lib/Service/FileService.php",
+   "lib/Service/Integration/Providers/ConnectorEntityCallsTrait.php"
+  ],
+  "i_targets": [
+   "lib/Files/Db/File.php",
+   "lib/Files/Db/RegisterFolderRecorder.php",
+   "lib/Files/Service/File/BulkDownloadArchive.php",
+   "lib/Files/Service/File/FileAuditHandler.php"
+  ],
+  "moves": [
+   {
+    "file": "lib/Search/Service/Vectorization/Strategies/VectorizationStrategyInterface.php",
+    "to": "Service"
+   }
+  ],
+  "before": {
+   "gt2": 840,
+   "gt4": 147,
+   "gt6": 16,
+   "moves_left": 1,
+   "exposed": 220
+  },
+  "target": {
+   "gt2": 711,
+   "gt4": 137,
+   "gt6": 16,
+   "moves_left": 0,
+   "exposed": 48
+  },
+  "deferred": [
+   "lib/Files/Service/File/DocumentProcessingHandler.php DocumentProcessingHandler::replaceWords: caller or builder in lib/Kernel/Contracts/DocumentProcessingHandlerInterface.php, off limits this round",
+   "lib/Files/Service/File/DocumentProcessingHandler.php DocumentProcessingHandler::anonymizeDocument: caller or builder in lib/Kernel/Contracts/DocumentProcessingHandlerInterface.php, off limits this round",
+   "lib/Files/Db/RegisterFolderRecorder.php RegisterFolderRecorder::record: caller or builder lib/Service/File/FolderManagementHandler.php is in open #4508"
+  ],
+  "away": {
+   "lib/Files/Db/RegisterFolderRecorder.php": [
+    [
+     "lib/Service/File/FolderManagementHandler.php",
+     "held by open #4508"
+    ],
+    [
+     "lib/Service/ServiceRegistrar.php",
+     "held by open cloud/k03-cache-handler-fields"
+    ]
+   ],
+   "lib/Files/Service/File/BulkDownloadArchive.php": [
+    [
+     "lib/Controller/ObjectsController.php",
+     "held by open #5046,#5116,#6178,#6179,#6219"
+    ]
+   ]
+  }
+ },
+ "M14": {
+  "id": "M14",
+  "files": [
+   "lib/Command/PruneRetiredSchemasCommand.php",
+   "lib/Search/Controller/ViewsController.php",
+   "lib/Search/Service/ExampleSet/ExampleSetViews.php",
+   "lib/Search/Service/ViewService.php",
+   "lib/Service/Dbal/DatabaseIntrospectionService.php",
+   "lib/Service/PersonLinkService.php",
+   "lib/Service/RegisterService.php",
+   "lib/Service/ScheduledReportService.php"
+  ],
+  "p_files": [
+   "lib/Command/PruneRetiredSchemasCommand.php",
+   "lib/Search/Service/ViewService.php",
+   "lib/Service/Dbal/DatabaseIntrospectionService.php",
+   "lib/Service/PersonLinkService.php",
+   "lib/Service/RegisterService.php",
+   "lib/Service/ScheduledReportService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 611,
+   "gt4": 108,
+   "gt6": 97
+  },
+  "target": {
+   "gt2": 383,
+   "gt4": 92,
+   "gt6": 81
+  },
+  "deferred": [
+   "lib/Search/Service/ViewService.php ViewService::update: caller or builder lib/Controller/ArchivalController.php is in open cloud/h02-archival-methods"
+  ],
+  "away": {}
+ },
+ "M15": {
+  "id": "M15",
+  "files": [
+   "lib/Files/Controller/FileExtractionController.php",
+   "lib/Files/Service/Sharing/AccessLinkReader.php",
+   "lib/Files/Service/Sharing/AccessLinkReaderFilters.php",
+   "lib/Files/Service/TextExtractionService.php",
+   "lib/Mcp/Db/ConversationMapper.php",
+   "lib/Notifications/Service/Notification/NotificationPreferenceService.php",
+   "lib/Notifications/Service/Timeline/PublicTimelineInterface.php",
+   "lib/Search/Service/Vectorization/Handlers/VectorSearchHandler.php",
+   "lib/Search/Service/Vectorization/VectorEmbeddings.php",
+   "lib/Service/CaseTokenService.php"
+  ],
+  "p_files": [
+   "lib/Files/Service/TextExtractionService.php",
+   "lib/Mcp/Db/ConversationMapper.php",
+   "lib/Notifications/Service/Notification/NotificationPreferenceService.php",
+   "lib/Search/Service/Vectorization/Handlers/VectorSearchHandler.php",
+   "lib/Search/Service/Vectorization/VectorEmbeddings.php",
+   "lib/Service/CaseTokenService.php"
+  ],
+  "i_targets": [],
+  "moves": [
+   {
+    "file": "lib/Files/Service/Sharing/AccessLinkReaderFilters.php",
+    "to": "Service"
+   }
+  ],
+  "before": {
+   "gt2": 636,
+   "gt4": 64,
+   "gt6": 0,
+   "moves_left": 1
+  },
+  "target": {
+   "gt2": 428,
+   "gt4": 64,
+   "gt6": 0,
+   "moves_left": 0
+  },
+  "deferred": [
+   "lib/Notifications/Service/Notification/NotificationPreferenceService.php NotificationPreferenceService::setGroupDefault: caller or builder in lib/Kernel/Contracts/NotificationPreferencesInterface.php, off limits this round",
+   "lib/Notifications/Service/Notification/NotificationPreferenceService.php NotificationPreferenceService::setOverride: caller or builder in lib/Kernel/Contracts/NotificationPreferencesInterface.php, off limits this round",
+   "lib/Notifications/Service/Notification/NotificationPreferenceService.php NotificationPreferenceService::resolveEffective: caller or builder lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php is in open #6215,#6217",
+   "lib/Notifications/Service/Notification/NotificationPreferenceService.php NotificationPreferenceService::getGroupDefault: caller or builder in lib/Kernel/Contracts/NotificationPreferencesInterface.php, off limits this round",
+   "lib/Notifications/Service/Notification/NotificationPreferenceService.php NotificationPreferenceService::getOverride: caller or builder in lib/Kernel/Contracts/NotificationPreferencesInterface.php, off limits this round",
+   "lib/Mcp/Db/ConversationMapper.php ConversationMapper::findByUser: caller or builder in lib/Kernel/Contracts/ConversationMapperInterface.php, off limits this round",
+   "lib/Mcp/Db/ConversationMapper.php ConversationMapper::findDeletedByUser: caller or builder in lib/Kernel/Contracts/ConversationMapperInterface.php, off limits this round",
+   "lib/Mcp/Db/ConversationMapper.php ConversationMapper::findTitlesByUserAgent: caller or builder in lib/Kernel/Contracts/ConversationMapperInterface.php, off limits this round",
+   "lib/Mcp/Db/ConversationMapper.php ConversationMapper::countByUser: caller or builder in lib/Kernel/Contracts/ConversationMapperInterface.php, off limits this round",
+   "lib/Mcp/Db/ConversationMapper.php ConversationMapper::canUserAccessConversation: caller or builder in lib/Kernel/Contracts/ConversationMapperInterface.php, off limits this round",
+   "lib/Search/Service/Vectorization/VectorEmbeddings.php VectorEmbeddings::testEmbedding: caller or builder lib/Search/Service/VectorizationService.php is owned by lane M13",
+   "lib/Search/Service/Vectorization/VectorEmbeddings.php VectorEmbeddings::semanticSearch: caller or builder lib/Search/Service/VectorizationService.php is owned by lane M13",
+   "lib/Search/Service/Vectorization/VectorEmbeddings.php VectorEmbeddings::hybridSearch: caller or builder lib/Search/Service/VectorizationService.php is owned by lane M13"
+  ],
+  "away": {}
+ },
+ "M16": {
+  "id": "M16",
+  "files": [
+   "lib/Files/Controller/ObjectFolderController.php",
+   "lib/Files/Service/File/Sanitizer/DocxSanitizer.php",
+   "lib/Mcp/Attribute/McpTool.php",
+   "lib/Mcp/Service/ChatService.php",
+   "lib/Notifications/Controller/NotificationHistoryController.php",
+   "lib/Notifications/Db/NotificationHistoryMapper.php",
+   "lib/Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php",
+   "lib/Notifications/Service/Notification/NcNotificationSender.php",
+   "lib/Notifications/Service/Notification/NotificationClearingService.php",
+   "lib/Search/Service/Aggregation/AggregationCache.php",
+   "lib/Service/Integration/Providers/ActivityProvider.php",
+   "lib/Service/Integration/Providers/MarkerLookupTrait.php",
+   "lib/Service/Integration/Providers/TimeProvider.php"
+  ],
+  "p_files": [
+   "lib/Files/Controller/ObjectFolderController.php",
+   "lib/Files/Service/File/Sanitizer/DocxSanitizer.php",
+   "lib/Mcp/Attribute/McpTool.php",
+   "lib/Mcp/Service/ChatService.php",
+   "lib/Notifications/Db/NotificationHistoryMapper.php",
+   "lib/Notifications/Service/Notification/NcNotificationSender.php",
+   "lib/Search/Service/Aggregation/AggregationCache.php",
+   "lib/Service/Integration/Providers/MarkerLookupTrait.php"
+  ],
+  "i_targets": [],
+  "moves": [
+   {
+    "file": "lib/Files/Controller/ObjectFolderController.php",
+    "to": "Service"
+   }
+  ],
+  "before": {
+   "gt2": 530,
+   "gt4": 178,
+   "gt6": 111,
+   "moves_left": 1
+  },
+  "target": {
+   "gt2": 415,
+   "gt4": 143,
+   "gt6": 98,
+   "moves_left": 0
+  },
+  "deferred": [
+   "lib/Search/Service/Aggregation/AggregationCache.php AggregationCache::set: caller or builder lib/Service/Aggregation/AggregationRunner.php is in open #4404",
+   "lib/Search/Service/Aggregation/AggregationCache.php AggregationCache::get: caller or builder lib/Search/SearchWiring.php is owned by lane M08",
+   "lib/Search/Service/Aggregation/AggregationCache.php AggregationCache::getAdhoc: caller or builder lib/Service/Aggregation/AggregationRunner.php is in open #4404",
+   "lib/Search/Service/Aggregation/AggregationCache.php AggregationCache::setAdhoc: caller or builder lib/Service/Aggregation/AggregationRunner.php is in open #4404",
+   "lib/Mcp/Service/ChatService.php ChatService::processMessage: caller or builder lib/Controller/ChatStreamController.php is in open #4641",
+   "lib/Mcp/Service/ChatService.php ChatService::ensureUniqueTitle: caller or builder in lib/Kernel/Contracts/ChatServiceInterface.php, off limits this round",
+   "lib/Mcp/Service/ChatService.php ChatService::testChat: caller or builder in lib/Kernel/Contracts/ChatServiceInterface.php, off limits this round",
+   "lib/Notifications/Db/NotificationHistoryMapper.php NotificationHistoryMapper::record: caller or builder lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php is in open #6215,#6217",
+   "lib/Notifications/Service/Notification/NcNotificationSender.php NcNotificationSender::__construct: caller or builder lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php is in open #6215,#6217",
+   "lib/Notifications/Service/Notification/NcNotificationSender.php NcNotificationSender::send: caller or builder lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php is in open #6215,#6217",
+   "lib/Notifications/Service/Notification/NcNotificationSender.php NcNotificationSender::enqueueWebPush: caller or builder lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php is in open #6215,#6217"
+  ],
+  "away": {}
+ },
+ "M17": {
+  "id": "M17",
+  "files": [
+   "lib/AppHost/Scheduling/ScheduleFlowStore.php",
+   "lib/BackgroundJob/ActorForwardedJob.php",
+   "lib/BackgroundJob/Support/ActorForwardingServices.php",
+   "lib/Controller/FlowController.php",
+   "lib/Controller/RulesController.php",
+   "lib/Controller/Support/FlowRunAccess.php",
+   "lib/Controller/Support/TaskWork.php",
+   "lib/Controller/Support/TasksDomain.php",
+   "lib/Lifecycle/GuardResult.php",
+   "lib/Lifecycle/LifecycleGuardContext.php",
+   "lib/Listener/SchemaFlowImportListener.php",
+   "lib/Service/Case/CasePlanCascade.php",
+   "lib/Service/Case/CasePlanStateMachine.php",
+   "lib/Service/ExampleSet/ExampleSetFlows.php",
+   "lib/Service/Flow/FlowCaller.php",
+   "lib/Service/Flow/FlowPlaceClaims.php",
+   "lib/Service/Flow/FlowStreamWalk.php",
+   "lib/Service/Flow/FlowVersionService.php",
+   "lib/Service/Flow/FlowVersionServiceInterface.php",
+   "lib/Service/Gdpr/Lifecycle/DenialFinaliseGuard.php",
+   "lib/Service/Lifecycle/KeepLifecycleStatesScope.php",
+   "lib/Service/ObjectAction/ObjectActionStepsFlow.php",
+   "lib/Service/Rules/RuleReplayService.php",
+   "lib/Service/Rules/RuleReplayServiceInterface.php",
+   "lib/Service/Rules/RuleRunSubject.php",
+   "lib/Service/Rules/RuleTrace.php",
+   "lib/Service/Task/TaskStateRules.php",
+   "lib/Service/Task/TaskTemporalProjection.php"
+  ],
+  "p_files": [
+   "lib/BackgroundJob/ActorForwardedJob.php",
+   "lib/Service/Case/CasePlanStateMachine.php",
+   "lib/Service/Flow/FlowPlaceClaims.php",
+   "lib/Service/Flow/FlowVersionService.php",
+   "lib/Service/Rules/RuleReplayService.php"
+  ],
+  "i_targets": [
+   "lib/BackgroundJob/Support/ActorForwardingServices.php",
+   "lib/Lifecycle/GuardResult.php",
+   "lib/Lifecycle/LifecycleGuardContext.php",
+   "lib/Service/Flow/FlowCaller.php",
+   "lib/Service/Lifecycle/KeepLifecycleStatesScope.php",
+   "lib/Service/Rules/RuleRunSubject.php",
+   "lib/Service/Rules/RuleTrace.php",
+   "lib/Service/Task/TaskStateRules.php",
+   "lib/Service/Task/TaskTemporalProjection.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 269,
+   "gt4": 100,
+   "gt6": 32,
+   "exposed": 241
+  },
+  "target": {
+   "gt2": 179,
+   "gt4": 9,
+   "gt6": 0,
+   "exposed": 241
+  },
+  "deferred": [
+   "lib/BackgroundJob/ActorForwardedJob.php ActorForwardedJob::__construct: caller or builder lib/BackgroundJob/AnnotationNotificationDispatchJob.php is in open #5046,#5116"
+  ],
+  "away": {
+   "lib/Service/Task/TaskTemporalProjection.php": [
+    [
+     "lib/Controller/TaskController.php",
+     "owned by lane M18"
+    ],
+    [
+     "lib/Controller/TasksController.php",
+     "owned by lane M18"
+    ]
+   ],
+   "lib/Service/Rules/RuleRunSubject.php": [
+    [
+     "lib/Listener/CalculationOnSaveListener.php",
+     "owned by lane M25"
+    ],
+    [
+     "lib/Listener/LifecycleValidationListener.php",
+     "owned by lane M33"
+    ],
+    [
+     "lib/Listener/StateFieldRuleListener.php",
+     "owned by lane M26"
+    ]
+   ],
+   "lib/Service/Rules/RuleTrace.php": [
+    [
+     "lib/Listener/CalculationOnSaveListener.php",
+     "owned by lane M25"
+    ],
+    [
+     "lib/Listener/LifecycleValidationListener.php",
+     "owned by lane M33"
+    ],
+    [
+     "lib/Listener/StateFieldRuleListener.php",
+     "owned by lane M26"
+    ]
+   ],
+   "lib/Service/Task/TaskStateRules.php": [
+    [
+     "lib/Command/RollbackApprovalMigrationCommand.php",
+     "owned by lane M03"
+    ],
+    [
+     "lib/Controller/TasksController.php",
+     "owned by lane M18"
+    ],
+    [
+     "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php",
+     "held by open #6215,#6217"
+    ]
+   ],
+   "lib/Lifecycle/GuardResult.php": [
+    [
+     "lib/Listener/LifecycleValidationListener.php",
+     "owned by lane M33"
+    ]
+   ],
+   "lib/Service/Flow/FlowCaller.php": [
+    [
+     "lib/Controller/FlowRunController.php",
+     "owned by lane M25"
+    ]
+   ],
+   "lib/Service/Lifecycle/KeepLifecycleStatesScope.php": [
+    [
+     "lib/Controller/RegistersController.php",
+     "owned by lane M33"
+    ],
+    [
+     "lib/Listener/LifecycleInitialStateListener.php",
+     "owned by lane M33"
+    ]
+   ],
+   "lib/BackgroundJob/Support/ActorForwardingServices.php": [
+    [
+     "lib/Search/BackgroundJob/AggregationThresholdJob.php",
+     "owned by lane M25"
+    ]
+   ],
+   "lib/Lifecycle/LifecycleGuardContext.php": [
+    [
+     "lib/Listener/LifecycleValidationListener.php",
+     "owned by lane M33"
+    ]
+   ]
+  }
+ },
+ "M18": {
+  "id": "M18",
+  "files": [
+   "lib/BackgroundJob/FlowRunRetentionJob.php",
+   "lib/Controller/Support/TaskEventsControllerServices.php",
+   "lib/Controller/Support/TaskLeafGuard.php",
+   "lib/Controller/Support/TaskNotesControllerServices.php",
+   "lib/Controller/TaskController.php",
+   "lib/Controller/TasksController.php",
+   "lib/Db/TaskBlockerMapper.php",
+   "lib/Db/TaskInboxCriteria.php",
+   "lib/Listener/TaskBlockerReleaseListener.php",
+   "lib/Notifications/BackgroundJob/TaskScheduledNotificationJob.php",
+   "lib/Service/Case/CaseRealisationService.php",
+   "lib/Service/Case/CaseSentryEvaluator.php",
+   "lib/Service/ExampleSet/ExampleSetTasks.php",
+   "lib/Service/Flow/FlowTaskBridge.php",
+   "lib/Service/Flow/FlowTaskMootness.php",
+   "lib/Service/Task/TaskAuthorizationService.php",
+   "lib/Service/Task/TaskCompletion.php",
+   "lib/Service/Task/TaskFormCompletion.php",
+   "lib/Service/Task/TaskFormCompletionInterface.php",
+   "lib/Service/Task/TaskInboxService.php",
+   "lib/Service/Task/TaskInboxServiceInterface.php",
+   "lib/Service/Task/TaskService.php",
+   "lib/Service/Task/TaskServiceInterface.php",
+   "lib/Service/Task/TaskVtodoWriteBackGate.php"
+  ],
+  "p_files": [
+   "lib/BackgroundJob/FlowRunRetentionJob.php",
+   "lib/Controller/TaskController.php",
+   "lib/Db/TaskInboxCriteria.php",
+   "lib/Service/Case/CaseSentryEvaluator.php",
+   "lib/Service/Task/TaskAuthorizationService.php",
+   "lib/Service/Task/TaskCompletion.php",
+   "lib/Service/Task/TaskFormCompletion.php",
+   "lib/Service/Task/TaskInboxService.php",
+   "lib/Service/Task/TaskService.php"
+  ],
+  "i_targets": [
+   "lib/Db/TaskBlockerMapper.php",
+   "lib/Db/TaskInboxCriteria.php",
+   "lib/Service/Task/TaskAuthorizationService.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 547,
+   "gt4": 205,
+   "gt6": 143,
+   "exposed": 323
+  },
+  "target": {
+   "gt2": 429,
+   "gt4": 112,
+   "gt6": 90,
+   "exposed": 243
+  },
+  "deferred": [
+   "lib/Service/Task/TaskInboxService.php TaskInboxService::__construct: caller or builder lib/Service/ServiceRegistrar.php is in open cloud/k03-cache-handler-fields",
+   "lib/Service/Task/TaskService.php TaskService::__construct: caller or builder lib/Service/ServiceRegistrar.php is in open cloud/k03-cache-handler-fields",
+   "lib/Service/Task/TaskService.php TaskService::offer: caller or builder in lib/Kernel/Contracts/TaskManagerInterface.php, off limits this round",
+   "lib/Service/Task/TaskService.php TaskService::edit: caller or builder in lib/Kernel/Contracts/TaskManagerInterface.php, off limits this round",
+   "lib/Service/Task/TaskService.php TaskService::assign: caller or builder in lib/Kernel/Contracts/TaskManagerInterface.php, off limits this round",
+   "lib/Service/Task/TaskService.php TaskService::reassign: caller or builder in lib/Kernel/Contracts/TaskManagerInterface.php, off limits this round",
+   "lib/Service/Task/TaskService.php TaskService::delegate: caller or builder in lib/Kernel/Contracts/TaskManagerInterface.php, off limits this round",
+   "lib/Service/Task/TaskService.php TaskService::resolve: caller or builder in lib/Kernel/Contracts/TaskManagerInterface.php, off limits this round",
+   "lib/Service/Task/TaskService.php TaskService::cancel: caller or builder in lib/Kernel/Contracts/TaskManagerInterface.php, off limits this round",
+   "lib/Service/Task/TaskService.php TaskService::checkChecklistItem: caller or builder in lib/Kernel/Contracts/TaskManagerInterface.php, off limits this round",
+   "lib/Service/Task/TaskService.php TaskService::applyTimerOutcome: caller or builder lib/Service/Flow/Timer/FlowTimerService.php is in open cloud/h18-wip-timer-units",
+   "lib/Service/Task/TaskService.php TaskService::record: caller or builder in lib/Kernel/Contracts/TaskManagerInterface.php, off limits this round"
+  ],
+  "away": {
+   "lib/Service/Task/TaskAuthorizationService.php": [
+    [
+     "lib/Controller/Support/TaskWork.php",
+     "owned by lane M17"
+    ]
+   ]
+  }
+ },
+ "M19": {
+  "id": "M19",
+  "files": [
+   "lib/BackgroundJob/JobHandles.php",
+   "lib/Controller/AuditTrailController.php",
+   "lib/Controller/FormsController.php",
+   "lib/Controller/ImportPreviewController.php",
+   "lib/Db/AuditTrailPageQuery.php",
+   "lib/Db/AuditTrailPageQueryInterface.php",
+   "lib/Listener/ApprovalChainGateListener.php",
+   "lib/Listener/FileChangeListener.php",
+   "lib/Listener/ObjectChangeListener.php",
+   "lib/Listener/ObjectCleanupListener.php",
+   "lib/Listener/RelatedRetentionRecalculationListener.php",
+   "lib/Listener/SourceRecordChangeListener.php",
+   "lib/Service/Audit/AuditTrailPageService.php",
+   "lib/Service/Audit/AuditTrailPageServiceInterface.php",
+   "lib/Service/Flow/FlowHopRouting.php",
+   "lib/Service/Flow/FlowRunSignalInterface.php",
+   "lib/Service/Flow/FlowRunSignalService.php",
+   "lib/Service/Flow/FlowRunSignals.php",
+   "lib/Service/Flow/FlowTokenRouter.php",
+   "lib/Service/Form/FormSubmitService.php",
+   "lib/Service/Form/FormSubmitServiceInterface.php",
+   "lib/Service/Gdpr/Export/SubjectExportService.php",
+   "lib/Service/Lifecycle/AutoTransitionQueue.php",
+   "lib/Service/Task/TaskSequenceService.php",
+   "lib/Service/Task/TaskSequenceServiceInterface.php"
+  ],
+  "p_files": [
+   "lib/Service/Audit/AuditTrailPageService.php",
+   "lib/Service/Flow/FlowRunSignalService.php",
+   "lib/Service/Flow/FlowTokenRouter.php",
+   "lib/Service/Form/FormSubmitService.php",
+   "lib/Service/Task/TaskSequenceService.php"
+  ],
+  "i_targets": [
+   "lib/BackgroundJob/JobHandles.php",
+   "lib/Service/Flow/FlowRunSignals.php",
+   "lib/Service/Flow/FlowTokenRouter.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 545,
+   "gt4": 93,
+   "gt6": 62,
+   "exposed": 248
+  },
+  "target": {
+   "gt2": 301,
+   "gt4": 0,
+   "gt6": 0,
+   "exposed": 248
+  },
+  "deferred": [
+   "lib/Service/Flow/FlowRunSignalService.php FlowRunSignalService::signalRunAs: caller or builder lib/Controller/FlowRunController.php is owned by lane M25"
+  ],
+  "away": {
+   "lib/BackgroundJob/JobHandles.php": [
+    [
+     "lib/Controller/RetentionController.php",
+     "held by open #5046,#5116"
+    ],
+    [
+     "lib/Controller/SchemaMigrationController.php",
+     "owned by lane M37"
+    ],
+    [
+     "lib/Db/MagicMapper.php",
+     "held by open #6108"
+    ],
+    [
+     "lib/Listener/AnnotationNotificationListener.php",
+     "held by open #5046,#5116"
+    ],
+    [
+     "lib/Service/Archival/LegalHoldService.php",
+     "held by open cloud/h02-archival-methods"
+    ],
+    [
+     "lib/Service/BulkJob/BulkJobService.php",
+     "owned by lane M03"
+    ],
+    [
+     "lib/Service/Operations/OperationsJobsService.php",
+     "owned by lane M08"
+    ],
+    [
+     "lib/Service/OperationsConsoleService.php",
+     "owned by lane M06"
+    ]
+   ],
+   "lib/Service/Flow/FlowTokenRouter.php": [
+    [
+     "lib/BackgroundJob/FlowRunWorker.php",
+     "owned by lane M25"
+    ]
+   ],
+   "lib/Service/Flow/FlowRunSignals.php": [
+    [
+     "lib/Controller/FlowRunController.php",
+     "owned by lane M25"
+    ]
+   ]
+  }
+ },
+ "M20": {
+  "id": "M20",
+  "files": [
+   "lib/Controller/CaseController.php",
+   "lib/Listener/CaseObjectEventListener.php",
+   "lib/Service/Case/CasePlanDefinition.php",
+   "lib/Service/Case/CasePlanEnsurer.php",
+   "lib/Service/Case/CasePlanService.php",
+   "lib/Service/Case/CasePlanServiceInterface.php",
+   "lib/Service/ExampleSet/ExampleSetCasePlans.php",
+   "lib/Service/Flow/FlowRunCommit.php",
+   "lib/Service/Lifecycle/AutoTransitionSelector.php",
+   "lib/Service/Lifecycle/LifecycleConditionEvaluator.php",
+   "lib/Service/Lifecycle/LifecycleConditionEvaluatorInterface.php"
+  ],
+  "p_files": [
+   "lib/Controller/CaseController.php",
+   "lib/Service/Case/CasePlanDefinition.php",
+   "lib/Service/Case/CasePlanEnsurer.php",
+   "lib/Service/Case/CasePlanService.php",
+   "lib/Service/Flow/FlowRunCommit.php",
+   "lib/Service/Lifecycle/LifecycleConditionEvaluator.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 885,
+   "gt4": 215,
+   "gt6": 118
+  },
+  "target": {
+   "gt2": 593,
+   "gt4": 64,
+   "gt6": 43
+  },
+  "deferred": [
+   "lib/Service/Flow/FlowRunCommit.php FlowRunCommit::commitFiring: caller or builder lib/Service/Flow/FlowStreamWalk.php is owned by lane M17",
+   "lib/Service/Flow/FlowRunCommit.php FlowRunCommit::finalize: caller or builder lib/Service/Flow/FlowRunService.php is in open #7593",
+   "lib/Service/Flow/FlowRunCommit.php FlowRunCommit::applyDerivedStatus: caller or builder lib/Service/Flow/FlowStreamWalk.php is owned by lane M17"
+  ],
+  "away": {}
+ },
+ "M21": {
+  "id": "M21",
+  "files": [
+   "lib/Controller/FlowRunMigrationController.php",
+   "lib/Service/Flow/FlowRunMigrationTarget.php",
+   "lib/Service/Flow/Timer/TermQuery.php",
+   "lib/Service/Form/FormDependent.php"
+  ],
+  "p_files": [],
+  "i_targets": [
+   "lib/Service/Flow/FlowRunMigrationTarget.php",
+   "lib/Service/Flow/Timer/TermQuery.php",
+   "lib/Service/Form/FormDependent.php"
+  ],
+  "moves": [],
+  "before": {
+   "exposed": 54
+  },
+  "target": {
+   "exposed": 38
+  },
+  "deferred": [],
+  "away": {
+   "lib/Service/Flow/Timer/TermQuery.php": [
+    [
+     "lib/Controller/FlowTimerDiagnosticController.php",
+     "owned by lane M31"
+    ]
+   ],
+   "lib/Service/Form/FormDependent.php": [
+    [
+     "lib/Event/FormDestinationDependentsEvent.php",
+     "off limits this round"
+    ]
+   ]
+  }
+ },
+ "M22": {
+  "id": "M22",
+  "files": [
+   "lib/BackgroundJob/DeferredObjectEventJob.php",
+   "lib/Controller/ObjectStateController.php",
+   "lib/Service/Bindings/ObjectsBindings.php",
+   "lib/Service/Object/DraftCallerRule.php",
+   "lib/Service/Object/DraftListLens.php",
+   "lib/Service/Object/DraftStatusPolicy.php",
+   "lib/Service/Object/ObjectEventGate.php",
+   "lib/Service/Object/ObjectStateRequest.php",
+   "lib/Service/Object/ObjectVersionHandler.php",
+   "lib/Service/Object/PaginationLinks.php",
+   "lib/Service/Object/SaveObjects.php",
+   "lib/Service/Relation/AffectedSetQuery.php",
+   "lib/Service/Relation/AffectedSets.php",
+   "lib/Service/Relation/ExternalLink.php",
+   "lib/Service/Relation/ObjectTreeQuery.php",
+   "lib/Service/Relation/ProvenanceLink.php",
+   "lib/Service/Relation/RelationEndpoint.php"
+  ],
+  "p_files": [
+   "lib/Service/Object/DraftCallerRule.php",
+   "lib/Service/Object/DraftListLens.php",
+   "lib/Service/Object/DraftStatusPolicy.php",
+   "lib/Service/Object/SaveObjects.php"
+  ],
+  "i_targets": [
+   "lib/Service/Object/DraftListLens.php",
+   "lib/Service/Object/DraftStatusPolicy.php",
+   "lib/Service/Object/ObjectEventGate.php",
+   "lib/Service/Object/ObjectStateRequest.php",
+   "lib/Service/Object/ObjectVersionHandler.php",
+   "lib/Service/Object/PaginationLinks.php",
+   "lib/Service/Relation/AffectedSetQuery.php",
+   "lib/Service/Relation/AffectedSets.php",
+   "lib/Service/Relation/ExternalLink.php",
+   "lib/Service/Relation/ObjectTreeQuery.php",
+   "lib/Service/Relation/ProvenanceLink.php",
+   "lib/Service/Relation/RelationEndpoint.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 333,
+   "gt4": 34,
+   "gt6": 25,
+   "exposed": 454
+  },
+  "target": {
+   "gt2": 171,
+   "gt4": 34,
+   "gt6": 25,
+   "exposed": 442
+  },
+  "deferred": [
+   "lib/Service/Object/DraftCallerRule.php DraftCallerRule::keptFromCaller: caller or builder lib/Service/Object/PermissionHandler.php is in open cloud/b12-permission-refusal-log",
+   "lib/Service/Object/SaveObjects.php SaveObjects::saveObjects: caller or builder lib/Service/ObjectService.php is in open #5497",
+   "lib/Service/Object/SaveObjects.php SaveObjects::handlePreValidationCascading: caller or builder lib/Service/ObjectService.php is in open #5497",
+   "lib/Service/Object/DraftListLens.php DraftListLens::sql: caller or builder lib/Db/MagicMapper/MagicSearchHandler.php is in open #6108"
+  ],
+  "away": {
+   "lib/Service/Object/DraftListLens.php": [
+    [
+     "lib/Db/MagicMapper/MagicSearchHandler.php",
+     "held by open #6108"
+    ]
+   ],
+   "lib/Service/Object/DraftStatusPolicy.php": [
+    [
+     "lib/Db/MagicMapper.php",
+     "held by open #6108"
+    ],
+    [
+     "lib/Db/MagicMapper/MagicRbacHandler.php",
+     "owned by lane M25"
+    ]
+   ],
+   "lib/Service/Object/ObjectEventGate.php": [
+    [
+     "lib/Db/MagicMapper.php",
+     "held by open #6108"
+    ]
+   ],
+   "lib/Service/Object/ObjectVersionHandler.php": [
+    [
+     "lib/Db/MagicMapper/MagicBulkHandler.php",
+     "held by open #4773"
+    ]
+   ],
+   "lib/Service/Object/PaginationLinks.php": [
+    [
+     "lib/Controller/ObjectsController.php",
+     "held by open #5046,#5116,#6178,#6179,#6219"
+    ]
+   ],
+   "lib/Service/Relation/AffectedSetQuery.php": [
+    [
+     "lib/Controller/ObjectRelationsController.php",
+     "owned by lane M23"
+    ]
+   ],
+   "lib/Service/Relation/AffectedSets.php": [
+    [
+     "lib/Controller/ObjectRelationsController.php",
+     "owned by lane M23"
+    ]
+   ],
+   "lib/Service/Relation/ExternalLink.php": [
+    [
+     "lib/Controller/ObjectRelationsController.php",
+     "owned by lane M23"
+    ]
+   ],
+   "lib/Service/Relation/ObjectTreeQuery.php": [
+    [
+     "lib/Controller/ObjectRelationsController.php",
+     "owned by lane M23"
+    ]
+   ],
+   "lib/Service/Relation/ProvenanceLink.php": [
+    [
+     "lib/Controller/ObjectRelationsController.php",
+     "owned by lane M23"
+    ]
+   ],
+   "lib/Service/Relation/RelationEndpoint.php": [
+    [
+     "lib/Controller/ObjectRelationsController.php",
+     "owned by lane M23"
+    ]
+   ]
+  }
+ },
+ "M23": {
+  "id": "M23",
+  "files": [
+   "lib/Controller/ObjectRelationsController.php",
+   "lib/Formats/FormatFactory.php",
+   "lib/Service/Merge/MergeService.php",
+   "lib/Service/Object/ExtendedFieldCheck.php",
+   "lib/Service/Object/LockHandler.php",
+   "lib/Service/Object/RecurrenceOccurrences.php",
+   "lib/Service/Object/SaveObject/RelationCascadeHandler.php",
+   "lib/Service/Object/ValidateObject.php",
+   "lib/Service/Relation/ObjectRelationService.php",
+   "lib/Service/Relation/ObjectRelationServiceInterface.php",
+   "lib/Service/Relation/ObjectTreeService.php",
+   "lib/Service/Relation/ObjectTreeServiceInterface.php",
+   "lib/Service/Settings/ValidationOperationsHandler.php"
+  ],
+  "p_files": [
+   "lib/Controller/ObjectRelationsController.php",
+   "lib/Service/Merge/MergeService.php",
+   "lib/Service/Object/LockHandler.php",
+   "lib/Service/Object/SaveObject/RelationCascadeHandler.php",
+   "lib/Service/Object/ValidateObject.php",
+   "lib/Service/Relation/ObjectRelationService.php",
+   "lib/Service/Relation/ObjectTreeService.php"
+  ],
+  "i_targets": [
+   "lib/Formats/FormatFactory.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 932,
+   "gt4": 151,
+   "gt6": 0,
+   "exposed": 19
+  },
+  "target": {
+   "gt2": 586,
+   "gt4": 136,
+   "gt6": 0,
+   "exposed": 0
+  },
+  "deferred": [
+   "lib/Service/Merge/MergeService.php MergeService::executeMerge: caller or builder in lib/Kernel/Contracts/ObjectMergerInterface.php, off limits this round",
+   "lib/Service/Object/ValidateObject.php ValidateObject::validateObjectWithPlannedUsers: caller or builder lib/Service/ExampleSet/ExampleSetStore.php is in open #4757",
+   "lib/Service/Object/LockHandler.php LockHandler::lock: caller or builder lib/Service/ObjectService.php is in open #5497",
+   "lib/Service/Object/LockHandler.php LockHandler::unlock: caller or builder lib/Service/ObjectService.php is in open #5497"
+  ],
+  "away": {}
+ },
+ "M24": {
+  "id": "M24",
+  "files": [
+   "lib/Controller/ObjectDraftController.php",
+   "lib/Service/Object/DraftActivation.php",
+   "lib/Service/Object/DraftActivationInterface.php",
+   "lib/Service/Object/ObjectDeleteRequest.php",
+   "lib/Service/Object/ObjectFindRequest.php",
+   "lib/Service/Object/UpsertOnKeyHandler.php",
+   "lib/Service/Object/UpsertOnKeyHandlerInterface.php",
+   "lib/Service/Object/ValidationHandler.php"
+  ],
+  "p_files": [
+   "lib/Service/Object/DraftActivation.php",
+   "lib/Service/Object/ObjectDeleteRequest.php",
+   "lib/Service/Object/ObjectFindRequest.php",
+   "lib/Service/Object/UpsertOnKeyHandler.php",
+   "lib/Service/Object/ValidationHandler.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 130,
+   "gt4": 67,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 106,
+   "gt4": 29,
+   "gt6": 0
+  },
+  "deferred": [
+   "lib/Service/Object/ObjectFindRequest.php ObjectFindRequest::__construct: caller or builder lib/Service/Object/GetObject.php is in open cloud/b12-get-object-sources,cloud/b12-read-cache-bundles",
+   "lib/Service/Object/ValidationHandler.php ValidationHandler::validateAndSaveObjectsBySchema: caller or builder lib/Service/ObjectService.php is in open #5497",
+   "lib/Service/Object/ObjectDeleteRequest.php ObjectDeleteRequest::__construct: caller or builder lib/Service/ObjectService.php is in open #5497"
+  ],
+  "away": {}
+ },
+ "M25": {
+  "id": "M25",
+  "files": [
+   "lib/AppHost/Service/GenericStoreService.php",
+   "lib/BackgroundJob/FlowRunWorker.php",
+   "lib/BackgroundJob/ObjectCleanupJob.php",
+   "lib/BackgroundJob/RecordedQueuedJob.php",
+   "lib/BackgroundJob/RecordedTimedJob.php",
+   "lib/BackgroundJob/SourceRecordRecomputeJob.php",
+   "lib/BackgroundJob/TranslationProjectionJob.php",
+   "lib/BackgroundJob/ViewAlertSweepJob.php",
+   "lib/Command/RematerialiseCalculationsCommand.php",
+   "lib/Controller/AccessLinkController.php",
+   "lib/Controller/FlowRunController.php",
+   "lib/Controller/OperationsConsoleController.php",
+   "lib/Controller/PortalTaskController.php",
+   "lib/Controller/QualityController.php",
+   "lib/Controller/SchemaImportController.php",
+   "lib/Controller/Support/DeletedStore.php",
+   "lib/Controller/Support/ObjectActionsSelection.php",
+   "lib/Controller/Support/ObjectGovernanceServices.php",
+   "lib/Db/FlowRunMapper.php",
+   "lib/Db/FlowRunMapperInterface.php",
+   "lib/Db/MagicMapper/MagicRbacHandler.php",
+   "lib/Db/MagicMapper/RelatedRowRbacInterface.php",
+   "lib/Db/Schema/ConfigurationValueRules.php",
+   "lib/Db/SchemaMapper/DeclaredActionCheck.php",
+   "lib/Db/SchemaMapper/ReferenceLoopCheck.php",
+   "lib/Files/Service/UploadService.php",
+   "lib/Listener/CalculationOnSaveListener.php",
+   "lib/Listener/ConsentEnvelopeOnSaveListener.php",
+   "lib/Listener/DecisionTableValidationListener.php",
+   "lib/Listener/Support/CalculationSaveRun.php",
+   "lib/Listener/SurvivorshipRecomputeListener.php",
+   "lib/Listener/ViewAlertCrossedListener.php",
+   "lib/Repair/SeedAppVirtualSchemas.php",
+   "lib/Repair/SeedDirectoryVirtualSchemas.php",
+   "lib/Repair/SeedFlowRunTriggerSubject.php",
+   "lib/Search/BackgroundJob/AggregationThresholdJob.php",
+   "lib/Service/Bindings/MiscBindings.php",
+   "lib/Service/Calculation/CalculationPayload.php",
+   "lib/Service/Calculation/SequenceContext.php",
+   "lib/Service/Calendar/CalendarDateDeclarationCheck.php",
+   "lib/Service/Config/ConfigPublishTarget.php",
+   "lib/Service/Consent/ConsentEnvelopeEvaluators.php",
+   "lib/Service/Consent/ConsentEvidenceSource.php",
+   "lib/Service/Consent/ConsentPropertyWrite.php",
+   "lib/Service/Decision/ReviewPolicy.php",
+   "lib/Service/Deferral/DeferredListenerContext.php",
+   "lib/Service/Delegation/DelegationRefused.php",
+   "lib/Service/Delegation/DelegationService.php",
+   "lib/Service/Deletion/DeletionServiceBundle.php",
+   "lib/Service/Deletion/DeletionWindowService.php",
+   "lib/Service/Dmn/DecisionTableLocation.php",
+   "lib/Service/Flow/FlowConsentParking.php",
+   "lib/Service/Flow/FlowDelegationCheck.php",
+   "lib/Service/Flow/FlowRunMigrationService.php",
+   "lib/Service/Flow/FlowTriggerValidator.php",
+   "lib/Service/Object/RelatedReadFilter.php",
+   "lib/Service/ObjectAction/ObjectActionDeclarations.php",
+   "lib/Service/ObjectAction/ObjectActionDefinition.php",
+   "lib/Service/ObjectSource/NcEntitySemanticMap.php",
+   "lib/Service/Operations/JobRunContext.php",
+   "lib/Service/Operations/JobRunFilter.php",
+   "lib/Service/Operations/JobScheduleChange.php",
+   "lib/Service/Outbound/OutboundClientFactory.php",
+   "lib/Service/Portal/PortalCompletion.php",
+   "lib/Service/Portal/PortalSubject.php",
+   "lib/Service/Quality/MasterDataAnnotationValidators.php",
+   "lib/Service/Quality/QualityListingWindow.php",
+   "lib/Service/Query/PropertyReadGuard.php",
+   "lib/Service/Query/RelatedRowAccess.php",
+   "lib/Service/Query/RelatedRowExistsClause.php",
+   "lib/Service/Query/RelatedRowLookups.php",
+   "lib/Service/Query/RelatedRowQueryApplier.php",
+   "lib/Service/SchemaImport/ImportOptions.php",
+   "lib/Service/Security/SafeFetchUrl.php",
+   "lib/Service/Sharing/AccessLinkUse.php",
+   "lib/Service/Survivorship/SurvivorshipTrustLookup.php",
+   "lib/Service/View/ViewAlert.php"
+  ],
+  "p_files": [
+   "lib/BackgroundJob/FlowRunWorker.php",
+   "lib/Db/FlowRunMapper.php",
+   "lib/Db/MagicMapper/MagicRbacHandler.php",
+   "lib/Service/Delegation/DelegationService.php",
+   "lib/Service/Deletion/DeletionWindowService.php",
+   "lib/Service/Flow/FlowConsentParking.php",
+   "lib/Service/ObjectAction/ObjectActionDeclarations.php",
+   "lib/Service/Query/RelatedRowAccess.php",
+   "lib/Service/Query/RelatedRowExistsClause.php",
+   "lib/Service/Query/RelatedRowQueryApplier.php"
+  ],
+  "i_targets": [
+   "lib/BackgroundJob/FlowRunWorker.php",
+   "lib/Service/Calculation/CalculationPayload.php",
+   "lib/Service/Calculation/SequenceContext.php",
+   "lib/Service/Calendar/CalendarDateDeclarationCheck.php",
+   "lib/Service/Config/ConfigPublishTarget.php",
+   "lib/Service/Consent/ConsentEnvelopeEvaluators.php",
+   "lib/Service/Consent/ConsentEvidenceSource.php",
+   "lib/Service/Consent/ConsentPropertyWrite.php",
+   "lib/Service/Decision/ReviewPolicy.php",
+   "lib/Service/Deferral/DeferredListenerContext.php",
+   "lib/Service/Delegation/DelegationRefused.php",
+   "lib/Service/Delegation/DelegationService.php",
+   "lib/Service/Deletion/DeletionServiceBundle.php",
+   "lib/Service/Deletion/DeletionWindowService.php",
+   "lib/Service/Dmn/DecisionTableLocation.php",
+   "lib/Service/Flow/FlowConsentParking.php",
+   "lib/Service/ObjectAction/ObjectActionDeclarations.php",
+   "lib/Service/ObjectAction/ObjectActionDefinition.php",
+   "lib/Service/ObjectSource/NcEntitySemanticMap.php",
+   "lib/Service/Operations/JobRunContext.php",
+   "lib/Service/Operations/JobRunFilter.php",
+   "lib/Service/Operations/JobScheduleChange.php",
+   "lib/Service/Outbound/OutboundClientFactory.php",
+   "lib/Service/Portal/PortalCompletion.php",
+   "lib/Service/Portal/PortalSubject.php",
+   "lib/Service/Quality/MasterDataAnnotationValidators.php",
+   "lib/Service/Quality/QualityListingWindow.php",
+   "lib/Service/Query/PropertyReadGuard.php",
+   "lib/Service/Query/RelatedRowAccess.php",
+   "lib/Service/Query/RelatedRowLookups.php",
+   "lib/Service/Query/RelatedRowQueryApplier.php",
+   "lib/Service/SchemaImport/ImportOptions.php",
+   "lib/Service/Security/SafeFetchUrl.php",
+   "lib/Service/Sharing/AccessLinkUse.php",
+   "lib/Service/Survivorship/SurvivorshipTrustLookup.php",
+   "lib/Service/View/ViewAlert.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 694,
+   "gt4": 51,
+   "gt6": 51,
+   "exposed": 1825
+  },
+  "target": {
+   "gt2": 374,
+   "gt4": 13,
+   "gt6": 13,
+   "exposed": 1249
+  },
+  "deferred": [
+   "lib/Db/MagicMapper/MagicRbacHandler.php MagicRbacHandler::__construct: caller or builder lib/Db/MagicMapper.php is in open #6108",
+   "lib/Db/MagicMapper/MagicRbacHandler.php MagicRbacHandler::applyRbacFilters: caller or builder lib/Db/MagicMapper/MagicSearchHandler.php is in open #6108",
+   "lib/Db/MagicMapper/MagicRbacHandler.php MagicRbacHandler::buildRbacRowPredicateSql: caller or builder lib/Db/MagicMapper.php is in open #6108",
+   "lib/Db/MagicMapper/MagicRbacHandler.php MagicRbacHandler::buildRbacConditionsSql: caller or builder lib/Db/MagicMapper/MagicSearchHandler.php is in open #6108",
+   "lib/Service/Flow/FlowConsentParking.php FlowConsentParking::park: caller or builder lib/Service/Flow/FlowRunService.php is in open #7593",
+   "lib/Service/Query/RelatedRowQueryApplier.php RelatedRowQueryApplier::apply: caller or builder lib/Db/MagicMapper/MagicSearchHandler.php is in open #6108"
+  ],
+  "away": {
+   "lib/BackgroundJob/FlowRunWorker.php": [
+    [
+     "lib/Service/Flow/FlowPlaceClaims.php",
+     "owned by lane M17"
+    ]
+   ],
+   "lib/Service/Config/ConfigPublishTarget.php": [
+    [
+     "lib/Controller/FederatedConfigController.php",
+     "owned by lane M27"
+    ]
+   ],
+   "lib/Service/Decision/ReviewPolicy.php": [
+    [
+     "lib/Event/AbstractDecisionRequestEvent.php",
+     "off limits this round"
+    ],
+    [
+     "lib/Event/DecisionChangeRequestedEvent.php",
+     "off limits this round"
+    ],
+    [
+     "lib/Event/DecisionVisibilityRequestedEvent.php",
+     "off limits this round"
+    ]
+   ],
+   "lib/Service/Deferral/DeferredListenerContext.php": [
+    [
+     "lib/BackgroundJob/ActorForwardedJob.php",
+     "owned by lane M17"
+    ],
+    [
+     "lib/BackgroundJob/AnnotationNotificationDispatchJob.php",
+     "held by open #5046,#5116"
+    ],
+    [
+     "lib/BackgroundJob/AutoTransitionJob.php",
+     "held by open #5046,#5116"
+    ]
+   ],
+   "lib/Service/Delegation/DelegationRefused.php": [
+    [
+     "lib/Controller/FlowNodeRunController.php",
+     "held by open #7593"
+    ]
+   ],
+   "lib/Service/Deletion/DeletionServiceBundle.php": [
+    [
+     "lib/Controller/DeletedController.php",
+     "held by open #5046,#5116"
+    ]
+   ],
+   "lib/Service/Deletion/DeletionWindowService.php": [
+    [
+     "lib/Db/ObjectEntity.php",
+     "held by open #5116"
+    ]
+   ],
+   "lib/Service/ObjectAction/ObjectActionDefinition.php": [
+    [
+     "lib/Controller/ObjectActionsController.php",
+     "owned by lane M26"
+    ]
+   ],
+   "lib/Service/Outbound/OutboundClientFactory.php": [
+    [
+     "lib/AppInfo/Application.php",
+     "off limits this round"
+    ]
+   ],
+   "lib/Service/Quality/MasterDataAnnotationValidators.php": [
+    [
+     "lib/Db/SchemaMapper/AdvisoryAnnotationChecks.php",
+     "held by open #6215,#6217"
+    ]
+   ],
+   "lib/Service/Query/PropertyReadGuard.php": [
+    [
+     "lib/Db/MagicMapper.php",
+     "held by open #6108"
+    ]
+   ],
+   "lib/Service/Query/RelatedRowAccess.php": [
+    [
+     "lib/Db/MagicMapper.php",
+     "held by open #6108"
+    ]
+   ],
+   "lib/Service/Query/RelatedRowLookups.php": [
+    [
+     "lib/Db/MagicMapper.php",
+     "held by open #6108"
+    ]
+   ],
+   "lib/Service/Query/RelatedRowQueryApplier.php": [
+    [
+     "lib/Db/MagicMapper.php",
+     "held by open #6108"
+    ],
+    [
+     "lib/Db/MagicMapper/MagicSearchHandler.php",
+     "held by open #6108"
+    ]
+   ],
+   "lib/Service/SchemaImport/ImportOptions.php": [
+    [
+     "lib/Controller/SchemasController.php",
+     "held by open #6215,#6217"
+    ]
+   ],
+   "lib/Service/Security/SafeFetchUrl.php": [
+    [
+     "lib/Controller/ConfigurationController.php",
+     "owned by lane M37"
+    ]
+   ],
+   "lib/Service/View/ViewAlert.php": [
+    [
+     "lib/Event/ViewAlertCrossedEvent.php",
+     "off limits this round"
+    ],
+    [
+     "lib/Search/Controller/ViewsController.php",
+     "owned by lane M14"
+    ],
+    [
+     "lib/Search/Service/ViewService.php",
+     "owned by lane M14"
+    ]
+   ]
+  }
+ },
+ "M26": {
+  "id": "M26",
+  "files": [
+   "lib/BackgroundJob/SyncDataJob.php",
+   "lib/BulkAction/ApplyRuleAction.php",
+   "lib/BulkAction/BulkActionWiring.php",
+   "lib/BulkAction/RunActionAction.php",
+   "lib/BulkAction/Support/ApplyRuleServices.php",
+   "lib/Controller/ObjectActionsController.php",
+   "lib/Controller/Support/ObjectActionsCatalogue.php",
+   "lib/Controller/Support/RulesDomain.php",
+   "lib/Db/SyncRecordInputs.php",
+   "lib/Listener/StateFieldRuleListener.php",
+   "lib/Service/Flow/MacroActionResolver.php",
+   "lib/Service/Hinge/ReferencedByService.php",
+   "lib/Service/ObjectAction/ObjectActionFlowRun.php",
+   "lib/Service/ObjectAction/ObjectActionRunner.php",
+   "lib/Service/ObjectAction/ObjectActionRunnerInterface.php",
+   "lib/Service/Rules/RuleVocabulary.php",
+   "lib/Service/Sync/HarvestPipelineService.php",
+   "lib/Service/Sync/HarvestPipelineServiceInterface.php",
+   "lib/Service/Sync/RestApiSourceFetcher.php",
+   "lib/Service/Sync/SourceFetcherInterface.php"
+  ],
+  "p_files": [
+   "lib/BulkAction/ApplyRuleAction.php",
+   "lib/BulkAction/RunActionAction.php",
+   "lib/Service/Hinge/ReferencedByService.php",
+   "lib/Service/ObjectAction/ObjectActionRunner.php",
+   "lib/Service/Sync/HarvestPipelineService.php"
+  ],
+  "i_targets": [
+   "lib/Db/SyncRecordInputs.php",
+   "lib/Service/Flow/MacroActionResolver.php",
+   "lib/Service/Rules/RuleVocabulary.php"
+  ],
+  "moves": [
+   {
+    "file": "lib/BulkAction/RunActionAction.php",
+    "to": "Service"
+   },
+   {
+    "file": "lib/BulkAction/ApplyRuleAction.php",
+    "to": "Service"
+   },
+   {
+    "file": "lib/BulkAction/Support/ApplyRuleServices.php",
+    "to": "Service"
+   }
+  ],
+  "before": {
+   "gt2": 503,
+   "gt4": 0,
+   "gt6": 0,
+   "moves_left": 3,
+   "exposed": 118
+  },
+  "target": {
+   "gt2": 248,
+   "gt4": 0,
+   "gt6": 0,
+   "moves_left": 0,
+   "exposed": 33
+  },
+  "deferred": [
+   "lib/Service/Hinge/ReferencedByService.php ReferencedByService::getReferencingGroups: caller or builder lib/Controller/ObjectsController.php is in open #5046,#5116,#6178,#6179,#6219"
+  ],
+  "away": {
+   "lib/Service/Rules/RuleVocabulary.php": [
+    [
+     "lib/Controller/RulesController.php",
+     "owned by lane M17"
+    ],
+    [
+     "lib/Listener/CalculationOnSaveListener.php",
+     "owned by lane M25"
+    ],
+    [
+     "lib/Listener/LifecycleValidationListener.php",
+     "owned by lane M33"
+    ]
+   ]
+  }
+ },
+ "M27": {
+  "id": "M27",
+  "files": [
+   "lib/AppHost/Store/FederatedStoreCatalog.php",
+   "lib/Calendar/CalendarEventTransformer.php",
+   "lib/Calendar/RegisterCalendar.php",
+   "lib/Calendar/RegisterCalendarProvider.php",
+   "lib/Command/DedupCollidedSchemasCommand.php",
+   "lib/Controller/FederatedConfigController.php",
+   "lib/Db/MagicMapper/FacetColumnFilter.php",
+   "lib/Dto/DeletionAnalysis.php",
+   "lib/Exception/ReferentialIntegrityException.php",
+   "lib/Search/Controller/AggregationController.php",
+   "lib/Service/Config/FederatedConfigService.php",
+   "lib/Service/Config/FederatedConfigServiceInterface.php",
+   "lib/Service/MappingService.php",
+   "lib/Service/Object/DeletionGraph/DeletionGraphWalk.php",
+   "lib/Service/Object/DeletionGraph/ReadableDeletionAnalysis.php",
+   "lib/Service/Object/ReferentialIntegrityService.php",
+   "lib/Service/ObjectHandlerAccessInterface.php",
+   "lib/Support/FilterParams.php",
+   "lib/Twig/MappingTwigInstaller.php",
+   "lib/Twig/MappingTwigInstallerInterface.php"
+  ],
+  "p_files": [
+   "lib/Calendar/CalendarEventTransformer.php",
+   "lib/Calendar/RegisterCalendar.php",
+   "lib/Command/DedupCollidedSchemasCommand.php",
+   "lib/Service/Config/FederatedConfigService.php",
+   "lib/Service/Object/ReferentialIntegrityService.php",
+   "lib/Support/FilterParams.php"
+  ],
+  "i_targets": [
+   "lib/Calendar/RegisterCalendarProvider.php",
+   "lib/Dto/DeletionAnalysis.php",
+   "lib/Support/FilterParams.php",
+   "lib/Twig/MappingTwigInstaller.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 532,
+   "gt4": 62,
+   "gt6": 0,
+   "exposed": 312
+  },
+  "target": {
+   "gt2": 280,
+   "gt4": 43,
+   "gt6": 0,
+   "exposed": 312
+  },
+  "deferred": [
+   "lib/Service/Object/ReferentialIntegrityService.php ReferentialIntegrityService::applyDeletionActions: caller or builder lib/Service/Object/DeleteObject.php is in open #5497",
+   "lib/Service/Object/ReferentialIntegrityService.php ReferentialIntegrityService::logRestrictBlock: caller or builder lib/Service/Object/DeleteObject.php is in open #5497",
+   "lib/Support/FilterParams.php FilterParams::warnUnknownKeys: caller or builder lib/Controller/ObjectsController.php is in open #5046,#5116,#6178,#6179,#6219"
+  ],
+  "away": {
+   "lib/Dto/DeletionAnalysis.php": [
+    [
+     "lib/Service/Object/DeleteObject.php",
+     "held by open #5497"
+    ],
+    [
+     "lib/Service/ObjectService.php",
+     "held by open #5497"
+    ]
+   ],
+   "lib/Support/FilterParams.php": [
+    [
+     "lib/Controller/ObjectsController.php",
+     "held by open #5046,#5116,#6178,#6179,#6219"
+    ],
+    [
+     "lib/Db/MagicMapper/MagicSearchHandler.php",
+     "held by open #6108"
+    ],
+    [
+     "lib/Service/Object/SearchQueryHandler.php",
+     "held by open #6223,#6224"
+    ]
+   ],
+   "lib/Twig/MappingTwigInstaller.php": [
+    [
+     "lib/AppHost/AppHostWiring.php",
+     "owned by lane M29"
+    ]
+   ],
+   "lib/Calendar/RegisterCalendarProvider.php": [
+    [
+     "lib/AppInfo/Application.php",
+     "off limits this round"
+    ]
+   ]
+  }
+ },
+ "M28": {
+  "id": "M28",
+  "files": [
+   "lib/AppHost/Controller/GenericStoreController.php",
+   "lib/AppHost/Service/RegisterDocumentLoaderInterface.php",
+   "lib/AppHost/Service/StoreDescriptor.php",
+   "lib/Controller/CalendarEventsController.php",
+   "lib/Controller/HandoffController.php",
+   "lib/Controller/Support/ControllerSession.php",
+   "lib/Db/MagicMapper/MagicSequentialOrder.php",
+   "lib/Db/MagicMapper/MagicUnionOrder.php",
+   "lib/Db/MagicMapper/NestedPathFilter.php",
+   "lib/Db/SyncRecordMapper.php",
+   "lib/Dto/DeletionEffects.php",
+   "lib/Exception/OasValidationException.php",
+   "lib/Exception/SchemaNotInRegisterException.php",
+   "lib/Federation/OpenRegisterCloudFederationProvider.php",
+   "lib/Files/Controller/FileTextController.php",
+   "lib/Files/Controller/Support/FileTextControllerServices.php",
+   "lib/Listener/HandoffLifecycleListener.php",
+   "lib/Notifications/Controller/ScheduledReportsController.php",
+   "lib/Notifications/Controller/Support/ScheduledReportsControllerServices.php",
+   "lib/Notifications/Controller/Support/TimelineAdminControllerServices.php",
+   "lib/Search/Controller/Support/DuplicateControllerServices.php",
+   "lib/Service/Deletion/DestructionRefusedException.php",
+   "lib/Service/Dmn/DecisionTableValidator.php",
+   "lib/Service/Flow/Nodes/LinkObjectNode.php",
+   "lib/Service/Handoff/HandoffService.php",
+   "lib/Service/Handoff/HandoffServiceInterface.php",
+   "lib/Service/Oas/OasValidationReport.php",
+   "lib/Service/Oas/OasValidationReportInterface.php",
+   "lib/Service/Rbac/ExplicitReveal.php",
+   "lib/Service/Sync/SyncRecordStatus.php",
+   "lib/Service/Sync/SyncRecordStatusInterface.php",
+   "lib/Support/NullFilter.php",
+   "lib/Support/OrderParameter.php"
+  ],
+  "p_files": [
+   "lib/AppHost/Service/StoreDescriptor.php",
+   "lib/Controller/CalendarEventsController.php",
+   "lib/Exception/SchemaNotInRegisterException.php",
+   "lib/Federation/OpenRegisterCloudFederationProvider.php",
+   "lib/Service/Deletion/DestructionRefusedException.php",
+   "lib/Service/Dmn/DecisionTableValidator.php",
+   "lib/Service/Handoff/HandoffService.php",
+   "lib/Support/NullFilter.php"
+  ],
+  "i_targets": [
+   "lib/Controller/Support/ControllerSession.php",
+   "lib/Dto/DeletionEffects.php",
+   "lib/Federation/OpenRegisterCloudFederationProvider.php",
+   "lib/Support/NullFilter.php",
+   "lib/Support/OrderParameter.php"
+  ],
+  "moves": [
+   {
+    "file": "lib/Service/Oas/OasValidationReportInterface.php",
+    "to": "Exception"
+   },
+   {
+    "file": "lib/Service/Sync/SyncRecordStatusInterface.php",
+    "to": "Db"
+   }
+  ],
+  "before": {
+   "gt2": 382,
+   "gt4": 56,
+   "gt6": 16,
+   "moves_left": 2,
+   "exposed": 190
+  },
+  "target": {
+   "gt2": 280,
+   "gt4": 23,
+   "gt6": 0,
+   "moves_left": 0,
+   "exposed": 190
+  },
+  "deferred": [
+   "lib/Support/NullFilter.php NullFilter::conditionsFor: caller or builder lib/Db/MagicMapper/MagicSearchHandler.php is in open #6108",
+   "lib/Exception/SchemaNotInRegisterException.php SchemaNotInRegisterException::__construct: caller or builder lib/Service/ObjectService.php is in open #5497",
+   "lib/Service/Deletion/DestructionRefusedException.php DestructionRefusedException::__construct: caller or builder lib/Service/Deletion/DestructionScopeService.php is owned by lane M03"
+  ],
+  "away": {
+   "lib/Support/NullFilter.php": [
+    [
+     "lib/Db/MagicMapper/MagicSearchHandler.php",
+     "held by open #6108"
+    ],
+    [
+     "lib/Service/Aggregation/AggregationRunner.php",
+     "held by open #4404"
+    ]
+   ],
+   "lib/Controller/Support/ControllerSession.php": [
+    [
+     "lib/Search/Controller/DuplicateController.php",
+     "owned by lane M33"
+    ]
+   ],
+   "lib/Support/OrderParameter.php": [
+    [
+     "lib/Db/MagicMapper.php",
+     "held by open #6108"
+    ],
+    [
+     "lib/Db/MagicMapper/MagicSearchHandler.php",
+     "held by open #6108"
+    ]
+   ],
+   "lib/Dto/DeletionEffects.php": [
+    [
+     "lib/Service/Object/DeletionGraph/DeletionGraphWalk.php",
+     "owned by lane M27"
+    ],
+    [
+     "lib/Service/Object/DeletionGraph/ReadableDeletionAnalysis.php",
+     "owned by lane M27"
+    ]
+   ],
+   "lib/Federation/OpenRegisterCloudFederationProvider.php": [
+    [
+     "lib/AppInfo/Application.php",
+     "off limits this round"
+    ]
+   ]
+  }
+ },
+ "M29": {
+  "id": "M29",
+  "files": [
+   "lib/AppHost/AppHostRegistrar.php",
+   "lib/AppHost/AppHostWiring.php",
+   "lib/AppHost/Bootstrap.php",
+   "lib/AppHost/FeatureToggleRegistrar.php",
+   "lib/AppHost/FeatureToggleWiring.php",
+   "lib/AppHost/IMetricsProvider.php",
+   "lib/AppHost/Listener/ApplicationPublishListener.php",
+   "lib/AppHost/Observability/MetricSample.php",
+   "lib/AppHost/Observability/MetricsEngine.php",
+   "lib/AppHost/Observability/Source/AppConfigMetricSource.php",
+   "lib/AppHost/Observability/Source/ObjectMetricSource.php",
+   "lib/AppHost/Observability/Source/ProviderMetricSource.php",
+   "lib/AppHost/Observability/Source/TableMetricSource.php",
+   "lib/AppHost/ObservabilityRegistrar.php",
+   "lib/AppHost/ObservabilityWiring.php",
+   "lib/AppHost/Repair/GenericInitializeActions.php",
+   "lib/AppHost/Service/AppHostSettingsService.php",
+   "lib/AppHost/Service/GenericActionAuthService.php",
+   "lib/AppHost/Service/GenericSettingsService.php",
+   "lib/AppHost/Store/StoreActionAuthorizer.php",
+   "lib/Repair/InitializeFlowActions.php",
+   "lib/Service/Bindings/RootBindings.php",
+   "lib/Service/OpenRegisterActionAuthService.php",
+   "lib/Service/Task/TaskMetricsProvider.php",
+   "lib/Service/Task/TaskMetricsProviderInterface.php"
+  ],
+  "p_files": [
+   "lib/AppHost/Bootstrap.php",
+   "lib/AppHost/Observability/MetricSample.php",
+   "lib/AppHost/Observability/MetricsEngine.php",
+   "lib/AppHost/Service/AppHostSettingsService.php"
+  ],
+  "i_targets": [
+   "lib/AppHost/Listener/ApplicationPublishListener.php",
+   "lib/AppHost/Observability/MetricSample.php",
+   "lib/AppHost/Repair/GenericInitializeActions.php",
+   "lib/AppHost/Service/GenericActionAuthService.php",
+   "lib/Service/OpenRegisterActionAuthService.php"
+  ],
+  "moves": [
+   {
+    "file": "lib/AppHost/Observability/MetricSample.php",
+    "to": "Service"
+   },
+   {
+    "file": "lib/AppHost/Service/GenericActionAuthService.php",
+    "to": "Service"
+   },
+   {
+    "file": "lib/AppHost/IMetricsProvider.php",
+    "to": "Service"
+   }
+  ],
+  "before": {
+   "gt2": 302,
+   "gt4": 30,
+   "gt6": 22,
+   "moves_left": 3,
+   "exposed": 255
+  },
+  "target": {
+   "gt2": 143,
+   "gt4": 0,
+   "gt6": 0,
+   "moves_left": 0,
+   "exposed": 47
+  },
+  "deferred": [],
+  "away": {
+   "lib/AppHost/Listener/ApplicationPublishListener.php": [
+    [
+     "lib/Listener/ListenerRegistrar.php",
+     "owned by lane M32"
+    ]
+   ]
+  }
+ },
+ "M30": {
+  "id": "M30",
+  "files": [
+   "lib/AppHost/Observability/HealthCheckExecutor.php",
+   "lib/Controller/ObjectShareLinkController.php",
+   "lib/Controller/Support/RenderedObjectUuids.php",
+   "lib/Db/MagicMapper/MagicFacetFieldLabel.php",
+   "lib/Db/MagicMapper/MagicFacetHandler.php",
+   "lib/Dto/BulkSaveOutcome.php",
+   "lib/Dto/BulkSaveOutcomes.php",
+   "lib/Formats/UuidFormat.php",
+   "lib/Listener/FrozenNodeWriteListener.php",
+   "lib/Repair/MigrateApprovalChainsToTasks.php",
+   "lib/Search/Service/GraphQL/Scalar/UuidType.php",
+   "lib/Service/Export/ExportProfileWriter.php",
+   "lib/Service/Object/ResultNameCollector.php",
+   "lib/Service/Object/SaveObject/InverseRelations.php",
+   "lib/Service/Object/SaveObject/ReferenceText.php",
+   "lib/Service/Object/SaveObject/RelationScanner.php",
+   "lib/Service/Rbac/ExplicitRevealMasker.php",
+   "lib/Service/Rbac/ShareGrantAttributes.php",
+   "lib/Service/RegisterScopedSchemaResolver.php",
+   "lib/Service/SchemaService.php",
+   "lib/Service/SharedSchema/SchemaTableMigrator.php",
+   "lib/Service/SharedSchemaDedupeService.php",
+   "lib/Service/Task/TaskBuilder.php"
+  ],
+  "p_files": [
+   "lib/AppHost/Observability/HealthCheckExecutor.php",
+   "lib/Db/MagicMapper/MagicFacetHandler.php",
+   "lib/Dto/BulkSaveOutcome.php",
+   "lib/Dto/BulkSaveOutcomes.php",
+   "lib/Repair/MigrateApprovalChainsToTasks.php",
+   "lib/Service/SharedSchema/SchemaTableMigrator.php",
+   "lib/Service/SharedSchemaDedupeService.php"
+  ],
+  "i_targets": [
+   "lib/Dto/BulkSaveOutcomes.php",
+   "lib/Formats/UuidFormat.php",
+   "lib/Service/Task/TaskBuilder.php"
+  ],
+  "moves": [
+   {
+    "file": "lib/Dto/BulkSaveOutcome.php",
+    "to": "Service"
+   }
+  ],
+  "before": {
+   "gt2": 562,
+   "gt4": 27,
+   "gt6": 27,
+   "moves_left": 1,
+   "exposed": 285
+  },
+  "target": {
+   "gt2": 285,
+   "gt4": 27,
+   "gt6": 27,
+   "moves_left": 0,
+   "exposed": 41
+  },
+  "deferred": [
+   "lib/Dto/BulkSaveOutcomes.php BulkSaveOutcomes::fromBulkResult: caller or builder lib/Controller/BulkController.php is owned by lane M01",
+   "lib/Dto/BulkSaveOutcomes.php BulkSaveOutcomes::fromBatchStatus: caller or builder lib/Controller/BulkController.php is owned by lane M01",
+   "lib/Db/MagicMapper/MagicFacetHandler.php MagicFacetHandler::__construct: caller or builder lib/Db/MagicMapper.php is in open #6108",
+   "lib/Db/MagicMapper/MagicFacetHandler.php MagicFacetHandler::getSimpleFacets: caller or builder lib/Db/MagicMapper.php is in open #6108",
+   "lib/AppHost/Observability/HealthCheckExecutor.php HealthCheckExecutor::__construct: caller or builder lib/AppHost/ObservabilityWiring.php is owned by lane M29"
+  ],
+  "away": {
+   "lib/Dto/BulkSaveOutcomes.php": [
+    [
+     "lib/Controller/BulkController.php",
+     "owned by lane M01"
+    ]
+   ],
+   "lib/Formats/UuidFormat.php": [
+    [
+     "lib/Notifications/Service/Notification/NotificationTemplating.php",
+     "owned by lane M33"
+    ],
+    [
+     "lib/Service/Object/RenderObject.php",
+     "held by open #5046,#5116,cloud/k16-render-mappers-dup"
+    ],
+    [
+     "lib/Service/Object/SaveObject.php",
+     "held by open #5046,#5116"
+    ],
+    [
+     "lib/Service/ObjectService.php",
+     "held by open #5497"
+    ]
+   ]
+  }
+ },
+ "M31": {
+  "id": "M31",
+  "files": [
+   "lib/Controller/FlowTimerDiagnosticController.php",
+   "lib/Controller/FormLinksController.php",
+   "lib/Controller/RegisterDescriptorController.php",
+   "lib/Controller/SetupController.php",
+   "lib/Controller/WorkingCalendarController.php",
+   "lib/Db/MagicMapper/MagicUnionPage.php",
+   "lib/Db/SourceMapper.php",
+   "lib/Notifications/Controller/TimelineAdminController.php",
+   "lib/Service/ObjectSource/DbalObjectSourceProvider.php",
+   "lib/Service/ObjectSource/OrganisationObjectSourceProvider.php",
+   "lib/Settings/OpenRegisterAdmin.php",
+   "lib/Support/QueryLimit.php"
+  ],
+  "p_files": [
+   "lib/Controller/FormLinksController.php",
+   "lib/Db/SourceMapper.php",
+   "lib/Service/ObjectSource/DbalObjectSourceProvider.php",
+   "lib/Service/ObjectSource/OrganisationObjectSourceProvider.php"
+  ],
+  "i_targets": [
+   "lib/Settings/OpenRegisterAdmin.php",
+   "lib/Support/QueryLimit.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 322,
+   "gt4": 89,
+   "gt6": 24,
+   "exposed": 93
+  },
+  "target": {
+   "gt2": 282,
+   "gt4": 89,
+   "gt6": 24,
+   "exposed": 93
+  },
+  "deferred": [
+   "lib/Db/SourceMapper.php SourceMapper::findAll: caller or builder lib/Controller/OrganisationController.php is in open #4641",
+   "lib/Service/ObjectSource/DbalObjectSourceProvider.php DbalObjectSourceProvider::aggregate: caller or builder lib/Service/Aggregation/AggregationRunner.php is in open #4404",
+   "lib/Service/ObjectSource/DbalObjectSourceProvider.php DbalObjectSourceProvider::update: caller or builder lib/BackgroundJob/SyncDataJob.php is owned by lane M26",
+   "lib/Service/ObjectSource/DbalObjectSourceProvider.php DbalObjectSourceProvider::find: caller or builder lib/Service/Aggregation/AggregationRunner.php is in open #4404",
+   "lib/Service/ObjectSource/DbalObjectSourceProvider.php DbalObjectSourceProvider::findAll: caller or builder lib/Service/Aggregation/AggregationRunner.php is in open #4404",
+   "lib/Service/ObjectSource/DbalObjectSourceProvider.php DbalObjectSourceProvider::insert: caller or builder lib/Service/Object/SaveObject.php is in open #5046,#5116",
+   "lib/Service/ObjectSource/DbalObjectSourceProvider.php DbalObjectSourceProvider::remove: caller or builder lib/Service/Object/DeleteObject.php is in open #5497",
+   "lib/Service/ObjectSource/OrganisationObjectSourceProvider.php OrganisationObjectSourceProvider::update: caller or builder lib/Controller/OrganisationController.php is in open #4641",
+   "lib/Service/ObjectSource/OrganisationObjectSourceProvider.php OrganisationObjectSourceProvider::findAll: caller or builder lib/Controller/OrganisationController.php is in open #4641",
+   "lib/Service/ObjectSource/OrganisationObjectSourceProvider.php OrganisationObjectSourceProvider::insert: caller or builder lib/Db/ApplicationMapper.php is owned by lane M33",
+   "lib/Service/ObjectSource/OrganisationObjectSourceProvider.php OrganisationObjectSourceProvider::remove: caller or builder lib/Service/Object/DeleteObject.php is in open #5497"
+  ],
+  "away": {
+   "lib/Support/QueryLimit.php": [
+    [
+     "lib/Db/MagicMapper.php",
+     "held by open #6108"
+    ],
+    [
+     "lib/Db/MagicMapper/MagicSearchHandler.php",
+     "held by open #6108"
+    ]
+   ],
+   "lib/Settings/OpenRegisterAdmin.php": [
+    [
+     "lib/Controller/RulesController.php",
+     "owned by lane M17"
+    ]
+   ]
+  }
+ },
+ "M32": {
+  "id": "M32",
+  "files": [
+   "lib/AppHost/Repair/GenericInitializeSettings.php",
+   "lib/AppHost/Settings/GenericAdminSettings.php",
+   "lib/AppHost/Settings/GenericSettingsSection.php",
+   "lib/Controller/ContactsController.php",
+   "lib/Controller/ProcessingPurposeController.php",
+   "lib/Controller/TranslationController.php",
+   "lib/Controller/VerwerkingsactiviteitenController.php",
+   "lib/Controller/VocabularyController.php",
+   "lib/Dashboard/IntegrationDashboardWidget.php",
+   "lib/Files/Service/TextExtraction/PatternSet/NlPatternSet.php",
+   "lib/Formats/IdentifierFormats.php",
+   "lib/Listener/ListenerBootstrap.php",
+   "lib/Listener/ListenerRegistrar.php",
+   "lib/Reference/ObjectReferenceProvider.php",
+   "lib/Service/Capability/ToolGrantSet.php",
+   "lib/Service/Consumer/ResolvedConsumer.php",
+   "lib/Service/Hardening/HardeningControl.php",
+   "lib/Service/Hardening/HardeningFloorGuard.php",
+   "lib/Service/Hardening/HardeningReportService.php"
+  ],
+  "p_files": [
+   "lib/AppHost/Repair/GenericInitializeSettings.php",
+   "lib/AppHost/Settings/GenericAdminSettings.php",
+   "lib/AppHost/Settings/GenericSettingsSection.php",
+   "lib/Controller/ContactsController.php",
+   "lib/Controller/ProcessingPurposeController.php",
+   "lib/Controller/TranslationController.php",
+   "lib/Controller/VerwerkingsactiviteitenController.php",
+   "lib/Controller/VocabularyController.php",
+   "lib/Service/Capability/ToolGrantSet.php",
+   "lib/Service/Consumer/ResolvedConsumer.php",
+   "lib/Service/Hardening/HardeningControl.php"
+  ],
+  "i_targets": [
+   "lib/Dashboard/IntegrationDashboardWidget.php",
+   "lib/Formats/IdentifierFormats.php",
+   "lib/Listener/ListenerBootstrap.php",
+   "lib/Reference/ObjectReferenceProvider.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 384,
+   "gt4": 137,
+   "gt6": 62,
+   "exposed": 127
+  },
+  "target": {
+   "gt2": 329,
+   "gt4": 50,
+   "gt6": 50,
+   "exposed": 118
+  },
+  "deferred": [
+   "lib/Service/Consumer/ResolvedConsumer.php ResolvedConsumer::__construct: caller or builder lib/Service/Consumer/ConsumerMapperSource.php is owned by lane M06"
+  ],
+  "away": {
+   "lib/Dashboard/IntegrationDashboardWidget.php": [
+    [
+     "lib/AppInfo/Application.php",
+     "off limits this round"
+    ]
+   ],
+   "lib/Listener/ListenerBootstrap.php": [
+    [
+     "lib/AppInfo/Application.php",
+     "off limits this round"
+    ]
+   ],
+   "lib/Reference/ObjectReferenceProvider.php": [
+    [
+     "lib/AppInfo/Application.php",
+     "off limits this round"
+    ]
+   ]
+  }
+ },
+ "M33": {
+  "id": "M33",
+  "files": [
+   "lib/AppHost/Scheduling/ScheduleReleaseReader.php",
+   "lib/BackgroundJob/AuditExportSource.php",
+   "lib/BackgroundJob/DsarDpiaDetectionJob.php",
+   "lib/Command/PruneRetiredSchemasRun.php",
+   "lib/Controller/BookmarkLinksController.php",
+   "lib/Controller/CalendarFeedController.php",
+   "lib/Controller/ContextsController.php",
+   "lib/Controller/DeckLinksController.php",
+   "lib/Controller/EmailLinksController.php",
+   "lib/Controller/FederationController.php",
+   "lib/Controller/MapLinksController.php",
+   "lib/Controller/PollLinksController.php",
+   "lib/Controller/RegistersController.php",
+   "lib/Controller/RegistrySubscriptionController.php",
+   "lib/Controller/Support/AuditTrailLog.php",
+   "lib/Controller/Support/CalendarFeedDomain.php",
+   "lib/Controller/Support/RegisterAccessAudit.php",
+   "lib/Controller/SurvivorshipController.php",
+   "lib/Controller/TmloController.php",
+   "lib/Controller/Trait/ObjectLinkActionsTrait.php",
+   "lib/Db/ApplicationMapper.php",
+   "lib/Db/FederatedShareMapper.php",
+   "lib/Db/MagicMapper/MagicFlaggedEncryption.php",
+   "lib/Db/MappingMapper.php",
+   "lib/Db/MultiTenancyTrait.php",
+   "lib/Db/Tenancy/EntityRbacTrait.php",
+   "lib/Db/Tenancy/TenancyIdentityTrait.php",
+   "lib/Dto/DeepLinkRegistration.php",
+   "lib/Listener/LeafScriptListener.php",
+   "lib/Listener/LifecycleInitialStateListener.php",
+   "lib/Listener/LifecycleValidationListener.php",
+   "lib/Listener/Support/ApprovalChainSequences.php",
+   "lib/Mcp/BuiltIn/ObjectsToolProvider.php",
+   "lib/Mcp/Service/Mcp/McpResourcesService.php",
+   "lib/Mcp/Tool/ObjectsTool.php",
+   "lib/Notifications/Service/Notification/NotificationTemplating.php",
+   "lib/Repair/RechainAuditTrailForFlowAttribution.php",
+   "lib/Repair/SeedVocabularyRegister.php",
+   "lib/Search/Controller/DuplicateController.php",
+   "lib/Search/Service/Quality/DuplicateDetectionService.php",
+   "lib/Service/AnonymousEvaluationContext.php",
+   "lib/Service/ApprovalChainAnnotationInstaller.php",
+   "lib/Service/AuditCanonicalV1.php",
+   "lib/Service/AuthorizationAuditService.php",
+   "lib/Service/BookmarkDraft.php",
+   "lib/Service/BulkJob/BulkJobExecutor.php",
+   "lib/Service/BulkJob/BulkSelectionResolver.php",
+   "lib/Service/Calendar/ObjectCalendarFeedService.php",
+   "lib/Service/Calendar/ObjectDateEventBuilder.php",
+   "lib/Service/CardDraft.php",
+   "lib/Service/CrossRegisterExistenceService.php",
+   "lib/Service/DeepLinkRegistryService.php",
+   "lib/Service/EmailMessageRef.php",
+   "lib/Service/EntryScripts.php",
+   "lib/Service/FederationShareService.php",
+   "lib/Service/LinkTarget.php",
+   "lib/Service/LogService.php",
+   "lib/Service/OrganisationContext.php",
+   "lib/Service/PoiDraft.php",
+   "lib/Service/PollDraft.php",
+   "lib/Service/PropertyAccessCollaborators.php",
+   "lib/Service/RegisterScopedSchemaResolvers.php",
+   "lib/Service/SchemaTeardownOverride.php",
+   "lib/Service/ServiceBootstrap.php",
+   "lib/Service/SystemOperationContext.php",
+   "lib/Service/TenancyCollaborators.php",
+   "lib/Service/WriteCause.php",
+   "lib/Service/WritePhase.php"
+  ],
+  "p_files": [
+   "lib/Db/ApplicationMapper.php",
+   "lib/Db/FederatedShareMapper.php",
+   "lib/Db/MultiTenancyTrait.php",
+   "lib/Dto/DeepLinkRegistration.php",
+   "lib/Mcp/Tool/ObjectsTool.php",
+   "lib/Service/AuthorizationAuditService.php",
+   "lib/Service/BulkJob/BulkSelectionResolver.php",
+   "lib/Service/Calendar/ObjectCalendarFeedService.php",
+   "lib/Service/Calendar/ObjectDateEventBuilder.php",
+   "lib/Service/DeepLinkRegistryService.php",
+   "lib/Service/EntryScripts.php",
+   "lib/Service/LogService.php",
+   "lib/Service/WriteCause.php"
+  ],
+  "i_targets": [
+   "lib/Db/MappingMapper.php",
+   "lib/Dto/DeepLinkRegistration.php",
+   "lib/Service/AnonymousEvaluationContext.php",
+   "lib/Service/ApprovalChainAnnotationInstaller.php",
+   "lib/Service/AuditCanonicalV1.php",
+   "lib/Service/AuthorizationAuditService.php",
+   "lib/Service/BookmarkDraft.php",
+   "lib/Service/Calendar/ObjectCalendarFeedService.php",
+   "lib/Service/CardDraft.php",
+   "lib/Service/CrossRegisterExistenceService.php",
+   "lib/Service/DeepLinkRegistryService.php",
+   "lib/Service/EmailMessageRef.php",
+   "lib/Service/EntryScripts.php",
+   "lib/Service/FederationShareService.php",
+   "lib/Service/LinkTarget.php",
+   "lib/Service/LogService.php",
+   "lib/Service/OrganisationContext.php",
+   "lib/Service/PoiDraft.php",
+   "lib/Service/PollDraft.php",
+   "lib/Service/PropertyAccessCollaborators.php",
+   "lib/Service/RegisterScopedSchemaResolvers.php",
+   "lib/Service/SchemaTeardownOverride.php",
+   "lib/Service/ServiceBootstrap.php",
+   "lib/Service/SystemOperationContext.php",
+   "lib/Service/TenancyCollaborators.php",
+   "lib/Service/WriteCause.php",
+   "lib/Service/WritePhase.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 545,
+   "gt4": 108,
+   "gt6": 0,
+   "exposed": 1776
+  },
+  "target": {
+   "gt2": 380,
+   "gt4": 65,
+   "gt6": 0,
+   "exposed": 1230
+  },
+  "deferred": [
+   "lib/Db/ApplicationMapper.php ApplicationMapper::findAll: caller or builder lib/Controller/OrganisationController.php is in open #4641",
+   "lib/Db/FederatedShareMapper.php FederatedShareMapper::findAll: caller or builder lib/Controller/OrganisationController.php is in open #4641",
+   "lib/Db/MultiTenancyTrait.php MultiTenancyTrait::applyOrganisationFilter: caller or builder lib/Db/ConfigurationMapper.php is owned by lane M04",
+   "lib/Mcp/Tool/ObjectsTool.php ObjectsTool::searchObjects: caller or builder in lib/Kernel/Contracts/ObjectOperationsInterface.php, off limits this round",
+   "lib/Mcp/Tool/ObjectsTool.php ObjectsTool::createObject: caller or builder in lib/Kernel/Contracts/ObjectOperationsInterface.php, off limits this round"
+  ],
+  "away": {
+   "lib/Service/DeepLinkRegistryService.php": [
+    [
+     "lib/AppInfo/Application.php",
+     "off limits this round"
+    ]
+   ],
+   "lib/Db/MappingMapper.php": [
+    [
+     "lib/Service/Configuration/ConfigurationServiceRegistrar.php",
+     "held by open #5968"
+    ],
+    [
+     "lib/Service/Configuration/ExportHandler.php",
+     "held by open #5968"
+    ],
+    [
+     "lib/Service/Configuration/ImportHandler.php",
+     "held by open #5968"
+    ]
+   ],
+   "lib/Service/AnonymousEvaluationContext.php": [
+    [
+     "lib/Db/MagicMapper/MagicOrganizationHandler.php",
+     "owned by lane M06"
+    ],
+    [
+     "lib/Db/MagicMapper/MagicRbacHandler.php",
+     "owned by lane M25"
+    ]
+   ],
+   "lib/Service/ApprovalChainAnnotationInstaller.php": [
+    [
+     "lib/Listener/ApprovalChainGateListener.php",
+     "owned by lane M19"
+    ],
+    [
+     "lib/Listener/ListenerRegistrar.php",
+     "owned by lane M32"
+    ]
+   ],
+   "lib/Service/AuthorizationAuditService.php": [
+    [
+     "lib/Controller/SchemasController.php",
+     "held by open #6215,#6217"
+    ]
+   ],
+   "lib/Service/CrossRegisterExistenceService.php": [
+    [
+     "lib/Controller/ObjectsController.php",
+     "held by open #5046,#5116,#6178,#6179,#6219"
+    ]
+   ],
+   "lib/Service/EntryScripts.php": [
+    [
+     "lib/Dashboard/IntegrationDashboardWidget.php",
+     "owned by lane M32"
+    ],
+    [
+     "lib/Listener/FilesSidebarListener.php",
+     "held by open #2061"
+    ],
+    [
+     "lib/Listener/MailAppScriptListener.php",
+     "held by open #2061"
+    ]
+   ],
+   "lib/Service/FederationShareService.php": [
+    [
+     "lib/Federation/OpenRegisterCloudFederationProvider.php",
+     "owned by lane M28"
+    ]
+   ],
+   "lib/Service/LogService.php": [
+    [
+     "lib/Controller/AuditTrailController.php",
+     "owned by lane M19"
+    ]
+   ],
+   "lib/Service/OrganisationContext.php": [
+    [
+     "lib/Db/MagicMapper.php",
+     "held by open #6108"
+    ],
+    [
+     "lib/Db/MagicMapper/MagicOrganizationHandler.php",
+     "owned by lane M06"
+    ],
+    [
+     "lib/Db/MagicMapper/MagicRbacHandler.php",
+     "owned by lane M25"
+    ],
+    [
+     "lib/Db/MagicMapper/MagicSearchHandler.php",
+     "held by open #6108"
+    ]
+   ],
+   "lib/Service/RegisterScopedSchemaResolvers.php": [
+    [
+     "lib/Controller/SchemasController.php",
+     "held by open #6215,#6217"
+    ],
+    [
+     "lib/Controller/TablesController.php",
+     "held by open #5317"
+    ]
+   ],
+   "lib/Service/SchemaTeardownOverride.php": [
+    [
+     "lib/Command/PruneRetiredSchemasCommand.php",
+     "owned by lane M14"
+    ]
+   ],
+   "lib/Service/ServiceBootstrap.php": [
+    [
+     "lib/AppInfo/Application.php",
+     "off limits this round"
+    ]
+   ],
+   "lib/Service/SystemOperationContext.php": [
+    [
+     "lib/Db/MagicMapper.php",
+     "held by open #6108"
+    ],
+    [
+     "lib/Db/MagicMapper/MagicOrganizationHandler.php",
+     "owned by lane M06"
+    ],
+    [
+     "lib/Db/MagicMapper/MagicRbacHandler.php",
+     "owned by lane M25"
+    ]
+   ],
+   "lib/Service/TenancyCollaborators.php": [
+    [
+     "lib/Db/MagicMapper/MagicOrganizationHandler.php",
+     "owned by lane M06"
+    ]
+   ],
+   "lib/Service/WriteCause.php": [
+    [
+     "lib/Controller/CredentialController.php",
+     "held by open #4548"
+    ],
+    [
+     "lib/Controller/ObjectActionsController.php",
+     "owned by lane M26"
+    ],
+    [
+     "lib/Controller/ObjectsController.php",
+     "held by open #5046,#5116,#6178,#6179,#6219"
+    ],
+    [
+     "lib/Controller/VocabularyController.php",
+     "owned by lane M32"
+    ],
+    [
+     "lib/Db/AuditTrailMapper.php",
+     "owned by lane M03"
+    ],
+    [
+     "lib/Files/Controller/FilesController.php",
+     "owned by lane M13"
+    ],
+    [
+     "lib/Files/Service/File/ObjectFileAccess.php",
+     "held by open cloud/c12-rbac-declaration-checks"
+    ],
+    [
+     "lib/Mcp/BuiltIn/SchemaDerivedToolProvider.php",
+     "owned by lane M03"
+    ],
+    [
+     "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php",
+     "held by open #6215,#6217"
+    ]
+   ],
+   "lib/Service/WritePhase.php": [
+    [
+     "lib/AppInfo/Application.php",
+     "off limits this round"
+    ],
+    [
+     "lib/Controller/ObjectsController.php",
+     "held by open #5046,#5116,#6178,#6179,#6219"
+    ],
+    [
+     "lib/Db/MagicMapper.php",
+     "held by open #6108"
+    ],
+    [
+     "lib/Db/SchemaMapper.php",
+     "held by open #6215,#6217"
+    ]
+   ]
+  }
+ },
+ "M34": {
+  "id": "M34",
+  "files": [
+   "lib/Controller/ShareLinksController.php",
+   "lib/Service/AnalyticsSeriesService.php",
+   "lib/Service/AuthorizationService.php",
+   "lib/Service/AvgComplianceService.php",
+   "lib/Service/AvgRetentionService.php",
+   "lib/Service/CalendarEventService.php",
+   "lib/Service/CountedRegisterImport.php",
+   "lib/Service/DsarService.php",
+   "lib/Service/ImportService.php",
+   "lib/Service/Integration/Providers/CalendarProvider.php",
+   "lib/Service/ObjectServiceMapperAdapter.php",
+   "lib/Service/ProcessingLogService.php",
+   "lib/Service/RegisterDescriptorService.php",
+   "lib/Service/RegisterResolverService.php",
+   "lib/Service/SchemaDeletionService.php",
+   "lib/Service/ShareDraft.php",
+   "lib/Service/TalkLinkService.php",
+   "lib/Service/TaskService.php",
+   "lib/Service/TimeTrackerLinkService.php",
+   "lib/Service/UserLinkWriter.php",
+   "lib/Service/UserService.php"
+  ],
+  "p_files": [
+   "lib/Service/AnalyticsSeriesService.php",
+   "lib/Service/AuthorizationService.php",
+   "lib/Service/AvgComplianceService.php",
+   "lib/Service/AvgRetentionService.php",
+   "lib/Service/CalendarEventService.php",
+   "lib/Service/CountedRegisterImport.php",
+   "lib/Service/DsarService.php",
+   "lib/Service/ImportService.php",
+   "lib/Service/ObjectServiceMapperAdapter.php",
+   "lib/Service/ProcessingLogService.php",
+   "lib/Service/RegisterDescriptorService.php",
+   "lib/Service/RegisterResolverService.php",
+   "lib/Service/SchemaDeletionService.php",
+   "lib/Service/TalkLinkService.php",
+   "lib/Service/TaskService.php",
+   "lib/Service/TimeTrackerLinkService.php",
+   "lib/Service/UserLinkWriter.php",
+   "lib/Service/UserService.php"
+  ],
+  "i_targets": [
+   "lib/Service/ShareDraft.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 1602,
+   "gt4": 424,
+   "gt6": 181,
+   "exposed": 63
+  },
+  "target": {
+   "gt2": 1183,
+   "gt4": 331,
+   "gt6": 159,
+   "exposed": 0
+  },
+  "deferred": [
+   "lib/Service/TaskService.php TaskService::__construct: caller or builder lib/Service/ServiceRegistrar.php is in open cloud/k03-cache-handler-fields",
+   "lib/Service/UserService.php UserService::__construct: caller or builder lib/Service/ServiceRegistrar.php is in open cloud/k03-cache-handler-fields"
+  ],
+  "away": {}
+ },
+ "M35": {
+  "id": "M35",
+  "files": [
+   "lib/Service/CalendarLinkService.php",
+   "lib/Service/ContactService.php",
+   "lib/Service/TaskVtodoDocument.php"
+  ],
+  "p_files": [
+   "lib/Service/CalendarLinkService.php",
+   "lib/Service/ContactService.php",
+   "lib/Service/TaskVtodoDocument.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 141,
+   "gt4": 34,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 113,
+   "gt4": 34,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {}
+ },
+ "M36": {
+  "id": "M36",
+  "files": [
+   "lib/Controller/ExportProfilesController.php",
+   "lib/Controller/Support/ReferenceOptionsAnswer.php",
+   "lib/Db/Schema.php",
+   "lib/Db/Schema/PropertyAuthorization.php",
+   "lib/Listener/GeneratedIdentifierListener.php",
+   "lib/Listener/UniqueConstraintListener.php",
+   "lib/Repair/GrantExportWhereReadIsGranted.php",
+   "lib/Service/Configuration/ConfigurationCollaborators.php",
+   "lib/Service/ExampleSet/ExampleSetDateValue.php",
+   "lib/Service/ExampleSet/ExampleSetRow.php",
+   "lib/Service/Export/ExportProfileService.php",
+   "lib/Service/Export/ExportRefusedException.php",
+   "lib/Service/Export/ExportRightService.php",
+   "lib/Service/Export/ExportRunContent.php",
+   "lib/Service/Export/ExportRunFile.php",
+   "lib/Service/Export/ExportRunOrigin.php",
+   "lib/Service/Rbac/ObjectOwnershipService.php",
+   "lib/Service/Rbac/ObjectOwnershipServiceInterface.php",
+   "lib/Service/Schema/SchemaChangeSet.php",
+   "lib/Service/Schemas/GeneratedIdentifierDeclarationReader.php",
+   "lib/Service/Schemas/ReferenceFilterOperandGuard.php",
+   "lib/Service/Schemas/ReferenceOptionsReaders.php",
+   "lib/Service/Schemas/ScopedPropertyDeclaration.php",
+   "lib/Service/Schemas/ScopedPropertyGovernance.php",
+   "lib/Service/Schemas/UniqueConstraintEvaluator.php",
+   "lib/Service/Schemas/UniqueConstraintEvaluatorInterface.php",
+   "lib/Service/Vocabulary/CodedPropertyDeclaration.php"
+  ],
+  "p_files": [
+   "lib/Db/Schema.php",
+   "lib/Service/Export/ExportRefusedException.php",
+   "lib/Service/Export/ExportRightService.php",
+   "lib/Service/Rbac/ObjectOwnershipService.php",
+   "lib/Service/Schemas/ReferenceFilterOperandGuard.php",
+   "lib/Service/Schemas/ScopedPropertyGovernance.php",
+   "lib/Service/Schemas/UniqueConstraintEvaluator.php"
+  ],
+  "i_targets": [
+   "lib/Service/Configuration/ConfigurationCollaborators.php",
+   "lib/Service/ExampleSet/ExampleSetDateValue.php",
+   "lib/Service/ExampleSet/ExampleSetRow.php",
+   "lib/Service/Export/ExportRightService.php",
+   "lib/Service/Export/ExportRunContent.php",
+   "lib/Service/Export/ExportRunFile.php",
+   "lib/Service/Export/ExportRunOrigin.php",
+   "lib/Service/Schema/SchemaChangeSet.php",
+   "lib/Service/Schemas/GeneratedIdentifierDeclarationReader.php",
+   "lib/Service/Schemas/ReferenceFilterOperandGuard.php",
+   "lib/Service/Schemas/ReferenceOptionsReaders.php",
+   "lib/Service/Schemas/ScopedPropertyDeclaration.php",
+   "lib/Service/Schemas/ScopedPropertyGovernance.php",
+   "lib/Service/Schemas/UniqueConstraintEvaluator.php",
+   "lib/Service/Vocabulary/CodedPropertyDeclaration.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 299,
+   "gt4": 43,
+   "gt6": 20,
+   "exposed": 634
+  },
+  "target": {
+   "gt2": 190,
+   "gt4": 20,
+   "gt6": 20,
+   "exposed": 492
+  },
+  "deferred": [
+   "lib/Db/Schema.php Schema::hasPermission: caller or builder lib/Controller/EntityRelationsController.php is in open cloud/d03-entity-relations",
+   "lib/Service/Rbac/ObjectOwnershipService.php ObjectOwnershipService::reassignMany: caller or builder lib/Service/ExampleSet/ExampleSetStore.php is in open #4757",
+   "lib/Service/Schemas/ScopedPropertyGovernance.php ScopedPropertyGovernance::assertBelowCeiling: caller or builder lib/Db/SchemaMapper.php is in open #6215,#6217"
+  ],
+  "away": {
+   "lib/Service/Configuration/ConfigurationCollaborators.php": [
+    [
+     "lib/Controller/RegistersController.php",
+     "owned by lane M33"
+    ]
+   ],
+   "lib/Service/ExampleSet/ExampleSetDateValue.php": [
+    [
+     "lib/Controller/RulesController.php",
+     "owned by lane M17"
+    ]
+   ],
+   "lib/Service/ExampleSet/ExampleSetRow.php": [
+    [
+     "lib/Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php",
+     "owned by lane M16"
+    ],
+    [
+     "lib/Search/Service/ExampleSet/ExampleSetViews.php",
+     "owned by lane M14"
+    ]
+   ],
+   "lib/Service/Export/ExportRightService.php": [
+    [
+     "lib/BulkAction/ExportWholeSetAction.php",
+     "held by open #4535"
+    ],
+    [
+     "lib/Controller/ExportRunsController.php",
+     "held by open #4535"
+    ],
+    [
+     "lib/Controller/ObjectsController.php",
+     "held by open #5046,#5116,#6178,#6179,#6219"
+    ]
+   ],
+   "lib/Service/Export/ExportRunContent.php": [
+    [
+     "lib/Controller/ObjectsController.php",
+     "held by open #5046,#5116,#6178,#6179,#6219"
+    ]
+   ],
+   "lib/Service/Export/ExportRunFile.php": [
+    [
+     "lib/Controller/ObjectsController.php",
+     "held by open #5046,#5116,#6178,#6179,#6219"
+    ]
+   ],
+   "lib/Service/Export/ExportRunOrigin.php": [
+    [
+     "lib/Controller/ObjectsController.php",
+     "held by open #5046,#5116,#6178,#6179,#6219"
+    ]
+   ],
+   "lib/Service/Schema/SchemaChangeSet.php": [
+    [
+     "lib/Controller/SchemaImportController.php",
+     "owned by lane M25"
+    ],
+    [
+     "lib/Mcp/Tool/SchemaTool.php",
+     "held by open cloud/k29-schema-interfacing"
+    ]
+   ],
+   "lib/Service/Schemas/ReferenceFilterOperandGuard.php": [
+    [
+     "lib/Controller/SchemasController.php",
+     "held by open #6215,#6217"
+    ]
+   ],
+   "lib/Service/Schemas/ScopedPropertyDeclaration.php": [
+    [
+     "lib/Db/SchemaMapper.php",
+     "held by open #6215,#6217"
+    ]
+   ],
+   "lib/Service/Schemas/ScopedPropertyGovernance.php": [
+    [
+     "lib/Db/SchemaMapper.php",
+     "held by open #6215,#6217"
+    ]
+   ],
+   "lib/Service/Vocabulary/CodedPropertyDeclaration.php": [
+    [
+     "lib/Controller/VocabularyController.php",
+     "owned by lane M32"
+    ]
+   ]
+  }
+ },
+ "M37": {
+  "id": "M37",
+  "files": [
+   "lib/BackgroundJob/SyncConfigurationsJob.php",
+   "lib/Controller/ConfigurationController.php",
+   "lib/Controller/SchemaMigrationController.php",
+   "lib/Repair/RegisterOpenRegisterWithDoriath.php",
+   "lib/Service/Configuration/GitHubHandler.php",
+   "lib/Service/ConfigurationDeployment/ConfigurationDraftService.php",
+   "lib/Service/ConfigurationDeployment/DeploymentService.php",
+   "lib/Service/ConfigurationService.php",
+   "lib/Service/Credential/CredentialStoreResolver.php",
+   "lib/Service/Credential/DoriathApplicationRegistrar.php",
+   "lib/Service/Credential/DoriathCredentialStore.php",
+   "lib/Service/Export/ExportAuditRecorder.php",
+   "lib/Service/Geo/PdokGeocoder.php",
+   "lib/Service/Integration/ExternalIntegrationRouter.php",
+   "lib/Service/Integration/Providers/ConnectorRoutedProviderTrait.php",
+   "lib/Service/Integration/Providers/KvkProvider.php",
+   "lib/Service/Integration/Providers/OpenCorporatesProvider.php",
+   "lib/Service/OpenProjectLinkService.php",
+   "lib/Service/Schema/SchemaMigrationService.php",
+   "lib/Service/Schema/SchemaMigrationServiceInterface.php",
+   "lib/Service/ShippedBaseline/ShippedBaselineStore.php",
+   "lib/Service/XwikiLinkService.php",
+   "lib/Settings/IntegrationsAdminSettings.php",
+   "lib/Support/FleetAppId.php"
+  ],
+  "p_files": [
+   "lib/BackgroundJob/SyncConfigurationsJob.php",
+   "lib/Controller/ConfigurationController.php",
+   "lib/Service/Configuration/GitHubHandler.php",
+   "lib/Service/ConfigurationDeployment/ConfigurationDraftService.php",
+   "lib/Service/ConfigurationDeployment/DeploymentService.php",
+   "lib/Service/ConfigurationService.php",
+   "lib/Service/Export/ExportAuditRecorder.php",
+   "lib/Service/Schema/SchemaMigrationService.php",
+   "lib/Service/ShippedBaseline/ShippedBaselineStore.php",
+   "lib/Support/FleetAppId.php"
+  ],
+  "i_targets": [
+   "lib/Support/FleetAppId.php"
+  ],
+  "moves": [],
+  "before": {
+   "gt2": 662,
+   "gt4": 237,
+   "gt6": 67,
+   "exposed": 42
+  },
+  "target": {
+   "gt2": 492,
+   "gt4": 202,
+   "gt6": 55,
+   "exposed": 42
+  },
+  "deferred": [
+   "lib/Service/Configuration/GitHubHandler.php GitHubHandler::__construct: caller or builder lib/Service/Configuration/ConfigurationServiceRegistrar.php is in open #5968",
+   "lib/Service/Configuration/GitHubHandler.php GitHubHandler::publishConfiguration: caller or builder in lib/Kernel/Contracts/GitHubClientInterface.php, off limits this round",
+   "lib/Service/Configuration/GitHubHandler.php GitHubHandler::listIssues: caller or builder in lib/Kernel/Contracts/GitHubClientInterface.php, off limits this round",
+   "lib/Service/Configuration/GitHubHandler.php GitHubHandler::createIssue: caller or builder in lib/Kernel/Contracts/GitHubClientInterface.php, off limits this round",
+   "lib/Service/Configuration/GitHubHandler.php GitHubHandler::searchConfigurations: caller or builder in lib/Kernel/Contracts/GitHubClientInterface.php, off limits this round",
+   "lib/Service/Configuration/GitHubHandler.php GitHubHandler::enrichConfigurationDetails: caller or builder in lib/Kernel/Contracts/GitHubClientInterface.php, off limits this round",
+   "lib/Service/Configuration/GitHubHandler.php GitHubHandler::getFileContent: caller or builder in lib/Kernel/Contracts/GitHubClientInterface.php, off limits this round",
+   "lib/Service/Configuration/GitHubHandler.php GitHubHandler::listConfigurationFiles: caller or builder in lib/Kernel/Contracts/GitHubClientInterface.php, off limits this round",
+   "lib/Service/Configuration/GitHubHandler.php GitHubHandler::getFileSha: caller or builder in lib/Kernel/Contracts/GitHubClientInterface.php, off limits this round",
+   "lib/Service/Export/ExportAuditRecorder.php ExportAuditRecorder::recordCompleted: caller or builder lib/BulkAction/ExportWholeSetAction.php is in open #4535",
+   "lib/Service/Export/ExportAuditRecorder.php ExportAuditRecorder::recordRefused: caller or builder lib/BulkAction/ExportWholeSetAction.php is in open #4535",
+   "lib/Service/Export/ExportAuditRecorder.php ExportAuditRecorder::write: caller or builder lib/Service/Export/ExportProfileService.php is owned by lane M36",
+   "lib/Service/ConfigurationDeployment/DeploymentService.php DeploymentService::__construct: caller or builder lib/Service/Configuration/ConfigurationServiceRegistrar.php is in open #5968",
+   "lib/Service/ConfigurationDeployment/ConfigurationDraftService.php ConfigurationDraftService::__construct: caller or builder lib/Service/Configuration/ConfigurationServiceRegistrar.php is in open #5968",
+   "lib/Service/ConfigurationDeployment/ConfigurationDraftService.php ConfigurationDraftService::draftValue: caller or builder lib/Controller/ConfigurationDeploymentController.php is in open #3860",
+   "lib/Service/ConfigurationDeployment/ConfigurationDraftService.php ConfigurationDraftService::draftRemoval: caller or builder lib/Controller/ConfigurationDeploymentController.php is in open #3860",
+   "lib/Service/ShippedBaseline/ShippedBaselineStore.php ShippedBaselineStore::record: caller or builder lib/Service/ShippedBaseline/ShippedConfigurationGuard.php is in open #4365"
+  ],
+  "away": {
+   "lib/Support/FleetAppId.php": [
+    [
+     "lib/Service/Integration/Providers/OpenProjectProvider.php",
+     "owned by lane M13"
+    ],
+    [
+     "lib/Service/Integration/Providers/XwikiProvider.php",
+     "owned by lane M13"
+    ]
+   ]
+  }
+ },
+ "M38": {
+  "id": "M38",
+  "files": [
+   "src/components/cards/RegisterSchemaCard.vue",
+   "src/components/tabs/AppTab.vue",
+   "src/dialogs/mail/CreateConnectedObjectDialog.vue",
+   "src/modals/view/EditView.vue",
+   "src/sidebars/dashboard/StatisticsTotalsTable.vue",
+   "src/sidebars/register/RegisterSideBar.vue",
+   "src/sidebars/register/RegistersSideBar.vue",
+   "src/views/account/sections/ExportSection.vue",
+   "src/views/account/sections/PasswordSection.vue",
+   "src/views/configuration/ConfigurationsIndex.vue",
+   "src/views/schema/SchemaDetails.vue",
+   "src/views/search/SearchIndex.vue",
+   "src/views/settings/sections/RbacConfiguration.vue",
+   "src/views/settings/sections/RegisterDescriptors.vue",
+   "src/views/settings/sections/RetentionConfiguration.vue",
+   "src/views/settings/sections/WorkingCalendars.vue",
+   "src/views/task/FlowTaskDetail.vue"
+  ],
+  "vue_files": [
+   "src/components/cards/RegisterSchemaCard.vue",
+   "src/components/tabs/AppTab.vue",
+   "src/dialogs/mail/CreateConnectedObjectDialog.vue",
+   "src/modals/view/EditView.vue",
+   "src/sidebars/dashboard/StatisticsTotalsTable.vue",
+   "src/sidebars/register/RegisterSideBar.vue",
+   "src/sidebars/register/RegistersSideBar.vue",
+   "src/views/account/sections/ExportSection.vue",
+   "src/views/account/sections/PasswordSection.vue",
+   "src/views/configuration/ConfigurationsIndex.vue",
+   "src/views/schema/SchemaDetails.vue",
+   "src/views/search/SearchIndex.vue",
+   "src/views/settings/sections/RbacConfiguration.vue",
+   "src/views/settings/sections/RegisterDescriptors.vue",
+   "src/views/settings/sections/RetentionConfiguration.vue",
+   "src/views/settings/sections/WorkingCalendars.vue",
+   "src/views/task/FlowTaskDetail.vue"
+  ],
+  "p_files": [],
+  "i_targets": [],
+  "before": {
+   "vue_red": 295
+  },
+  "target": {
+   "vue_red": 183
+  }
+ },
+ "M39": {
+  "id": "M39",
+  "files": [
+   "src/components/object-relations/RelationsTab.vue",
+   "src/components/shared/GroupSelect.vue",
+   "src/components/shared/ListActionsBar.vue",
+   "src/components/shared/SelectedObjectsList.vue",
+   "src/components/shared/TabErrorState.vue",
+   "src/dialogs/avg/EditActivityDialog.vue",
+   "src/modals/configuration/ImportConfiguration.vue",
+   "src/modals/deleted/RestoreMultiple.vue",
+   "src/modals/object/MassDeleteObject.vue",
+   "src/modals/schema/DeleteSchemaObjects.vue",
+   "src/modals/settings/RebaseConfirmationModal.vue",
+   "src/modals/source/DeleteSource.vue",
+   "src/sidebars/SidebarStatsSection.vue",
+   "src/sidebars/StatisticsScopeFilter.vue",
+   "src/sidebars/entities/EntitiesSideBar.vue",
+   "src/views/Endpoint/EndpointsList.vue",
+   "src/views/account/sections/TokensSection.vue",
+   "src/views/quality/DuplicatesIndex.vue",
+   "src/views/quality/MasterEntitiesIndex.vue",
+   "src/views/quality/QualityIndex.vue",
+   "src/views/quality/QueueHealthIndex.vue",
+   "src/views/reports/ReportView.vue",
+   "src/views/schema/SchemaRulesTab.vue",
+   "src/views/settings/sections/LlmConfiguration.vue",
+   "src/views/settings/sections/OrganisationConfiguration.vue"
+  ],
+  "vue_files": [
+   "src/components/object-relations/RelationsTab.vue",
+   "src/components/shared/GroupSelect.vue",
+   "src/components/shared/ListActionsBar.vue",
+   "src/components/shared/SelectedObjectsList.vue",
+   "src/components/shared/TabErrorState.vue",
+   "src/dialogs/avg/EditActivityDialog.vue",
+   "src/modals/configuration/ImportConfiguration.vue",
+   "src/modals/deleted/RestoreMultiple.vue",
+   "src/modals/object/MassDeleteObject.vue",
+   "src/modals/schema/DeleteSchemaObjects.vue",
+   "src/modals/settings/RebaseConfirmationModal.vue",
+   "src/modals/source/DeleteSource.vue",
+   "src/sidebars/SidebarStatsSection.vue",
+   "src/sidebars/StatisticsScopeFilter.vue",
+   "src/sidebars/entities/EntitiesSideBar.vue",
+   "src/views/Endpoint/EndpointsList.vue",
+   "src/views/account/sections/TokensSection.vue",
+   "src/views/quality/DuplicatesIndex.vue",
+   "src/views/quality/MasterEntitiesIndex.vue",
+   "src/views/quality/QualityIndex.vue",
+   "src/views/quality/QueueHealthIndex.vue",
+   "src/views/reports/ReportView.vue",
+   "src/views/schema/SchemaRulesTab.vue",
+   "src/views/settings/sections/LlmConfiguration.vue",
+   "src/views/settings/sections/OrganisationConfiguration.vue"
+  ],
+  "p_files": [],
+  "i_targets": [],
+  "before": {
+   "vue_red": 180
+  },
+  "target": {
+   "vue_red": 112
+  }
+ },
+ "MW5": {
+  "id": "MW5",
+  "files": [
+   "src/dialogs/avg/DenialComposerDialog.vue",
+   "src/dialogs/avg/RedactionDialog.vue",
+   "src/dialogs/migrationPack/TransformDialog.vue",
+   "src/dialogs/migrationPack/UnsavedChangesDialog.vue",
+   "src/modals/account/CreatedTokenModal.vue",
+   "src/modals/configuration/ViewConfiguration.vue",
+   "src/modals/deleted/BulkSelectionDialog.vue",
+   "src/modals/logs/AuditTrailChanges.vue",
+   "src/modals/logs/AuditTrailDetails.vue",
+   "src/modals/mdm/MdmConflictResolutionModal.vue",
+   "src/modals/object/CopyObject.vue",
+   "src/modals/object/LockObject.vue",
+   "src/modals/object/MassValidateObjects.vue",
+   "src/modals/object/ViewObject.vue",
+   "src/modals/objectAuditTrail/ViewObjectAuditTrail.vue",
+   "src/modals/organisation/JoinOrganisation.vue",
+   "src/modals/organisation/ManageOrganisationRoles.vue",
+   "src/modals/organisation/SwitchOrganisationModal.vue",
+   "src/modals/schema/ExploreSchema.vue",
+   "src/modals/schema/ValidateSchema.vue",
+   "src/modals/settings/FileManagementModal.vue",
+   "src/modals/settings/FileVectorizationModal.vue",
+   "src/modals/settings/LLMConfigModal.vue",
+   "src/modals/settings/MassValidateModal.vue",
+   "src/modals/settings/ObjectManagementModal.vue",
+   "src/modals/settings/ObjectVectorizationModal.vue",
+   "src/modals/source/ViewSource.vue",
+   "src/modals/webhook/ViewWebhookLog.vue"
+  ],
+  "vue_files": [
+   "src/dialogs/avg/DenialComposerDialog.vue",
+   "src/dialogs/avg/RedactionDialog.vue",
+   "src/dialogs/migrationPack/TransformDialog.vue",
+   "src/dialogs/migrationPack/UnsavedChangesDialog.vue",
+   "src/modals/account/CreatedTokenModal.vue",
+   "src/modals/configuration/ViewConfiguration.vue",
+   "src/modals/deleted/BulkSelectionDialog.vue",
+   "src/modals/logs/AuditTrailChanges.vue",
+   "src/modals/logs/AuditTrailDetails.vue",
+   "src/modals/mdm/MdmConflictResolutionModal.vue",
+   "src/modals/object/CopyObject.vue",
+   "src/modals/object/LockObject.vue",
+   "src/modals/object/MassValidateObjects.vue",
+   "src/modals/object/ViewObject.vue",
+   "src/modals/objectAuditTrail/ViewObjectAuditTrail.vue",
+   "src/modals/organisation/JoinOrganisation.vue",
+   "src/modals/organisation/ManageOrganisationRoles.vue",
+   "src/modals/organisation/SwitchOrganisationModal.vue",
+   "src/modals/schema/ExploreSchema.vue",
+   "src/modals/schema/ValidateSchema.vue",
+   "src/modals/settings/FileManagementModal.vue",
+   "src/modals/settings/FileVectorizationModal.vue",
+   "src/modals/settings/LLMConfigModal.vue",
+   "src/modals/settings/MassValidateModal.vue",
+   "src/modals/settings/ObjectManagementModal.vue",
+   "src/modals/settings/ObjectVectorizationModal.vue",
+   "src/modals/source/ViewSource.vue",
+   "src/modals/webhook/ViewWebhookLog.vue"
+  ],
+  "p_files": [],
+  "i_targets": [],
+  "before": {
+   "vue_red": 626
+  },
+  "target": {
+   "vue_red": 0
+  },
+  "status": "waiting"
+ }
+}
