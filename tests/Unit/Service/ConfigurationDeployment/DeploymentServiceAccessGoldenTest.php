@@ -375,7 +375,7 @@ class DeploymentServiceAccessGoldenTest extends TestCase {
 		$store->method('read')->willReturnCallback(
 			function (string $layer, ?string $layerRef, string $configKey): ConfigurationSnapshot {
 				$this->calls[] = ['store.read', $layer, $layerRef, $configKey];
-				return new ConfigurationSnapshot(layer: $layer, layerRef: $layerRef, configKey: $configKey, value: 'live-'.$configKey, present: true);
+				return new ConfigurationSnapshot(new ConfigurationAddress($layer, $layerRef, $configKey), 'live-'.$configKey, true);
 			}
 		);
 		return $store;

@@ -36,6 +36,8 @@ use OCA\OpenRegister\Db\ConfigurationDraftSet;
 use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationProvenance;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
@@ -297,7 +299,7 @@ final class DeploymentServiceTest extends TestCase {
 		$store = $this->createMock(ConfigurationValueStore::class);
 		$store->method('read')->willReturnCallback(
 			static fn (string $layer, ?string $ref, string $key): ConfigurationSnapshot
-				=> new ConfigurationSnapshot($layer, $ref, $key, ['n' => 999], true, 'dep-1', 'author')
+				=> new ConfigurationSnapshot(new ConfigurationAddress($layer, $ref, $key), ['n' => 999], true, new ConfigurationProvenance('dep-1', 'author'))
 		);
 		$store->method('write')->willReturn(['layer' => ConfigurationLayer::INSTANCE, 'key' => 'x', 'present' => false, 'raw' => '']);
 		$store->expects($this->exactly(9))->method('write');
@@ -347,7 +349,7 @@ final class DeploymentServiceTest extends TestCase {
 
 		$store = $this->createMock(ConfigurationValueStore::class);
 		$store->method('read')->willReturn(
-			new ConfigurationSnapshot(ConfigurationLayer::INSTANCE, null, 'archival', ['enabled' => true], true, 'dep-2', 'a')
+			new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'archival'), ['enabled' => true], true, new ConfigurationProvenance('dep-2', 'a'))
 		);
 		$store->method('remove')->willReturn(['layer' => ConfigurationLayer::INSTANCE, 'key' => 'archival', 'present' => true, 'raw' => '{}']);
 		$store->expects($this->once())->method('remove');

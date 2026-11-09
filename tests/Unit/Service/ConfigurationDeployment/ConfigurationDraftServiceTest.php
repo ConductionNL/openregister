@@ -36,6 +36,8 @@ use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationProvenance;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
@@ -112,7 +114,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 
 		$store = $this->createMock(ConfigurationValueStore::class);
 		$store->method('read')->willReturn(
-			new ConfigurationSnapshot(ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => true], true, 'dep-1')
+			new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac'), ['enabled' => true], true, new ConfigurationProvenance('dep-1'))
 		);
 
 		$user = $this->createMock(IUser::class);
@@ -171,7 +173,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 
 		$store = $this->createMock(ConfigurationValueStore::class);
 		$store->method('read')->willReturn(
-			new ConfigurationSnapshot(ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => true], true)
+			new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac'), ['enabled' => true], true)
 		);
 
 		$user = $this->createMock(IUser::class);
@@ -221,7 +223,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 	public function testANewDraftIsWrittenAgainstTheLiveValueFieldForField(): void {
 		[$service, $store] = $this->service($this->set(), [], false, 'author');
 		$store->expects($this->once())->method('read')->with(ConfigurationLayer::INSTANCE, null, 'rbac')->willReturn(
-			new ConfigurationSnapshot(ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => true], true, 'dep-1')
+			new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac'), ['enabled' => true], true, new ConfigurationProvenance('dep-1'))
 		);
 
 		$draft = $service->draftValue('set-1', ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => false]);

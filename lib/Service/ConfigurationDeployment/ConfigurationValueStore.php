@@ -115,13 +115,10 @@ class ConfigurationValueStore {
 		}
 
 		return new ConfigurationSnapshot(
-			layer: $address->layer,
-			layerRef: null,
-			configKey: $address->configKey,
+			address: new ConfigurationAddress(layer: $address->layer, layerRef: null, configKey: $address->configKey),
 			value: $this->decode(raw: $this->appConfig->getValueString($this->appName, $address->configKey, '')),
 			present: true,
-			deploymentUuid: $row?->getDeploymentUuid(),
-			updatedBy: $row?->getUpdatedBy()
+			provenance: new ConfigurationProvenance(deploymentUuid: $row?->getDeploymentUuid(), updatedBy: $row?->getUpdatedBy())
 		);
 
 	}//end snapshotAt()
@@ -144,13 +141,10 @@ class ConfigurationValueStore {
 		}
 
 		return new ConfigurationSnapshot(
-			layer: $address->layer,
-			layerRef: $address->layerRef,
-			configKey: $address->configKey,
+			address: $address,
 			value: $row->readValue(),
 			present: true,
-			deploymentUuid: $row->getDeploymentUuid(),
-			updatedBy: $row->getUpdatedBy()
+			provenance: new ConfigurationProvenance(deploymentUuid: $row->getDeploymentUuid(), updatedBy: $row->getUpdatedBy())
 		);
 
 	}//end rowSnapshot()
