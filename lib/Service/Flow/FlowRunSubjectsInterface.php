@@ -52,25 +52,15 @@ interface FlowRunSubjectsInterface {
 	public function all(FlowRun $run): array;
 
 	/**
-	 * Record an object under a role on the run; a replacement is logged.
+	 * Record the object the run fired on (its `subject_*` columns) under the `trigger` role; a replacement is logged.
 	 *
-	 * @param FlowRun $run      The run to record on.
-	 * @param string  $role     The author's word for what this object is.
-	 * @param string  $uuid     The object.
-	 * @param string  $register Its register, when known.
-	 * @param string  $schema   Its schema, when known.
+	 * @param FlowRun $run The run to record on.
 	 *
 	 * @return void
 	 *
-	 * @throws UnexpectedValueException When the role or the uuid is empty.
+	 * @throws UnexpectedValueException When the run carries no subject uuid.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	public function record(
-		FlowRun $run,
-		string $role,
-		string $uuid,
-		string $register = '',
-		string $schema = ''
-	): void;
+	public function recordTrigger(FlowRun $run): void;
 }//end interface
