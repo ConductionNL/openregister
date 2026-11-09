@@ -83,14 +83,7 @@ class EmailService implements EmailServiceInterface {
 		$links = $this->emailLinkMapper->findByObjectUuid($objectUuid, $limit, $offset);
 		$total = $this->emailLinkMapper->countByObjectUuid($objectUuid);
 
-		$results = array_map(
-			static function (EmailLink $link): array {
-				return $link->jsonSerialize();
-			},
-			$links
-		);
-
-		return ['results' => $results, 'total' => $total];
+		return ['results' => array_map(static fn (EmailLink $link): array => $link->jsonSerialize(), $links), 'total' => $total];
 	}//end getEmailsForObject()
 
 	/**
