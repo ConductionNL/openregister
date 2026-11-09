@@ -3,7 +3,9 @@
 /**
  * OpenRegister CaseEnsureRun
  *
- * One convergent bring-over in progress: what every inserted row is built from, the history its audits come from, the rows already there, and which keys were created or kept.
+ * One convergent bring-over in progress: what every inserted row is built
+ * from, the history its audits come from, the rows already there, and which
+ * keys were created or kept.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Case

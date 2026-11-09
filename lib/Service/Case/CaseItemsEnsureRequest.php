@@ -3,7 +3,9 @@
 /**
  * OpenRegister CaseItemsEnsureRequest
  *
- * A request to bring plan items over from another engine convergently: where they anchor, the definition with recorded states, their history and who brings them.
+ * A request to bring plan items over from another engine convergently:
+ * where they anchor, the definition with recorded states, their history and
+ * who brings them.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Case
