@@ -544,7 +544,8 @@ class FlowTokenRouter {
 		$tos = array_map(static fn ($t): string => (string)$t, $hop->transition->getTos());
 		if (count($taken) !== count($tos)) {
 			$pass = $hop->pass;
-			$this->withdraw(withdrawal: new FlowTokenWithdrawal(workflow: $pass->workflow, subject: $pass->subject, places: array_values(array_diff($tos, $taken))));
+			$places = array_values(array_diff($tos, $taken));
+			$this->withdraw(withdrawal: new FlowTokenWithdrawal(workflow: $pass->workflow, subject: $pass->subject, places: $places));
 		}
 	}//end keepOnlyTakenExits()
 

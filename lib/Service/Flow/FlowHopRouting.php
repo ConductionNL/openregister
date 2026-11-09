@@ -104,7 +104,8 @@ final class FlowHopRouting {
 		$exits = $this->router->exitsOf(flow: $pass->flow, transition: $transition);
 		$items = $this->router->resolveOutputTags(exits: $exits, items: $pass->items);
 		$taken = $this->router->takenExits(exits: $exits, output: new FlowStepOutput(items: $items, context: $pass->context));
-		$placeItems = $this->placement->advance(firing: new ItemFiring(transition: $transition, items: $items, taken: $taken), placeItems: $pass->placeItems);
+		$firing = new ItemFiring(transition: $transition, items: $items, taken: $taken);
+		$placeItems = $this->placement->advance(firing: $firing, placeItems: $pass->placeItems);
 		$pass->workflow->apply(subject: $pass->subject, transitionName: $hop->name());
 		$this->pruneUntakenExits(hop: $hop, taken: $taken);
 
