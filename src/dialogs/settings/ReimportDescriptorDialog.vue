@@ -17,18 +17,18 @@
 			}}
 		</p>
 		<template #actions>
-			<NcButton @click="$emit('cancel')">
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
-			<NcButton variant="primary" @click="$emit('confirm')">
-				{{ t('openregister', 'Re-import') }}
-			</NcButton>
+			<CnDialogActions
+				:cancelLabel="t('openregister', 'Cancel')"
+				:confirmLabel="t('openregister', 'Re-import')"
+				@cancel="$emit('cancel')"
+				@submit="$emit('confirm')" />
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import { NcButton, NcDialog } from '@nextcloud/vue'
+import { CnDialogActions } from '@conduction/nextcloud-vue'
+import { NcDialog } from '@nextcloud/vue'
 
 /**
  * The question asked before a register descriptor is re-imported.
@@ -37,7 +37,7 @@ import { NcButton, NcDialog } from '@nextcloud/vue'
  */
 export default {
 	name: 'ReimportDescriptorDialog',
-	components: { NcButton, NcDialog },
+	components: { CnDialogActions, NcDialog },
 	props: {
 		/** The descriptor row to re-import ({appId, title, ...}). */
 		row: { type: Object, required: true },

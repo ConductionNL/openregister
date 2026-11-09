@@ -6,11 +6,11 @@ exports[`ReimportDescriptorDialog (DOM golden) renders the question 1`] = `
 	     document: say so before it runs, not after. -->
 <x-ncdialog open="true" name="t:Re-import {register}? {&quot;register&quot;:&quot;Reg&quot;}" size="small">
   <slot-actions>
-    <x-ncbutton>
+    <x-ncbutton disabled="false" data-testid="cn-dialog-actions-cancel">
       <slot-default>t:Cancel</slot-default>
     </x-ncbutton>
-    <x-ncbutton variant="primary">
-      <slot-default>t:Re-import</slot-default>
+    <x-ncbutton variant="primary" disabled="false" data-testid="cn-dialog-actions-submit">
+      <slot-default> t:Re-import</slot-default>
     </x-ncbutton>
   </slot-actions>
   <slot-default>
