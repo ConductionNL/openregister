@@ -79,6 +79,7 @@ import MdmMergeWizardModal from '../../modals/mdm/MdmMergeWizardModal.vue'
 import QualityPageFrame from './QualityPageFrame.vue'
 import RangePager from './RangePager.vue'
 import { qualityStore } from '../../store/store.js'
+import { qualityPaging } from './qualityPaging.js'
 import { qualitySelection } from './qualitySelection.js'
 
 export default {
@@ -93,7 +94,7 @@ export default {
 		MdmMergeWizardModal,
 	},
 
-	mixins: [qualitySelection],
+	mixins: [qualitySelection, qualityPaging('fetchDuplicates', 'duplicates')],
 
 	data() {
 		return {
@@ -146,30 +147,6 @@ export default {
 				qualityStore.selectedRegister,
 				qualityStore.selectedSchema,
 				{ limit: 20, offset: 0 },
-			)
-		},
-
-		/**
-		 * @spec exclude UI pagination handler — delegates to fetchDuplicates
-		 */
-		async previousPage() {
-			const offset = Math.max(0, this.duplicatesOffset - this.duplicatesLimit)
-			await qualityStore.fetchDuplicates(
-				qualityStore.selectedRegister,
-				qualityStore.selectedSchema,
-				{ limit: this.duplicatesLimit, offset },
-			)
-		},
-
-		/**
-		 * @spec exclude UI pagination handler — delegates to fetchDuplicates
-		 */
-		async nextPage() {
-			const offset = this.duplicatesOffset + this.duplicatesLimit
-			await qualityStore.fetchDuplicates(
-				qualityStore.selectedRegister,
-				qualityStore.selectedSchema,
-				{ limit: this.duplicatesLimit, offset },
 			)
 		},
 
