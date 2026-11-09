@@ -4,6 +4,7 @@ namespace Unit\Service;
 
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\ApplicationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -46,7 +47,7 @@ class ApplicationServiceTest extends TestCase {
 			->with(null, null, [])
 			->willReturn([$app1, $app2]);
 
-		$result = $this->service->findAll();
+		$result = $this->service->findAll(ListQuery::unbounded());
 
 		$this->assertCount(2, $result);
 	}
@@ -58,7 +59,7 @@ class ApplicationServiceTest extends TestCase {
 			->with(10, 5, ['key' => 'value'])
 			->willReturn([]);
 
-		$result = $this->service->findAll(10, 5, ['key' => 'value']);
+		$result = $this->service->findAll(new ListQuery(10, 5, ['key' => 'value']));
 
 		$this->assertSame([], $result);
 	}
@@ -69,7 +70,7 @@ class ApplicationServiceTest extends TestCase {
 			->method('findAll')
 			->willReturn([]);
 
-		$result = $this->service->findAll();
+		$result = $this->service->findAll(ListQuery::unbounded());
 
 		$this->assertSame([], $result);
 	}
