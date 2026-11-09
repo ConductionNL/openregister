@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssign;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriters;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
 use OCP\IUser;
@@ -200,7 +201,7 @@ class ObjectActionRunnerTest extends TestCase {
 	 * @return array The answer.
 	 */
 	private function invoke(string $key, array $inputs = [], ?ObjectEntity $object = null): array {
-		return $this->runner()->run($object ?? $this->object(), $this->schema(), $key, $inputs, ['uuid' => 'obj-1', 'register' => 'r', 'schema' => 'besluit']);
+		return $this->runner()->run(new ObjectActionTarget($object ?? $this->object(), $this->schema(), 'r', 'besluit'), $key, $inputs);
 	}//end invoke()
 
 	/**
@@ -338,7 +339,7 @@ class ObjectActionRunnerTest extends TestCase {
 			}
 		);
 
-		$answer = $this->runner()->run($this->object(), $schema, 'reopen', ['reason' => 'x'], []);
+		$answer = $this->runner()->run(new ObjectActionTarget($this->object(), $schema, '', ''), 'reopen', ['reason' => 'x']);
 
 		$this->assertSame(Http::STATUS_OK, $answer['status']);
 		$this->assertSame(['update'], $asked);
