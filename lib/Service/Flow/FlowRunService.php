@@ -340,16 +340,13 @@ class FlowRunService implements FlowRunServiceInterface {
 		$guard = $this->guardFor(run: $run, flow: $flow);
 		$context = $this->nodeContextFor(run: $run, resuming: true, guard: $guard);
 
-		$result = $this->engine->run(
+		$start = new FlowRunStart(
 			flow: $flow,
 			store: new FlowRunMarkingStore(run: $run),
 			subject: $subject,
-			dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope()),
-			context: $context,
-			items: ($run->getItems() ?? []),
-			startAt: null,
-			streams: $walk
+			dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope())
 		);
+		$result = $this->engine->run(start: $start->withContext(context: $context)->withStreams(streams: $walk), items: ($run->getItems() ?? []));
 
 		return $this->persistResult(run: $run, result: $result);
 	}//end advanceStream()
@@ -1029,15 +1026,16 @@ class FlowRunService implements FlowRunServiceInterface {
 		$walk = $this->streamWalkFor(run: $run, flow: $flow);
 
 		try {
-			$result = $this->engine->run(
+			$begin = new FlowRunStart(
 				flow: $flow,
 				store: new FlowRunMarkingStore(run: $run),
 				subject: $subject,
-				dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope()),
-				context: $context,
+				dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope())
+			);
+			$result = $this->engine->run(
+				start: $begin->withContext(context: $context)->withStreams(streams: $walk),
 				items: $items,
-				startAt: $start,
-				streams: $walk
+				startAt: $start
 			);
 		} catch (Throwable $e) {
 			return $this->failWalk(run: $run, walk: $walk, error: $e);

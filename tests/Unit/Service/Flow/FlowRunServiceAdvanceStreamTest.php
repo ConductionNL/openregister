@@ -140,9 +140,9 @@ class FlowRunServiceAdvanceStreamTest extends TestCase {
 		$this->engine->expects($this->once())->method('run')->willReturnCallback(
 			function () use (&$seenItems): array {
 				$args = func_get_args();
-				// run(flow, store, subject, dispatcher, context, items, startAt, streams):
+				// run(start, items, startAt):
 				// PHPUnit hands named arguments through positionally.
-				$seenItems = $args[5];
+				$seenItems = $args[1];
 
 				return [
 					'status' => FlowEngine::STATUS_COMPLETED,
@@ -173,9 +173,9 @@ class FlowRunServiceAdvanceStreamTest extends TestCase {
 		$this->engine->expects($this->once())->method('run')->willReturnCallback(
 			function () use (&$seen): array {
 				$args = func_get_args();
-				// `streams` is the last argument of run(); PHPUnit hands named
-				// arguments through positionally.
-				$seen = end($args);
+				// `streams` travels on the run start, the first argument of run();
+				// PHPUnit hands named arguments through positionally.
+				$seen = $args[0]->streams;
 				return ['status' => FlowEngine::STATUS_QUEUED, 'log' => [], 'context' => [], 'items' => []];
 			}
 		);
