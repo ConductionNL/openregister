@@ -71,23 +71,65 @@ final class MetricDescriptor {
 	public const TABLE_REGEX = '/^[a-z0-9_]+$/';
 
 	/**
+	 * Metric name (without the `{app}_` prefix).
+	 *
+	 * @var string
+	 */
+	public readonly string $name;
+
+	/**
+	 * Prometheus type (gauge|counter).
+	 *
+	 * @var string
+	 */
+	public readonly string $type;
+
+	/**
+	 * Source kind (self::KINDS), read from the source block's `kind`.
+	 *
+	 * @var string
+	 */
+	public readonly string $kind;
+
+	/**
+	 * Raw validated source params.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public readonly array $source;
+
+	/**
+	 * HELP text.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $help;
+
+	/**
+	 * Per-metric cache TTL in seconds (0 = no cache).
+	 *
+	 * @var integer
+	 */
+	public readonly int $cacheTtl;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $name Metric name (without the `{app}_` prefix).
-	 * @param string $type Prometheus type (gauge|counter).
-	 * @param string $kind Source kind (self::KINDS).
-	 * @param array<string, mixed> $source Raw validated source params.
-	 * @param string|null $help HELP text.
-	 * @param int $cacheTtl Per-metric cache TTL in seconds (0 = no cache).
+	 * @param MetricFamily         $family   Name, Prometheus type and HELP text.
+	 * @param array<string, mixed> $source   Raw validated source params; its `kind` is the source kind.
+	 * @param int                  $cacheTtl Per-metric cache TTL in seconds (0 = no cache).
 	 */
 	public function __construct(
-		public readonly string $name,
-		public readonly string $type,
-		public readonly string $kind,
-		public readonly array $source,
-		public readonly ?string $help = null,
-		public readonly int $cacheTtl = 0,
+		MetricFamily $family,
+		array $source,
+		int $cacheTtl = 0,
 	) {
+		$this->name     = $family->name;
+		$this->type     = $family->type;
+		$this->kind     = (string)($source['kind'] ?? '');
+		$this->source   = $source;
+		$this->help     = $family->help;
+		$this->cacheTtl = $cacheTtl;
 	}//end __construct()
 
 	/**
@@ -108,11 +150,8 @@ final class MetricDescriptor {
 		$cacheTtl = self::validCacheTtl(name: $name, raw: $raw);
 
 		return new self(
-			name: $name,
-			type: $type,
-			kind: $source['kind'],
+			family: new MetricFamily(name: $name, type: $type, help: self::validHelp(name: $name, raw: $raw)),
 			source: $source,
-			help: self::validHelp(name: $name, raw: $raw),
 			cacheTtl: $cacheTtl
 		);
 	}//end fromArray()
