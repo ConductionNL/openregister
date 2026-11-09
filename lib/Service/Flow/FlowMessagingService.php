@@ -156,8 +156,10 @@ class FlowMessagingService {
 		private readonly FlowMessagingPlatform $platform,
 		FlowMessagingOverrides $overrides,
 	) {
+		$events          = $platform->eventDispatcher;
+		$logger          = $platform->logger;
 		$this->addresses = new FlowRecipientAddresses(recipientResolver: $recipients->recipientResolver);
-		$this->announcer = new FlowEmailAnnouncer(eventDispatcher: $platform->eventDispatcher, logger: $platform->logger, runContext: $overrides->runContext);
+		$this->announcer = new FlowEmailAnnouncer(eventDispatcher: $events, logger: $logger, runContext: $overrides->runContext);
 		// The container always resolves the bound OptOutAuthorityInterface; a hand-built
 		// service without one could not ask integriq, so it is refused rather than guessed.
 		$this->optOut    = ($overrides->optOut ?? throw new LogicException('FlowMessagingService needs an opt-out authority.'));
