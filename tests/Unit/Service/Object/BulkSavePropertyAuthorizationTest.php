@@ -112,13 +112,7 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 			session: new BulkSaveSession(userSession: $session, organisationService: $this->createMock(OrganisationService::class), groupManager: $groups),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
 			checks: new BulkRowChecks(permissionHandler: $permissions, rowRules: new BulkRowRules(
-				propertyRbac: new PropertyRbacHandler(
-					$session,
-					$groups,
-					$this->createMock(ConditionMatcher::class),
-					$this->createMock(LoggerInterface::class),
-					self::stateFieldRuleResolver($session, $groups)
-				)
+				propertyRbac: new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groups), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($session, $groups)), logger: $this->createMock(LoggerInterface::class))
 			))
 		);
 

@@ -199,12 +199,6 @@ trait BuildsReaderHistory {
 			static fn (string $uid, string $group): bool => in_array($group, $groups, true)
 		);
 
-		return new PropertyRbacHandler(
-			$session,
-			$groupManager,
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($session, $groupManager)
-		);
+		return new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($session, $groupManager)), logger: $this->createMock(LoggerInterface::class));
 	}//end readerProperties()
 }//end trait

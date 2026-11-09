@@ -80,18 +80,12 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
 		$this->organisations = $this->createMock(OrganisationService::class);
-		$this->rbac = new PropertyRbacHandler(
-			$session,
-			$groupManager,
-			new ConditionMatcher(
+		$this->rbac = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules(new ConditionMatcher(
 				$session,
 				$this->createMock(ContainerInterface::class),
 				new OperatorEvaluator($this->createMock(LoggerInterface::class)),
 				$this->createMock(LoggerInterface::class)
-			),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($session, $groupManager)
-		);
+			), self::stateFieldRuleResolver($session, $groupManager)), logger: $this->createMock(LoggerInterface::class));
 
 		return new SaveObject(
 			$this->createMock(MagicMapper::class),

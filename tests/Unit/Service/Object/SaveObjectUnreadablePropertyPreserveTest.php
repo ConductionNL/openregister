@@ -83,13 +83,7 @@ class SaveObjectUnreadablePropertyPreserveTest extends TestCase {
 		$groups->method('getUserGroupIds')->willReturnCallback(fn () => $this->writerGroups);
 
 		// A REAL PropertyRbacHandler: the point of this test is the collaboration.
-		$propertyRbacHandler = new PropertyRbacHandler(
-			$session,
-			$groups,
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($session, $groups)
-		);
+		$propertyRbacHandler = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groups), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($session, $groups)), logger: $this->createMock(LoggerInterface::class));
 
 		$this->handler = new SaveObject(
 			$this->createMock(MagicMapper::class),

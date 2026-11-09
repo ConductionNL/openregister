@@ -121,13 +121,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 			fn (string $app, string $key, string $default = ''): string => $key === ReadEventVisibility::CONFIG_KEY ? $this->readEventGroups : $default
 		);
 
-		$properties = new PropertyRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
-		);
+		$properties = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($this->userSession, $this->groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($this->userSession, $this->groupManager)), logger: $this->createMock(LoggerInterface::class));
 
 		return AuditTrailControllerFactory::create(
 			'openregister',

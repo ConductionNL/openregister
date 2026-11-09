@@ -74,13 +74,7 @@ class AnEmptyRuleListMeansOneThingTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('getUserGroupIds')->willReturn(['medewerkers']);
 
-		return new PropertyRbacHandler(
-			$session,
-			$groups,
-			$this->createMock(ConditionMatcher::class),
-			new NullLogger(),
-			$this->createMock(StateFieldRuleResolver::class)
-		);
+		return new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groups), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), $this->createMock(StateFieldRuleResolver::class)), logger: new NullLogger());
 	}//end handler()
 
 	/**

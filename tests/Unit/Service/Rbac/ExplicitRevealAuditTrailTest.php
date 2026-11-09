@@ -277,13 +277,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		$reads->method('maySeeReadEvents')->willReturn(true);
 		$session = $this->createMock(originalClassName: IUserSession::class);
 		$groups = $this->createMock(originalClassName: IGroupManager::class);
-		$properties = new PropertyRbacHandler(
-			$session,
-			$groups,
-			$this->createMock(originalClassName: ConditionMatcher::class),
-			$this->createMock(originalClassName: LoggerInterface::class),
-			self::stateFieldRuleResolver($session, $groups)
-		);
+		$properties = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groups), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(originalClassName: ConditionMatcher::class), self::stateFieldRuleResolver($session, $groups)), logger: $this->createMock(originalClassName: LoggerInterface::class));
 
 		$lister = new ReadableAuditTrailLister(
 			auditTrailMapper: $trails,

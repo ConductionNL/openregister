@@ -69,13 +69,7 @@ class ExplicitFacetsObeyThePropertyReadRuleTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 		$groupManager = $this->createMock(IGroupManager::class);
 
-		$rbac = new PropertyRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(ConditionMatcher::class),
-			new NullLogger(),
-			self::stateFieldRuleResolver($userSession, $groupManager)
-		);
+		$rbac = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($userSession, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($userSession, $groupManager)), logger: new NullLogger());
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($rbac);
@@ -120,13 +114,7 @@ class ExplicitFacetsObeyThePropertyReadRuleTest extends TestCase {
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturn([]);
 
-		$rbac = new PropertyRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(ConditionMatcher::class),
-			new NullLogger(),
-			self::stateFieldRuleResolver($userSession, $groupManager)
-		);
+		$rbac = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($userSession, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($userSession, $groupManager)), logger: new NullLogger());
 
 		$this->assertTrue($rbac->canReadProperty(schema: $this->schema(), property: 'contactPerson', object: []));
 	}

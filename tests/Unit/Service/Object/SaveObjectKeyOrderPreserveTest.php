@@ -86,13 +86,7 @@ class SaveObjectKeyOrderPreserveTest extends TestCase {
 			$this->createMock(OrganisationService::class),
 			$this->createMock(CacheHandler::class),
 			$this->createMock(SettingsService::class),
-			new PropertyRbacHandler(
-				$this->createMock(IUserSession::class),
-				$this->createMock(IGroupManager::class),
-				$this->createMock(ConditionMatcher::class),
-				$this->createMock(LoggerInterface::class),
-				self::stateFieldRuleResolver($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class))
-			),
+			new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class))), logger: $this->createMock(LoggerInterface::class)),
 			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
 			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
 			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),

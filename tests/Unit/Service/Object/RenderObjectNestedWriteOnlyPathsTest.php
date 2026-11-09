@@ -177,13 +177,7 @@ class RenderObjectNestedWriteOnlyPathsTest extends TestCase {
 
 		$rbacSession = $this->createMock(\OCP\IUserSession::class);
 		$rbacGroups = $this->createMock(\OCP\IGroupManager::class);
-		$rbac = new \OCA\OpenRegister\Service\PropertyRbacHandler(
-			$rbacSession,
-			$rbacGroups,
-			$this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
-			$this->createMock(\Psr\Log\LoggerInterface::class),
-			self::stateFieldRuleResolver($rbacSession, $rbacGroups)
-		);
+		$rbac = new \OCA\OpenRegister\Service\PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($rbacSession, $rbacGroups), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class), self::stateFieldRuleResolver($rbacSession, $rbacGroups)), logger: $this->createMock(\Psr\Log\LoggerInterface::class));
 
 		return new RenderObject(
 			$this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),

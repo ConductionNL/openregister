@@ -307,13 +307,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			static fn (string $uid, string $group): bool => in_array($group, $groups, true)
 		);
 
-		$properties = new PropertyRbacHandler(
-			$session,
-			$groupManager,
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($session, $groupManager)
-		);
+		$properties = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($session, $groupManager)), logger: $this->createMock(LoggerInterface::class));
 
 		return new ObjectHistoryForReaders(
 			$access,
@@ -1154,13 +1148,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			$access,
 			$this->createMock(AuditTrailMapper::class),
 			new HistoryEntryRedactor(
-				new PropertyRbacHandler(
-					$session,
-					$groupManager,
-					$this->createMock(ConditionMatcher::class),
-					$this->createMock(LoggerInterface::class),
-					self::stateFieldRuleResolver($session, $groupManager)
-				)
+				new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($session, $groupManager)), logger: $this->createMock(LoggerInterface::class))
 			),
 			$registerMapper,
 			new PurposeGuard($registry, new PurposeContext($request), $trail, new NullLogger()),

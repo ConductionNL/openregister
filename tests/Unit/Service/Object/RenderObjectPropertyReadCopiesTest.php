@@ -119,13 +119,7 @@ class RenderObjectPropertyReadCopiesTest extends TestCase {
 		$userSession->method('getUser')->willReturn($this->user);
 		$groupManager = $this->createMock(\OCP\IGroupManager::class);
 
-		return new \OCA\OpenRegister\Service\PropertyRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
-			$this->createMock(\Psr\Log\LoggerInterface::class),
-			self::stateFieldRuleResolver($userSession, $groupManager)
-		);
+		return new \OCA\OpenRegister\Service\PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($userSession, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class), self::stateFieldRuleResolver($userSession, $groupManager)), logger: $this->createMock(\Psr\Log\LoggerInterface::class));
 	}
 
 	/**

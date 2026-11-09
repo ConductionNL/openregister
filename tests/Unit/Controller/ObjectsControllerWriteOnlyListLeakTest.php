@@ -232,13 +232,7 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 		// for its `array` return type, and the list path writes that back over the row.
 		$languageService = new \OCA\OpenRegister\Service\LanguageService();
 
-		$propertyRbacHandler = new PropertyRbacHandler(
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class))
-		);
+		$propertyRbacHandler = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class), self::stateFieldRuleResolver($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class))), logger: $this->createMock(LoggerInterface::class));
 
 		return new RenderObject(
 			$this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),

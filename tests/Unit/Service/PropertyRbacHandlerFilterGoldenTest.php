@@ -211,14 +211,7 @@ final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
 			}
 		);
 
-		return new PropertyRbacHandler(
-			userSession: $session,
-			groupManager: $groups,
-			conditionMatcher: $matcher,
-			logger: $logger,
-			stateFieldRules: $states,
-			reveals: $reveals
-		);
+		return new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groups), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($matcher, $states), logger: $logger, reveals: $reveals);
 	}
 
 	/**

@@ -115,14 +115,7 @@ class ExplicitRevealTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 		$groupManager->method('isAdmin')->willReturn(in_array('admin', $groups, true));
 
-		$handler = new PropertyRbacHandler(
-			$session,
-			$groupManager,
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($session, $groupManager),
-			$reveals
-		);
+		$handler = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($session, $groupManager)), logger: $this->createMock(LoggerInterface::class), reveals: $reveals);
 
 		return [$handler, $session];
 	}//end rules()
