@@ -35,7 +35,6 @@ use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewMappers;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Before this, every object row of the preview was an empty array and every
@@ -91,7 +90,6 @@ final class PreviewHandlerChangesTest extends TestCase {
 
 		$this->handler = new PreviewHandler(
 			new PreviewMappers($this->registerMapper, $this->schemaMapper, $this->objectMapper),
-			$this->createMock(LoggerInterface::class),
 			$this->fetchHandler
 		);
 	}//end setUp()
