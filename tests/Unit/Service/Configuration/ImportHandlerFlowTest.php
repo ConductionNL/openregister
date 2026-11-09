@@ -769,6 +769,69 @@ class ImportHandlerFlowTest extends TestCase {
 	}//end testImportFromJsonIgnoresFlowsWithoutFlowMapper()
 
 	/**
+	 * importFlow() takes only the allowlisted fields from an exported-shaped payload onto a new flow.
+	 *
+	 * The payload is what Flow::jsonSerialize() emits for a published, previously
+	 * run flow on the source instance, plus owner and organisation as a
+	 * hand-built bundle could carry them.
+	 */
+	public function testImportFlowTakesOnlyAllowlistedFieldsFromAnExportedPayload(): void {
+		$source = new Flow();
+		$source->setUuid('flow-uuid-1');
+		$source->setName('Exported');
+		$source->setDescription('From the source instance');
+		$source->setTrigger('object.created');
+		$source->setCron('0 3 * * *');
+		$source->setNodes([['id' => 'n1', 'type' => 'step']]);
+		$source->setVersion(7);
+		$source->setSemver('1.2.0');
+		$source->setLifecycleStatus(FlowVersion::STATUS_PUBLISHED);
+		$source->setStatus('error');
+		$source->setStatusMessage('boom on the source');
+		$source->setLastRunStatus('failed');
+
+		$payload = $source->jsonSerialize();
+		$payload['owner'] = 'mallory';
+		$payload['organisation'] = 'org-evil';
+		$payload['retentionDays'] = 0;
+		$payload['auditEnabled'] = false;
+
+		$this->flowMapper->method('findByUuid')
+			->willThrowException(new DoesNotExistException('not found'));
+
+		$stored = null;
+		$this->flowMapper->expects($this->once())->method('insert')
+			->with($this->callback(static function (Flow $flow) use (&$stored): bool {
+				$stored = clone $flow;
+				return true;
+			}))
+			->willReturnArgument(0);
+
+		$this->invokeMethod($this->handler, 'importFlow', [$payload, $this->configuration(), 'alice', false]);
+
+		// Carried: the definition and its settings.
+		$this->assertSame('Exported', $stored->getName());
+		$this->assertSame('From the source instance', $stored->getDescription());
+		$this->assertSame('object.created', $stored->getTrigger());
+		$this->assertSame('0 3 * * *', $stored->getCron());
+		$this->assertSame([['id' => 'n1', 'type' => 'step']], $stored->getNodes());
+		$this->assertSame(1, $stored->getRetentionDays());
+		$this->assertFalse($stored->getAuditEnabled());
+
+		// Not carried: the source's version state, runtime state and identity.
+		// The target derives its own ordinal; a new flow keeps the entity default, never the source's 7.
+		$this->assertSame((new Flow())->getVersion(), $stored->getVersion());
+		$this->assertNotSame(7, $stored->getVersion());
+		$this->assertNull($stored->getSemver());
+		$this->assertSame(FlowVersion::STATUS_DRAFT, $stored->getLifecycleStatus());
+		$this->assertNull($stored->getStatus());
+		$this->assertNull($stored->getStatusMessage());
+		$this->assertNull($stored->getLastRunStatus());
+		$this->assertSame('alice', $stored->getOwner());
+		$this->assertSame('org-1', $stored->getOrganisation());
+	}//end testImportFlowTakesOnlyAllowlistedFieldsFromAnExportedPayload()
+
+	/**
 	 * applyImportedFlowFields() carries every inheritable setting FlowService does, oversightEnabled included.
 	 */
 	public function testApplyImportedFlowFieldsCarriesOversightEnabled(): void {
