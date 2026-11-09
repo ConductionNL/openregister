@@ -142,10 +142,10 @@ class ViewMapper extends QBMapper implements ViewMapperInterface {
 		parent::__construct(db: $db, tableName: 'openregister_views', entityClass: View::class);
 
 		// Store dependencies for use in mapper methods.
-		$this->organisationMapper = $access->organisationMapper;
+		$this->organisationMapper = $access->tenancy->organisationMapper;
 		$this->appConfig = $access->appConfig;
-		$this->userSession = $access->userSession;
-		$this->groupManager = $access->groupManager;
+		$this->userSession = $access->tenancy->userSession;
+		$this->groupManager = $access->tenancy->groupManager;
 		$this->eventDispatcher = $eventDispatcher;
 	}//end __construct()
 
