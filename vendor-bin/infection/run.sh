@@ -66,7 +66,7 @@ c = c.replace('"$schema": "vendor-bin', f'"$schema": "{root}/vendor-bin')
 open(f"{out}/infection.json5", "w").write(c)
 PY
 	CFG="$OUT/infection.json5"
-	ARGS+=("--filter=$(IFS=,; echo "${abs[*]}")")
+	ARGS+=("${abs[@]}")
 fi
 
 cd "$HERE"
