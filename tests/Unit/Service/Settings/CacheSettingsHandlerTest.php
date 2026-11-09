@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SchemaCacheClearers;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -78,8 +79,7 @@ class CacheSettingsHandlerTest extends TestCase {
 
 		$this->handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			$this->cacheHandler,
 			$this->container
 		);
@@ -152,8 +152,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testGetCacheStatsStructureOnException(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			null
 		);
@@ -542,8 +541,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testClearCacheObjectNoCacheHandler(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			null
 		);
@@ -563,8 +561,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testClearCacheNamesNoCacheHandler(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			null
 		);
@@ -671,8 +668,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testClearObjectCacheContainerFallback(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);
@@ -698,8 +694,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testClearObjectCacheContainerFails(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);
@@ -753,8 +748,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testWarmupNamesCacheNoCacheHandler(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			null
 		);
@@ -774,8 +768,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testWarmupNamesCacheContainerFallback(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);
@@ -803,8 +796,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testWarmupNamesCacheContainerFails(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);
@@ -945,8 +937,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testConstructorMinimalParams(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService)
 		);
 
 		$this->assertInstanceOf(CacheSettingsHandler::class, $handler);
@@ -964,8 +955,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testClearNamesCacheContainerFallback(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);
@@ -991,8 +981,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testClearNamesCacheContainerFails(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);

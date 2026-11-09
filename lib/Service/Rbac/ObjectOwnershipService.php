@@ -924,8 +924,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			admittedAs: $admittedAs,
 			userId: $uid,
 			userGroups: $groups,
-			user: null,
-			group: $group
+			principal: new GrantedPrincipal(group: $group)
 		) === true
 		) {
 			throw new NotAuthorizedException(
