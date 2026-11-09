@@ -446,9 +446,11 @@ class DraftActivationTest extends TestCase {
 
 		// Control: with the two values sent, the same stored nulls stand in nobody's way.
 		$saved = $this->activation->activate(
-			address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'),
-			owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')),
-			changes: ['subject' => 'Bin not collected', 'channel' => 'phone']
+			promotion: new DraftPromotion(
+				address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'),
+				owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')),
+				changes: ['subject' => 'Bin not collected', 'channel' => 'phone']
+			)
 		);
 		$this->assertSame('active', $saved->getStatus());
 		$this->assertArrayNotHasKey('priority', $this->saves[0]['object']);
@@ -472,9 +474,11 @@ class DraftActivationTest extends TestCase {
 		$this->store(uuid: 'd1', owner: 'agent', status: 'draft', data: ['subject' => 'Old subject']);
 
 		$saved = $this->activation->activate(
-			address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'),
-			owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')),
-			changes: ['subject' => 'New subject', 'channel' => 'email', '@self' => ['owner' => 'somebody-else', 'status' => 'draft'], 'id' => 'another-id']
+			promotion: new DraftPromotion(
+				address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'),
+				owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')),
+				changes: ['subject' => 'New subject', 'channel' => 'email', '@self' => ['owner' => 'somebody-else', 'status' => 'draft'], 'id' => 'another-id']
+			)
 		);
 
 		$this->assertSame('active', $saved->getStatus());
