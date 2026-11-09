@@ -148,6 +148,7 @@ class Bootstrap {
 	private const GENERIC_STORE_CONTROLLER_SERVICES = 'OCA\\OpenRegister\\AppHost\\Controller\\Support\\GenericStoreControllerServices';
 
 	private const GENERIC_SETTINGS_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\AppHostSettingsService';
+	private const GENERIC_SETTINGS_SERVICES = 'OCA\\OpenRegister\\AppHost\\Service\\AppHostSettingsServices';
 	private const GENERIC_ACTION_AUTH_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService';
 	private const GENERIC_INITIALIZE_SETTINGS = 'OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeSettings';
 	private const GENERIC_INITIALIZE_ACTIONS = 'OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeActions';
@@ -433,14 +434,17 @@ class Bootstrap {
 	private static function registerServices(IRegistrationContext $context, string $appId, string $serviceNs): void {
 		$settingsFactory = static function (ContainerInterface $c) use ($appId) {
 			$class = self::GENERIC_SETTINGS_SERVICE;
+			$services = self::GENERIC_SETTINGS_SERVICES;
 			return new $class(
 				appId: $appId,
-				appConfig: $c->get('OCP\\IAppConfig'),
-				appManager: $c->get('OCP\\App\\IAppManager'),
-				container: $c,
+				services: new $services(
+					appConfig: $c->get('OCP\\IAppConfig'),
+					appManager: $c->get('OCP\\App\\IAppManager'),
+					container: $c,
+					logger: $c->get('Psr\\Log\\LoggerInterface')
+				),
 				groupManager: $c->get('OCP\\IGroupManager'),
-				userSession: $c->get('OCP\\IUserSession'),
-				logger: $c->get('Psr\\Log\\LoggerInterface')
+				userSession: $c->get('OCP\\IUserSession')
 			);
 		};
 		$context->registerService(self::GENERIC_SETTINGS_SERVICE, $settingsFactory);
@@ -464,14 +468,17 @@ class Bootstrap {
 		// a disabled OpenRegister still never fatals NC bootstrap.
 		$settingsPlaneFactory = static function (ContainerInterface $c) use ($appId) {
 			$class = self::GENERIC_SETTINGS_PLANE_SERVICE;
+			$services = self::GENERIC_SETTINGS_SERVICES;
 			return new $class(
 				appId: $appId,
-				appConfig: $c->get('OCP\\IAppConfig'),
-				appManager: $c->get('OCP\\App\\IAppManager'),
-				container: $c,
+				services: new $services(
+					appConfig: $c->get('OCP\\IAppConfig'),
+					appManager: $c->get('OCP\\App\\IAppManager'),
+					container: $c,
+					logger: $c->get('Psr\\Log\\LoggerInterface')
+				),
 				groupManager: $c->get('OCP\\IGroupManager'),
-				userSession: $c->get('OCP\\IUserSession'),
-				logger: $c->get('Psr\\Log\\LoggerInterface')
+				userSession: $c->get('OCP\\IUserSession')
 			);
 		};
 		$context->registerService(self::GENERIC_SETTINGS_PLANE_SERVICE, $settingsPlaneFactory);
