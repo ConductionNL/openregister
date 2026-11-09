@@ -1398,7 +1398,8 @@ class ImportHandler {
 			// A slug is resolved within the target register(s) when the caller
 			// knows them (per-register-schema-slug-uniqueness), so an app never
 			// reuses another register's schema that merely shares the slug.
-			$existingSchema = $this->resolveExistingSchemaForImport(lookup: new ImportedSchemaLookup(data: $data, registerSchemaIds: $registerSchemaIds, options: $options));
+			$lookup = new ImportedSchemaLookup(data: $data, registerSchemaIds: $registerSchemaIds, options: $options);
+			$existingSchema = $this->resolveExistingSchemaForImport(lookup: $lookup);
 
 			if ($existingSchema !== null) {
 				$update = new ImportedSchemaUpdate(data: $data, existing: $existingSchema);
@@ -3578,7 +3579,8 @@ class ImportHandler {
 			return null;
 		}
 
-		$uuid = $this->findExistingSeedUuid(table: new RegisterSchema(register: $registerObject, schema: $schemaObject), slug: $targetData['@self']['slug']);
+		$table = new RegisterSchema(register: $registerObject, schema: $schemaObject);
+		$uuid = $this->findExistingSeedUuid(table: $table, slug: $targetData['@self']['slug']);
 		if (empty($uuid) === false) {
 			return $uuid;
 		}
