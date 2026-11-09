@@ -809,6 +809,7 @@ import LabeledSelect from './LabeledSelect.vue'
 import OpenAnonymiserHint from './OpenAnonymiserHint.vue'
 import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
+import { saveMessageMethods } from './saveMessage.js'
 
 /**
  * File configuration settings component for managing file upload and text extraction.
@@ -1395,6 +1396,8 @@ export default {
 	},
 
 	methods: {
+		...saveMessageMethods,
+
 		/**
 		 * Load file configuration settings
 		 *
@@ -1924,21 +1927,6 @@ export default {
 			} finally {
 				this.retryingFiles = false
 			}
-		},
-
-		/**
-		 * Show save message
-		 *
-		 * @spec exclude UI plumbing — transient inline message with auto-clear timeout.
-		 * @param {string} message - The message to show
-		 * @param {string} type - The type of message to show
-		 */
-		showSaveMessage(message, type = 'success') {
-			this.saveMessage = message
-			this.saveMessageType = type
-			setTimeout(() => {
-				this.saveMessage = ''
-			}, 3000)
 		},
 
 		/**
