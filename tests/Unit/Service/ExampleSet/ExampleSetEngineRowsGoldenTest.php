@@ -29,6 +29,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use PHPUnit\Framework\TestCase;
 
@@ -187,7 +188,7 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 		);
 		$report   = [];
 		$record   = ['users' => ['alice' => 'created'], 'notes' => ['demo/old' => ['uuid' => 'u-old'], 'other/x' => ['uuid' => 'u-x']]];
-		$changed  = $rows->installFragment(fragment: $fragment, context: ['cast' => []], report: $report, record: $record, values: new ExampleSetValues());
+		$changed  = $rows->installFragment(write: new ExampleSetFragmentWrite(fragment: $fragment, context: ['cast' => []], values: new ExampleSetValues()), report: $report, record: $record);
 		$this->assertTrue($changed);
 		$this->assertSame(
 			[
@@ -216,11 +217,9 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 		$report  = [];
 		$record  = ['users' => [], 'notes' => ['demo/a' => ['uuid' => 'u-a']]];
 		$changed = $rows->installFragment(
-			fragment: self::fragment(part: 'notes', rows: [['key' => 'a', 'data' => ['name' => 'fine']]]),
-			context: ['refresh' => false],
+			write: new ExampleSetFragmentWrite(fragment: self::fragment(part: 'notes', rows: [['key' => 'a', 'data' => ['name' => 'fine']]]), context: ['refresh' => false], values: new ExampleSetValues()),
 			report: $report,
-			record: $record,
-			values: new ExampleSetValues()
+			record: $record
 		);
 		$this->assertFalse($changed);
 		$this->assertSame(['notes' => ['demo/a' => 'kept']], $report);
@@ -238,11 +237,9 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 		$report  = [];
 		$record  = ['users' => [], 'notes' => ['demo/a' => ['uuid' => 'u-a'], 'demo/stuck' => ['uuid' => 'u-stuck']]];
 		$changed = $rows->installFragment(
-			fragment: self::fragment(part: 'notes', rows: [['key' => 'a', 'data' => ['name' => 'fine']], ['key' => 'stuck', 'data' => ['name' => 'fine']]]),
-			context: ['refresh' => true],
+			write: new ExampleSetFragmentWrite(fragment: self::fragment(part: 'notes', rows: [['key' => 'a', 'data' => ['name' => 'fine']], ['key' => 'stuck', 'data' => ['name' => 'fine']]]), context: ['refresh' => true], values: new ExampleSetValues()),
 			report: $report,
-			record: $record,
-			values: new ExampleSetValues()
+			record: $record
 		);
 		$this->assertTrue($changed);
 		$this->assertSame(
@@ -266,11 +263,9 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 		$record  = ['users' => [], 'views' => ['demo/a' => ['uuid' => 'u-a']], 'watchers' => ['demo/a' => ['uuid' => 'u-a']]];
 		$rows    = $this->rows(part: 'views', inPlace: true, calls: $calls);
 		$changed = $rows->installFragment(
-			fragment: self::fragment(part: 'views', rows: [['key' => 'a', 'data' => ['name' => 'fine']]]),
-			context: ['refresh' => true],
+			write: new ExampleSetFragmentWrite(fragment: self::fragment(part: 'views', rows: [['key' => 'a', 'data' => ['name' => 'fine']]]), context: ['refresh' => true], values: new ExampleSetValues()),
 			report: $report,
-			record: $record,
-			values: new ExampleSetValues()
+			record: $record
 		);
 		$this->assertTrue($changed);
 		$this->assertSame(['uuid' => 'u-a', 'updated' => true], $record['views']['demo/a']);
@@ -278,11 +273,9 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 		$watchers = $this->rows(part: 'watchers', inPlace: true, calls: $calls);
 		$this->assertFalse(
 			$watchers->installFragment(
-				fragment: self::fragment(part: 'watchers', rows: [['key' => 'a', 'data' => ['name' => 'fine']]]),
-				context: ['refresh' => true],
+				write: new ExampleSetFragmentWrite(fragment: self::fragment(part: 'watchers', rows: [['key' => 'a', 'data' => ['name' => 'fine']]]), context: ['refresh' => true], values: new ExampleSetValues()),
 				report: $report,
-				record: $record,
-				values: new ExampleSetValues()
+				record: $record
 			)
 		);
 		$this->assertSame(['views' => ['demo/a' => 'refreshed'], 'watchers' => ['demo/a' => 'kept']], $report);

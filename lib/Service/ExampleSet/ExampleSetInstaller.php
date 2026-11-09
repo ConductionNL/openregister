@@ -529,7 +529,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		// Before the changes, so a change can quote a flow or an access link
 		// (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
-		$early = $this->engineRows?->installBeforeChanges(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values);
+		$early = $this->engineRows?->installBeforeChanges(write: new ExampleSetFragmentWrite(fragment: $fragment, context: $context, values: $this->values), report: $report, record: $record);
 		if ($early === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 		}
@@ -540,7 +540,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		$report = $this->installAppConfig(run: $run, context: $context, report: $report, record: $record);
 
-		if ($this->engineRows?->install(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
+		if ($this->engineRows?->install(write: new ExampleSetFragmentWrite(fragment: $fragment, context: $context, values: $this->values), report: $report, record: $record) === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 		}
 

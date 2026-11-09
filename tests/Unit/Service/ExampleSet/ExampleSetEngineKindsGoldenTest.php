@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds;
@@ -243,12 +244,12 @@ class ExampleSetEngineKindsGoldenTest extends TestCase {
 		$kinds  = $this->kinds(writers: $writers);
 		$report = [];
 		$record = ['users' => []];
-		$this->assertFalse($kinds->install(fragment: self::fragment(), context: [], report: $report, record: $record, values: new ExampleSetValues()));
+		$this->assertFalse($kinds->install(write: new ExampleSetFragmentWrite(fragment: self::fragment(), context: [], values: new ExampleSetValues()), report: $report, record: $record));
 		$after = array_values(array: array_diff(array_keys(array: self::PARTS), ExampleSetEngineKinds::BEFORE_CHANGES));
 		$this->assertSame(array_map(callback: fn (string $p): string => 'install '.$p, array: $after), $this->calls);
 
 		$this->calls = [];
-		$before = $kinds->installBeforeChanges(fragment: self::fragment(), context: [], report: $report, record: $record, values: new ExampleSetValues());
+		$before = $kinds->installBeforeChanges(write: new ExampleSetFragmentWrite(fragment: self::fragment(), context: [], values: new ExampleSetValues()), report: $report, record: $record);
 		$this->assertTrue($before);
 		$this->assertSame(['install flows', 'install accessLinks', 'install grants'], $this->calls);
 		$this->assertSame(['flows', 'accessLinks', 'grants'], ExampleSetEngineKinds::BEFORE_CHANGES);
@@ -263,8 +264,8 @@ class ExampleSetEngineKindsGoldenTest extends TestCase {
 		$kinds  = $this->kinds(writers: []);
 		$report = [];
 		$record = ['users' => []];
-		$this->assertFalse($kinds->install(fragment: self::fragment(), context: [], report: $report, record: $record, values: new ExampleSetValues()));
-		$before = $kinds->installBeforeChanges(fragment: self::fragment(), context: [], report: $report, record: $record, values: new ExampleSetValues());
+		$this->assertFalse($kinds->install(write: new ExampleSetFragmentWrite(fragment: self::fragment(), context: [], values: new ExampleSetValues()), report: $report, record: $record));
+		$before = $kinds->installBeforeChanges(write: new ExampleSetFragmentWrite(fragment: self::fragment(), context: [], values: new ExampleSetValues()), report: $report, record: $record);
 		$this->assertFalse($before);
 		$this->assertSame([], $report);
 		$this->assertSame([], $kinds->accessLinksOf(fragment: self::fragment(), record: null));
