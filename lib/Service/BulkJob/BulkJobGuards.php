@@ -26,7 +26,6 @@ use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 
 /**
@@ -123,9 +122,7 @@ class BulkJobGuards {
 	 * stops recording what it would take to go back, and the second is the
 	 * failure this change exists to prevent.
 	 *
-	 * @param BulkActionInterface           $action     The action.
-	 * @param array<string, ObjectEntity>   $objects    The hydrated selection.
-	 * @param array<string, mixed>          $parameters The job's parameters.
+	 * @param RehearsedJob $job The action, its parameters and the hydrated selection.
 	 *
 	 * @return void
 	 *
@@ -133,22 +130,23 @@ class BulkJobGuards {
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function assertUndoCeiling(BulkActionInterface $action, array $objects, array $parameters): void {
+	public function assertUndoCeiling(RehearsedJob $job): void {
+		$action = $job->action;
 		if (($action instanceof ReversibleBulkActionInterface) === false) {
 			return;
 		}
 
 		$bytes = 0;
 
-		foreach ($objects as $object) {
-			$size = $this->encodedSize(plan: $action->reversalPlanFor(object: $object, parameters: $parameters));
+		foreach ($job->objects as $object) {
+			$size = $this->encodedSize(plan: $action->reversalPlanFor(object: $object, parameters: $job->parameters));
 			if ($size === null) {
 				continue;
 			}
 
 			$bytes += $size;
 			if ($bytes > $this->undoCeiling) {
-				throw $this->undoCeilingRefusal(objectCount: count($objects));
+				throw $this->undoCeilingRefusal(objectCount: count($job->objects));
 			}
 		}
 	}//end assertUndoCeiling()

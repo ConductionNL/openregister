@@ -241,7 +241,7 @@ class BulkJobService implements BulkJobServiceInterface {
 
 		$objects = $this->actions->resolver->hydrate(uuids: $uuids, scope: $request->selection);
 		$this->actions->executor->assertGuards(action: $action, objects: $objects);
-		$this->guards()->assertUndoCeiling(action: $action, objects: $objects, parameters: $request->call->parameters);
+		$this->guards()->assertUndoCeiling(job: new RehearsedJob(action: $action, objects: $objects, parameters: $request->call->parameters));
 
 		$job = $this->store->jobMapper->createFromArray(
 			array_merge(
