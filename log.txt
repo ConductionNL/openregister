@@ -149,3 +149,4 @@
 2026-11-09T13:58:55Z integrator-20261109T130654-5892e14f GREEN tree d5b335b4df on dev f145582340 prs 1 front=skip: Tests: 52004, Assertions: 169543, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-09T13:59:29Z integrator-20261109T130654-5892e14f MERGED-TREE d5b335b4df: 1 PRs in one push, main now d5b335b4df = tested tree
 2026-11-09T13:59:53Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7653 f5eed6aa
+2026-11-09T14:00:02Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7660 d5e9c640
