@@ -20,12 +20,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Bindings;
 
+use OCA\OpenRegister\Kernel\Contracts\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\CorrectionTargets;
 use OCA\OpenRegister\Service\Object\CorrectionTargetsInterface;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrameInterface;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
-use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 
 /**
  * Contract => service map for the objects core.

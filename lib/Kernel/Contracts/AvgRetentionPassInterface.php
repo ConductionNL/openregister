@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Running one AVG retention-enforcement pass, as the daily retention job does. Only the method that caller calls.

@@ -1815,6 +1815,76 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Object\\PermissionScopeInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PermissionScopeInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Object\\PermissionCacheInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PermissionCacheInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Sharing\\SharePrincipalDeriverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SharePrincipalDeriverInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Sharing\\AccessLinkMintGuardInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AccessLinkMintGuardInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Authorization\\GrantableRightsIndexInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\GrantableRightsIndexInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Authorization\\DeclaredGroupInventoryInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DeclaredGroupInventoryInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\GrantChangeAuditorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\GrantChangeAuditorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Consent\\ConsentAnnotationValidatorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ConsentAnnotationValidatorInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\AvgRetentionPassInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AvgRetentionPassInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Object\\RetentionDestructionInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RetentionDestructionInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Object\\RunLockReleaseInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RunLockReleaseInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\InboundAuthRateLimitInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\InboundAuthRateLimitInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\RateLimitResetInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RateLimitResetInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\AuthenticationTokenFetcherInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AuthenticationTokenFetcherInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }

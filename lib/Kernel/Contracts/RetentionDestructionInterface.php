@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Object;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The retention-destruction frame, as the destruction run and the delete guard use it.

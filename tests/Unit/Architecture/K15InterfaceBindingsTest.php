@@ -25,7 +25,7 @@ use OCA\OpenRegister\Service\Object\CorrectionTargetsInterface;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrameInterface;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
-use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
+use OCA\OpenRegister\Kernel\Contracts\RetentionDestructionInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

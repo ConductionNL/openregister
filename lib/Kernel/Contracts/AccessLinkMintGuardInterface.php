@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Sharing;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The minting check the access link endpoints run before minting.

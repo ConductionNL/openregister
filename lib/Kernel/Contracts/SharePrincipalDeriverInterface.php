@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Sharing;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Validates an object's share list and derives the principal lists RBAC matches.

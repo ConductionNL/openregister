@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Object;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * UUID filtering, the active organisation and group verdicts of PermissionHandler.

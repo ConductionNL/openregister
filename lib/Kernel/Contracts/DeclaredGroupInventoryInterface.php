@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Authorization;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The read-only inventory of declared authorization groups, as the occ
