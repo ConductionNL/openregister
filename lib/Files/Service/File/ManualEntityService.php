@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\DetectionMethod;
+use OCA\OpenRegister\Files\Db\EntityMention;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
@@ -466,24 +467,18 @@ class ManualEntityService {
 		$matchesSkipped = 0;
 
 		foreach ($matches as $match) {
-			$existsAlready = $this->entityRelationMapper->existsForFileAtPosition(
-				fileId: $fileId,
-				entityId: (int)$entity->getId(),
-				chunkId: $match['chunkId'],
-				positionStart: $match['positionStart'],
-				positionEnd: $match['positionEnd']
-			);
-			if ($existsAlready === true) {
+			$mention = EntityMention::atMatch(entityId: (int)$entity->getId(), match: $match);
+			if ($this->entityRelationMapper->existsForFileAtPosition(fileId: $fileId, mention: $mention) === true) {
 				$matchesSkipped++;
 				continue;
 			}
 
 			$rowsToInsert[] = [
-				'entityId' => (int)$entity->getId(),
+				'entityId' => $mention->entityId,
 				'fileId' => $fileId,
-				'chunkId' => $match['chunkId'],
-				'positionStart' => $match['positionStart'],
-				'positionEnd' => $match['positionEnd'],
+				'chunkId' => $mention->chunkId,
+				'positionStart' => $mention->positionStart,
+				'positionEnd' => $mention->positionEnd,
 				'context' => $match['context'],
 				'detectionMethod' => DetectionMethod::MANUAL,
 				'role' => 'anonymisable',
