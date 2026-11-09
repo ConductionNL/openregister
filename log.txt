@@ -103,3 +103,4 @@
 2026-11-09T11:29:49Z fixer-F3-20261109T104024-64386ead FIXED #7694 62cd94556de3 is the pushed head (5ed9318c6 in the line above was never pushed); tree identical to 07f901cd8: ConfigKey fix only
 2026-11-09T11:29:56Z fixer-F3-20261109T104024-64386ead UNPARK #7694 62cd94556de3
 2026-11-09T11:32:18Z integrator-20261109T092732-73c42b8a GREEN tree 9a2d3c4806 on dev 34eb2d6c6c prs 5 front=skip: Tests: 51967, Assertions: 169441, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
+2026-11-09T11:34:15Z integrator-20261109T092732-73c42b8a MERGE-FAILED #7748: {"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Reques
