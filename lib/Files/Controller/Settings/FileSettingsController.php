@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Controller\Settings;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
 use Exception;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
@@ -47,20 +48,40 @@ use Psr\Log\LoggerInterface;
  */
 class FileSettingsController extends Controller {
 	/**
+	 * DI container, for the optional extraction backends.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Settings service.
+	 *
+	 * @var AppSettingsInterface
+	 */
+	private readonly AppSettingsInterface $settingsService;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest $request The request.
-	 * @param ContainerInterface $container DI container.
-	 * @param AppSettingsInterface $settingsService Settings service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param IRequest                       $request  The request.
+	 * @param FileSettingsControllerServices $services The container, the settings service and the logger.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly ContainerInterface $container,
-		private readonly AppSettingsInterface $settingsService,
-		private readonly LoggerInterface $logger,
+		FileSettingsControllerServices $services,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->container = $services->container;
+		$this->settingsService = $services->settingsService;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
