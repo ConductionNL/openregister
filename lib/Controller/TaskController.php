@@ -59,6 +59,7 @@ use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
 use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
@@ -607,9 +608,7 @@ class TaskController extends Controller {
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->completion->complete(
 				uuid: $uuid,
-				outcome: $outcome,
-				resultText: $resultText,
-				comment: $comment,
+				answer: new TaskAnswer(outcome: $outcome, resultText: $resultText, comment: $comment),
 				data: ($data ?? []),
 				actor: $this->uid()
 			),
