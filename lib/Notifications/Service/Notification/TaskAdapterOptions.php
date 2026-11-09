@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 /**
  * What a task is presented with besides itself: its inbox row and the extra fields rules read.
+ *
+ * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
  */
 final class TaskAdapterOptions {
 

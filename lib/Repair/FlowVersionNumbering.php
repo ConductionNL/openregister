@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface;
 
 /**
  * Where published flow versions are read and written, and how they are numbered.
+ *
+ * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
  */
 final class FlowVersionNumbering {
 

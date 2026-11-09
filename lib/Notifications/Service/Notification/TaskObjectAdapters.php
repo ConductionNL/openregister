@@ -39,6 +39,8 @@ final class TaskObjectAdapters {
 	 * @param TaskAdapterOptions|null $options The task's inbox row and the extra fields the rules read.
 	 *
 	 * @return ObjectEntity
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
 	 */
 	public static function forTask(?Task $task = null, ?TaskAdapterOptions $options = null): ObjectEntity {
 		$options ??= new TaskAdapterOptions();
