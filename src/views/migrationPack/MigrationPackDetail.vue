@@ -1241,37 +1241,58 @@ export default {
 		async save() {
 			this.saveProblem = null
 			this.saved = false
+			await this.writeDefinition(
+				async (definition) => {
+					const current = await getPack(this.packId)
+					if (this.changedElsewhere(current)) {
+						this.saveProblem = this.conflictProblem()
+						return
+					}
+					this.pack = await updatePack(
+						this.packId,
+						definition,
+						this.pack.updatedAt,
+					)
+					this.reset()
+					this.saved = true
+				},
+				(error) => {
+					const status = error?.response?.status
+					if (status === 404) {
+						// Shown with its own actions; the edits stay in the editor.
+						this.packDeleted = true
+					} else if (error?.response?.data?.error === 'pack-changed') {
+						this.saveProblem = this.conflictProblem()
+					} else {
+						this.saveProblem = explainError(
+							error,
+							t('openregister', 'Could not save the migration pack.'),
+						)
+					}
+				},
+			)
+		},
+
+		/**
+		 * Write the edited definition, unless it does not parse, while showing
+		 * the save as busy.
+		 *
+		 * @param {Function} write Sends the definition; receives it.
+		 * @param {Function} fail Handles an error the write threw.
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-create-and-update-must-accept-a-definition-envelope-and-keep-the-route-id
+		 */
+		async writeDefinition(write, fail) {
 			const definition = this.definitionToSave()
 			if (definition === null) {
 				return
 			}
 			this.saving = true
 			try {
-				const current = await getPack(this.packId)
-				if (this.changedElsewhere(current)) {
-					this.saveProblem = this.conflictProblem()
-					return
-				}
-				this.pack = await updatePack(
-					this.packId,
-					definition,
-					this.pack.updatedAt,
-				)
-				this.reset()
-				this.saved = true
+				await write(definition)
 			} catch (error) {
-				const status = error?.response?.status
-				if (status === 404) {
-					// Shown with its own actions; the edits stay in the editor.
-					this.packDeleted = true
-				} else if (error?.response?.data?.error === 'pack-changed') {
-					this.saveProblem = this.conflictProblem()
-				} else {
-					this.saveProblem = explainError(
-						error,
-						t('openregister', 'Could not save the migration pack.'),
-					)
-				}
+				fail(error)
 			} finally {
 				this.saving = false
 			}
@@ -1320,28 +1341,24 @@ export default {
 		 */
 		async saveAsNew() {
 			this.saveProblem = null
-			const definition = this.definitionToSave()
-			if (definition === null) {
-				return
-			}
-			this.saving = true
-			try {
-				this.pack = await createPack(definition)
-				this.packDeleted = false
-				this.reset()
-				this.saved = true
-				await this.$router.push({
-					name: 'migration-pack-detail',
-					params: { id: String(this.pack.id) },
-				})
-			} catch (error) {
-				this.saveProblem = explainError(
-					error,
-					t('openregister', 'Could not save the migration pack.'),
-				)
-			} finally {
-				this.saving = false
-			}
+			await this.writeDefinition(
+				async (definition) => {
+					this.pack = await createPack(definition)
+					this.packDeleted = false
+					this.reset()
+					this.saved = true
+					await this.$router.push({
+						name: 'migration-pack-detail',
+						params: { id: String(this.pack.id) },
+					})
+				},
+				(error) => {
+					this.saveProblem = explainError(
+						error,
+						t('openregister', 'Could not save the migration pack.'),
+					)
+				},
+			)
 		},
 	},
 }
