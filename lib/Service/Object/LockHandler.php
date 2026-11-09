@@ -169,12 +169,7 @@ class LockHandler {
 		?string $runUuid = null,
 		?string $nodeId = null,
 	): array {
-		$request = new LockRequest(
-			identifier: $identifier,
-			process: $process,
-			duration: $duration,
-			runStep: new LockRunStep(runUuid: $runUuid, nodeId: $nodeId)
-		);
+		$request = new LockRequest(identifier: $identifier, process: $process, duration: $duration, runStep: new LockRunStep(runUuid: $runUuid, nodeId: $nodeId));
 		$this->logRequest(request: $request, advisory: $advisory);
 
 		return $this->acquire(request: $request, advisory: $advisory);
