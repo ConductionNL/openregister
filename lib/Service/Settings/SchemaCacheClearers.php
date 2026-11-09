@@ -26,6 +26,8 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 /**
  * The two schema-level caches the cache settings clear: the schema cache and
  * the facet result cache built from schemas.
+ *
+ * @spec openspec/specs/settings-management/spec.md#requirement-the-capability-must-orchestrate-cache-statistics-clearing-and-warmup
  */
 final class SchemaCacheClearers {
 	/**
@@ -33,6 +35,8 @@ final class SchemaCacheClearers {
 	 *
 	 * @param SchemaCacheHandler      $schemaCache  Schema cache handler.
 	 * @param FacetResultCacheClearer $facetResults Clears the facet result caches.
+	 *
+	 * @spec openspec/specs/settings-management/spec.md#requirement-the-capability-must-orchestrate-cache-statistics-clearing-and-warmup
 	 */
 	public function __construct(
 		public readonly SchemaCacheHandler $schemaCache,

@@ -30,7 +30,6 @@ use OCA\OpenRegister\BackgroundJob\ObjectCleanupJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\Deferral\ListenerDeferralPlatform;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -266,11 +265,9 @@ class ObjectCleanupJobTest extends TestCase {
 		$deferral = new ListenerDeferralService(
 			userSession: $deferringSession,
 			organisation: $this->createMock(originalClassName: OrganisationService::class),
-			platform: new ListenerDeferralPlatform(
-				jobList: $jobList,
-				appConfig: $this->createMock(originalClassName: IAppConfig::class),
-				logger: $this->createMock(originalClassName: LoggerInterface::class)
-			)
+			jobList: $jobList,
+			appConfig: $this->createMock(originalClassName: IAppConfig::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
 		$deferral->defer(

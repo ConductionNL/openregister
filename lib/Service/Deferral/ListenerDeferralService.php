@@ -36,7 +36,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Deferral;
 
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCP\BackgroundJob\IJobList;
+use OCP\IAppConfig;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 
 /**
  * Buffers deferred listener work and enqueues actor-forwarded chunk jobs.
@@ -132,7 +135,9 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 	 *
 	 * @param IUserSession $userSession Session used to capture the acting user.
 	 * @param OrganisationServiceInterface $organisation Resolver for the active organisation.
-	 * @param ListenerDeferralPlatform $platform Job list, app config and logger.
+	 * @param IJobList $jobList Job list the chunk jobs are enqueued on.
+	 * @param IAppConfig $appConfig App config holding the kill switch.
+	 * @param LoggerInterface $logger PSR logger.
 	 * @param int|null $argumentLimit Job argument limit to respect; null reads the running server's.
 	 *
 	 * @return void
@@ -140,7 +145,9 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly OrganisationServiceInterface $organisation,
-		private readonly ListenerDeferralPlatform $platform,
+		private readonly IJobList $jobList,
+		private readonly IAppConfig $appConfig,
+		private readonly LoggerInterface $logger,
 		private readonly ?int $argumentLimit = null,
 	) {
 	}//end __construct()
@@ -186,7 +193,7 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 	 */
 	public function isDeferralEnabled(): bool {
 		try {
-			$mode = $this->platform->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, self::MODE_BACKGROUND);
+			$mode = $this->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, self::MODE_BACKGROUND);
 		} catch (\Throwable $e) {
 			return true;
 		}
@@ -234,7 +241,7 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 			$this->hookShutdown();
 			$this->flushWhenFull(jobClass: $jobClass);
 		} catch (\Throwable $e) {
-			$this->platform->logger->error(
+			$this->logger->error(
 				message: '[ListenerDeferralService] Failed to buffer deferred listener entry',
 				context: [
 					'file' => __FILE__,
@@ -396,7 +403,7 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 			return $fitted;
 		}
 
-		$this->platform->logger->error(
+		$this->logger->error(
 			message: '[ListenerDeferralService] A deferred listener entry is larger than a background job may carry; it was not enqueued',
 			context: [
 				'file' => __FILE__,
@@ -439,7 +446,7 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 			return ['entry' => $entry, 'length' => $length];
 		}
 
-		$this->platform->logger->warning(
+		$this->logger->warning(
 			message: '[ListenerDeferralService] A deferred listener entry was too large for a background job; '
 				. 'it was enqueued without its previous data; conditioned updated rules and '
 				. 'calculatedChange rules are skipped for this object',
@@ -494,9 +501,9 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 		);
 
 		try {
-			$this->platform->jobList->add($jobClass, $context->toJobArguments());
+			$this->jobList->add($jobClass, $context->toJobArguments());
 		} catch (\Throwable $e) {
-			$this->platform->logger->error(
+			$this->logger->error(
 				message: '[ListenerDeferralService] Failed to enqueue deferred listener job',
 				context: [
 					'file' => __FILE__,
