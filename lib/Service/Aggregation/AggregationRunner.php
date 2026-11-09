@@ -608,10 +608,12 @@ class AggregationRunner implements AggregationRunnerInterface {
 		if (count($run->groupFields) > 0) {
 			$groups = $this->computeGrouped(
 				rows: $rows,
-				metric: $run->getMetric(),
-				field: $run->getField(),
-				groupFields: $run->groupFields,
-				metrics: $metrics
+				aggregation: new RowAggregation(
+					metric: $run->getMetric(),
+					field: $run->getField(),
+					groupFields: $run->groupFields,
+					metrics: $metrics
+				)
 			);
 			return ['groups' => $groups];
 		}
@@ -620,7 +622,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return ['values' => $this->computeMetrics(rows: $rows, metrics: $metrics)];
 		}
 
-		return ['value' => $this->computeMetric(rows: $rows, metric: $run->getMetric(), field: $run->getField())];
+		return ['value' => $this->computeMetric(rows: $rows, aggregation: new RowAggregation(metric: $run->getMetric(), field: $run->getField()))];
 	}//end namedFigures()
 
 	/**
@@ -1276,7 +1278,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 		foreach ($buckets as $key => $bucketRows) {
 			$groups[] = [
 				'key' => $key,
-				'value' => $this->computeMetric(rows: $bucketRows, metric: $query->metric, field: $query->field),
+				'value' => $this->computeMetric(rows: $bucketRows, aggregation: new RowAggregation(metric: $query->metric, field: $query->field)),
 			];
 		}
 
@@ -1369,10 +1371,12 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return [
 				'groups' => $this->computeGrouped(
 					rows: $rows,
-					metric: $query->metric,
-					field: $query->field,
-					groupFields: $groupFields,
-					metrics: $metrics
+					aggregation: new RowAggregation(
+						metric: $query->metric,
+						field: $query->field,
+						groupFields: $groupFields,
+						metrics: $metrics
+					)
 				),
 			];
 		}
@@ -1381,7 +1385,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return ['values' => $this->computeMetrics(rows: $rows, metrics: $metrics)];
 		}
 
-		return ['value' => $this->computeMetric(rows: $rows, metric: $query->metric, field: $query->field)];
+		return ['value' => $this->computeMetric(rows: $rows, aggregation: new RowAggregation(metric: $query->metric, field: $query->field))];
 	}//end adhocPhpFigures()
 
 	/**
@@ -1470,51 +1474,39 @@ class AggregationRunner implements AggregationRunnerInterface {
 	/**
 	 * Compute a single scalar metric over the given rows.
 	 *
-	 * @param array<int, array<string, mixed>> $rows Already-filtered rows.
-	 * @param string $metric One of count/sum/avg/min/max/count_distinct.
-	 * @param mixed $field Field name to aggregate over (ignored for count).
+	 * @param array<int, array<string, mixed>> $rows        Already-filtered rows.
+	 * @param RowAggregation                   $aggregation The metric (count/sum/avg/min/max/count_distinct) and the
+	 *                                                      field it aggregates over (ignored for count).
 	 *
 	 * @return int|float|null The metric result, or null when no rows match.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	private function computeMetric(array $rows, string $metric, mixed $field): int|float|null {
-		$sumReducer = fn (float $a, float $b) => $a + $b;
-		$minReducer = fn (float $a, float $b) => min($a, $b);
-		$maxReducer = fn (float $a, float $b) => max($a, $b);
-		$distinct = array_unique(
-			array_filter(
-				array_map(fn (array $r) => $r[(string)$field] ?? null, $rows),
-				fn ($v) => $v !== null
-			),
-			SORT_REGULAR
-		);
-
-		return match ($metric) {
+	private function computeMetric(array $rows, RowAggregation $aggregation): int|float|null {
+		$field = (string) $aggregation->field;
+		return match ($aggregation->metric) {
 			'count' => count($rows),
-			'sum' => $this->reduceNumeric(
-				rows: $rows,
-				field: (string)$field,
-				reducer: $sumReducer,
-				initial: 0.0
-			),
-			'avg' => $this->avg(rows: $rows, field: (string)$field),
-			'min' => $this->reduceNumeric(
-				rows: $rows,
-				field: (string)$field,
-				reducer: $minReducer,
-				initial: null
-			),
-			'max' => $this->reduceNumeric(
-				rows: $rows,
-				field: (string)$field,
-				reducer: $maxReducer,
-				initial: null
-			),
-			'count_distinct' => count($distinct),
+			'sum' => array_reduce($this->numericValues(rows: $rows, field: $field), fn (float $a, float $b) => $a + $b, 0.0),
+			'avg' => $this->avg(rows: $rows, field: $field),
+			'min' => self::reduceFromFirst(values: $this->numericValues(rows: $rows, field: $field), reducer: fn (float $a, float $b) => min($a, $b)),
+			'max' => self::reduceFromFirst(values: $this->numericValues(rows: $rows, field: $field), reducer: fn (float $a, float $b) => max($a, $b)),
+			'count_distinct' => $this->countDistinct(rows: $rows, field: $field),
 			default => null,
-		};//end match
+		};
 	}//end computeMetric()
+
+	/**
+	 * The number of distinct non-null values of a column.
+	 *
+	 * @param array<int, array<string, mixed>> $rows  Rows to read.
+	 * @param string                           $field Column to read.
+	 *
+	 * @return int
+	 */
+	private function countDistinct(array $rows, string $field): int {
+		$values = array_filter(array_map(fn (array $r) => $r[$field] ?? null, $rows), fn ($v) => $v !== null);
+		return count(array_unique($values, SORT_REGULAR));
+	}//end countDistinct()
 
 	/**
 	 * Compute every metric in a multi-metric request over the same row set.
@@ -1831,8 +1823,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 			$key    = $this->metricEntryKey(entry: $entry);
 			$values[$key] = $this->computeMetric(
 				rows: $scoped,
-				metric: $entry['metric'],
-				field: ($entry['field'] ?? null)
+				aggregation: new RowAggregation(metric: $entry['metric'], field: ($entry['field'] ?? null))
 			);
 		}
 
@@ -1939,19 +1930,10 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * a consumer can pivot the result into a cross-tab. The bucket order is
 	 * the first-seen order of each distinct tuple.
 	 *
-	 * @param array<int, array<string, mixed>> $rows Already-filtered rows.
-	 * @param string $metric One of count/sum/avg/min/max/count_distinct.
-	 * @param mixed $field Field to aggregate over.
-	 * @param array<int, string> $groupFields Ordered field(s) used as the bucket key.
-	 * @param array<int, array{metric: string, field: ?string}>|null $metrics Optional multi-metric list
-	 *                                                                        (REQ-AGG-102). When it
-	 *                                                                        carries more than one
-	 *                                                                        entry, each group row
-	 *                                                                        carries a `values` map
-	 *                                                                        instead of a single scalar
-	 *                                                                        `value` —
-	 *                                                                        `$metric`/`$field` are
-	 *                                                                        then ignored.
+	 * @param array<int, array<string, mixed>> $rows        Already-filtered rows.
+	 * @param RowAggregation                   $aggregation The metric over its field, the group fields and the optional
+	 *                                                      multi-metric list (with more than one entry each group row
+	 *                                                      carries a `values` map instead of a single scalar `value`).
 	 *
 	 * @return array<int, array{key?: mixed, keys?: array<string, mixed>, value?: int|float|null, values?: array<string, int|float|null>}>
 	 *
@@ -1959,16 +1941,17 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function computeGrouped(array $rows, string $metric, mixed $field, array $groupFields, ?array $metrics = null): array {
-		$isMulti = (count($groupFields) > 1);
+	private function computeGrouped(array $rows, RowAggregation $aggregation): array {
+		$metrics       = $aggregation->metrics;
+		$isMulti       = (count($aggregation->groupFields) > 1);
 		$isMultiMetric = (is_array($metrics) === true && count($metrics) > 1);
 
 		$out = [];
-		foreach ($this->groupBuckets(rows: $rows, groupFields: $groupFields) as $bucket) {
+		foreach ($this->groupBuckets(rows: $rows, groupFields: $aggregation->groupFields) as $bucket) {
 			if ($isMultiMetric === true) {
 				$figure = ['values' => $this->computeMetrics(rows: $bucket['rows'], metrics: $metrics)];
 			} else {
-				$figure = ['value' => $this->computeMetric(rows: $bucket['rows'], metric: $metric, field: $field)];
+				$figure = ['value' => $this->computeMetric(rows: $bucket['rows'], aggregation: $aggregation)];
 			}
 
 			$out[] = $this->groupKeyOf(tuple: $bucket['tuple'], isMulti: $isMulti) + $figure;
@@ -2018,39 +2001,45 @@ class AggregationRunner implements AggregationRunnerInterface {
 	}//end groupKeyOf()
 
 	/**
-	 * Reduce a numeric column using the given binary reducer.
+	 * The numeric values of a column, as floats, in row order; non-numeric values are skipped.
 	 *
-	 * @param array<int, array<string, mixed>> $rows Rows to reduce.
-	 * @param string $field Column to read.
-	 * @param callable $reducer Binary reducer applied to (acc, value).
-	 * @param mixed $initial Initial accumulator value (null is allowed).
+	 * @param array<int, array<string, mixed>> $rows  Rows to read.
+	 * @param string                           $field Column to read.
 	 *
-	 * @return int|float|null The reduced value, or null when no numeric rows were seen.
+	 * @return array<int, float>
 	 */
-	private function reduceNumeric(array $rows, string $field, callable $reducer, mixed $initial): int|float|null {
-		$acc = $initial;
-		$count = 0;
+	private function numericValues(array $rows, string $field): array {
+		$values = [];
 		foreach ($rows as $row) {
 			$value = $row[$field] ?? null;
-			if (is_numeric($value) === false) {
-				continue;
+			if (is_numeric($value) === true) {
+				$values[] = (float) $value;
 			}
-
-			$count++;
-			if ($acc === null) {
-				$acc = (float)$value;
-				continue;
-			}
-
-			$acc = $reducer((float)$acc, (float)$value);
 		}
 
-		if ($count === 0 && $acc === null) {
+		return $values;
+	}//end numericValues()
+
+	/**
+	 * Reduce values with a binary reducer seeded by the first value; null when there are none.
+	 *
+	 * @param array<int, float>              $values  The values, in order.
+	 * @param callable(float, float): float  $reducer Binary reducer applied to (acc, value).
+	 *
+	 * @return float|null
+	 */
+	private static function reduceFromFirst(array $values, callable $reducer): ?float {
+		if (count($values) === 0) {
 			return null;
 		}
 
+		$acc = array_shift($values);
+		foreach ($values as $value) {
+			$acc = $reducer($acc, $value);
+		}
+
 		return $acc;
-	}//end reduceNumeric()
+	}//end reduceFromFirst()
 
 	/**
 	 * Compute the arithmetic mean of a numeric column.
@@ -4449,9 +4438,11 @@ class AggregationRunner implements AggregationRunnerInterface {
 		foreach ($joined->selectEntries as $entry) {
 			$perAlias[$entry['alias']] = $this->computeGrouped(
 				rows: $rows,
-				metric: $entry['metric'],
-				field: $entry['field'],
-				groupFields: $joined->getJoinedFields()
+				aggregation: new RowAggregation(
+					metric: $entry['metric'],
+					field: $entry['field'],
+					groupFields: $joined->getJoinedFields()
+				)
 			);
 		}
 
@@ -4819,10 +4810,12 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return [
 				'groups' => $this->computeGrouped(
 					rows: $rows,
-					metric: $cross->getMetric(),
-					field: $cross->getField(),
-					groupFields: $crossGroupFields,
-					metrics: $cross->getMetrics()
+					aggregation: new RowAggregation(
+						metric: $cross->getMetric(),
+						field: $cross->getField(),
+						groupFields: $crossGroupFields,
+						metrics: $cross->getMetrics()
+					)
 				),
 			];
 		}
@@ -4836,7 +4829,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return ['values' => $this->computeMetrics(rows: $rows, metrics: $cross->getMetrics())];
 		}
 
-		return ['value' => $this->computeMetric(rows: $rows, metric: $cross->getMetric(), field: $cross->getField())];
+		return ['value' => $this->computeMetric(rows: $rows, aggregation: new RowAggregation(metric: $cross->getMetric(), field: $cross->getField()))];
 	}//end crossFigures()
 
 	/**
