@@ -160,17 +160,18 @@ class ExampleSetTalkStore {
 	/**
 	 * Write a call that was held into the conversation's history.
 	 *
-	 * @param string             $token  The conversation token.
-	 * @param string             $owner  The account that started the call.
-	 * @param DateTime           $start  When the call started.
-	 * @param DateTime           $end    When it ended.
-	 * @param array<int, string> $joined The accounts that joined.
+	 * @param string               $token  The conversation token.
+	 * @param string               $owner  The account that started the call.
+	 * @param array<string, mixed> $call   The declared call: when it started (`start`) and ended (`end`).
+	 * @param array<int, string>   $joined The accounts that joined.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
-	public function heldCall(string $token, string $owner, DateTime $start, DateTime $end, array $joined): void {
+	public function heldCall(string $token, string $owner, array $call, array $joined): void {
+		$start = new DateTime((string) $call['start']);
+		$end   = new DateTime((string) $call['end']);
 		$room = $this->container->get(self::MANAGER)->getRoomByToken($token);
 		$chat = $this->container->get(self::CHAT);
 		$chat->addSystemMessage($room, null, 'users', $owner, (string) json_encode(['message' => 'call_started', 'parameters' => []]), $start, false);

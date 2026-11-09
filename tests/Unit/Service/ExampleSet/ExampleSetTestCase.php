@@ -849,7 +849,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			$this->talk['rooms'][$token] = ['id' => (count($this->talk['rooms']) + 1), 'name' => $name, 'owner' => $owner, 'participants' => $participants];
 			return ['token' => $token, 'id' => $this->talk['rooms'][$token]['id'], 'created' => true];
 		});
-		$store->method('heldCall')->willReturnCallback(function (string $token, string $owner, \DateTime $start, \DateTime $end, array $joined): void {
+		$store->method('heldCall')->willReturnCallback(function (string $token, string $owner, array $call, array $joined): void {
+			$start = new \DateTime((string) $call['start']);
+			$end   = new \DateTime((string) $call['end']);
 			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_started', 'at' => $start->format('c')];
 			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_ended', 'at' => $end->format('c'), 'users' => $joined, 'duration' => ($end->getTimestamp() - $start->getTimestamp())];
 		});
