@@ -18,7 +18,6 @@ final class RegisterDescriptorControllerFactory {
 	/**
 	 * The constructor arguments of RegisterDescriptorController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param RegisterDescriptorServiceInterface $descriptors Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
@@ -27,14 +26,12 @@ final class RegisterDescriptorControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\RegisterDescriptorServiceInterface $descriptors,
 		\OCP\IUserSession $userSession,
 		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\RegisterDescriptorControllerServices(
 				descriptors: $descriptors,
