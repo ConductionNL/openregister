@@ -46,7 +46,7 @@ class BundleManageGuardTest extends TestCase {
 	public function testANewRegisterAndSchemaPass(): void {
 		$this->gate->method('isAdministrator')->willReturn(false);
 		$this->registers->method('find')->willThrowException(new DoesNotExistException('none'));
-		$this->schemas->method('findBySlug')->willReturn([]);
+		$this->schemas->method('findAllByIdentifier')->willReturn([]);
 
 		$this->guard->assertAllowed(['components' => ['registers' => ['nieuw' => []], 'schemas' => ['nieuw-schema' => []]]]);
 		$this->addToAssertionCount(1);
@@ -63,7 +63,7 @@ class BundleManageGuardTest extends TestCase {
 
 	public function testAnExistingSchemaTheCallerCannotManageIsRefused(): void {
 		$this->gate->method('isAdministrator')->willReturn(false);
-		$this->schemas->method('findBySlug')->willReturn([new Schema()]);
+		$this->schemas->method('findAllByIdentifier')->willReturn([new Schema()]);
 		$this->gate->method('mayManage')->willReturn(false);
 
 		$this->expectException(NotAuthorizedException::class);
@@ -84,6 +84,66 @@ class BundleManageGuardTest extends TestCase {
 		$this->gate->method('mayManageRegister')->willReturn(true);
 
 		$this->guard->assertAllowed(['components' => ['registers' => ['publicatie' => []]]]);
+		$this->addToAssertionCount(1);
+	}
+
+	/**
+	 * The importer resolves a schema by uuid, numeric id or slug in any case; the guard must too.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function importerIdentifiers(): array {
+		return [
+			'uuid'         => ['5f1c9d0e-1111-4222-8333-944455556666'],
+			'numeric id'   => ['12'],
+			'case variant' => ['Publication'],
+		];
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('importerIdentifiers')]
+	public function testAnyIdentifierTheImporterResolvesIsJudged(string $identifier): void {
+		$this->gate->method('isAdministrator')->willReturn(false);
+		$this->schemas->expects($this->once())->method('findAllByIdentifier')
+			->with($identifier)
+			->willReturn([new Schema()]);
+		$this->gate->method('mayManage')->willReturn(false);
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->guard->assertAllowed(['components' => ['schemas' => [['slug' => $identifier]]]]);
+	}
+
+	public function testSeedObjectsIntoASchemaTheCallerCannotManageAreRefused(): void {
+		$this->gate->method('isAdministrator')->willReturn(false);
+		$this->registers->method('find')->willReturn(new Register());
+		$this->gate->method('mayManageRegister')->willReturn(true);
+		$this->schemas->method('findAllByIdentifier')->with('publication')->willReturn([new Schema()]);
+		$this->gate->method('mayManage')->willReturn(false);
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->guard->assertAllowed(['components' => ['objects' => [['@self' => ['register' => 'woo', 'schema' => 'publication'], 'title' => 'x']]]]);
+	}
+
+	public function testTopLevelSeedObjectsIntoARegisterTheCallerCannotManageAreRefused(): void {
+		$this->gate->method('isAdministrator')->willReturn(false);
+		$this->registers->method('find')->willReturn(new Register());
+		$this->gate->method('mayManageRegister')->willReturn(false);
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->guard->assertAllowed(['objects' => [['@self' => ['register' => 'woo', 'schema' => 'publication']]]]);
+	}
+
+	public function testSeedObjectsIntoTheBundlesOwnNewDefinitionsPass(): void {
+		$this->gate->method('isAdministrator')->willReturn(false);
+		$this->registers->method('find')->willThrowException(new DoesNotExistException('none'));
+		$this->schemas->expects($this->once())->method('findAllByIdentifier')->with('nieuw-schema')->willReturn([]);
+
+		$this->guard->assertAllowed([
+			'components' => [
+				'registers' => ['nieuw' => []],
+				'schemas'   => ['nieuw-schema' => []],
+				'objects'   => [['@self' => ['register' => 'nieuw', 'schema' => 'nieuw-schema']]],
+			],
+		]);
 		$this->addToAssertionCount(1);
 	}
 }

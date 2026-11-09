@@ -972,6 +972,56 @@ class SchemaMapper extends QBMapper {
 	}//end findMultipleOptimized()
 
 	/**
+	 * Every schema an identifier could resolve to, across all organisations.
+	 *
+	 * The union of what the importer's lookups match: `find()` (uuid, `LOWER(slug)`
+	 * or numeric id), `findBySlugInIds()` and `findByApplicationAndSlug()`
+	 * (`LOWER(slug)`) and `findBySlug()` (exact slug). A guard that judges what
+	 * an import would overwrite must see every row any of those could pick.
+	 * No RBAC and no organisation filter: the caller judges each row.
+	 *
+	 * @param string $identifier A uuid, slug (any case) or numeric id.
+	 * @param int    $limit      Maximum number of rows.
+	 *
+	 * @return list<Schema> The matching schemas.
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	public function findAllByIdentifier(string $identifier, int $limit = 100): array {
+		$this->traceRead(method: 'findAllByIdentifier');
+
+		$qb = $this->db->getQueryBuilder();
+		$conditions = $qb->expr()->orX(
+			$qb->expr()->eq('uuid', $qb->createNamedParameter(value: $identifier, type: IQueryBuilder::PARAM_STR)),
+			$qb->expr()->eq(
+				$qb->func()->lower('slug'),
+				$qb->createNamedParameter(value: strtolower($identifier), type: IQueryBuilder::PARAM_STR)
+			)
+		);
+		// Same numeric test and cast as find(), so the id arm matches what it matches.
+		if (is_numeric($identifier) === true) {
+			$conditions->add(
+				$qb->expr()->eq('id', $qb->createNamedParameter(value: (int)$identifier, type: IQueryBuilder::PARAM_INT))
+			);
+		}
+
+		$qb->select('*')
+			->from('openregister_schemas')
+			->where($conditions)
+			->setMaxResults($limit);
+
+		$result = $qb->executeQuery();
+		$schemas = [];
+		while (($row = $result->fetch()) !== false) {
+			$schemas[] = Schema::fromRow($row);
+		}
+
+		$result->closeCursor();
+
+		return $schemas;
+	}//end findAllByIdentifier()
+
+	/**
 	 * Finds schemas by slug
 	 *
 	 * Searches for schemas matching the given slug with optional

@@ -73,15 +73,34 @@ class BundleManageGuard {
 			return;
 		}
 
-		foreach ($this->slugs(documents: ($bundle['components']['registers'] ?? [])) as $slug) {
+		$registerSlugs = $this->slugs(documents: ($bundle['components']['registers'] ?? []));
+		foreach ($registerSlugs as $slug) {
 			if ($this->mayOverwriteRegister(slug: $slug) === false) {
 				throw new NotAuthorizedException(message: 'This bundle would change a register you may not manage');
 			}
 		}
 
-		foreach ($this->slugs(documents: ($bundle['components']['schemas'] ?? [])) as $slug) {
+		$schemaSlugs = $this->slugs(documents: ($bundle['components']['schemas'] ?? []));
+		foreach ($schemaSlugs as $slug) {
 			if ($this->mayOverwriteSchema(slug: $slug) === false) {
 				throw new NotAuthorizedException(message: 'This bundle would change a schema you may not manage');
+			}
+		}
+
+		// Seed objects are saved as the system into whatever register and schema
+		// their `@self` names. A target the bundle defines itself was judged above;
+		// any other existing target must be one the caller may manage.
+		foreach ($this->seedTargets(bundle: $bundle) as [$register, $schema]) {
+			if ($register !== '' && in_array($register, $registerSlugs, true) === false
+				&& $this->mayOverwriteRegister(slug: $register) === false
+			) {
+				throw new NotAuthorizedException(message: 'This bundle would write objects into a register you may not manage');
+			}
+
+			if ($schema !== '' && in_array($schema, $schemaSlugs, true) === false
+				&& $this->mayOverwriteSchema(slug: $schema) === false
+			) {
+				throw new NotAuthorizedException(message: 'This bundle would write objects into a schema you may not manage');
 			}
 		}
 	}//end assertAllowed()
@@ -121,14 +140,10 @@ class BundleManageGuard {
 	private function mayOverwriteSchema(string $slug): bool {
 		try {
 			// The lookup sees every schema the system write could reach; the manage gate judges it.
-			$schemas = $this->schemaMapper->findBySlug(
-				slug: $slug,
-				limit: 100,
-				offset: 0,
-				// phpcs:ignore Squiz.Commenting.InlineComment.NotCapital -- ADR-055 marker.
-				_rbac: false, // rbac-bypass: judged by the manage gate below.
-				_multitenancy: false
-			);
+			// Every row the importer's lookups could pick: uuid, numeric id, or the
+			// slug in any case (find(), findBySlugInIds(), findBySlug()). No RBAC or
+			// organisation filter; the manage gate below judges each row.
+			$schemas = $this->schemaMapper->findAllByIdentifier(identifier: $slug);
 		} catch (Throwable $e) {
 			return false;
 		}
@@ -141,6 +156,54 @@ class BundleManageGuard {
 
 		return true;
 	}//end mayOverwriteSchema()
+
+	/**
+	 * The register and schema each seed object of the bundle targets.
+	 *
+	 * Seed objects sit under `components.objects` or a top-level `objects`
+	 * (ImportHandler reads both).
+	 *
+	 * @param array<string, mixed> $bundle The bundle.
+	 *
+	 * @return list<array{0: string, 1: string}> Register and schema identifier per seed object.
+	 */
+	private function seedTargets(array $bundle): array {
+		$targets = [];
+		foreach ([($bundle['components']['objects'] ?? null), ($bundle['objects'] ?? null)] as $bucket) {
+			if (is_array($bucket) === false) {
+				continue;
+			}
+
+			foreach ($bucket as $object) {
+				if (is_array($object) === false || is_array($object['@self'] ?? null) === false) {
+					continue;
+				}
+
+				$self = $object['@self'];
+				$targets[] = [
+					$this->identifier(value: ($self['register'] ?? null)),
+					$this->identifier(value: ($self['schema'] ?? null)),
+				];
+			}
+		}
+
+		return $targets;
+	}//end seedTargets()
+
+	/**
+	 * A scalar `@self` reference as a string, '' otherwise.
+	 *
+	 * @param mixed $value The reference.
+	 *
+	 * @return string The identifier.
+	 */
+	private function identifier(mixed $value): string {
+		if (is_scalar($value) === false) {
+			return '';
+		}
+
+		return (string)$value;
+	}//end identifier()
 
 	/**
 	 * The slugs of a bundle's register or schema documents.
