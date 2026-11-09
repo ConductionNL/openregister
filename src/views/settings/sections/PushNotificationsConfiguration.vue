@@ -221,7 +221,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@use './statusCallout.scss' as *;
+@use './sectionStyles.scss' as *;
 
 .push-status-section {
 	margin-top: 8px;
