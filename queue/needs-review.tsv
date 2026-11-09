@@ -2,7 +2,6 @@
 6973	e37838719e0c24186d8f9279aca58947cbccca7a	-	access title, path or words
 7916	358d0ff4aa0b39289ba112fcb369fc3c57544bd2	-	access title, path or words
 7956	66ed3de14aecfb28eecc5132c2c697f513dbe41a	-	access title, path or words
-7957	692f7ff744922f44b30ce915fa48f2561e863cfa	-	access title, path or words
 7959	38a7a3dd03c386a23aa46fd6260645b2d0860a32	-	access title, path or words
 7960	e57042363cc6befa0baff3dd515279b2bdacc60c	-	access title, path or words
 7961	2aa93b069e0cbb3616e78a643e2acf0ec6e29c06	-	access title, path or words
@@ -51,6 +50,7 @@
 8015	c161b5ca0a9ab8594a733d51d5214ddd0183664d	-	access title, path or words
 8017	1e9ed5c174abb70cd383dd487438628967597808	-	access title, path or words
 8018	d533b6ff9afb49da46fa056717920fd3f72da27e	-	access title, path or words
+8020	e725186561e97127302ce063862284927ba4150b		code moved into a strict_types file
 8020	e725186561e97127302ce063862284927ba4150b		code moved into a strict_types file
 8021	6c0835c88a849824cd628fdd9778ca754c13355a	-	access title, path or words
 8022	3fd8a890375c5cf60abd0c9ef51fadf689455b27	-	access title, path or words
@@ -238,3 +238,4 @@
 8287	36d600ac7e6f043322542324a9eb39210d9c922e	-	access title, path or words
 8289	851c92395721524afbe8a9c62d9c7da31424890d	-	access title, path or words
 8291	dbf28e6c37ab8c54fdcc5aec92e520cbfab6b0b9	-	access title, path or words
+8297	884943163698c4fdfd4327b456abba2a0223e4c7	-	access title, path or words
