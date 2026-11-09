@@ -38,7 +38,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Vocabulary;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Throwable;
 
 /**
@@ -63,16 +62,12 @@ class CodedFilterExpander {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConceptRepository $concepts Reads the scheme's concepts.
-	 * @param ConceptHierarchy $hierarchy Walks broader and narrower.
-	 * @param SchemaMapperInterface $schemas Resolves the schema being queried.
-	 * @param CodedPropertyDeclarationFactory $declarationFactory Reads a schema's coded declarations.
+	 * @param ConceptSchemeAccess $scheme Reads the scheme's concepts and walks broader and narrower.
+	 * @param CodedSchemaTables   $tables Resolves the schema being queried and reads its coded declarations.
 	 */
 	public function __construct(
-		private readonly ConceptRepository $concepts,
-		private readonly ConceptHierarchy $hierarchy,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly CodedPropertyDeclarationFactory $declarationFactory,
+		private readonly ConceptSchemeAccess $scheme,
+		private readonly CodedSchemaTables $tables,
 	) {
 
 	}//end __construct()
@@ -122,7 +117,7 @@ class CodedFilterExpander {
 			return [];
 		}
 
-		return $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
+		return $this->tables->declarations->fromProperties(properties: ($schema->getProperties() ?? []));
 	}//end declarationsFor()
 
 	/**
@@ -162,12 +157,12 @@ class CodedFilterExpander {
 		CodedPropertyDeclaration $declaration,
 		?int $depth = null,
 	): array {
-		$conceptsByUri = $this->concepts->conceptsOf(schemeUri: $declaration->scheme);
+		$conceptsByUri = $this->scheme->concepts->conceptsOf(schemeUri: $declaration->scheme);
 		if (isset($conceptsByUri[$branch]) === false) {
 			return [];
 		}
 
-		$uris = $this->hierarchy->branchUris(
+		$uris = $this->scheme->hierarchy->branchUris(
 			rootUri: $branch,
 			conceptsByUri: $conceptsByUri,
 			maxDepth: ($depth ?? $declaration->maxDepth)
@@ -285,7 +280,7 @@ class CodedFilterExpander {
 		}
 
 		try {
-			return $this->schemas->find(id: $schemaRef, _rbac: false, _multitenancy: false);
+			return $this->tables->schemas->find(id: $schemaRef, _rbac: false, _multitenancy: false);
 		} catch (Throwable $missing) {
 			return null;
 		}

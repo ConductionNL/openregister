@@ -125,9 +125,7 @@ class ConceptDeleteGuardUsageGoldenTest extends TestCase {
 
 		return new ConceptDeleteGuard(
 			lifecycle: new ConceptLifecycle(),
-			schemas: $schemas,
-			objects: $objects,
-			declarationFactory: new CodedPropertyDeclarationFactory()
+			tables: new \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables(schemas: $schemas, declarations: new CodedPropertyDeclarationFactory(), objects: $objects)
 		);
 	}//end guard()
 
