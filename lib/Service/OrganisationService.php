@@ -132,69 +132,6 @@ class OrganisationService implements OrganisationServiceInterface {
 	private static array $userOrgsCache = [];
 
 	/**
-	 * Organisation mapper for database operations
-	 *
-	 * @var OrganisationMapperInterface
-	 */
-	private OrganisationMapperInterface $organisationMapper;
-
-	/**
-	 * App config for storing user preferences
-	 *
-	 * @var IAppConfig
-	 */
-	private IAppConfig $appConfig;
-
-	/**
-	 * User session for getting current user
-	 *
-	 * @var IUserSession
-	 */
-	private IUserSession $userSession;
-
-	/**
-	 * Session interface for storing organisation data
-	 *
-	 * @var ISession
-	 */
-	private ISession $session;
-
-	/**
-	 * Configuration interface for persistent user settings
-	 *
-	 * @var IConfig
-	 */
-	private IConfig $config;
-
-	/**
-	 * Group manager for accessing Nextcloud groups
-	 *
-	 * @var IGroupManager
-	 */
-	private IGroupManager $groupManager;
-
-	/**
-	 * User manager for accessing Nextcloud users
-	 *
-	 * @var IUserManager
-	 */
-	private IUserManager $userManager;
-
-	/**
-	 * Logger for debugging and error tracking
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
-	 * Settings service for application configuration
-	 *
-	 * @var SettingsServiceInterface|null
-	 */
-	private ?SettingsServiceInterface $settingsService = null;
-
-	/**
 	 * Organisations named by an organisation context, by uuid (null = not found).
 	 *
 	 * @var array<string, Organisation|null>
@@ -215,25 +152,16 @@ class OrganisationService implements OrganisationServiceInterface {
 	 * @param SettingsServiceInterface|null $settingsService Settings service (optional)
 	 */
 	public function __construct(
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		ISession $session,
-		IConfig $config,
-		IAppConfig $appConfig,
-		IGroupManager $groupManager,
-		IUserManager $userManager,
-		LoggerInterface $logger,
-		?SettingsServiceInterface $settingsService = null,
+		private OrganisationMapperInterface $organisationMapper,
+		private IUserSession $userSession,
+		private ISession $session,
+		private IConfig $config,
+		private IAppConfig $appConfig,
+		private IGroupManager $groupManager,
+		private IUserManager $userManager,
+		private LoggerInterface $logger,
+		private ?SettingsServiceInterface $settingsService = null,
 	) {
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->session = $session;
-		$this->config = $config;
-		$this->appConfig = $appConfig;
-		$this->groupManager = $groupManager;
-		$this->userManager = $userManager;
-		$this->logger = $logger;
-		$this->settingsService = $settingsService;
 	}//end __construct()
 
 	/**

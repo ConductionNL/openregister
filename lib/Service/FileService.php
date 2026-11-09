@@ -357,32 +357,22 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 		FileContentHandlers $content,
 		FileLifecycleHandlers $lifecycle,
 	) {
-		$this->logger = $platform->logger;
-		$this->logger->debug(
-			message: '[FileService] FileService constructor started.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-		// REMOVED: registerMapper assignment (unused, caused circular dependency).
 		$this->adoptPlatform(platform: $platform);
 		$this->adoptStorage(storage: $storage);
 		$this->adoptContent(content: $content);
 		$this->adoptLifecycle(lifecycle: $lifecycle);
 		$this->attachServiceToHandlers();
-
-		$this->logger->debug(
-			message: '[FileService] FileService constructor completed.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
 	}//end __construct()
 
 	/**
-	 * Take the root folder, share link builder and user session off the platform bundle.
+	 * Take the logger, root folder, share link builder and user session off the platform bundle.
 	 *
 	 * @param FileServicePlatform $platform The platform bundle
 	 *
 	 * @return void
 	 */
 	private function adoptPlatform(FileServicePlatform $platform): void {
+		$this->logger = $platform->logger;
 		$this->rootFolder = $platform->rootFolder;
 		$this->shareUrls = $platform->shareUrls;
 		$this->userSession = $platform->userSession;
