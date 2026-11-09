@@ -130,9 +130,8 @@ class GrantChangeAuditorTest extends TestCase {
 		);
 
 		$this->auditor->recordSpecialRight(
-			organisationUuid: 'org-1',
-			before: ['records-service'],
-			after: ['records-service', 'second-service']
+			'org-1',
+			new \OCA\OpenRegister\Service\Rbac\SpecialRightChange(['records-service'], ['records-service', 'second-service'])
 		);
 	}//end testAChangeOfTheSpecialRightListIsASettingsChangeOnTheSameChain()
 

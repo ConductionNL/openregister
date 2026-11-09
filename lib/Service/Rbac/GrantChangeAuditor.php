@@ -157,18 +157,17 @@ class GrantChangeAuditor implements GrantChangeAuditorInterface {
 	/**
 	 * Record a change of the groups that hold the special right on an organisation's records.
 	 *
-	 * @param string $organisationUuid The organisation.
-	 * @param array<int|string, mixed> $before The list before.
-	 * @param array<int|string, mixed> $after The list after.
+	 * @param string             $organisationUuid The organisation.
+	 * @param SpecialRightChange $change           The list before and after.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function recordSpecialRight(string $organisationUuid, array $before, array $after): void {
+	public function recordSpecialRight(string $organisationUuid, SpecialRightChange $change): void {
 		$key = 'organisation ' . $organisationUuid . ': ' . OrganisationSpecialRights::GRANT_MANAGE;
 
-		$this->settings->recordUpdate(app: 'openregister', before: [$key => $before], after: [$key => $after]);
+		$this->settings->recordUpdate(app: 'openregister', before: [$key => $change->before], after: [$key => $change->after]);
 	}//end recordSpecialRight()
 
 	/**
