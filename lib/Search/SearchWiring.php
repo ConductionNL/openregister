@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
+use OCA\OpenRegister\Search\BackgroundJob\ChunkVectorizationBatches;
+use OCA\OpenRegister\Search\BackgroundJob\ChunkVectorizationBatchesInterface;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
@@ -100,6 +102,7 @@ final class SearchWiring {
 		ViewMapperInterface::class => ViewMapper::class,
 		ExampleSetViewRowsInterface::class => ExampleSetViews::class,
 		ChunkVectorFactoryInterface::class => ChunkVectorFactory::class,
+		ChunkVectorizationBatchesInterface::class => ChunkVectorizationBatches::class,
 	];
 
 	/**

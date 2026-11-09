@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
+use OCA\OpenRegister\Search\BackgroundJob\ChunkVectorizationBatches;
+use OCA\OpenRegister\Search\BackgroundJob\ChunkVectorizationBatchesInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactory;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactoryInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
@@ -37,7 +39,7 @@ use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
  * UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationJob
- * @covers \OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationBatch
+ * @covers \OCA\OpenRegister\Search\BackgroundJob\ChunkVectorizationBatch
  * @uses   \OCA\OpenRegister\Files\Db\Chunk
  */
 class ChunkVectorizationJobGoldenTest extends TestCase
@@ -294,6 +296,7 @@ class ChunkVectorizationJobGoldenTest extends TestCase
         $this->registerService(EmbeddingGeneratorInterface::class, fn () => $embeddings);
         $this->registerService(VectorStorageHandlerInterface::class, fn () => $storage);
         $this->registerService(ChunkVectorFactoryInterface::class, fn () => new ChunkVectorFactory());
+        $this->registerService(ChunkVectorizationBatchesInterface::class, fn () => new ChunkVectorizationBatches(container: $this->containerMock()));
     }//end wire()
 
     /**

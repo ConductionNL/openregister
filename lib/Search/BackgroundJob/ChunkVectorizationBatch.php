@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category BackgroundJob
- * @package  OCA\OpenRegister\BackgroundJob
+ * @package  OCA\OpenRegister\Search\BackgroundJob
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Files\BackgroundJob;
+namespace OCA\OpenRegister\Search\BackgroundJob;
 
 use DateTime;
 use Exception;

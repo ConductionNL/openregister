@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace Unit\BackgroundJob;
 
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
+use OCA\OpenRegister\Search\BackgroundJob\ChunkVectorizationBatches;
+use OCA\OpenRegister\Search\BackgroundJob\ChunkVectorizationBatchesInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactory;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactoryInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
@@ -83,6 +85,7 @@ class ChunkVectorizationJobTest extends TestCase {
 			return $this->storageHandler;
 		});
 		$this->registerService(ChunkVectorFactoryInterface::class, fn () => new ChunkVectorFactory());
+		$this->registerService(ChunkVectorizationBatchesInterface::class, fn () => new ChunkVectorizationBatches(container: $this->containerMock()));
 
 		return new ChunkVectorizationJob($this->timeFactory, $this->containerMock());
 	}

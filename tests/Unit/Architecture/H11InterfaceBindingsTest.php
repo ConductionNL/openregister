@@ -77,7 +77,7 @@ final class H11InterfaceBindingsTest extends TestCase {
 			'example-set own row kinds' => ['Service/ExampleSet/ExampleSetOwnRowKinds.php', ['ExampleSetViews']],
 			'operations jobs' => ['Service/Operations/OperationsJobsService.php', ['SearchIndexRebuildJob']],
 			'chunk vectorization batch' => [
-				'Files/BackgroundJob/ChunkVectorizationBatch.php',
+				'Search/BackgroundJob/ChunkVectorizationBatch.php',
 				['StoredVector', 'VectorSubject', 'VectorPayload', 'VectorChunkPosition'],
 			],
 		];

@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\BackgroundJob;
 
+use OCA\OpenRegister\Search\BackgroundJob\ChunkVectorizationBatchesInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -152,9 +153,9 @@ class ChunkVectorizationJob extends TimedJob {
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#5.2
 	 */
 	private function vectorizeBatch(LoggerInterface $logger): array {
-		$batch = new ChunkVectorizationBatch(container: $this->container);
+		$batches = $this->container->get(ChunkVectorizationBatchesInterface::class);
 		try {
-			return $batch->vectorize();
+			return $batches->vectorizeNextBatch();
 		} catch (\Throwable $e) {
 			$logger->warning(
 				message: '[ChunkVectorizationJob] Chunk vectorization batch failed '

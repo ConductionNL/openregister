@@ -1057,7 +1057,7 @@
 			"service": true
 		},
 		"OCA\\OpenRegister\\BackgroundJob\\ChunkVectorizationBatch": {
-			"class": "OCA\\OpenRegister\\Files\\BackgroundJob\\ChunkVectorizationBatch",
+			"class": "OCA\\OpenRegister\\Search\\BackgroundJob\\ChunkVectorizationBatch",
 			"eager": false,
 			"service": true
 		},
