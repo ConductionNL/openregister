@@ -56,7 +56,7 @@ use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepositoryInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectServiceInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2EndpointsInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceClientInterface;
-use OCA\OpenRegister\Service\Credential\OAuth2InstanceHost;
+use OCA\OpenRegister\Service\Credential\OAuth2InstanceHostInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
 use OCA\OpenRegister\Service\Credential\OAuth2RelayGuardInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2StateServiceInterface;
@@ -89,8 +89,6 @@ use Throwable;
  * with a long list of ways to refuse it, and every refusal is a separate branch on
  * purpose: a callback that answered fewer questions would be answering some of them
  * by accident.
- * @SuppressWarnings(PHPMD.StaticAccess) One call, to {@see OAuth2InstanceHost}, a
- * stateless security predicate; injecting it would make the host-lock substitutable.
  */
 class CredentialOauth2Controller extends Controller {
 
@@ -167,11 +165,19 @@ class CredentialOauth2Controller extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
+	 * Validates the per-account host a start supplies.
+	 *
+	 * @var OAuth2InstanceHostInterface
+	 */
+	private readonly OAuth2InstanceHostInterface $instanceHost;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
 	 * @param CredentialOauth2ControllerServices $services The credential oauth2 controller services.
+	 * @param OAuth2InstanceHostInterface $instanceHost The per-account host check, a guard kept as its own parameter.
 	 *
 	 * @return void
 	 *
@@ -188,6 +194,7 @@ class CredentialOauth2Controller extends Controller {
 		string $appName,
 		IRequest $request,
 		CredentialOauth2ControllerServices $services,
+		OAuth2InstanceHostInterface $instanceHost,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->connect = $services->domain->connect;
@@ -198,6 +205,7 @@ class CredentialOauth2Controller extends Controller {
 		$this->userSession = $services->platform->userSession;
 		$this->throttler = $services->platform->throttler;
 		$this->logger = $services->platform->logger;
+		$this->instanceHost = $instanceHost;
 	}//end __construct()
 
 	/**
@@ -673,7 +681,7 @@ class CredentialOauth2Controller extends Controller {
 			return null;
 		}
 
-		return OAuth2InstanceHost::normalise(candidate: (string)$this->request->getParam('instanceBaseUrl', ''));
+		return $this->instanceHost->origin(candidate: (string)$this->request->getParam('instanceBaseUrl', ''));
 	}//end requestedHost()
 
 	/**

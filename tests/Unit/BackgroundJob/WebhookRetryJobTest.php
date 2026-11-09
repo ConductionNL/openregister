@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\Support\WebhookDeliveryStores;
 use OCA\OpenRegister\BackgroundJob\WebhookRetryJob;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
@@ -33,8 +34,7 @@ class WebhookRetryJobTest extends TestCase {
 
 		$this->job = new WebhookRetryJob(
 			$timeFactory,
-			$this->webhookMapper,
-			$this->webhookLogMapper,
+			new WebhookDeliveryStores($this->webhookMapper, $this->webhookLogMapper),
 			$this->webhookService,
 			$this->logger,
 		);

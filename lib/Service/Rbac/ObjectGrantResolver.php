@@ -50,7 +50,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Support\PermissionBit;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Container\ContainerInterface;

@@ -11,6 +11,7 @@ namespace Unit\Service\Config;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Config\Types\GenericObjectShareableConfigType;
+use OCA\OpenRegister\Service\Config\Types\ShareableTypeIdentity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -25,9 +26,7 @@ class GenericObjectShareableConfigTypeTest extends TestCase {
 		$this->objects = $this->createMock(ObjectService::class);
 		$this->type = new GenericObjectShareableConfigType(
 			$this->objects,
-			'procest.casetype',
-			'Case type (Procest)',
-			'procest-casetype',
+			new ShareableTypeIdentity('procest.casetype', 'Case type (Procest)', 'procest-casetype'),
 			'procest',
 			'casetype'
 		);

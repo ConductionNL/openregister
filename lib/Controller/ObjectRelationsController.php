@@ -46,8 +46,12 @@ use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
 use OCA\OpenRegister\Service\Relation\AffectedSetQuery;
 use OCA\OpenRegister\Service\Relation\AffectedSets;
+use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
+use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
 use OCA\OpenRegister\Service\Relation\ObjectTreeServiceInterface;
+use OCA\OpenRegister\Service\Relation\ProvenanceLink;
+use OCA\OpenRegister\Service\Relation\RelationEndpoint;
 use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolverInterface;
 use OCP\AppFramework\Controller;
@@ -267,13 +271,13 @@ class ObjectRelationsController extends Controller {
 	 */
 	private function externalLink(ObjectEntity $object): ObjectRelation {
 		return $this->relations->addExternalLink(
-			sourceUuid: (string)$object->getUuid(),
-			url: (string)$this->request->getParam('url', ''),
-			title: $this->params->stringParam(name: 'title'),
-			relationType: $this->params->stringParam(name: 'type'),
-			label: $this->params->stringParam(name: 'label'),
-			register: $this->params->idOf(reference: $object->getRegister()),
-			schema: $this->params->idOf(reference: $object->getSchema())
+			source: $this->endpoint(object: $object),
+			link: new ExternalLink(
+				url: (string)$this->request->getParam('url', ''),
+				title: $this->params->stringParam(name: 'title'),
+				relationType: $this->params->stringParam(name: 'type'),
+				label: $this->params->stringParam(name: 'label')
+			)
 		);
 	}//end externalLink()
 
@@ -320,11 +324,10 @@ class ObjectRelationsController extends Controller {
 	 */
 	private function recordProse(ProseReference $reference): array {
 		$rows = $this->relations->recordProseReference(
-			sourceUuid: (string)$reference->source->getUuid(),
-			targetUuid: (string)$reference->far->getUuid(),
+			source: $this->endpoint(object: $reference->source),
+			target: $this->endpoint(object: $reference->far),
 			anchor: $reference->anchor,
-			relationType: $this->params->stringParam(name: 'type'),
-			scope: $this->proseScope(source: $reference->source, far: $reference->far)
+			relationType: $this->params->stringParam(name: 'type')
 		);
 
 		$rendered = [];
@@ -336,21 +339,19 @@ class ObjectRelationsController extends Controller {
 	}//end recordProse()
 
 	/**
-	 * The register and schema of both ends of a prose reference.
+	 * One end of a relation row: the object, in its register and schema.
 	 *
-	 * @param ObjectEntity $source The object the text belongs to.
-	 * @param ObjectEntity $far    The object the text names.
+	 * @param ObjectEntity $object The object.
 	 *
-	 * @return array<string, int|null> The scope.
+	 * @return RelationEndpoint The end.
 	 */
-	private function proseScope(ObjectEntity $source, ObjectEntity $far): array {
-		return [
-			'sourceRegister' => $this->params->idOf(reference: $source->getRegister()),
-			'sourceSchema' => $this->params->idOf(reference: $source->getSchema()),
-			'targetRegister' => $this->params->idOf(reference: $far->getRegister()),
-			'targetSchema' => $this->params->idOf(reference: $far->getSchema()),
-		];
-	}//end proseScope()
+	private function endpoint(ObjectEntity $object): RelationEndpoint {
+		return new RelationEndpoint(
+			uuid: (string)$object->getUuid(),
+			register: $this->params->idOf(reference: $object->getRegister()),
+			schema: $this->params->idOf(reference: $object->getSchema())
+		);
+	}//end endpoint()
 
 	/**
 	 * The answer to a recorded prose reference.
@@ -615,17 +616,12 @@ class ObjectRelationsController extends Controller {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	private function recordProvenance(ObjectEntity $source, ObjectEntity $created, array $link, array $inherited): ObjectRelation {
+		$provenance = new ProvenanceLink(entry: $link['entry'], relationType: $link['type']);
 		if ($inherited !== []) {
-			return $this->relations->recordDerivation(
-				parent: $source,
-				child: $created,
-				relationType: $link['type'],
-				inherited: $inherited,
-				entry: $link['entry']
-			);
+			return $this->relations->recordDerivation(parent: $source, child: $created, link: $provenance, inherited: $inherited);
 		}
 
-		return $this->relations->recordSplit(source: $source, created: $created, entry: $link['entry'], relationType: $link['type']);
+		return $this->relations->recordSplit(source: $source, created: $created, link: $provenance);
 	}//end recordProvenance()
 
 	/**
@@ -800,9 +796,11 @@ class ObjectRelationsController extends Controller {
 	private function treeOf(ObjectEntity $object, string $direction): array {
 		return $this->trees->tree(
 			root: $object,
-			direction: $direction,
-			depth: $this->params->optionalDepth(),
-			fields: $this->params->csvParam(name: 'fields')
+			query: new ObjectTreeQuery(
+				direction: $direction,
+				depth: $this->params->optionalDepth(),
+				fields: $this->params->csvParam(name: 'fields')
+			)
 		);
 	}//end treeOf()
 

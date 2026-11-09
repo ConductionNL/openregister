@@ -1886,4 +1886,19 @@ class FlowRunService implements FlowRunServiceInterface {
 
 	}//end recordLastRun()
 
+	/**
+	 * The items a run starts from, read from a seed exactly as a caller sent it.
+	 *
+	 * @param mixed $value The seed as sent.
+	 *
+	 * @return array<int, array<string, mixed>> The well-formed items.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Moved here with the call from FlowTestRunController:
+	 * FlowItems::normalise is a pure value-normaliser with no state to inject.
+	 *
+	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 */
+	public function seedItemsFrom(mixed $value): array {
+		return FlowItems::normalise(value: $value);
+	}//end seedItemsFrom()
 }//end class

@@ -57,7 +57,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
  */
-class FlowRunSignalService {
+class FlowRunSignalService implements FlowRunSignalInterface {
 	/**
 	 * Constructor.
 	 *
