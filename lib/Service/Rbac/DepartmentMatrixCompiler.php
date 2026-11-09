@@ -131,24 +131,25 @@ class DepartmentMatrixCompiler {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function compile(array $matrix, array $ownValues, ?DateTimeInterface $now = null): array {
-		$field = trim((string)($matrix['field'] ?? ''));
-		$rows = ($matrix['rows'] ?? null);
-		if ($field === '' || is_array($rows) === false) {
-			return [];
-		}
-
-		return $this->compileRows(rows: $rows, run: new MatrixCompileRun(ownValues: $ownValues, field: $field, now: ($now ?? new DateTimeImmutable())));
+		$run = new MatrixCompileRun(ownValues: $ownValues, field: trim((string)($matrix['field'] ?? '')), now: ($now ?? new DateTimeImmutable()));
+		return $this->compileRows(rows: ($matrix['rows'] ?? null), run: $run);
 	}//end compile()
 
 	/**
 	 * Gather the rows by action and group, then emit one rule per scope.
 	 *
-	 * @param array<int|string, mixed> $rows The declared rows.
-	 * @param MatrixCompileRun         $run  The caller's own values, the field and the moment.
+	 * A matrix without a field or without a row list compiles to nothing.
+	 *
+	 * @param mixed            $rows The declared rows.
+	 * @param MatrixCompileRun $run  The caller's own values, the field and the moment.
 	 *
 	 * @return array<string, array<int, array<string, mixed>>> Rules per action.
 	 */
-	private function compileRows(array $rows, MatrixCompileRun $run): array {
+	private function compileRows(mixed $rows, MatrixCompileRun $run): array {
+		if ($run->field === '' || is_array($rows) === false) {
+			return [];
+		}
+
 		$this->gatherByActionGroup(rows: $rows, run: $run);
 
 		return $this->rulesFrom(gathered: $run->gathered, field: $run->field);
