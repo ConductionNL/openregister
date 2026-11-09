@@ -37,17 +37,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ObjectFavouriteControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Notifications\Db\Watcher;
-use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Star an object for the calling user, and unstar it.
@@ -66,22 +64,26 @@ class ObjectFavouriteController extends Controller {
 	private readonly ObjectSharingEndpoint $endpoint;
 
 	/**
+	 * The controller's collaborators.
+	 *
+	 * @var ObjectFavouriteControllerServices
+	 */
+	private readonly ObjectFavouriteControllerServices $services;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest                  $request       Request.
-	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
-	 * @param FavouriteServiceInterface $favourites    The favourite primitive.
-	 * @param LoggerInterface           $logger        Logger.
+	 * @param IRequest                          $request  Request.
+	 * @param ObjectFavouriteControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		IRequest $request,
-		ObjectOperationsInterface $objectService,
-		private readonly FavouriteServiceInterface $favourites,
-		LoggerInterface $logger,
+		ObjectFavouriteControllerServices $services,
 	) {
-		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->services = $services;
 		$failure = 'Could not complete the favourite request';
-		$this->endpoint = new ObjectSharingEndpoint(objectService: $objectService, logger: $logger, file: __FILE__, failure: $failure);
+		$this->endpoint = new ObjectSharingEndpoint(objectService: $services->objectService, logger: $services->logger, file: __FILE__, failure: $failure);
 	}//end __construct()
 
 	/**
@@ -108,7 +110,7 @@ class ObjectFavouriteController extends Controller {
 			return $object;
 		}
 
-		$star = fn (): Watcher => $this->favourites->star(object: $object, register: $register, schema: $schema);
+		$star = fn (): Watcher => $this->services->favourites->star(object: $object, register: $register, schema: $schema);
 		$favourite = $this->endpoint->run(operation: $star, context: 'star');
 		if ($favourite instanceof JSONResponse) {
 			return $favourite;
@@ -143,7 +145,7 @@ class ObjectFavouriteController extends Controller {
 			return $object;
 		}
 
-		$removed = $this->endpoint->run(operation: fn (): bool => $this->favourites->unstar(object: $object), context: 'unstar');
+		$removed = $this->endpoint->run(operation: fn (): bool => $this->services->favourites->unstar(object: $object), context: 'unstar');
 		if ($removed instanceof JSONResponse) {
 			return $removed;
 		}
