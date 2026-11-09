@@ -37,7 +37,7 @@ interface TaskRelationMapperInterface {
 	 *
 	 * @param Entity $entity The relation.
 	 *
-	 * @return TaskRelation The inserted relation.
+	 * @return \OCA\OpenRegister\Db\TaskRelation The inserted relation.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
 	 */

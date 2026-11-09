@@ -59,7 +59,7 @@ interface FlowRunStepMapperInterface {
 	 *
 	 * @param Entity $entity The step.
 	 *
-	 * @return FlowRunStep The inserted step.
+	 * @return \OCA\OpenRegister\Db\FlowRunStep The inserted step.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
 	 */
