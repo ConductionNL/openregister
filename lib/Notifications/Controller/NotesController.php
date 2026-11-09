@@ -115,12 +115,23 @@ class NotesController extends Controller {
 		string $schema,
 		string $id,
 	): JSONResponse {
+		return $this->notesAt(path: new NotePath(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * The notes on the object at a route path.
+	 *
+	 * @param NotePath $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function notesAt(NotePath $path): JSONResponse {
 		return $this->onObject(
-			path: new NotePath(register: $register, schema: $schema, id: $id),
+			path: $path,
 			action: fn (ObjectEntity $object): JSONResponse => $this->listNotes(object: $object),
 			failure: $this->failureWith(status: 500)
 		);
-	}//end index()
+	}//end notesAt()
 
 	/**
 	 * Create a new note on a specific object.
@@ -141,14 +152,23 @@ class NotesController extends Controller {
 		string $schema,
 		string $id,
 	): JSONResponse {
-		$path = new NotePath(register: $register, schema: $schema, id: $id);
+		return $this->createAt(path: new NotePath(register: $register, schema: $schema, id: $id));
+	}//end create()
 
+	/**
+	 * Add a note to the object at a route path.
+	 *
+	 * @param NotePath $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function createAt(NotePath $path): JSONResponse {
 		return $this->onObject(
 			path: $path,
 			action: fn (ObjectEntity $object): JSONResponse => $this->createOn(target: new AddressedObject(object: $object, path: $path)),
 			failure: $this->failureWith(status: 400)
 		);
-	}//end create()
+	}//end createAt()
 
 	/**
 	 * Update a note.
@@ -171,12 +191,24 @@ class NotesController extends Controller {
 		string $id,
 		string $noteId,
 	): JSONResponse {
+		return $this->updateAt(path: new NotePath(register: $register, schema: $schema, id: $id), noteId: $noteId);
+	}//end update()
+
+	/**
+	 * Update one note on the object at a route path.
+	 *
+	 * @param NotePath $path   The register, schema and object id from the route.
+	 * @param string   $noteId The note id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function updateAt(NotePath $path, string $noteId): JSONResponse {
 		return $this->onObject(
-			path: new NotePath(register: $register, schema: $schema, id: $id),
+			path: $path,
 			action: fn (ObjectEntity $object): JSONResponse => $this->updateOn(object: $object, noteId: (int)$noteId),
 			failure: fn (Exception $e): JSONResponse => $this->updateFailure(e: $e)
 		);
-	}//end update()
+	}//end updateAt()
 
 	/**
 	 * Update a note, reached over PATCH.
@@ -232,12 +264,24 @@ class NotesController extends Controller {
 		string $id,
 		string $noteId,
 	): JSONResponse {
+		return $this->versionsAt(path: new NotePath(register: $register, schema: $schema, id: $id), noteId: $noteId);
+	}//end versions()
+
+	/**
+	 * The versions of one note on the object at a route path.
+	 *
+	 * @param NotePath $path   The register, schema and object id from the route.
+	 * @param string   $noteId The note id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function versionsAt(NotePath $path, string $noteId): JSONResponse {
 		return $this->onObject(
-			path: new NotePath(register: $register, schema: $schema, id: $id),
+			path: $path,
 			action: fn (ObjectEntity $object): JSONResponse => $this->versionsOf(object: $object, noteId: (int)$noteId),
 			failure: $this->failureWith(status: 400)
 		);
-	}//end versions()
+	}//end versionsAt()
 
 	/**
 	 * Delete a note.
@@ -260,12 +304,24 @@ class NotesController extends Controller {
 		string $id,
 		string $noteId,
 	): JSONResponse {
+		return $this->destroyAt(path: new NotePath(register: $register, schema: $schema, id: $id), noteId: $noteId);
+	}//end destroy()
+
+	/**
+	 * Delete one note on the object at a route path.
+	 *
+	 * @param NotePath $path   The register, schema and object id from the route.
+	 * @param string   $noteId The note id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function destroyAt(NotePath $path, string $noteId): JSONResponse {
 		return $this->onObject(
-			path: new NotePath(register: $register, schema: $schema, id: $id),
+			path: $path,
 			action: fn (ObjectEntity $object): JSONResponse => $this->destroyOn(object: $object, noteId: (int)$noteId),
 			failure: fn (Exception $e): JSONResponse => $this->failureWith(status: $this->statusFor(e: $e))($e)
 		);
-	}//end destroy()
+	}//end destroyAt()
 
 	/**
 	 * Run an action on the object the path names, translating the shared outcomes.
