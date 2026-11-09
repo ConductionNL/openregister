@@ -1,3 +1,4 @@
+import { mockApplication, mockApplicationData } from './application/application.mock.ts'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -8,12 +9,11 @@
  *
  * @spec exclude Unit test of client-side test fixtures.
  */
-import { Application } from './application/application'
-import { mockApplication, mockApplicationData } from './application/application.mock.ts'
-import { AuditTrail } from './auditTrail/auditTrail'
+import { Application } from './application/application.ts'
 import { mockAuditTrail, mockAuditTrailData } from './auditTrail/auditTrail.mock.ts'
-import { Database } from './database/database'
+import { AuditTrail } from './auditTrail/auditTrail.ts'
 import { mockDatabase, mockDatabaseData } from './database/database.mock.ts'
+import { Database } from './database/database.ts'
 
 describe('entity fixtures', () => {
 	it.each([
