@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Service\Notification\TemplateCatalogue;
 use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
 
@@ -62,7 +63,7 @@ class NotificationTemplateRegistryEditsTest extends TestCase {
 			}
 		);
 
-		return new NotificationTemplateRegistry($config, $events, $shipped);
+		return new NotificationTemplateRegistry($config, new TemplateCatalogue($events, $shipped));
 
 	}//end registry()
 
