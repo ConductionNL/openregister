@@ -76,8 +76,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCP\IL10N;
-use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -125,16 +123,14 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectNodeSources $sources     Object reads (RBAC-enforcing) and the register and schema mappers.
-	 * @param IUserManager      $userManager Resolves the run owner.
-	 * @param IL10N             $l10n        Translations.
-	 * @param IURLGenerator     $urls        For the palette icon.
+	 * @param ObjectNodeSources    $sources      Object reads (RBAC-enforcing) and the register and schema mappers.
+	 * @param IUserManager         $userManager  Resolves the run owner.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 */
 	public function __construct(
 		private readonly ObjectNodeSources $sources,
 		private readonly IUserManager $userManager,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		private readonly FlowNodePresentation $presentation,
 	) {
 	}//end __construct()
 
@@ -153,7 +149,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	 * @return string The display name.
 	 */
 	public function getDisplayName(): string {
-		return $this->l10n->t('Read objects');
+		return $this->presentation->l10n->t('Read objects');
 	}//end getDisplayName()
 
 	/**
@@ -162,7 +158,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	 * @return string The description.
 	 */
 	public function getDescription(): string {
-		return $this->l10n->t('Find objects in a register and put them on the item.');
+		return $this->presentation->l10n->t('Find objects in a register and put them on the item.');
 	}//end getDescription()
 
 	/**
@@ -171,7 +167,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	 * @return string The icon URL.
 	 */
 	public function getIcon(): string {
-		return $this->urls->imagePath('core', 'actions/search.svg');
+		return $this->presentation->urls->imagePath('core', 'actions/search.svg');
 	}//end getIcon()
 
 	/**
@@ -196,15 +192,15 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	 */
 	public function validateConfig(array $config): void {
 		if (trim((string)($config['register'] ?? '')) === '') {
-			throw new UnexpectedValueException($this->l10n->t('An object-read step needs a register.'));
+			throw new UnexpectedValueException($this->presentation->l10n->t('An object-read step needs a register.'));
 		}
 
 		if (trim((string)($config['schema'] ?? '')) === '') {
-			throw new UnexpectedValueException($this->l10n->t('An object-read step needs a schema.'));
+			throw new UnexpectedValueException($this->presentation->l10n->t('An object-read step needs a schema.'));
 		}
 
 		if (array_key_exists('filters', $config) === true && is_array($config['filters']) === false) {
-			throw new UnexpectedValueException($this->l10n->t('An object-read step\'s filters must be an object.'));
+			throw new UnexpectedValueException($this->presentation->l10n->t('An object-read step\'s filters must be an object.'));
 		}
 
 	}//end validateConfig()
@@ -384,7 +380,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 
 		if ($rendered['unresolved'] !== []) {
 			throw new RuntimeException(
-				$this->l10n->t(
+				$this->presentation->l10n->t(
 					'The object-read step\'s filter could not be rendered: %s resolved to nothing on this item. '
 					. 'A filter that renders empty matches nothing, so the step would report success having read no objects.',
 					[implode(', ', $rendered['unresolved'])]
@@ -434,7 +430,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 			);
 		} catch (Throwable $e) {
 			throw new RuntimeException(
-				$this->l10n->t('The object-read step could not read from the register: %s', [$e->getMessage()]),
+				$this->presentation->l10n->t('The object-read step could not read from the register: %s', [$e->getMessage()]),
 				0,
 				$e
 			);
@@ -492,14 +488,14 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 		$uid = ($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? null);
 		if (is_string($uid) === false || trim($uid) === '') {
 			throw new RuntimeException(
-				$this->l10n->t('This flow run has no acting identity (runAs); an object read must be attributable.')
+				$this->presentation->l10n->t('This flow run has no acting identity (runAs); an object read must be attributable.')
 			);
 		}
 
 		$user = $this->userManager->get(trim($uid));
 		if ($user === null) {
 			throw new RuntimeException(
-				$this->l10n->t(
+				$this->presentation->l10n->t(
 					'This flow run\'s acting identity "%s" (runAs) is not a user account; an object read must be attributable.',
 					[trim($uid)]
 				)
@@ -515,7 +511,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 		// unnoticed for as long as the run lives.
 		if ($user->isEnabled() === false) {
 			throw new RuntimeException(
-				$this->l10n->t(
+				$this->presentation->l10n->t(
 					'This flow run\'s acting identity "%s" (runAs) is a disabled account; an object read is refused rather than performed on their behalf.',
 					[trim($uid)]
 				)
@@ -541,7 +537,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 			return $this->sources->registers->find(id: $identifier, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			throw new UnexpectedValueException(
-				$this->l10n->t('The register "%s" could not be resolved.', [$identifier]),
+				$this->presentation->l10n->t('The register "%s" could not be resolved.', [$identifier]),
 				0,
 				$e
 			);
@@ -595,7 +591,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 			return $this->sources->schemas->find(id: $identifier, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			throw new UnexpectedValueException(
-				$this->l10n->t('The schema "%s" could not be resolved.', [$identifier]),
+				$this->presentation->l10n->t('The schema "%s" could not be resolved.', [$identifier]),
 				0,
 				$e
 			);
