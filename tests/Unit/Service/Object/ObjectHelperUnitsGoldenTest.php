@@ -88,11 +88,7 @@ class ObjectHelperUnitsGoldenTest extends TestCase {
 		$writer = new ObjectSlugBackfillWriter(
 			magicMapper: $magic,
 			db: $db,
-			ledger: new ObjectSlugBackfillLedger(
-				cacheHandler: $this->createMock(CacheHandler::class),
-				auditTrail: $this->createMock(AuditTrailMapper::class),
-				logger: $logger
-			),
+			ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->createMock(AuditTrailMapper::class), logger: $logger)),
 			logger: $logger
 		);
 

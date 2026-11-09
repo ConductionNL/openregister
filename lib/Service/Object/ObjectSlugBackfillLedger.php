@@ -40,17 +40,31 @@ use Throwable;
 class ObjectSlugBackfillLedger {
 
 	/**
+	 * Records the audit entry of a run that changed slugs.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrail;
+
+	/**
+	 * Receives the overflow lines and the failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectCacheInvalidationInterface     $cacheHandler Object cache, evicted after writing.
-	 * @param AuditTrailMapperInterface $auditTrail   Records the audit entry of a run that changed slugs.
-	 * @param LoggerInterface  $logger       Receives the overflow lines and the failures.
+	 * @param ObjectCacheInvalidationInterface $cacheHandler Object cache, evicted after writing.
+	 * @param AuditRecording                   $audit        The audit trail and the log for overflow lines and failures.
 	 */
 	public function __construct(
 		private readonly ObjectCacheInvalidationInterface $cacheHandler,
-		private readonly AuditTrailMapperInterface $auditTrail,
-		private readonly LoggerInterface $logger,
+		AuditRecording $audit,
 	) {
+		$this->auditTrail = $audit->trail;
+		$this->logger = $audit->logger;
 	}//end __construct()
 
 	/**

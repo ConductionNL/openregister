@@ -55,7 +55,7 @@ class GrantChangeAuditorTest extends TestCase {
 		$this->mapper = $this->createMock(AuditTrailMapper::class);
 		$this->settings = $this->createMock(SettingsChangeAuditor::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->auditor = new GrantChangeAuditor($this->mapper, $this->settings, $this->logger);
+		$this->auditor = new GrantChangeAuditor(new \OCA\OpenRegister\Service\Object\AuditRecording($this->mapper, $this->logger), $this->settings);
 	}//end setUp()
 
 	/**

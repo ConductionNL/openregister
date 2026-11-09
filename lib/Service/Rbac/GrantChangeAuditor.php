@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\AuditRecording;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -72,17 +73,31 @@ class GrantChangeAuditor implements GrantChangeAuditorInterface {
 	public const ACTION_OWNER_GROUP = 'owner_group_changed';
 
 	/**
+	 * The trail, which owns the chain.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $mapper;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapperInterface $mapper The trail, which owns the chain.
+	 * @param AuditRecording        $audit    The trail, which owns the chain, and the log a failed write goes to.
 	 * @param SettingsChangeAuditor $settings Writes the change of an organisation's special right list.
-	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapperInterface $mapper,
+		AuditRecording $audit,
 		private readonly SettingsChangeAuditor $settings,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->mapper = $audit->trail;
+		$this->logger = $audit->logger;
 	}//end __construct()
 
 	/**
@@ -97,7 +112,8 @@ class GrantChangeAuditor implements GrantChangeAuditorInterface {
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function recordGrant(ObjectEntity $object, array $grant, ?string $admittedAs): void {
-		$this->write(object: $object, action: self::ACTION_GRANTED, changed: $this->describe(grant: $grant, admittedAs: $admittedAs));
+		$changed = $this->describe(grant: $grant, admittedAs: $admittedAs);
+		$this->write(object: $object, entry: new GrantAuditEntry(action: self::ACTION_GRANTED, changed: $changed));
 	}//end recordGrant()
 
 	/**
@@ -112,7 +128,8 @@ class GrantChangeAuditor implements GrantChangeAuditorInterface {
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function recordRevoke(ObjectEntity $object, array $grant, ?string $admittedAs): void {
-		$this->write(object: $object, action: self::ACTION_REVOKED, changed: $this->describe(grant: $grant, admittedAs: $admittedAs));
+		$changed = $this->describe(grant: $grant, admittedAs: $admittedAs);
+		$this->write(object: $object, entry: new GrantAuditEntry(action: self::ACTION_REVOKED, changed: $changed));
 	}//end recordRevoke()
 
 	/**
@@ -133,8 +150,7 @@ class GrantChangeAuditor implements GrantChangeAuditorInterface {
 
 		$this->write(
 			object: $object,
-			action: self::ACTION_OWNER_GROUP,
-			changed: ['ownerGroup' => ['old' => $before, 'new' => $after]]
+			entry: new GrantAuditEntry(action: self::ACTION_OWNER_GROUP, changed: ['ownerGroup' => ['old' => $before, 'new' => $after]])
 		);
 	}//end recordOwnerGroup()
 
@@ -177,22 +193,21 @@ class GrantChangeAuditor implements GrantChangeAuditorInterface {
 	/**
 	 * Write one entry; never throws.
 	 *
-	 * @param ObjectEntity $object The record.
-	 * @param string $action The typed action.
-	 * @param array<string, mixed> $changed The change set.
+	 * @param ObjectEntity    $object The record.
+	 * @param GrantAuditEntry $entry  The typed action and its change set.
 	 *
 	 * @return void
 	 */
-	private function write(ObjectEntity $object, string $action, array $changed): void {
+	private function write(ObjectEntity $object, GrantAuditEntry $entry): void {
 		try {
-			$this->mapper->createAuditTrailEntry(object: $object, action: $action, context: $changed);
+			$this->mapper->createAuditTrailEntry(object: $object, action: $entry->action, context: $entry->changed);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[GrantChangeAuditor] Could not record a change of who may reach a record; the change itself was stored',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'action' => $action,
+					'action' => $entry->action,
 					'uuid' => $object->getUuid(),
 					'exception' => $e->getMessage(),
 				]
