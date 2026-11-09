@@ -138,6 +138,34 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 		$this->assertCount(1, array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
 	}//end testATextSearchLeavesOutTheTablesItMayNotRead()
 
+	/**
+	 * A text search across every table passes the caller's RBAC and multitenancy flags to the search and the count.
+	 *
+	 * @return void
+	 */
+	public function testATextSearchCarriesTheCallersFlags(): void {
+		$case = [
+			'search'       => ['_search' => 'zaak'],
+			'count'        => ['_search' => 'zaak'],
+			'pairs'        => [['registerId' => 1, 'schemaId' => 2], ['registerId' => 1, 'schemaId' => 3]],
+			'rbac'         => false,
+			'multitenancy' => false,
+		];
+		$result = $this->runCase(case: $case);
+
+		$across = array_values(array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'searchAcross ')));
+		$this->assertCount(1, $across);
+		$this->assertStringContainsString('"_rbac":false,"_multitenancy":false', $across[0]);
+		$counts = array_values(array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
+		$this->assertCount(2, $counts);
+		foreach ($counts as $count) {
+			$this->assertStringContainsString('"_rbac":false,"_multitenancy":false', $count);
+		}
+
+		$this->assertSame(['magic_mapper'], [$result['response']['@self']['source'] ?? null]);
+		$this->assertSame([], $result['response']['ignoredFilters'] ?? null);
+	}//end testATextSearchCarriesTheCallersFlags()
+
 	public function testEveryCaseIsRecorded(): void {
 		$expected = require __DIR__.'/fixtures/search-objects-paginated.php';
 		$this->assertSame(expected: array_keys(self::cases()), actual: array_keys($expected));
