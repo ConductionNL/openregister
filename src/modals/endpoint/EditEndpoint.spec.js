@@ -11,7 +11,7 @@ jest.mock('../../store/store.js', () => {
 		navigationStore: reactive({ modal: 'editEndpoint', setModal: jest.fn() }),
 	}
 })
-jest.mock('vue-material-design-icons/ContentSaveOutline.vue', () => ({ __esModule: true, default: { template: '<i />' } }))
+jest.mock('vue-material-design-icons/ContentSaveOutline.vue', () => ({ __esModule: true, default: { template: '<i />' } }), { virtual: true })
 jest.mock('../../components/shared/CloseCancelButton.vue', () => ({
 	__esModule: true,
 	default: { name: 'CloseCancelButton', props: ['label'], emits: ['click'], template: '<button class="cancel" @click="$emit(\'click\')">{{ label }}</button>' },
