@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Mcp\Service\Chat;
 
 use Exception;
 use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use Psr\Log\LoggerInterface;
@@ -61,27 +62,6 @@ class ContextRetrievalHandler {
 	];
 
 	/**
-	 * Vector embeddings service
-	 *
-	 * @var VectorEmbeddingsInterface
-	 */
-	private VectorEmbeddingsInterface $vectorService;
-
-	/**
-	 * Object service for database search
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private ObjectOperationsInterface $objectService;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Constructor
 	 *
 	 * @param VectorEmbeddingsInterface $vectorService Vector embeddings service.
@@ -93,13 +73,10 @@ class ContextRetrievalHandler {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		VectorEmbeddingsInterface $vectorService,
-		ObjectOperationsInterface $objectService,
-		LoggerInterface $logger,
+		private readonly VectorEmbeddingsInterface $vectorService,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->vectorService = $vectorService;
-		$this->objectService = $objectService;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -108,22 +85,23 @@ class ContextRetrievalHandler {
 	 * This method performs the core context retrieval for Retrieval Augmented Generation.
 	 * It searches for relevant documents/objects/files based on the query and agent settings.
 	 *
-	 * @param string $query User query text.
-	 * @param Agent|null $agent Agent configuration (optional).
-	 * @param array $selectedViews View filters for multitenancy (optional).
-	 * @param array $ragSettings RAG configuration overrides (optional).
+	 * @param ChatMessageRequest $request The turn: the query text, the selected views and the RAG
+	 *                                    configuration overrides.
+	 * @param Agent|null         $agent   Agent configuration (optional).
 	 *
 	 * @return array Retrieved context with semantic results, chunks, and metadata.
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	public function retrieveContext(string $query, ?Agent $agent, array $selectedViews=[], array $ragSettings=[]): array {
+	public function retrieveContext(ChatMessageRequest $request, ?Agent $agent): array {
+		$query = $request->userMessage;
+		$ragSettings = $request->ragSettings;
 		$this->info(
 			message: '[ContextRetrievalHandler] Retrieving context',
 			context: ['query' => substr($query, 0, 100), 'hasAgent' => $agent !== null, 'ragSettings' => $ragSettings]
 		);
 		$settings = $this->searchSettings(agent: $agent, ragSettings: $ragSettings);
-		$settings['viewFilters'] = $this->resolveViewFilters(agent: $agent, selectedViews: $selectedViews);
+		$settings['viewFilters'] = $this->resolveViewFilters(agent: $agent, selectedViews: $request->selectedViews);
 
 		try {
 			return $this->contextFor(query: $query, settings: $settings);

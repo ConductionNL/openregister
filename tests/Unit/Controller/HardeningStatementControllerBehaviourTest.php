@@ -62,7 +62,6 @@ class HardeningStatementControllerBehaviourTest extends TestCase {
 		}
 
 		return new HardeningStatementController(
-			'openregister',
 			$request,
 			new HardeningStatementControllerServices($this->statements, $this->elevation, $session)
 		);
