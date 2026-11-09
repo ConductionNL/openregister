@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\HandoffControllerServices;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -67,21 +69,32 @@ class HandoffController extends Controller {
 	];
 
 	/**
+	 * The handoff engine.
+	 *
+	 * @var HandoffServiceInterface
+	 */
+	private readonly HandoffServiceInterface $handoffService;
+
+	/**
+	 * Structured logging.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by NC).
-	 * @param IRequest $request Request (injected by NC).
-	 * @param HandoffServiceInterface $handoffService The handoff engine.
-	 * @param LoggerInterface $logger Structured logging.
+	 * @param IRequest                  $request  Request (injected by NC).
+	 * @param HandoffControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly HandoffServiceInterface $handoffService,
-		private readonly LoggerInterface $logger,
+		HandoffControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->handoffService = $services->handoffService;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

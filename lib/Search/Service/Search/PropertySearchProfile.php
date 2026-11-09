@@ -26,6 +26,7 @@
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Search;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 
 /**
@@ -41,60 +42,11 @@ use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
  * property than for an undeclared one. Before this change the free-text scan
  * took every non-encrypted string property whose format was not a date, and it
  * still does for anything that stays silent.
+ *
+ * The match types and input controls are the constants of the Kernel contract,
+ * so PropertySearchProfile::MATCH_EXACT and the rest keep their names.
  */
-final class PropertySearchProfile {
-	/**
-	 * The term has to equal the value.
-	 */
-	public const MATCH_EXACT = 'exact';
-
-	/**
-	 * The value has to start with the term.
-	 */
-	public const MATCH_PREFIX = 'prefix';
-
-	/**
-	 * The field is filtered by a lower and an upper bound, not by a term.
-	 */
-	public const MATCH_RANGE = 'range';
-
-	/**
-	 * Near enough counts, through pg_trgm similarity.
-	 */
-	public const MATCH_FUZZY = 'fuzzy';
-
-	/**
-	 * The term may appear anywhere in the value. The historical behaviour.
-	 */
-	public const MATCH_FULLTEXT = 'fulltext';
-
-	/**
-	 * Every match type a property may declare.
-	 *
-	 * @var string[]
-	 */
-	public const MATCH_TYPES = [
-		self::MATCH_EXACT,
-		self::MATCH_PREFIX,
-		self::MATCH_RANGE,
-		self::MATCH_FUZZY,
-		self::MATCH_FULLTEXT,
-	];
-
-	/**
-	 * Every input control a property may ask a list surface to render.
-	 *
-	 * @var string[]
-	 */
-	public const INPUT_CONTROLS = [
-		'text',
-		'select',
-		'multiselect',
-		'range',
-		'date-range',
-		'boolean',
-	];
-
+final class PropertySearchProfile implements PropertySearchProfileInterface {
 	/**
 	 * The formats that make a property a date.
 	 *
