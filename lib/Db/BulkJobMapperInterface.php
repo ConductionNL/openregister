@@ -90,6 +90,29 @@ interface BulkJobMapperInterface {
 	public function findByActor(string $startedBy, ?string $state = null, ?int $limit = null, ?int $offset = null): array;
 
 	/**
+	 * List the jobs of one actor, newest first.
+	 *
+	 * @param string    $startedBy The actor's uid.
+	 * @param ListQuery $query     The page (unbounded for every job) and an optional `state` filter.
+	 *
+	 * @return BulkJob[] The actor's jobs.
+	 *
+	 * @spec exclude ADR-011 ListQuery variant of findByActor(), no capability of its own
+	 */
+	public function findJobsOf(string $startedBy, ListQuery $query): array;
+
+	/**
+	 * List every job, newest first. For the administrator's console.
+	 *
+	 * @param ListQuery $query The page (unbounded for every job) and an optional `state` filter.
+	 *
+	 * @return BulkJob[] The jobs.
+	 *
+	 * @spec exclude ADR-011 ListQuery variant of findAllJobs(), no capability of its own
+	 */
+	public function findJobs(ListQuery $query): array;
+
+	/**
 	 * Read just the state of a job.
 	 *
 	 * The commit loop asks this between every two objects, so a cancel stops
