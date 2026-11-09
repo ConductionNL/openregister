@@ -141,15 +141,12 @@ interface DataSubjectRequestServiceInterface {
 	/**
 	 * Flag/unflag objection on a single object (art-21).
 	 *
-	 * @param string $objectIdentifier Object id/uuid.
-	 * @param bool $objected Whether the subject objects to processing.
-	 * @param string $reason Reason recorded on the marker.
+	 * @param string         $objectIdentifier Object id/uuid.
+	 * @param ProcessingFlag $flag             Whether the subject objects to processing, and the reason recorded on the marker.
 	 *
 	 * @return array<string, mixed>|null Updated object envelope, or null on miss.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 */
-	public function setObjection(string $objectIdentifier, bool $objected, string $reason): ?array;
+	public function setObjection(string $objectIdentifier, ProcessingFlag $flag): ?array;
 
 	/**
 	 * Flag/unflag processing restriction on a single object (art-18).
@@ -158,13 +155,10 @@ interface DataSubjectRequestServiceInterface {
 	 * (active flag + reason + timestamp), RBAC/tenant scoped, attributed
 	 * to the DSAR activity. Jurisdiction wording stays in the leaf app.
 	 *
-	 * @param string $objectIdentifier Object id/uuid.
-	 * @param bool $restricted Whether processing is restricted.
-	 * @param string $reason Reason recorded on the marker.
+	 * @param string         $objectIdentifier Object id/uuid.
+	 * @param ProcessingFlag $flag             Whether processing is restricted, and the reason recorded on the marker.
 	 *
 	 * @return array<string, mixed>|null Updated object envelope, or null on miss.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 */
-	public function setRestriction(string $objectIdentifier, bool $restricted, string $reason): ?array;
+	public function setRestriction(string $objectIdentifier, ProcessingFlag $flag): ?array;
 }//end interface
