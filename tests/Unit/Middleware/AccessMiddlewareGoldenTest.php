@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
 use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
 use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiation;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
@@ -462,7 +463,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$negotiator = $this->createMock(ApiVersionNegotiator::class);
 		$served = null;
 		if ($version !== null) {
-			$served = new ApiVersion($version, ApiVersion::STATUS_SUPPORTED);
+			$served = new ApiVersion(id: $version, lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_SUPPORTED));
 		}
 
 		$negotiator->method('negotiate')->willReturn(new ApiVersionNegotiation(null, $served, ApiVersionNegotiation::SOURCE_DEFAULT));
