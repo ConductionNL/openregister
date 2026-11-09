@@ -18,7 +18,7 @@ final class SearchTrailControllerFactory {
 	/**
 	 * The constructor arguments of SearchTrailController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param SearchTrailServiceInterface $searchTrailService Constructor argument.
 	 * @param SearchTrailMapperInterface $searchTrailMapper Constructor argument.
@@ -36,7 +36,6 @@ final class SearchTrailControllerFactory {
 		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\SearchTrailControllerServices(
 				searchTrailService: $searchTrailService,
