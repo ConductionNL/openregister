@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Files\Service\Sharing
+ * @package  OCA\OpenRegister\Service\Sharing
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Files\Service\Sharing;
+namespace OCA\OpenRegister\Service\Sharing;
 
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
