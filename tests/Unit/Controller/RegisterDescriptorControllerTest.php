@@ -48,7 +48,6 @@ class RegisterDescriptorControllerTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
 		$this->controller = RegisterDescriptorControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->descriptors,
 			$this->userSession,

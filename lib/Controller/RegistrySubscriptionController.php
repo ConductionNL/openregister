@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\RegistrySubscriptionControllerServices;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -97,16 +98,14 @@ class RegistrySubscriptionController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param RegistrySubscriptionControllerServices $services The registry subscription controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		RegistrySubscriptionControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->objectService = $services->domain->objectService;
 		$this->schemaMapper = $services->domain->schemaMapper;
 		$this->permissionHandler = $services->domain->permissionHandler;
