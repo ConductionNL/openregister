@@ -71,12 +71,13 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 	 */
 	public function setStatus(string $objectUuid, string $property, string $language, string $status): Translation {
 		$this->assertKnownStatus(status: $status);
-		$existing = $this->requireSlot(objectUuid: $objectUuid, property: $property, language: $language);
+		$slot = new TranslationSlot(objectUuid: $objectUuid, property: $property, language: $language);
+		$existing = $this->requireSlot(slot: $slot);
 
 		$translator = $this->userSession->getUser()?->getUID();
 
 		return $this->translationMapper->upsert(
-			slot: new TranslationSlot(objectUuid: $objectUuid, property: $property, language: $language),
+			slot: $slot,
 			edit: new TranslationEdit(value: $existing->getValue(), status: $status, translator: $translator)
 		);
 	}//end setStatus()
@@ -107,16 +108,14 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 	/**
 	 * The existing translation slot, or an exception when there is none.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param string $property   The property name.
-	 * @param string $language   The language code.
+	 * @param TranslationSlot $slot The object, property and language of the slot.
 	 *
 	 * @return Translation The existing slot.
 	 *
 	 * @throws InvalidArgumentException When no slot exists.
 	 */
-	private function requireSlot(string $objectUuid, string $property, string $language): Translation {
-		$existing = $this->translationMapper->findOne($objectUuid, $property, $language);
+	private function requireSlot(TranslationSlot $slot): Translation {
+		$existing = $this->translationMapper->findOne($slot->objectUuid, $slot->property, $slot->language);
 		if ($existing !== null) {
 			return $existing;
 		}
@@ -124,9 +123,9 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 		throw new InvalidArgumentException(
 			sprintf(
 				'No translation slot for object=%s property=%s language=%s — set a value before promoting status.',
-				$objectUuid,
-				$property,
-				$language
+				$slot->objectUuid,
+				$slot->property,
+				$slot->language
 			)
 		);
 	}//end requireSlot()

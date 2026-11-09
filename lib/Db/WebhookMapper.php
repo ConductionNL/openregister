@@ -401,7 +401,6 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	 *
 	 * @param Webhook $webhook Webhook to update
 	 * @param bool $success Was delivery successful
-	 * @param bool $incrementOnly Only increment counters, don't update timestamps
 	 *
 	 * @return Webhook
 	 *
@@ -409,26 +408,19 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control update behavior
 	 */
-	public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly = false): Webhook {
+	public function updateStatistics(Webhook $webhook, bool $success): Webhook {
 		$webhook->setTotalDeliveries($webhook->getTotalDeliveries() + 1);
-
-		if ($incrementOnly === false) {
-			$webhook->setLastTriggeredAt(new DateTime());
-		}
+		$webhook->setLastTriggeredAt(new DateTime());
 
 		if ($success === true) {
 			$webhook->setSuccessfulDeliveries($webhook->getSuccessfulDeliveries() + 1);
-			if ($incrementOnly === false) {
-				$webhook->setLastSuccessAt(new DateTime());
-			}
+			$webhook->setLastSuccessAt(new DateTime());
 
 			return $this->update(entity: $webhook);
 		}
 
 		$webhook->setFailedDeliveries($webhook->getFailedDeliveries() + 1);
-		if ($incrementOnly === false) {
-			$webhook->setLastFailureAt(new DateTime());
-		}
+		$webhook->setLastFailureAt(new DateTime());
 
 		return $this->update(entity: $webhook);
 	}//end updateStatistics()
