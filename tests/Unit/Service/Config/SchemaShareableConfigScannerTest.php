@@ -30,8 +30,11 @@ class SchemaShareableConfigScannerTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->scanner = new SchemaShareableConfigScanner(
-			$this->schemaMapper,
-			$this->registerMapper,
+			new \OCA\OpenRegister\Db\SchemaCatalog(
+				$this->registerMapper,
+				$this->schemaMapper,
+				$this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)
+			),
 			$this->createMock(ObjectService::class),
 			$this->createMock(LoggerInterface::class)
 		);
