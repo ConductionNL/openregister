@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Controller;
 
 use Closure;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\TalkLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
 use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
@@ -46,20 +48,32 @@ class TalkLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var TalkLinkServiceInterface
+	 */
+	private readonly TalkLinkServiceInterface $talkLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
-	 * @param IRequest $request HTTP request.
-	 * @param TalkLinkServiceInterface $talkLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param IRequest                    $request  HTTP request.
+	 * @param TalkLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly TalkLinkServiceInterface $talkLinkService,
-		private readonly ObjectOperationsInterface $objectService,
+		TalkLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->talkLinkService = $services->talkLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**

@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\MergeController;
+use OCA\OpenRegister\Controller\Support\MergeControllerServices;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCP\AppFramework\Http;
@@ -59,10 +60,11 @@ class MergeControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 
 		$this->controller = new MergeController(
-			'openregister',
 			$this->request,
-			$this->mergeService,
-			$this->userSession
+			new MergeControllerServices(
+				$this->mergeService,
+				$this->userSession
+			)
 		);
 	}//end setUp()
 
